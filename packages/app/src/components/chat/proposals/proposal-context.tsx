@@ -1,6 +1,9 @@
 import * as React from "react"
 
-import type { UserStoryAgentActivity } from "@/components/backlog/data/backlog-data"
+import type {
+  UserStoryAgentActivity,
+  UserStoryFileAttachment,
+} from "@/components/backlog/data/backlog-data"
 import type { AgentConversationRun } from "@/components/chat/agent-conversation"
 
 import { fullToolDetail, storyProposalIds } from "./proposal-tools"
@@ -17,6 +20,9 @@ export type ProposalCardRenderers = Partial<
 
 type ProposalHost = {
   cards: ProposalCardRenderers
+  // The files attached to the conversation, which a proposed story can
+  // carry. Without them, proposals do not offer files.
+  fileAttachments?: UserStoryFileAttachment[]
   // Opens a story added from a proposal; the backlog by default.
   onOpenStory?: (storyId: string) => void
 }
@@ -28,15 +34,17 @@ const StoryProposalsContext = React.createContext<string[]>([])
 export function ProposalHostProvider({
   cards,
   children,
+  fileAttachments,
   onOpenStory,
 }: Partial<ProposalHost> & { children: React.ReactNode }) {
   const parent = React.useContext(ProposalHostContext)
   const value = React.useMemo(
     () => ({
       cards: cards ? { ...parent.cards, ...cards } : parent.cards,
+      fileAttachments: fileAttachments ?? parent.fileAttachments,
       onOpenStory: onOpenStory ?? parent.onOpenStory,
     }),
-    [cards, onOpenStory, parent]
+    [cards, fileAttachments, onOpenStory, parent]
   )
   return (
     <ProposalHostContext.Provider value={value}>

@@ -20,8 +20,20 @@ When an agent hands its work back, the story moves to **In Review**. Open it:
 | **Request Changes** | Write a comment: the story goes back to **In Progress** and the agent takes another pass.      |
 | **Reject**          | Choose **Request Changes** after all, or **Discard User Story**, which moves it to **Discarded**. Discarding a Direct story keeps the files the agent changed in your project folder. |
 | **Approve & Merge** | Blame merges the story's branch, and the story moves to **Done**.                              |
+| **Approve & Commit** | A Direct story, which already works in your project folder, has nothing to merge: Blame commits its files on the checked-out branch, and the story moves to **Done**. |
 
-The approve button reads **Approve** for a Direct story, which already works in your project folder, and **Mark as Done** when the story changed nothing.
+The approve button reads **Mark as Done** when the story changed nothing.
+
+## What Approve & Commit does
+
+Your project folder is shared with your own work and with other Direct stories, chats and Plan Mode, so Blame commits only the files this story wrote:
+
+1. It finds the files the agent wrote for this story that still differ from the last commit. Your other uncommitted changes stay uncommitted, and files you already staged stay staged and out of the commit.
+2. If one of those files also holds changes that are not the story's, such as a file you had modified before the story started, Blame lists them and asks: commit them with the story, leave them out, or cancel.
+3. An agent writes the commit message, with your **Alternative model** and your project's commit convention.
+4. Blame commits on the checked-out branch and keeps the commit on the story, so its diff stays visible once it is **Done**. Nothing is pushed.
+
+If none of the story's changes are left in the folder, or the commit fails, the story stays in review and Blame says why.
 
 ## What a merge does
 

@@ -62,7 +62,7 @@ for await (const line of lines) {
       { type: "tool_use", id, name: "mcp__blame__echo", input: {} },
     ], [{ type: "input_json_delta", partial_json: '{"value":"ping"}' }], "tool_use");
     const result = await callTool(id, { value: "ping" });
-    streamText(`tool said: ${result.content.map((item) => item.text).join(" ")}`);
+    streamText(`tool said: ${result.content.map((item) => (item.type === "image" ? `[image ${item.mimeType}]` : item.text)).join(" ")}`);
   } else if (text.includes("please cut")) {
     // A dropped connection: Claude Code closes the partial answer, then
     // retries the same request on its own.
@@ -100,8 +100,9 @@ for await (const line of lines) {
     continue;
   } else {
     await toolsListing;
+    const images = content.filter((block) => block.type === "image").length;
     streamText(
-      `echo(${model}): ${text} | effort: ${effort} | system: ${systemPrompt.split("\n")[0]} | mcp: ${mcpUrl ? "blame" : "none"}${mcpUrl ? ` | tools: ${toolsListed ? "listed" : "missing"}` : ""}`,
+      `echo(${model}): ${text} | effort: ${effort} | system: ${systemPrompt.split("\n")[0]} | mcp: ${mcpUrl ? "blame" : "none"}${mcpUrl ? ` | tools: ${toolsListed ? "listed" : "missing"}` : ""}${images ? ` | images: ${images}` : ""}`,
     );
   }
   write({ type: "result", subtype: "success", is_error: false, result: "" });

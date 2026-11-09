@@ -418,6 +418,25 @@ export type GenerateCommitMessageResult = {
   message: string;
 };
 
+export type DirectStoryFilesInput = {
+  // The project folder a Direct story works in.
+  root: string;
+  // Every agent session the story ran, including restored checkpoints.
+  sessionIds: string[];
+};
+
+export type DirectStoryFile = {
+  path: string;
+  // The file holds changes that are not the story's: it differed from HEAD
+  // before the story first wrote it, or it changed after the story's last write.
+  shared: boolean;
+};
+
+export type DirectStoryFilesResult = {
+  // Files the story wrote that still differ from HEAD and can be committed.
+  files: DirectStoryFile[];
+};
+
 export type GenerateTitleInput = {
   apiConnection: ApiConnection;
   context: "quick-chat" | "user-story";
@@ -780,6 +799,9 @@ export type PlannedUserStory = {
   summary: string;
   priority: StoryPlanPriority;
   dependsOn: string[];
+  // Names of the files the person attached to the conversation that this
+  // story needs; the app hands them to the story's coding agent.
+  attachments: string[];
   // Set by the app once the person added it to the backlog.
   addedAs?: string;
   dismissed?: boolean;

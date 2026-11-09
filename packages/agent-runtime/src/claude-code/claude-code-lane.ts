@@ -12,6 +12,7 @@ import {
   bridgeToolName,
   classifyClaudeCodeError,
   clientStreamEvent,
+  contentBesideToolResults,
   conversationRoot,
   initialUserContent,
   isRecord,
@@ -23,7 +24,6 @@ import {
   toolResults,
   toolUseIds,
   userContent,
-  userTextBesideToolResults,
   type AnthropicBlock,
   type AnthropicMessage,
   type AnthropicTool,
@@ -238,11 +238,11 @@ export class ClaudeCodeLane {
       return;
     }
     const blocks = toolResults(last);
-    const extraText = userTextBesideToolResults(last);
+    const beside = contentBesideToolResults(last);
     blocks.forEach((block, index) =>
       this.deliver(
         String(block.tool_use_id),
-        mcpToolResult(block, index === blocks.length - 1 ? extraText : undefined),
+        mcpToolResult(block, index === blocks.length - 1 ? beside : []),
       ),
     );
   }
@@ -374,7 +374,9 @@ export class ClaudeCodeLane {
       (this.requestTail ? messageBlocks(this.requestTail) : []).map((block) => JSON.stringify(block)),
     );
     return messageBlocks(last).filter(
-      (block) => block.type === "text" && !before.has(JSON.stringify(block)),
+      (block) =>
+        (block.type === "text" || block.type === "image") &&
+        !before.has(JSON.stringify(block)),
     );
   }
 

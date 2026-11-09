@@ -13,6 +13,8 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
+  DirectStoryFilesInput,
+  DirectStoryFilesResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -477,6 +479,8 @@ export type BlameDesktopApi = {
     gitCommit(input: {
       root: string;
       message: string;
+      // Commits only these files and leaves the rest of the index alone.
+      paths?: string[];
     }): Promise<GitCommandResult>;
     gitPush(input: { root: string }): Promise<GitCommandResult>;
     gitBranches(input: { root: string }): Promise<GitBranchList>;
@@ -689,6 +693,9 @@ export type BlameDesktopApi = {
     generateCommitMessage(
       input: GenerateCommitMessageInput,
     ): Promise<GenerateCommitMessageResult>;
+    directStoryFiles(
+      input: DirectStoryFilesInput,
+    ): Promise<DirectStoryFilesResult>;
     resolveMergeConflicts(
       input: ResolveMergeConflictsInput,
     ): Promise<ResolveMergeConflictsResult>;

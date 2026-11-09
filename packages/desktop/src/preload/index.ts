@@ -657,6 +657,8 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("agent:pull-request-availability", input),
     generateCommitMessage: (input) =>
       ipcRenderer.invoke("agent:generate-commit-message", input),
+    directStoryFiles: (input) =>
+      ipcRenderer.invoke("agent:direct-story-files", input),
     resolveMergeConflicts: (input) =>
       ipcRenderer.invoke("agent:resolve-merge-conflicts", input),
   },

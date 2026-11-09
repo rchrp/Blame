@@ -93,6 +93,8 @@ import {
 } from "./story-runtime-cleanup"
 import { activeStory, inactiveStoryFields } from "./story-runtime-state"
 import { useReviewCompletion } from "./use-review-completion"
+import { DirectSharedFilesDialog } from "./direct-shared-files-dialog"
+import { useDirectStoryCommit } from "./use-direct-story-commit"
 import { useStoryPullRequest } from "./use-story-pull-request"
 import { useStoryAgentStream } from "./use-story-agent-stream"
 import { finalizeStoppedRun } from "./story-agent-control"
@@ -810,8 +812,27 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     storiesRef,
     updateStory,
   })
-  const { approveDirectStory, markReviewStoryDone } =
-    useReviewCompletion(updateStory)
+  const { markReviewStoryDone } = useReviewCompletion(updateStory)
+  const { approveAndCommitDirectStory, sharedFilesDialog } =
+    useDirectStoryCommit({
+      alternativeSelection,
+      auth,
+      gitIdentity,
+      platform,
+      projects,
+      updateStory,
+    })
+  // Like a merge: one at a time per story, shown on its card and its drawer.
+  const approveAndCommitStory = React.useCallback(
+    async (story: UserStory) =>
+      (await withStoryTransition(
+        story.id,
+        async () =>
+          approveAndCommitDirectStory(await detailedStory(story, backlog)),
+        "merge"
+      )) ?? activeStory(story, storiesRef.current),
+    [approveAndCommitDirectStory, backlog]
+  )
   const completeReviewStory = React.useCallback(
     async (story: UserStory, options?: { push?: boolean }) => {
       const emptyDiff = await currentReviewDiffEmpty(
@@ -820,12 +841,12 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         projects.activeProject?.path
       )
       if (emptyDiff) return markReviewStoryDone(story)
-      if (story.workspaceMode === "direct") return approveDirectStory(story)
+      if (story.workspaceMode === "direct") return approveAndCommitStory(story)
       return approveAndMergeStory(story, options)
     },
     [
       approveAndMergeStory,
-      approveDirectStory,
+      approveAndCommitStory,
       markReviewStoryDone,
       platform.workspace,
       projects.activeProject?.path,
@@ -1167,6 +1188,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       />
       <UserStoryPreviewWarmup userStories={backlog.stories} />
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
+      <DirectSharedFilesDialog {...sharedFilesDialog} />
     </div>
   )
 }

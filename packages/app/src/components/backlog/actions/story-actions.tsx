@@ -1,4 +1,4 @@
-import { approveActionLabel } from "@/components/backlog/shared/backlog-helpers"
+import { approveActionLabel } from "@/components/backlog/shared/approve-action-label"
 import { Trash2Icon } from "lucide-react"
 
 import {

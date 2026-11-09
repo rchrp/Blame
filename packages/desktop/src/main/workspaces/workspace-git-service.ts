@@ -30,6 +30,8 @@ import {
   runRuntimeGit,
 } from "../workspace-runtime-git.ts";
 
+import { gitCommitFiles } from "./workspace-git-commit.ts";
+
 export type GitLogInput = {
   currentBranchOnly?: boolean;
   limit?: number;
@@ -68,6 +70,8 @@ export type GitFilesInput = {
 
 export type GitCommitInput = {
   message: string;
+  // Commit only these files, leaving the rest of the index as it is.
+  paths?: string[];
   root: string;
 };
 
@@ -343,6 +347,11 @@ export async function gitCommit(input: GitCommitInput) {
   const cwd = resolveRuntimePath(input.root);
   const message = input.message.trim();
   if (!message) throw new Error("Commit message is required");
+  if (input.paths) {
+    const paths = gitWorkspacePaths(input.paths);
+    if (paths.length === 0) throw new Error("Select files before committing");
+    return gitCommitFiles(cwd, message, paths);
+  }
   const result = await runRuntimeGit(cwd, [
     "commit",
     "--no-gpg-sign",
@@ -351,6 +360,12 @@ export async function gitCommit(input: GitCommitInput) {
   ]);
   return { output: result.stdout || result.stderr };
 }
+
+// What the person staged for other files stays staged: `--only` commits the
+// working-tree content of the given files and leaves the index of the rest.
+
+
+
 
 export async function gitPush(root: string) {
   const cwd = resolveRuntimePath(root);

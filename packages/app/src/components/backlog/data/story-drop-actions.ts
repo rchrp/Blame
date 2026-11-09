@@ -3,6 +3,7 @@ import type {
   UserStory,
 } from "@/components/backlog/data/backlog-data"
 import type { BacklogStatusPipRequest } from "@/context/platform"
+import { approveActionLabel } from "../shared/approve-action-label.ts"
 
 // Dragging a story onto a column runs one of the actions its card already
 // offers. Each action that moves the story to a column becomes a drop zone
@@ -63,11 +64,7 @@ export function storyDropActions(
         }),
         action(
           "done",
-          options.reviewDiffEmpty
-            ? "Mark as Done"
-            : story.workspaceMode === "direct"
-              ? "Approve"
-              : "Approve & Merge",
+          approveActionLabel(story, options.reviewDiffEmpty) ?? "Approve & Merge",
           { action: "Approve & Merge" }
         ),
         options.reviewDiffEmpty

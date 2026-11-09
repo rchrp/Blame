@@ -194,6 +194,15 @@ function runtimeEnvPath(path: string) {
   );
 }
 
+export function isRuntimeArtifactPath(path: string) {
+  return (
+    runtimeEnvPath(path) ||
+    runtimeArtifactPaths.some(
+      (artifact) => path === artifact || path.startsWith(`${artifact}/`),
+    )
+  );
+}
+
 function splitLines(value: string) {
   return value.split("\n").filter(Boolean);
 }
