@@ -9,6 +9,10 @@ import { join } from "node:path";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import log from "electron-log";
+import {
+  clineAgentEnvironment,
+  writeClineTelemetryOptOut,
+} from "@blame/agent-runtime/cline-sdk-opt-out";
 import { excludeComponentPreviewFiles } from "./component-preview-exclude";
 import { stopComponentPreviews } from "./component-preview/component-preview-agent";
 import { releaseAgentPreviewSession } from "./preview-browser-ipc";
@@ -559,8 +563,14 @@ export async function shutdownAgentRuntime() {
 }
 
 function createAgentRuntimePool(input: AgentRuntimeRegistration) {
+  const clineSettings = join(app.getPath("userData"), "cline", "settings.json");
+  try {
+    writeClineTelemetryOptOut(clineSettings);
+  } catch (error) {
+    log.warn("Could not write the agents' Cline settings", error);
+  }
   const environment = {
-    ...process.env,
+    ...clineAgentEnvironment(process.env, clineSettings),
     // An app opened from the Finder inherits launchd's minimal PATH: agent
     // commands need the same Node, package manager and tool directories as
     // the other runtimes Blame starts.
