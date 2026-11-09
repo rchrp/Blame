@@ -12,28 +12,19 @@ import { type PreviewManifest } from "@blame/preview-contract";
 import { type RuntimeProfileId } from "@blame/preview-runtime";
 import type { ServiceState } from "@blame/preview-runtime/compose";
 import {
-  ATTR_BLAME_AGENT_ROLE,
-  ATTR_BLAME_AGENT_STRATEGY,
   ATTR_BLAME_EXECUTION_ID,
-  ATTR_BLAME_EXECUTION_KIND,
   ATTR_BLAME_EXECUTION_STATUS,
-  ATTR_BLAME_MULTI_AGENT_ENABLED,
-  ATTR_BLAME_MULTI_AGENT_USED,
   ATTR_BLAME_OPERATION_NAME,
   ATTR_BLAME_REPOSITORY_LANGUAGE,
   ATTR_BLAME_REPOSITORY_SIZE_BUCKET,
   ATTR_BLAME_STORY_ID,
-  ATTR_BLAME_TASK_COMPLEXITY_BUCKET,
   ATTR_BLAME_WORKTREE_ID,
   ATTR_ERROR_TYPE,
-  ATTR_GEN_AI_PROVIDER_NAME,
-  ATTR_GEN_AI_REQUEST_MODEL,
   boundedMetricDimensionName,
   errorAttributes,
   getBlameTelemetry,
   getExecutionRegistry,
   opaqueIdentifier,
-  semanticGenAiProviderName,
   withoutTelemetryEnvironment,
   type BlameSpan,
   type ExecutionComponent,
@@ -49,6 +40,7 @@ import {
   releaseAgentWorkspaceSessions,
 } from "./agent-ipc";
 import { containerRuntimeEnvironment } from "./container-runtime";
+import { executionCohortAttributes } from "./execution-cohort-attributes.ts";
 import {
   assertHostDependencies,
   checkHostDependencies,
@@ -237,35 +229,6 @@ import {
 import { resolveStoryBranch } from "./workspaces/story-branch-identity.ts";
 
 const previewRequestTimeoutMs = 5_000;
-const repositoryLanguageCohorts = new Set([
-  "c",
-  "cpp",
-  "csharp",
-  "css",
-  "dart",
-  "go",
-  "html",
-  "java",
-  "javascript",
-  "kotlin",
-  "mixed",
-  "other",
-  "php",
-  "python",
-  "ruby",
-  "rust",
-  "shell",
-  "swift",
-  "typescript",
-  "vue",
-]);
-const repositorySizeCohorts = new Set([
-  "small",
-  "medium",
-  "large",
-  "very_large",
-]);
-const taskComplexityCohorts = new Set(["small", "medium", "large"]);
 const repositoryTelemetryCache = new Map<
   string,
   Promise<RepositoryTelemetryCohorts | undefined>
@@ -1084,47 +1047,6 @@ function executionDescriptor(
     storyId: input.storyId,
     worktreeId: worktree ? opaqueIdentifier(worktree) : undefined,
   };
-}
-
-function executionCohortAttributes(
-  cohorts: ExecutionTelemetryCohorts | undefined,
-) {
-  const workspaceAttributes = { [ATTR_BLAME_EXECUTION_KIND]: "workspace" };
-  if (!cohorts) return workspaceAttributes;
-  const strategy = boundedAgentStrategy(cohorts.agentStrategy);
-  return {
-    ...workspaceAttributes,
-    [ATTR_BLAME_AGENT_ROLE]: "lead",
-    [ATTR_BLAME_AGENT_STRATEGY]: strategy,
-    [ATTR_BLAME_MULTI_AGENT_ENABLED]: strategy === "multi_agent",
-    [ATTR_BLAME_MULTI_AGENT_USED]: false,
-    [ATTR_BLAME_REPOSITORY_LANGUAGE]: boundedRepositoryLanguage(
-      cohorts.repositoryLanguage,
-    ),
-    [ATTR_BLAME_REPOSITORY_SIZE_BUCKET]: boundedCohortValue(
-      cohorts.repositorySizeBucket,
-      repositorySizeCohorts,
-    ),
-    [ATTR_BLAME_TASK_COMPLEXITY_BUCKET]: boundedCohortValue(
-      cohorts.taskComplexityBucket,
-      taskComplexityCohorts,
-    ),
-    [ATTR_GEN_AI_PROVIDER_NAME]: semanticGenAiProviderName(cohorts.providerId),
-    [ATTR_GEN_AI_REQUEST_MODEL]: boundedMetricDimensionName(cohorts.modelId),
-  };
-}
-
-function boundedAgentStrategy(value: string) {
-  return value === "multi_agent" ? value : "single_agent";
-}
-
-function boundedRepositoryLanguage(value: string | undefined) {
-  if (!value) return undefined;
-  return repositoryLanguageCohorts.has(value) ? value : "other";
-}
-
-function boundedCohortValue(value: string | undefined, allowed: Set<string>) {
-  return value && allowed.has(value) ? value : undefined;
 }
 
 async function enrichExecutionRepositoryCohorts(
