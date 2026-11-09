@@ -249,10 +249,12 @@ export class DeploymentSourceArtifactSchema extends BaseModel {
 }
 
 export class FileAttachmentSchema extends BaseModel {
-  static $columns = ['checksumSha256', 'createdAt', 'detachedAt', 'id', 'mimeType', 'name', 'objectKey', 'size', 'status', 'updatedAt', 'uploadedAt', 'userId'] as const
+  static $columns = ['checksumSha256', 'conversationAttachment', 'createdAt', 'detachedAt', 'id', 'mimeType', 'name', 'objectKey', 'size', 'status', 'updatedAt', 'uploadedAt', 'userId'] as const
   $columns = FileAttachmentSchema.$columns
   @column()
   declare checksumSha256: string
+  @column()
+  declare conversationAttachment: boolean
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column.dateTime()

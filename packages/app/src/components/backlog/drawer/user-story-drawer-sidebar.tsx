@@ -291,7 +291,7 @@ function useStoryStats(
   const plan = usePlanUsage(
     selection,
     provider?.id,
-    source?.agentUsage,
+    source && { id: source.id, running: source.agentStatus === "Running" },
     choiceOfModel?.credentialLabel ?? undefined
   )
   const planUsage = (plan.enabled && plan.usage) || undefined

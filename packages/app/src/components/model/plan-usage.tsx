@@ -8,24 +8,26 @@ import {
   type ModelSelection,
   subscriptionProviders,
 } from "@/components/model/model-selection"
+import { planUsageKey, planUsages } from "@/components/model/plan-usage-cache"
+import { useCloudAuth } from "@/context/cloud-auth"
 import { cn } from "@/lib/utils"
-
-const refreshMs = 60_000
 
 export function hasPlanUsage(providerId: string | undefined) {
   return !!providerId && subscriptionProviders.includes(providerId)
 }
 
 /**
- * How much of the user's ChatGPT or Claude plan is used, kept fresh while
- * shown. `refreshKey` asks again when it changes, after an agent turn.
+ * How much of the user's ChatGPT or Claude plan is used. The value is shared
+ * by everything that shows it and kept fresh while one is shown. When the
+ * `agent` stops running, its turn just used some of the plan: ask again once.
  */
 export function usePlanUsage(
   selection: ModelSelection,
   providerId: string | undefined,
-  refreshKey?: unknown,
+  agent?: { id: string; running: boolean },
   preferredCredentialLabel?: string
 ) {
+  const user = useCloudAuth().user
   const read = selection.agent?.providers.subscriptionUsage
   const credentialLabel =
     preferredCredentialLabel ??
@@ -33,55 +35,53 @@ export function usePlanUsage(
   const apiConnection = selection.apiConnection
   const connected = !!providerId && selection.connectedProviderIDs.has(providerId)
   const enabled = !!read && connected && hasPlanUsage(providerId)
-  const [result, setResult] = React.useState<{
-    apiConnection: typeof apiConnection
-    credentialLabel?: string
-    failed: boolean
-    providerId: string
-    usage?: SubscriptionUsage | null
-  }>()
+  // One entry per account: a slow answer for another provider or account can
+  // never be shown beside the newly selected model.
+  const key =
+    enabled && providerId
+      ? planUsageKey(
+          `${apiConnection.url}|${user?.id ?? ""}`,
+          providerId,
+          credentialLabel
+        )
+      : undefined
+  const fetchUsage = React.useMemo(
+    () =>
+      read && providerId
+        ? () => read({ apiConnection, credentialLabel, providerId })
+        : undefined,
+    [apiConnection, credentialLabel, providerId, read]
+  )
+  const entry = React.useSyncExternalStore(
+    planUsages.subscribe,
+    () => planUsages.read(key),
+    () => undefined
+  )
 
   React.useEffect(() => {
-    if (!enabled || !providerId) return
-    let active = true
-    let inFlight = false
-    const refresh = async () => {
-      if (inFlight) return
-      inFlight = true
-      const identity = { apiConnection, credentialLabel, providerId }
-      try {
-        const usage = await read(identity)
-        if (active) setResult({ ...identity, failed: false, usage })
-      } catch {
-        if (active) setResult({ ...identity, failed: true })
-      } finally {
-        inFlight = false
-      }
-    }
-    const run = () => {
-      if (document.visibilityState === "visible") void refresh()
-    }
-    const first = window.setTimeout(run, 0)
-    const timer = window.setInterval(run, refreshMs)
-    window.addEventListener("focus", run)
-    return () => {
-      active = false
-      window.clearTimeout(first)
-      window.clearInterval(timer)
-      window.removeEventListener("focus", run)
-    }
-  }, [apiConnection, credentialLabel, enabled, providerId, read, refreshKey])
+    if (!key || !fetchUsage) return
+    return planUsages.watch(key, fetchUsage)
+  }, [fetchUsage, key])
 
-  // A slow response from the previous provider/account must never be shown
-  // beside the newly selected model.
-  const current =
-    enabled &&
-    result?.apiConnection === apiConnection &&
-    result?.providerId === providerId &&
-    result?.credentialLabel === credentialLabel
-      ? result
-      : undefined
-  return { enabled, failed: current?.failed ?? false, usage: current?.usage }
+  // The turn that just ended used some of the plan: ask once more, now.
+  const agentId = agent?.id
+  const agentRunning = agent?.running ?? false
+  const previousAgent = React.useRef({ id: agentId, running: agentRunning })
+  React.useEffect(() => {
+    const previous = previousAgent.current
+    previousAgent.current = { id: agentId, running: agentRunning }
+    const turnEnded =
+      previous.id === agentId && previous.running && !agentRunning
+    if (turnEnded && key && fetchUsage) {
+      void planUsages.load(key, fetchUsage, { force: true })
+    }
+  }, [agentId, agentRunning, fetchUsage, key])
+
+  return {
+    enabled,
+    failed: entry?.failed ?? false,
+    usage: entry && !entry.failed ? entry.usage : undefined,
+  }
 }
 
 /** One bar per plan window, each with its reset time. */
