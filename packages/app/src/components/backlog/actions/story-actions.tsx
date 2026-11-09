@@ -1,3 +1,4 @@
+import type { PullRequestAvailability } from "@blame/agent-runtime"
 import { approveActionLabel } from "@/components/backlog/shared/approve-action-label"
 import { Trash2Icon } from "lucide-react"
 
@@ -5,12 +6,14 @@ import {
   type UserStory,
   userStoryActions,
 } from "@/components/backlog/data/backlog-data"
+import { PullRequestButton } from "@/components/backlog/drawer/pull-request-link"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import type { OpenDrawer } from "@/components/backlog/shared/backlog-types"
 import {
   type StoryActionHandler,
   StoryAction,
 } from "@/components/backlog/actions/story-action-button"
+import { StoryApproveMergeMenu } from "@/components/backlog/actions/story-approve-merge-menu"
 import {
   type RejectChoice,
   type StopAgentChoice,
@@ -20,10 +23,12 @@ import {
 } from "@/components/backlog/actions/story-action-dialogs"
 import { Separator } from "@/components/ui/separator"
 import { useStoryWorkToPush } from "@/pages/backlog/use-story-work-to-push"
+import { cn } from "@/lib/utils"
 
 export function StoryActions({
   diffStats,
   onAction,
+  onCheckPullRequest,
   onOpenDrawer,
   onOpenWorktree,
   onDeleteUserStory,
@@ -35,6 +40,8 @@ export function StoryActions({
 }: {
   diffStats?: UserStoryDiffStats
   onAction: StoryActionHandler
+  // Absent where gh cannot run: Open PR is not offered.
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
   onDeleteUserStory: (story: UserStory) => Promise<void>
@@ -49,6 +56,7 @@ export function StoryActions({
       <ReviewActions
         diffStats={diffStats}
         onAction={onAction}
+        onCheckPullRequest={onCheckPullRequest}
         onOpenDrawer={onOpenDrawer}
         onOpenWorktree={onOpenWorktree}
         onReject={onReject}
@@ -199,6 +207,7 @@ function ProgressActions({
 function ReviewActions({
   diffStats,
   onAction,
+  onCheckPullRequest,
   onOpenDrawer,
   onOpenWorktree,
   onReject,
@@ -207,6 +216,7 @@ function ReviewActions({
 }: {
   diffStats?: UserStoryDiffStats
   onAction: StoryActionHandler
+  onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onOpenDrawer: OpenDrawer
   onOpenWorktree: (story: UserStory) => Promise<void>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
@@ -214,6 +224,8 @@ function ReviewActions({
   story: UserStory
 }) {
   const updatePullRequest = useStoryWorkToPush(story)
+  // A Direct story or an empty diff has a plain button: nothing to push.
+  const approveLabel = approveActionLabel(story, reviewDiffEmpty)
   return (
     <div className="grid w-full gap-2">
       <DevelopmentActions
@@ -228,45 +240,73 @@ function ReviewActions({
         onOpenWorktree={onOpenWorktree}
         story={story}
       />
-      {updatePullRequest ? (
-        <StoryAction
-          action="Open PR"
-          label="Update Pull Request"
-          onAction={onAction}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-          story={story}
-        />
-      ) : null}
-      <div className="grid grid-cols-2 gap-2">
-        {reviewDiffEmpty ? (
-          <StoryAction
-            action="Discard"
+      {story.pullRequestUrl ? (
+        <div
+          className={cn(
+            "grid gap-2",
+            updatePullRequest ? "grid-cols-2" : "grid-cols-1"
+          )}
+        >
+          {updatePullRequest ? (
+            <StoryAction
+              action="Open PR"
+              label="Update Pull Request"
+              onAction={onAction}
+              onOpenDrawer={onOpenDrawer}
+              onOpenWorktree={onOpenWorktree}
+              story={story}
+            />
+          ) : null}
+          <PullRequestButton
             className="w-full"
-            icon={Trash2Icon}
-            iconOnly={false}
-            label="Discard"
-            onAction={onAction}
-            onOpenDrawer={onOpenDrawer}
-            onOpenWorktree={onOpenWorktree}
-            story={story}
+            size="sm"
+            url={story.pullRequestUrl}
           />
-        ) : (
-          <RejectDialog
-            onOpenDrawer={onOpenDrawer}
-            onReject={onReject}
-            story={story}
-          />
-        )}
-        <StoryAction
-          action="Approve & Merge"
-          label={approveActionLabel(story, reviewDiffEmpty)}
-          onAction={onAction}
-          onOpenDrawer={onOpenDrawer}
-          onOpenWorktree={onOpenWorktree}
-          story={story}
-        />
-      </div>
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "grid gap-2",
+            approveLabel ? "grid-cols-2" : "grid-cols-[auto_1fr]"
+          )}
+        >
+          {reviewDiffEmpty ? (
+            <StoryAction
+              action="Discard"
+              className="w-full"
+              icon={Trash2Icon}
+              iconOnly={false}
+              label="Discard"
+              onAction={onAction}
+              onOpenDrawer={onOpenDrawer}
+              onOpenWorktree={onOpenWorktree}
+              story={story}
+            />
+          ) : (
+            <RejectDialog
+              onOpenDrawer={onOpenDrawer}
+              onReject={onReject}
+              story={story}
+            />
+          )}
+          {approveLabel ? (
+            <StoryAction
+              action="Approve & Merge"
+              label={approveLabel}
+              onAction={onAction}
+              onOpenDrawer={onOpenDrawer}
+              onOpenWorktree={onOpenWorktree}
+              story={story}
+            />
+          ) : (
+            <StoryApproveMergeMenu
+              onAction={onAction}
+              onCheckPullRequest={onCheckPullRequest}
+              story={story}
+            />
+          )}
+        </div>
+      )}
     </div>
   )
 }

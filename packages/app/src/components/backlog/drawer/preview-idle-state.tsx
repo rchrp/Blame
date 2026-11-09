@@ -95,7 +95,13 @@ export function PreviewLaunchClouds({ filling }: { filling: boolean }) {
   )
 }
 
-export function PreviewNotStarted() {
+export function PreviewNotStarted({
+  onOpenAutoStartSettings,
+}: {
+  // Set while automatic story previews are off: tells so, and where to turn
+  // them on.
+  onOpenAutoStartSettings?: () => void
+}) {
   return (
     <PreviewIdleMessage>
       <AppWindowIcon className="size-8 text-muted-foreground" />
@@ -106,6 +112,18 @@ export function PreviewNotStarted() {
         <p className="max-w-sm text-sm text-pretty text-muted-foreground">
           Start the app with the run controls above: its page opens here.
         </p>
+        {onOpenAutoStartSettings && (
+          <p className="max-w-sm text-sm text-pretty text-muted-foreground">
+            Previews no longer start on their own.{" "}
+            <button
+              type="button"
+              className="rounded-sm underline underline-offset-4 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              onClick={onOpenAutoStartSettings}
+            >
+              Change this in Settings
+            </button>
+          </p>
+        )}
       </div>
     </PreviewIdleMessage>
   )

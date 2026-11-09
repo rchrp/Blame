@@ -109,6 +109,11 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
     variant: "default",
     tone: "primary",
   },
+  "Approve, Merge & Push": {
+    icon: GitMergeIcon,
+    variant: "default",
+    tone: "primary",
+  },
   "Open PR": {
     icon: GitPullRequestIcon,
     variant: "default",
@@ -285,6 +290,7 @@ function directAction(action: BacklogAction) {
     action === "Discard" ||
     action === "Dequeue" ||
     action === "Approve & Merge" ||
+    action === "Approve, Merge & Push" ||
     action === "Open PR" ||
     action === "Use Context" ||
     action === "Rework"

@@ -30,9 +30,12 @@ import type {
   OpenDrawer,
   UserStoryDrawerMode
 } from "@/components/backlog/shared/backlog-types"
-import { ApproveMergeMenu } from "@/components/backlog/drawer/approve-merge-menu"
+import {
+  ApproveMergeMenu,
+  useApproveMergeTransition
+} from "@/components/backlog/actions/approve-merge-menu"
+import { PullRequestButton } from "@/components/backlog/drawer/pull-request-link"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
-import { useStoryTransitionKind } from "@/pages/backlog/story-transitions"
 import { useStoryWorkToPush } from "@/pages/backlog/use-story-work-to-push"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
@@ -92,7 +95,7 @@ const drawerActionConfig: Record<DrawerAction, DrawerActionConfig> = {
     variant: "default",
     tone: "primary"
   },
-  "Merge without Push": {
+  "Approve, Merge & Push": {
     icon: GitMergeIcon,
     variant: "default",
     tone: "primary"
@@ -141,15 +144,9 @@ export function DrawerActions({
 }) {
   // A merge keeps spinning here when it started from the card, or before the
   // drawer was closed and opened again.
-  const transition = useStoryTransitionKind(story?.id)
+  const transitionAction = useApproveMergeTransition(story?.id)
   const workToPush = useStoryWorkToPush(story)
-  const activeAction =
-    loadingAction ??
-    (transition === "merge"
-      ? "Approve & Merge"
-      : transition === "pull-request"
-        ? "Open PR"
-        : undefined)
+  const activeAction = loadingAction ?? transitionAction
   const requestChangesPrimary =
     mode !== "create" && status === "in-review" && hasCommentDraft
   // The story was reworked after its pull request opened: Open PR pushes it.
@@ -162,7 +159,13 @@ export function DrawerActions({
       onClick={() => onAction("Open PR")}
     />
   ) : null
-  const actions = drawerActions(mode, status).map((action) => (
+  // With its pull request open, the story waits for GitHub: no Reject or
+  // Approve & Merge, only the way to the pull request.
+  const pullRequestUrl =
+    mode !== "create" && status === "in-review"
+      ? story?.pullRequestUrl
+      : undefined
+  const reviewActions = drawerActions(mode, status).map((action) => (
     <React.Fragment key={action}>
       {action === "Stop Agent" && story ? (
         <StopAgentDialog
@@ -203,7 +206,6 @@ export function DrawerActions({
         // Inside the hover menu of review actions, the plain button stays.
         <ApproveMergeMenu
           activeAction={activeAction}
-          hasPullRequest={Boolean(story.pullRequestUrl)}
           onAction={onAction}
           onCheckPullRequest={onCheckPullRequest}
           targetBranch={story.targetBranch}
@@ -222,6 +224,11 @@ export function DrawerActions({
       )}
     </React.Fragment>
   ))
+  const actions = pullRequestUrl ? (
+    <PullRequestButton url={pullRequestUrl} />
+  ) : (
+    reviewActions
+  )
 
   return (
     <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">

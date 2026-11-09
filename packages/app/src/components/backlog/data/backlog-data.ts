@@ -20,6 +20,7 @@ export type BacklogAction =
   | "Request Changes"
   | "Reject"
   | "Approve & Merge"
+  | "Approve, Merge & Push"
   | "Open PR"
   | "Use Context"
   | "Rework"

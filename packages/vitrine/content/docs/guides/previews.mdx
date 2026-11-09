@@ -51,4 +51,17 @@ Its run controls sit at the right of the toolbar, as in the app's header: the ru
 - **Run logs** has the logs of the story's run, one tab per service, running ones first: the first place to look when a preview does not start.
 - **Variables** holds the story's environment variables (isolated stories only).
 
+### Starting a preview
+
+A story's preview does not start by itself. Choose the run configuration in the run controls (the one picked for the story is already selected) and press **Start**: this works whatever the setting below says. Until then the tab reads **The preview is not started**, with a shortcut to the setting.
+
+To have Blame start story previews for you, turn on **Settings → General → Start story previews automatically**. It is off by default, saved on this computer, and takes effect at once. With it on:
+
+- A Local Container story starts its preview when the story starts, and again when it reaches review. At most the two most recently updated stories in review start this way, because the sandbox has limited memory.
+- A Cloud Preview story starts its preview while it is in progress or in review.
+- A story with no service to run, and a Direct story, start nothing.
+- A preview you stopped yourself stays stopped.
+
+Turning the setting off does not stop a preview that is already running.
+
 The header's controls open the same preview and logs for the project's own app.

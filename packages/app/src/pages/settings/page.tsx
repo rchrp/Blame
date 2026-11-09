@@ -57,6 +57,7 @@ import { DesktopSettingsPanel } from "./desktop-settings-panel"
 import { PersonalizationSettingsPanel } from "@/components/personalization/personalization-panel"
 import { OpenProjectTargetRow } from "./open-project-target-row"
 import { PreviewSetupPolicyRow } from "./preview-setup-policy-row"
+import { StoryPreviewAutoStartRow } from "./story-preview-auto-start-row"
 import {
   clearRequestedSettingsSection,
   requestedSettingsSection,
@@ -293,6 +294,7 @@ function GeneralSettingsPanel() {
         </SettingsRow>
         <OpenProjectTargetRow />
         <PreviewSetupPolicyRow />
+        <StoryPreviewAutoStartRow />
       </SettingsGroup>
     </SettingsPanel>
   )
