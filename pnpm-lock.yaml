@@ -755,9 +755,6 @@ importers:
       '@blame/preview-runtime':
         specifier: workspace:*
         version: link:../preview-runtime
-      '@blame/telemetry':
-        specifier: workspace:*
-        version: link:../telemetry
       '@grpc/grpc-js':
         specifier: 1.14.7
         version: 1.14.7

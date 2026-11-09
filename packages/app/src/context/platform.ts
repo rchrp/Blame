@@ -15,7 +15,6 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
-  ExecutionTelemetryCohorts,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -116,7 +115,6 @@ export type Platform = {
   previewDevices?: import("./platform-preview-devices").PreviewDevicesClient
   previewTerminal?: import("./platform-preview-surfaces").PreviewTerminalClient
   previewSurfaces?: import("./platform-preview-surfaces").PreviewSurfacesClient
-  telemetry?: TelemetryClient
   privacy?: import("./platform-privacy").PrivacyClient
   whatsNew?: import("./platform-whats-new").WhatsNewClient
   updates?: DesktopUpdatesClient
@@ -169,17 +167,6 @@ export type DeployClient = {
   ): Promise<ProjectDeployment>
 }
 
-export type TelemetryExportSession = {
-  endpoint: string
-  expiresAt: string
-  token: string
-}
-
-export type RuntimeDiagnosticInput = {
-  detail: string
-  operation: "ensure" | "repair" | "reset"
-}
-
 export type RuntimeProgress = {
   completedBytes?: number
   percent?: number
@@ -204,12 +191,6 @@ export type RuntimeStatusReport = {
   updateRequired?: boolean
   // Installed VM is stopped and only needs to be started.
   startRequired?: boolean
-}
-
-export type TelemetryClient = {
-  configure(session: TelemetryExportSession): Promise<boolean>
-  disable(): Promise<boolean>
-  sendRuntimeDiagnostic?(input: RuntimeDiagnosticInput): Promise<boolean>
 }
 
 export type McpTransport = "stdio" | "streamableHttp" | "sse"
@@ -887,14 +868,12 @@ export type WorkspaceClient = {
     branch?: string | null // recorded by the story on an earlier run
     // Run in the project folder instead of a new worktree.
     direct?: boolean
-    executionId: string
     repositoryRoot: string
     runtimeProfile: RuntimeProfileId
     storyId: string
     storyReference: string
     // The branch to start from; without it, the project folder's branch.
     targetBranch?: string | null
-    telemetryCohorts?: ExecutionTelemetryCohorts
     title: string
   }): Promise<WorktreeResult>
   checkHostDependencies(input: {
@@ -908,9 +887,6 @@ export type WorkspaceClient = {
   /** What in a project shows it uses a database, for the database choice. */
   databaseEvidence?(input: { root: string }): Promise<{ evidence: string[] }>
   prepareProjectPreview(input: {
-    executionId: string
-    storyId: string
-    telemetryCohorts?: ExecutionTelemetryCohorts
     worktree: string
     previewManifest: PreviewManifest
     runConfigurations: ProjectRunConfiguration[]
@@ -920,9 +896,6 @@ export type WorkspaceClient = {
     databaseMode?: "compose" | "existing" | null
   }): Promise<{ prepared: true }>
   runProjectSetup(input: {
-    executionId: string
-    storyId: string
-    telemetryCohorts?: ExecutionTelemetryCohorts
     worktree: string
     previewManifest: PreviewManifest
     runConfigurations: ProjectRunConfiguration[]
@@ -946,9 +919,6 @@ export type WorkspaceClient = {
   }): Promise<boolean>
   resolveProjectPreviewUrl(input: { worktree: string }): Promise<string | null>
   ensureProjectPreviewUrl(input: {
-    executionId: string
-    storyId?: string
-    telemetryCohorts?: ExecutionTelemetryCohorts
     workspaceMode?: "local-container" | "cloud-mirror" | "direct"
     worktree: string
   }): Promise<string | null>

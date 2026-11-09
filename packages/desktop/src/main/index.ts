@@ -1,7 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { shutdownBlameTelemetry } from "@blame/telemetry";
 import contextMenu from "electron-context-menu";
 import log from "electron-log";
 import windowState from "electron-window-state";
@@ -18,12 +17,7 @@ import {
   type IpcMainInvokeEvent,
   type WebContents,
 } from "electron";
-import {
-  configureAgentRuntimeTelemetry,
-  disableAgentRuntimeTelemetry,
-  prewarmAgentRuntime,
-  shutdownAgentRuntime,
-} from "./agent-ipc";
+import { prewarmAgentRuntime, shutdownAgentRuntime } from "./agent-ipc";
 import { desktopAppIdentity } from "./desktop-app-identity";
 import { desktopRuntimeEnvironment } from "./desktop-runtime-environment";
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery";
@@ -82,7 +76,7 @@ contextMenu({
 
 const desktopResources = desktopResourcePaths(app.getAppPath());
 const runtimeShutdownTimeoutMs = 4_000;
-const telemetryShutdownTimeoutMs = 4_000;
+const logFlushTimeoutMs = 4_000;
 const initialWindowShowFallbackMs = 8_000;
 type WindowBounds = { height: number; width: number; x: number; y: number };
 const protocolClientArguments = desktopProtocolClientArguments(
@@ -155,16 +149,11 @@ void app.whenReady().then(() => {
     },
     agentRuntime: {
       modulePath: desktopResources.agentRuntime,
-      serviceVersion: app.getVersion(),
     },
     localApi: {
       modulePath: fileURLToPath(import.meta.resolve("@blame/api/local")),
       dataDirectory: join(app.getPath("userData"), "local-api"),
       secrets: safeStorage,
-    },
-    telemetry: {
-      configure: configureAgentRuntimeTelemetry,
-      disable: disableAgentRuntimeTelemetry,
     },
     async beforeInstall() {
       shutdownRequested = true;
@@ -728,8 +717,7 @@ async function cleanupApplication() {
   await settleWithin(runtimeShutdown, runtimeShutdownTimeoutMs);
   await settleWithin(shutdownLocalApi(), runtimeShutdownTimeoutMs);
   stopRuntimeInBackground({ ...process.env, PATH: setupPath() });
-  await settleWithin(shutdownBlameTelemetry(), telemetryShutdownTimeoutMs);
-  await settleWithin(flushLiveLogs(), telemetryShutdownTimeoutMs);
+  await settleWithin(flushLiveLogs(), logFlushTimeoutMs);
 }
 
 function settleWithin(task: Promise<void>, timeout: number) {

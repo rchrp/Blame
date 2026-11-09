@@ -19,7 +19,6 @@ import {
 import type {
   HostDependencyIssue,
   HostDependencyReport,
-  RuntimeDiagnosticInput,
   RuntimeProgress,
 } from "@/context/platform"
 import { usePlatform } from "@/context/platform"
@@ -28,6 +27,7 @@ import {
   runtimeFailureDetail,
   runtimeFailureTitle,
   runtimeReportFailure,
+  type RuntimeOperation,
 } from "@/pages/backlog/runtime-failure"
 
 const runtimeFailureToastId = "runtime-action-failure"
@@ -65,16 +65,12 @@ export function HostDependenciesDialog({
         const result = await runtimeAction.run(setRuntimeProgress)
         const reportFailure = runtimeReportFailure(result)
         if (reportFailure) {
-          showRuntimeFailureToast(
-            reportFailure,
-            runtimeAction.operation,
-            platform
-          )
+          showRuntimeFailureToast(reportFailure, runtimeAction.operation)
           return
         }
         await onRecheck()
       } catch (error) {
-        showRuntimeFailureToast(error, runtimeAction.operation, platform)
+        showRuntimeFailureToast(error, runtimeAction.operation)
       } finally {
         setRunningAction(null)
         setRuntimeProgress(null)
@@ -210,7 +206,7 @@ function repairRuntimeIssue(issue: HostDependencyIssue) {
 }
 
 function createRuntimeAction(
-  operation: RuntimeDiagnosticInput["operation"],
+  operation: RuntimeOperation,
   run:
     | ((onProgress?: (progress: RuntimeProgress) => void) => Promise<unknown>)
     | undefined
@@ -309,48 +305,10 @@ function dependencyUrl(issue: HostDependencyIssue) {
   return urls[issue.name]
 }
 
-function showRuntimeFailureToast(
-  error: unknown,
-  operation: RuntimeDiagnosticInput["operation"],
-  platform: ReturnType<typeof usePlatform>
-) {
-  const detail = runtimeFailureDetail(error)
-  const send = platform.telemetry?.sendRuntimeDiagnostic
+function showRuntimeFailureToast(error: unknown, operation: RuntimeOperation) {
   toast.error(runtimeFailureTitle(operation), {
-    action: send
-      ? {
-          label: "Send diagnostic",
-          onClick: () =>
-            void submitRuntimeDiagnostic({ detail, operation }, platform),
-        }
-      : undefined,
-    description: detail,
+    description: runtimeFailureDetail(error),
     duration: Infinity,
     id: runtimeFailureToastId,
-  })
-}
-
-async function submitRuntimeDiagnostic(
-  input: RuntimeDiagnosticInput,
-  platform: ReturnType<typeof usePlatform>
-) {
-  try {
-    const sent = await platform.telemetry?.sendRuntimeDiagnostic?.(input)
-    if (!sent) {
-      showDiagnosticSendFailure()
-      return
-    }
-    toast.dismiss(runtimeFailureToastId)
-    toast.success("Runtime diagnostic sent", {
-      description: "The error details were sent to Blame for investigation.",
-    })
-  } catch {
-    showDiagnosticSendFailure()
-  }
-}
-
-function showDiagnosticSendFailure() {
-  toast.error("Unable to send runtime diagnostic", {
-    description: "Check your connection and sign-in status, then try again.",
   })
 }

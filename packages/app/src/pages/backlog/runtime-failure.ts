@@ -1,8 +1,6 @@
-import type { RuntimeDiagnosticInput } from "@/context/platform"
+export type RuntimeOperation = "ensure" | "repair" | "reset"
 
-export function runtimeFailureTitle(
-  operation: RuntimeDiagnosticInput["operation"]
-) {
+export function runtimeFailureTitle(operation: RuntimeOperation) {
   if (operation === "ensure") return "Runtime setup failed"
   if (operation === "repair") return "Runtime repair failed"
   return "Runtime reset failed"

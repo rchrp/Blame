@@ -10,7 +10,7 @@ export default defineConfig({
       rolldownOptions: {
         input: {
           "agent-runtime-process": "src/main/agent-runtime-process.ts",
-          index: "src/main/bootstrap.ts",
+          index: "src/main/index.ts",
         },
         output: {
           entryFileNames: "[name].js",

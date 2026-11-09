@@ -13,7 +13,6 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
-  ExecutionTelemetryCohorts,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -67,8 +66,7 @@ import type {
   PreviewDevtoolsSettingsClient,
   PreviewEnvironmentClient,
 } from "@blame/app";
-import type { RuntimeDiagnosticInput, RuntimeProgress } from "@blame/app";
-import type { TelemetryExportSession } from "@blame/app";
+import type { RuntimeProgress } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { RuntimeStatusReport } from "../main/runtime-manager";
 import type { CreateProjectInput } from "../main/project-creation";
@@ -172,7 +170,7 @@ export type ProjectApp = {
 };
 
 // What the app sends on its own; see main/privacy-preferences.ts.
-export type PrivacyPreferences = { telemetry: boolean; updateChecks: boolean };
+export type PrivacyPreferences = { updateChecks: boolean };
 
 export type PrivacyClient = {
   get(): Promise<PrivacyPreferences>;
@@ -307,11 +305,6 @@ export type BlameDesktopApi = {
   };
   localApi: import("@blame/app").LocalApiClient;
   deploy: DeployClient;
-  telemetry: {
-    configure(session: TelemetryExportSession): Promise<boolean>;
-    disable(): Promise<boolean>;
-    sendRuntimeDiagnostic(input: RuntimeDiagnosticInput): Promise<boolean>;
-  };
   openDirectoryPicker(
     options?: OpenDirectoryPickerOptions,
   ): Promise<string | string[] | null>;
@@ -516,13 +509,11 @@ export type BlameDesktopApi = {
       branch?: string | null;
       // Run in the project folder instead of a new worktree.
       direct?: boolean;
-      executionId: string;
       repositoryRoot: string;
       runtimeProfile: RuntimeProfileId;
       storyId: string;
       storyReference: string;
       targetBranch?: string | null;
-      telemetryCohorts?: ExecutionTelemetryCohorts;
       title: string;
     }): Promise<WorktreeResult>;
     checkHostDependencies(input: {
@@ -534,9 +525,6 @@ export type BlameDesktopApi = {
     }): Promise<HostDependencyReport>;
     databaseEvidence(input: { root: string }): Promise<{ evidence: string[] }>;
     prepareProjectPreview(input: {
-      executionId: string;
-      storyId: string;
-      telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
       previewManifest: PreviewManifest;
       runConfigurations: ProjectRunConfiguration[];
@@ -546,9 +534,6 @@ export type BlameDesktopApi = {
       databaseMode?: "compose" | "existing" | null;
     }): Promise<{ prepared: true }>;
     runProjectSetup(input: {
-      executionId: string;
-      storyId: string;
-      telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
       previewManifest: PreviewManifest;
       runConfigurations: ProjectRunConfiguration[];
@@ -574,9 +559,6 @@ export type BlameDesktopApi = {
       worktree: string;
     }): Promise<string | null>;
     ensureProjectPreviewUrl(input: {
-      executionId: string;
-      storyId?: string;
-      telemetryCohorts?: ExecutionTelemetryCohorts;
       worktree: string;
     }): Promise<string | null>;
     runtimeStatus(): Promise<RuntimeStatusReport>;

@@ -21,7 +21,6 @@ import {
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
 import type { ApiConnection, ReasoningSelection } from "@blame/agent-runtime";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { hostGitCommand } from "./host-git.ts";
 import { projectNameError } from "@blame/agent-runtime/project-name";
 import {
@@ -251,10 +250,8 @@ async function ensureGeneratedProjectGitignore(target: string) {
 }
 
 async function git(cwd: string, args: string[]) {
-  const env = withoutTelemetryEnvironment(process.env);
-  await execFileAsync(hostGitCommand({ env }), args, {
+  await execFileAsync(hostGitCommand(), args, {
     cwd,
-    env,
     maxBuffer: gitMaxBuffer,
   });
 }

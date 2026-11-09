@@ -33,7 +33,6 @@ mountApp(root, {
     securityAudits: window.blame.securityAudits,
     systemNotifications: window.blame.systemNotifications,
     appStatus: window.blame.appStatus,
-    telemetry: window.blame.telemetry,
     terminal: window.blame.terminal,
     updates: window.blame.updates,
     workspace: window.blame.workspace,

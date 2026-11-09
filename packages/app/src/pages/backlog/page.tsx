@@ -594,7 +594,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         .sendDevelopment({
           executionId: session.executionId,
           sessionId: session.sessionId,
-          storyId: session.storyId,
           title: currentStory.title,
           summary: currentStory.summary,
           codeSelectionAttachments: currentStory.codeSelectionAttachments ?? [],
@@ -710,7 +709,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           () =>
             platform.agent!.approveAndMerge({
               apiConnection: auth.apiConnection,
-              executionId: crypto.randomUUID(),
               providerId: alternativeSelection.currentModel!.provider.id,
               modelId: alternativeSelection.currentModel!.id,
               credentialLabel:
@@ -723,7 +721,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
               push: options.push,
               title: story.title,
               summary: story.summary,
-              storyId: story.id,
               codePractices,
             })
         )
@@ -830,7 +827,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           () =>
             platform.agent!.openPullRequest({
               apiConnection: auth.apiConnection,
-              executionId: crypto.randomUUID(),
               providerId: alternativeSelection.currentModel!.provider.id,
               modelId: alternativeSelection.currentModel!.id,
               credentialLabel:
@@ -843,7 +839,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
               title: currentStory.title,
               summary: currentStory.summary,
               agentSummary: currentStory.agentFinalResponse ?? undefined,
-              storyId: currentStory.id,
               codePractices,
             })
         )

@@ -9,7 +9,6 @@ import type {
   CodeGraphUpdateResult,
   CodeReviewGraphProvider,
 } from "@blame/agent-runtime";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import {
@@ -824,7 +823,7 @@ function spawnWorkspaceCommand(command: string, args: string[], cwd: string) {
 
 function commandEnvironment() {
   return {
-    ...withoutTelemetryEnvironment(process.env),
+    ...process.env,
     PATH: setupPath(),
     PYTHONUTF8: "1",
   };

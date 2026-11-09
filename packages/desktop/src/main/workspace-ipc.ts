@@ -4,42 +4,12 @@ import {
   manifestWithProjectPackageManager,
   projectPackageManager,
   type ApplyPreviewInitializationInput,
-  type ExecutionTelemetryCohorts,
   type ProjectPreviewRuntimeState,
   type ProjectRunConfiguration,
 } from "@blame/agent-runtime";
 import { type PreviewManifest } from "@blame/preview-contract";
 import { type RuntimeProfileId } from "@blame/preview-runtime";
 import type { ServiceState } from "@blame/preview-runtime/compose";
-import {
-  ATTR_BLAME_AGENT_ROLE,
-  ATTR_BLAME_AGENT_STRATEGY,
-  ATTR_BLAME_EXECUTION_ID,
-  ATTR_BLAME_EXECUTION_KIND,
-  ATTR_BLAME_EXECUTION_STATUS,
-  ATTR_BLAME_MULTI_AGENT_ENABLED,
-  ATTR_BLAME_MULTI_AGENT_USED,
-  ATTR_BLAME_OPERATION_NAME,
-  ATTR_BLAME_REPOSITORY_LANGUAGE,
-  ATTR_BLAME_REPOSITORY_SIZE_BUCKET,
-  ATTR_BLAME_STORY_ID,
-  ATTR_BLAME_TASK_COMPLEXITY_BUCKET,
-  ATTR_BLAME_WORKTREE_ID,
-  ATTR_ERROR_TYPE,
-  ATTR_GEN_AI_PROVIDER_NAME,
-  ATTR_GEN_AI_REQUEST_MODEL,
-  boundedMetricDimensionName,
-  errorAttributes,
-  getBlameTelemetry,
-  getExecutionRegistry,
-  opaqueIdentifier,
-  semanticGenAiProviderName,
-  withoutTelemetryEnvironment,
-  type BlameSpan,
-  type ExecutionComponent,
-  type ExecutionDescriptor,
-  type TelemetryOutcome,
-} from "@blame/telemetry";
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
@@ -97,10 +67,6 @@ import {
   collectProjectInitializationDiagnostics,
   type CollectProjectInitializationDiagnosticsInput,
 } from "./project-initialization-diagnostics";
-import {
-  repositoryTelemetryCohorts,
-  type RepositoryTelemetryCohorts,
-} from "./repository-telemetry-cohorts";
 import {
   ensureRuntimeReady,
   getRuntimeStatus,
@@ -194,10 +160,6 @@ import {
   worktreeRegistered,
 } from "./workspace-runtime-git.ts";
 import {
-  startWorkspaceStep,
-  traceWorkspaceStep,
-} from "./workspace-step-telemetry";
-import {
   commandText,
   gitAbortConflict,
   gitAcceptConflictFile,
@@ -237,44 +199,7 @@ import {
 import { resolveStoryBranch } from "./workspaces/story-branch-identity.ts";
 
 const previewRequestTimeoutMs = 5_000;
-const repositoryLanguageCohorts = new Set([
-  "c",
-  "cpp",
-  "csharp",
-  "css",
-  "dart",
-  "go",
-  "html",
-  "java",
-  "javascript",
-  "kotlin",
-  "mixed",
-  "other",
-  "php",
-  "python",
-  "ruby",
-  "rust",
-  "shell",
-  "swift",
-  "typescript",
-  "vue",
-]);
-const repositorySizeCohorts = new Set([
-  "small",
-  "medium",
-  "large",
-  "very_large",
-]);
-const taskComplexityCohorts = new Set(["small", "medium", "large"]);
-const repositoryTelemetryCache = new Map<
-  string,
-  Promise<RepositoryTelemetryCohorts | undefined>
->();
 const setupEnvironmentCacheTtlMs = 2_000;
-const worktreeSetupOperationName = "blame.worktree.setup";
-const previewPrepareOperationName = "blame.preview.prepare";
-const projectSetupOperationName = "blame.project.setup";
-const previewStartOperationName = "blame.preview.start";
 type WorkspacePathInput = {
   root: string;
   path?: string;
@@ -285,13 +210,7 @@ type WorkspaceSearchInput = WorkspacePathInput & {
   limit?: number;
 };
 
-type ExecutionContextInput = {
-  executionId: string;
-  storyId?: string;
-  telemetryCohorts?: ExecutionTelemetryCohorts;
-};
-
-type CreateWorktreeInput = ExecutionContextInput & {
+type CreateWorktreeInput = {
   // The branch the story recorded on an earlier run, if any.
   branch?: string | null;
   // Run in the project folder instead of a new worktree.
@@ -306,8 +225,7 @@ type CreateWorktreeInput = ExecutionContextInput & {
   title: string;
 };
 
-type RunProjectSetupInput = ExecutionContextInput & {
-  storyId: string;
+type RunProjectSetupInput = {
   worktree: string;
   previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];
@@ -354,25 +272,15 @@ type ResolveProjectPreviewUrlInput = {
   worktree: string;
 };
 
-type EnsureProjectPreviewUrlInput = ExecutionContextInput &
-  ResolveProjectPreviewUrlInput & {
-    workspaceMode?: WorkspaceMode;
-  };
+type EnsureProjectPreviewUrlInput = ResolveProjectPreviewUrlInput & {
+  workspaceMode?: WorkspaceMode;
+};
 
 type SetupRun = {
   id: string;
   abort: AbortController;
-  processSpan: BlameSpan;
   startedAt: number;
-  telemetry: ExecutionOperation;
   worktree: string;
-};
-
-type ExecutionOperation = {
-  component: ExecutionComponent;
-  descriptor: ExecutionDescriptor;
-  finished: boolean;
-  operationName: string;
 };
 
 type ControlProjectPreviewInput = {
@@ -793,23 +701,6 @@ async function searchRuntimeFiles(root: string, query: string, limit: number) {
 }
 
 async function createWorktree(input: CreateWorktreeInput) {
-  const operation = beginExecutionOperation(
-    input,
-    worktreeSetupOperationName,
-    createWorktreePath(input),
-  );
-  const cohorts = enrichExecutionRepositoryCohorts(
-    operation,
-    input.repositoryRoot,
-  );
-  return runExecutionOperation(operation, async () => {
-    const result = await createWorktreeOperation(input);
-    await waitForRepositoryCohorts(cohorts);
-    return result;
-  });
-}
-
-async function createWorktreeOperation(input: CreateWorktreeInput) {
   if (input.direct) return directWorkspace(input);
   const context = await worktreeCreationContext(input);
   if (removingWorktrees.has(context.worktree))
@@ -995,7 +886,7 @@ async function timedWorktreeCreateStep<T>(
 ) {
   const start = Date.now();
   try {
-    return await traceWorkspaceStep(label, action);
+    return await action();
   } finally {
     timings.push({ duration: Date.now() - start, label });
   }
@@ -1019,210 +910,23 @@ async function appendWorktreeCreateTimings(
   );
 }
 
-function beginExecutionOperation(
-  input: ExecutionContextInput,
-  operationName: string,
-  worktree?: string,
-): ExecutionOperation {
-  const descriptor = executionDescriptor(input, worktree);
-  const component = getExecutionRegistry().beginComponent(
-    descriptor,
-    operationName,
-    { [ATTR_BLAME_OPERATION_NAME]: operationName },
-  );
-  return {
-    component,
-    descriptor,
-    finished: false,
-    operationName,
-  };
-}
-
-async function runExecutionOperation<T>(
-  operation: ExecutionOperation,
-  action: () => Promise<T>,
-  outcome = (_result: T): TelemetryOutcome => "succeeded",
-) {
-  return getBlameTelemetry().withinSpan(operation.component.span, async () => {
-    try {
-      const result = await action();
-      finishExecutionOperation(operation, outcome(result));
-      return result;
-    } catch (error) {
-      finishExecutionOperation(operation, "failed", error);
-      throw error;
-    }
-  });
-}
-
-function finishExecutionOperation(
-  operation: ExecutionOperation,
-  outcome: TelemetryOutcome,
-  error?: unknown,
-) {
-  if (operation.finished) return;
-  operation.finished = true;
-  recordOperationMetrics(
-    operation.component.span,
-    operation.operationName,
-    outcome,
-    error,
-    operation.descriptor,
-  );
-  if (outcome === "failed") operation.component.fail(error ?? new Error());
-  else if (outcome === "canceled") operation.component.cancel();
-  else operation.component.succeed();
-}
-
-function executionDescriptor(
-  input: ExecutionContextInput,
-  worktree?: string,
-): ExecutionDescriptor {
-  return {
-    attributes: executionCohortAttributes(input.telemetryCohorts),
-    executionId: input.executionId,
-    storyId: input.storyId,
-    worktreeId: worktree ? opaqueIdentifier(worktree) : undefined,
-  };
-}
-
-function executionCohortAttributes(
-  cohorts: ExecutionTelemetryCohorts | undefined,
-) {
-  const workspaceAttributes = { [ATTR_BLAME_EXECUTION_KIND]: "workspace" };
-  if (!cohorts) return workspaceAttributes;
-  const strategy = boundedAgentStrategy(cohorts.agentStrategy);
-  return {
-    ...workspaceAttributes,
-    [ATTR_BLAME_AGENT_ROLE]: "lead",
-    [ATTR_BLAME_AGENT_STRATEGY]: strategy,
-    [ATTR_BLAME_MULTI_AGENT_ENABLED]: strategy === "multi_agent",
-    [ATTR_BLAME_MULTI_AGENT_USED]: false,
-    [ATTR_BLAME_REPOSITORY_LANGUAGE]: boundedRepositoryLanguage(
-      cohorts.repositoryLanguage,
-    ),
-    [ATTR_BLAME_REPOSITORY_SIZE_BUCKET]: boundedCohortValue(
-      cohorts.repositorySizeBucket,
-      repositorySizeCohorts,
-    ),
-    [ATTR_BLAME_TASK_COMPLEXITY_BUCKET]: boundedCohortValue(
-      cohorts.taskComplexityBucket,
-      taskComplexityCohorts,
-    ),
-    [ATTR_GEN_AI_PROVIDER_NAME]: semanticGenAiProviderName(cohorts.providerId),
-    [ATTR_GEN_AI_REQUEST_MODEL]: boundedMetricDimensionName(cohorts.modelId),
-  };
-}
-
-function boundedAgentStrategy(value: string) {
-  return value === "multi_agent" ? value : "single_agent";
-}
-
-function boundedRepositoryLanguage(value: string | undefined) {
-  if (!value) return undefined;
-  return repositoryLanguageCohorts.has(value) ? value : "other";
-}
-
-function boundedCohortValue(value: string | undefined, allowed: Set<string>) {
-  return value && allowed.has(value) ? value : undefined;
-}
-
-async function enrichExecutionRepositoryCohorts(
-  operation: ExecutionOperation,
-  repositoryRoot: string,
-) {
-  const cohorts = await loadRepositoryTelemetryCohorts(repositoryRoot);
-  if (!cohorts) return;
-  const attributes = {
-    [ATTR_BLAME_REPOSITORY_LANGUAGE]: cohorts.repositoryLanguage,
-    [ATTR_BLAME_REPOSITORY_SIZE_BUCKET]: cohorts.repositorySizeBucket,
-  };
-  operation.descriptor.attributes = {
-    ...operation.descriptor.attributes,
-    ...attributes,
-  };
-  getExecutionRegistry().setAttributes(
-    operation.descriptor.executionId,
-    attributes,
-  );
-}
-
-function loadRepositoryTelemetryCohorts(repositoryRoot: string) {
-  const root = resolveRuntimePath(repositoryRoot);
-  const cached = repositoryTelemetryCache.get(root);
-  if (cached) return cached;
-  const pending = readRepositoryTelemetryCohorts(root);
-  repositoryTelemetryCache.set(root, pending);
-  void pending.then((cohorts) => {
-    if (!cohorts) repositoryTelemetryCache.delete(root);
-  });
-  return pending;
-}
-
-async function readRepositoryTelemetryCohorts(root: string) {
-  try {
-    const result = await runRuntime("git", ["ls-files", "-z"], { cwd: root });
-    return repositoryTelemetryCohorts(result.stdout);
-  } catch {
-    return undefined;
-  }
-}
-
-async function waitForRepositoryCohorts(preparation: Promise<void>) {
-  let timeout: NodeJS.Timeout | undefined;
-  const deadline = new Promise<void>((resolve) => {
-    timeout = setTimeout(resolve, 100);
-  });
-  await Promise.race([preparation, deadline]);
-  if (timeout) clearTimeout(timeout);
-}
-
 async function runProjectSetup(input: RunProjectSetupInput) {
-  const operation = beginExecutionOperation(
-    input,
-    projectSetupOperationName,
-    input.worktree,
-  );
-  void enrichExecutionRepositoryCohorts(operation, input.worktree);
-  try {
-    return await getBlameTelemetry().withinSpan(operation.component.span, () =>
-      runProjectSetupOperation(input, operation),
-    );
-  } catch (error) {
-    finishExecutionOperation(operation, "failed", error);
-    throw error;
-  }
-}
-
-async function prepareProjectPreview(input: PrepareProjectPreviewInput) {
-  const operation = beginExecutionOperation(
-    input,
-    previewPrepareOperationName,
-    input.worktree,
-  );
-  void enrichExecutionRepositoryCohorts(operation, input.worktree);
-  return runExecutionOperation(operation, async () => {
-    const { worktree } = await prepareProjectPreviewArtifacts(input);
-    if (
-      input.runtimeProfile === "local-container" &&
-      typeof input.runConfigurationId !== "string"
-    ) {
-      prefetchProjectPreview(worktree);
-    }
-    return { prepared: true };
-  });
-}
-
-async function runProjectSetupOperation(
-  input: RunProjectSetupInput,
-  operation: ExecutionOperation,
-) {
   const { worktree } = await prepareProjectPreviewArtifacts(input);
   return startProjectSetupRun(
     worktree,
-    operation,
     input.runtimeProfile === "local-container",
   );
+}
+
+async function prepareProjectPreview(input: PrepareProjectPreviewInput) {
+  const { worktree } = await prepareProjectPreviewArtifacts(input);
+  if (
+    input.runtimeProfile === "local-container" &&
+    typeof input.runConfigurationId !== "string"
+  ) {
+    prefetchProjectPreview(worktree);
+  }
+  return { prepared: true };
 }
 
 // Writes what a local preview starts from: the canonical manifest, compiled
@@ -1308,20 +1012,11 @@ function writeRuntimeJson(path: string, value: unknown) {
 
 // The renderer subscribes to the run's events once it has the run id, so
 // the run itself starts on the next tick.
-function startProjectSetupRun(
-  worktree: string,
-  telemetry: ExecutionOperation,
-  startLocalPreview: boolean,
-) {
+function startProjectSetupRun(worktree: string, startLocalPreview: boolean) {
   const run: SetupRun = {
     id: randomUUID(),
     abort: new AbortController(),
-    processSpan: startWorkspaceStep(
-      "setup process runtime",
-      telemetry.component.span.context,
-    ),
     startedAt: Date.now(),
-    telemetry,
     worktree,
   };
   setupRuns.set(run.id, run);
@@ -1336,16 +1031,13 @@ async function completeProjectSetupRun(
   const { id: runId, worktree } = run;
   try {
     const previewUrl = startLocalPreview
-      ? await traceSetupPreview(run, () =>
-          startProjectCompose(worktree, {
-            output: (chunk) =>
-              emitSetupOutput(runId, worktree, "stdout", chunk),
-            signal: run.abort.signal,
-          }),
-        )
+      ? await startProjectCompose(worktree, {
+          output: (chunk) => emitSetupOutput(runId, worktree, "stdout", chunk),
+          signal: run.abort.signal,
+        })
       : null;
     if (run.abort.signal.aborted) return;
-    finishSetupRun(run, "succeeded");
+    await finishSetupRun(run);
     emitSetupOutput(
       runId,
       worktree,
@@ -1357,145 +1049,24 @@ async function completeProjectSetupRun(
     emitSetupOutput(runId, worktree, "exit", "0");
   } catch (error) {
     if (run.abort.signal.aborted) return;
-    finishSetupRun(run, "failed", error);
+    await finishSetupRun(run);
     emitSetupOutput(runId, worktree, "stderr", errorMessage(error));
     emitSetupOutput(runId, worktree, "exit", "1");
   }
 }
 
-function finishSetupRun(
-  run: SetupRun,
-  outcome: TelemetryOutcome,
-  error?: unknown,
-) {
+function finishSetupRun(run: SetupRun) {
   setupRuns.delete(run.id);
-  run.processSpan.end(outcome);
-  finishExecutionOperation(run.telemetry, outcome, error);
-}
-
-async function traceSetupPreview<T>(run: SetupRun, action: () => Promise<T>) {
-  const telemetry = getBlameTelemetry();
-  const operationName = previewStartOperationName;
-  const span = telemetry.startSpan(operationName, {
-    attributes: operationSpanAttributes(
-      run.telemetry.descriptor,
-      operationName,
-    ),
-    parent: run.telemetry.component.span.context,
-  });
-  return telemetry.withinSpan(span, () =>
-    runSpanOperation(span, operationName, run.telemetry.descriptor, action),
+  return appendTimingLog(
+    run.worktree,
+    "setup process runtime",
+    Date.now() - run.startedAt,
   );
-}
-
-async function runSpanOperation<T>(
-  span: BlameSpan,
-  operationName: string,
-  descriptor: ExecutionDescriptor,
-  action: () => Promise<T>,
-) {
-  try {
-    const result = await action();
-    recordOperationMetrics(
-      span,
-      operationName,
-      "succeeded",
-      undefined,
-      descriptor,
-    );
-    span.end("succeeded");
-    return result;
-  } catch (error) {
-    span.recordError(error);
-    recordOperationMetrics(span, operationName, "failed", error, descriptor);
-    span.end("failed");
-    throw error;
-  }
-}
-
-function recordOperationMetrics(
-  span: BlameSpan,
-  operationName: string,
-  outcome: TelemetryOutcome,
-  error?: unknown,
-  descriptor?: ExecutionDescriptor,
-) {
-  const attributes = operationMetricAttributes(
-    operationName,
-    outcome,
-    error,
-    descriptor,
-  );
-  const telemetry = getBlameTelemetry();
-  telemetry.count(`${operationName}.count`, 1, attributes, span.context);
-  telemetry.record(
-    `${operationName}.duration`,
-    span.durationSeconds(),
-    attributes,
-    span.context,
-  );
-  recordOperationLog(span, outcome, attributes, error);
-}
-
-function operationMetricAttributes(
-  operationName: string,
-  outcome: TelemetryOutcome,
-  error?: unknown,
-  descriptor?: ExecutionDescriptor,
-) {
-  return {
-    ...metricCohortAttributes(descriptor),
-    [ATTR_BLAME_EXECUTION_STATUS]: outcome,
-    [ATTR_BLAME_OPERATION_NAME]: operationName,
-    ...(outcome === "failed"
-      ? { [ATTR_ERROR_TYPE]: operationErrorType(error) }
-      : {}),
-  };
-}
-
-function recordOperationLog(
-  span: BlameSpan,
-  outcome: TelemetryOutcome,
-  attributes: Record<string, unknown>,
-  error?: unknown,
-) {
-  const telemetry = getBlameTelemetry();
-  telemetry.log(
-    outcome === "failed" ? "error" : "info",
-    "blame.operation.completed",
-    {
-      ...attributes,
-      ...(error ? errorAttributes(error) : {}),
-    },
-    span.context,
-  );
-}
-
-function metricCohortAttributes(descriptor: ExecutionDescriptor | undefined) {
-  const latest = descriptor
-    ? getExecutionRegistry().attributes(descriptor.executionId)
-    : undefined;
-  return latest ?? descriptor?.attributes;
-}
-
-function operationSpanAttributes(
-  descriptor: ExecutionDescriptor,
-  operationName: string,
-) {
-  return {
-    [ATTR_BLAME_EXECUTION_ID]: descriptor.executionId,
-    [ATTR_BLAME_OPERATION_NAME]: operationName,
-    [ATTR_BLAME_STORY_ID]: descriptor.storyId,
-    [ATTR_BLAME_WORKTREE_ID]: descriptor.worktreeId,
-  };
 }
 
 function operationErrorType(error: unknown) {
   if (error instanceof PreviewRuntimeError) return error.code;
-  if (error instanceof Error && error.name) {
-    return boundedMetricDimensionName(error.name);
-  }
-  return "Error";
+  return error instanceof Error && error.name ? error.name : "Error";
 }
 
 type StartProjectComposeOptions = {
@@ -1828,18 +1399,12 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
     );
     return null;
   }
-  getBlameTelemetry().count("blame.harness.preview_recoveries", 1, {});
-  const nextRecovery = runPreviewRecovery(input, worktree)
+  const nextRecovery = recoverProjectPreview(worktree)
     .then((result) => {
       previewRecoveryCircuit.succeeded(worktree);
       return result;
     })
     .catch((error) => {
-      getBlameTelemetry().count(
-        "blame.harness.preview_recoveries_by_failure",
-        1,
-        {},
-      );
       previewRecoveryCircuit.failed(
         worktree,
         configurationFingerprint,
@@ -2034,8 +1599,6 @@ export async function applyProjectPreviewInitialization(
       await controlProjectPreview({ action: "stop", worktree });
     }
     await prepareProjectPreviewArtifacts({
-      executionId: `preview-repair:${input.storyId}`,
-      storyId: input.storyId,
       worktree,
       previewManifest: input.previewManifest,
       runConfigurations: input.runConfigurations,
@@ -2088,8 +1651,6 @@ async function refreshProjectDependencyArtifacts(worktree: string) {
   ]);
   if (!manifest) return;
   await prepareProjectPreviewArtifacts({
-    executionId: "preview-dependency-refresh",
-    storyId: "preview-dependency-refresh",
     worktree,
     previewManifest: manifest,
     runConfigurations,
@@ -2289,22 +1850,6 @@ function setupRunningForWorktree(worktree: string) {
   );
 }
 
-async function runPreviewRecovery(
-  input: EnsureProjectPreviewUrlInput,
-  worktree: string,
-) {
-  const operation = beginExecutionOperation(
-    input,
-    previewStartOperationName,
-    worktree,
-  );
-  void enrichExecutionRepositoryCohorts(operation, worktree);
-  const action = () => recoverProjectPreview(worktree);
-  return runExecutionOperation(operation, action, (result) =>
-    result ? "succeeded" : "canceled",
-  );
-}
-
 async function recoverProjectPreview(worktree: string) {
   if (await previewRuntimeStopped(worktree)) return null;
   if (removedWorktrees.has(worktree)) return null;
@@ -2349,10 +1894,7 @@ async function settleRecoveredPreview(worktree: string) {
 }
 
 export async function shutdownWorkspaceProcesses() {
-  Array.from(setupRuns.values()).forEach((run) => {
-    run.abort.abort();
-    finishSetupRun(run, "canceled");
-  });
+  Array.from(setupRuns.values()).forEach((run) => run.abort.abort());
   setupRuns.clear();
   for (const stream of projectLogStreams.values()) stream.abort.abort();
   for (const stream of projectServiceLogStreams.values()) {
@@ -2368,7 +1910,7 @@ async function stopSetupRunsForWorktree(worktree: string) {
   for (const run of Array.from(setupRuns.values())) {
     if (run.worktree !== worktree) continue;
     run.abort.abort();
-    finishSetupRun(run, "canceled");
+    setupRuns.delete(run.id);
   }
 }
 
@@ -2629,7 +2171,7 @@ async function timedRecoveryStep<T>(
 ) {
   const start = Date.now();
   try {
-    return await traceWorkspaceStep(label, action);
+    return await action();
   } finally {
     await appendTimingLog(worktree, label, Date.now() - start);
   }
@@ -2834,11 +2376,10 @@ async function setupEnvironment(worktree: string) {
 async function buildSetupEnvironment(
   worktree: string,
 ): Promise<SetupEnvironment> {
-  const hostEnvironment = withoutTelemetryEnvironment(process.env);
   const environment = {
-    ...containerRuntimeEnvironment(hostEnvironment),
+    ...containerRuntimeEnvironment(process.env),
     ...(await worktreeRuntimeEnvironment(worktree)),
-    ...hostEnvironment,
+    ...process.env,
     BLAME_HOST_GID: hostGroupId(),
     BLAME_HOST_UID: hostUserId(),
     CI: "true",
@@ -2853,7 +2394,7 @@ async function buildSetupEnvironment(
     npm_config_yes: "true",
     PATH: setupPath(),
   };
-  return withoutTelemetryEnvironment(environment) as SetupEnvironment;
+  return environment as SetupEnvironment;
 }
 
 function invalidateSetupEnvironment(worktree: string) {
@@ -2862,7 +2403,7 @@ function invalidateSetupEnvironment(worktree: string) {
 
 function runtimeManagerEnvironment() {
   return {
-    ...withoutTelemetryEnvironment(process.env),
+    ...process.env,
     PATH: setupPath(),
   };
 }

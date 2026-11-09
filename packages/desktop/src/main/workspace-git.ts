@@ -3,7 +3,6 @@ import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { constants as osConstants, setPriority, tmpdir } from "node:os";
 import { basename, join, posix, resolve } from "node:path";
 import { promisify } from "node:util";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pLimit } from "./concurrency.ts";
 import { hostGitCommand } from "./host-git.ts";
 import { workspaceDiffStats } from "./workspace-diff-stats.ts";
@@ -480,7 +479,7 @@ async function runGit(
 ) {
   if (runtimeManagedPath(root))
     return runVirtualizedGit(root, args, environment);
-  const env = { ...withoutTelemetryEnvironment(process.env), ...environment };
+  const env = { ...process.env, ...environment };
   return execFileAsync(hostGitCommand({ env }), args, {
     cwd: root,
     env,
@@ -512,7 +511,7 @@ function runBackgroundGit(
 ) {
   if (runtimeManagedPath(root))
     return runVirtualizedGit(root, args, environment);
-  const env = { ...withoutTelemetryEnvironment(process.env), ...environment };
+  const env = { ...process.env, ...environment };
   let command: string;
   try {
     command = hostGitCommand({ env });

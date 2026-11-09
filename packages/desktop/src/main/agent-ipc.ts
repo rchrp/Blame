@@ -38,7 +38,6 @@ import { useAgentWorkspaceCheck } from "./preview-runtime/local/local-preview-id
 type AgentRuntimeRegistration = {
   modulePath: string;
   packaged: boolean;
-  serviceVersion: string;
   previewService: PreviewService;
   beforeDelivery?(worktree: string): Promise<void>;
   beforeWorkspaceWrite?(worktree: string): Promise<void>;
@@ -559,14 +558,6 @@ export async function shutdownAgentRuntime() {
   await currentRuntime?.shutdown();
 }
 
-export function configureAgentRuntimeTelemetry(session: unknown) {
-  return runtime?.configureTelemetry(session);
-}
-
-export function disableAgentRuntimeTelemetry() {
-  return runtime?.disableTelemetry();
-}
-
 function createAgentRuntimePool(input: AgentRuntimeRegistration) {
   const environment = {
     ...process.env,
@@ -575,7 +566,6 @@ function createAgentRuntimePool(input: AgentRuntimeRegistration) {
     // the other runtimes Blame starts.
     PATH: setupPath(),
     BLAME_AGENT_PACKAGED: String(input.packaged),
-    BLAME_AGENT_SERVICE_VERSION: input.serviceVersion,
     BLAME_CLAUDE_CODE_STATE_DIR: join(app.getPath("userData"), "claude-code"),
     // Where cloud commands' gh is downloaded once (see github-cli.ts).
     BLAME_GITHUB_CLI_DIR: join(app.getPath("userData"), "github-cli"),

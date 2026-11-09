@@ -49,7 +49,6 @@ export class AgentRuntimePool {
   private readonly sessionRoutes = new Map<string, AgentWorker>();
   private readonly workers: AgentWorker[] = [];
   private stopping = false;
-  private telemetrySession: unknown;
 
   constructor(options: AgentRuntimePoolOptions) {
     this.options = options;
@@ -145,16 +144,6 @@ export class AgentRuntimePool {
     );
   }
 
-  configureTelemetry(session: unknown) {
-    this.telemetrySession = session;
-    return this.broadcast("telemetry.configure", session);
-  }
-
-  disableTelemetry() {
-    this.telemetrySession = null;
-    return this.broadcast("telemetry.disable");
-  }
-
   cancelSecurityAudit(auditId: string) {
     return this.broadcast("securityAudits.cancel", auditId);
   }
@@ -219,7 +208,6 @@ export class AgentRuntimePool {
       onExit: (error) => this.handleExit(worker, error),
     });
     this.workers.push(worker);
-    this.configureWorkerTelemetry(worker);
     return worker;
   }
 
@@ -281,17 +269,6 @@ export class AgentRuntimePool {
 
   private routeSession(worker: AgentWorker, sessionId: string) {
     this.sessionRoutes.set(sessionId, worker);
-  }
-
-  private configureWorkerTelemetry(worker: AgentWorker) {
-    if (this.telemetrySession === undefined) return;
-    const method =
-      this.telemetrySession === null
-        ? "telemetry.disable"
-        : "telemetry.configure";
-    const input =
-      this.telemetrySession === null ? undefined : this.telemetrySession;
-    void worker.client.request(method, input).catch(() => undefined);
   }
 
   private broadcast(method: AgentRuntimeMethod, input?: unknown) {

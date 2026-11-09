@@ -1,6 +1,5 @@
 import { execFile, spawn } from "node:child_process";
 import type { RuntimeProgress } from "@blame/app";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import {
   runtimeCommand,
   runtimeName,
@@ -8,13 +7,6 @@ import {
 } from "./container-runtime.ts";
 import { runtimeToolScript } from "./host-tool-path.ts";
 import { retireRuntimeAgents } from "./runtime-agent.ts";
-import {
-  runtimeTelemetry,
-  type RuntimeTelemetryOperation,
-  type RuntimeTelemetryOperationName,
-  type RuntimeTelemetryProbeName,
-  type RuntimeTelemetryRecorder,
-} from "./runtime-telemetry.ts";
 
 const commandTimeoutMs = 15_000;
 const lifecycleCommandTimeoutMs = 30 * 60_000;
@@ -114,25 +106,17 @@ export type RuntimeCommandRunner = (
 
 type RuntimeManagerContext = {
   env?: NodeJS.ProcessEnv;
-  observation?: RuntimeTelemetryOperation;
   onProgress?: RuntimeProgressHandler;
   platform: NodeJS.Platform;
-  probesEnabled?: boolean;
   run: RuntimeCommandRunner;
 };
 
-type RuntimeManagerAction = (
-  context: RuntimeManagerContext,
-) => Promise<RuntimeStatusReport>;
-
 export class RuntimeManager {
   private readonly context: RuntimeManagerContext;
-  private readonly telemetry: RuntimeTelemetryRecorder;
 
   constructor(
     input: RuntimeManagerInput = {},
     run: RuntimeCommandRunner = runCommand,
-    telemetry: RuntimeTelemetryRecorder = runtimeTelemetry,
   ) {
     this.context = {
       env: input.env,
@@ -140,7 +124,6 @@ export class RuntimeManager {
       platform: input.platform ?? process.platform,
       run,
     };
-    this.telemetry = telemetry;
   }
 
   getRuntimeStatus() {
@@ -148,43 +131,31 @@ export class RuntimeManager {
   }
 
   async checkRuntimeDependencies(): Promise<RuntimeStatusReport> {
-    return this.observe("status", checkRuntimeStatus);
+    return checkRuntimeStatus(this.context);
   }
 
   async ensureRuntimeReady() {
-    return this.observe("ensure", ensureRuntimeOperation);
+    return ensureRuntimeOperation(this.context);
   }
 
   async repairRuntime() {
-    return this.observe("repair", repairRuntimeOperation);
+    return runReadyLifecycleOperation(this.context, "repair");
   }
 
   async resetRuntime() {
-    return this.observe("reset", resetRuntimeOperation);
+    return runReadyLifecycleOperation(this.context, "reset");
   }
 
   async uninstallRuntime() {
-    return this.observe("uninstall", uninstallRuntimeOperation);
-  }
-
-  private observe(
-    operation: RuntimeTelemetryOperationName,
-    action: RuntimeManagerAction,
-  ) {
-    return this.telemetry.runOperation(
-      runtimeName(this.context.platform),
-      operation,
-      (observation) => action({ ...this.context, observation }),
-    );
+    return uninstallRuntimeOperation(this.context);
   }
 }
 
 export function createRuntimeManager(
   input: RuntimeManagerInput = {},
   run: RuntimeCommandRunner = runCommand,
-  telemetry: RuntimeTelemetryRecorder = runtimeTelemetry,
 ) {
-  return new RuntimeManager(input, run, telemetry);
+  return new RuntimeManager(input, run);
 }
 
 export function getRuntimeStatus(input: RuntimeManagerInput = {}) {
@@ -221,16 +192,15 @@ export function stopRuntimeInBackground(
   platform: NodeJS.Platform = process.platform,
 ) {
   if (!managedRuntimePlatform(platform)) return;
-  const environment = withoutTelemetryEnvironment(env);
   const spec = executableRuntimeCommand(
     runtimeBinary(platform),
     ["stop"],
-    environment,
+    env,
   );
   try {
     spawn(spec.command, spec.args, {
       detached: true,
-      env: environment,
+      env,
       stdio: "ignore",
       windowsHide: true,
       windowsVerbatimArguments: spec.windowsVerbatimArguments,
@@ -245,76 +215,36 @@ export function stopRuntimeInBackground(
 async function ensureRuntimeOperation(context: RuntimeManagerContext) {
   context.onProgress?.({ phase: "checking" });
   const report = await checkRuntimeStatus(context);
-  context.observation?.initial(report);
-  if (report.status === "ready") {
-    context.observation?.readinessPolls(0);
-    return report;
-  }
-  await runLifecyclePhase(context, "ensure");
-  return waitForReadinessPhase(context);
-}
-
-function repairRuntimeOperation(context: RuntimeManagerContext) {
-  return runReadyLifecycleOperation(context, "repair");
-}
-
-function resetRuntimeOperation(context: RuntimeManagerContext) {
-  return runReadyLifecycleOperation(context, "reset");
+  if (report.status === "ready") return report;
+  await runLifecycleCommand(context, "ensure");
+  return waitForRuntimeReadiness(context);
 }
 
 async function runReadyLifecycleOperation(
   context: RuntimeManagerContext,
   command: "repair" | "reset",
 ) {
-  await runLifecyclePhase(context, command);
-  return waitForReadinessPhase(context);
+  await runLifecycleCommand(context, command);
+  return waitForRuntimeReadiness(context);
 }
 
 async function uninstallRuntimeOperation(context: RuntimeManagerContext) {
-  await runLifecyclePhase(context, "uninstall");
+  await runLifecycleCommand(context, "uninstall");
   return checkRuntimeStatus(context);
-}
-
-function checkRuntimeStatus(context: RuntimeManagerContext) {
-  return observeRuntimePhase(context, "status_check", () =>
-    runtimeStatusReportFromContext(context),
-  );
 }
 
 // A running agent keeps the code it started with: after provisioning, the
 // next requests go to a fresh agent (US-045 ran its whole story on the
 // agent the update had just replaced).
-async function runLifecyclePhase(
+async function runLifecycleCommand(
   context: RuntimeManagerContext,
   command: "ensure" | "repair" | "reset" | "uninstall",
 ) {
   try {
-    return await observeRuntimePhase(context, "lifecycle_command", () =>
-      runRuntimeLifecycleCommand(context, command),
-    );
+    return await runRuntimeLifecycleCommand(context, command);
   } finally {
     retireRuntimeAgents();
   }
-}
-
-function waitForReadinessPhase(context: RuntimeManagerContext) {
-  const action = () => waitForRuntimeReadiness(context);
-  return (
-    context.observation?.phase("readiness_wait", action, readinessOutcome) ??
-    action()
-  );
-}
-
-function readinessOutcome(report: RuntimeStatusReport) {
-  return report.status === "ready" ? "succeeded" : "failed";
-}
-
-function observeRuntimePhase<T>(
-  context: RuntimeManagerContext,
-  phase: "lifecycle_command" | "readiness_wait" | "status_check",
-  action: () => Promise<T>,
-) {
-  return context.observation?.phase(phase, action) ?? action();
 }
 
 async function runtimeDependencyIssues(context: RuntimeManagerContext) {
@@ -345,9 +275,7 @@ async function managedRuntimeIssues(context: RuntimeManagerContext) {
 
 async function checkLinuxDocker(context: RuntimeManagerContext) {
   try {
-    await observeRuntimeProbe(context, "docker", "binary", () =>
-      context.run("docker", ["--version"], context.env),
-    );
+    await context.run("docker", ["--version"], context.env);
     return null;
   } catch (error) {
     return runtimeIssue("docker", "missing", error);
@@ -356,9 +284,7 @@ async function checkLinuxDocker(context: RuntimeManagerContext) {
 
 async function checkRuntimeConnection(context: RuntimeManagerContext) {
   try {
-    await observeRuntimeProbe(context, "docker", "connection", () =>
-      runRuntimeCommand(context, "info", []),
-    );
+    await runRuntimeCommand(context, "info", []);
     return null;
   } catch (error) {
     return runtimeIssue("docker", "unavailable", error);
@@ -371,9 +297,7 @@ async function checkRuntimeTool(
   args: string[],
 ) {
   try {
-    await observeRuntimeProbe(context, "docker-compose", "compose", () =>
-      runRuntimeCommand(context, command, args),
-    );
+    await runRuntimeCommand(context, command, args);
     return null;
   } catch (error) {
     return runtimeIssue("docker-compose", "missing", error);
@@ -382,8 +306,10 @@ async function checkRuntimeTool(
 
 async function checkManagedRuntimeBinary(context: RuntimeManagerContext) {
   try {
-    await observeRuntimeProbe(context, "blame-runtime", "binary", () =>
-      context.run(runtimeBinary(context.platform), ["--version"], context.env),
+    await context.run(
+      runtimeBinary(context.platform),
+      ["--version"],
+      context.env,
     );
     return null;
   } catch (error) {
@@ -393,12 +319,10 @@ async function checkManagedRuntimeBinary(context: RuntimeManagerContext) {
 
 async function checkManagedRuntimeStatus(context: RuntimeManagerContext) {
   try {
-    const output = await observeRuntimeProbe(
-      context,
-      "blame-runtime",
-      "status",
-      () =>
-        context.run(runtimeBinary(context.platform), ["status"], context.env),
+    const output = await context.run(
+      runtimeBinary(context.platform),
+      ["status"],
+      context.env,
     );
     return managedRuntimeStatusIssueFromOutput(output);
   } catch (error) {
@@ -408,16 +332,10 @@ async function checkManagedRuntimeStatus(context: RuntimeManagerContext) {
 
 async function checkManagedRuntimeAgent(context: RuntimeManagerContext) {
   try {
-    const output = await observeRuntimeProbe(
-      context,
-      "blame-runtime",
-      "agent",
-      () =>
-        context.run(
-          runtimeBinary(context.platform),
-          ["agent", "status"],
-          context.env,
-        ),
+    const output = await context.run(
+      runtimeBinary(context.platform),
+      ["agent", "status"],
+      context.env,
     );
     return parseRuntimeState(output) === "ready"
       ? null
@@ -425,16 +343,6 @@ async function checkManagedRuntimeAgent(context: RuntimeManagerContext) {
   } catch (error) {
     return managedRuntimeAgentIssue(error);
   }
-}
-
-function observeRuntimeProbe<T>(
-  context: RuntimeManagerContext,
-  dependency: RuntimeDependencyName,
-  probe: RuntimeTelemetryProbeName,
-  action: () => Promise<T>,
-) {
-  if (!context.observation || context.probesEnabled === false) return action();
-  return context.observation.probe(dependency, probe, action);
 }
 
 function runRuntimeCommand(
@@ -501,19 +409,15 @@ function runtimeProgressValid(value: RuntimeProgress) {
 
 async function waitForRuntimeReadiness(context: RuntimeManagerContext) {
   const deadline = Date.now() + readinessTimeoutMs;
-  const pollingContext = { ...context, probesEnabled: false };
-  let report = await runtimeStatusReportFromContext(pollingContext);
-  let pollCount = 1;
+  let report = await checkRuntimeStatus(context);
   while (runtimeReadinessPending(report) && Date.now() < deadline) {
     await sleep(readinessPollIntervalMs);
-    report = await runtimeStatusReportFromContext(pollingContext);
-    pollCount += 1;
+    report = await checkRuntimeStatus(context);
   }
-  context.observation?.readinessPolls(pollCount);
   return report;
 }
 
-async function runtimeStatusReportFromContext(context: RuntimeManagerContext) {
+async function checkRuntimeStatus(context: RuntimeManagerContext) {
   const issues = await runtimeDependencyIssues(context);
   return runtimeStatusReport(context.platform, issues);
 }
@@ -735,7 +639,7 @@ async function runCommand(
   timeoutMs = commandTimeoutMs,
   onOutput?: (output: string) => void,
 ) {
-  const environment = withoutTelemetryEnvironment(env ?? process.env);
+  const environment = env ?? process.env;
   const commandSpec = executableRuntimeCommand(command, args, environment);
   return executeCommand(commandSpec, environment, timeoutMs, onOutput);
 }

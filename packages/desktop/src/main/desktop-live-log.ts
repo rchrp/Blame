@@ -1,15 +1,8 @@
 import { appendFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { getBlameTelemetry, type TelemetrySeverity } from "@blame/telemetry";
-import {
-  app,
-  type BrowserWindow,
-  type RenderProcessGoneDetails,
-} from "electron";
-import {
-  liveLogAttributes,
-  rendererLogAttributes,
-} from "./desktop-log-attributes";
+import { app, type BrowserWindow } from "electron";
+import { redactLogData } from "./desktop-log-redaction";
+import { grantedGithubTokens } from "./github-access/agent-github-access.ts";
 
 type ConsoleMethod = "debug" | "error" | "info" | "log" | "warn";
 
@@ -21,7 +14,6 @@ const consoleMethods: ConsoleMethod[] = [
   "warn",
 ];
 const originalConsole = new Map<ConsoleMethod, (...data: unknown[]) => void>();
-const telemetry = getBlameTelemetry();
 const maximumLogBytes = 10 * 1024 * 1024;
 const maximumPendingWrites = 1_000;
 const retainedLogFiles = 3;
@@ -55,67 +47,40 @@ export function attachLiveLogWindow(window: BrowserWindow) {
   window.webContents.on(
     "console-message",
     (_event, level, message, line, source) => {
-      appendRendererLog(level, message, line, source);
+      appendLiveLog("renderer", [`level=${level}`, source, line, message]);
     },
   );
 
   window.webContents.on("render-process-gone", (_event, details) => {
-    appendRendererProcessGone(details);
+    appendLiveLog("renderer-process-gone", [details]);
   });
 }
 
 function appendLiveLog(scope: string, data: unknown[]) {
   try {
-    const eventName = eventNameForScope(scope);
-    const severity = severityForScope(scope);
-    recordLiveLog(severity, eventName, liveLogAttributes(data));
+    const values = redactLogData(data, grantedGithubTokens());
+    writeLogLine(
+      `[${new Date().toISOString()}] [${scope}] ${values.map(formatLogValue).join(" ")}\n`,
+    );
   } catch {}
 }
 
-function appendRendererLog(
-  level: number,
-  message: string,
-  line: number,
-  source: string,
-) {
-  const attributes = rendererLogAttributes(message, line, source);
-  recordLiveLog(
-    rendererSeverity(level),
-    "blame.desktop.renderer.console",
-    attributes,
-  );
-}
-
-function appendRendererProcessGone(details: RenderProcessGoneDetails) {
-  const severity = details.reason === "clean-exit" ? "info" : "error";
-  const attributes = {
-    "blame.process.exit_code": details.exitCode,
-    "blame.process.reason": details.reason,
-    ...(severity === "error" ? { "error.type": "RendererProcessGone" } : {}),
-  };
-  recordLiveLog(severity, "blame.desktop.renderer.process_gone", attributes);
+function formatLogValue(value: unknown) {
+  if (value instanceof Error) return value.stack || value.message;
+  if (typeof value === "string") return value;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
 }
 
 function liveLogPath() {
   return join(app.getPath("userData"), "logs", "blame-live.log");
 }
 
-function recordLiveLog(
-  severity: TelemetrySeverity,
-  eventName: string,
-  attributes: Record<string, unknown>,
-) {
-  try {
-    writeLogRecord(telemetry.structuredLog(severity, eventName, attributes));
-  } catch {}
-  try {
-    emitOperationalLog(severity, eventName, attributes);
-  } catch {}
-}
-
-function writeLogRecord(record: Record<string, unknown>) {
+function writeLogLine(line: string) {
   if (pendingWrites >= maximumPendingWrites) return;
-  const line = `${JSON.stringify(record)}\n`;
   pendingWrites += 1;
   writeQueue = writeQueue
     .then(() => appendRotatingLog(line))
@@ -163,32 +128,4 @@ async function moveLogFile(source: string, destination: string) {
     await rm(destination, { force: true });
     await rename(source, destination);
   } catch {}
-}
-
-function emitOperationalLog(
-  severity: TelemetrySeverity,
-  eventName: string,
-  attributes: Record<string, unknown>,
-) {
-  if (severity === "error" || severity === "warn") {
-    telemetry.log(severity, eventName, attributes);
-  }
-}
-
-function eventNameForScope(scope: string) {
-  return `blame.desktop.${scope.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
-}
-
-function severityForScope(scope: string): TelemetrySeverity {
-  if (scope === "debug") return "debug";
-  if (scope.includes("error") || scope.includes("Exception")) return "error";
-  if (scope === "warn" || scope === "warning") return "warn";
-  return "info";
-}
-
-function rendererSeverity(level: number): TelemetrySeverity {
-  if (level >= 3) return "error";
-  if (level === 2) return "warn";
-  if (level === 0) return "debug";
-  return "info";
 }

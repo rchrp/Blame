@@ -5,7 +5,6 @@ import {
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline";
@@ -538,13 +537,11 @@ function runtimeEnvironmentKey(key: string) {
 
 function agentCommand(platform: NodeJS.Platform, env?: NodeJS.ProcessEnv) {
   const nextEnv = {
-    ...withoutTelemetryEnvironment(process.env),
+    ...process.env,
     ...env,
     PATH: setupPath({ env, platform }),
   };
-  const sanitizedEnv = withoutHostGithubTokens(
-    withoutTelemetryEnvironment(nextEnv),
-  );
+  const sanitizedEnv = withoutHostGithubTokens(nextEnv);
   if (platform === "win32") {
     return {
       args: [

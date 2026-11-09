@@ -2,7 +2,6 @@ import crossSpawn from "cross-spawn";
 import { setupPath } from "../host-tool-path.ts";
 import { type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 
 export type DeviceCommandOptions = {
   cwd?: string;
@@ -34,7 +33,7 @@ export const deviceHost: DeviceHost = {
     return crossSpawn(command, args, {
       cwd: options.cwd,
       env: {
-        ...withoutTelemetryEnvironment(process.env),
+        ...process.env,
         PATH: setupPath(),
         ...options.environment,
       },

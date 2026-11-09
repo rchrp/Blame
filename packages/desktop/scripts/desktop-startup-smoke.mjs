@@ -16,7 +16,7 @@ async function launch() {
   const linux = process.platform === "linux";
   if (linux) args.unshift("--no-sandbox");
   const headless = linux && !process.env.DISPLAY;
-  const environment = { ...process.env, OTEL_SDK_DISABLED: "true" };
+  const environment = { ...process.env };
   delete environment.ELECTRON_RUN_AS_NODE;
   delete environment.ELECTRON_RENDERER_URL;
   try {

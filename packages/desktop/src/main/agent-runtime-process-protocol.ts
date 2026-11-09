@@ -40,8 +40,6 @@ export const agentRuntimeMethods = [
   "pullRequestAvailability",
   "generateCommitMessage",
   "resolveMergeConflicts",
-  "telemetry.configure",
-  "telemetry.disable",
   "shutdown",
 ] as const;
 

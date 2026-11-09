@@ -9,7 +9,6 @@ import type { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useModelSelection } from "@/components/model/model-selection"
-import { taskComplexityBucket } from "@blame/agent-runtime/telemetry-cohorts"
 
 const agentCompletionRecoveryGraceMs = 60_000
 
@@ -134,28 +133,6 @@ export function recoveredMessageCount(value: unknown) {
   if (!value || typeof value !== "object") return 0
   const messages = (value as Record<string, unknown>).messages
   return Array.isArray(messages) ? messages.length : 0
-}
-
-function storyTaskComplexity(story: UserStory) {
-  const promptLength = story.title.length + story.summary.length
-  const attachmentCount =
-    (story.codeSelectionAttachments?.length ?? 0) +
-    (story.fileAttachments?.length ?? 0)
-  return taskComplexityBucket(promptLength, attachmentCount)
-}
-
-export function storyTelemetryCohorts(
-  story: UserStory,
-  modelId: string | null | undefined,
-  providerId: string | null | undefined
-) {
-  if (!modelId || !providerId) return undefined
-  return {
-    agentStrategy: "multi_agent" as const,
-    modelId,
-    providerId,
-    taskComplexityBucket: storyTaskComplexity(story),
-  }
 }
 
 export function clineLogPath(worktree: string, sessionId: string) {

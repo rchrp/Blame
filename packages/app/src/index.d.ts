@@ -36,10 +36,8 @@ export type {
   McpServerConfig,
   McpServersClient,
   Platform,
-  RuntimeDiagnosticInput,
   RuntimeProgress,
   SecurityAuditClient,
-  TelemetryExportSession,
 } from "./context/platform"
 
 export type MountAppOptions = {

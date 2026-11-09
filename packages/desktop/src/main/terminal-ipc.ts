@@ -2,7 +2,6 @@ import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { BrowserWindow, ipcMain } from "electron";
 import { spawn as spawnPty, type IPty } from "node-pty";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { pathExists, spawnRuntime } from "./workspace-runtime.ts";
 import { terminalDirectory, terminalShell } from "./terminal-shell.ts";
 
@@ -47,11 +46,10 @@ async function startTerminal(cwd: string) {
 
   const id = randomUUID();
   const shell = terminalShell(directory);
-  const environment = withoutTelemetryEnvironment(process.env);
   if (shell.runtime) {
     const child = spawnRuntime(shell.command, shell.args, {
       cwd: directory,
-      env: environment,
+      env: process.env,
     });
     const session: Extract<TerminalSession, { runtime: true }> = {
       id,
@@ -67,7 +65,7 @@ async function startTerminal(cwd: string) {
   const pty = spawnPty(shell.command, shell.args, {
     cols: 120,
     cwd: directory,
-    env: terminalEnvironment(environment),
+    env: terminalEnvironment(process.env),
     name: "xterm-256color",
     rows: 32,
   });

@@ -1,4 +1,3 @@
-import type { ExecutionTelemetryCohorts } from "@blame/agent-runtime"
 import * as React from "react"
 import { toast } from "sonner"
 
@@ -13,7 +12,6 @@ import {
 } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
-import { storyTelemetryCohorts } from "./backlog-rotation-helpers"
 import { syncPreviewEnvironment } from "./preview-environment-sync"
 
 // A story's worktree gets its preview setup from the project's preview
@@ -30,8 +28,6 @@ type Preparation = {
 }
 
 type StoryStart = {
-  executionId: string
-  telemetryCohorts?: ExecutionTelemetryCohorts
   /** The environment the story started with, if the check cannot load one. */
   environment?: CloudProjectInitialization
 }
@@ -121,11 +117,6 @@ async function prepareStoryPreview(
     if (!workspace || (await fileExists(workspace, story, previewRepairPath)))
       return
     await workspace.prepareProjectPreview({
-      executionId: start?.executionId ?? crypto.randomUUID(),
-      storyId: story.id,
-      telemetryCohorts:
-        start?.telemetryCohorts ??
-        storyTelemetryCohorts(story, story.agentModelId, story.agentProviderId),
       worktree: story.worktree,
       previewManifest: environment.previewManifest,
       runConfigurations: environment.runConfigurations,

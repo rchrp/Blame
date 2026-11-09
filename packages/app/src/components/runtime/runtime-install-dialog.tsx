@@ -1,6 +1,5 @@
 import * as React from "react"
 import { BoxIcon, ExternalLinkIcon, RefreshCwIcon, WrenchIcon } from "lucide-react"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -21,7 +20,6 @@ import { saveStoryRunMode } from "@/lib/runtime-preference"
 export function RuntimeInstallDialog() {
   const runtime = useBlameRuntime()
   const platform = usePlatform()
-  const [sending, setSending] = React.useState(false)
   const open = Boolean(runtime.prompt)
   const repair = runtime.phase === "needs-repair"
   const unsupported = runtime.phase === "unsupported"
@@ -37,24 +35,6 @@ export function RuntimeInstallDialog() {
     runtime.prompt?.onAccept?.()
     runtime.closePrompt()
     void action()
-  }
-
-  async function sendDiagnostic() {
-    const send = platform.telemetry?.sendRuntimeDiagnostic
-    if (!send || !runtime.lastError) return
-    setSending(true)
-    try {
-      const sent = await send({ detail: runtime.lastError, operation: "repair" })
-      if (sent) toast.success("Diagnostic sent", { position: "bottom-right" })
-      else throw new Error()
-    } catch {
-      toast.error("Couldn't send the diagnostic", {
-        description: "Check your connection, then try again.",
-        position: "bottom-right",
-      })
-    } finally {
-      setSending(false)
-    }
   }
 
   return (
@@ -110,16 +90,7 @@ export function RuntimeInstallDialog() {
             <span />
           )}
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            {repair && runtime.lastError && platform.telemetry?.sendRuntimeDiagnostic ? (
-              <Button
-                type="button"
-                variant="outline"
-                disabled={sending}
-                onClick={() => void sendDiagnostic()}
-              >
-                Send diagnostic
-              </Button>
-            ) : storyTitle ? (
+            {storyTitle ? (
               <Button
                 type="button"
                 variant="outline"

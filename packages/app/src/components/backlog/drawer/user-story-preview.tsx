@@ -721,8 +721,6 @@ export const UserStoryPreview = React.memo(function UserStoryPreview({
       return
     void platform.workspace
       .ensureProjectPreviewUrl({
-        executionId: crypto.randomUUID(),
-        storyId: userStory?.id,
         workspaceMode: userStory?.workspaceMode ?? "local-container",
         worktree: setupLogWorktree,
       })

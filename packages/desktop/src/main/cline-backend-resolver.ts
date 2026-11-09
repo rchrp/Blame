@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import type { AgentBackendConfig } from "@blame/agent-runtime";
 import { setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient } from "./runtime-agent.ts";
@@ -253,7 +252,6 @@ function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
           url,
         ],
         {
-          env: withoutTelemetryEnvironment(process.env),
           stdio: "ignore",
           windowsHide: true,
         },
@@ -278,12 +276,10 @@ function preWarmRoute(url: string, platform: NodeJS.Platform): Promise<void> {
 
 function runtimeEnvironment(options: ResolverInput, platform: NodeJS.Platform) {
   return {
-    env: withoutTelemetryEnvironment(
-      options.env ?? {
-        ...process.env,
-        PATH: setupPath({ platform }),
-      },
-    ),
+    env: options.env ?? {
+      ...process.env,
+      PATH: setupPath({ platform }),
+    },
     platform,
   };
 }

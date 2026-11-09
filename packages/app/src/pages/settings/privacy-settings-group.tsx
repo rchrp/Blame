@@ -6,8 +6,8 @@ import { usePlatform } from "@/context/platform"
 import type { PrivacyPreferences } from "@/context/platform-privacy"
 import { SettingsGroup, SettingsRow } from "./settings-layout"
 
-// The two things Blame sends on its own. The Windows installer asks the same
-// questions; both answers land in the same preferences file.
+// What Blame sends on its own: the update check. The Windows installer asks
+// the same question; both answers land in the same preferences file.
 export function PrivacySettingsGroup() {
   const { privacy } = usePlatform()
   const [preferences, setPreferences] =
@@ -42,17 +42,6 @@ export function PrivacySettingsGroup() {
       title="Privacy"
       description="Choose what Blame sends on its own. Your code and prompts are never part of it."
     >
-      <SettingsRow
-        title="Usage and error telemetry"
-        description="While you are signed in, send minimised usage, performance and error data to api.blame.so. Turning it back on applies at the next launch."
-      >
-        <Switch
-          aria-label="Toggle usage and error telemetry"
-          checked={preferences?.telemetry ?? true}
-          disabled={!preferences}
-          onCheckedChange={(telemetry) => void update({ telemetry })}
-        />
-      </SettingsRow>
       <SettingsRow
         title="Check for updates at launch"
         description="Ask download.blame.so for a newer version each time Blame starts. You can still check by hand above."

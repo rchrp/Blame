@@ -28,7 +28,7 @@ import { registerMcpIpcHandlers } from "./mcp-ipc";
 import { registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc";
 import { PreviewService } from "./preview-runtime/preview-service";
 import { registerPreviewRuntimeIpcHandlers } from "./ipc/preview-runtime-ipc";
-import { registerTelemetryIpcHandlers } from "./telemetry-ipc";
+import { registerPrivacyIpcHandlers } from "./privacy-settings";
 import { registerTerminalIpcHandlers } from "./terminal-ipc";
 import { registerPreviewSurfacesIpc } from "./ipc/preview-surfaces-ipc";
 import { configurePreviewVariables } from "./preview-environment/variables-store";
@@ -51,18 +51,9 @@ export type DesktopIpcOptions = {
   };
   agentRuntime: {
     modulePath: string;
-    serviceVersion: string;
   };
   // The API this computer runs for use without an account.
   localApi: ConstructorParameters<typeof LocalApiService>[0];
-  telemetry: {
-    configure: NonNullable<
-      Parameters<typeof registerTelemetryIpcHandlers>[0]
-    >["configure"];
-    disable: NonNullable<
-      Parameters<typeof registerTelemetryIpcHandlers>[0]
-    >["disable"];
-  };
   beforeInstall(): Promise<void>;
   onRuntimeReady(): void;
 };
@@ -152,7 +143,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerPreviewEnvironmentIpcHandlers({ isAppWindow: options.isAppWindow });
   registerMcpIpcHandlers();
   registerTerminalIpcHandlers();
-  registerTelemetryIpcHandlers(options.telemetry);
+  registerPrivacyIpcHandlers();
   registerDesktopUpdateIpcHandlers({ beforeInstall: options.beforeInstall });
   registerWhatsNewIpcHandlers();
   registerWorkspaceIpcHandlers({

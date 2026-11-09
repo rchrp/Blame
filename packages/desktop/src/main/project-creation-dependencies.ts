@@ -3,7 +3,6 @@ import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { join, matchesGlob, relative } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { setupPath } from "./host-tool-path.ts";
 import { prepareGeneratedProjectPnpmBuilds } from "./project-creation-pnpm-builds.ts";
 import type {
@@ -226,7 +225,7 @@ export const runProjectCommand: ProjectCommandRunner = (recipe, emit) => {
     const child = spawn(recipe.command, recipe.args, {
       cwd: recipe.cwd,
       env: {
-        ...withoutTelemetryEnvironment(process.env),
+        ...process.env,
         CI: "true",
         NODE_ENV: "development",
         PATH: setupPath(),

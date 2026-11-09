@@ -5,7 +5,6 @@ import {
   type ChildProcessWithoutNullStreams,
 } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { withoutTelemetryEnvironment } from "@blame/telemetry";
 import { existsSync } from "node:fs";
 import {
   appendFile as appendHostFile,
@@ -520,12 +519,10 @@ function encodeWslSegment(value: string) {
 }
 
 function runtimeEnvironment(input: RuntimeOptions, platform: NodeJS.Platform) {
-  const env = withoutTelemetryEnvironment(
-    input.env ?? {
-      ...process.env,
-      PATH: setupPath({ platform }),
-    },
-  );
+  const env = input.env ?? {
+    ...process.env,
+    PATH: setupPath({ platform }),
+  };
   if (platform === "win32") {
     const wslenv =
       "GIT_SSH_COMMAND/u:GIT_TERMINAL_PROMPT/u:GIT_AUTHOR_NAME/u:GIT_AUTHOR_EMAIL/u:GIT_COMMITTER_NAME/u:GIT_COMMITTER_EMAIL/u";
