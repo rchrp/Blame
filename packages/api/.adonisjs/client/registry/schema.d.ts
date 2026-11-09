@@ -258,13 +258,13 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/api/v1/projects/:projectId/github/agent-token'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/github').issueGithubAgentTokenValidator)>>
       paramsTuple: [ParamValue]
       params: { projectId: ParamValue }
-      query: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/github').issueGithubAgentTokenValidator)>>
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_github_controller').default['agentToken']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'preview_sessions.preview_sessions.index': {

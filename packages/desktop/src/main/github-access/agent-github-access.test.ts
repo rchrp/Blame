@@ -219,9 +219,10 @@ test("a cloud session's commands get the API's repository token, renewed before 
   const session = { sessionId: "cloud-session", projectId: "project-a", workspaceMode: "cloud-mirror", apiConnection };
 
   assert.deepEqual(await grantSessionGithubAccess(session, dependencies("write")), {});
-  assert.deepEqual(requests, [{ apiConnection, projectId: "project-a" }]);
+  assert.deepEqual(requests, [{ apiConnection, level: "write", projectId: "project-a" }]);
   assert.deepEqual(await sessionCommandCredentials("cloud-session"), { githubToken: "repository-token-renewed" });
   assert.equal(requests.length, 2);
+  assert.deepEqual(requests[1], { apiConnection, level: "write", projectId: "project-a" });
   // Valid for long enough: the next command reuses it.
   assert.deepEqual(await sessionCommandCredentials("cloud-session"), { githubToken: "repository-token-renewed" });
   assert.equal(requests.length, 2);
@@ -234,6 +235,26 @@ test("a cloud session's commands get the API's repository token, renewed before 
   assert.deepEqual(await sessionCommandCredentials("cloud-session"), {});
   assert.equal(requests.length, 2);
   assert.ok(!grantedGithubTokens().includes("repository-token-renewed"));
+});
+
+test("a read-only cloud session asks the API for a read-only token, given to its commands without any MCP server", async () => {
+  const requests: CloudGithubTokenRequest[] = [];
+  const session = { sessionId: "cloud-read", projectId: "project-a", workspaceMode: "cloud-mirror", apiConnection };
+  const result = await grantSessionGithubAccess(session, {
+    level: async () => "read",
+    readToken: async () => ({ token }),
+    cloudToken: async (request) => {
+      requests.push(request);
+      return { token: "ghs_read-only-app-token", expiresAt: Date.now() + 60 * 60_000 };
+    },
+  });
+  assert.deepEqual(result, {});
+  assert.deepEqual(requests, [{ apiConnection, level: "read", projectId: "project-a" }]);
+  assert.deepEqual(await sessionCommandCredentials("cloud-read"), { githubToken: "ghs_read-only-app-token" });
+  assert.equal(sessionGithubMcpServer("cloud-read"), undefined);
+
+  await grantSessionGithubAccess(session, { level: async () => "off", readToken: async () => ({ token }), cloudToken: noCloudToken });
+  assert.deepEqual(await sessionCommandCredentials("cloud-read"), {});
 });
 
 test("a cloud session starts without GitHub access, and says why, when the API issues no token", async () => {
@@ -256,7 +277,7 @@ test("the cloud token is asked of the project's agent-token endpoint with the se
     calls.push({ url: String(input), init });
     return response;
   };
-  const request = { apiConnection, projectId: "project-a" };
+  const request: CloudGithubTokenRequest = { apiConnection, level: "read", projectId: "project-a" };
 
   const result = await requestCloudGithubToken(request, {
     packaged: true,
@@ -266,6 +287,15 @@ test("the cloud token is asked of the project's agent-token endpoint with the se
   assert.equal(calls[0]!.url, "https://api.blame.so/api/v1/projects/project-a/github/agent-token");
   assert.equal(calls[0]!.init?.method, "POST");
   assert.equal(new Headers(calls[0]!.init?.headers).get("authorization"), "Bearer blame-session");
+  assert.equal(new Headers(calls[0]!.init?.headers).get("content-type"), "application/json");
+  assert.deepEqual(JSON.parse(String(calls[0]!.init?.body)), { level: "read" });
+
+  calls.length = 0;
+  await requestCloudGithubToken(
+    { ...request, level: "write" },
+    { packaged: true, fetcher: respond(Response.json({ token: "ghs_write-app-token", expiresAt })) },
+  );
+  assert.deepEqual(JSON.parse(String(calls[0]!.init?.body)), { level: "write" });
 
   const refused = await requestCloudGithubToken(request, {
     packaged: true,

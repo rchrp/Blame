@@ -31,6 +31,7 @@ test.group('Project GitHub access for the agent', (group) => {
     try {
       const response = await client
         .post(`/api/v1/projects/${project.id}/github/agent-token`)
+        .json({ level: 'read' })
         .loginAs(other)
       response.assertStatus(404)
       assert.notInclude(JSON.stringify(response.body()), issuedToken)
@@ -45,18 +46,71 @@ test.group('Project GitHub access for the agent', (group) => {
     const project = await linkedProject(user.id, { agentAccess: false })
     const github = mockGithub(() => tokenResponse())
     try {
-      const response = await client
-        .post(`/api/v1/projects/${project.id}/github/agent-token`)
-        .loginAs(user)
-      response.assertStatus(403)
-      assert.include(JSON.stringify(response.body()), 'turned off')
+      for (const level of ['read', 'write'] as const) {
+        const response = await client
+          .post(`/api/v1/projects/${project.id}/github/agent-token`)
+          .json({ level })
+          .loginAs(user)
+        response.assertStatus(403)
+        assert.include(JSON.stringify(response.body()), 'turned off')
+      }
       assert.lengthOf(github.calls, 0)
     } finally {
       github.restore()
     }
   })
 
-  test('asks GitHub for a token limited to the repository with the least permissions', async ({
+  test('refuses a token request without a read or write level', async ({ client, assert }) => {
+    const user = await createLicensedUser()
+    const project = await linkedProject(user.id, { agentAccess: true })
+    const github = mockGithub(() => tokenResponse())
+    try {
+      const invalidBodies = [{}, { level: 'off' }, { level: 'admin' }]
+      for (const body of invalidBodies) {
+        const response = await client
+          .post(`/api/v1/projects/${project.id}/github/agent-token`)
+          .json(body as unknown as { level: 'read' | 'write' })
+          .loginAs(user)
+        response.assertStatus(422)
+        assert.notInclude(JSON.stringify(response.body()), issuedToken)
+      }
+      assert.lengthOf(github.calls, 0)
+    } finally {
+      github.restore()
+    }
+  })
+
+  test('asks GitHub for a read-only token limited to the repository', async ({
+    client,
+    assert,
+  }) => {
+    const user = await createLicensedUser()
+    const project = await linkedProject(user.id, { agentAccess: true })
+    const github = mockGithub(() => tokenResponse())
+    const readOnly = {
+      actions: 'read',
+      checks: 'read',
+      contents: 'read',
+      issues: 'read',
+      pull_requests: 'read',
+    }
+    try {
+      const response = await client
+        .post(`/api/v1/projects/${project.id}/github/agent-token`)
+        .json({ level: 'read' })
+        .loginAs(user)
+      response.assertStatus(200)
+      assert.equal(response.body().token, issuedToken)
+      assert.deepEqual(response.body().permissions, readOnly)
+
+      assert.lengthOf(github.calls, 1)
+      assert.deepEqual(github.calls[0]!.body, { repositories: ['web'], permissions: readOnly })
+    } finally {
+      github.restore()
+    }
+  })
+
+  test('asks GitHub for a read and write token limited to the repository with the least permissions', async ({
     client,
     assert,
   }) => {
@@ -66,6 +120,7 @@ test.group('Project GitHub access for the agent', (group) => {
     try {
       const response = await client
         .post(`/api/v1/projects/${project.id}/github/agent-token`)
+        .json({ level: 'write' })
         .loginAs(user)
       response.assertStatus(200)
       response.assertHeader('cache-control', 'no-store')
@@ -105,6 +160,7 @@ test.group('Project GitHub access for the agent', (group) => {
     try {
       const response = await client
         .post(`/api/v1/projects/${project.id}/github/agent-token`)
+        .json({ level: 'write' })
         .loginAs(user)
       response.assertStatus(502)
     } finally {
@@ -123,6 +179,7 @@ test.group('Project GitHub access for the agent', (group) => {
     try {
       const response = await client
         .post(`/api/v1/projects/${project.id}/github/agent-token`)
+        .json({ level: 'write' })
         .loginAs(user)
       response.assertStatus(503)
       assert.include(JSON.stringify(response.body()), 'GITHUB_APP_ID')

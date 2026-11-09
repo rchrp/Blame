@@ -16,3 +16,8 @@ export const linkGithubRepositoryValidator = vine.create({
 export const updateGithubAgentAccessValidator = vine.create({
   enabled: vine.boolean(),
 })
+
+// The project's level on the desktop: GitHub enforces it through the token's permissions.
+export const issueGithubAgentTokenValidator = vine.create({
+  level: vine.enum(['read', 'write'] as const),
+})

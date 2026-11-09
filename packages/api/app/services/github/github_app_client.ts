@@ -13,15 +13,28 @@ const githubHeaders = {
 }
 
 /**
- * The least the agent needs on its repository: issues, pull requests and
- * checks, and reading the code. Nothing else (no workflows, no admin, no push).
+ * The least the agent needs on its repository, per level. Read only: reading
+ * the code, issues, pull requests, checks and Actions runs, so GitHub refuses
+ * any write. Read and write: issues, pull requests and checks too, still
+ * reading the code only. Nothing else (no workflows, no admin, no push).
  */
 export const agentTokenPermissions = {
-  checks: 'write',
-  contents: 'read',
-  issues: 'write',
-  pull_requests: 'write',
+  read: {
+    actions: 'read',
+    checks: 'read',
+    contents: 'read',
+    issues: 'read',
+    pull_requests: 'read',
+  },
+  write: {
+    checks: 'write',
+    contents: 'read',
+    issues: 'write',
+    pull_requests: 'write',
+  },
 } as const
+
+export type AgentTokenLevel = keyof typeof agentTokenPermissions
 
 export class GithubApiError extends Error {
   constructor(
@@ -76,16 +89,17 @@ export class GithubAppClient {
     }
   }
 
-  /** A one-hour installation token for one repository, with agentTokenPermissions. */
+  /** A one-hour installation token for one repository, with the level's agentTokenPermissions. */
   async createRepositoryToken(
     installationId: string,
-    repositoryName: string
+    repositoryName: string,
+    level: AgentTokenLevel
   ): Promise<GithubRepositoryToken> {
     const body = await this.request(
       `/app/installations/${encodeURIComponent(installationId)}/access_tokens`,
       {
         method: 'POST',
-        body: { repositories: [repositoryName], permissions: agentTokenPermissions },
+        body: { repositories: [repositoryName], permissions: agentTokenPermissions[level] },
       }
     )
     const token = text(body.token)

@@ -1,7 +1,11 @@
 import ProjectGithubService, {
   serializeProjectGithub,
 } from '#services/github/project_github_service'
-import { linkGithubRepositoryValidator, updateGithubAgentAccessValidator } from '#validators/github'
+import {
+  issueGithubAgentTokenValidator,
+  linkGithubRepositoryValidator,
+  updateGithubAgentAccessValidator,
+} from '#validators/github'
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class ProjectGithubController {
@@ -37,10 +41,12 @@ export default class ProjectGithubController {
     return { github: serializeProjectGithub(project) }
   }
 
-  async agentToken({ auth, params, response }: HttpContext) {
+  async agentToken({ auth, params, request, response }: HttpContext) {
+    const { level } = await request.validateUsing(issueGithubAgentTokenValidator)
     const token = await new ProjectGithubService().issueAgentToken(
       auth.getUserOrFail().id,
-      params.projectId
+      params.projectId,
+      level
     )
     response.header('Cache-Control', 'no-store')
     return token

@@ -24,6 +24,16 @@ async function create(client: ApiClient, { user, project }: Awaited<ReturnType<t
   return response.body().data as { id: string; storyNumber: number }
 }
 
+async function nextStoryNumber(client: ApiClient, context: Awaited<ReturnType<typeof fixture>>) {
+  const { storyNumber } = await create(client, context)
+  return storyNumber
+}
+
+async function lastStoryNumber(project: Project) {
+  await project.refresh()
+  return project.lastStoryNumber
+}
+
 test.group('persistent story numbering', (group) => {
   group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
@@ -39,7 +49,7 @@ test.group('persistent story numbering', (group) => {
       removed.assertStatus(204)
       assert.isNull(await UserStory.find(story.id))
     }
-    assert.equal((await create(client, context)).storyNumber, 4)
+    assert.equal(await nextStoryNumber(client, context), 4)
   })
 
   test('serializes concurrent creations in an empty project', async ({ client, assert }) => {
@@ -49,7 +59,7 @@ test.group('persistent story numbering', (group) => {
       stories.map((story) => story.storyNumber).sort((a, b) => a - b),
       [1, 2, 3, 4, 5, 6, 7, 8]
     )
-    assert.equal((await context.project.refresh()).lastStoryNumber, 8)
+    assert.equal(await lastStoryNumber(context.project), 8)
   })
 
   test('numbers projects independently and reserves a new number when moving a story', async ({
@@ -62,15 +72,15 @@ test.group('persistent story numbering', (group) => {
       project: await Project.create({ userId: alpha.user.id, name: 'Beta' }),
     }
     const first = await create(client, alpha)
-    assert.equal((await create(client, beta)).storyNumber, 1)
+    assert.equal(await nextStoryNumber(client, beta), 1)
     const moved = await client
       .patch(`/api/v1/projects/user-stories/${first.id}`)
       .loginAs(alpha.user)
       .json({ projectId: beta.project.id })
     moved.assertStatus(200)
     assert.equal((moved.body() as { data: { storyNumber: number } }).data.storyNumber, 2)
-    assert.equal((await create(client, alpha)).storyNumber, 2)
-    assert.equal((await create(client, beta)).storyNumber, 3)
+    assert.equal(await nextStoryNumber(client, alpha), 2)
+    assert.equal(await nextStoryNumber(client, beta), 3)
   })
 
   test('migration starts counters above existing story numbers', async ({ client, assert }) => {
@@ -83,10 +93,10 @@ test.group('persistent story numbering', (group) => {
     await UserStory.query().where('id', story.id).update({ storyNumber: 41 })
     await new StoryCounterMigration(db.connection(), 'story-counter').execDown()
     await new StoryCounterMigration(db.connection(), 'story-counter').execUp()
-    assert.equal((await context.project.refresh()).lastStoryNumber, 41)
-    assert.equal((await empty.project.refresh()).lastStoryNumber, 0)
-    assert.equal((await create(client, context)).storyNumber, 42)
-    assert.equal((await create(client, empty)).storyNumber, 1)
+    assert.equal(await lastStoryNumber(context.project), 41)
+    assert.equal(await lastStoryNumber(empty.project), 0)
+    assert.equal(await nextStoryNumber(client, context), 42)
+    assert.equal(await nextStoryNumber(client, empty), 1)
   })
 
   test('rejects another user before reserving a number', async ({ client, assert }) => {
@@ -98,8 +108,8 @@ test.group('persistent story numbering', (group) => {
       summary: 'Forbidden',
     })
     response.assertStatus(404)
-    assert.equal((await context.project.refresh()).lastStoryNumber, 0)
-    assert.equal((await create(client, context)).storyNumber, 1)
+    assert.equal(await lastStoryNumber(context.project), 0)
+    assert.equal(await nextStoryNumber(client, context), 1)
   })
 
   test('rolls back the reservation if inserting the story fails', async ({ client, assert }) => {
@@ -113,7 +123,7 @@ test.group('persistent story numbering', (group) => {
         summary: 'Stories require a title',
       })
     )
-    assert.equal((await context.project.refresh()).lastStoryNumber, 0)
-    assert.equal((await create(client, context)).storyNumber, 1)
+    assert.equal(await lastStoryNumber(context.project), 0)
+    assert.equal(await nextStoryNumber(client, context), 1)
   })
 })

@@ -2,7 +2,7 @@ import GithubAppInstallation from '#models/github_app_installation'
 import type Project from '#models/project'
 import ProjectsService from '#services/projects_service'
 import { githubAppCredentials } from '#config/github_app'
-import { agentTokenPermissions, GithubApiError } from './github_app_client.js'
+import { agentTokenPermissions, GithubApiError, type AgentTokenLevel } from './github_app_client.js'
 import { githubRequest, requiredGithubAppClient } from './github_app_access.js'
 import { Exception } from '@adonisjs/core/exceptions'
 
@@ -71,7 +71,7 @@ export default class ProjectGithubService {
     return project
   }
 
-  async issueAgentToken(userId: string, projectId: string) {
+  async issueAgentToken(userId: string, projectId: string, level: AgentTokenLevel) {
     const { client } = requiredGithubAppClient()
     const project = await new ProjectsService().findForUser(userId, projectId)
     if (!project.githubAgentAccess) {
@@ -94,7 +94,11 @@ export default class ProjectGithubService {
     if (!installation) throw installationRevoked(repository)
     const issued = await githubRequest(async () => {
       try {
-        return await client.createRepositoryToken(installation.installationId, repository.name)
+        return await client.createRepositoryToken(
+          installation.installationId,
+          repository.name,
+          level
+        )
       } catch (error) {
         // GitHub refuses an installation that was removed, suspended or lost the repository.
         if (error instanceof GithubApiError && [401, 403, 404, 422].includes(error.status)) {
@@ -116,7 +120,7 @@ export default class ProjectGithubService {
       token: issued.token,
       expiresAt: issued.expiresAt,
       repository: `${repository.owner}/${repository.name}`,
-      permissions: agentTokenPermissions,
+      permissions: agentTokenPermissions[level],
     }
   }
 }

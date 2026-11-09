@@ -207,20 +207,20 @@ test.group('user stories', (group) => {
     const user = await createUser()
     const project = await createProject(user.id, 'Alpha')
 
-    const created = (
-      await client
-        .post('/api/v1/projects/user-stories')
-        .loginAs(user)
-        .json({ projectId: project.id, title: 'Go deep', summary: 'Ambitious work', ambition: 'ambitious' })
-    ).body() as UserStoryBody
+    const createdResponse = await client.post('/api/v1/projects/user-stories').loginAs(user).json({
+      projectId: project.id,
+      title: 'Go deep',
+      summary: 'Ambitious work',
+      ambition: 'ambitious',
+    })
+    const created = createdResponse.body() as UserStoryBody
     assert.equal(created.data.ambition, 'ambitious')
 
-    const withoutAmbition = (
-      await client
-        .post('/api/v1/projects/user-stories')
-        .loginAs(user)
-        .json({ projectId: project.id, title: 'Default', summary: 'Follows the account' })
-    ).body() as UserStoryBody
+    const withoutAmbitionResponse = await client
+      .post('/api/v1/projects/user-stories')
+      .loginAs(user)
+      .json({ projectId: project.id, title: 'Default', summary: 'Follows the account' })
+    const withoutAmbition = withoutAmbitionResponse.body() as UserStoryBody
     assert.isNull(withoutAmbition.data.ambition)
 
     const updated = await client
@@ -236,9 +236,7 @@ test.group('user stories', (group) => {
       .json({ ambition: null })
     assert.isNull((cleared.body() as UserStoryBody).data.ambition)
 
-    const shown = await client
-      .get(`/api/v1/projects/user-stories/${created.data.id}`)
-      .loginAs(user)
+    const shown = await client.get(`/api/v1/projects/user-stories/${created.data.id}`).loginAs(user)
     assert.isNull((shown.body() as UserStoryBody).data.ambition)
   })
 

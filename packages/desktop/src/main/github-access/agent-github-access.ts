@@ -20,11 +20,13 @@ import { allowedCloudApiBaseUrl } from "../preview-runtime/cloud-preview-client.
 // A cloud session never gets that personal token. Its commands run on this
 // computer, in the agent process (only the preview runs in the sandbox), so
 // the token arrives here: a one-hour Blame GitHub App token limited to the
-// project's repository, asked of the Blame API and renewed before it expires,
-// kept in memory and given to each command as GH_TOKEN.
+// project's repository, asked of the Blame API at the project's level and
+// renewed before it expires, kept in memory and given to each command as
+// GH_TOKEN. At the read level, GitHub itself refuses any write with it: the
+// API asks GitHub for read permissions only.
 
 export type AgentGithubAccessLevel = "off" | "read" | "write";
-type GrantedLevel = Exclude<AgentGithubAccessLevel, "off">;
+export type GrantedLevel = Exclude<AgentGithubAccessLevel, "off">;
 
 // US-073 stored the projects with access as a list: that access is "write".
 type SettingsFile = { projects?: string[] | Record<string, unknown> };
@@ -135,6 +137,7 @@ export type CloudGithubToken = { token: string; expiresAt: number };
 export type CloudGithubTokenResult = CloudGithubToken | { unavailable: string };
 export type CloudGithubTokenRequest = {
   apiConnection: CloudApiConnection;
+  level: GrantedLevel;
   projectId: string;
 };
 
@@ -149,8 +152,8 @@ export type SessionGithubAccessDependencies = {
  * Decides a session's GitHub access as it starts (or resumes), in a project
  * that turned it on: a Local Container session gets the host's token, at the
  * project's level, a cloud session a GitHub App token for the project's
- * repository. The notice explains why there is none; the session starts
- * anyway.
+ * repository, with the permissions of that level. The notice explains why
+ * there is none; the session starts anyway.
  */
 export async function grantSessionGithubAccess(
   session: Record<string, unknown>,
@@ -169,7 +172,11 @@ export async function grantSessionGithubAccess(
     .catch((): AgentGithubAccessLevel => "off");
   if (level !== "read" && level !== "write") return {};
   if (cloud)
-    return grantCloudSessionToken(sessionId, projectId, session, dependencies);
+    return grantCloudSessionToken(
+      { sessionId, projectId, level },
+      session,
+      dependencies,
+    );
   const result = await dependencies.readToken();
   if ("unavailable" in result) return { notice: result.unavailable };
   sessionGrants.set(sessionId, { level, token: result.token });
@@ -177,15 +184,15 @@ export async function grantSessionGithubAccess(
 }
 
 async function grantCloudSessionToken(
-  sessionId: string,
-  projectId: string,
+  grant: { sessionId: string; projectId: string; level: GrantedLevel },
   session: Record<string, unknown>,
   dependencies: SessionGithubAccessDependencies,
 ) {
   const apiConnection = cloudApiConnection(session.apiConnection);
   if (!apiConnection) return { notice: cloudSignedOutMessage };
+  const { sessionId, projectId, level } = grant;
   const source = new CloudGithubTokenSource(() =>
-    dependencies.cloudToken({ apiConnection, projectId }),
+    dependencies.cloudToken({ apiConnection, level, projectId }),
   );
   const first = await source.renew();
   if ("unavailable" in first) return { notice: first.unavailable };
@@ -243,8 +250,9 @@ const cloudUnreachableMessage =
 
 /**
  * Asks the Blame API for the agent's GitHub App token for a cloud session's
- * project. The API checks that the project is the person's, that GitHub
- * access is on and that a repository is linked, and limits the token to it.
+ * project, at its level. The API checks that the project is the person's,
+ * that GitHub access is on and that a repository is linked, limits the token
+ * to it and gives it only read permissions at the read level.
  */
 export async function requestCloudGithubToken(
   request: CloudGithubTokenRequest,
@@ -265,7 +273,9 @@ export async function requestCloudGithubToken(
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${request.apiConnection.token}`,
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ level: request.level }),
       redirect: "error",
       signal: AbortSignal.timeout(15_000),
     });

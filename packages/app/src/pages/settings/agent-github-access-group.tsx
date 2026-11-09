@@ -16,11 +16,18 @@ import { createCloudApi } from "@/lib/cloud-api"
 
 import { SettingsGroup, SettingsRow } from "./settings-layout"
 
-const levelDescriptions: Record<AgentGithubAccessLevel, string> = {
+const localLevelDescriptions: Record<AgentGithubAccessLevel, string> = {
   off: "The agent gets no GitHub credentials.",
   read: "The agent reads repositories, issues, pull requests and Actions runs through GitHub's MCP server, in read-only mode. Its commands get no GitHub token.",
   write:
     "The agent's commands get the token as GH_TOKEN, so the agent can use gh with all of your account's rights.",
+}
+
+const cloudLevelDescriptions: Record<AgentGithubAccessLevel, string> = {
+  off: "",
+  read: " In cloud sessions, the agent's commands get a one-hour Blame GitHub App token limited to the repository linked above, never your personal gh token. GitHub only lets it read the code, issues, pull requests, checks and Actions runs.",
+  write:
+    " In cloud sessions, the agent's commands get a one-hour Blame GitHub App token limited to the repository linked above, never your personal gh token. It can read the code and write issues, pull requests and checks, but not push code.",
 }
 
 function isLevel(value: string): value is AgentGithubAccessLevel {
@@ -137,9 +144,7 @@ function agentGithubAccessDescription(
   level: AgentGithubAccessLevel,
   accountProject: boolean
 ) {
-  const local = `In Local Container sessions in ${projectName}, Blame runs gh auth token on this computer and keeps the token in memory only, never in the worktree. ${levelDescriptions[level]}`
-  const cloud = accountProject
-    ? " In cloud sessions, access gives the agent's commands a one-hour Blame GitHub App token limited to the repository linked above, never your personal gh token."
-    : ""
+  const local = `In Local Container sessions in ${projectName}, Blame runs gh auth token on this computer and keeps the token in memory only, never in the worktree. ${localLevelDescriptions[level]}`
+  const cloud = accountProject ? cloudLevelDescriptions[level] : ""
   return `${local}${cloud} Takes effect in new sessions.`
 }

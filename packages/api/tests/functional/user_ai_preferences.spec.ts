@@ -79,7 +79,8 @@ test.group('user ai preferences', (group) => {
     const user = await createUser()
     await savePreference(client, user)
 
-    const body = (await client.get('/api/v1/account/ai-preferences').loginAs(user)).body() as PreferenceBody
+    const response = await client.get('/api/v1/account/ai-preferences').loginAs(user)
+    const body = response.body() as PreferenceBody
 
     assert.deepEqual(body.data?.personalization, {
       responseStyle: 'balanced',
@@ -89,7 +90,10 @@ test.group('user ai preferences', (group) => {
     })
   })
 
-  test('saves the personalization alone without touching the models', async ({ client, assert }) => {
+  test('saves the personalization alone without touching the models', async ({
+    client,
+    assert,
+  }) => {
     const user = await createUser()
     await savePreference(client, user)
     const personalization = {
