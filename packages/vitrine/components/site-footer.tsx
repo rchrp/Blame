@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ServiceStatusLink } from "@/components/service-status-link";
 import {
   githubContributingUrl,
   githubIssuesUrl,
@@ -131,16 +132,19 @@ function FooterGroup({ group }: { group: (typeof footerGroups)[number] }) {
 
 function Copyright() {
   return (
-    <p className="mx-auto mt-12 max-w-7xl border-t border-white/8 pt-6 text-xs text-white/34">
-      © {new Date().getFullYear()} Raphael Charpentier EI — MK Holding. Blame
-      is free software, licensed under the{" "}
-      <Link
-        className="underline decoration-white/20 underline-offset-4 transition hover:text-white/70"
-        href={githubLicenseUrl}
-      >
-        GNU AGPL v3
-      </Link>
-      .
-    </p>
+    <div className="mx-auto mt-12 flex max-w-7xl flex-col gap-4 border-t border-white/8 pt-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+      <p className="text-xs text-white/34">
+        © {new Date().getFullYear()} Raphael Charpentier EI — MK Holding. Blame
+        is free software, licensed under the{" "}
+        <Link
+          className="underline decoration-white/20 underline-offset-4 transition hover:text-white/70"
+          href={githubLicenseUrl}
+        >
+          GNU AGPL v3
+        </Link>
+        .
+      </p>
+      <ServiceStatusLink />
+    </div>
   );
 }
