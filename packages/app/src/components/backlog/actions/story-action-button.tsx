@@ -11,6 +11,7 @@ import {
   FileTextIcon,
   FolderOpenIcon,
   GitMergeIcon,
+  GitPullRequestIcon,
   LoaderCircleIcon,
   MessageSquareReplyIcon,
   PlayIcon,
@@ -108,6 +109,11 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
     variant: "default",
     tone: "primary",
   },
+  "Open PR": {
+    icon: GitPullRequestIcon,
+    variant: "default",
+    tone: "primary",
+  },
   "Use Context": {
     icon: FilePlus2Icon,
     variant: "default",
@@ -160,9 +166,13 @@ export function StoryAction({
   const [clicked, setClicked] = React.useState(false)
   // Another action (pause, resume, comment, merge) is already running on it.
   const busy = useStoryInTransition(story.id)
-  // A merge started from the drawer spins here too, even after navigating.
-  const merging = useStoryTransitionKind(story.id) === "merge"
-  const loading = clicked || (action === "Approve & Merge" && merging)
+  // A merge or a pull request update started from the drawer spins here too,
+  // even after navigating.
+  const transition = useStoryTransitionKind(story.id)
+  const loading =
+    clicked ||
+    (action === "Approve & Merge" && transition === "merge") ||
+    (action === "Open PR" && transition === "pull-request")
 
   if (action === "Stop Agent") {
     if (!onStopAgent) return null
@@ -223,7 +233,11 @@ export function StoryAction({
       onOpenDrawer(drawerTargetForAction(story, action))
       return
     }
-    if (action !== "Approve & Merge" && action !== "Use Context") {
+    if (
+      action !== "Approve & Merge" &&
+      action !== "Open PR" &&
+      action !== "Use Context"
+    ) {
       await runAction(story, action)
       return
     }
@@ -238,7 +252,9 @@ export function StoryAction({
   return (
     <Button
       type="button"
-      disabled={loading || (action === "Approve & Merge" && busy)}
+      disabled={
+        loading || ((action === "Approve & Merge" || action === "Open PR") && busy)
+      }
       size={buttonIconOnly ? "icon-sm" : "sm"}
       variant={actionStyle.variant}
       className={cn(
@@ -269,6 +285,7 @@ function directAction(action: BacklogAction) {
     action === "Discard" ||
     action === "Dequeue" ||
     action === "Approve & Merge" ||
+    action === "Open PR" ||
     action === "Use Context" ||
     action === "Rework"
   )

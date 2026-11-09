@@ -19,6 +19,7 @@ import {
   StopAgentDialog,
 } from "@/components/backlog/actions/story-action-dialogs"
 import { Separator } from "@/components/ui/separator"
+import { useStoryWorkToPush } from "@/pages/backlog/use-story-work-to-push"
 
 export function StoryActions({
   diffStats,
@@ -212,6 +213,7 @@ function ReviewActions({
   reviewDiffEmpty?: boolean
   story: UserStory
 }) {
+  const updatePullRequest = useStoryWorkToPush(story)
   return (
     <div className="grid w-full gap-2">
       <DevelopmentActions
@@ -226,6 +228,16 @@ function ReviewActions({
         onOpenWorktree={onOpenWorktree}
         story={story}
       />
+      {updatePullRequest ? (
+        <StoryAction
+          action="Open PR"
+          label="Update Pull Request"
+          onAction={onAction}
+          onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
+          story={story}
+        />
+      ) : null}
       <div className="grid grid-cols-2 gap-2">
         {reviewDiffEmpty ? (
           <StoryAction

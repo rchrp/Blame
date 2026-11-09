@@ -958,6 +958,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         return
       }
       if (action === "Approve & Merge") return completeReviewStory(currentStory)
+      if (action === "Open PR") return openPullRequestForStory(currentStory)
     },
     [
       closeDrawerIfDeleted,
@@ -965,6 +966,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       generateQueuedStoryTitle,
       backlog,
       openCreateDrawerWithDraft,
+      openPullRequestForStory,
       platform,
       projects.activeProject?.path,
       updateStory,

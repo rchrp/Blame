@@ -33,6 +33,7 @@ import type {
 import { ApproveMergeMenu } from "@/components/backlog/drawer/approve-merge-menu"
 import { drawerActions } from "@/components/backlog/drawer/user-story-drawer-helpers"
 import { useStoryTransitionKind } from "@/pages/backlog/story-transitions"
+import { useStoryWorkToPush } from "@/pages/backlog/use-story-work-to-push"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
 import { modKeyLabel } from "@/lib/keyboard"
@@ -141,6 +142,7 @@ export function DrawerActions({
   // A merge keeps spinning here when it started from the card, or before the
   // drawer was closed and opened again.
   const transition = useStoryTransitionKind(story?.id)
+  const workToPush = useStoryWorkToPush(story)
   const activeAction =
     loadingAction ??
     (transition === "merge"
@@ -150,6 +152,16 @@ export function DrawerActions({
         : undefined)
   const requestChangesPrimary =
     mode !== "create" && status === "in-review" && hasCommentDraft
+  // The story was reworked after its pull request opened: Open PR pushes it.
+  const updatePullRequest = workToPush ? (
+    <DrawerActionButton
+      action="Open PR"
+      disabled={Boolean(activeAction)}
+      label="Update Pull Request"
+      loading={activeAction === "Open PR"}
+      onClick={() => onAction("Open PR")}
+    />
+  ) : null
   const actions = drawerActions(mode, status).map((action) => (
     <React.Fragment key={action}>
       {action === "Stop Agent" && story ? (
@@ -216,6 +228,7 @@ export function DrawerActions({
       {requestChangesPrimary ? (
         <>
           <ReviewActionsMenu disabled={Boolean(activeAction)}>
+            {updatePullRequest}
             {actions}
           </ReviewActionsMenu>
           <DrawerActionButton
@@ -226,7 +239,10 @@ export function DrawerActions({
           />
         </>
       ) : (
-        actions
+        <>
+          {updatePullRequest}
+          {actions}
+        </>
       )}
     </div>
   )
