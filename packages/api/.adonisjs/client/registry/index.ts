@@ -30,18 +30,6 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"consumer-contract"],[0,"withdrawal"]],
     types: placeholder as Registry['consumer_contracts.withdraw']['types'],
   },
-  'telemetry_ingestion.store': {
-    methods: ["POST"],
-    pattern: '/api/v1/telemetry/otlp/v1/:signal',
-    tokens: [[0,"api"],[0,"v1"],[0,"telemetry"],[0,"otlp"],[0,"v1"],[1,"signal"]],
-    types: placeholder as Registry['telemetry_ingestion.store']['types'],
-  },
-  'telemetry_ingestion.health': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/telemetry/upstream-health',
-    tokens: [[0,"api"],[0,"v1"],[0,"telemetry"],[0,"upstream-health"]],
-    types: placeholder as Registry['telemetry_ingestion.health']['types'],
-  },
   'vercel_connections.callback': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/integrations/vercel/callback',
@@ -53,12 +41,6 @@ const routes = {
     pattern: '/api/v1/integrations/github/callback',
     tokens: [[0,"api"],[0,"v1"],[0,"integrations"],[0,"github"],[0,"callback"]],
     types: placeholder as Registry['github_installations.callback']['types'],
-  },
-  'telemetry_sessions.show': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/telemetry/session',
-    tokens: [[0,"api"],[0,"v1"],[0,"telemetry"],[0,"session"]],
-    types: placeholder as Registry['telemetry_sessions.show']['types'],
   },
   'integrations.vercel.vercel_connections.create_intent': {
     methods: ["POST"],

@@ -14,7 +14,6 @@ const hostedRequests = [
   ['post', '/api/v1/web/search'],
   ['get', '/api/v1/preview-sessions'],
   ['post', '/api/v1/speech/transcriptions'],
-  ['get', '/api/v1/telemetry/session'],
   ['post', '/api/v1/account/export'],
   ['get', '/api/v1/projects/01a19910-96a1-79a4-b933-df4ae67dd9eb/deployments'],
 ] as const
