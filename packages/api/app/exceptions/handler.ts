@@ -1,8 +1,7 @@
 import app from '@adonisjs/core/services/app'
 import { type HttpContext, ExceptionHandler } from '@adonisjs/core/http'
-import { errorAttributes, getBlameTelemetry } from '@blame/telemetry'
-
-const telemetry = getBlameTelemetry()
+import { monitoring } from '#lib/monitoring/metrics'
+import { errorAttributes } from '#lib/monitoring/redaction'
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -26,7 +25,7 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * @note You should not attempt to send a response from this method.
    */
   async report(error: unknown, ctx: HttpContext) {
-    telemetry.log('error', 'blame.http.request.failed', {
+    monitoring.log('error', 'blame.http.request.failed', {
       ...errorAttributes(error),
       'http.request.method': ctx.request.method(),
       'http.response.status_code': errorStatus(error),

@@ -150,7 +150,6 @@ jobs:
         with:
           node-version: 24
       - run: pnpm typecheck
-      - run: pnpm --filter @blame/telemetry test
       - run: pnpm --filter @blame/preview-contract test
       - run: pnpm --filter @blame/preview-runtime test
       - run: pnpm --filter @blame/sandbox-runner test
