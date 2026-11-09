@@ -12,6 +12,12 @@ type UploadResponse = {
   upload: UploadTarget | null
 }
 
+type UploadOptions = {
+  // The files belong to a thread the app keeps itself, which no story or
+  // message links on the API: the API keeps them longer than other orphans.
+  conversationAttachment?: boolean
+}
+
 // Persist and forward only the attachment contract, including when restoring
 // older drafts that may contain fields no longer used by the application.
 export function originalFileAttachment(
@@ -33,12 +39,13 @@ export function originalFileAttachment(
 
 export async function uploadFileAttachments(
   connection: ApiConnection,
-  attachments: UserStoryFileAttachment[] | null | undefined
+  attachments: UserStoryFileAttachment[] | null | undefined,
+  options: UploadOptions = {}
 ) {
   if (!attachments) return attachments
   return Promise.all(
     attachments.map((attachment) =>
-      uploadFileAttachment(connection, attachment)
+      uploadFileAttachment(connection, attachment, options)
     )
   )
 }
@@ -68,7 +75,8 @@ export function isFileAttachmentReference(
 
 async function uploadFileAttachment(
   connection: ApiConnection,
-  attachment: UserStoryFileAttachment
+  attachment: UserStoryFileAttachment,
+  options: UploadOptions
 ) {
   if (attachment.content === undefined)
     return originalFileAttachment(attachment)
@@ -80,6 +88,9 @@ async function uploadFileAttachment(
     {
       body: JSON.stringify({
         checksumSha256,
+        ...(options.conversationAttachment
+          ? { conversationAttachment: true }
+          : {}),
         id: attachment.id,
         name: attachment.name,
         size: attachment.size,

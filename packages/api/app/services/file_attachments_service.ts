@@ -16,6 +16,7 @@ export type AttachmentOwnerType = keyof typeof ownerConfigs
 
 type CreateUploadInput = Omit<FileAttachmentReference, 'content' | 'downloadUrl'> & {
   checksumSha256: string
+  conversationAttachment?: boolean
 }
 
 const ownerConfigs = {
@@ -256,6 +257,7 @@ export default class FileAttachmentsService {
   private pendingRecord(userId: string, input: CreateUploadInput) {
     return {
       checksumSha256: input.checksumSha256,
+      conversationAttachment: input.conversationAttachment ?? false,
       detachedAt: null,
       id: input.id,
       mimeType: normalizedType(input.type),
@@ -387,15 +389,26 @@ export default class FileAttachmentsService {
   }
 
   private orphanCandidates(limit: number) {
-    const cutoff = DateTime.utc().minus({ hours: this.config.orphanGraceHours })
+    const cutoff = DateTime.utc().minus({ hours: this.config.orphanGraceHours }).toJSDate()
+    const conversationCutoff = DateTime.utc()
+      .minus({ hours: this.config.conversationOrphanGraceHours })
+      .toJSDate()
     return FileAttachment.query()
       .where((query) =>
         query
-          .where((pending) =>
-            pending.where('status', 'pending').where('createdAt', '<=', cutoff.toJSDate())
-          )
+          .where((pending) => pending.where('status', 'pending').where('createdAt', '<=', cutoff))
           .orWhere((ready) =>
-            ready.where('status', 'ready').where('detachedAt', '<=', cutoff.toJSDate())
+            ready.where('status', 'ready').where((detached) =>
+              detached
+                .where((standard) =>
+                  standard.where('conversationAttachment', false).where('detachedAt', '<=', cutoff)
+                )
+                .orWhere((conversation) =>
+                  conversation
+                    .where('conversationAttachment', true)
+                    .where('detachedAt', '<=', conversationCutoff)
+                )
+            )
           )
       )
       .orderBy('createdAt', 'asc')

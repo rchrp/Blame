@@ -38,6 +38,8 @@ import type {
   ProviderListResponse,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
+  PullRequestState,
+  PullRequestStateInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
@@ -690,6 +692,7 @@ export type BlameDesktopApi = {
     pullRequestAvailability(
       input: PullRequestAvailabilityInput,
     ): Promise<PullRequestAvailability>;
+    pullRequestState(input: PullRequestStateInput): Promise<PullRequestState>;
     generateCommitMessage(
       input: GenerateCommitMessageInput,
     ): Promise<GenerateCommitMessageResult>;

@@ -105,7 +105,7 @@ async function publishTargetBranch(
   }
 }
 
-async function cleanupMergedStory(
+export async function cleanupMergedStory(
   story: UserStory,
   platform: ReturnType<typeof usePlatform>,
   repositoryRoot: string | undefined

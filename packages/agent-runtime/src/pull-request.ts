@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { git } from "./runtime-git.js";
-import type { PullRequestAvailability } from "./types.js";
+import type { PullRequestAvailability, PullRequestState } from "./types.js";
 
 // Open PR runs gh on this computer, with the person's own gh sign-in. No
 // token is read or handed to the agent: gh authenticates itself.
@@ -75,6 +75,45 @@ export async function requirePullRequestRepository(
       "Open PR needs a Git remote named origin on github.com.",
     );
   throw new Error(availability.message);
+}
+
+// gh pr view --json state,mergedAt. Merged is told by mergedAt: an approved
+// pull request stays open until its code reaches the target branch.
+export function parsePullRequestState(output: string): PullRequestState {
+  const parsed: unknown = JSON.parse(output);
+  if (!parsed || typeof parsed !== "object")
+    throw new Error("gh pr view returned an unexpected answer.");
+  const { mergedAt, state } = parsed as { mergedAt?: unknown; state?: unknown };
+  if (typeof mergedAt === "string" && mergedAt)
+    return { status: "merged", mergedAt };
+  if (state === "OPEN") return { status: "open" };
+  if (state === "CLOSED") return { status: "closed" };
+  throw new Error("gh pr view returned an unexpected state.");
+}
+
+export async function readPullRequestState(
+  repositoryRoot: string,
+  url: string,
+  gh: GhRunner,
+): Promise<PullRequestState> {
+  // The URL is an argument of gh: it must not be read as an option.
+  if (!/^https:\/\/\S+$/u.test(url))
+    throw new Error("The pull request URL is invalid.");
+  let output: string;
+  try {
+    output = await gh(repositoryRoot, [
+      "pr",
+      "view",
+      url,
+      "--json",
+      "state,mergedAt",
+    ]);
+  } catch {
+    // gh is missing, signed out or offline: the story keeps its state until
+    // gh answers. gh's output may describe the account, so it is not read.
+    return { status: "unavailable" };
+  }
+  return parsePullRequestState(output);
 }
 
 export async function openPullRequestUrl(

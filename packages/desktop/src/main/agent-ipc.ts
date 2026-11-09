@@ -390,6 +390,9 @@ function registerDeliveryWorkflowIpcHandlers(
   ipcMain.handle("agent:pull-request-availability", (_event, input) =>
     agentRuntime().run("pullRequestAvailability", input),
   );
+  ipcMain.handle("agent:pull-request-state", (_event, input) =>
+    agentRuntime().run("pullRequestState", input),
+  );
   ipcMain.handle("agent:generate-commit-message", (_event, input) =>
     agentWorkspaceInput(input).then((resolved) =>
       agentRuntime().run("generateCommitMessage", resolved),
