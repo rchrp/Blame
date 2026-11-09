@@ -8,6 +8,15 @@ import type { LightAttentionState } from "./light-attention.js";
 
 export type JournalFileState = { hash: string; path: string };
 
+/** One file change of a session: the file's hash before and after it. */
+export type JournalFileTransition = {
+  after: string;
+  /** Absent when the change did not record the file's previous state. */
+  before?: string;
+  path: string;
+  timestamp: string;
+};
+
 export type JournalChange = {
   beforeFiles?: JournalFileState[];
   files: JournalFileState[];
@@ -207,6 +216,23 @@ export class SessionJournal {
   async currentChangedPaths() {
     await this.hydrate();
     return (await this.currentChangesByPath()).map(({ path }) => path);
+  }
+
+  /** Every file change in recording order, unlike the net changes above. */
+  async fileTransitions(): Promise<JournalFileTransition[]> {
+    await this.hydrate();
+    return this.changes.flatMap((change) =>
+      change.paths.flatMap((path) => {
+        const after = change.files.find((file) => file.path === path)?.hash;
+        if (!after) return [];
+        const before = change.beforeFiles?.find(
+          (file) => file.path === path,
+        )?.hash;
+        return [
+          { after, ...(before ? { before } : {}), path, timestamp: change.timestamp },
+        ];
+      }),
+    );
   }
 
   async completionSnapshot(): Promise<JournalCompletionSnapshot> {

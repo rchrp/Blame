@@ -15,6 +15,8 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
+  DirectStoryFilesInput,
+  DirectStoryFilesResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -522,6 +524,10 @@ export type AgentClient = {
   generateCommitMessage(
     input: GenerateCommitMessageInput
   ): Promise<GenerateCommitMessageResult>
+  // The files a Direct story wrote in the project folder that can be committed.
+  directStoryFiles(
+    input: DirectStoryFilesInput
+  ): Promise<DirectStoryFilesResult>
   resolveMergeConflicts(
     input: ResolveMergeConflictsInput
   ): Promise<ResolveMergeConflictsResult>
@@ -789,7 +795,12 @@ export type WorkspaceClient = {
   gitUnstageFiles(input: { root: string; paths: string[] }): Promise<boolean>
   gitRollbackFiles(input: { root: string; paths: string[] }): Promise<boolean>
   gitDeleteFiles(input: { root: string; paths: string[] }): Promise<boolean>
-  gitCommit(input: { root: string; message: string }): Promise<GitCommandResult>
+  // With `paths`, commits only those files and leaves the rest of the index alone.
+  gitCommit(input: {
+    root: string
+    message: string
+    paths?: string[]
+  }): Promise<GitCommandResult>
   gitPush(input: { root: string }): Promise<GitCommandResult>
   gitBranches?(input: { root: string }): Promise<GitBranchList>
   // Creates the local branch following a remote-only one.

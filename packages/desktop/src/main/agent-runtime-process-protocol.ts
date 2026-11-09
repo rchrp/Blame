@@ -39,6 +39,7 @@ export const agentRuntimeMethods = [
   "openPullRequest",
   "pullRequestAvailability",
   "generateCommitMessage",
+  "directStoryFiles",
   "resolveMergeConflicts",
   "shutdown",
 ] as const;

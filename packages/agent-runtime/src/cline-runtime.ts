@@ -223,6 +223,7 @@ import {
   type SessionJournalInput,
 } from "./harness/light-executor.js";
 import { sha256 } from "./harness/light-identity.js";
+import { findDirectStoryFiles } from "./direct-story-files.js";
 import {
   selectProjectMemory,
   type ProjectMemoryPersistence,
@@ -308,6 +309,7 @@ import type {
   CompareCheckpointInput,
   CompareCheckpointResult,
   DiscoverSecurityAuditInput,
+  DirectStoryFilesInput,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
   GenerateTitleInput,
@@ -645,6 +647,11 @@ export class BlameAgentRuntime {
 
   generateCommitMessage = (input: GenerateCommitMessageInput) =>
     this.generateWorkspaceCommitMessage(input);
+
+  directStoryFiles = (input: DirectStoryFilesInput) => {
+    assertRepositoryPath(input.root, "root");
+    return findDirectStoryFiles(input);
+  };
 
   resolveMergeConflicts = (input: ResolveMergeConflictsInput) =>
     this.resolveWorkspaceMergeConflicts(input);

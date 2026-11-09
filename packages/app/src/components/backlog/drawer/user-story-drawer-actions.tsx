@@ -1,6 +1,6 @@
 import * as React from "react"
 import type { PullRequestAvailability } from "@blame/agent-runtime"
-import { approveActionLabel } from "@/components/backlog/shared/backlog-helpers"
+import { approveActionLabel } from "@/components/backlog/shared/approve-action-label"
 import {
   CheckIcon,
   ChevronUpIcon,

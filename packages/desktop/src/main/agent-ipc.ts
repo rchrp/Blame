@@ -395,6 +395,9 @@ function registerDeliveryWorkflowIpcHandlers(
       agentRuntime().run("generateCommitMessage", resolved),
     ),
   );
+  ipcMain.handle("agent:direct-story-files", (_event, input) =>
+    agentRuntime().run("directStoryFiles", input),
+  );
   ipcMain.handle("agent:resolve-merge-conflicts", async (_event, input) => {
     const resolved = await agentWorkspaceInput(input);
     if (typeof resolved.worktree !== "string" || !resolved.worktree) {

@@ -283,6 +283,8 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.pullRequestAvailability(input as never),
     generateCommitMessage: (input: unknown) =>
       runtime.generateCommitMessage(input as never),
+    directStoryFiles: (input: unknown) =>
+      runtime.directStoryFiles(input as never),
     resolveMergeConflicts: (input: unknown) =>
       runtime.resolveMergeConflicts(input as never),
   };

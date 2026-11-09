@@ -31,6 +31,7 @@ import {
   gitBranches,
   gitTrackRemoteBranch,
 } from "./workspaces/workspace-git-branches.ts";
+import { gitCommitFiles } from "./workspaces/workspace-git-commit.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -465,6 +466,72 @@ test("lists remote-only branches and tracks one with a new local branch", async 
     await rm(remote, { recursive: true, force: true });
   }
 });
+
+test("a path commit takes only the given files and keeps other staged files staged", async () => {
+  const repository = await createRepository();
+  try {
+    await writeFile(join(repository, "staged.txt"), "staged\n");
+    await writeFile(join(repository, "tracked.txt"), "tracked\n");
+    await commit(repository, "more files");
+    // The person staged staged.txt; the story edited tracked.txt, deleted
+    // removed.txt and created created.txt.
+    await writeFile(join(repository, "staged.txt"), "staged, edited\n");
+    await git(repository, ["add", "staged.txt"]);
+    await writeFile(join(repository, "tracked.txt"), "tracked, edited\n");
+    await unlink(join(repository, "removed.txt"));
+    await writeFile(join(repository, "created.txt"), "created\n");
+
+    await gitCommitFiles(repository, "story work", [
+      "tracked.txt",
+      "removed.txt",
+      "created.txt",
+    ]);
+
+    const committed = await git(repository, [
+      "show",
+      "--name-status",
+      "--format=",
+      "HEAD",
+    ]);
+    assert.deepEqual(committed.stdout.trim().split("\n").sort(), [
+      "A\tcreated.txt",
+      "D\tremoved.txt",
+      "M\ttracked.txt",
+    ]);
+    assert.equal(
+      (await git(repository, ["status", "--porcelain"])).stdout,
+      "M  staged.txt\n",
+    );
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
+test("a rejected path commit leaves the new files untracked", {
+  skip: process.platform === "win32",
+}, async () => {
+  const repository = await createRepository();
+  try {
+    await writeFile(
+      join(repository, ".git", "hooks", "pre-commit"),
+      "#!/bin/sh\nexit 1\n",
+      { mode: 0o755 },
+    );
+    await writeFile(join(repository, "created.txt"), "created\n");
+
+    await assert.rejects(
+      gitCommitFiles(repository, "story work", ["created.txt"]),
+    );
+
+    assert.equal(
+      (await git(repository, ["status", "--porcelain"])).stdout,
+      "?? created.txt\n",
+    );
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
 async function createRepository() {
   const repository = await mkdtemp(join(tmpdir(), "blame-workspace-git-"));
   await git(repository, ["init"]);

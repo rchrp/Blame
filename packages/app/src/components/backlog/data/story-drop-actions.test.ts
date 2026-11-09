@@ -35,6 +35,24 @@ test("each state offers only the moves its card buttons offer", () => {
   assert.deepEqual(zones("discarded"), [["backlog", "Rework", false]])
 })
 
+test("a Direct story in review is approved by committing its files", () => {
+  const direct = (options = {}) =>
+    storyDropActions(
+      { id: "s1", status: "in-review", workspaceMode: "direct" } as never,
+      options
+    ).map((action) => action.label)
+  assert.deepEqual(direct(), [
+    "Request Changes",
+    "Approve & Commit",
+    "Reject and discard",
+  ])
+  assert.deepEqual(direct({ reviewDiffEmpty: true }), [
+    "Request Changes",
+    "Mark as Done",
+    "Discard",
+  ])
+})
+
 test("drop zones carry the same requests as the buttons", () => {
   const [, approve, discard] = storyDropActions({ id: "s1", status: "in-review" } as never)
   assert.deepEqual(approve?.request, { action: "Approve & Merge" })
