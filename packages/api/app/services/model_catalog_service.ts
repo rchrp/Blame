@@ -28,7 +28,7 @@ import { createHash } from 'node:crypto'
 import { DateTime } from 'luxon'
 
 const snapshotId = 'global'
-const catalogPolicyVersion = 6
+const catalogPolicyVersion = 7
 // Claude Code runs through the desktop's local bridge; the Codex CLI provider
 // is not wired and OpenAI Codex OAuth already covers that subscription.
 const externalCliProviderIds = new Set(['openai-codex-cli'])
@@ -297,8 +297,9 @@ function mergeLiveProvider(provider: CatalogProvider, allowedModels: Record<stri
 }
 
 async function loadOpenRouterModels() {
-  const apiKey = env.get('OPENROUTER_API_KEY')?.release().trim()
-  if (!apiKey) return []
+  const apiKey = env.get('OPENROUTER_API_KEY')?.release().trim() || undefined
+  // Keyless requests go to the public model list, like the models.dev refresh.
+  if (!apiKey && env.get('BLAME_MODEL_CATALOG_LIVE_REFRESH') === false) return []
   try {
     return await fetchOpenRouterCatalog(apiKey)
   } catch (error) {

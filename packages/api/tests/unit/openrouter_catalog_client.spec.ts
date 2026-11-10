@@ -26,6 +26,36 @@ test.group('OpenRouter catalog client', () => {
     assert.isTrue(requests.every((url) => url.startsWith('https://openrouter.ai/api/v1/')))
   })
 
+  test('reads inline scores from the public model list without a key', async ({ assert }) => {
+    const requests: Array<{ url: string; headers: Headers }> = []
+    const fetcher = async (input: string | URL | Request, init?: RequestInit) => {
+      requests.push({ url: input.toString(), headers: new Headers(init?.headers) })
+      return jsonResponse({
+        data: [
+          {
+            id: 'openai/gpt-public',
+            canonical_slug: 'openai/gpt-public-20261101',
+            benchmarks: {
+              design_arena: [],
+              artificial_analysis: { intelligence_index: 61.2, coding_index: 58 },
+            },
+          },
+        ],
+      })
+    }
+
+    const [model] = await fetchOpenRouterCatalog(undefined, fetcher as typeof fetch)
+
+    assert.equal(model.benchmark?.intelligenceIndex, 61.2)
+    assert.equal(model.benchmark?.codingIndex, 58)
+    assert.equal(model.benchmark?.smartScore, 61.2)
+    assert.deepEqual(
+      requests.map(({ url }) => url),
+      ['https://openrouter.ai/api/v1/models?output_modalities=text']
+    )
+    assert.isNull(requests[0].headers.get('Authorization'))
+  })
+
   test('combines scores filed under the id and the dated slug', async ({ assert }) => {
     // As OpenRouter does for new models: its own runs under the id, the
     // Artificial Analysis index under the dated slug.

@@ -7,10 +7,17 @@ type BenchmarkAccumulator = {
   designArenaScores: number[]
 }
 
-export async function fetchOpenRouterCatalog(apiKey: string, fetcher: typeof fetch = fetch) {
+// Without a key (Blame local), the public model list still carries each
+// model's Artificial Analysis scores; only /benchmarks needs one.
+export async function fetchOpenRouterCatalog(
+  apiKey: string | undefined,
+  fetcher: typeof fetch = fetch
+) {
   const [modelsPayload, benchmarksPayload] = await Promise.all([
     fetchOpenRouterJson('/models?output_modalities=text', apiKey, fetcher),
-    fetchOpenRouterJson('/benchmarks', apiKey, fetcher).catch(() => ({ data: [] })),
+    apiKey
+      ? fetchOpenRouterJson('/benchmarks', apiKey, fetcher).catch(() => ({ data: [] }))
+      : { data: [] },
   ])
   const benchmarks = benchmarkMap(benchmarksPayload)
   return payloadItems(modelsPayload)
@@ -18,11 +25,15 @@ export async function fetchOpenRouterCatalog(apiKey: string, fetcher: typeof fet
     .filter((model): model is OpenRouterModel => model !== undefined)
 }
 
-async function fetchOpenRouterJson(path: string, apiKey: string, fetcher: typeof fetch) {
+async function fetchOpenRouterJson(
+  path: string,
+  apiKey: string | undefined,
+  fetcher: typeof fetch
+) {
   const response = await fetcher(`https://openrouter.ai/api/v1${path}`, {
     headers: {
       Accept: 'application/json',
-      Authorization: `Bearer ${apiKey}`,
+      ...(apiKey ? { Authorization: `Bearer ${apiKey}` } : {}),
     },
     signal: AbortSignal.timeout(15_000),
   })
