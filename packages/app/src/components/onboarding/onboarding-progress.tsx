@@ -9,14 +9,13 @@ const steps = [
   { id: "account", label: "Account" },
   { id: "provider", label: "Provider" },
   { id: "models", label: "Models" },
-  { id: "premium", label: "Cloud" },
   { id: "runtime", label: "Runtime" },
 ] as const
 
 export type OnboardingStep = Exclude<(typeof steps)[number]["id"], "account">
 
 // Where the person stands in the first-run journey. Account is always done by
-// the time this shows; without one, the journey skips Account and Premium.
+// the time this shows; without one, the journey skips Account.
 export function OnboardingProgress({
   step,
   className,
@@ -26,7 +25,7 @@ export function OnboardingProgress({
 }) {
   const auth = useCloudAuth()
   const journey = steps
-    .filter(({ id }) => auth.mode === "account" || (id !== "account" && id !== "premium"))
+    .filter(({ id }) => auth.mode === "account" || id !== "account")
     .map(({ label }) => label)
   const current = journey.indexOf(steps.find(({ id }) => id === step)!.label)
   return (

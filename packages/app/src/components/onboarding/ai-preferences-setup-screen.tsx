@@ -38,10 +38,6 @@ import {
   type ProviderGroup,
   type ProviderGroupID,
 } from "@/components/model/provider-groups"
-import {
-  dismissPremiumOffer,
-  queuePremiumOffer,
-} from "@/components/onboarding/onboarding-flow"
 import { OnboardingProgress } from "@/components/onboarding/onboarding-progress"
 import { GlassPanel } from "@/components/onboarding/stage/glass-panel"
 import { useOnboardingStage } from "@/components/onboarding/stage/onboarding-stage"
@@ -118,8 +114,6 @@ export function AiPreferencesSetupScreen() {
   async function save() {
     if (auth.status !== "authenticated" || !ready || saving) return
     setSaving(true)
-    const offerPremium = auth.mode === "account" && auth.license?.licensed !== true
-    if (offerPremium) queuePremiumOffer()
     try {
       await auth.saveAiPreferences({
         alternativeModel: preferencePayload(alternative),
@@ -131,7 +125,6 @@ export function AiPreferencesSetupScreen() {
         position: "bottom-right",
       })
     } catch (error) {
-      if (offerPremium) dismissPremiumOffer()
       toast.error("Unable to save AI preferences", {
         description:
           error instanceof Error ? error.message : "Please try again.",

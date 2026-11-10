@@ -26,14 +26,13 @@ import {
 } from "@/components/onboarding/loading-screen"
 import {
   useMinimumDuration,
-  usePremiumOfferPending,
   useRuntimeOfferPending,
 } from "@/components/onboarding/onboarding-flow"
 import {
   OnboardingStage,
   type OnboardingScreen,
 } from "@/components/onboarding/stage/onboarding-stage"
-import { PremiumOfferScreen, PremiumPanel } from "@/pages/premium/page"
+import { PremiumPanel } from "@/pages/premium/page"
 import { WhatsNewOnLaunch } from "@/components/updates/whats-new-dialog"
 import { isSecondaryWindow } from "@/lib/secondary-window"
 import {
@@ -133,23 +132,14 @@ export function App() {
     auth.status === "loading",
     statusPipOpen ? 0 : minimumLoadingMs
   )
-  const premiumOfferPending = usePremiumOfferPending()
   const runtime = useBlameRuntime()
   const runtimeOfferOpen = useRuntimeOfferPending(runtime.phase)
-  // First-run setup offers Premium to accounts only: a local workspace sees
-  // it when it reaches for a hosted service, in the account popup.
-  const premiumOfferOpen =
-    premiumOfferPending &&
-    auth.mode === "account" &&
-    auth.aiPreferences !== null &&
-    auth.license?.licensed !== true
   const accountFlow = useAccountFlow(premiumOpen)
   const closePremium = () => navigate(previousRoute.path)
   const windowRole = appWindowRole({
     activeProject: projects.activeProject,
     aiPreferences: auth.aiPreferences,
     authStatus: loading ? "loading" : auth.status,
-    premiumOpen: premiumOfferOpen,
     statusPipOpen,
   })
 
@@ -197,7 +187,6 @@ export function App() {
       aiPreferencesMissing: auth.aiPreferences === null,
       authStatus: auth.status,
       loading,
-      premiumOfferOpen,
       runtimeOfferOpen,
     }),
     accountFlow.view
@@ -245,13 +234,11 @@ function resolveOnboardingScreen(input: {
   aiPreferencesMissing: boolean
   authStatus: "authenticated" | "loading" | "unauthenticated"
   loading: boolean
-  premiumOfferOpen: boolean
   runtimeOfferOpen: boolean
 }): OnboardingScreen | undefined {
   if (input.loading || input.authStatus === "loading") return "loading"
   if (input.authStatus === "unauthenticated") return "connect"
   if (input.aiPreferencesMissing) return "ai-setup"
-  if (input.premiumOfferOpen) return "premium-offer"
   if (!input.activeProject && input.runtimeOfferOpen) return "runtime-setup"
   if (!input.activeProject) return "welcome"
   return undefined
@@ -282,7 +269,6 @@ function onboardingElement(
     )
   }
   if (screen === "ai-setup") return <AiPreferencesSetupScreen />
-  if (screen === "premium-offer") return <PremiumOfferScreen />
   if (screen === "runtime-setup") return <RuntimeSetupScreen />
   return <WelcomeScreen />
 }

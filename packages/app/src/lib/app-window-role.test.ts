@@ -12,7 +12,6 @@ const workspaceInput: AppWindowRoleInput = {
   activeProject: { id: "project" },
   aiPreferences: {},
   authStatus: "authenticated",
-  premiumOpen: false,
   statusPipOpen: false,
 }
 
@@ -30,7 +29,6 @@ test("does not manage auxiliary or loading window roles", () => {
 test("uses compact windows for every screen outside the application layout", () => {
   const compactInputs: AppWindowRoleInput[] = [
     { ...workspaceInput, authStatus: "unauthenticated" },
-    { ...workspaceInput, premiumOpen: true },
     { ...workspaceInput, aiPreferences: null },
     { ...workspaceInput, activeProject: undefined },
   ]

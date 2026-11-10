@@ -16,8 +16,6 @@ import {
 } from "@blame/pricing-card"
 
 import { LegalLink } from "@/components/legal/legal-link"
-import { dismissPremiumOffer } from "@/components/onboarding/onboarding-flow"
-import { OnboardingProgress } from "@/components/onboarding/onboarding-progress"
 import { useOnboardingStage } from "@/components/onboarding/stage/onboarding-stage"
 import { Button } from "@/components/ui/button"
 import { Kbd } from "@/components/ui/kbd"
@@ -47,16 +45,11 @@ const premiumFeatures = [
 type BillingCycle = PricingBillingCycle
 type PendingAction = BillingCycle | "refresh" | "portal"
 
-// The one-time Premium step at the end of first-run setup.
-export function PremiumOfferScreen() {
-  return <PremiumPanel variant="offer" onLeave={dismissPremiumOffer} />
-}
-
 type PremiumPanelProps = {
-  // "offer" is the one-time step at the end of first-run setup. Reached from
-  // settings or a Premium-only feature, Premium is a setup step ("page")
-  // while setup is not finished, and a popup over the app ("dialog") after.
-  variant: "offer" | "page" | "dialog"
+  // Reached from settings or a Premium-only feature, Premium is a setup step
+  // ("page") while setup is not finished, and a popup over the app
+  // ("dialog") after.
+  variant: "page" | "dialog"
   onLeave(): void
   // Premium comes with an account: without one, getting Premium signs in
   // first, then the checkout opens for the chosen cycle.
@@ -77,7 +70,6 @@ export function PremiumPanel({
   const account = auth.mode === "account"
   const premium = auth.license?.licensed === true
   const actions = useLicenseActions()
-  const offer = variant === "offer"
   const wasPremium = React.useRef(premium)
 
   React.useEffect(() => {
@@ -113,7 +105,6 @@ export function PremiumPanel({
           : "mx-auto flex min-h-full w-full max-w-5xl flex-col px-8 pt-10 pb-12"
       }
     >
-      {offer ? <OnboardingProgress step="premium" className="mb-4" /> : null}
       <div className="grid flex-1 items-center gap-10 md:grid-cols-[minmax(0,1fr)_minmax(0,27.5rem)]">
         <motion.div
           className="max-w-md"
@@ -162,7 +153,7 @@ export function PremiumPanel({
               className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
               onClick={onLeave}
             >
-              {offer ? "Continue with free" : "Continue using Blame"}
+              Continue using Blame
               <Kbd>Esc</Kbd>
             </Button>
             {account ? (
@@ -181,11 +172,10 @@ export function PremiumPanel({
               </Button>
             ) : null}
           </motion.div>
-          {offer || !account ? (
+          {!account ? (
             <motion.p variants={riseIn} className="mt-2 text-xs text-foreground/50">
-              {offer
-                ? "You can upgrade anytime from Settings."
-                : "Blame Cloud comes with a free Blame account: you sign in or create one first, and your workspace moves into it."}
+              Blame Cloud comes with a free Blame account: you sign in or
+              create one first, and your workspace moves into it.
             </motion.p>
           ) : null}
         </motion.div>

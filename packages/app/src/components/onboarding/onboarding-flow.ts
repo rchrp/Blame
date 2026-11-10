@@ -1,12 +1,7 @@
 import * as React from "react"
 
 // First-run flow state that outlives a single screen.
-//
-// The Premium offer appears once, right after someone finishes configuring
-// their models for the first time. It is kept in memory only: people who quit
-// on the offer go straight to their projects next time.
 
-let premiumOfferPending = false
 const listeners = new Set<() => void>()
 
 function emit() {
@@ -18,25 +13,6 @@ function subscribe(listener: () => void) {
   return () => {
     listeners.delete(listener)
   }
-}
-
-export function queuePremiumOffer() {
-  premiumOfferPending = true
-  emit()
-}
-
-export function dismissPremiumOffer() {
-  if (!premiumOfferPending) return
-  premiumOfferPending = false
-  emit()
-}
-
-export function usePremiumOfferPending() {
-  return React.useSyncExternalStore(
-    subscribe,
-    () => premiumOfferPending,
-    () => false
-  )
 }
 
 // Keeps the loading screen up for a short beat on start-up, so the brand
