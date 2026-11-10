@@ -17,6 +17,7 @@ import { projectCodePractices } from "@/lib/project-code-practices"
 import type { DirectSharedFilesDialogProps } from "./direct-shared-files-dialog"
 import {
   commitDirectStory,
+  directCommitMessageRequest,
   directCommitValidationError,
   type SharedFilesChoice,
 } from "./direct-story-commit"
@@ -94,11 +95,7 @@ export function useDirectStoryCommit({
                 modelId: model!.id,
                 credentialLabel: model!.credentialLabel,
                 reasoningEffort: alternativeSelection.currentVariant,
-                repositoryRoot: root,
-                worktree: root,
-                selectedPaths: paths,
-                title: story.title,
-                summary: story.summary,
+                ...directCommitMessageRequest(story, root, paths),
                 codePractices,
               })
             ).message,

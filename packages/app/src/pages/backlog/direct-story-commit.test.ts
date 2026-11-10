@@ -3,6 +3,7 @@ import test from "node:test"
 
 import {
   commitDirectStory,
+  directCommitMessageRequest,
   directCommitValidationError,
   storySessionIds,
   type DirectStoryCommitDependencies,
@@ -147,6 +148,25 @@ test("lets a failed commit surface its error", async () => {
   await assert.rejects(
     commitDirectStory(story, "/project", dependencies),
     /pre-commit hook failed/
+  )
+})
+
+test("asks for a message that closes the GitHub issues the story handles", () => {
+  const issue = "https://github.com/acme/shop/issues/12"
+  assert.deepEqual(
+    directCommitMessageRequest(
+      { title: "Pay by card", summary: `Traite la GitHub issue [12](${issue}).` },
+      "/project",
+      ["a.ts"]
+    ),
+    {
+      repositoryRoot: "/project",
+      worktree: "/project",
+      selectedPaths: ["a.ts"],
+      title: "Pay by card",
+      summary: `Traite la GitHub issue [12](${issue}).`,
+      closeLinkedIssues: true,
+    }
   )
 })
 

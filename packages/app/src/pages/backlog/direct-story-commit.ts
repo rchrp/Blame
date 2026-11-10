@@ -78,6 +78,23 @@ export function directCommitValidationError(
     return "Desktop agent runtime is not available."
 }
 
+// The story's own files and text: with them, the runtime ends the message with
+// a Closes #N line per GitHub issue of origin the story says it handles.
+export function directCommitMessageRequest(
+  story: Pick<UserStory, "summary" | "title">,
+  root: string,
+  paths: string[]
+) {
+  return {
+    repositoryRoot: root,
+    worktree: root,
+    selectedPaths: paths,
+    title: story.title,
+    summary: story.summary,
+    closeLinkedIssues: true,
+  }
+}
+
 // Every agent session of the story: its runs, and the one it ends with.
 export function storySessionIds(
   story: Pick<UserStory, "agentRuns" | "clineSessionId">
