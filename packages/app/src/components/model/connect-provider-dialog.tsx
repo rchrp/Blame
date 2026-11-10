@@ -12,11 +12,8 @@ import type {
 
 import { ClaudeCodeConnectContent } from "@/components/model/claude-code-connect"
 import { ProviderMark } from "@/components/model/model-selector"
-import {
-  type ModelSelection,
-  recommendedApiKeyProviders,
-  subscriptionProviders,
-} from "@/components/model/model-selection"
+import type { ModelSelection } from "@/components/model/model-selection"
+import { groupProviders } from "@/components/model/provider-groups"
 import { ProviderAccessBadge } from "@/components/model/provider-access-badge"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -70,7 +67,7 @@ export function ProviderSelectDialog({
           <CommandList className="max-h-[24rem] overscroll-contain">
             <CommandEmpty>No providers found</CommandEmpty>
             {groupProviders(selection.allProviders).map((group) => (
-              <CommandGroup key={group.name} heading={group.name}>
+              <CommandGroup key={group.id} heading={group.name}>
                 {group.providers.map((provider) => (
                   <CommandItem
                     key={provider.id}
@@ -528,28 +525,4 @@ function connectionDescription(credential: ProviderCredentialSummary) {
   if (credential.baseUrl) return credential.baseUrl
   if (credential.authMethod === "local-cli") return "Claude Code on this computer"
   return credential.authMethod === "oauth" ? "OAuth account" : "API key"
-}
-
-const providerSections = [
-  { name: "Use your subscription", providerIDs: subscriptionProviders },
-  { name: "API keys", providerIDs: recommendedApiKeyProviders },
-]
-
-/** Subscriptions first, then the recommended API keys, then everything else. */
-function groupProviders(providers: Provider[]) {
-  const listed = new Set(providerSections.flatMap((section) => section.providerIDs))
-  return [
-    ...providerSections.map((section) => ({
-      name: section.name,
-      providers: section.providerIDs.flatMap((id) =>
-        providers.filter((provider) => provider.id === id)
-      ),
-    })),
-    {
-      name: "More providers",
-      providers: providers
-        .filter((provider) => !listed.has(provider.id))
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    },
-  ].filter((group) => group.providers.length)
 }

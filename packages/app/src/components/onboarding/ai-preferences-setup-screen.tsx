@@ -1,5 +1,8 @@
 import * as React from "react"
-import type { ReasoningSelection } from "@blame/agent-runtime"
+import type {
+  BlameProvider as Provider,
+  ReasoningSelection,
+} from "@blame/agent-runtime"
 import {
   CheckIcon,
   CopyIcon,
@@ -22,12 +25,19 @@ import {
 } from "@/components/model/model-selector"
 import {
   allProvidersValue,
-  popularProviders,
   type ModelPreferenceRole,
+  recommendedApiKeyProviders,
+  subscriptionProviders,
   type ModelSelection,
   type SelectableModel,
   useModelSelection,
 } from "@/components/model/model-selection"
+import { ProviderAccessBadge } from "@/components/model/provider-access-badge"
+import {
+  groupProviders,
+  type ProviderGroup,
+  type ProviderGroupID,
+} from "@/components/model/provider-groups"
 import {
   dismissPremiumOffer,
   queuePremiumOffer,
@@ -69,8 +79,6 @@ type RoleSelection = {
 
 const defaultVariant = "default"
 const lastStep = 2
-const providerColumns = 4
-const visibleProviderTiles = 7
 
 export function AiPreferencesSetupScreen() {
   const auth = useCloudAuth()
@@ -312,12 +320,29 @@ function ProviderStep({
   onConnect(providerID: string): void
   selection: ModelSelection
 }) {
-  const handleKeyDown = useRovingFocus(providerColumns)
-  const tiles = providerTiles(selection)
+  const groups = groupProviders(selection.allProviders)
+  const subscriptions = providerGroup(groups, "subscription")
+  const apiKeys = providerGroup(groups, "api-keys")
+  const moreCount = providerGroup(groups, "more").length
   const connectedCount = selection.connectedProviderIDs.size
+  const loading = subscriptions.length + apiKeys.length === 0
+
+  function tile(provider: Provider, index: number, variant: TileVariant) {
+    return (
+      <ProviderTile
+        key={provider.id}
+        provider={provider}
+        index={index}
+        variant={variant}
+        autoFocus={index === 0 && connectedCount === 0}
+        connected={selection.connectedProviderIDs.has(provider.id)}
+        onConnect={onConnect}
+      />
+    )
+  }
 
   return (
-    <div className="grid content-start gap-6">
+    <div className="grid content-start gap-5" onKeyDown={moveProviderFocus}>
       <StepHeader
         eyebrow="Step 1 of 3"
         title="Connect your AI provider"
@@ -335,114 +360,219 @@ function ProviderStep({
           </Button>
         }
       />
-      <div
-        role="group"
-        aria-label="Providers"
-        className="grid grid-cols-2 gap-2.5 sm:grid-cols-4"
-        onKeyDown={handleKeyDown}
-      >
-        {tiles.length === 0
-          ? Array.from({ length: visibleProviderTiles + 1 }, (_, index) => (
-              <div
-                key={index}
-                className="h-[5.5rem] animate-pulse rounded-2xl bg-foreground/[0.05]"
-                style={{ animationDelay: `${index * 80}ms` }}
-              />
-            ))
-          : tiles.map((provider, index) => {
-              const isConnected = selection.connectedProviderIDs.has(provider.id)
-              return (
-                <motion.button
-                  key={provider.id}
-                  type="button"
-                  data-roving-item
-                  autoFocus={index === 0 && connectedCount === 0}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.04 * index, ...springSoft }}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.97 }}
-                  className={cn(
-                    "group relative flex h-[5.5rem] flex-col items-start justify-between rounded-2xl border border-foreground/[0.08] bg-background/55 p-3 text-left outline-none transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/30 hover:bg-background/90 hover:shadow-[0_12px_28px_-16px_var(--primary)] focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25",
-                    isConnected && "border-primary/40 bg-primary/[0.06]"
-                  )}
-                  onClick={() => onConnect(provider.id)}
-                >
-                  <span className="flex w-full items-start justify-between">
-                    <span className="scale-125 origin-top-left">
-                      <ProviderMark provider={provider} />
-                    </span>
-                    <AnimatePresence>
-                      {isConnected ? (
-                        <motion.span
-                          initial={{ scale: 0, rotate: -45 }}
-                          animate={{ scale: 1, rotate: 0 }}
-                          exit={{ scale: 0 }}
-                          transition={springSnappy}
-                          className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                        >
-                          <CheckIcon className="size-3" strokeWidth={3} />
-                        </motion.span>
-                      ) : provider.id === "anthropic" ? (
-                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary dark:bg-indigo-400/15 dark:text-indigo-200">
-                          Recommended
-                        </span>
-                      ) : null}
-                    </AnimatePresence>
-                  </span>
-                  <span className="grid w-full gap-0.5">
-                    <span className="truncate text-sm font-semibold">{provider.name}</span>
-                    <span className="text-[11px] text-foreground/50">
-                      {isConnected ? "Connected · Manage" : "Connect"}
-                    </span>
-                  </span>
-                </motion.button>
-              )
-            })}
-        {tiles.length > 0 ? (
-          <motion.button
-            type="button"
-            data-roving-item
-            initial={{ opacity: 0, y: 10 }}
+      <ProviderSection label="Use your subscription" className="sm:grid-cols-2">
+        {loading
+          ? tileSkeletons(subscriptionProviders.length, "subscription")
+          : subscriptions.map((provider, index) =>
+              tile(provider, index, "subscription")
+            )}
+      </ProviderSection>
+      <ProviderSection label="API keys" className="grid-cols-2 sm:grid-cols-4">
+        {loading
+          ? tileSkeletons(recommendedApiKeyProviders.length, "api-key")
+          : apiKeys.map((provider, index) =>
+              tile(provider, subscriptions.length + index, "api-key")
+            )}
+      </ProviderSection>
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <AnimatePresence initial={false} mode="wait">
+          <motion.p
+            key={connectedCount > 0 ? "connected" : "empty"}
+            initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.04 * tiles.length, ...springSoft }}
-            whileHover={{ y: -2 }}
-            whileTap={{ scale: 0.97 }}
-            className="flex h-[5.5rem] flex-col items-start justify-between rounded-2xl border border-foreground/10 bg-foreground/[0.02] p-3 text-left text-foreground/70 outline-none transition-colors duration-200 hover:border-primary/40 hover:text-foreground focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25"
+            exit={{ opacity: 0, y: -4 }}
+            className="text-sm text-foreground/60"
+          >
+            {connectedCount > 0 ? (
+              <>
+                <span className="font-medium text-foreground">
+                  {connectedCount} provider{connectedCount > 1 ? "s" : ""} connected.
+                </span>{" "}
+                Continue to choose your models.
+              </>
+            ) : (
+              "Use the arrow keys to move between providers, Enter to connect."
+            )}
+          </motion.p>
+        </AnimatePresence>
+        {moreCount > 0 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            data-roving-item
+            className="shrink-0 text-foreground/70"
             onClick={onBrowse}
           >
-            <PlusIcon className="size-5" />
-            <span className="grid gap-0.5">
-              <span className="text-sm font-semibold">More providers</span>
-              <span className="text-[11px] text-foreground/50">
-                {Math.max(selection.allProviders.length - tiles.length, 0)} more
-              </span>
-            </span>
-          </motion.button>
+            <PlusIcon />
+            {moreCount} more provider{moreCount > 1 ? "s" : ""}
+          </Button>
         ) : null}
       </div>
-      <AnimatePresence initial={false} mode="wait">
-        <motion.p
-          key={connectedCount > 0 ? "connected" : "empty"}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -4 }}
-          className="text-sm text-foreground/60"
-        >
-          {connectedCount > 0 ? (
-            <>
-              <span className="font-medium text-foreground">
-                {connectedCount} provider{connectedCount > 1 ? "s" : ""} connected.
-              </span>{" "}
-              Continue to choose your models.
-            </>
-          ) : (
-            "Use the arrow keys to move between providers, Enter to connect."
-          )}
-        </motion.p>
-      </AnimatePresence>
     </div>
   )
+}
+
+type TileVariant = "subscription" | "api-key"
+
+function ProviderSection({
+  children,
+  className,
+  label,
+}: {
+  children: React.ReactNode
+  className: string
+  label: string
+}) {
+  return (
+    <div className="grid gap-2">
+      <span className="text-xs font-semibold text-foreground/55">{label}</span>
+      <div role="group" aria-label={label} className={cn("grid gap-2.5", className)}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function ProviderTile({
+  autoFocus,
+  connected,
+  index,
+  onConnect,
+  provider,
+  variant,
+}: {
+  autoFocus: boolean
+  connected: boolean
+  index: number
+  onConnect(providerID: string): void
+  provider: Provider
+  variant: TileVariant
+}) {
+  const status = (
+    <span className="text-[11px] text-foreground/50">
+      {connected ? "Connected · Manage" : "Connect"}
+    </span>
+  )
+  const check = (
+    <AnimatePresence>
+      {connected ? (
+        <motion.span
+          initial={{ scale: 0, rotate: -45 }}
+          animate={{ scale: 1, rotate: 0 }}
+          exit={{ scale: 0 }}
+          transition={springSnappy}
+          className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground"
+        >
+          <CheckIcon className="size-3" strokeWidth={3} />
+        </motion.span>
+      ) : null}
+    </AnimatePresence>
+  )
+
+  return (
+    <motion.button
+      type="button"
+      data-roving-item
+      autoFocus={autoFocus}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.03 * index, ...springSoft }}
+      whileHover={{ y: -2 }}
+      whileTap={{ scale: 0.97 }}
+      className={cn(
+        "group relative flex rounded-2xl border border-foreground/[0.08] bg-background/55 p-3 text-left outline-none transition-[border-color,background-color,box-shadow] duration-200 hover:border-primary/30 hover:bg-background/90 hover:shadow-[0_12px_28px_-16px_var(--primary)] focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25",
+        variant === "subscription"
+          ? "h-[4.25rem] items-center gap-3"
+          : "h-[5.5rem] flex-col items-start justify-between",
+        connected && "border-primary/40 bg-primary/[0.06]"
+      )}
+      onClick={() => onConnect(provider.id)}
+    >
+      {variant === "subscription" ? (
+        <>
+          <span className="flex size-8 shrink-0 items-center justify-center">
+            <span className="scale-125">
+              <ProviderMark provider={provider} />
+            </span>
+          </span>
+          <span className="grid min-w-0 flex-1 gap-0.5">
+            <span className="truncate text-sm font-semibold">{provider.name}</span>
+            {status}
+          </span>
+          <ProviderAccessBadge providerID={provider.id} />
+          {check}
+        </>
+      ) : (
+        <>
+          <span className="flex w-full items-start justify-between">
+            <span className="origin-top-left scale-125">
+              <ProviderMark provider={provider} />
+            </span>
+            {check}
+          </span>
+          <span className="grid w-full gap-0.5">
+            <span className="truncate text-sm font-semibold">{provider.name}</span>
+            {status}
+          </span>
+        </>
+      )}
+    </motion.button>
+  )
+}
+
+function tileSkeletons(count: number, variant: TileVariant) {
+  return Array.from({ length: count }, (_, index) => (
+    <div
+      key={index}
+      className={cn(
+        "animate-pulse rounded-2xl bg-foreground/[0.05]",
+        variant === "subscription" ? "h-[4.25rem]" : "h-[5.5rem]"
+      )}
+      style={{ animationDelay: `${index * 80}ms` }}
+    />
+  ))
+}
+
+function providerGroup(groups: ProviderGroup[], id: ProviderGroupID) {
+  return groups.find((group) => group.id === id)?.providers ?? []
+}
+
+/**
+ * Arrow keys across the tiles. The sections have different column counts,
+ * so up and down pick the closest tile in the next row on screen.
+ */
+function moveProviderFocus(event: React.KeyboardEvent<HTMLElement>) {
+  const keys = ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"]
+  if (!keys.includes(event.key) || event.altKey) return
+  const items = Array.from(
+    event.currentTarget.querySelectorAll<HTMLElement>("[data-roving-item]:not([disabled])")
+  )
+  const current = document.activeElement as HTMLElement
+  const index = items.indexOf(current)
+  if (index === -1) return
+  event.preventDefault()
+  if (event.key === "Home") return items[0]?.focus()
+  if (event.key === "End") return items.at(-1)?.focus()
+  if (event.key === "ArrowRight") return items[Math.min(index + 1, items.length - 1)]?.focus()
+  if (event.key === "ArrowLeft") return items[Math.max(index - 1, 0)]?.focus()
+
+  const from = current.getBoundingClientRect()
+  const down = event.key === "ArrowDown"
+  const centerX = (rect: DOMRect) => rect.left + rect.width / 2
+  const candidates = items
+    .map((item) => ({ item, rect: item.getBoundingClientRect() }))
+    .filter(({ rect }) => (down ? rect.top >= from.bottom - 1 : rect.bottom <= from.top + 1))
+  if (!candidates.length) return
+  const rowTop = down
+    ? Math.min(...candidates.map(({ rect }) => rect.top))
+    : Math.max(...candidates.map(({ rect }) => rect.top))
+  const row = candidates.filter(({ rect }) => Math.abs(rect.top - rowTop) < 2)
+  row.sort(
+    (a, b) =>
+      Math.abs(centerX(a.rect) - centerX(from)) - Math.abs(centerX(b.rect) - centerX(from))
+  )
+  row[0]?.item.focus()
 }
 
 function ModelStep({
@@ -652,20 +782,6 @@ function VariantSelect({
       </SelectContent>
     </Select>
   )
-}
-
-function providerTiles(selection: ModelSelection) {
-  const byID = new Map(selection.allProviders.map((provider) => [provider.id, provider]))
-  const connected = selection.allProviders.filter((provider) =>
-    selection.connectedProviderIDs.has(provider.id)
-  )
-  const popular = popularProviders
-    .map((id) => byID.get(id))
-    .filter((provider) => provider !== undefined)
-  const unique = new Map(
-    [...connected, ...popular].map((provider) => [provider.id, provider])
-  )
-  return Array.from(unique.values()).slice(0, visibleProviderTiles)
 }
 
 function useRecommendedModels(selection: ModelSelection) {
