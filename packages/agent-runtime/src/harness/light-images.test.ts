@@ -157,7 +157,7 @@ for (const [name, content] of [
       await writeFile(join(root, name), content);
       const output = await read(root, name);
       assert.equal(output.status, "blocked");
-      assert.match(String(output.message), /extract text or render images/);
+      assert.match(String(output.message), /read_attachment/);
     });
   });
 }

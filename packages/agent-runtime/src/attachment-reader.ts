@@ -13,6 +13,17 @@ export const attachmentReadSchema = z.object({
 type AttachmentReadInput = z.infer<typeof attachmentReadSchema>;
 const maxBytes = 10 * 1024 * 1024;
 const textLimit = 20_000;
+const workspaceDocuments = new Set([".pdf", ".docx", ".xlsx"]);
+
+function inside(directory: string, path: string) {
+  const local = relative(directory, path);
+  return (
+    !!local &&
+    local !== ".." &&
+    !local.startsWith(`..${sep}`) &&
+    !isAbsolute(local)
+  );
+}
 
 // This is a read tool, not a conversion pipeline: originals stay intact and
 // parsing happens only when the model asks to inspect an attached document.
@@ -27,15 +38,17 @@ export async function readAttachment(
     const root = await realpath(workspaceRoot);
     const attachments = join(root, ".blame", "attachments");
     const path = await realpath(resolve(workspaceRoot, input.path));
-    const local = relative(attachments, path);
+    // Attachments may be any format; elsewhere in the workspace only the
+    // documents read_code cannot parse, so text keeps read_code's guards.
     if (
-      !local ||
-      local === ".." ||
-      local.startsWith(`..${sep}`) ||
-      isAbsolute(local)
+      !inside(attachments, path) &&
+      !(
+        inside(root, path) &&
+        workspaceDocuments.has(extname(path).toLowerCase())
+      )
     )
       throw new Error(
-        "Only files in this workspace's attachment directory can be read.",
+        "Only attachments, or PDF, DOCX and XLSX files inside this workspace, can be read. Use read_code for other workspace files.",
       );
     const info = await stat(path);
     if (!info.isFile() || info.size > maxBytes)

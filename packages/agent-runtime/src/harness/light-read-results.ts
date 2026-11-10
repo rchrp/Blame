@@ -285,6 +285,6 @@ export function arrayValue(value: unknown) {
 
 export function readableSource(content: Buffer) {
   if (content.includes(0) || !isUtf8(content) || content.subarray(0, 5).toString("ascii") === "%PDF-")
-    throw new Error("Binary or PDF content is not source text. Use run_task to extract text or render images, then read the output.");
+    throw new Error("Binary or PDF content is not source text. Read PDF, DOCX and XLSX documents with read_attachment; for other binary files, use run_task to extract text, then read the output.");
   return content.toString("utf8");
 }
