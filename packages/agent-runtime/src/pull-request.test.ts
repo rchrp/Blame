@@ -8,7 +8,6 @@ import { promisify } from "node:util";
 
 import { BlameAgentRuntime } from "./cline-runtime.js";
 import {
-  githubRepository,
   parsePullRequestState,
   pullRequestAvailability,
   pullRequestBody,
@@ -18,6 +17,7 @@ import {
   parsePullRequestText,
   pullRequestTextPrompt,
 } from "./pull-request-text.js";
+import { githubRepository } from "./runtime-git.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -86,13 +86,27 @@ test("keeps a story without criteria or agent summary whole", () => {
   );
 });
 
-test("caps the pull request body at GitHub's limit", () => {
-  const body = pullRequestBody({
-    summary: "Story",
-    agentSummary: "x".repeat(70_000),
-  });
+test("ends the pull request body with a Closes line per issue it closes", () => {
+  assert.equal(
+    pullRequestBody({ summary: "Fix the typo." }, [4, 12]),
+    "## Story\n\nFix the typo.\n\nCloses #4\nCloses #12\n\n---\n_Opened from Blame._",
+  );
+});
+
+test("caps the pull request body at GitHub's limit, never its Closes lines", () => {
+  const story = { summary: "Story", agentSummary: "x".repeat(70_000) };
+  const body = pullRequestBody(story, [4, 12]);
   assert.equal(body.length, 65_536);
-  assert.match(body, /_\[truncated\]_$/);
+  assert.match(
+    body,
+    /x\n\n_\[truncated\]_\n\nCloses #4\nCloses #12\n\n---\n_Opened from Blame\._$/u,
+  );
+  const withoutIssues = pullRequestBody(story);
+  assert.equal(withoutIssues.length, 65_536);
+  assert.match(
+    withoutIssues,
+    /x\n\n_\[truncated\]_\n\n---\n_Opened from Blame\._$/u,
+  );
 });
 
 test("asks for the pull request text with the story and its agent summary only", () => {
@@ -453,6 +467,41 @@ test("closes the origin issues the story handles from its merged commit", async 
       .map((message) => message.trim());
     assert.ok(
       messages.includes("fix(card): pay by card\n\nCloses #4\nCloses #12"),
+      messages.join("\n---\n"),
+    );
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test("closes the issues the story handles from its pull request and its commit", async () => {
+  const fixture = await pullRequestFixture();
+  const gh = fakeGh();
+  const runtime = pullRequestTestRuntime(gh.run);
+  try {
+    await writeFile(join(fixture.worktree, "card.ts"), "export {};\n");
+    await runtime.openPullRequest({
+      ...fixture.input,
+      summary: [
+        fixture.input.summary,
+        "Traite la GitHub issue [63](https://github.com/acme/shop/issues/63).",
+        "Hors périmètre : [#64](https://github.com/acme/shop/issues/64), https://github.com/acme/api/issues/2.",
+      ].join("\n\n"),
+    });
+
+    // The English text leaves the links out: the story's own text has them.
+    const create = gh.calls.find((args) => args[1] === "create") ?? [];
+    const body = option(create, "--body") ?? "";
+    assert.match(body, /- \[ \] Pay by card\n\n## Agent summary\n\nCheckout shipped\.\n\nCloses #63\n\n---\n/u);
+    assert.doesNotMatch(body, /Closes #(?:2|64)\b/u);
+    const messages = (
+      await git(fixture.remote, ["log", "--format=%B%x00", "story/pr"])
+    )
+      .split("\0")
+      .map((message) => message.trim());
+    assert.ok(
+      messages.includes("fix(card): livrer le paiement\n\nCloses #63"),
       messages.join("\n---\n"),
     );
   } finally {

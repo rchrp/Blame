@@ -1,4 +1,4 @@
-import { githubRepository } from "./pull-request.js";
+import { githubRepository } from "./runtime-git.js";
 
 // A commit whose message says `Closes #N` shows in issue N's timeline, and
 // GitHub closes the issue once that commit reaches the default branch.
@@ -58,8 +58,12 @@ export function withLinkedIssueTrailers(
   if (!missing.length) return message;
   const body = message.trimEnd();
   const separator = endsWithClosingLines(body) ? "\n" : "\n\n";
-  const trailers = missing.map((issue) => `Closes #${issue}`);
-  return `${body}${separator}${trailers.join("\n")}`;
+  return `${body}${separator}${closingIssueLines(missing)}`;
+}
+
+// One `Closes #N` line per issue, for a commit message or a pull request.
+export function closingIssueLines(issues: readonly number[]) {
+  return issues.map((issue) => `Closes #${issue}`).join("\n");
 }
 
 function originRepository(originUrl: string | undefined) {

@@ -102,6 +102,16 @@ export async function defaultPushRemote(cwd: string) {
   return remotes.includes("origin") ? "origin" : (remotes[0] ?? null);
 }
 
+// owner/name of a github.com remote URL, in any of the forms Git accepts.
+export function githubRepository(url: string) {
+  const match =
+    /^(?:https?|ssh|git):\/\/(?:[^@/]+@)?github\.com(?::\d+)?\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/iu.exec(
+      url.trim(),
+    ) ??
+    /^(?:[^@/]+@)?github\.com:([^/]+)\/([^/]+?)(?:\.git)?\/?$/iu.exec(url.trim());
+  return match ? `${match[1]}/${match[2]}` : undefined;
+}
+
 // The URL origin fetches from, or undefined without an origin remote.
 export async function originRemoteUrl(cwd: string) {
   try {

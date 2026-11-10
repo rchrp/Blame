@@ -202,7 +202,10 @@ import {
   removeRuntimeEnvChanges,
   storyStatus,
 } from "./story-worktree-git.js";
-import { withLinkedIssueTrailers } from "./linked-issues.js";
+import {
+  linkedIssueNumbers,
+  withLinkedIssueTrailers,
+} from "./linked-issues.js";
 import {
   knownModelInfo,
   loadCatalogModel,
@@ -2585,10 +2588,13 @@ export class BlameAgentRuntime {
     logFile: string,
   ) {
     const text = await this.englishPullRequestText(input, logFile);
+    // From the story as written: its English rewrite may drop the links.
+    const origin = await originRemoteUrl(input.repositoryRoot);
+    const issues = linkedIssueNumbers(input, origin);
     return createPullRequest(
       input.repositoryRoot,
       {
-        body: pullRequestBody(text),
+        body: pullRequestBody(text, issues),
         repository: destination.repository,
         storyBranch: input.storyBranch,
         targetBranch: destination.targetBranch,

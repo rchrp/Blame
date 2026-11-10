@@ -1,7 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
-import { originRemoteUrl } from "./runtime-git.js";
+import { closingIssueLines } from "./linked-issues.js";
+import { githubRepository, originRemoteUrl } from "./runtime-git.js";
 import type { PullRequestAvailability, PullRequestState } from "./types.js";
 
 // Open PR runs gh on this computer, with the person's own gh sign-in. No
@@ -34,16 +35,6 @@ export async function runHostGh(cwd: string, args: string[]) {
     windowsHide: true,
   });
   return stdout;
-}
-
-// owner/name of a github.com remote URL, in any of the forms Git accepts.
-export function githubRepository(url: string) {
-  const match =
-    /^(?:https?|ssh|git):\/\/(?:[^@/]+@)?github\.com(?::\d+)?\/([^/]+)\/([^/]+?)(?:\.git)?\/?$/iu.exec(
-      url.trim(),
-    ) ??
-    /^(?:[^@/]+@)?github\.com:([^/]+)\/([^/]+?)(?:\.git)?\/?$/iu.exec(url.trim());
-  return match ? `${match[1]}/${match[2]}` : undefined;
 }
 
 export async function pullRequestAvailability(
@@ -177,26 +168,33 @@ export async function createPullRequest(
   return url;
 }
 
-// The story, its acceptance criteria and what the agent says it did.
-export function pullRequestBody(story: {
-  summary: string;
-  agentSummary?: string;
-}) {
+// The story, its acceptance criteria and what the agent says it did, then a
+// `Closes #N` line per issue it closes, so GitHub links and closes them.
+export function pullRequestBody(
+  story: { summary: string; agentSummary?: string },
+  closedIssues: readonly number[] = [],
+) {
   const { description, acceptanceCriteria } = splitAcceptanceCriteria(
     story.summary,
   );
   const agentSummary = story.agentSummary?.trim();
-  const body = [
+  const content = [
     description && `## Story\n\n${description}`,
     acceptanceCriteria && `## Acceptance criteria\n\n${acceptanceCriteria}`,
     agentSummary && `## Agent summary\n\n${agentSummary}`,
-    "---\n_Opened from Blame._",
   ]
     .filter(Boolean)
     .join("\n\n");
-  return body.length <= pullRequestBodyLimit
-    ? body
-    : `${body.slice(0, pullRequestBodyLimit - truncationNotice.length)}${truncationNotice}`;
+  // Truncation keeps the Closes lines and the footer whole.
+  const end = [closingIssueLines(closedIssues), "---\n_Opened from Blame._"]
+    .filter(Boolean)
+    .join("\n\n");
+  const room = pullRequestBodyLimit - end.length - "\n\n".length;
+  const kept =
+    content.length <= room
+      ? content
+      : `${content.slice(0, room - truncationNotice.length)}${truncationNotice}`;
+  return [kept, end].filter(Boolean).join("\n\n");
 }
 
 const acceptanceCriteriaHeading =
