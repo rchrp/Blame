@@ -390,6 +390,9 @@ export type GenerateCommitMessageInput = {
   worktree: string;
   title?: string;
   summary?: string;
+  // A story's commit (Direct mode): the message closes the GitHub issues of
+  // origin the title or summary says it handles, as Approve & Merge does.
+  closeLinkedIssues?: boolean;
   selectedPaths?: string[];
   codePractices?: ProjectCodePracticePreference[];
   backend?: AgentBackendConfig;

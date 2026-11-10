@@ -201,11 +201,9 @@ import {
   mergeConflictPrompt,
   removeRuntimeEnvChanges,
   storyStatus,
+  withStoryIssueTrailers,
 } from "./story-worktree-git.js";
-import {
-  linkedIssueNumbers,
-  withLinkedIssueTrailers,
-} from "./linked-issues.js";
+import { linkedIssueNumbers } from "./linked-issues.js";
 import {
   knownModelInfo,
   loadCatalogModel,
@@ -2655,8 +2653,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
       approveMergeLogPath(input.worktree),
       "blame-approve-merge",
     );
-    const origin = await originRemoteUrl(input.repositoryRoot);
-    const message = withLinkedIssueTrailers(generated, input, origin);
+    const message = await withStoryIssueTrailers(generated, input);
     await addStoryChanges(input.worktree);
     await git(input.worktree, ["commit", "-m", message]);
     const nextStatus = await storyStatus(input.worktree, "--porcelain");
@@ -2696,6 +2693,9 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
       logFile,
       "blame-commit-message-generation",
     );
+    // A Direct story's commit; the Git page's own commits don't ask.
+    if (input.closeLinkedIssues)
+      return { message: await withStoryIssueTrailers(message, input) };
     return { message };
   }
 

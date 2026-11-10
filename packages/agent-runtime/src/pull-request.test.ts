@@ -510,6 +510,41 @@ test("closes the issues the story handles from its pull request and its commit",
   }
 });
 
+test("a Direct story's commit message closes the issues it handles, the Git page's doesn't", async () => {
+  const fixture = await pullRequestFixture();
+  const runtime = pullRequestTestRuntime(fakeGh().run);
+  try {
+    // Direct commits in the project folder itself.
+    const root = fixture.repositoryRoot;
+    await writeFile(join(root, "card.ts"), "export {};\n");
+    const request = {
+      apiConnection: fixture.input.apiConnection,
+      providerId: fixture.input.providerId,
+      modelId: fixture.input.modelId,
+      repositoryRoot: root,
+      worktree: root,
+      selectedPaths: ["card.ts"],
+      title: "Pay by card",
+      summary:
+        "Traite la GitHub issue [12](https://github.com/acme/shop/issues/12).",
+    };
+
+    assert.deepEqual(
+      await runtime.generateCommitMessage({
+        ...request,
+        closeLinkedIssues: true,
+      }),
+      { message: "fix(card): pay by card\n\nCloses #12" },
+    );
+    assert.deepEqual(await runtime.generateCommitMessage(request), {
+      message: "fix(card): pay by card",
+    });
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
 // A story started from develop, in a project whose origin is on GitHub but
 // pushes to a local bare repository.
 async function pullRequestFixture() {

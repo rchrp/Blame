@@ -8,7 +8,8 @@ import {
   commitMessagePaths,
   fallbackCommitMessageFromStatus,
 } from "./commit-message.js";
-import { currentGitBranch, git } from "./runtime-git.js";
+import { withLinkedIssueTrailers } from "./linked-issues.js";
+import { currentGitBranch, git, originRemoteUrl } from "./runtime-git.js";
 
 // Git on a story worktree: Blame's runtime artifacts and the project's
 // runtime .env files never reach a commit, a status or an agent prompt.
@@ -78,6 +79,15 @@ export async function fallbackCommitMessage(input: CommitMessageRuntimeInput) {
     git(input.worktree, ["log", "-12", "--pretty=%s"]),
   ]);
   return fallbackCommitMessageFromStatus(input, status, log);
+}
+
+// A story's commit closes the issues of origin the story says it handles.
+export async function withStoryIssueTrailers(
+  message: string,
+  input: CommitMessageRuntimeInput,
+) {
+  const origin = await originRemoteUrl(input.repositoryRoot);
+  return withLinkedIssueTrailers(message, input, origin);
 }
 
 export async function mergeConflictPrompt(
