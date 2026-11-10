@@ -28,21 +28,56 @@ Blame gives each agent its own worktree, ports, services, and running app, so yo
 
 ## Install
 
-**macOS**
+Download the latest release for your platform:
+
+| Platform                  | Download                                                                                                                                                                                                       | Requirements                          |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **macOS** (Apple silicon) | [`blame-mac-arm64.dmg`](https://download.blame.so/latest/blame-mac-arm64.dmg)                                                                                                                                  | macOS 13 or later                     |
+| **macOS** (Intel)         | [`blame-mac-x64.dmg`](https://download.blame.so/latest/blame-mac-x64.dmg)                                                                                                                                      | macOS 13 or later                     |
+| **Windows** (x64)         | [`blame-win-x64.exe`](https://download.blame.so/latest/blame-win-x64.exe)                                                                                                                                      | Windows 10 or 11 with WSL 2           |
+| **Linux** (x86_64)        | [`AppImage`](https://download.blame.so/latest/blame-linux-x86_64.AppImage) · [`.deb`](https://download.blame.so/latest/blame-linux-amd64.deb) · [`.rpm`](https://download.blame.so/latest/blame-linux-x86_64.rpm) | Docker Engine with the Compose plugin |
+
+On macOS, you can also install it with [Homebrew](https://brew.sh):
 
 ```bash
 brew install --cask rchrp/tap/blame
 ```
 
-**Windows**
-
-```powershell
-winget install Blame.Blame
-```
-
-**Linux:** download the [AppImage, `.deb` or `.rpm`](#downloads). The AUR package (`blame-bin`) is ready and waits for AUR account registration to reopen. I use Arch, btw: it is coming.
+**Coming soon:** winget on Windows, once its package is merged, and the AUR package (`blame-bin`) on Arch, once AUR account registration reopens. I use Arch, btw: it is coming.
 
 Then open Blame and choose **Continue without an account**. [Quick start](#quick-start) takes you from there to your first merge.
+
+Blame keeps itself up to date. Older versions and betas are on the [releases page](https://github.com/rchrp/Blame/releases) and [blame.so/download](https://blame.so/download); the [Code signing policy](CODE_SIGNING_POLICY.md) explains how releases are built and signed.
+
+<details>
+<summary><strong>Platform notes</strong></summary>
+
+**macOS.** The app is signed and notarized. On first launch, Blame sets up a small Linux VM (based on [Lima](https://lima-vm.io)) where agents, worktrees, and previews run.
+
+**Windows.** The installer is not code-signed yet (signing through SignPath Foundation is [planned](CODE_SIGNING_POLICY.md)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off the update check at launch; Settings → Desktop → Privacy has the same switch. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
+
+**Linux.** Worktrees stay native, and previews and project services run in Docker on your machine.
+
+```bash
+# AppImage
+chmod +x blame-linux-x86_64.AppImage && ./blame-linux-x86_64.AppImage
+
+# Debian, Ubuntu
+sudo apt install ./blame-linux-amd64.deb
+
+# Fedora, RHEL
+sudo dnf install ./blame-linux-x86_64.rpm
+```
+
+**Verify a download.** Each release ships a `SHA256SUMS` file:
+
+```bash
+shasum -a 256 -c SHA256SUMS --ignore-missing
+```
+
+**Beta channel.** Turn on **Settings → Desktop → Beta channel** to get prereleases as soon as they ship.
+
+</details>
 
 ## Why Blame
 
@@ -105,49 +140,6 @@ These are good tools, and all of them run agents in parallel git worktrees. The 
 | Account required                        | No                                             | No                                                | GitHub login                             | No                                                      | No                                                      |
 
 Checked on November 2, 2026, against each project's own docs. \*Bloop wound down Vibe Kanban in April 2026; it is community-maintained since, without its kanban board. Something wrong or out of date? [Open an issue](https://github.com/rchrp/Blame/issues) and it gets fixed.
-
-## Downloads
-
-Download the latest release for your platform:
-
-| Platform                  | Download                                                                                                                                                                                                                                   | Requirements                                |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| **macOS** (Apple silicon) | [`blame-mac-arm64.dmg`](https://download.blame.so/latest/blame-mac-arm64.dmg)                                                                                                                                                              | macOS 13 or later                           |
-| **macOS** (Intel)         | [`blame-mac-x64.dmg`](https://download.blame.so/latest/blame-mac-x64.dmg)                                                                                                                                                                  | macOS 13 or later                           |
-| **Windows** (x64)         | [`blame-win-x64.exe`](https://download.blame.so/latest/blame-win-x64.exe)                                                                                                                                                                  | Windows 10 or 11 with WSL 2                 |
-| **Linux** (x86_64)        | [`AppImage`](https://download.blame.so/latest/blame-linux-x86_64.AppImage) · [`.deb`](https://download.blame.so/latest/blame-linux-amd64.deb) · [`.rpm`](https://download.blame.so/latest/blame-linux-x86_64.rpm) | Docker Engine with the Compose plugin       |
-
-You can also pick any version, including betas, from the [releases page](https://github.com/rchrp/Blame/releases) or [blame.so/download](https://blame.so/download). Blame keeps itself up to date from those releases. The [Code signing policy](CODE_SIGNING_POLICY.md) explains how releases are built and signed.
-
-<details>
-<summary><strong>Platform notes</strong></summary>
-
-**macOS.** The app is signed and notarized. On first launch, Blame sets up a small Linux VM (based on [Lima](https://lima-vm.io)) where agents, worktrees, and previews run.
-
-**Windows.** The installer is not code-signed yet (signing through SignPath Foundation is [planned](CODE_SIGNING_POLICY.md)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off the update check at launch; Settings → Desktop → Privacy has the same switch. Blame runs agents in its own WSL distribution. If WSL is not installed, run `wsl --install` in an administrator terminal and restart first.
-
-**Linux.** Worktrees stay native, and previews and project services run in Docker on your machine.
-
-```bash
-# AppImage
-chmod +x blame-linux-x86_64.AppImage && ./blame-linux-x86_64.AppImage
-
-# Debian, Ubuntu
-sudo apt install ./blame-linux-amd64.deb
-
-# Fedora, RHEL
-sudo dnf install ./blame-linux-x86_64.rpm
-```
-
-**Verify a download.** Each release ships a `SHA256SUMS` file:
-
-```bash
-shasum -a 256 -c SHA256SUMS --ignore-missing
-```
-
-**Beta channel.** Turn on **Settings → Desktop → Beta channel** to get prereleases as soon as they ship.
-
-</details>
 
 ## The Light Semantic Harness
 
