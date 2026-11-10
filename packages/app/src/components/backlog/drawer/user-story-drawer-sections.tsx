@@ -41,6 +41,7 @@ import {
   useAgentTurnMetrics,
 } from "@/components/chat/agent-turn-metrics"
 import { ModelSelector } from "@/components/model/model-selector"
+import { SelectorGroup } from "@/components/ui/selector-group"
 import {
   saveStoryModelChoice,
   useStoryModelChoice,
@@ -199,15 +200,18 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           toolbarEnd={
             editable ? (
               <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
-                <StoryBranchSelector
-                  runMode={runMode}
-                  value={targetBranch}
-                  onChange={onTargetBranchChange}
-                />
-                <RuntimeProfileSelector value={runMode} onChange={onRunModeChange} />
-                <div className="w-96 shrink-0">
-                  <MarkdownEditorModelSelector />
-                </div>
+                <SelectorGroup>
+                  <RuntimeProfileSelector
+                    value={runMode}
+                    onChange={onRunModeChange}
+                  />
+                  <StoryBranchSelector
+                    runMode={runMode}
+                    value={targetBranch}
+                    onChange={onTargetBranchChange}
+                  />
+                </SelectorGroup>
+                <MarkdownEditorModelSelector />
               </div>
             ) : undefined
           }
@@ -384,18 +388,15 @@ const StoryCommentModelSelector = React.memo(function StoryCommentModelSelector(
     [preference, storyId]
   )
   return (
-    <div className="w-80 max-w-full min-w-0">
-      <ModelSelector
-        modelTriggerClassName="max-w-none"
-        role="agent"
-        scope={scope}
-        warnOnModelChange={Boolean(
-          userStory.agentModelId ||
-            userStory.agentRuns?.length ||
-            userStory.clineSessionId
-        )}
-      />
-    </div>
+    <ModelSelector
+      role="agent"
+      scope={scope}
+      warnOnModelChange={Boolean(
+        userStory.agentModelId ||
+          userStory.agentRuns?.length ||
+          userStory.clineSessionId
+      )}
+    />
   )
 })
 
@@ -518,7 +519,7 @@ const StoryBranchSelector = React.memo(function StoryBranchSelector({
 })
 const MarkdownEditorModelSelector = React.memo(
   function ModelSelectorBoundary() {
-    return <ModelSelector modelTriggerClassName="max-w-none" />
+    return <ModelSelector />
   }
 )
 

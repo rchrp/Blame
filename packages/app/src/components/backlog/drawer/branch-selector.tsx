@@ -22,12 +22,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  selectorChevronClassName,
+  selectorSegmentClassName,
+} from "@/components/ui/selector-group"
 import { usePlatform, type GitBranchList } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { cn } from "@/lib/utils"
 
-const triggerClassName =
-  "h-8 w-44 justify-between gap-2 rounded-xl bg-muted/70 px-3 text-sm font-medium text-foreground shadow-none ring-0 transition-colors hover:bg-muted active:translate-y-0"
+const triggerClassName = cn(selectorSegmentClassName, "max-w-48")
 
 const directNote = "Direct runs in the project folder, on its current branch."
 
@@ -139,11 +142,11 @@ export function BranchSelectorView({
     return (
       <div
         aria-label={`Branch: ${label} (${directNote})`}
-        className={cn("flex items-center", triggerClassName, "hover:bg-muted/70")}
+        className={cn(triggerClassName, "hover:bg-muted/70 dark:hover:bg-muted/70")}
         title={directNote}
       >
         <BranchLabel label={label} />
-        <LockIcon className="size-3.5 shrink-0 opacity-70" />
+        <LockIcon className="size-3.5 shrink-0 text-muted-foreground" />
       </div>
     )
 
@@ -168,9 +171,9 @@ export function BranchSelectorView({
         >
           <BranchLabel label={label} loading={Boolean(tracking)} />
           {open ? (
-            <ChevronUpIcon className="size-4 shrink-0 opacity-70" />
+            <ChevronUpIcon className={selectorChevronClassName} />
           ) : (
-            <ChevronDownIcon className="size-4 shrink-0 opacity-70" />
+            <ChevronDownIcon className={selectorChevronClassName} />
           )}
         </Button>
       </PopoverTrigger>

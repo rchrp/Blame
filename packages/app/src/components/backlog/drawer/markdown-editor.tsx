@@ -1927,7 +1927,7 @@ export const MarkdownEditor = React.forwardRef<
                     onUndo={stableUndo}
                   />
                 </div>
-                <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
+                <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
                   {toolbarEnd}
                 </div>
               </div>

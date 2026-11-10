@@ -149,11 +149,7 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
               label: "your project",
             }}
             submitLabel="Send"
-            toolbarEnd={
-              <div className="w-44 max-w-full min-w-0 sm:w-[22rem]">
-                <ModelSelector role="agent" />
-              </div>
-            }
+            toolbarEnd={<ModelSelector role="agent" />}
           />
         </>
       }

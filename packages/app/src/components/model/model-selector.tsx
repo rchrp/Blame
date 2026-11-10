@@ -29,6 +29,11 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import {
+  SelectorGroup,
+  selectorChevronClassName,
+  selectorSegmentClassName,
+} from "@/components/ui/selector-group"
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -148,7 +153,7 @@ function ModelPicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
-        <div className="flex w-full min-w-0 items-center justify-end gap-2">
+        <SelectorGroup>
           <ModelPickerTrigger
             className={modelTriggerClassName}
             open={open}
@@ -156,7 +161,7 @@ function ModelPicker({
             onWheel={onWheel}
           />
           <ModelVariantSelector selection={selection} />
-        </div>
+        </SelectorGroup>
       </PopoverAnchor>
       <ModelPickerContent
         advanced={advanced}
@@ -192,19 +197,12 @@ function ModelPickerTrigger({
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className={cn(
-              "h-8 w-0 max-w-52 min-w-0 flex-1 justify-center rounded-xl border-0 bg-muted/70 px-3 shadow-none hover:bg-muted aria-expanded:bg-muted",
-              className
-            )}
+            className={cn(selectorSegmentClassName, "w-48 shrink", className)}
             disabled={!selection.serverReady || selection.loading}
             onWheel={onWheel}
           >
             <ModelSummary model={selection.currentModel} />
-            {open ? (
-              <ChevronUpIcon className="size-4 shrink-0 text-muted-foreground" />
-            ) : (
-              <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
-            )}
+            <PickerChevron open={open} />
           </Button>
         </PopoverTrigger>
       </TooltipTrigger>
@@ -1101,7 +1099,7 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <button
-              className="flex h-8 w-32 max-w-[38%] items-center justify-between gap-2 rounded-xl bg-muted/70 px-4 text-sm capitalize transition-colors hover:bg-muted"
+              className={cn(selectorSegmentClassName, "w-28 shrink-0 capitalize")}
               type="button"
               onWheel={onWheel}
             >
@@ -1144,7 +1142,7 @@ function ModelVariantContent({
       align="start"
       side="top"
       sideOffset={6}
-      className="w-[var(--radix-popover-trigger-width)] rounded-xl p-2"
+      className="w-[var(--radix-popover-trigger-width)] min-w-36 rounded-xl p-2"
     >
       <div className="space-y-0.5">
         {options.map((variant) => (
@@ -1167,23 +1165,23 @@ function ModelVariantContent({
 
 function PickerChevron({ open }: { open: boolean }) {
   return open ? (
-    <ChevronUpIcon className="size-4 shrink-0 text-muted-foreground" />
+    <ChevronUpIcon className={selectorChevronClassName} />
   ) : (
-    <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
+    <ChevronDownIcon className={selectorChevronClassName} />
   )
 }
 
 function ModelSummary({ model }: { model: SelectableModel | undefined }) {
   if (!model) {
     return (
-      <span className="min-w-0 flex-1 truncate text-center text-muted-foreground">
+      <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">
         Select model
       </span>
     )
   }
 
   return (
-    <span className="flex min-w-0 flex-1 items-center justify-center gap-2">
+    <span className="flex min-w-0 flex-1 items-center gap-2">
       <ProviderMark provider={model.provider} />
       <span className="min-w-0 truncate">{modelTriggerDisplayName(model)}</span>
     </span>

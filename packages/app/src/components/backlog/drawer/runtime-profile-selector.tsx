@@ -16,6 +16,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
+import {
+  selectorChevronClassName,
+  selectorSegmentClassName,
+} from "@/components/ui/selector-group"
 import { useCloudAuth } from "@/context/cloud-auth"
 import {
   openHostedServicesOffer,
@@ -43,8 +47,9 @@ type RuntimeOption = {
   label: string
   profile: StoryRunMode
   selectedClassName: string
+  // The trigger's tint and icon colour, at the same height as its neighbours.
   triggerClassName: string
-  triggerStyle?: React.CSSProperties
+  triggerIconClassName: string
 }
 
 const cloudGradient = {
@@ -64,8 +69,8 @@ const runtimeOptions = [
     profile: "vercel-compose",
     selectedClassName: "text-sky-600 dark:text-sky-300",
     triggerClassName:
-      "border-transparent bg-transparent text-foreground shadow-[0_0_0_1px_oklch(0.7_0.17_250_/_0.12),0_0_8px_oklch(0.65_0.2_250_/_0.12)] ring-1 ring-foreground/20 transition-[filter] duration-150 hover:brightness-105 focus-visible:ring-2 focus-visible:ring-sky-300/80",
-    triggerStyle: cloudGradient,
+      "bg-sky-500/10 hover:bg-sky-500/15 aria-expanded:bg-sky-500/15 dark:bg-sky-400/15 dark:hover:bg-sky-400/20",
+    triggerIconClassName: "text-sky-600 dark:text-sky-300",
   },
   {
     description: "Run the story in an isolated sandbox on this computer.",
@@ -76,7 +81,8 @@ const runtimeOptions = [
     profile: "local-container",
     selectedClassName: "text-primary dark:text-blue-300",
     triggerClassName:
-      "bg-primary/10 text-foreground shadow-none ring-1 ring-primary/30 transition-colors hover:bg-primary/15 dark:bg-primary/25 dark:ring-primary/60 dark:hover:bg-primary/35",
+      "bg-primary/10 hover:bg-primary/15 aria-expanded:bg-primary/15 dark:bg-primary/25 dark:hover:bg-primary/35",
+    triggerIconClassName: "text-primary dark:text-blue-300",
   },
   {
     description:
@@ -87,8 +93,8 @@ const runtimeOptions = [
     label: "Direct",
     profile: "direct",
     selectedClassName: "text-foreground",
-    triggerClassName:
-      "bg-muted/70 text-foreground shadow-none ring-0 transition-colors hover:bg-muted",
+    triggerClassName: "",
+    triggerIconClassName: "text-muted-foreground",
   },
 ] as const satisfies readonly RuntimeOption[]
 
@@ -156,26 +162,24 @@ export const RuntimeProfileSelector = React.memo(
             type="button"
             aria-label={`Preview runtime: ${selected.label}`}
             title={cloudFallback ? cloudFallbackNote : undefined}
-            className={cn(
-              "h-8 w-44 justify-between gap-2 rounded-xl px-3 text-sm font-medium active:translate-y-0",
-              selected.triggerClassName
-            )}
-            style={selected.triggerStyle}
+            className={cn(selectorSegmentClassName, selected.triggerClassName)}
           >
             <span className="flex min-w-0 items-center gap-2">
-              <SelectedIcon className="size-4 shrink-0" />
+              <SelectedIcon
+                className={cn("size-4 shrink-0", selected.triggerIconClassName)}
+              />
               <span className="truncate">{selected.label}</span>
               {cloudFallback && (
                 <CloudOffIcon
                   aria-label={cloudFallbackNote}
-                  className="size-3.5 shrink-0 opacity-70"
+                  className="size-3.5 shrink-0 text-muted-foreground"
                 />
               )}
             </span>
             {open ? (
-              <ChevronUpIcon className="size-4 shrink-0 opacity-70" />
+              <ChevronUpIcon className={selectorChevronClassName} />
             ) : (
-              <ChevronDownIcon className="size-4 shrink-0 opacity-70" />
+              <ChevronDownIcon className={selectorChevronClassName} />
             )}
           </Button>
         </PopoverTrigger>

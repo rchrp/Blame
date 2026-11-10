@@ -274,11 +274,7 @@ function PlanModeDialog({
               speechSessionKey="plan-mode"
               speechTarget={{ draftKey: "plan-mode", label: "your plan" }}
               submitLabel="Send"
-              toolbarEnd={
-                <div className="w-44 max-w-full min-w-0 sm:w-[22rem]">
-                  <ModelSelector role="agent" />
-                </div>
-              }
+              toolbarEnd={<ModelSelector role="agent" />}
             />
           </>
         }
