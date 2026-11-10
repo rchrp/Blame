@@ -55,7 +55,6 @@ import { useGitIdentity } from "@/context/git-identity"
 import {
   usePlatform,
   type BacklogStatusPipRequest,
-  type Platform,
 } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import {
@@ -100,6 +99,11 @@ import { useStoryPullRequest } from "./use-story-pull-request"
 import { useStoryPullRequestSync } from "./use-story-pull-request-sync"
 import { useStoryAgentStream } from "./use-story-agent-stream"
 import { finalizeStoppedRun } from "./story-agent-control"
+import {
+  replaceStoryAfterUndo,
+  restoreStoryCheckpoint,
+} from "./story-checkpoint-undo"
+import { currentDiffSummary, resumeAgentFeedback } from "./story-resume-feedback"
 import {
   useQueuedCommentDelivery,
   useStoryComments,
@@ -1246,46 +1250,6 @@ function storyStatusMap(stories: UserStory[]) {
   return new Map(stories.map((story) => [story.id, story.status]))
 }
 
-function replaceStoryAfterUndo(
-  story: UserStory,
-  storiesRef: { current: UserStory[] },
-  setDrawerTarget: React.Dispatch<
-    React.SetStateAction<DrawerTarget | undefined>
-  >
-) {
-  storiesRef.current = storiesRef.current.map((currentStory) =>
-    currentStory.id === story.id ? story : currentStory
-  )
-  setDrawerTarget((current) =>
-    current?.userStory?.id === story.id
-      ? { ...current, userStory: story }
-      : current
-  )
-}
-
-async function restoreStoryCheckpoint(
-  platform: Platform,
-  story: UserStory,
-  sessionId: string | null | undefined,
-  checkpointRunCount: number
-) {
-  if (!platform.agent)
-    throw new Error("Desktop agent runtime is not available.")
-  if (!sessionId) throw new Error("This message has no Cline session.")
-  if (!story.worktree)
-    throw new Error("This user story has no active worktree.")
-  return platform.agent.sessions.restoreCheckpoint({
-    checkpointRunCount,
-    cwd: story.worktree,
-    restore: {
-      messages: true,
-      omitCheckpointMessageFromSession: true,
-      workspace: true,
-    },
-    sessionId,
-  })
-}
-
 function detailedStory(
   story: UserStory,
   backlog: ReturnType<typeof useBacklogStore>
@@ -1343,39 +1307,3 @@ function clineLogPath(worktree: string, sessionId: string) {
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
 }
-
-function resumeAgentFeedback(story: UserStory, diffSummary: string) {
-  const details = [
-    story.agentSessionSummary
-      ? `Previous session summary:\n${story.agentSessionSummary}`
-      : "",
-    story.agentLastError ? `Previous agent error: ${story.agentLastError}` : "",
-    story.agentLastEvent ? `Last recorded event: ${story.agentLastEvent}` : "",
-    diffSummary,
-  ].filter(Boolean)
-  return [
-    "Resume the implementation from the existing worktree.",
-    "Inspect the current git diff first, keep the useful existing changes, and continue until the story is ready for review.",
-    ...details,
-  ].join("\n")
-}
-
-async function currentDiffSummary(story: UserStory, platform: Platform) {
-  if (!story.worktree || !platform.workspace) return ""
-  try {
-    const diff = await platform.workspace.gitDiff({ root: story.worktree })
-    return diffSummary(diff)
-  } catch {
-    return ""
-  }
-}
-
-function diffSummary(diff: string) {
-  const files = Array.from(diff.matchAll(/^diff --git a\/(.+?) b\/(.+)$/gm))
-    .map((match) => match[2])
-    .filter(Boolean)
-    .slice(0, 20)
-  if (files.length === 0) return "Current git diff: no local changes."
-  return `Current git diff files: ${files.join(", ")}.`
-}
-
