@@ -25,7 +25,7 @@ export const productSummary =
 
 const installCommands = [
   "- macOS: `brew install --cask rchrp/tap/blame`",
-  `- Windows: \`winget install Blame.Blame\` once the winget package is published (it is in review); until then, download the installer from ${absoluteSiteUrl("/download")}`,
+  `- Windows: the installer from ${absoluteSiteUrl("/download")}. A winget package is coming soon.`,
   "- Linux: the AppImage, `.deb`, or `.rpm` package from the download page. An AUR package is coming soon.",
 ].join("\n");
 

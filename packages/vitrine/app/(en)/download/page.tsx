@@ -95,9 +95,9 @@ export default async function DownloadPage() {
 const linkClassName =
   'text-white/86 underline decoration-white/24 underline-offset-4 transition hover:text-white hover:decoration-white/60'
 
-// Homebrew and winget. The winget package (Blame.Blame) is waiting for
-// Microsoft's review: once it is published
-// (https://github.com/microsoft/winget-pkgs/pull/468422), drop its note.
+// Homebrew only for now. The winget package (Blame.Blame) is waiting for
+// Microsoft's review: once it is merged
+// (https://github.com/microsoft/winget-pkgs/pull/468422), list its command.
 function CommandLineInstall() {
   return (
     <section
@@ -122,17 +122,9 @@ function CommandLineInstall() {
           </dd>
         </div>
         <div>
-          <dt className="text-xs font-medium text-white/52">Windows · winget</dt>
-          <dd className="mt-2">
-            <InstallCommand
-              platform="Windows"
-              command="winget install Blame.Blame"
-              showPlatform={false}
-            />
-            <p className="mt-2 text-xs leading-5 text-white/48">
-              The winget package is in review. Until Microsoft publishes it,
-              use the installer.
-            </p>
+          <dt className="text-xs font-medium text-white/52">Windows</dt>
+          <dd className="mt-2 text-sm leading-6 text-white/60">
+            Use the installer. A winget package is coming soon.
           </dd>
         </div>
         <div>

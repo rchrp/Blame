@@ -1,9 +1,9 @@
 ---
 title: Install
-description: Install Blame on macOS, Windows, or Linux, with a package manager or a direct download.
+description: Install Blame on macOS, Windows, or Linux, with a direct download or Homebrew.
 ---
 
-Blame is a desktop app for macOS, Windows, and Linux. Install it with your package manager, or download it from [blame.so/download](/download).
+Blame is a desktop app for macOS, Windows, and Linux. Download it from [blame.so/download](/download), or install it with Homebrew on macOS.
 
 ## macOS
 
@@ -20,11 +20,7 @@ Blame needs macOS 13 or later. The app is signed and notarized. On first launch,
 
 ## Windows
 
-```powershell
-winget install Blame.Blame
-```
-
-Or download the installer: [`blame-win-x64.exe`](https://download.blame.so/latest/blame-win-x64.exe).
+Download the installer: [`blame-win-x64.exe`](https://download.blame.so/latest/blame-win-x64.exe).
 
 Blame needs Windows 10 or 11 with WSL 2. It runs agents in its own WSL distribution. If WSL is not installed, run this in an administrator terminal, then restart:
 
@@ -33,6 +29,10 @@ wsl --install
 ```
 
 The installer is not code-signed yet (signing through SignPath Foundation is [planned](/code-signing-policy)), so SmartScreen may warn you: choose **More info → Run anyway**. The installer lets you turn off the update check at launch.
+
+<Callout title="winget">
+  A winget package (`Blame.Blame`) is coming soon: it waits for Microsoft to merge it. Until then, use the installer.
+</Callout>
 
 ## Linux
 
