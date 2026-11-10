@@ -9,6 +9,11 @@ import {
   subscriptionProviders,
 } from "@/components/model/model-selection"
 import { planUsageKey, planUsages } from "@/components/model/plan-usage-cache"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { cn } from "@/lib/utils"
 
@@ -84,32 +89,49 @@ export function usePlanUsage(
   }
 }
 
-/** One bar per plan window, each with its reset time. */
+/**
+ * One bar per plan window, each with its reset time. `inverted` is for a
+ * tooltip, whose colors are the page's swapped.
+ */
 export function PlanUsageBars({
   className,
+  inverted = false,
   usage,
 }: {
   className?: string
+  inverted?: boolean
   usage: SubscriptionUsage
 }) {
   return (
     <div className={cn("grid gap-2.5", className)}>
       {usage.windows.map((window) => (
-        <PlanUsageBar key={window.id} window={window} />
+        <PlanUsageBar key={window.id} inverted={inverted} window={window} />
       ))}
     </div>
   )
 }
 
-function PlanUsageBar({ window }: { window: SubscriptionUsageWindow }) {
+function PlanUsageBar({
+  inverted,
+  window,
+}: {
+  inverted: boolean
+  window: SubscriptionUsageWindow
+}) {
   const reset = resetText(window)
+  const muted = inverted ? "text-background/60" : "text-muted-foreground"
   return (
     <div className="grid gap-1">
       <div className="flex items-baseline justify-between gap-3 text-xs tabular-nums">
-        <span className="text-muted-foreground">{window.label}</span>
-        <span className="font-medium text-foreground">
+        <span className={muted}>{window.label}</span>
+        <span
+          className={cn(
+            "font-medium",
+            inverted ? "text-background" : "text-foreground"
+          )}
+        >
           {window.usedPercent}%{" "}
-          <span className="font-normal text-muted-foreground">used</span>
+          <span className={cn("font-normal", muted)}>used</span>
         </span>
       </div>
       <div
@@ -117,7 +139,10 @@ function PlanUsageBar({ window }: { window: SubscriptionUsageWindow }) {
         aria-valuemax={100}
         aria-valuemin={0}
         aria-valuenow={window.usedPercent}
-        className="h-1.5 overflow-hidden rounded-full bg-foreground/[0.08]"
+        className={cn(
+          "h-1.5 overflow-hidden rounded-full",
+          inverted ? "bg-background/15" : "bg-foreground/[0.08]"
+        )}
         role="progressbar"
       >
         <div
@@ -129,7 +154,7 @@ function PlanUsageBar({ window }: { window: SubscriptionUsageWindow }) {
         />
       </div>
       {reset ? (
-        <span className="text-[11px] text-muted-foreground">{reset}</span>
+        <span className={cn("text-[11px]", muted)}>{reset}</span>
       ) : null}
     </div>
   )
@@ -226,6 +251,41 @@ export function PlanUsagePercents({ usage }: { usage: SubscriptionUsage }) {
         </span>
       ))}
     </span>
+  )
+}
+
+/**
+ * The donut and its two percentages, with every window's bar and reset time
+ * on hover or focus. Needs a TooltipProvider above it.
+ */
+export function PlanUsageGlance({
+  className,
+  side = "bottom",
+  usage,
+}: {
+  className?: string
+  side?: React.ComponentProps<typeof TooltipContent>["side"]
+  usage: SubscriptionUsage
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          tabIndex={0}
+          aria-label={`Plan usage: ${planUsageSummary(usage)}`}
+          className={cn(
+            "flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+            className
+          )}
+        >
+          <PlanUsageDonut usage={usage} />
+          <PlanUsagePercents usage={usage} />
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="block w-56" side={side}>
+        <PlanUsageBars inverted usage={usage} />
+      </TooltipContent>
+    </Tooltip>
   )
 }
 

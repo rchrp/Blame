@@ -20,7 +20,7 @@ import {
   ProviderSelectDialog,
 } from "@/components/model/connect-provider-dialog"
 import { ModelSelector, ProviderMark } from "@/components/model/model-selector"
-import { PlanUsageBars, usePlanUsage } from "@/components/model/plan-usage"
+import { PlanUsageGlance, usePlanUsage } from "@/components/model/plan-usage"
 import { ModelProviderScope, type ModelSelection, useModelSelection } from "@/components/model/model-selection"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -569,58 +569,44 @@ function ProviderConnectionRow({
   selection: ModelSelection
 }) {
   const connectionCount = providerCredentialCount(selection, provider.id)
+  const plan = usePlanUsage(selection, provider.id)
+  const planType = plan.enabled ? plan.usage?.planType : undefined
 
   return (
-    <div className="border-b py-4 last:border-b-0">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <ProviderMark provider={provider} />
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium">{provider.name}</div>
-            <div className="truncate text-sm text-muted-foreground">
-              {providerConnectionLabel(connectionCount)}
-            </div>
+    <div className="flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex min-w-0 items-center gap-3">
+        <ProviderMark provider={provider} />
+        <div className="min-w-0">
+          <div className="truncate text-sm font-medium">{provider.name}</div>
+          <div className="truncate text-sm text-muted-foreground">
+            {providerConnectionLabel(connectionCount)}
+            {planType ? <span className="capitalize"> · {planType}</span> : null}
           </div>
         </div>
-        <Button type="button" variant="outline" size="sm" onClick={onManage}>
-          Manage
-        </Button>
+        {plan.enabled ? <ProviderPlanUsage plan={plan} /> : null}
       </div>
-      <ProviderPlanUsage providerId={provider.id} selection={selection} />
+      <Button type="button" variant="outline" size="sm" onClick={onManage}>
+        Manage
+      </Button>
     </div>
   )
 }
 
-// How much of a ChatGPT or Claude plan is left, under its connection.
-function ProviderPlanUsage({
-  providerId,
-  selection,
-}: {
-  providerId: string
-  selection: ModelSelection
-}) {
-  const { enabled, failed, usage } = usePlanUsage(selection, providerId)
-  if (!enabled) return null
+// How much of a ChatGPT or Claude plan is used, beside its provider's name.
+function ProviderPlanUsage({ plan }: { plan: ReturnType<typeof usePlanUsage> }) {
+  if (plan.usage)
+    return <PlanUsageGlance className="ml-3 shrink-0" usage={plan.usage} />
+  if (plan.failed || plan.usage === null)
+    return (
+      <span className="ml-3 shrink-0 text-xs text-muted-foreground">
+        Usage unavailable
+      </span>
+    )
   return (
-    <div className="mt-3 ml-8 grid gap-2.5 rounded-lg border bg-muted/30 p-3">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium">Plan usage</span>
-        {usage?.planType ? (
-          <span className="text-xs text-muted-foreground capitalize">
-            {usage.planType}
-          </span>
-        ) : null}
-      </div>
-      {usage ? (
-        <PlanUsageBars className="sm:grid-cols-2 sm:gap-x-6" usage={usage} />
-      ) : (
-        <span className="text-xs text-muted-foreground">
-          {failed || usage === null
-            ? "Plan usage isn't available right now."
-            : "Checking plan usage…"}
-        </span>
-      )}
-    </div>
+    <span
+      aria-label="Checking plan usage"
+      className="ml-3 size-7 shrink-0 animate-pulse rounded-full border-4 border-foreground/[0.09]"
+    />
   )
 }
 

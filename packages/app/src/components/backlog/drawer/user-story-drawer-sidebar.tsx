@@ -18,6 +18,7 @@ import { ProviderIcon } from "@/components/model/model-selector"
 import {
   PlanUsageBars,
   PlanUsageDonut,
+  PlanUsageGlance,
   PlanUsagePercents,
   planUsageSummary,
   usePlanUsage,
@@ -315,21 +316,7 @@ function PreparationStats({
     >
       {planUsage ? (
         <Pop className="flex shrink-0 items-center gap-2">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                tabIndex={0}
-                aria-label={`Plan usage: ${planUsageSummary(planUsage)}`}
-                className="flex items-center gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-              >
-                <PlanUsageDonut usage={planUsage} />
-                <PlanUsagePercents usage={planUsage} />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <PlanUsageBars usage={planUsage} />
-            </TooltipContent>
-          </Tooltip>
+          <PlanUsageGlance usage={planUsage} />
           <span aria-hidden className="mx-0.5 h-6 w-px shrink-0 bg-foreground/10" />
         </Pop>
       ) : null}
