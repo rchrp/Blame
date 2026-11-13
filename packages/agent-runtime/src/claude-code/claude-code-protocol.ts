@@ -293,7 +293,7 @@ function turnImages(message: AnthropicMessage): AnthropicBlock[] {
 export function systemPromptForClaudeCode(request: MessagesRequest) {
   const notes = request.tools?.length
     ? [
-        `- Your tools are served under the \`${bridgeToolPrefix}\` prefix. Tool names in these instructions refer to the same tools without that prefix.`,
+        `- Your tools are served under the \`${bridgeToolPrefix}\` prefix: always call them by that full name, such as \`${claudeCodeToolName(request.tools[0]!.name)}\`. A bare name such as \`${bridgeToolName(request.tools[0]!.name)}\` does not exist and the call fails. These instructions name the tools without the prefix.`,
         "- Any working directory, scratchpad or environment section added outside these instructions belongs to the process that relays your requests, not to the user's project. Work only on the workspace described above, through your tools.",
         "- There is no Bash, Grep, Glob or Read tool. `search_code` is the grep (ripgrep: text terms, regex, file lists, counts, context lines, pages) and `read_code` reads files, symbols and line ranges. Use them rather than grep, rg, cat or sed through `run_task`.",
         "- Call independent tools in parallel: put several tool calls in one response instead of one per turn.",
@@ -303,6 +303,11 @@ export function systemPromptForClaudeCode(request: MessagesRequest) {
         "- Any working directory, scratchpad or environment section added outside these instructions belongs to the process that relays your requests, not to the user's project. Ignore it.",
       ];
   return [systemText(request), "", "# Tool and environment notes", ...notes].join("\n");
+}
+
+/** The name Claude Code knows a Blame tool by. */
+export function claudeCodeToolName(name: string) {
+  return `${bridgeToolPrefix}${bridgeToolName(name)}`;
 }
 
 export function bridgeToolName(name: string) {
@@ -402,9 +407,11 @@ function transcriptEntry(message: AnthropicMessage) {
   for (const block of messageBlocks(message)) {
     if (block.type === "text" && typeof block.text === "string")
       lines.push(block.text);
+    // The full name: a long history of bare names led the model to call
+    // tools Claude Code does not have, which loses the lane.
     else if (block.type === "tool_use")
       lines.push(
-        `[tool call ${String(block.id)}: ${bridgeToolName(String(block.name))}] ${JSON.stringify(block.input ?? {})}`,
+        `[tool call ${String(block.id)}: ${claudeCodeToolName(String(block.name))}] ${JSON.stringify(block.input ?? {})}`,
       );
     else if (block.type === "tool_result")
       lines.push(

@@ -106,7 +106,7 @@ test("sends a new conversation natively and replays a longer one", () => {
   ]);
   assert.equal(replay.length, 1);
   const transcript = String(replay[0]!.text);
-  assert.match(transcript, /\[tool call t1: read_files\] \{"path":"a"\}/);
+  assert.match(transcript, /\[tool call t1: mcp__blame__read_files\] \{"path":"a"\}/);
   assert.match(transcript, /file body/);
   assert.match(transcript, /Continue the task from the last tool results/);
   assert.doesNotMatch(transcript, /images of the last message/);
@@ -298,6 +298,7 @@ test("Claude Code learns that Blame's tools replace its own shell and file tools
   assert.match(prompt, /^# Blame/u);
   assert.match(prompt, /`search_code` is the grep/u);
   assert.match(prompt, /several tool calls in one response/u);
+  assert.match(prompt, /always call them by that full name, such as `mcp__blame__read_code`/u);
 });
 
 test("workspace metadata in the prompt leaves out the commit hash so commits keep the prompt cache", () => {
