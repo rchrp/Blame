@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 
 import type { LegalDocument } from "@/content/legal-documents";
 import { isMarkdownPagePath, markdownUrlPath } from "@/lib/markdown-paths";
-import { absoluteSiteUrl } from "@/lib/site";
+import { absoluteSiteUrl, socialImagePath } from "@/lib/site";
 
-const socialImageUrl = absoluteSiteUrl("/social/blame-social-card.jpg");
+const socialImageUrl = absoluteSiteUrl(socialImagePath);
 const socialImageAlt =
   "Blame ADE, the open-source ADE for parallel agents: a backlog of stories and one story's live preview";
 

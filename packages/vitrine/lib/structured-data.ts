@@ -9,7 +9,7 @@ import {
 } from "@/content/legal-documents";
 import { githubReleasesUrl, githubRepositoryUrl } from "@/lib/github";
 import { publisher } from "@/lib/publisher";
-import { absoluteSiteUrl } from "@/lib/site";
+import { absoluteSiteUrl, socialImagePath } from "@/lib/site";
 
 // Schema.org data for search engines and AI agents. Every page's graph
 // describes the same publisher, website and application, under the same @id,
@@ -94,7 +94,7 @@ const softwareApplicationStructuredData = {
   downloadUrl: absoluteSiteUrl("/download"),
   installUrl: absoluteSiteUrl("/download"),
   releaseNotes: githubReleasesUrl,
-  image: absoluteSiteUrl("/social/blame-social-card.jpg"),
+  image: absoluteSiteUrl(socialImagePath),
   applicationCategory: "DeveloperApplication",
   applicationSubCategory: "Agentic Development Environment",
   license: licenseUrl,
