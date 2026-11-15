@@ -175,7 +175,9 @@ function serviceRunning(
 ) {
   return containers.some(
     (container) =>
-      container.service === service && container.status === "running",
+      container.service === service &&
+      // Paused: hibernated, and woken by its next use.
+      (container.status === "running" || container.status === "paused"),
   );
 }
 

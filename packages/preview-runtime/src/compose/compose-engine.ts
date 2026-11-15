@@ -296,11 +296,12 @@ export class ComposeEngine {
     );
     return plan.services.map(({ id }): ServiceState => {
       const matching = rows.filter(({ service }) => service === id);
-      const row =
-        matching.find(({ state }) => state === "running") ?? matching[0];
+      const row = matching.find(({ state }) => live(state)) ?? matching[0];
       return {
         id,
-        running: row?.state === "running",
+        // A paused container is a hibernated preview: its processes and
+        // ports stay, and it answers again once unpaused.
+        running: live(row?.state),
         healthy: row?.health ? row.health === "healthy" : undefined,
         health: row?.health,
         state: row?.state,
@@ -618,6 +619,10 @@ const healthLogScript = `
 ids="$(docker ps --all --quiet --no-trunc --filter "label=com.docker.compose.project=$1" --filter "label=com.docker.compose.service=$2")"
 [ -z "$ids" ] || docker inspect --format '{{if .State.Health}}{{range .State.Health.Log}}{{.Output}}{{end}}{{end}}' $ids
 `;
+
+function live(state: string | undefined) {
+  return state === "running" || state === "paused";
+}
 
 function parseContainerRows(value: string) {
   return value.split("\n").flatMap((line) => {
