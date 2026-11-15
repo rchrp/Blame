@@ -41,14 +41,11 @@ async function writeNet(root: string, pid: number, rows: string[]) {
 }
 
 function watch(root: string, ticks: number, pids: number[]) {
-  const child = spawn("sh", [
-    "-c",
-    watchScript,
+  const child = spawn(
     "sh",
-    root,
-    String(ticks),
-    ...pids.map(String),
-  ]);
+    ["-c", watchScript, "sh", root, String(ticks), ...pids.map(String)],
+    { env: { ...process.env, BLAME_WATCH_INTERVAL: "0.5" } },
+  );
   let stdout = "";
   child.stdout.setEncoding("utf8").on("data", (chunk) => (stdout += chunk));
   return new Promise<string>((resolve) =>
@@ -145,4 +142,19 @@ test("restarts a woken preview only when it cannot serve current code", () => {
     wakeRestartReason({ ...report, changed: 5000 }, 2) ?? "",
     /5000 files changed/,
   );
+});
+
+test("a watcher left behind ends once a newer one starts", async () => {
+  const root = await proc(9, [listening, idleSocket]);
+  try {
+    const started = Date.now();
+    const older = watch(root, 40, [9]);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const newer = watch(root, 1, [9]);
+    assert.equal(await older, "");
+    assert.ok(Date.now() - started < 5_000);
+    await newer;
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

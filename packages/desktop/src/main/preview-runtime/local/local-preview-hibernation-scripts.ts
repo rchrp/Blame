@@ -74,29 +74,48 @@ ids="$(docker ps -q --no-trunc --filter label=blame.preview --filter label=com.d
  * watch began (a new browser tab, a database client), or bytes it has not
  * read (a request on a kept-alive connection). It reads the container's
  * own network namespace, so ports published through docker-proxy, Lima,
- * WSL or iptables look the same. Arguments: proc root, ticks, pids.
- * A bounded life ends a watcher whose desktop went away.
+ * WSL or iptables look the same, within a second. Arguments: proc root,
+ * ticks (seconds), pids.
+ * It ends by itself after its ticks, once none of its containers is still
+ * frozen, or once a newer watcher started, so one left behind by a desktop
+ * that went away does not stay.
  */
 export const watchScript = `
 proc="$1"
 ticks="$2"
 shift 2
-exec awk -v proc="$proc" -v ticks="$ticks" -v pids="$*" '
-function scan(pid, first,   files, f, line, n, i, field, port, key, count, listen, rows) {
+owner="\${TMPDIR:-/tmp}/blame-hibernation-watcher"
+echo $$ >"$owner"
+exec awk -v proc="$proc" -v ticks="$ticks" -v interval="\${BLAME_WATCH_INTERVAL:-1}" -v pids="$*" -v self=$$ -v owner="$owner" '
+function frozen(pid,   line, path, state) {
+  if ((getline line < (proc "/" pid "/cgroup")) <= 0) return 1
+  close(proc "/" pid "/cgroup")
+  path = "/sys/fs/cgroup" substr(line, index(line, "::") + 2) "/cgroup.events"
+  state = 1
+  while ((getline line < path) > 0) if (line ~ /^frozen /) state = (line == "frozen 1")
+  close(path)
+  return state
+}
+function scan(pid, first,   f, file, line, n, i, field, port, key, count, listen, rows, readable) {
   split("", listen)
   count = 0
-  files[1] = proc "/" pid "/net/tcp"
-  files[2] = proc "/" pid "/net/tcp6"
+  readable = 0
   for (f = 1; f <= 2; f++) {
-    while ((getline line < files[f]) > 0) {
+    file = proc "/" pid "/net/" (f == 1 ? "tcp" : "tcp6")
+    # Each read walks the kernel connection table: after the first tick,
+    # read only the files where the container listens.
+    if (!first && !((pid SUBSEP f) in listens)) continue
+    while ((getline line < file) > 0) {
+      readable = 1
       n = split(line, field, " ")
       if (n < 5 || field[1] == "sl") continue
       split(field[2], port, ":")
-      if (field[4] == "0A") listen[port[2]] = 1
+      if (field[4] == "0A") { listen[port[2]] = 1; listens[pid, f] = 1 }
       else if (field[4] == "01" || field[4] == "03") rows[++count] = port[2] " " field[2] " " field[3] " " field[5]
     }
-    close(files[f])
+    close(file)
   }
+  if (!readable || (tick % 10 == 0 && !frozen(pid))) return 2
   for (i = 1; i <= count; i++) {
     split(rows[i], field, " ")
     if (!(field[1] in listen)) continue
@@ -110,11 +129,18 @@ function scan(pid, first,   files, f, line, n, i, field, port, key, count, liste
 BEGIN {
   total = split(pids, list, " ")
   for (tick = 0; tick < ticks; tick++) {
+    if ((getline current < owner) > 0 && current != self) exit
+    close(owner)
+    watched = 0
     for (i = 1; i <= total; i++) {
       if (list[i] in woke) continue
-      if (scan(list[i], tick == 0)) { woke[list[i]] = 1; print "wake " list[i]; fflush() }
+      result = scan(list[i], tick == 0)
+      if (result == 2) continue
+      watched++
+      if (result == 1) { woke[list[i]] = 1; print "wake " list[i]; fflush() }
     }
-    if (system("sleep 0.5") != 0) exit
+    if (!watched) exit
+    if (system("sleep " interval) != 0) exit
   }
 }'
 `;
