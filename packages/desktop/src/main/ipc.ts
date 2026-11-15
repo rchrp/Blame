@@ -13,6 +13,11 @@ import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
 import { registerPreviewDevtoolsSettingsIpcHandlers } from "./ipc/preview-devtools-settings-ipc";
+import { registerPreviewServingIpcHandlers } from "./ipc/preview-serving-ipc";
+import {
+  requestDevelopmentServing,
+  useServingAgentCheck,
+} from "./preview-runtime/local/local-preview-serving";
 import { registerAgentGithubAccessIpcHandlers } from "./ipc/agent-github-access-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
@@ -118,8 +123,14 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     packaged: options.packaged,
     previewService: previews,
     beforeDelivery: (worktree) => previews.syncBarrier(worktree),
-    beforeWorkspaceWrite: (worktree) => previews.syncBarrier(worktree),
+    beforeWorkspaceWrite: (worktree) => {
+      // A story that changes again needs its development server back.
+      void requestDevelopmentServing(worktree).catch(() => undefined);
+      return previews.syncBarrier(worktree);
+    },
   });
+  useServingAgentCheck(localAgentOwnsWorkspace);
+  registerPreviewServingIpcHandlers({ isAppWindow: options.isAppWindow });
   registerPreviewRuntimeIpcHandlers({
     isAppWindow: options.isAppWindow,
     service: previews,

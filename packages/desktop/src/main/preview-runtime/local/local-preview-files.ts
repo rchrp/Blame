@@ -8,6 +8,7 @@ import {
 import {
   compilePreviewManifest,
   type PreviewExecutionPlan,
+  type PreviewServing,
 } from "@blame/preview-runtime";
 import {
   initialPreviewRuntimeSelection,
@@ -178,9 +179,13 @@ export function writeLocalRuntimeState(
 // previews, so both accept, refuse and run a manifest the same way.
 export function compileLocalPreviewPlan(
   manifest: PreviewManifest,
+  serving?: PreviewServing,
 ): PreviewExecutionPlan {
   try {
-    return compilePreviewManifest(manifest);
+    return compilePreviewManifest(
+      manifest,
+      serving === "production" ? { serving } : {},
+    );
   } catch (error) {
     throw new LocalPreviewError(
       "preview_manifest_invalid",

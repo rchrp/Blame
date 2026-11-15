@@ -1,6 +1,9 @@
 import { localPreviewToolsPath } from "./local-preview-tools.ts";
 import { stopDevicesForWorktree } from "../../preview-devices/device-registry.ts";
-import type { PreviewExecutionPlan } from "@blame/preview-runtime";
+import type {
+  PreviewExecutionPlan,
+  PreviewServing,
+} from "@blame/preview-runtime";
 import type { ProjectRunConfiguration } from "@blame/agent-runtime";
 import {
   ComposeEngine,
@@ -58,6 +61,8 @@ export type LocalPreviewRunOptions = {
   timing?: (label: string, durationMs: number) => void;
   /** False once the preview should no longer start. */
   wanted?: () => Promise<boolean>;
+  /** Serves the declared production builds (see local-preview-serving). */
+  serving?: PreviewServing;
 };
 
 const phaseSteps: Record<EnginePhase, string | undefined> = {
@@ -74,6 +79,10 @@ let dockerHost: DockerHost = blameRuntimeDockerHost;
 /** Replaces the Blame Runtime with another Docker host, for tests. */
 export function useLocalDockerHost(host: DockerHost) {
   dockerHost = host;
+}
+
+export function localPreviewDockerHost() {
+  return dockerHost;
 }
 
 export function localPreviewEngine(
@@ -114,7 +123,10 @@ export type LocalPreviewContext = Awaited<
 >;
 
 /** The manifest, plan and selected run configuration of a worktree. */
-export async function localPreviewContext(worktree: string) {
+export async function localPreviewContext(
+  worktree: string,
+  serving?: PreviewServing,
+) {
   const manifest = await readLocalPreviewManifest(worktree);
   if (!manifest) {
     throw new LocalPreviewError(
@@ -126,7 +138,7 @@ export async function localPreviewContext(worktree: string) {
     readLocalRunConfigurations(worktree),
     readLocalRuntimeState(worktree),
   ]);
-  const plan = compileLocalPreviewPlan(manifest);
+  const plan = compileLocalPreviewPlan(manifest, serving);
   const selected = selectedPreviewRunConfiguration(configurations, state);
   return { manifest, plan, configurations, state, selected };
 }
@@ -170,7 +182,7 @@ export async function startLocalPreview(
   worktree: string,
   options: LocalPreviewRunOptions = {},
 ) {
-  const context = await localPreviewContext(worktree);
+  const context = await localPreviewContext(worktree, options.serving);
   const engine = localPreviewEngine(worktree, options);
   const serviceIds = selectedServiceIds(context);
   const ownPorts = await runningPorts(engine, context.plan);
@@ -225,6 +237,22 @@ export async function startLocalPreview(
     exec: (serviceId, command) => engine.execInService(serviceId, command),
   });
   return url;
+}
+
+/** Renders a worktree's plan as a start would, without starting it. */
+export async function renderLocalPreviewForStart(
+  worktree: string,
+  context: LocalPreviewContext,
+) {
+  return renderLocalPreview({
+    worktree,
+    plan: context.plan,
+    selected: context.selected,
+    ownPorts: await runningPorts(localPreviewEngine(worktree), context.plan),
+    hostGateway: await currentHostGateway(),
+    databaseMode: await readLocalDatabaseMode(worktree),
+    tunedDependencies: await localTunedDependencies(worktree, context.plan),
+  });
 }
 
 /**
