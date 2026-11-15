@@ -1767,8 +1767,12 @@ async function hibernateIdleProjectPreview(worktree: string) {
 export function startIdlePreviewSuspension() {
   configureLocalPreviewHibernation({
     log: (worktree, line) => void appendRecoveryLog(worktree, line),
-    restart: (worktree) =>
-      controlProjectPreview({ action: "restart", worktree }),
+    // Only a preview still wanted: a stop may have overtaken a hibernation.
+    restart: async (worktree) => {
+      const { desiredStatus } = await readPreviewRuntimeFileState(worktree);
+      if (desiredStatus === "running")
+        await controlProjectPreview({ action: "restart", worktree });
+    },
   });
   startIdlePreviewSweeper({
     runningWorktrees: async () => {
