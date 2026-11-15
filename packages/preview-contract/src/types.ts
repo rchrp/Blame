@@ -70,6 +70,18 @@ export type PreviewManifestBinding = {
   path?: string;
 };
 
+/**
+ * How a service serves a production build, for stories in review: an
+ * optional build command run once per source revision, then the command
+ * that serves its output. Both run in the service's container, working
+ * directory and environment, with `environment` layered on top.
+ */
+export type PreviewManifestProduction = {
+  build?: string;
+  command: string;
+  environment?: PreviewManifestEnvironment;
+};
+
 export type PreviewManifestService = {
   id: string;
   kind: PreviewManifestServiceKind;
@@ -83,6 +95,7 @@ export type PreviewManifestService = {
   endpoints: PreviewManifestEndpoint[];
   bindings?: PreviewManifestBinding[];
   surface?: PreviewManifestSurface;
+  production?: PreviewManifestProduction;
 };
 
 export type PreviewManifestProbeTarget = {

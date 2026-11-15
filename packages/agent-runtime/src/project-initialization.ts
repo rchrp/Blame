@@ -140,6 +140,21 @@ export const projectInitializationResultSchema = {
                 additionalProperties: { type: "string" },
               },
               dependsOn: { type: "array", items: { type: "string" } },
+              production: {
+                type: "object",
+                description:
+                  "Optional production build and serve commands, used while the story is in review.",
+                additionalProperties: false,
+                required: ["command"],
+                properties: {
+                  build: { type: "string" },
+                  command: { type: "string" },
+                  environment: {
+                    type: "object",
+                    additionalProperties: { type: "string" },
+                  },
+                },
+              },
               surface: {
                 type: "object",
                 additionalProperties: false,

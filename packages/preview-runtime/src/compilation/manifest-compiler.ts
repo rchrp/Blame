@@ -24,9 +24,18 @@ import {
   type EnvironmentPlanEntry,
 } from "../domain/environment-plan.js";
 import { displaySurfaceServices } from "./display-surface.js";
+import {
+  productionService,
+  type PreviewServing,
+} from "./production-serving.js";
 
 export type ManifestCompilerOptions = {
   displayImage?: string;
+  /**
+   * `production` serves the services' declared builds (review mode). The
+   * default plan, the one cloud previews hash, never contains them.
+   */
+  serving?: PreviewServing;
   gatewayPortStart?: number;
   compatibilityHints?: Array<
     | {
@@ -60,7 +69,11 @@ export function compilePreviewManifest(
   }
   const serviceIds = new Set(manifest.services.map(({ id }) => id));
   const services = manifest.services.flatMap((service) => {
-    const compiled = compileService(service, serviceIds);
+    const development = compileService(service, serviceIds);
+    const compiled =
+      options.serving === "production"
+        ? productionService(service, development)
+        : development;
     return service.surface?.type === "display"
       ? displaySurfaceServices(compiled, service.surface, options.displayImage)
       : [compiled];
@@ -143,6 +156,9 @@ export function compilePreviewManifest(
   return {
     version: terminal || display ? 3 : 2,
     ...(terminal ? { tools: { ttyd: true as const } } : {}),
+    ...(options.serving === "production"
+      ? { serving: "production" as const }
+      : {}),
     workspaceRoot: "/workspace",
     setup: orderedSetupTasks(manifest).map((task) => ({
       id: task.id,
