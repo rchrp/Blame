@@ -35,6 +35,10 @@ import {
 } from "./local-preview-render.ts";
 import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
 import { queueDependencyInstall } from "./local-preview-install-queue.ts";
+import {
+  prepareColdStart,
+  type ColdStart,
+} from "./local-preview-cold-start.ts";
 import { localPreviewHostGateway } from "../../preview-environment/host-gateway.ts";
 import { environmentPreflightFailure } from "../../preview-environment/environment-preflight.ts";
 
@@ -75,6 +79,7 @@ export function useLocalDockerHost(host: DockerHost) {
 export function localPreviewEngine(
   worktree: string,
   options: LocalPreviewRunOptions = {},
+  coldStart?: { current?: ColdStart },
 ) {
   return new ComposeEngine({
     host: dockerHost,
@@ -87,6 +92,7 @@ export function localPreviewEngine(
       if (setup) options.step?.(`Running setup task ${setup[1]}`);
     },
     measure: async (phase, action) => {
+      if (phase === "services.start") await coldStart?.current?.enter();
       const step = phaseSteps[phase];
       if (step) options.step?.(step);
       const measured = async () => {
@@ -166,8 +172,21 @@ export async function startLocalPreview(
   worktree: string,
   options: LocalPreviewRunOptions = {},
 ) {
+  const coldStart: { current?: ColdStart } = {};
+  try {
+    return await startSelectedServices(worktree, options, coldStart);
+  } finally {
+    coldStart.current?.end();
+  }
+}
+
+async function startSelectedServices(
+  worktree: string,
+  options: LocalPreviewRunOptions,
+  coldStart: { current?: ColdStart },
+) {
   const context = await localPreviewContext(worktree);
-  const engine = localPreviewEngine(worktree, options);
+  const engine = localPreviewEngine(worktree, options, coldStart);
   const serviceIds = selectedServiceIds(context);
   const ownPorts = await runningPorts(engine, context.plan);
   const local = await renderLocalPreview({
@@ -198,6 +217,18 @@ export async function startLocalPreview(
   await engine.prepare(local.rendered, local.owner);
   if (!(await wanted(options))) return undefined;
   await stopOtherServices(engine, context.plan, serviceIds);
+  coldStart.current = await prepareColdStart({
+    host: dockerHost,
+    worktree,
+    plan: context.plan,
+    serviceIds,
+    dependencyKey: local.dependencyKey,
+    owner: local.owner,
+    running: await selectedRunning(engine, context.plan, serviceIds),
+    log: options.log,
+    step: options.step,
+    timing: options.timing,
+  });
   await engine.start(context.plan, serviceIds, {
     lockfiles: async () => local.dependencyKey,
   });
@@ -213,6 +244,7 @@ export async function startLocalPreview(
     ? previewUrl(context, local.hostPorts)
     : undefined;
   if (url) await waitForAnswer(engine, context.plan, serviceIds, url, options);
+  coldStart.current?.answered();
   await runFunctionalProbes({
     plan: context.plan,
     serviceIds,
@@ -432,6 +464,15 @@ async function runningPorts(engine: ComposeEngine, plan: PreviewExecutionPlan) {
       )
       .map(([, { port }]) => port),
   );
+}
+
+async function selectedRunning(
+  engine: ComposeEngine,
+  plan: PreviewExecutionPlan,
+  serviceIds: string[],
+) {
+  const states = await engine.inspect(plan).catch(() => []);
+  return states.some(({ id, running }) => running && serviceIds.includes(id));
 }
 
 async function stopOtherServices(
