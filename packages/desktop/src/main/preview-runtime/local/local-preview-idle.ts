@@ -1,13 +1,20 @@
-// Stops local previews nobody uses, so a forgotten dev server does not
-// keep its memory and file watchers. A preview is in use while the user
-// views it, while an agent session runs in its worktree, and for a while
-// after either last touched it. Opening it in the app or an agent's
-// preview tool starts it again; the setup is done, so that takes seconds.
+// Puts local previews nobody uses to sleep, in two steps. After a few
+// minutes without use a preview hibernates: its containers are paused and
+// their memory evicted, and its next use wakes it in a second or two (see
+// local-preview-hibernation.ts). After a couple of hours it is stopped, which
+// also frees its swap and file watchers; opening it starts it again, which
+// takes seconds since the setup is done. Use is a state read from a visible
+// window, an agent's preview tool, the in-app browser, a surface, or a
+// client connecting to its port. An agent coding in the worktree does not
+// keep its preview awake (it wakes on the agent's next look), but keeps it
+// from being stopped: the user usually reviews it once the agent is done.
 
-export const previewIdleTimeoutMs = 20 * 60_000;
+export const previewHibernateAfterMs = 5 * 60_000;
+export const previewIdleTimeoutMs = 2 * 60 * 60_000;
 const sweepIntervalMs = 60_000;
 
 const lastUse = new Map<string, number>();
+const lastAgentWork = new Map<string, number>();
 let agentWorksIn: (worktree: string) => boolean = () => false;
 let sweeper: NodeJS.Timeout | undefined;
 
@@ -22,8 +29,8 @@ export function useAgentWorkspaceCheck(check: (worktree: string) => boolean) {
 }
 
 /**
- * The running previews to stop: unused for the timeout, counted from their
- * last use or, for those already running, from when Blame started.
+ * The running previews unused for the timeout, counted from their last
+ * use or, for those already running, from when Blame started.
  */
 export function idlePreviewWorktrees(input: {
   running: string[];
@@ -41,8 +48,49 @@ export function idlePreviewWorktrees(input: {
   });
 }
 
+/** What the sweep does to each running preview. */
+export function idlePreviewActions(input: {
+  running: string[];
+  hibernated: (worktree: string) => boolean;
+  agentWorksIn: (worktree: string) => boolean;
+  lastUse: ReadonlyMap<string, number>;
+  lastAgentWork: ReadonlyMap<string, number>;
+  since: number;
+  now: number;
+}) {
+  const stop = idlePreviewWorktrees({
+    running: input.running,
+    busy: input.agentWorksIn,
+    lastUse: new Map(
+      input.running.map((worktree) => [
+        worktree,
+        Math.max(
+          input.lastUse.get(worktree) ?? 0,
+          input.lastAgentWork.get(worktree) ?? 0,
+        ),
+      ]),
+    ),
+    since: input.since,
+    now: input.now,
+    timeoutMs: previewIdleTimeoutMs,
+  });
+  const hibernate = idlePreviewWorktrees({
+    running: input.running.filter(
+      (worktree) => !stop.includes(worktree) && !input.hibernated(worktree),
+    ),
+    busy: () => false,
+    lastUse: input.lastUse,
+    since: input.since,
+    now: input.now,
+    timeoutMs: previewHibernateAfterMs,
+  });
+  return { hibernate, stop };
+}
+
 export function startIdlePreviewSweeper(dependencies: {
   runningWorktrees: () => Promise<string[]>;
+  hibernated: (worktree: string) => boolean;
+  hibernate: (worktree: string) => Promise<unknown>;
   suspend: (worktree: string) => Promise<unknown>;
 }) {
   if (sweeper) return;
@@ -63,20 +111,26 @@ async function sweep(
   sweeping = true;
   try {
     const running = await dependencies.runningWorktrees().catch(() => []);
-    // An agent at work keeps its preview in use, and for the timeout after.
+    const now = Date.now();
     for (const worktree of running) {
-      if (agentWorksIn(worktree)) recordPreviewUse(worktree);
+      if (agentWorksIn(worktree)) lastAgentWork.set(worktree, now);
     }
-    const idle = idlePreviewWorktrees({
+    const { hibernate, stop } = idlePreviewActions({
       running,
-      busy: agentWorksIn,
+      hibernated: dependencies.hibernated,
+      agentWorksIn,
       lastUse,
+      lastAgentWork,
       since,
-      now: Date.now(),
+      now,
     });
-    for (const worktree of idle) {
+    for (const worktree of stop) {
       await dependencies.suspend(worktree).catch(() => undefined);
       lastUse.delete(worktree);
+      lastAgentWork.delete(worktree);
+    }
+    for (const worktree of hibernate) {
+      await dependencies.hibernate(worktree).catch(() => undefined);
     }
   } finally {
     sweeping = false;

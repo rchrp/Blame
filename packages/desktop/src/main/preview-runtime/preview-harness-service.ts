@@ -21,7 +21,7 @@ import {
   projectPreviewLifecycleState,
 } from "../workspace-ipc.ts";
 import type { PreviewService } from "./preview-service.ts";
-import { recordPreviewUse } from "./local/local-preview-idle.ts";
+import { ensureLocalPreviewAwake } from "./local/local-preview-hibernation.ts";
 import { resolveWorkspacePath as resolveRuntimePath } from "../workspace-runtime.ts";
 
 export type PreviewHarnessInput = {
@@ -63,9 +63,13 @@ export class PreviewHarnessService {
   }
 
   async inspect(input: PreviewHarnessInput) {
-    // An agent inspecting the preview keeps it from being stopped as unused.
+    // An agent inspecting the preview keeps it in use, and wakes it from
+    // hibernation before any tool reads or drives it.
     if (input.worktree && input.workspaceMode !== "cloud-mirror") {
-      recordPreviewUse(resolveRuntimePath(input.worktree));
+      await ensureLocalPreviewAwake(
+        resolveRuntimePath(input.worktree),
+        "an agent preview tool",
+      );
     }
     const [lifecycle, revisions] = await Promise.all([
       this.lifecycle(input),

@@ -1,3 +1,7 @@
+import {
+  ensureLocalPreviewAwake,
+  localPreviewHibernated,
+} from "../preview-runtime/local/local-preview-hibernation.ts";
 import { emulatePreviewDevice } from "./device-emulation";
 import { coverPreviewPage } from "./preview-reveal";
 import { surfaceEnabled } from "../preview-surfaces/experimental-surfaces";
@@ -249,6 +253,9 @@ export async function createPreviewBrowser(
           view.webContents.session,
           () => options.bridgeGrant!(bridgeSource),
           bridgeSource.kind,
+          bridgeSource.kind === "local"
+            ? wakeOnRequest(bridgeSource.worktree)
+            : undefined,
         )
       : undefined;
   if (bridge) {
@@ -290,6 +297,17 @@ export async function createPreviewBrowser(
   attachPreviewBrowserEvents(record);
   owner.once("closed", ownerClosed);
   return { id };
+}
+
+// A request from the page wakes a hibernated preview; it does not count as
+// use by itself, since a hidden page may keep polling.
+function wakeOnRequest(worktree: string) {
+  return () =>
+    localPreviewHibernated(worktree)
+      ? ensureLocalPreviewAwake(worktree, "the in-app browser", {
+          recordUse: false,
+        })
+      : Promise.resolve();
 }
 
 function previewBridgeSource(input: {

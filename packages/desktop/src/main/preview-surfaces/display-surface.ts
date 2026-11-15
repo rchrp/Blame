@@ -6,6 +6,7 @@ import {
   localPreviewContext,
   localPreviewEngine,
 } from "../preview-runtime/local/local-preview-runner.ts";
+import { ensureLocalPreviewAwake } from "../preview-runtime/local/local-preview-hibernation.ts";
 import type { PreviewService } from "../preview-runtime/preview-service.ts";
 import type { SurfaceScope } from "./surface-upstream.ts";
 import { surfaceEnabled } from "./experimental-surfaces.ts";
@@ -35,6 +36,7 @@ export async function displaySurfaceAction(
       status: "unavailable",
       message: "The preview workspace is unavailable.",
     };
+  await ensureLocalPreviewAwake(scope.worktree, "a screen action");
   const context = await localPreviewContext(scope.worktree);
   const service = context.plan.services.find((s) => s.id === scope.serviceId);
   if (

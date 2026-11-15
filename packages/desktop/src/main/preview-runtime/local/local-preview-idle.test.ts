@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { idlePreviewWorktrees } from "./local-preview-idle.ts";
+import {
+  idlePreviewActions,
+  idlePreviewWorktrees,
+} from "./local-preview-idle.ts";
 
 const minute = 60_000;
 
@@ -37,4 +40,44 @@ test("counts a preview already running from when Blame started", () => {
     }),
     [],
   );
+});
+
+test("hibernates after a few minutes, stops after hours", () => {
+  const now = 1_000 * minute;
+  const lastUse = new Map([
+    ["/w/viewed", now - 2 * minute],
+    ["/w/idle", now - 6 * minute],
+    ["/w/asleep", now - 30 * minute],
+    ["/w/forgotten", now - 180 * minute],
+  ]);
+  assert.deepEqual(
+    idlePreviewActions({
+      running: ["/w/viewed", "/w/idle", "/w/asleep", "/w/forgotten"],
+      hibernated: (worktree) => worktree === "/w/asleep",
+      agentWorksIn: () => false,
+      lastUse,
+      lastAgentWork: new Map(),
+      since: 0,
+      now,
+    }),
+    { hibernate: ["/w/idle"], stop: ["/w/forgotten"] },
+  );
+});
+
+test("an agent at work lets its preview hibernate but not stop", () => {
+  const now = 1_000 * minute;
+  const actions = (agentWorksIn: boolean, agentWorkedAgo: number) =>
+    idlePreviewActions({
+      running: ["/w/story"],
+      hibernated: () => false,
+      agentWorksIn: () => agentWorksIn,
+      lastUse: new Map([["/w/story", now - 300 * minute]]),
+      lastAgentWork: new Map([["/w/story", now - agentWorkedAgo * minute]]),
+      since: 0,
+      now,
+    });
+  assert.deepEqual(actions(true, 0), { hibernate: ["/w/story"], stop: [] });
+  // The user reviews it once the agent is done: hibernated, not stopped.
+  assert.deepEqual(actions(false, 30), { hibernate: ["/w/story"], stop: [] });
+  assert.deepEqual(actions(false, 150), { hibernate: [], stop: ["/w/story"] });
 });

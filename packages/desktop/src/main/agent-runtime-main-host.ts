@@ -1,3 +1,4 @@
+import { ensureLocalPreviewAwake } from "./preview-runtime/local/local-preview-hibernation.ts";
 import { hostGitCommand } from "./host-git.ts";
 import { agentSurfaceInfo, agentSurfaceCall } from "./preview-surfaces/surface-agent.ts";
 import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
@@ -56,6 +57,7 @@ async function handleAgentHostRequest(
   devtools: PreviewDevtoolsMcpService,
   previews: PreviewService,
 ) {
+  await wakeAgentPreview(method, input);
   if (method === "previewSurfaceInfo") return agentSurfaceInfo(input as never, previews);
   if (method === "previewSurfaceCall") return agentSurfaceCall(input as never, previews, signal);
   if (method === 'renderWebPage') {
@@ -106,6 +108,18 @@ async function handleAgentHostRequest(
     return componentPreviewHostRequest(input, signal, previews);
   }
   throw new Error(`Unsupported agent host method: ${method}`);
+}
+
+// A surface or component preview of a hibernated local preview wakes it and
+// waits until it answers; the devtools and log tools wake it through the
+// harness.
+async function wakeAgentPreview(method: AgentHostMethod, input: unknown) {
+  if (method !== "previewSurfaceCall" && method !== "componentPreview") return;
+  const request = recordInput(input);
+  const worktree = optionalText(request.worktree);
+  if (!worktree || request.action === "stop") return;
+  if (request.workspaceMode === "cloud-mirror" || request.workspaceMode === "direct") return;
+  await ensureLocalPreviewAwake(worktree, `the agent's ${method}`);
 }
 
 // The agent process removes a temporary copy itself once its scan is done.
