@@ -3,7 +3,7 @@ import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime"
 // Each read of a local preview's state runs a few dozen commands in Blame
 // Runtime. Read it often while it changes, rarely once it has settled. The
 // desktop also counts each read from a visible window as use of the preview,
-// which keeps it from being suspended after 20 idle minutes.
+// which keeps it awake and wakes it if it hibernates.
 export const previewRuntimeChangingPollMs = 2_000
 export const previewRuntimeSettledPollMs = 10_000
 export const previewRuntimeHiddenPollMs = 60_000
