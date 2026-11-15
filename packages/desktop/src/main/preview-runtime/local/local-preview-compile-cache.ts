@@ -177,6 +177,8 @@ export type CompileCacheCapture = {
    * restored or created at start is not worth a snapshot yet.
    */
   writtenAfter?: number;
+  /** How long to wait for that write to start; a small app never writes. */
+  writeWaitSeconds?: number;
 };
 
 /**
@@ -212,6 +214,7 @@ export async function captureCompileCache(
       String(quiet),
       String(timeout),
       String(options.writtenAfter ?? 0),
+      String(options.writeWaitSeconds ?? timeout),
       ...target.directories,
     ],
     { timeoutMs: (timeout + 300) * 1_000 },
@@ -304,7 +307,7 @@ echo "seeded $(( $(date +%s) - $(stat -c %Y "$snap") ))"
 // listing before and after the copy.
 const captureScript = `
 set -u
-quiet="$1"; timeout="$2"; since="$3"; shift 3
+quiet="$1"; timeout="$2"; since="$3"; wait_write="$4"; shift 4
 now() { date +%s; }
 if ! mkdir /c/.capturing 2>/dev/null; then
   [ $(( $(now) - $(stat -c %Y /c/.capturing) )) -gt 600 ] || { echo busy; exit 0; }
@@ -315,12 +318,13 @@ listing() {
   for d; do [ -d "/w/$d" ] && find "/w/$d" -exec stat -c '%n %s %Y %Z %i' {} +; done | sort
 }
 newest() { listing "$@" | awk '{ if ($3 > m) m = $3; if ($4 > m) m = $4 } END { print m + 0 }'; }
-deadline=$(( $(now) + timeout ))
+deadline=$(( $(now) + timeout )); write_deadline=$(( $(now) + wait_write ))
 while :; do
   [ "$(now)" -le "$deadline" ] || { echo "source not written or never quiet"; exit 0; }
   before="$(listing "$@")"
   [ -n "$before" ] || { echo "nothing to capture"; exit 0; }
   latest="$(newest "$@")"
+  [ "$latest" -ge "$since" ] || [ "$(now)" -le "$write_deadline" ] || { echo "source not written"; exit 0; }
   if [ "$latest" -lt "$since" ] || [ $(( $(now) - latest )) -lt "$quiet" ]; then sleep 2; continue; fi
   tmp="/c/.incoming-$$"; rm -rf "$tmp"; mkdir -p "$tmp"
   ok=1
