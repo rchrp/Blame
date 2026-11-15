@@ -46,6 +46,9 @@ export type ColdStartInput = {
   queue?: CompileQueue;
 };
 
+/** How long a cold start keeps its turn after its first page at most. */
+const coldTurnAfterAnswerMs = 30_000;
+
 let queueHost: DockerHost | undefined;
 const sharedQueue = createCompileQueue({
   availableMemory: () =>
@@ -129,13 +132,21 @@ function coldStart(
       if (handedOff) return;
       handedOff = true;
       if (!capture) return finish();
-      void captureCompileCache(input.host, target)
+      // The compiler writes its cache once idle, the peak of a cold start:
+      // the turn lasts until the snapshot, or a while if it never writes.
+      const writtenAfter = Math.floor(Date.now() / 1_000);
+      const holdLimit = setTimeout(finish, coldTurnAfterAnswerMs);
+      holdLimit.unref?.();
+      void captureCompileCache(input.host, target, { writtenAfter })
         .then((captured) => {
           if (captured)
             input.log?.("Saved the compile cache for the next stories.\n");
         })
         .catch(() => undefined)
-        .finally(finish);
+        .finally(() => {
+          clearTimeout(holdLimit);
+          finish();
+        });
     },
     end() {
       if (!handedOff) finish();

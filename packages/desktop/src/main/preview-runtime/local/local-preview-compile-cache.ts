@@ -171,6 +171,12 @@ export type CompileCacheCapture = {
   quietSeconds?: number;
   /** How long to wait for a quiet source before giving up. */
   timeoutSeconds?: number;
+  /**
+   * Epoch seconds the cache must have been written after: a compiler
+   * writes its cache some seconds after it went idle, and the cache it
+   * restored or created at start is not worth a snapshot yet.
+   */
+  writtenAfter?: number;
 };
 
 /**
@@ -188,7 +194,7 @@ export async function captureCompileCache(
     return false;
   const volume = compileCacheVolume(target.dependencyKey);
   const quiet = options.quietSeconds ?? 5;
-  const timeout = options.timeoutSeconds ?? 90;
+  const timeout = options.timeoutSeconds ?? 120;
   const created = await host.run("sh", [
     "-c",
     createVolumeScript,
@@ -205,6 +211,7 @@ export async function captureCompileCache(
       "sh",
       String(quiet),
       String(timeout),
+      String(options.writtenAfter ?? 0),
       ...target.directories,
     ],
     { timeoutMs: (timeout + 300) * 1_000 },
@@ -292,11 +299,12 @@ echo "seeded $(( $(date +%s) - $(stat -c %Y "$snap") ))"
 `;
 
 // One capture at a time per snapshot (a lock directory, stale after ten
-// minutes). The source must be quiet: no entry changed in the last
-// \`quiet\` seconds, and the same listing before and after the copy.
+// minutes). The source must have been written after \`since\`, then be
+// quiet: no entry changed in the last \`quiet\` seconds, and the same
+// listing before and after the copy.
 const captureScript = `
 set -u
-quiet="$1"; timeout="$2"; shift 2
+quiet="$1"; timeout="$2"; since="$3"; shift 3
 now() { date +%s; }
 if ! mkdir /c/.capturing 2>/dev/null; then
   [ $(( $(now) - $(stat -c %Y /c/.capturing) )) -gt 600 ] || { echo busy; exit 0; }
@@ -309,10 +317,11 @@ listing() {
 newest() { listing "$@" | awk '{ if ($3 > m) m = $3; if ($4 > m) m = $4 } END { print m + 0 }'; }
 deadline=$(( $(now) + timeout ))
 while :; do
-  [ "$(now)" -le "$deadline" ] || { echo "source never quiet"; exit 0; }
+  [ "$(now)" -le "$deadline" ] || { echo "source not written or never quiet"; exit 0; }
   before="$(listing "$@")"
   [ -n "$before" ] || { echo "nothing to capture"; exit 0; }
-  if [ $(( $(now) - $(newest "$@") )) -lt "$quiet" ]; then sleep 2; continue; fi
+  latest="$(newest "$@")"
+  if [ "$latest" -lt "$since" ] || [ $(( $(now) - latest )) -lt "$quiet" ]; then sleep 2; continue; fi
   tmp="/c/.incoming-$$"; rm -rf "$tmp"; mkdir -p "$tmp"
   ok=1
   for d; do

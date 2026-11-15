@@ -201,6 +201,15 @@ test("does not capture a cache its compiler keeps writing", async (t) => {
     (await inBusybox(root, `cat "/r/fresh/${cache}/v16/CURRENT"`)).trim(),
     "first",
   );
+  // Quiet, but not written since the start: not a snapshot yet.
+  assert.equal(
+    await captureCompileCache(host, target("busy"), {
+      quietSeconds: 2,
+      timeoutSeconds: 4,
+      writtenAfter: Math.floor(Date.now() / 1_000) + 60,
+    }),
+    false,
+  );
   // Quiet again, it becomes the snapshot.
   assert.equal(
     await captureCompileCache(host, target("busy"), {
