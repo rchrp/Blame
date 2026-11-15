@@ -64,7 +64,8 @@ function fakeHost(wakeOutput = "running\t2\nqueue\t16384\nchanged\t3\n") {
           stderr: "",
         };
       }
-      if (name === "wake") return { exitCode: 0, stdout: wakeOutput, stderr: "" };
+      if (name === "wake")
+        return { exitCode: 0, stdout: wakeOutput, stderr: "" };
       return { exitCode: 0, stdout: "", stderr: "" };
     },
     async readFile(path) {
@@ -99,7 +100,11 @@ test("hibernates a preview and wakes it on its next use", async () => {
   const { calls, logs, watchers } = setup();
   const root = await worktree();
   await ensureLocalPreviewAwake(root, "nothing to wake");
-  assert.equal(calls.length, 0);
+  // Only the one-time look for previews an earlier Blame left paused.
+  assert.deepEqual(
+    calls.map(({ script }) => script),
+    ["other"],
+  );
   assert.deepEqual(await hibernateLocalPreview(root), {
     before: 1_000_000_000,
     after: 18_000_000,
@@ -109,10 +114,11 @@ test("hibernates a preview and wakes it on its next use", async () => {
   assert.deepEqual(watchers[0]?.args.slice(2), ["101", "102"]);
   await ensureLocalPreviewAwake(root, "a screenshot");
   assert.equal(localPreviewHibernated(root), false);
-  assert.deepEqual(
-    calls.filter(({ script }) => script === "wake")[0]?.args,
-    ["blame_0123456789ab", "/tmp/blame-hibernation-blame_0123456789ab", root],
-  );
+  assert.deepEqual(calls.filter(({ script }) => script === "wake")[0]?.args, [
+    "blame_0123456789ab",
+    "/tmp/blame-hibernation-blame_0123456789ab",
+    root,
+  ]);
   assert.match(logs[1]!, /woken for a screenshot .*3 files changed/);
 });
 

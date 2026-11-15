@@ -70,6 +70,8 @@ export async function ensureLocalPreviewAwake(
 ) {
   const worktree = resolveWorkspacePath(worktreeInput);
   if (options.recordUse !== false) recordPreviewUse(worktree);
+  // Right after Blame started, a paused preview may not be known yet.
+  if (!adopted) await adoptPausedLocalPreviews();
   if (!hibernations.has(worktree) && !queues.has(worktree)) return;
   await serialized(worktree, () => wake(worktree, reason));
 }
@@ -130,9 +132,18 @@ export async function releaseLocalPreviewHibernation(worktree: string) {
  * on Linux it quit while Docker kept running), so their next use wakes them.
  */
 let adopted = false;
+let adoption: Promise<void> | undefined;
+let lastAdoptionAttempt = 0;
 
-export async function adoptPausedLocalPreviews() {
-  if (adopted) return;
+/** Tries until it succeeds, at most every 10 seconds; then never again. */
+export function adoptPausedLocalPreviews() {
+  if (adopted || Date.now() - lastAdoptionAttempt < 10_000) return adoption;
+  lastAdoptionAttempt = Date.now();
+  adoption = adoptNow().finally(() => (adoption = undefined));
+  return adoption;
+}
+
+async function adoptNow() {
   const result = await localDockerHost()
     .run("sh", ["-c", pausedPreviewsScript], { timeoutMs: 30_000 })
     .catch(() => undefined);
@@ -241,7 +252,7 @@ function delay(milliseconds: number) {
 }
 
 // One watcher for every hibernated preview, restarted when the set changes.
-const watcherTicks = 1_200;
+const watcherTicks = 600;
 let watcher: { key: string; controller: AbortController } | undefined;
 let watcherRetry: NodeJS.Timeout | undefined;
 

@@ -597,8 +597,8 @@ export function currentHostGateway() {
   ).catch(() => undefined);
 }
 
-// Docker stops a paused container only once its grace period ran out:
-// unpause it first, so the stop is as quick as a running one's.
+// A stopped or removed preview no longer hibernates: forget it, and unpause
+// its containers (Docker would too, after delivering the stop signal).
 async function releaseHibernation(worktree: string) {
   const { releaseLocalPreviewHibernation } =
     await import("./local-preview-hibernation.ts");
