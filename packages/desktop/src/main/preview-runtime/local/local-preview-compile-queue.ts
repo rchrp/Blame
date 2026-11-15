@@ -2,19 +2,20 @@
 // memory peak of a preview: measured on Next.js 16.4 Turbopack in a 4 GiB
 // Blame Runtime (2026-11-15), one cold start peaks at 3.1 GiB while it
 // writes its cache, a seeded one at 1.6 GiB, and three cold starts at once
-// pushed 3 GiB into swap and cost half as much CPU again. Starts that
+// pushed 3 GiB into swap, and two seeded ones still swapped. Starts that
 // compile take turns: one runs whenever none does, and another joins only
 // while the Runtime's available memory covers every running estimate plus
-// its own. Warm restarts never wait here.
+// its own, so a 4 GiB Runtime compiles one at a time and a larger one
+// several seeded starts. Warm restarts never wait here.
 
 export type CompileStartKind = "cold" | "seeded";
 
 const gib = 1024 * 1024 * 1024;
 
-/** Expected memory peak of a compiling start, from the measurements above. */
+/** Memory peak of a compiling start: the measured peaks, plus a margin. */
 export const compileStartEstimates: Record<CompileStartKind, number> = {
-  cold: 3 * gib,
-  seeded: 1.5 * gib,
+  cold: 3.25 * gib,
+  seeded: 1.75 * gib,
 };
 
 export type CompileQueueOptions = {

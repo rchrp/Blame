@@ -225,7 +225,7 @@ test("does not capture a cache its compiler keeps writing", async (t) => {
   );
 });
 
-test("keeps the published snapshot and the previous one only", async (t) => {
+test("keeps the published snapshot only", async (t) => {
   if (!docker) return t.skip("Docker is not available");
   await writeQuietCache("third", "third");
   assert.equal(
@@ -238,7 +238,7 @@ test("keeps the published snapshot and the previous one only", async (t) => {
     volume,
   );
   const [current, ...lines] = listing.trim().split("\n");
-  assert.equal(lines.filter((line) => line.startsWith("snapshot-")).length, 2);
+  assert.equal(lines.filter((line) => line.startsWith("snapshot-")).length, 1);
   assert.ok(lines.includes(current!));
   assert.ok(!lines.some((line) => line.startsWith(".incoming")));
 });

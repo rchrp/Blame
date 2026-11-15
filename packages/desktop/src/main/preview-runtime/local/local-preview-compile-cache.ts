@@ -335,12 +335,11 @@ while :; do
 done
 name="snapshot-$(now)-$$"
 mv "$tmp" "/c/$name" && touch "/c/$name" || exit 1
-previous="$(cat /c/current 2>/dev/null || true)"
 echo "$name" > /c/.current-$$ && mv /c/.current-$$ /c/current || exit 1
-# Keep the previous snapshot for a seed that may still read it.
+# One snapshot per key. A seed still reading an old one fails and removes
+# its partial copy: that story starts cold.
 for old in /c/snapshot-*; do
-  base="\${old##*/}"
-  [ "$base" = "$name" ] || [ "$base" = "$previous" ] || rm -rf "$old"
+  [ "\${old##*/}" = "$name" ] || rm -rf "$old"
 done
 echo captured
 `;

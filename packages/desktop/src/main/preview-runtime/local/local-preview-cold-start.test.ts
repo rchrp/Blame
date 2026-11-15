@@ -165,3 +165,31 @@ test("a snapshot older than the refresh period is taken again", async () => {
   await new Promise((resolve) => setTimeout(resolve, 10));
   assert.deepEqual(calls, ["presence", "seed", "volume", "capture"]);
 });
+
+test("a cold start that waited seeds from the snapshot the first one left", async () => {
+  const captured = deferred();
+  const { host, calls } = fakeHost({
+    presence: "none",
+    captured: captured.promise,
+  });
+  const { input, logs } = inputFor(host);
+  const first = await prepareColdStart(input);
+  await first!.enter();
+  const second = await prepareColdStart({ ...input, worktree: "/w2" });
+  assert.equal(second?.kind, "cold");
+  const entered = second!.enter();
+  await new Promise((resolve) => setImmediate(resolve));
+  // The first start's capture publishes a snapshot.
+  first!.answered();
+  await new Promise((resolve) => setImmediate(resolve));
+  const presence = fakeHost({ presence: "snapshot", seed: "seeded 5" });
+  input.host.run = presence.host.run;
+  captured.resolve();
+  await entered;
+  assert.match(logs.join(""), /Seeded the compile cache .*0 min old/);
+  // Its cache is fresh: it is not taken again.
+  second!.answered();
+  assert.equal(calls.filter((call) => call === "capture").length, 1);
+  assert.deepEqual(presence.calls, ["presence", "seed"]);
+  second!.end();
+});

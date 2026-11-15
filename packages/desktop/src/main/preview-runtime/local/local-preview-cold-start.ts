@@ -2,6 +2,7 @@ import type { PreviewExecutionPlan } from "@blame/preview-runtime";
 import type { DockerHost } from "@blame/preview-runtime/compose";
 import {
   captureCompileCache,
+  type CompileCacheSeed,
   compileCacheDirectories,
   compileCacheRefreshSeconds,
   seedCompileCache,
@@ -72,37 +73,46 @@ export async function prepareColdStart(
     directories,
     owner: input.owner,
   };
+  const seeded = await seedFor(input, target);
+  if (seeded.state === "warm") return undefined;
+  if (!input.queue) queueHost = input.host;
+  return coldStart(input, target, seeded);
+}
+
+async function seedFor(input: ColdStartInput, target: CompileCacheTarget) {
   const startedAt = Date.now();
-  const seed = await seedCompileCache(input.host, target).catch(
-    (error: unknown) => ({
-      state: "cold" as const,
+  const result = await seedCompileCache(input.host, target).catch(
+    (error: unknown): CompileCacheSeed => ({
+      state: "cold",
       reason: error instanceof Error ? error.message : String(error),
     }),
   );
   input.timing?.("compile-cache.seed", Date.now() - startedAt);
-  if (seed.state === "warm") return undefined;
-  if (seed.state === "seeded")
+  if (result.state === "seeded")
     input.log?.(
-      `Seeded the compile cache from another story's (${Math.round(seed.snapshotAgeSeconds / 60)} min old).\n`,
+      `Seeded the compile cache from another story's (${Math.round(result.snapshotAgeSeconds / 60)} min old).\n`,
     );
-  else
-    input.log?.(
-      `No compile cache to reuse (${seed.reason}): the first pages compile everything.\n`,
-    );
-  const kind: CompileStartKind = seed.state === "seeded" ? "seeded" : "cold";
-  const capture =
-    seed.state === "cold" ||
-    seed.snapshotAgeSeconds > compileCacheRefreshSeconds;
-  if (!input.queue) queueHost = input.host;
-  return coldStart(input, target, kind, capture);
+  else if (result.state === "cold")
+    input.log?.(`No compile cache to reuse yet (${result.reason}).\n`);
+  return result;
+}
+
+// A fresh snapshot is kept; a missing or old one is taken from this start.
+function needsCapture(seeded: CompileCacheSeed) {
+  return (
+    seeded.state === "cold" ||
+    (seeded.state === "seeded" &&
+      seeded.snapshotAgeSeconds > compileCacheRefreshSeconds)
+  );
 }
 
 function coldStart(
   input: ColdStartInput,
   target: CompileCacheTarget,
-  kind: CompileStartKind,
-  capture: boolean,
+  seeded: CompileCacheSeed,
 ): ColdStart {
+  const kind: CompileStartKind = seeded.state === "seeded" ? "seeded" : "cold";
+  let capture = needsCapture(seeded);
   const queue = input.queue ?? sharedQueue;
   let leave: (() => void) | undefined;
   let handedOff = false;
@@ -119,14 +129,18 @@ function coldStart(
     async enter() {
       if (leave || ended) return;
       const askedAt = Date.now();
-      leave = await queue.enter(kind, () =>
-        input.step?.("Waiting for another preview to compile"),
-      );
+      let waited = false;
+      leave = await queue.enter(kind, () => {
+        waited = true;
+        input.step?.("Waiting for another preview to compile");
+      });
       // Dropped while it waited: give the turn back at once.
       if (ended) return leave();
       enteredAt = Date.now();
-      if (enteredAt - askedAt > 1_000)
-        input.timing?.("compile.wait", enteredAt - askedAt);
+      if (!waited) return;
+      input.timing?.("compile.wait", enteredAt - askedAt);
+      // The start it waited for may have left a snapshot to seed from.
+      if (kind === "cold") capture = needsCapture(await seedFor(input, target));
     },
     answered() {
       if (handedOff) return;
