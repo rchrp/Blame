@@ -46,6 +46,12 @@ export type LocalComposeTarget = {
   extraHosts?: Record<string, string>;
   /** Native Linux keeps downloaded tools in the desktop user's data folder. */
   toolsPath?: string;
+  /**
+   * Dependencies that get development settings (see dependency-tuning.ts).
+   * A container created before them keeps its settings: recreating a
+   * database reruns the setup tasks that seeded it.
+   */
+  tunedDependencies?: string[];
 };
 
 export type ComposeTarget = SandboxComposeTarget | LocalComposeTarget;

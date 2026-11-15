@@ -16,7 +16,11 @@ import {
   selectedPreviewRunConfiguration,
   shouldStartBrowserPreview,
 } from "../../preview-run-state.ts";
-import { previewFailureLogExcerpt } from "../../preview-readiness.ts";
+import {
+  previewComposeProjectName,
+  previewFailureLogExcerpt,
+} from "../../preview-readiness.ts";
+import { tunedDependencies } from "./local-preview-dependency-tuning.ts";
 import { rm } from "../../workspace-runtime.ts";
 import {
   compileLocalPreviewPlan,
@@ -177,6 +181,7 @@ export async function startLocalPreview(
     ownPorts,
     hostGateway: await currentHostGateway(),
     databaseMode: await readLocalDatabaseMode(worktree),
+    tunedDependencies: await localTunedDependencies(worktree, context.plan),
   });
   logEnvironment(local.environment, options);
   const missing = environmentPreflightFailure(local.environment, serviceIds);
@@ -239,6 +244,7 @@ export async function prefetchLocalPreview(
     ownPorts: await runningPorts(engine, context.plan),
     hostGateway: await currentHostGateway(),
     databaseMode: await readLocalDatabaseMode(worktree),
+    tunedDependencies: await localTunedDependencies(worktree, context.plan),
   });
   await engine.prepare(local.rendered, local.owner);
   await engine.prefetch(context.plan, {
@@ -589,6 +595,14 @@ export function currentHostGateway() {
   return localPreviewHostGateway((command, args) =>
     dockerHost.run(command, args, { timeoutMs: 15_000 }),
   ).catch(() => undefined);
+}
+
+function localTunedDependencies(worktree: string, plan: PreviewExecutionPlan) {
+  return tunedDependencies(
+    dockerHost,
+    previewComposeProjectName(worktree),
+    plan,
+  );
 }
 
 async function wanted(options: LocalPreviewRunOptions) {

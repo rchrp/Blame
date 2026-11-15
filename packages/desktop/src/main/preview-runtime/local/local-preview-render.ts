@@ -65,6 +65,8 @@ export async function renderLocalPreview(input: {
   ownPorts?: ReadonlySet<number>;
   databaseMode?: PreviewDatabaseMode | null;
   hostGateway?: PreviewHostGateway;
+  /** Dependencies that get development settings; see the renderer. */
+  tunedDependencies?: string[];
 }) {
   const { worktree, plan } = input;
   const databaseMode = previewDatabaseMode(plan, input.databaseMode);
@@ -85,6 +87,7 @@ export async function renderLocalPreview(input: {
     dependencyKey,
     toolsPath: localPreviewToolsPath(),
     extraHosts: previewExtraHosts(input.hostGateway),
+    tunedDependencies: input.tunedDependencies,
   };
   const draft = renderCompose(plan, target);
   const origin = previewOrigin(plan, hostPorts, input.selected);

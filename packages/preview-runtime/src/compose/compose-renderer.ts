@@ -19,6 +19,11 @@ import {
   type EngineVolume,
   type MountedVolume,
 } from "./compose-target.js";
+import {
+  dependencyTuning,
+  dependencyTuningLabel,
+  dependencyTuningVersion,
+} from "./dependency-tuning.js";
 
 // The one translation of an execution plan into a Compose project, for local
 // and cloud previews alike. Setup tasks become one-shot services in the
@@ -158,20 +163,29 @@ function setupService(task: SetupTaskPlan, context: RenderContext) {
 function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
   const anchor = context.anchors.get(service.id);
   const sharesLoopback = Boolean(anchor && anchor !== service.id);
+  const tuning =
+    context.target.kind === "local" &&
+    context.target.tunedDependencies?.includes(service.id)
+      ? dependencyTuning(service)
+      : undefined;
+  const environment = serviceEnvironment(
+    environmentFile(service.id, context.target)
+      ? { ...service, environment: {} }
+      : service,
+    context,
+  );
+  const labels = context.target.serviceLabels?.[service.id];
   return container(context, {
     ...containerSource(service.container, service.id, context.target),
     entrypoint: service.entrypoint,
-    command: service.command ? shellCommand(service.command) : undefined,
+    command:
+      tuning?.command ??
+      (service.command ? shellCommand(service.command) : undefined),
     working_dir:
       service.kind === "dependency" && !service.command
         ? undefined
         : service.workingDir,
-    environment: serviceEnvironment(
-      environmentFile(service.id, context.target)
-        ? { ...service, environment: {} }
-        : service,
-      context,
-    ),
+    environment: { ...environment, ...tuning?.environment },
     env_file: environmentFile(service.id, context.target),
     depends_on: dependencyConditions(
       [...service.dependsOn, ...(sharesLoopback ? [anchor!] : [])],
@@ -216,7 +230,9 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
     restart: context.target.kind === "sandbox" ? "unless-stopped" : "no",
     // A changed label recreates the container, as a changed environment
     // does: env files are mounted, so their content is hashed here.
-    labels: context.target.serviceLabels?.[service.id],
+    labels: tuning
+      ? { ...labels, [dependencyTuningLabel]: dependencyTuningVersion }
+      : labels,
   });
 }
 
