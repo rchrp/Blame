@@ -3,9 +3,10 @@ import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
 
 // Keeps the Blame Runtime small. A preview's containers, network and own
 // volumes go with its worktree; shared node_modules volumes go once no
-// worktree uses them; images built over two weeks ago that no container
-// uses are pruned. Database volumes of existing worktrees are never
-// touched. The desktop never runs this while a preview starts.
+// worktree uses them, and the compile cache snapshots of their dependency
+// key with them; images built over two weeks ago that no container uses
+// are pruned. Database volumes of existing worktrees are never touched.
+// The desktop never runs this while a preview starts.
 
 /** Removes everything Docker keeps for one preview project. */
 export async function removePreviewProject(
@@ -103,6 +104,11 @@ referenced="$(for root in "$@"; do
 done | xargs -r cat 2>/dev/null | sed -n 's/^ *name: \\(blame_node_modules_[A-Za-z0-9_]*\\)$/\\1/p' | sort -u)"
 for volume in $(docker volume ls -q --filter dangling=true --filter name=blame_node_modules_); do
   printf '%s\\n' "$referenced" | grep -qx "$volume" || docker volume rm "$volume" >/dev/null 2>&1 || true
+done
+# A compile cache snapshot goes with the last node_modules volume of its key.
+for volume in $(docker volume ls -q --filter dangling=true --filter name=blame_compile_cache_); do
+  key="\${volume#blame_compile_cache_}"
+  docker volume ls -q --filter "name=blame_node_modules_\${key}" | grep -q . || docker volume rm "$volume" >/dev/null 2>&1 || true
 done
 docker image prune -f >/dev/null 2>&1 || true
 docker image prune -af --filter until=336h >/dev/null 2>&1 || true
