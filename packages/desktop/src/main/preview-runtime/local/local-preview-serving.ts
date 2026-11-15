@@ -8,7 +8,7 @@ import { ComposeEngine } from "@blame/preview-runtime/compose";
 import { parse as parseYaml } from "yaml";
 import {
   joinWorkspacePath,
-  mkdir,
+  pathExists,
   readFile,
   run,
   writeFileAtomic,
@@ -171,19 +171,20 @@ export async function reviewBuild(
   if (!inReview(worktree, now) || !(await reviewBuildsEnabled(worktree)))
     return "development";
   const state = await readServingState(worktree);
-  const revision = await sourceRevision(worktree);
   if (state.mode === "production") {
     // The source changed under the build: serve it in development again,
     // and build that revision on a later pass.
-    if (state.revision === revision) return "production";
+    if (state.revision === (await sourceRevision(worktree)))
+      return "production";
     await deps.restart(worktree);
     return "development";
   }
-  if (state.failed === revision) return "development";
   const context = await localPreviewContext(worktree, "production");
   const services = productionServices(context);
-  if (!services.length || !(await allRunning(worktree, context, services)))
-    return "development";
+  if (!services.length) return "development";
+  const revision = await sourceRevision(worktree);
+  if (state.failed === revision) return "development";
+  if (!(await allRunning(worktree, context, services))) return "development";
   const render = await renderLocalPreviewForStart(worktree, context);
   const target = {
     context,
@@ -403,8 +404,10 @@ export async function readServingState(
   }
 }
 
+// Only next to the engine's own state: a worktree removed meanwhile, such
+// as during a build, is not brought back.
 async function writeServingState(worktree: string, state: ServingState) {
-  await mkdir(localPreviewPaths(worktree).engineState);
+  if (!(await pathExists(localPreviewPaths(worktree).engineState))) return;
   await writeFileAtomic(
     servingStatePath(worktree),
     `${JSON.stringify(state, null, 2)}\n`,
