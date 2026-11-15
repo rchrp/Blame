@@ -182,6 +182,70 @@ are recreated once on their next start.
   need one mount; putting the virtual store outside the project breaks
   Vite and Turbopack, and a per-install store loses the shared cache.
 
+#### Cold starts (2026-11-15)
+
+A dev server compiles at its first requests, node_modules included, and
+writes its cache some seconds after it goes idle: that write is the
+memory peak of a preview. `local/local-preview-cold-start.ts` drives two
+measures, only for a start whose selected services are not running and
+whose worktree has no compiler cache yet (warm restarts and woken
+previews skip both):
+
+- **Seeded cache** (`local-preview-compile-cache.ts`). Compiler caches
+  are found from the services' package dependencies; today only
+  Turbopack (`next` → `.next/dev/cache/turbopack`, `.next/cache/turbopack`).
+  An empty cache is filled from the snapshot of its dependency key (same
+  manifests, so same compiler and node_modules), a volume
+  `blame_compile_cache_<key>` that holds one snapshot and goes with the
+  key's last node_modules volume. Only the compiler's own cache is copied,
+  never its output: Turbopack checks sources, config and environment
+  against what it restores. A snapshot is taken from a cold start (or one
+  seeded from a snapshot over 6 h old) once its compiler wrote the cache
+  after the first page and nothing changed for 5 s, with the same listing
+  before and after the copy. Copies run in a busybox container through
+  the Docker host, with no provisioning change.
+- **Compile turns** (`local-preview-compile-queue.ts`). A start waits for
+  a turn right before `up` ("Waiting for another preview to compile").
+  One start always runs; another joins while the host's `MemAvailable`
+  covers every running estimate plus its own (cold 3.25 GiB, seeded 1.75
+  GiB: the measured peaks plus a margin), so a 4 GiB Runtime compiles one
+  at a time. A seeded start ends its turn at its first page; a cold one
+  when its cache became the snapshot (or 30 s after its first page if the
+  compiler never writes, at most 3 min). A cold start that waited seeds
+  again once admitted. Dependency installs keep their own queue.
+
+Measured in a throwaway VM (runtime image v13, 6 vCPU, 4 GiB, swapfile;
+`next dev` 16.4.6 Turbopack, a 9-page app with heavy client components;
+the Mac under load from other VMs, so CPU times are noisy):
+
+| One story | CPU s | cgroup peak | first page |
+|---|---|---|---|
+| cold, pages + cache write | 57–77 | 2.9–3.1 GiB | 7–14 s |
+| seeded from a snapshot | 11–15 | 1.5–1.6 GiB | 4.6 s |
+
+| Three new stories at once | CPU s (total) | VM swap peak | all first pages | all settled |
+|---|---|---|---|---|
+| before (6 runs) | 146–350 | 2.4–3.4 GiB | 11–17 s | > 210 s: two never wrote their cache |
+| after, no snapshot (3 runs) | 70–103 | 3–409 MiB | 36–51 s | 37–53 s |
+| after, snapshot present | 39 | 1.2 GiB¹ | 21 s | 24 s |
+
+¹ three previews running in 4 GiB: the earlier ones are swapped out once
+started, not during compilation (each container's swap peak stays under
+0.6 GiB).
+
+- Exactness: `local-preview-compile-cache-next.test.ts`
+  (`BLAME_COMPILE_CACHE_E2E=1`, optional `BLAME_TEST_DOCKER_PREFIX`) runs
+  a real `next dev`: a seeded story serves its changed, added and deleted
+  pages, module, client component, CSS, `next.config` and environment, in
+  both directions, and raw copies taken while Turbopack writes leave their
+  stories correct (Turbopack commits through `CURRENT`).
+- Turbopack writes its cache only once it compiled enough (9 pages did,
+  3 did not): a story whose first page is all it ever serves leaves no
+  snapshot, and the next ones start cold in turn.
+- Not seeded: Next's webpack cache (no gain measured, even on a story's
+  own restart: 35–38 CPU s), Vite (its dependency cache is in the shared
+  node_modules). Nuxt, SvelteKit and Astro were not measured.
+
 ## Phase 2: one compose renderer (original proposal)
 
 Medium risk: it changes how local compose files are produced.
