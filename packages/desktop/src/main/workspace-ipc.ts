@@ -115,9 +115,12 @@ import {
   type LocalPreviewInspection,
   prefetchLocalPreview,
   removeLocalPreview,
-  startLocalPreview,
   stopLocalPreview,
 } from "./preview-runtime/local/local-preview-runner.ts";
+import {
+  startLocalPreviewServing,
+  startReviewBuildSweeper,
+} from "./preview-runtime/local/local-preview-serving.ts";
 import { prepareStoryEnvFiles } from "./preview-environment/env-file-sources.ts";
 import { forgetStoryVariables } from "./preview-environment/variables-store.ts";
 import {
@@ -1152,7 +1155,7 @@ async function startProjectComposeOperation(
     stalePreviewSetupReason(worktree, await readLocalPreviewManifest(worktree)),
   );
   try {
-    const previewUrl = await startLocalPreview(worktree, {
+    const previewUrl = await startLocalPreviewServing(worktree, {
       log: options.output ?? ((chunk) => appendRunLog(worktree, chunk)),
       step: (step) => void recordPreviewStartStep(worktree, step),
       timing: (label, durationMs) =>
@@ -1782,6 +1785,12 @@ export function startIdlePreviewSuspension() {
     hibernated: localPreviewHibernated,
     hibernate: hibernateIdleProjectPreview,
     suspend: suspendIdleProjectPreview,
+  });
+  // Stories in review serve a production build where the manifest has one.
+  startReviewBuildSweeper({
+    runningWorktrees: () => runningPreviewWorktrees(),
+    restart: (worktree) => startProjectCompose(worktree),
+    log: appendRunLog,
   });
 }
 

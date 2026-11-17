@@ -15,6 +15,7 @@ import type {
 } from "./types.js";
 import { previewEnvironmentValueRejection } from "./environment-security.js";
 import { parseSurface, validateSurfaces } from "./parser-surfaces.js";
+import { parseProduction, validateProduction } from "./parser-production.js";
 import { parseDevices, validateDevices } from "./parser-devices.js";
 
 const serviceKinds = new Set<PreviewManifestServiceKind>([
@@ -199,6 +200,7 @@ function parseService(value: unknown): PreviewManifestService {
     "endpoints",
     "bindings",
     "surface",
+    "production",
   ]);
   return {
     id: requiredString(value.id, "service.id"),
@@ -215,6 +217,14 @@ function parseService(value: unknown): PreviewManifestService {
     ...(value.surface === undefined
       ? {}
       : { surface: parseSurface(value.surface) }),
+    ...(value.production === undefined
+      ? {}
+      : {
+          production: parseProduction(value.production, {
+            environment: parseEnvironment,
+            command: validateCommand,
+          }),
+        }),
   };
 }
 
@@ -612,6 +622,7 @@ function validateService(
   if (service.command)
     validateCommand(service.command, `service ${service.id}`);
   validatePreviewService(service);
+  validateProduction(service);
   validateDependencies(service.dependsOn, knownIds, `service ${service.id}`);
 }
 

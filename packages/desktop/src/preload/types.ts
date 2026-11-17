@@ -69,6 +69,7 @@ import type {
   McpServersClient,
   PreviewDevtoolsSettingsClient,
   PreviewEnvironmentClient,
+  PreviewServingSettingsClient,
 } from "@blame/app";
 import type { IssueReport, RuntimeProgress } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
@@ -335,6 +336,7 @@ export type BlameDesktopApi = {
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
   previewDevtools: PreviewDevtoolsSettingsClient;
+  previewServing: PreviewServingSettingsClient;
   agentGithubAccess: AgentGithubAccessClient;
   previewEnvironment: PreviewEnvironmentClient;
   previewBrowser: {

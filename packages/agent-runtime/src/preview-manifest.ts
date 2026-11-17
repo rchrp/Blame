@@ -482,6 +482,21 @@ function normalizeService(
       caches,
     ),
     dependsOn: uniqueStrings(service.dependsOn ?? []),
+    ...(service.production
+      ? {
+          production: {
+            ...service.production,
+            ...(service.production.build
+              ? {
+                  build: commandWithLocalCorepackShims(
+                    service.production.build,
+                  ),
+                }
+              : {}),
+            command: commandWithLocalCorepackShims(service.production.command),
+          },
+        }
+      : {}),
   };
 }
 

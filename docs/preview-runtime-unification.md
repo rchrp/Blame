@@ -314,6 +314,96 @@ started, not during compilation (each container's swap peak stays under
   own restart: 35–38 CPU s), Vite (its dependency cache is in the shared
   node_modules). Nuxt, SvelteKit and Astro were not measured.
 
+### Lighter dependencies and review builds (2026-11-15)
+
+Measured in a throwaway 4 GiB VM (runtime image v13, one run each, small
+apps); private (anonymous) memory unless noted.
+
+**Development settings for heavy dependency images.** The local Compose
+target (`compose/dependency-tuning.ts`) starts official images with
+development memory settings. It is the local target and not the compiler
+so that cloud plans, their hashes and the runner stay as they are.
+
+| Image | Default, at rest / seeded | With the settings | Setting |
+| --- | --- | --- | --- |
+| `mysql` 8.4 and 9 | 421 / 509 MiB | 181 / 240 MiB | `--performance-schema=OFF --innodb-buffer-pool-size=64M` |
+| Elasticsearch 8 | 2.4 GiB | 1.0 GiB | `ES_JAVA_OPTS=-Xms512m -Xmx512m` (heap defaulted to half the VM) |
+| OpenSearch 2 | 1.47 GiB | 0.93 GiB | `OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m` |
+
+"Seeded" is 40 tables and 200,000 rows. Postgres and PostGIS (3–8 MiB
+private, the rest is reclaimable page cache), MariaDB (no Performance
+Schema by default), MongoDB (its WiredTiger cache only matters past
+256 MiB of data) and Redis/Valkey gained less than 20 MiB and keep their
+defaults. No setting touches durability (redo log, flush policy, data
+directories). A service with its own command, entrypoint or heap option,
+and non-official images (Bitnami), are left as declared. Only new
+containers get the settings (label `blame.dependency-tuning`): changing an
+existing database container would recreate it, and the engine would rerun
+its seed against the data its volume kept.
+
+**Review builds.** A service may declare `production: { build?, command,
+environment? }`; the initialization agent fills it for Next.js 16+, Vite
+and SvelteKit, Astro, React Router and Nuxt. `compilePreviewManifest(m,
+{ serving: "production" })` returns the review variant of the plan (the
+default plan ignores `production`). In the desktop,
+`local/local-preview-serving.ts`:
+
+- Once no agent has worked in a story for 3 minutes, a sweep (every
+  minute, one build at a time) builds each selected service that declares
+  `production`, with `compose run --rm --no-deps` of the review variant's
+  Compose file, while the development server keeps serving. On success
+  the preview starts again in review mode: Compose recreates only those
+  services, on the same ports.
+- A build is keyed by the source revision (the tree `git add -A` would
+  write, from a copy of the index, without `.blame`) and by the build's
+  command, image, working directory and rendered environment, browser
+  bindings included. A start serves the build only when every key
+  matches; otherwise it starts the development server.
+- Back to development: when an agent session starts or a message is sent
+  to the story (`beforeWorkspaceWrite`), when the source changes under a
+  served build, when a build fails (not retried for that revision; the
+  development service restarts, since a build may rewrite files it
+  reads) and when the production start fails.
+- Paused (hibernated) or stopped previews are not built.
+- On by default; Settings › Story previews turns it off per project
+  (`preview-serving-settings.json`, keyed by the project folder that
+  story worktrees record).
+
+| Next.js 16.4, 9 pages | Development | Review build |
+| --- | --- | --- |
+| Steady state, private / total | 406 / 547 MiB | 69 / 77 MiB |
+| CPU to serve the 9 pages once | 22 s (start + on-demand compile) | 3 s |
+| Build | – | 9.7 s, 25 CPU-s, peak 1.9 GiB with the development server |
+| Switch | development → build 2.1 s | build → development 2.6 s |
+
+Vite 6 (React template): 110 → 70 MiB, build 3.0 s and 3 CPU-s, both
+switches 1.9 s. The development figure is low because no browser loaded
+its modules; a real session transforms every module the page imports.
+
+Differences between the two modes that a review can see:
+
+- `NODE_ENV` is `production` (forced when the service sets another
+  value, unless `production.environment` sets it). Same environment and
+  bindings otherwise, and the same port, so callback URLs and cookies
+  still match.
+- No development overlay, no HMR, minified errors in the console. Agents
+  never see the build: they work in development.
+- Static rendering at build time reads the dependencies as they were
+  then; the build reruns on every source change, not on data changes.
+- Component previews start one-off containers from the current Compose
+  file, so during the few seconds after a session starts and before the
+  switch back they get the production environment.
+- Build output must be ignored by Git: otherwise the revision changes
+  after each build and the next start builds again (once, not in a loop).
+- Next.js before 16 shares `.next` between `dev` and `build`: the agent
+  declares no `production` for it.
+
+Not tested: Windows (WSL2) and native Linux runtimes, an existing story
+switching through the real app (the measurements drove Compose with the
+rendered files), and builds that need a running database. Manifests
+written before this change have no `production` until the project is
+initialized again.
+
 ## Phase 2: one compose renderer (original proposal)
 
 Medium risk: it changes how local compose files are produced.

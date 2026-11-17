@@ -12,6 +12,7 @@ import {
 import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { RuntimeSettingsGroup } from "./runtime-settings-group"
 import { BrowserDiagnosticsGroup } from "./browser-diagnostics-group"
+import { ReviewBuildsGroup } from "./review-builds-group"
 import { AgentGithubAccessGroup } from "./agent-github-access-group"
 import { ProjectGithubGroup } from "./project-github-group"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -50,6 +51,7 @@ export function DesktopSettingsPanel() {
       <PrivacySettingsGroup />
       <RuntimeSettingsGroup />
       <BrowserDiagnosticsGroup />
+      <ReviewBuildsGroup />
       {auth.status === "authenticated" && auth.mode === "account" ? (
         <ProjectGithubGroup />
       ) : null}

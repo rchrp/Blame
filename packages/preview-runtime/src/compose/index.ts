@@ -3,6 +3,7 @@
 export * from "./compose-healthcheck.js";
 export * from "./compose-renderer.js";
 export * from "./compose-target.js";
+export * from "./dependency-tuning.js";
 export * from "./compose-engine.js";
 export * from "./docker-host.js";
 export * from "./command-output.js";

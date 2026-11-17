@@ -55,6 +55,8 @@ export type ServiceLaunchPlan = {
   endpoints: ServiceEndpointPlan[];
   bindings: ServiceBindingPlan[];
   surface?: ServiceSurfacePlan;
+  /** Production plans only: what builds the output `command` serves. */
+  build?: { command: string };
 };
 
 export type ServiceSurfacePlan =
@@ -126,6 +128,8 @@ export type PreviewExecutionPlan = {
   networking: NetworkPlan;
   detectedCompatibility: CompatibilityRequirement[];
   tools?: { ttyd?: true };
+  /** Set on the review variant that serves production builds. */
+  serving?: "production";
 };
 
 export type RuntimeSelection = {

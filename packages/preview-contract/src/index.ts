@@ -25,6 +25,7 @@ export type {
   PreviewManifestEnvironment,
   PreviewManifestProbe,
   PreviewManifestProbeTarget,
+  PreviewManifestProduction,
   PreviewManifestProject,
   PreviewManifestRisk,
   PreviewManifestService,
