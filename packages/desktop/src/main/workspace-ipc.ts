@@ -1574,12 +1574,9 @@ export async function controlProjectPreview(input: ControlProjectPreviewInput) {
   const worktree = resolveRuntimePath(input.worktree);
   // Starting the hibernated configuration only wakes it.
   if (input.action === "start" && localPreviewHibernated(worktree)) {
-    const { selectedConfigurationId } =
+    const { selectedConfigurationId: hibernated } =
       await readPreviewRuntimeFileState(worktree);
-    if (
-      !input.configurationId ||
-      input.configurationId === selectedConfigurationId
-    ) {
+    if ((input.configurationId || hibernated) === hibernated) {
       await ensureLocalPreviewAwake(worktree, "a start request");
       return projectPreviewRuntimeState(worktree);
     }
@@ -1778,10 +1775,8 @@ export function startIdlePreviewSuspension() {
     },
   });
   startIdlePreviewSweeper({
-    runningWorktrees: async () => {
-      await adoptPausedLocalPreviews();
-      return runningPreviewWorktrees();
-    },
+    runningWorktrees: () =>
+      adoptPausedLocalPreviews().then(() => runningPreviewWorktrees()),
     hibernated: localPreviewHibernated,
     hibernate: hibernateIdleProjectPreview,
     suspend: suspendIdleProjectPreview,

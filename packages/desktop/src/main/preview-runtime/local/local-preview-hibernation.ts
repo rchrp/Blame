@@ -136,7 +136,7 @@ let adoption: Promise<void> | undefined;
 let lastAdoptionAttempt = 0;
 
 /** Tries until it succeeds, at most every 10 seconds; then never again. */
-export function adoptPausedLocalPreviews() {
+export async function adoptPausedLocalPreviews() {
   if (adopted || Date.now() - lastAdoptionAttempt < 10_000) return adoption;
   lastAdoptionAttempt = Date.now();
   adoption = adoptNow().finally(() => (adoption = undefined));
