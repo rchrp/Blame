@@ -72,6 +72,10 @@ export function useLocalDockerHost(host: DockerHost) {
   dockerHost = host;
 }
 
+export function localDockerHost() {
+  return dockerHost;
+}
+
 export function localPreviewEngine(
   worktree: string,
   options: LocalPreviewRunOptions = {},
@@ -256,6 +260,7 @@ export async function stopLocalPreview(
   await stopDevicesForWorktree(worktree);
   const engine = localPreviewEngine(worktree);
   if (!(await engine.prepared())) return;
+  await releaseHibernation(worktree);
   if (!serviceIds) return engine.stop();
   if (!serviceIds.length) return;
   await engine.compose(["stop", "--timeout", "5", ...serviceIds]);
@@ -264,6 +269,7 @@ export async function stopLocalPreview(
 /** Removes the preview's containers, network and own volumes. */
 export async function removeLocalPreview(worktree: string) {
   await stopDevicesForWorktree(worktree, true);
+  await releaseHibernation(worktree);
   await localPreviewEngine(worktree).remove();
   await rm(localPreviewPaths(worktree).engineState);
 }
@@ -589,6 +595,14 @@ export function currentHostGateway() {
   return localPreviewHostGateway((command, args) =>
     dockerHost.run(command, args, { timeoutMs: 15_000 }),
   ).catch(() => undefined);
+}
+
+// A stopped or removed preview no longer hibernates: forget it, and unpause
+// its containers (Docker would too, after delivering the stop signal).
+async function releaseHibernation(worktree: string) {
+  const { releaseLocalPreviewHibernation } =
+    await import("./local-preview-hibernation.ts");
+  await releaseLocalPreviewHibernation(worktree);
 }
 
 async function wanted(options: LocalPreviewRunOptions) {

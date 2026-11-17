@@ -1,6 +1,7 @@
 import WebSocket from "ws";
 import type { PreviewService } from "../preview-runtime/preview-service.ts";
 import { localPreviewEndpoints } from "../preview-runtime/local/local-preview-runner.ts";
+import { ensureLocalPreviewAwake } from "../preview-runtime/local/local-preview-hibernation.ts";
 
 export type SurfaceScope = {
   storyId: string;
@@ -52,6 +53,7 @@ export async function surfaceUpstream(
     url.protocol = "wss:";
   } else {
     if (!scope.worktree) throw new Error("Preview workspace is unavailable.");
+    await ensureLocalPreviewAwake(scope.worktree, "its screen or terminal");
     const { routes } = await localPreviewEndpoints(scope.worktree);
     const route = routes.find(
       (r) => r.serviceId === scope.serviceId && r.endpointId === endpointId,

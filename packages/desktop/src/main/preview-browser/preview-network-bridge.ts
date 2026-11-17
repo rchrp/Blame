@@ -63,6 +63,8 @@ export class PreviewNetworkBridge {
     private readonly partition: Session,
     private readonly grantProvider: GrantProvider,
     private readonly expectedProvider: PreviewBridgeProvider = "cloud",
+    /** Runs before each request: wakes a hibernated local preview. */
+    private readonly beforeForward: () => Promise<void> = async () => {},
   ) {
     this.server.on("connection", (socket) => {
       this.sockets.add(socket);
@@ -200,6 +202,7 @@ export class PreviewNetworkBridge {
   ) {
     this.authorize(request);
     await this.ensureFreshRoutes();
+    await this.beforeForward();
     tracked.stage("upstream");
     const { route, url } = this.routes.resolve(request.url ?? "");
     const provider = providerTarget(route.providerUrl, url);
@@ -244,6 +247,7 @@ export class PreviewNetworkBridge {
       throw new Error("Invalid preview WebSocket upgrade");
     }
     await this.ensureFreshRoutes();
+    await this.beforeForward();
     tracked.stage("upstream");
     const { route, url } = this.routes.resolve(request.url ?? "");
     const provider = providerTarget(route.providerUrl, url);

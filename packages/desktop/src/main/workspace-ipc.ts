@@ -86,6 +86,13 @@ import {
   startIdlePreviewSweeper,
 } from "./preview-runtime/local/local-preview-idle.ts";
 import {
+  adoptPausedLocalPreviews,
+  configureLocalPreviewHibernation,
+  ensureLocalPreviewAwake,
+  hibernateLocalPreview,
+  localPreviewHibernated,
+} from "./preview-runtime/local/local-preview-hibernation.ts";
+import {
   compileLocalPreviewPlan,
   localPreviewPaths,
   LocalPreviewError as PreviewRuntimeError,
@@ -600,10 +607,14 @@ export function registerWorkspaceIpcHandlers(
   ipcMain.handle(
     "workspace:project-preview-runtime-state",
     (event, input: { worktree: string; workspaceMode?: WorkspaceMode }) => {
-      // The app reads the state while the preview is open and on screen.
+      // The app reads the state while the preview is open and on screen:
+      // that is use, and wakes it if it hibernates.
       const window = BrowserWindow.fromWebContents(event.sender);
       if (window?.isVisible() && !window.isMinimized()) {
-        recordPreviewUse(resolveRuntimePath(input.worktree));
+        void ensureLocalPreviewAwake(
+          input.worktree,
+          "the app showing it",
+        ).catch(() => undefined);
       }
       return projectPreviewRuntimeState(input.worktree, input.workspaceMode);
     },
@@ -1370,6 +1381,8 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
     return null;
   }
   const currentUrl = await resolveProjectPreviewUrl({ worktree });
+  // Polled for every story: a hibernated preview serves once woken.
+  if (currentUrl && localPreviewHibernated(worktree)) return currentUrl;
   if (
     currentUrl &&
     (await previewLiveness.serving(worktree, {
@@ -1556,6 +1569,18 @@ function previewStatusConfiguration(
 
 export async function controlProjectPreview(input: ControlProjectPreviewInput) {
   const worktree = resolveRuntimePath(input.worktree);
+  // Starting the hibernated configuration only wakes it.
+  if (input.action === "start" && localPreviewHibernated(worktree)) {
+    const { selectedConfigurationId } =
+      await readPreviewRuntimeFileState(worktree);
+    if (
+      !input.configurationId ||
+      input.configurationId === selectedConfigurationId
+    ) {
+      await ensureLocalPreviewAwake(worktree, "a start request");
+      return projectPreviewRuntimeState(worktree);
+    }
+  }
   // In flight from the request on, so no read sees it half applied; the
   // state it returns is read once it settled.
   await trackLocalPreviewOperation(worktree, () =>
@@ -1728,10 +1753,34 @@ async function suspendIdleProjectPreview(worktree: string) {
   await stopProjectPreview(selection, { suspend: true });
 }
 
-/** Starts stopping the local previews nobody uses. */
+// Hibernates a ready preview nobody used for a few minutes.
+async function hibernateIdleProjectPreview(worktree: string) {
+  if (previewStarts.has(worktree) || previewPrefetches.has(worktree)) return;
+  if (localPreviewOperationInFlight(worktree)) return;
+  const state = await readPreviewRuntimeFileState(worktree);
+  if (state.desiredStatus !== "running" || state.lifecycle?.status !== "ready")
+    return;
+  await hibernateLocalPreview(worktree);
+}
+
+/** Starts hibernating, then stopping, the local previews nobody uses. */
 export function startIdlePreviewSuspension() {
+  configureLocalPreviewHibernation({
+    log: (worktree, line) => void appendRecoveryLog(worktree, line),
+    // Only a preview still wanted: a stop may have overtaken a hibernation.
+    restart: async (worktree) => {
+      const { desiredStatus } = await readPreviewRuntimeFileState(worktree);
+      if (desiredStatus === "running")
+        await controlProjectPreview({ action: "restart", worktree });
+    },
+  });
   startIdlePreviewSweeper({
-    runningWorktrees: () => runningPreviewWorktrees(),
+    runningWorktrees: async () => {
+      await adoptPausedLocalPreviews();
+      return runningPreviewWorktrees();
+    },
+    hibernated: localPreviewHibernated,
+    hibernate: hibernateIdleProjectPreview,
     suspend: suspendIdleProjectPreview,
   });
 }
