@@ -15,7 +15,15 @@ import {
   rm as rmHost,
   writeFile as writeHostFile,
 } from "node:fs/promises";
-import { basename, dirname, join, posix, resolve, win32 } from "node:path";
+import {
+  basename,
+  dirname,
+  join,
+  posix,
+  relative,
+  resolve,
+  win32,
+} from "node:path";
 import { promisify } from "node:util";
 import { hostGitCommand } from "./host-git.ts";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
@@ -148,6 +156,15 @@ export function joinWorkspacePath(root: string, ...paths: string[]) {
   if (runtimePathLike(root))
     return posix.join(normalizedRuntimePath(root), ...paths);
   return joinHostPath(root, ...paths);
+}
+
+/** The path of target relative to the workspace root, "." for the root. */
+export function toWorkspacePath(root: string, target: string) {
+  const resolvedRoot = resolveWorkspacePath(root);
+  const path = resolvedRoot.includes("/")
+    ? posix.relative(resolvedRoot, target.replace(/\\/g, "/"))
+    : relative(resolve(root), target);
+  return path || ".";
 }
 
 export function dirnameWorkspacePath(path: string) {
