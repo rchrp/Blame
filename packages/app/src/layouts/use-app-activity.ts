@@ -1,7 +1,7 @@
 import * as React from "react"
 
 import { selectBacklogStory } from "@/components/backlog/data/backlog-navigation"
-import { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import { useBacklogSelector } from "@/components/backlog/data/backlog-store"
 import { quickChatSelectedEvent } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { navigate } from "@/components/navigation/navigation"
@@ -13,9 +13,11 @@ import { usePlatform, type NotificationTarget } from "@/context/platform"
 // right story or chat when clicked.
 export function useAppActivity() {
   const platform = usePlatform()
-  const backlog = useBacklogStore()
+  const runningStories = useBacklogSelector((backlog) =>
+    runningAgents(backlog.stories, [])
+  )
   const quickChats = useQuickChatStore()
-  const running = runningAgents(backlog.stories, quickChats.chats)
+  const running = runningStories + runningAgents([], quickChats.chats)
   const previousRunning = React.useRef(running)
   const setActiveChat = quickChats.setActiveId
 
