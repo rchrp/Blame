@@ -319,7 +319,12 @@ impl Replicator {
     pub async fn run(mut self, shutdown: CancellationToken) {
         let inner = self.store.inner.clone();
         while !shutdown.is_cancelled() {
-            let pass = self.pass().await;
+            // A remote that hangs must not keep the engine from exiting. Dropping
+            // a pass half way is safe: a mark is stored only after the remote
+            // answered, and pushing again is harmless.
+            let Either::Right(pass) = first(shutdown.cancelled(), self.pass()).await else {
+                break;
+            };
             if pass.progressed {
                 continue;
             }

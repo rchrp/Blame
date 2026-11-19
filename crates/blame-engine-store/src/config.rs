@@ -2,9 +2,8 @@ use blame_engine_core::ports::RemoteLog;
 use std::sync::Arc;
 use std::time::Duration;
 
-/// How much a returned `append` promises about a power cut. See `schema.rs`
-/// for the pragmas each level maps to and `README` measurements in the crate
-/// docs for what they cost.
+/// How much a returned `append` promises about a power cut. The pragmas each
+/// level maps to are in `schema.rs`, what they cost in the crate docs.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Durability {
     /// Survives a power cut. Every commit is flushed through the drive's
@@ -55,8 +54,7 @@ pub struct StoreOptions {
     pub remote: Option<Arc<dyn RemoteLog>>,
     pub replication: ReplicationConfig,
     /// Blobs up to this size are rows of the database, larger ones files.
-    /// 256 KiB sits between the measured crossovers (rows write faster up to
-    /// ~1 MiB, files read faster from ~64 KiB up).
+    /// 256 KiB sits between the measured crossovers (see the crate docs).
     pub inline_blob_max: usize,
 }
 
