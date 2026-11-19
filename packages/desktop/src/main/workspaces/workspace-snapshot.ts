@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import type { Stats } from "node:fs";
 import { lstat, readFile, readdir, readlink } from "node:fs/promises";
 import { join, relative, sep } from "node:path";
 import {
@@ -26,6 +27,22 @@ export type WorkspaceSnapshot = {
   policy?: WorkspaceSnapshotPolicy;
 };
 
+// A file's hash, kept while its size, times and inode stay the same: a
+// sync of a mirrored worktree, 450 ms after each change, then reads only
+// the files that changed. As Git does with its index, a file changed
+// within moments of its hash is read again, in case a second change kept
+// its times.
+type FileHash = {
+  changed: number;
+  hashedAt: number;
+  inode: number;
+  modified: number;
+  sha256: string;
+  size: number;
+};
+const fileHashes = new Map<string, Map<string, FileHash>>();
+const racyMilliseconds = 2_000;
+
 // The cloud sandbox runner hashes its copy with the same rule (see
 // @blame/preview-runtime/workspace-ignore); both hashes must match.
 export async function snapshotWorkspace(
@@ -34,7 +51,19 @@ export async function snapshotWorkspace(
 ): Promise<WorkspaceSnapshot> {
   const files: Record<string, WorkspaceFileMetadata> = {};
   const casePaths = new Map<string, string>();
-  await visit(root, root, files, casePaths, new WorkspaceIgnore(policy));
+  const hashes = {
+    previous: fileHashes.get(root) ?? new Map<string, FileHash>(),
+    next: new Map<string, FileHash>(),
+  };
+  await visit(
+    root,
+    root,
+    files,
+    casePaths,
+    new WorkspaceIgnore(policy),
+    hashes,
+  );
+  fileHashes.set(root, hashes.next);
   const compare = compareWorkspacePaths(policy);
   const sortedFiles = Object.fromEntries(
     Object.entries(files).sort(([left], [right]) => compare(left, right)),
@@ -88,6 +117,7 @@ async function visit(
   files: Record<string, WorkspaceFileMetadata>,
   casePaths: Map<string, string>,
   rules: WorkspaceIgnore,
+  hashes: { previous: Map<string, FileHash>; next: Map<string, FileHash> },
 ) {
   const entries = await readdir(directory, { withFileTypes: true });
   if (
@@ -120,7 +150,7 @@ async function visit(
     casePaths.set(folded, path);
     const stat = await lstat(absolute);
     if (stat.isDirectory())
-      await visit(root, absolute, files, casePaths, rules);
+      await visit(root, absolute, files, casePaths, rules, hashes);
     else if (stat.isSymbolicLink()) {
       const target = await readlink(absolute);
       assertSafeSymlink(path, target);
@@ -132,15 +162,42 @@ async function visit(
         target,
       };
     } else if (stat.isFile()) {
-      const content = await readFile(absolute);
+      const hash = await fileHash(absolute, stat, hashes.previous.get(path));
+      hashes.next.set(path, hash);
       files[path] = {
         type: "file",
-        sha256: createHash("sha256").update(content).digest("hex"),
+        sha256: hash.sha256,
         mode: stat.mode & 0o777,
         size: stat.size,
       };
     }
   }
+}
+
+async function fileHash(
+  absolute: string,
+  stat: Stats,
+  previous: FileHash | undefined,
+): Promise<FileHash> {
+  if (
+    previous &&
+    previous.size === stat.size &&
+    previous.modified === stat.mtimeMs &&
+    previous.changed === stat.ctimeMs &&
+    previous.inode === stat.ino &&
+    previous.hashedAt - Math.max(stat.mtimeMs, stat.ctimeMs) > racyMilliseconds
+  )
+    return previous;
+  const hashedAt = Date.now();
+  const content = await readFile(absolute);
+  return {
+    changed: stat.ctimeMs,
+    hashedAt,
+    inode: stat.ino,
+    modified: stat.mtimeMs,
+    sha256: createHash("sha256").update(content).digest("hex"),
+    size: stat.size,
+  };
 }
 
 export function assertSafeSymlink(path: string, target: string) {
