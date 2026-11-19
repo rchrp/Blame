@@ -44,6 +44,10 @@ export const agentRuntimeMethods = [
   "generateCommitMessage",
   "directStoryFiles",
   "resolveMergeConflicts",
+  "mcpOAuth.statuses",
+  "mcpOAuth.authorize",
+  "mcpOAuth.clear",
+  "lightWorkspace.execute",
   "shutdown",
 ] as const;
 

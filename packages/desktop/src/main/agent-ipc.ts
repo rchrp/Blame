@@ -31,6 +31,7 @@ import {
   type AgentRuntimeProcessCallbacks,
 } from "./agent-runtime-process-client";
 import { createAgentHostRequestHandler } from "./agent-runtime-main-host";
+import type { AgentRuntimeMethod } from "./agent-runtime-process-protocol";
 import { prepareSessionGithubAccess } from "./ipc/agent-github-access-ipc";
 import { setupPath } from "./host-tool-path";
 import { keepRuntimeRunningWhile, onRuntimeRunning } from "./runtime-power";
@@ -594,6 +595,14 @@ function createAgentRuntimeProcess(
 function agentRuntime() {
   if (!runtime) throw new Error("Agent runtime is not initialized");
   return runtime;
+}
+
+/** Work of the agent runtime for the rest of the main process, which never loads it. */
+export function runOnAgentRuntime<Result>(
+  method: AgentRuntimeMethod,
+  input?: unknown,
+) {
+  return agentRuntime().run<Result>(method, input);
 }
 
 function emitAgentEvent(event: AgentEvent) {
