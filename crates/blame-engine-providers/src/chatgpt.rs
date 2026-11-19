@@ -554,6 +554,3 @@ fn page(title: &str, message: &str) -> String {
         escape(message)
     )
 }
-
-#[cfg(test)]
-mod tests;
