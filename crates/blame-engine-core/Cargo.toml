@@ -23,5 +23,9 @@ thiserror.workspace = true
 tokio = { workspace = true, features = ["sync", "rt"] }
 tokio-util.workspace = true
 
+[dev-dependencies]
+blame-engine-core = { path = ".", features = ["testing"] }
+tokio = { workspace = true, features = ["sync", "rt", "macros"] }
+
 [lints]
 workspace = true
