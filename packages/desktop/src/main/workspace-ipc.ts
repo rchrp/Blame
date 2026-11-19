@@ -1403,9 +1403,9 @@ export async function projectPreviewRuntimeState(
       readProjectPreviewManifest(worktree).catch(() => undefined),
     ]);
   const containers = inspection.services;
-  // Woken after the runtime stopped: its containers went with it, and the
-  // wake is starting it again.
-  const restarting = waking && !containers.some(({ state }) => state);
+  // Woken after the runtime stopped: its containers exited with it, and
+  // the wake is starting it again (a paused container counts as running).
+  const restarting = waking && !containers.some(({ running }) => running);
   const selected = selectedPreviewRunConfiguration(
     configurations,
     runtimeState,
