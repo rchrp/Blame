@@ -325,8 +325,6 @@ function reasoningText(
   id: string,
   payload: Record<string, unknown>
 ) {
-  const accumulatedText = stringValue(payload.accumulatedText)
-  if (accumulatedText !== undefined) return accumulatedText
   const reasoning = stringValue(payload.reasoning)
   if (reasoning !== undefined) return reasoning
   const text = stringValue(payload.text)
@@ -350,8 +348,8 @@ function messageActivities(
   if (closingStreamPhase(phase)) {
     return closeRunningActivities(activities, ["message"])
   }
-  const id = messageActivityId(activities, iteration, payload)
-  const text = messageText(activities, id, iteration, payload)
+  const id = inlineActivityId(activities, "message", iteration)
+  const text = messageText(activities, id, payload)
   if (text === undefined || !text.trim()) return undefined
   const messageKind = agentMessageKind()
   return upsertActivities(activities, [
@@ -367,24 +365,6 @@ function messageActivities(
       messageKind,
     },
   ])
-}
-
-function messageActivityId(
-  activities: UserStoryAgentActivity[],
-  iteration: number | undefined,
-  payload: Record<string, unknown>
-) {
-  const active = inlineActivity(activities, "message", iteration)
-  if (active) return active.id
-  const accumulatedText = stringValue(payload.accumulatedText)
-  const lastActivity = activities.at(-1)
-  if (
-    accumulatedText !== undefined &&
-    reusableClosedMessage(lastActivity, iteration, accumulatedText)
-  ) {
-    return lastActivity.id
-  }
-  return nextInlineActivityId(activities, "message", iteration)
 }
 
 function inlineActivityId(
@@ -422,18 +402,6 @@ function nextInlineActivityId(
       activity.kind === kind && sameIteration(activity.iteration, iteration)
   ).length
   return `${label}-${iteration ?? "session"}-${count + 1}`
-}
-
-function reusableClosedMessage(
-  activity: UserStoryAgentActivity | undefined,
-  iteration: number | undefined,
-  accumulatedText: string
-): activity is UserStoryAgentActivity {
-  return (
-    activity?.kind === "message" &&
-    sameIteration(activity.iteration, iteration) &&
-    sameStreamingResponse(activity.detail, accumulatedText)
-  )
 }
 
 function lastMatchingActivity(
@@ -495,75 +463,12 @@ function closeRunningActivityInputs(
 function messageText(
   activities: UserStoryAgentActivity[],
   id: string,
-  iteration: number | undefined,
   payload: Record<string, unknown>
 ) {
   const current = activities.find((activity) => activity.id === id)?.detail
-  const accumulatedText = stringValue(payload.accumulatedText)
-  if (accumulatedText !== undefined) {
-    return currentMessageAccumulatedText(
-      activities,
-      id,
-      iteration,
-      accumulatedText
-    )
-  }
   const text = stringValue(payload.text)
   if (text !== undefined) return appendStreamingText(current, text)
   return stringValue(payload.message)
-}
-
-function currentMessageAccumulatedText(
-  activities: UserStoryAgentActivity[],
-  id: string,
-  iteration: number | undefined,
-  accumulatedText: string
-) {
-  const previousText = previousMessageText(activities, id, iteration)
-  if (!previousText) return accumulatedText
-  const normalizedText = normalizedStreamedMessageLineEndings(accumulatedText)
-  const normalizedPreviousText =
-    normalizedStreamedMessageLineEndings(previousText)
-  const prefixLength = accumulatedPrefixLength(
-    normalizedText,
-    normalizedPreviousText
-  )
-  if (prefixLength === undefined) return accumulatedText
-  if (!safeAccumulatedPrefixBoundary(normalizedText, prefixLength)) {
-    return accumulatedText
-  }
-  return normalizedText.slice(prefixLength).trimStart()
-}
-
-function previousMessageText(
-  activities: UserStoryAgentActivity[],
-  id: string,
-  iteration: number | undefined
-) {
-  return activities
-    .filter(
-      (activity) =>
-        activity.id !== id &&
-        activity.kind === "message" &&
-        sameIteration(activity.iteration, iteration)
-    )
-    .map((activity) => activity.detail)
-    .join("")
-}
-
-function accumulatedPrefixLength(value: string, prefix: string) {
-  if (value.startsWith(prefix)) return prefix.length
-  const compactPrefix = prefix.trimEnd()
-  if (compactPrefix && value.startsWith(compactPrefix)) {
-    return compactPrefix.length
-  }
-  return undefined
-}
-
-function safeAccumulatedPrefixBoundary(value: string, index: number) {
-  if (index <= 0) return false
-  if (index >= value.length) return true
-  return /\s/.test(value[index - 1] ?? "") || /\s/.test(value[index] ?? "")
 }
 
 function agentMessageKind(): UserStoryAgentActivity["messageKind"] {

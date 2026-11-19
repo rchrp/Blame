@@ -41,15 +41,15 @@ function runOnDockerHost(
       execution: "virtualized",
       user: "root",
     });
-    let stdout = "";
-    let stderr = "";
+    const stdout = outputTail();
+    const stderr = outputTail();
     let settled = false;
     const finish = (exitCode: number) => {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
       options.signal?.removeEventListener("abort", abort);
-      resolve({ exitCode, stdout, stderr });
+      resolve({ exitCode, stdout: stdout.text(), stderr: stderr.text() });
     };
     const abort = () => {
       child.kill("SIGTERM");
@@ -57,7 +57,9 @@ function runOnDockerHost(
     };
     const timer = options.timeoutMs
       ? setTimeout(() => {
-          stderr += `\nCommand timed out after ${Math.round((options.timeoutMs ?? 0) / 1_000)}s.`;
+          stderr.append(
+            `\nCommand timed out after ${Math.round((options.timeoutMs ?? 0) / 1_000)}s.`,
+          );
           child.kill("SIGKILL");
           finish(124);
         }, options.timeoutMs)
@@ -65,17 +67,33 @@ function runOnDockerHost(
     if (options.signal?.aborted) abort();
     options.signal?.addEventListener("abort", abort, { once: true });
     child.stdout.setEncoding("utf8").on("data", (chunk: string) => {
-      stdout = `${stdout}${chunk}`.slice(-outputLimit);
+      stdout.append(chunk);
       options.onOutput?.(chunk);
     });
     child.stderr.setEncoding("utf8").on("data", (chunk: string) => {
-      stderr = `${stderr}${chunk}`.slice(-outputLimit);
+      stderr.append(chunk);
       options.onOutput?.(chunk);
     });
     child.once("error", (error) => {
-      stderr += error.message;
+      stderr.append(error.message);
       finish(127);
     });
     child.once("exit", (code) => finish(code ?? 1));
   });
+}
+
+// The last outputLimit characters of a stream, kept as chunks so that a long
+// output is not copied again on every chunk.
+function outputTail() {
+  const chunks: string[] = [];
+  let length = 0;
+  return {
+    append(chunk: string) {
+      chunks.push(chunk);
+      length += chunk.length;
+      while (chunks.length > 1 && length - chunks[0]!.length >= outputLimit)
+        length -= chunks.shift()!.length;
+    },
+    text: () => chunks.join("").slice(-outputLimit),
+  };
 }

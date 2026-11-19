@@ -8,6 +8,7 @@ import {
   type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
 } from "@blame/agent-runtime";
+import { createAgentEventCoalescer } from "@blame/agent-runtime/agent-event-coalescer";
 import { AgentRuntimeHostClient } from "./agent-runtime-host-client.ts";
 import {
   agentRpcError,
@@ -35,6 +36,9 @@ const parentPort = process.parentPort;
 if (!parentPort) throw new Error("Agent runtime parent port is unavailable");
 
 const host = new AgentRuntimeHostClient(parentPort);
+const events = createAgentEventCoalescer((event) =>
+  parentPort.postMessage({ event, kind: "event" }),
+);
 const runtime = createAgentRuntime(host);
 const handlers = runtimeHandlers(runtime);
 
@@ -53,13 +57,7 @@ parentPort.postMessage({ kind: "ready" });
 
 function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
   return new BlameAgentRuntime(
-    {
-      emit: (event) =>
-        parentPort.postMessage({
-          event: serializableAgentEvent(event),
-          kind: "event",
-        }),
-    },
+    { emit: (event) => events.push(serializableAgentEvent(event)) },
     {
       git: (cwd, args) => hostClient.request<string>("git", { args, cwd }),
       renderWebPage: (input) => hostRequest<{ url: string; html: string }>(hostClient, 'renderWebPage', input),
@@ -179,6 +177,8 @@ async function handleRuntimeRequest(request: AgentRpcRequest) {
 }
 
 function respond(request: AgentRpcRequest, result?: unknown, error?: unknown) {
+  // A response follows the events its request produced.
+  events.flush();
   parentPort.postMessage({
     ...(error ? { error: agentRpcError(error) } : { result }),
     id: request.id,

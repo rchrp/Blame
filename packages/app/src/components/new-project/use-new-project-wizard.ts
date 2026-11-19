@@ -574,21 +574,11 @@ function appendProjectCreationLog(
 
 function projectCreationEventText(event: AgentEvent) {
   if (event.type === "reasoning" || event.type === "text") {
-    const accumulatedText = eventAccumulatedText(event.payload)
-    if (accumulatedText !== undefined) {
-      return { value: accumulatedText, append: false }
-    }
     const deltaText = eventDeltaText(event.payload)
     if (deltaText !== undefined) return { value: deltaText, append: true }
     return { value: eventText(event.payload), append: false }
   }
   return { value: eventText(event.payload), append: false }
-}
-
-function eventAccumulatedText(payload: unknown) {
-  if (!payload || typeof payload !== "object") return undefined
-  const value = (payload as Record<string, unknown>).accumulatedText
-  return typeof value === "string" ? cleanEventText(value) : undefined
 }
 
 function eventDeltaText(payload: unknown) {
@@ -604,9 +594,9 @@ function appendStreamingProjectCreationLog(
   const prefix = next.channel === "reasoning" ? "Planning: " : ""
   const currentText = channelLogText(last.data, prefix)
   const nextText = channelLogText(next.data, prefix)
-  const mergedText = nextText.startsWith(currentText)
-    ? nextText
-    : `${currentText}${nextText}`
+  // Compacting the joined text keeps the log the same however the stream
+  // was split into deltas.
+  const mergedText = compactEventText(`${currentText}${nextText}`)
   return { ...next, data: `${prefix}${mergedText}\n` }
 }
 
@@ -620,7 +610,7 @@ function eventText(payload: unknown): string {
   if (typeof payload === "string") return cleanEventText(payload)
   if (!payload || typeof payload !== "object") return ""
   const record = payload as Record<string, unknown>
-  for (const key of ["message", "text", "accumulatedText", "reason", "error"]) {
+  for (const key of ["message", "text", "reason", "error"]) {
     const value = record[key]
     if (typeof value === "string" && value.trim()) return cleanEventText(value)
   }
