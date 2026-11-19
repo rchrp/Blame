@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { parsePreviewManifest } from "@blame/agent-runtime";
+import { parsePreviewManifest } from "@blame/agent-runtime/preview-manifest";
 import { compilePreviewManifest } from "@blame/preview-runtime";
 import type { CommandResult, DockerHost } from "@blame/preview-runtime/compose";
 import { allocatePreviewHostPorts } from "./local-preview-ports.ts";

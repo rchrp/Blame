@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
-import { parsePreviewManifest } from "@blame/agent-runtime";
+import { parsePreviewManifest } from "@blame/agent-runtime/preview-manifest";
 import { compilePreviewManifest, probeEndpoint } from "@blame/preview-runtime";
 import {
   publishedEndpointKeys,

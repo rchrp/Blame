@@ -7,7 +7,7 @@ import {
   previewDevtoolsBoundedArguments,
   previewDevtoolsTimeoutMarginMs,
   previewDevtoolsToolTimeoutMs,
-} from "@blame/agent-runtime";
+} from "@blame/agent-runtime/preview-devtools-policy";
 import { previewNavigationAllowed } from "../preview-browser/preview-navigation-policy.ts";
 import { runtimeHostPath } from "../workspace-runtime.ts";
 import {

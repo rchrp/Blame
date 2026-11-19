@@ -5,7 +5,7 @@ import {
   parseComponentPreviewRequest,
   type ComponentPreviewRender,
   type ComponentPreviewTheme,
-} from "@blame/agent-runtime";
+} from "@blame/agent-runtime/component-preview-request";
 import type { ScreenshotCaptureContext } from "../agent-screenshots/agent-screenshot-capture.ts";
 import type { ComponentPreviewHost } from "./component-preview-hosts.ts";
 import {

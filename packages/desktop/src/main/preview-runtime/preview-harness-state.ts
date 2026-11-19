@@ -1,4 +1,4 @@
-import type { WorkspaceRevisionState } from "@blame/agent-runtime";
+import type { WorkspaceRevisionState } from "@blame/agent-runtime/workspace-revisions";
 import type { PreviewLifecycleState } from "@blame/preview-contract";
 import type { PreviewDevtoolsTarget } from "../preview-browser/preview-browser-manager.ts";
 
