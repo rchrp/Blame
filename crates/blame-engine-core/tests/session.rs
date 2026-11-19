@@ -906,6 +906,8 @@ async fn an_idle_session_can_be_dropped_and_opened_again() {
 
 #[tokio::test]
 async fn reopening_after_a_crash_mid_tool_ends_the_turn_by_default() {
+    // A command killed while it hung never took effect: it is reported as
+    // not run.
     let world = fresh().with_tools(ScriptedTools::new(standard_specs(), |_, _| {
         Behavior::UntilCancelled
     }));
@@ -918,7 +920,6 @@ async fn reopening_after_a_crash_mid_tool_ends_the_turn_by_default() {
     tool_running(&world).await;
     session.crash().await;
     drop(session);
-
     let session = open(&world, RecoveryPolicy::Stop).await;
     let records = session.records().await;
     assert_eq!(
@@ -928,13 +929,33 @@ async fn reopening_after_a_crash_mid_tool_ends_the_turn_by_default() {
     let RecordBody::ToolCallFinished { outcome, .. } = &records[6].body else {
         panic!()
     };
-    assert_eq!(
-        *outcome,
-        ToolOutcome::Interrupted,
-        "a command's fate is unknown"
-    );
+    assert_eq!(*outcome, ToolOutcome::Cancelled);
     assert_eq!(outcome_of_last_turn(&records), TurnOutcome::Interrupted);
     assert!(session.is_idle());
+    check_invariants(&records, &sorted_specs());
+
+    // A command that ran but whose result was never stored: nobody knows
+    // what it did, and the model is told so.
+    let world = fresh();
+    world.provider.push(Script::tool_calls(&[(
+        "run",
+        json!({ "command": "deploy.sh" }),
+    )]));
+    let session = create(&world).await;
+    // user, checkpoint, request, reply, tool started; then the power goes.
+    world.store.lose_power_after(5);
+    session.send(text("ship"), Delivery::Turn).await.unwrap();
+    session.wait_idle().await;
+    assert_eq!(world.tools.log().executions.len(), 1);
+    drop(session);
+    world.store.restore_power();
+    let session = open(&world, RecoveryPolicy::Stop).await;
+    let records = session.records().await;
+    let RecordBody::ToolCallFinished { outcome, .. } = &records[6].body else {
+        panic!("{:?}", kinds(&records))
+    };
+    assert_eq!(*outcome, ToolOutcome::Interrupted);
+    assert_eq!(outcome_of_last_turn(&records), TurnOutcome::Interrupted);
     check_invariants(&records, &sorted_specs());
 }
 

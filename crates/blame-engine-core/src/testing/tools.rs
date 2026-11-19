@@ -43,6 +43,9 @@ pub struct ToolLog {
     pub executions: Vec<ToolInvocation>,
     /// Calls that were asked about after a crash, with the answer given.
     pub interrupted: Vec<(ToolCallId, InterruptedCall)>,
+    /// Calls that took effect: they returned a result. A call killed while
+    /// it waited never did.
+    pub applied: Vec<ToolCallId>,
     /// Calls running right now, and the most that ever ran at once.
     pub running: usize,
     pub max_running: usize,
@@ -168,6 +171,7 @@ impl ToolHost for ScriptedTools {
         }
         let behavior = (self.handler)(&invocation, &self.workspace);
         let cancelled = || ToolOutput::text(ToolOutcome::Cancelled, "cancelled");
+        let call = invocation.call.clone();
         let output = match behavior {
             Behavior::Output(output) => output,
             Behavior::Progress(lines, output) => {
@@ -193,23 +197,21 @@ impl ToolHost for ScriptedTools {
                 }
             }
         };
-        self.log
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .running -= 1;
+        let mut log = self.log.lock().unwrap_or_else(PoisonError::into_inner);
+        log.running -= 1;
+        if output.outcome != ToolOutcome::Cancelled {
+            log.applied.push(call);
+        }
+        drop(log);
         output
     }
 
-    /// Answers like a careful host would: a call it never ran is
-    /// `NotApplied`; a file write it ran is `Applied` with the same result
-    /// (writes are idempotent and checkable); anything else that ran is
+    /// Answers like a careful host would: a call that never took effect is
+    /// `NotApplied`; a file write that did is `Applied` with the same result
+    /// (writes are idempotent and checkable); anything else that did is
     /// `Unknown`.
     async fn interrupted(&self, invocation: &ToolInvocation) -> InterruptedCall {
-        let ran = self
-            .log()
-            .executions
-            .iter()
-            .any(|e| e.call == invocation.call);
+        let ran = self.log().applied.contains(&invocation.call);
         let answer = match (ran, self.effect_of(&invocation.name)) {
             (false, _) => InterruptedCall::NotApplied,
             (true, Some(ToolEffect::WorkspaceWrite | ToolEffect::ReadOnly)) => {
