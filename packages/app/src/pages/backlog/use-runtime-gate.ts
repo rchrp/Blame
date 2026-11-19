@@ -21,7 +21,7 @@ export function useRuntimeGate({
   stories: readonly UserStory[]
 }) {
   const runtime = useBlameRuntime()
-  const { phase, promptInstall, setLocalRunsActive } = runtime
+  const { phase, promptInstall, setLocalRunsActive, start } = runtime
   const phaseRef = React.useRef(phase)
   const prompted = React.useRef(new Set<string>())
   const onReadyRef = React.useRef(onRuntimeReady)
@@ -48,6 +48,8 @@ export function useRuntimeGate({
       const current = phaseRef.current
       if (runModeOf(story) !== "local-container") return "go"
       if (current === "ready" || current === "unavailable") return "go"
+      // A stopped runtime starts for the story, which waits for it.
+      if (current === "stopped") void start()
       if (runtimeBlocksNewRuns(current)) return "wait"
       // Missing or broken: ask once per story, then keep it queued.
       if (!prompted.current.has(story.id)) {
@@ -56,7 +58,7 @@ export function useRuntimeGate({
       }
       return "needs-runtime"
     },
-    [promptInstall, runModeOf]
+    [promptInstall, runModeOf, start]
   )
 
   return {

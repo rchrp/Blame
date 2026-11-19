@@ -149,6 +149,10 @@ export class RuntimeManager {
   async uninstallRuntime() {
     return uninstallRuntimeOperation(this.context);
   }
+
+  async stopRuntime() {
+    await runLifecycleCommand(this.context, "stop");
+  }
 }
 
 export function createRuntimeManager(
@@ -182,9 +186,14 @@ export function uninstallRuntime(input: RuntimeManagerInput = {}) {
   return createRuntimeManager(input).uninstallRuntime();
 }
 
+/** Stops the VM once nothing uses it; it waits for any other lifecycle operation. */
+export function stopRuntime(input: RuntimeManagerInput = {}) {
+  return createRuntimeManager(input).stopRuntime();
+}
+
 /**
  * Stops the Blame Runtime when the app quits, so the VM's memory goes back
- * to the computer; the next start boots it again. The command outlives the
+ * to the computer; the next use boots it again. The command outlives the
  * app, which does not wait for it.
  */
 export function stopRuntimeInBackground(
@@ -238,7 +247,7 @@ async function uninstallRuntimeOperation(context: RuntimeManagerContext) {
 // agent the update had just replaced).
 async function runLifecycleCommand(
   context: RuntimeManagerContext,
-  command: "ensure" | "repair" | "reset" | "uninstall",
+  command: "ensure" | "repair" | "reset" | "stop" | "uninstall",
 ) {
   try {
     return await runRuntimeLifecycleCommand(context, command);
@@ -356,7 +365,7 @@ function runRuntimeCommand(
 
 function runRuntimeLifecycleCommand(
   context: RuntimeManagerContext,
-  command: "ensure" | "repair" | "reset" | "uninstall",
+  command: "ensure" | "repair" | "reset" | "stop" | "uninstall",
 ) {
   if (context.platform === "linux") return Promise.resolve("");
   if (!managedRuntimePlatform(context.platform)) {

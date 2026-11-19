@@ -37,12 +37,6 @@ test("resolves Windows runtime worktrees to a remote Cline backend", async () =>
         url: "ws://127.0.0.1:25463/hub",
       }),
     },
-    ensureReady: async () => ({
-      issues: [],
-      platform: "win32",
-      runtime: "BlameRuntime",
-      status: "ready",
-    }),
     platform: "win32",
   });
 
@@ -71,12 +65,6 @@ test("resolves macOS runtime worktrees to a remote Cline backend", async () => {
       agentClient: {
         clineHubEnsure: async () => ({ url: "ws://127.0.0.1:25463/hub" }),
       },
-      ensureReady: async () => ({
-        issues: [],
-        platform: "darwin",
-        runtime: "BlameRuntime",
-        status: "ready",
-      }),
       platform: "darwin",
     },
   );
@@ -95,12 +83,6 @@ test("keeps legacy macOS shared worktrees connected to the remote backend", asyn
       agentClient: {
         clineHubEnsure: async () => ({ url: "ws://127.0.0.1:25463/hub" }),
       },
-      ensureReady: async () => ({
-        issues: [],
-        platform: "darwin",
-        runtime: "BlameRuntime",
-        status: "ready",
-      }),
       platform: "darwin",
     },
   );

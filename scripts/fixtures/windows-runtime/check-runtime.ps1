@@ -73,6 +73,16 @@ Assert-Equal (Test-DistroPresent) $true "distro list ignores stderr"
 $env:BLAME_TEST_WSL_FAIL = "list"
 Assert-Throws { Test-DistroPresent } "Failed listing must not be treated as an absent distro"
 $env:BLAME_TEST_WSL_FAIL = ""
+Assert-Equal (Test-DistroRunning) $true "running distro is listed by name"
+$env:BLAME_TEST_WSL_STOPPED = "1"
+Assert-Equal (Test-DistroRunning) $false "no running distribution is a stopped one"
+& {
+  function Invoke-DistroScript { throw "A status read must not start the distribution" }
+  $checks = @(Get-StatusChecks)
+  Assert-Equal $checks[-1].name "vm" "stopped distro reports the VM"
+  Assert-Equal $checks[-1].status "unavailable" "stopped distro is startable, not missing"
+}
+$env:BLAME_TEST_WSL_STOPPED = ""
 & {
   function Get-Command { return $null }
   Assert-Equal (Test-WslAvailable) $false "missing wsl.exe is unsupported"

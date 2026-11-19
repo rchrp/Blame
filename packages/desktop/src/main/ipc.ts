@@ -39,6 +39,7 @@ import { registerTerminalIpcHandlers } from "./terminal-ipc";
 import { registerPreviewSurfacesIpc } from "./ipc/preview-surfaces-ipc";
 import { configurePreviewVariables } from "./preview-environment/variables-store";
 import { registerPreviewEnvironmentIpcHandlers } from "./ipc/preview-environment-ipc";
+import { registerRuntimeIpcHandlers } from "./ipc/runtime-ipc";
 import {
   localPreviewBridgeGrant,
   registerWorkspaceIpcHandlers,
@@ -61,7 +62,6 @@ export type DesktopIpcOptions = {
   // The API this computer runs for use without an account.
   localApi: ConstructorParameters<typeof LocalApiService>[0];
   beforeInstall(): Promise<void>;
-  onRuntimeReady(): void;
 };
 
 let previewService: PreviewService | undefined;
@@ -78,6 +78,8 @@ export function suspendStartedCloudPreviews() {
 }
 
 export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
+  // First: every request to the Blame Runtime goes through its power.
+  registerRuntimeIpcHandlers();
   const setProjectMenuReady = installApplicationMenu();
   ipcMain.on("project-menu:ready", (event, ready: unknown) => {
     if (!options.isAppWindow(event.sender) || typeof ready !== "boolean")
@@ -161,7 +163,6 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerWhatsNewIpcHandlers();
   registerWorkspaceIpcHandlers({
     beforeGitWrite: (worktree) => previews.syncBarrier(worktree),
-    onRuntimeReady: options.onRuntimeReady,
   });
 }
 

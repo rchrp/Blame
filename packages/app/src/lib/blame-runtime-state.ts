@@ -6,6 +6,7 @@ export type RuntimePhase =
   | "unavailable"
   | "checking"
   | "ready"
+  // Installed and stopped: it starts when a local story needs it.
   | "stopped"
   | "starting"
   // Not installed yet.
@@ -31,7 +32,8 @@ export function runtimePhaseFromReport(report: RuntimeStatusReport): RuntimePhas
   return "needs-repair"
 }
 
-// Work the app starts on its own, without asking.
+// Work the app starts on its own, without asking. A stopped runtime stays
+// stopped until a local story needs it (see `start` in blame-runtime.tsx).
 export function automaticRuntimeOperation(input: {
   autoRepairTried: boolean
   canInstall: boolean
@@ -39,7 +41,6 @@ export function automaticRuntimeOperation(input: {
   phase: RuntimePhase
 }): RuntimeOperation | undefined {
   if (!input.canInstall) return undefined
-  if (input.phase === "stopped") return "start"
   // Updating restarts the runtime: wait until no local story is using it.
   if (input.phase === "update-pending")
     return input.localRunsActive === 0 ? "update" : undefined
@@ -115,7 +116,7 @@ export function runtimePhaseLabel(phase: RuntimePhase) {
     unavailable: "Not available here",
     checking: "Checking…",
     ready: "Ready",
-    stopped: "Stopped",
+    stopped: "Stopped until a local story needs it",
     starting: "Starting…",
     missing: "Not installed",
     "update-pending": "Update waiting for running stories",

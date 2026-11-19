@@ -13,6 +13,7 @@ import {
   ensureLocalPreviewAwake,
   hibernateLocalPreview,
   localPreviewHibernated,
+  localPreviewWaking,
   releaseLocalPreviewHibernation,
 } from "./local-preview-hibernation.ts";
 import {
@@ -157,6 +158,28 @@ test("restarts a preview whose dependencies changed while it slept", async () =>
   await ensureLocalPreviewAwake(root, "the app");
   assert.deepEqual(restarts, [root]);
   assert.match(logs.at(-1)!, /restarting it because pnpm-lock\.yaml changed/);
+});
+
+test("reports a wake under way, restart included", async () => {
+  const { restarts } = setup("running\t0\n");
+  const root = await worktree();
+  await hibernateLocalPreview(root);
+  let restarted = () => undefined as void;
+  configureLocalPreviewHibernation({
+    log: () => undefined,
+    restart: (worktree) => {
+      restarts.push(worktree);
+      return new Promise<void>((resolve) => (restarted = resolve));
+    },
+  });
+  const awake = ensureLocalPreviewAwake(root, "the app");
+  assert.equal(localPreviewWaking(root), true);
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  assert.deepEqual(restarts, [root]);
+  assert.equal(localPreviewWaking(root), true);
+  restarted();
+  await awake;
+  assert.equal(localPreviewWaking(root), false);
 });
 
 test("a stop unpauses the preview without waking it", async () => {

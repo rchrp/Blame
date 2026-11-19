@@ -20,6 +20,7 @@ import { promisify } from "node:util";
 import { hostGitCommand } from "./host-git.ts";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
+import { RuntimeStoppedError } from "./runtime-power.ts";
 import {
   platformWorktreeRoot,
   runtimeExecution,
@@ -232,7 +233,11 @@ export async function run(
         user: input.user ?? "blame",
       });
     } catch (error) {
-      if (runtimeAgentCommandFailed(error)) throw error;
+      if (
+        runtimeAgentCommandFailed(error) ||
+        error instanceof RuntimeStoppedError
+      )
+        throw error;
     }
   }
   const spec = runtimeCommand(command, args, { ...input, execution });
@@ -331,7 +336,11 @@ export async function readExistingFiles(
         await runtimeAgentClient({ env, platform }).readExistingFiles(paths)
       ).files;
     } catch (error) {
-      if (runtimeAgentCommandFailed(error)) throw error;
+      if (
+        runtimeAgentCommandFailed(error) ||
+        error instanceof RuntimeStoppedError
+      )
+        throw error;
     }
   }
   const entries = await Promise.all(

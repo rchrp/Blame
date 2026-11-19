@@ -63,7 +63,8 @@ export function useStoryPreviewPreparation(
   // The model of the setup agents, as for a merge.
   const selection = useModelSelection({ role: "alternative" })
   // Local Container worktrees live in the Blame Runtime.
-  const runtimePhase = useBlameRuntime().phase
+  const { phase: runtimePhase, start: startRuntime } = useBlameRuntime()
+  const runtimeStopped = runtimePhase === "stopped"
   const runtimeReady =
     runtimePhase === "ready" || runtimePhase === "unavailable"
   const ready = Boolean(
@@ -91,11 +92,15 @@ export function useStoryPreviewPreparation(
       const key = worktreeKey(story)
       const start = startingStories.get(story.id)
       if (preparing.has(key) || (!start && !interrupted.has(key))) continue
-      if (story.workspaceMode === "local-container" && !runtimeReady) continue
+      if (story.workspaceMode === "local-container" && !runtimeReady) {
+        // It starts for this preparation, which runs once it is ready.
+        if (runtimeStopped) void startRuntime()
+        continue
+      }
       startingStories.delete(story.id)
       void prepareStoryPreview(current, story, start)
     }
-  }, [backlog.stories, ready, runtimeReady])
+  }, [backlog.stories, ready, runtimeReady, runtimeStopped, startRuntime])
 }
 
 async function prepareStoryPreview(

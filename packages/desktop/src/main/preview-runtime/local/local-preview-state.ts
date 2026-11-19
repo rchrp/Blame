@@ -76,6 +76,8 @@ export async function localPreviewRuntimeState(
     inFlight: boolean;
     /** Whether the worktree may still serve a preview. */
     served: boolean;
+    /** A wake was under way before the files were read. */
+    waking: boolean;
   },
 ): Promise<ProjectPreviewRuntimeState> {
   const files = await readLocalPreviewFiles(worktree);
@@ -101,12 +103,16 @@ export async function localPreviewRuntimeState(
     (await previewWorktreeIsRepository(worktree))
       ? await localPreviewUrl(worktree, inspection)
       : undefined;
+  // Woken after the runtime stopped: its containers went with it, and the
+  // wake is starting it again.
+  const restarting =
+    input.waking && !inspection.services.some(({ state }) => state);
   const lifecycle = localPreviewLifecycle(
     state,
     selected ? statuses[selected.id] : undefined,
     browserPreview,
     previewUrl,
-    input.inFlight,
+    input.inFlight || restarting,
   );
   return {
     configurations,

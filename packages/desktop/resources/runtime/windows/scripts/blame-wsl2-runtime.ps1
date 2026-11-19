@@ -215,6 +215,16 @@ function Test-DistroUsesWsl2 {
   Test-DistroUsesWsl2Text (Get-WslListText)
 }
 
+# Names only: the verbose list translates its states. With no distribution
+# running, wsl.exe fails with a translated sentence.
+function Test-DistroRunning {
+  $result = Invoke-WslHost -WslArgs @("--list", "--running", "--quiet")
+  if ($result.Code -ne 0) {
+    return $false
+  }
+  ($result.Stdout -replace "`0", "") -match "(?m)^\s*$([regex]::Escape($DistroName))\s*$"
+}
+
 function Test-ContainerRuntimeCommand {
   param([string[]]$CommandArgs)
   if ($CommandArgs[0] -match "^(compose|container|info|inspect|network|volume)$") {
@@ -249,6 +259,13 @@ function Get-StatusChecks {
     return $checks
   }
   $checks.Add((New-Check "wsl2" "available"))
+  # Any command in the distribution starts it: a stopped one is reported
+  # as such, and starts when Blame needs it (ensure).
+  if (-not (Test-DistroRunning)) {
+    $checks.Add((New-Check "vm" "unavailable" "Start BlameRuntime from Blame runtime setup."))
+    return $checks
+  }
+  $checks.Add((New-Check "vm" "available"))
   Add-DistroChecks $checks
   $checks
 }
@@ -700,7 +717,8 @@ switch ($args[0]) {
     Uninstall-Runtime
   }
   "stop" {
-    # Ends the distribution's processes when Blame quits.
+    # Ends the distribution's processes once Blame no longer uses them or
+    # quits; WSL shuts its VM down once no distribution runs.
     Invoke-WslHost -WslArgs @("--terminate", $DistroName) | Out-Null
   }
   default {

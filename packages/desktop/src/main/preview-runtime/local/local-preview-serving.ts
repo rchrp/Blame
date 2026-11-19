@@ -6,6 +6,7 @@ import {
 } from "@blame/preview-runtime";
 import { ComposeEngine } from "@blame/preview-runtime/compose";
 import { parse as parseYaml } from "yaml";
+import { runtimeBackground } from "../../runtime-power.ts";
 import {
   joinWorkspacePath,
   pathExists,
@@ -136,7 +137,8 @@ export async function startLocalPreviewServing(
 export function startReviewBuildSweeper(input: ServingDependencies) {
   dependencies = input;
   if (sweeper) return;
-  sweeper = setInterval(() => void sweep(), sweepIntervalMs);
+  // Not a use of the Blame Runtime: an awake preview keeps it running.
+  sweeper = setInterval(() => void runtimeBackground(sweep), sweepIntervalMs);
   sweeper.unref?.();
 }
 

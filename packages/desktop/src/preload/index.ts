@@ -506,6 +506,15 @@ const api: BlameDesktopApi = {
     runtimeStatus: () => ipcRenderer.invoke("workspace:get-runtime-status"),
     ensureRuntimeReady: (onProgress) =>
       invokeRuntimeOperation("workspace:ensure-runtime-ready", onProgress),
+    onRuntimePowerChange: (callback) => {
+      const handler = (
+        _event: unknown,
+        event: Parameters<typeof callback>[0],
+      ) => callback(event);
+      ipcRenderer.on("workspace:runtime-power", handler);
+      return () =>
+        ipcRenderer.removeListener("workspace:runtime-power", handler);
+    },
     repairRuntime: (onProgress) =>
       invokeRuntimeOperation("workspace:repair-runtime", onProgress),
     resetRuntime: (onProgress) =>

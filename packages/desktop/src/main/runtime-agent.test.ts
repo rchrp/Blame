@@ -312,6 +312,8 @@ test("runtime agent client delegates and cancels semantic workspace execution", 
     controller.signal,
   );
 
+  // Once the request is out: the connection waits for the runtime first.
+  await new Promise((resolve) => setImmediate(resolve));
   controller.abort();
   await assert.rejects(execution, { name: "AbortError" });
   await new Promise((resolve) => setImmediate(resolve));

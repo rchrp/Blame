@@ -2,7 +2,12 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import { RuntimeProgressBody } from "@/components/runtime/runtime-progress"
-import { usePlatform, type RuntimeProgress, type RuntimeStatusReport } from "@/context/platform"
+import {
+  usePlatform,
+  type RuntimePowerEvent,
+  type RuntimeProgress,
+  type RuntimeStatusReport,
+} from "@/context/platform"
 import {
   automaticRuntimeOperation,
   runtimeOperationDoneTitle,
@@ -20,7 +25,10 @@ import {
 
 // One place that knows the state of the Blame Runtime (the sandbox that runs
 // local container previews) and drives installs, updates and repairs.
-// Everything else asks it instead of checking the runtime on its own.
+// Everything else asks it instead of checking the runtime on its own. The
+// desktop starts the runtime when something needs it and stops it once
+// unused: this follows those changes and shows a start the way it shows its
+// own operations.
 
 export type RuntimeInstallPrompt = {
   // Called when the person agrees to install or repair.
@@ -36,6 +44,8 @@ type BlameRuntimeContextValue = {
   report?: RuntimeStatusReport
   // Installs (or repairs) in the background; progress shows bottom right.
   install(): Promise<boolean>
+  // Starts a stopped runtime for a local story about to need it.
+  start(): Promise<boolean>
   reset(): Promise<boolean>
   refresh(): Promise<RuntimePhase>
   // Opens the one dialog that explains the runtime and offers to install it.
@@ -105,15 +115,7 @@ export function BlameRuntimeProvider({
           : operation === "repair" ? workspace?.repairRuntime ?? workspace?.ensureRuntimeReady
             : workspace?.ensureRuntimeReady
       if (!action) return Promise.resolve(false)
-      const title = runtimeOperationTitle(operation)
-      const show = (next?: RuntimeProgress) =>
-        toast.loading(title, {
-          className: "progress-notification-toast",
-          description: <RuntimeProgressBody progress={next} />,
-          duration: Infinity,
-          id: toastId,
-          position: "bottom-right",
-        })
+      const show = (next?: RuntimeProgress) => showRuntimeProgress(operation, next)
       setPhase(runtimeOperationPhase(operation))
       setProgress(undefined)
       setLastError(undefined)
@@ -129,27 +131,13 @@ export function BlameRuntimeProvider({
           const next = await workspace?.runtimeStatus?.()
           if (next) setReport(next)
           setPhase(next ? runtimePhaseFromReport(next) : "ready")
-          toast.success(runtimeOperationDoneTitle(operation), {
-            description:
-              operation === "update"
-                ? "Queued stories start again."
-                : "Local container previews are ready to use.",
-            duration: 5_000,
-            id: toastId,
-            position: "bottom-right",
-          })
+          showRuntimeDone(operation)
           return true
         } catch (error) {
           const detail = runtimeFailureDetail(error)
           setLastError(detail)
           setPhase("needs-repair")
-          toast.error(runtimeOperationFailedTitle(operation), {
-            action: { label: "Details", onClick: () => setPrompt({}) },
-            description: detail.split("\n").at(-1),
-            duration: 10_000,
-            id: toastId,
-            position: "bottom-right",
-          })
+          showRuntimeFailure(operation, detail, () => setPrompt({}))
           return false
         } finally {
           setProgress(undefined)
@@ -180,6 +168,42 @@ export function BlameRuntimeProvider({
     }
   }, [available, refresh])
 
+  // Starts and stops the desktop decided on: a start that something else
+  // asked for shows like one of ours; ours show their own progress.
+  const startShown = React.useRef(false)
+  React.useEffect(() => {
+    if (!available || !workspace?.onRuntimePowerChange) return
+    return workspace.onRuntimePowerChange((event: RuntimePowerEvent) => {
+      if (running.current) return
+      if (event.state === "starting") {
+        startShown.current = true
+        setPhase("starting")
+        setProgress(event.progress)
+        showRuntimeProgress("start", event.progress)
+        return
+      }
+      const shown = startShown.current
+      startShown.current = false
+      setProgress(undefined)
+      if (event.state === "running") {
+        void refresh().then(() => {
+          if (shown) showRuntimeDone("start")
+        })
+        return
+      }
+      if (!event.error) {
+        setPhase("stopped")
+        if (shown) toast.dismiss(toastId)
+        return
+      }
+      const detail = event.error
+      void refresh().then(() => {
+        setLastError(detail)
+        showRuntimeFailure("start", detail, () => setPrompt({}))
+      })
+    })
+  }, [available, refresh, workspace])
+
   // Updates and a first repair happen on their own.
   React.useEffect(() => {
     const operation = automaticRuntimeOperation({
@@ -189,7 +213,7 @@ export function BlameRuntimeProvider({
       phase,
     })
     if (!operation) return
-    if (operation === "repair" || operation === "start") autoRepairTried.current = true
+    if (operation === "repair") autoRepairTried.current = true
     void run(operation)
   }, [canInstall, localRunsActive, phase, run])
 
@@ -198,6 +222,11 @@ export function BlameRuntimeProvider({
     return run(phaseRef.current === "missing" ? "install" : "repair")
   }, [run])
   const reset = React.useCallback(() => run("reset"), [run])
+  const start = React.useCallback(() => {
+    if (phaseRef.current === "ready") return Promise.resolve(true)
+    if (phaseRef.current !== "stopped") return running.current ?? Promise.resolve(false)
+    return run("start")
+  }, [run])
   const promptInstall = React.useCallback(
     (next: RuntimeInstallPrompt = {}) => setPrompt(next),
     []
@@ -218,8 +247,9 @@ export function BlameRuntimeProvider({
       report,
       reset,
       setLocalRunsActive,
+      start,
     }),
-    [canInstall, closePrompt, install, lastError, phase, progress, prompt, promptInstall, refresh, report, reset]
+    [canInstall, closePrompt, install, lastError, phase, progress, prompt, promptInstall, refresh, report, reset, start]
   )
 
   return (
@@ -227,10 +257,52 @@ export function BlameRuntimeProvider({
   )
 }
 
+function showRuntimeProgress(operation: RuntimeOperation, progress?: RuntimeProgress) {
+  toast.loading(runtimeOperationTitle(operation), {
+    className: "progress-notification-toast",
+    description: <RuntimeProgressBody progress={progress} />,
+    duration: Infinity,
+    id: toastId,
+    position: "bottom-right",
+  })
+}
+
+function showRuntimeDone(operation: RuntimeOperation) {
+  toast.success(runtimeOperationDoneTitle(operation), {
+    description:
+      operation === "update"
+        ? "Queued stories start again."
+        : "Local container previews are ready to use.",
+    duration: 5_000,
+    id: toastId,
+    position: "bottom-right",
+  })
+}
+
+function showRuntimeFailure(operation: RuntimeOperation, detail: string, details: () => void) {
+  toast.error(runtimeOperationFailedTitle(operation), {
+    action: { label: "Details", onClick: details },
+    description: detail.split("\n").at(-1),
+    duration: 10_000,
+    id: toastId,
+    position: "bottom-right",
+  })
+}
+
 export function useBlameRuntime() {
   const value = React.useContext(BlameRuntimeContext)
   if (!value) throw new Error("useBlameRuntime must be used inside BlameRuntimeProvider")
   return value
+}
+
+// Starts a stopped runtime once when a screen shows the user is about to
+// need it (writing a Local Container story), not again after an idle stop.
+export function useRuntimeWarmup(intended: boolean) {
+  const runtime = React.useContext(BlameRuntimeContext)
+  const start = React.useEffectEvent(() => void runtime?.start())
+  React.useEffect(() => {
+    if (intended) start()
+  }, [intended])
 }
 
 // Lets screens rendered outside the provider (tests, harnesses) opt out.

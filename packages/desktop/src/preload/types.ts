@@ -71,7 +71,11 @@ import type {
   PreviewEnvironmentClient,
   PreviewServingSettingsClient,
 } from "@blame/app";
-import type { IssueReport, RuntimeProgress } from "@blame/app";
+import type {
+  IssueReport,
+  RuntimePowerEvent,
+  RuntimeProgress,
+} from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { RuntimeStatusReport } from "../main/runtime-manager";
 import type { CreateProjectInput } from "../main/project-creation";
@@ -574,6 +578,9 @@ export type BlameDesktopApi = {
     ensureRuntimeReady(
       onProgress?: (progress: RuntimeProgress) => void,
     ): Promise<HostDependencyReport>;
+    onRuntimePowerChange(
+      callback: (event: RuntimePowerEvent) => void,
+    ): () => void;
     repairRuntime(
       onProgress?: (progress: RuntimeProgress) => void,
     ): Promise<HostDependencyReport>;
