@@ -53,7 +53,7 @@ export const codeSigningSections = [
         "macOS: the application and its runtime helpers, signed with an Apple Developer ID certificate and notarized by Apple.",
       ),
       paragraph(
-        "Only files built from Blame's source are signed. Third-party binaries that Blame ships unchanged, such as Electron's libraries, ripgrep, node-pty's helpers and pnpm, keep their upstream signature or none.",
+        "Only files built from Blame's source are signed. Third-party binaries that Blame ships unchanged, such as Electron's libraries, ripgrep, agent-browser, node-pty's helpers and pnpm, keep their upstream signature or none.",
       ),
     ],
   },

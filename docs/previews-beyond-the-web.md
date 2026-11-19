@@ -57,8 +57,8 @@ unchanged for web projects.
   (`app/src/components/backlog/drawer/native-preview.tsx`,
   `desktop/src/main/preview-browser/preview-browser-manager.ts`).
 - **Agent tools.** The story agent sees the preview through
-  `get_preview_devtools` and the `preview_devtools__*` tools (Chrome
-  DevTools MCP against a CDP proxy), `project_app` in Direct mode, and
+  `get_preview_devtools` and the `preview_devtools__*` tools
+  (agent-browser against a CDP proxy), `project_app` in Direct mode, and
   `get_preview_container_logs` (`agent-runtime/src/preview-harness-tools.ts`).
 - **Worktrees on macOS.** A local-container story worktree lives inside the
   VM (`/home/blame/.local/share/blame/runtime/worktrees`). The VM mounts the
