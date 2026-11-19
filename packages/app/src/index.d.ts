@@ -6,6 +6,7 @@ export type { LocalApiClient } from "./context/platform-local-api"
 export type { PreviewEnvironmentClient } from "./context/platform-preview-environment"
 export type { PreviewServingSettingsClient } from "./context/platform-preview-serving"
 export type { AgentGithubAccessClient } from "./context/platform-agent-github-access"
+export type { RunLogsClient } from "./context/platform-run-logs"
 export type {
   PreviewTerminalClient,
   PreviewSurfacesClient,

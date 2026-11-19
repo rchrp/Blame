@@ -34,6 +34,7 @@ mountApp(root, {
     systemNotifications: window.blame.systemNotifications,
     appStatus: window.blame.appStatus,
     terminal: window.blame.terminal,
+    runLogs: window.blame.runLogs,
     updates: window.blame.updates,
     workspace: window.blame.workspace,
     windowControls: window.blame.windowControls,

@@ -299,6 +299,7 @@ export type BacklogStatusPip = {
 export type BlameDesktopApi = {
   previewDevices: import("@blame/app").PreviewDevicesClient;
   previewTerminal: import("@blame/app").PreviewTerminalClient;
+  runLogs: import("@blame/app").RunLogsClient;
   previewSurfaces: import("@blame/app").PreviewSurfacesClient;
   auth: {
     onCallback(
