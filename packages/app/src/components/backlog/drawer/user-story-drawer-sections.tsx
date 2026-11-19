@@ -451,14 +451,15 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
         : undefined,
     [providers]
   )
+  // Follows the story, not its updates: each turn keeps this callback.
+  const storyId = userStory?.id
   const loadActivityDetail = React.useCallback(
     async (run: { id: string }, activity: UserStoryAgentActivity) => {
-      if (!userStory) return activity.detail
-      return (
-        await api.agentRunActivityDetail(userStory.id, run.id, activity.id)
-      ).detail
+      if (!storyId) return activity.detail
+      return (await api.agentRunActivityDetail(storyId, run.id, activity.id))
+        .detail
     },
-    [api, userStory]
+    [api, storyId]
   )
 
   return (

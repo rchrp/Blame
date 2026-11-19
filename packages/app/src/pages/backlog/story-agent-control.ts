@@ -16,6 +16,19 @@ type BacklogRuns = {
   loadDetail(story: UserStory): Promise<UserStory>
 }
 
+// Aborts the session a pause stops. Returns the runtime's refusal, if any.
+export function pauseAbortRefusal(
+  story: Pick<UserStory, "agentStatus" | "clineSessionId">,
+  agent?: { sessions: { abort(sessionId: string): Promise<void> } }
+): Promise<{ error: unknown } | undefined> {
+  if (!story.clineSessionId || story.agentStatus === "Paused")
+    return Promise.resolve(undefined)
+  return Promise.resolve(agent?.sessions.abort(story.clineSessionId)).then(
+    () => undefined,
+    (error: unknown) => ({ error })
+  )
+}
+
 // Closes the run that was executing when the person paused the agent or
 // interrupted it with a comment. Aborting a session sends no final event,
 // so without this the run stays "running" forever and is later mistaken

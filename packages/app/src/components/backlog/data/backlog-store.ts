@@ -37,40 +37,149 @@ type BacklogState = {
   stories: UserStory[]
 }
 
-type BacklogStoreValue = ReturnType<typeof useBacklogStoreValue>
+type BacklogActions = ReturnType<typeof useBacklogActions>
+type BacklogStoreValue = ReturnType<typeof backlogValue>
 
-const BacklogStoreContext = React.createContext<BacklogStoreValue | undefined>(
-  undefined
-)
+// The backlog's state lives outside React so that a component can follow
+// only the part it shows: an agent saving its run re-renders what shows
+// that run, not every reader of the backlog.
+type BacklogStateStore = {
+  get(): BacklogState
+  set: React.Dispatch<React.SetStateAction<BacklogState>>
+  subscribe(listener: () => void): () => void
+}
+
+const BacklogStoreContext = React.createContext<
+  { actions: BacklogActions; state: BacklogStateStore } | undefined
+>(undefined)
 
 export function BacklogStoreProvider({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const value = useBacklogStoreValue()
+  const [state] = React.useState(createBacklogStateStore)
+  const actions = useBacklogActions(state.set)
+  const value = React.useMemo(() => ({ actions, state }), [actions, state])
 
   return React.createElement(BacklogStoreContext.Provider, { value }, children)
 }
 
+// The whole backlog: re-renders on every change.
 export function useBacklogStore() {
+  const { actions, state } = useBacklogContext()
+  const snapshot = React.useSyncExternalStore(state.subscribe, state.get)
+  return backlogValue(snapshot, actions)
+}
+
+// What `select` reads from the backlog: re-renders only when that changes,
+// as `equal` compares it.
+export function useBacklogSelector<T>(
+  select: (backlog: BacklogStoreValue) => T,
+  equal: (left: T, right: T) => boolean = Object.is
+) {
+  const { actions, state } = useBacklogContext()
+  const selection = React.useRef<{
+    actions: BacklogActions
+    select: typeof select
+    snapshot: BacklogState
+    value: T
+  }>(undefined)
+  const selected = () => {
+    const snapshot = state.get()
+    const current = selection.current
+    if (
+      current?.snapshot === snapshot &&
+      current.actions === actions &&
+      current.select === select
+    )
+      return current.value
+    const value = select(backlogValue(snapshot, actions))
+    selection.current = {
+      actions,
+      select,
+      snapshot,
+      value: current && equal(current.value, value) ? current.value : value,
+    }
+    return selection.current.value
+  }
+  return React.useSyncExternalStore(state.subscribe, selected)
+}
+
+function useBacklogContext() {
   const context = React.useContext(BacklogStoreContext)
   if (!context)
     throw new Error("useBacklogStore must be used within BacklogStoreProvider")
   return context
 }
 
-function useBacklogStoreValue() {
-  const auth = useCloudAuth()
-  const platform = usePlatform()
-  const projects = useProjects()
-  const [state, setState] = React.useState<BacklogState>({
+function createBacklogStateStore(): BacklogStateStore {
+  let state: BacklogState = {
     cleanupStoryIds: new Set(),
     detailedStoryIds: new Set(),
     loading: false,
     setupInitializingStoryIds: new Set(),
     stories: [],
-  })
+  }
+  const listeners = new Set<() => void>()
+  return {
+    get: () => state,
+    set(update) {
+      const next = typeof update === "function" ? update(state) : update
+      if (next === state) return
+      state = next
+      listeners.forEach((listener) => listener())
+    },
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+  }
+}
+
+function backlogValue(state: BacklogState, actions: BacklogActions) {
+  return { ...state, ...actions, ...backlogReaders(state) }
+}
+
+// Each reader keeps its identity while what it reads is unchanged, so that
+// a component given one re-renders only when that changed.
+const readers = new WeakMap<object, unknown>()
+
+function backlogReaders(state: BacklogState) {
+  return {
+    storiesForColumn: reader(
+      state.stories,
+      () => (column: BacklogColumnId) =>
+        state.stories.filter((story) => story.status === column)
+    ),
+    storyCleanup: reader(state.cleanupStoryIds, () =>
+      storyIn(state.cleanupStoryIds)
+    ),
+    storyDetailsLoaded: reader(state.detailedStoryIds, () =>
+      storyIn(state.detailedStoryIds)
+    ),
+    storySetupInitializing: reader(state.setupInitializingStoryIds, () =>
+      storyIn(state.setupInitializingStoryIds)
+    ),
+  }
+}
+
+function reader<Reader>(source: object, create: () => Reader) {
+  if (!readers.has(source)) readers.set(source, create())
+  return readers.get(source) as Reader
+}
+
+function storyIn(storyIds: Set<string>) {
+  return (story?: Pick<UserStory, "id">) =>
+    Boolean(story && storyIds.has(story.id))
+}
+
+function useBacklogActions(
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+) {
+  const auth = useCloudAuth()
+  const platform = usePlatform()
+  const projects = useProjects()
   const loadRequestId = React.useRef(0)
   const detailRequests = React.useRef(new Map<string, Promise<UserStory>>())
   const updateQueues = React.useRef(new Map<string, Promise<unknown>>())
@@ -121,7 +230,7 @@ function useBacklogStoreValue() {
         stories: [],
       })
     }
-  }, [api, projectId])
+  }, [api, projectId, setState])
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)
@@ -157,7 +266,7 @@ function useBacklogStoreValue() {
       }
       return story
     },
-    [api, projectId]
+    [api, projectId, setState]
   )
 
   const update = React.useCallback(
@@ -181,7 +290,7 @@ function useBacklogStoreValue() {
         }))
         return nextStory
       }),
-    [api]
+    [api, setState]
   )
   const undoComment = React.useCallback(
     async (
@@ -193,7 +302,7 @@ function useBacklogStoreValue() {
       replaceStory(nextStory, setState)
       return nextStory
     },
-    [api]
+    [api, setState]
   )
   const validateCommentUndo = React.useCallback(
     (story: UserStory, commentId: string, runId: string) =>
@@ -224,7 +333,7 @@ function useBacklogStoreValue() {
       }))
       return comment
     },
-    [api]
+    [api, setState]
   )
   const createAgentRun = React.useCallback(
     async (story: UserStory, input: UserStoryAgentRunDraft) => {
@@ -244,7 +353,7 @@ function useBacklogStoreValue() {
       }))
       return run
     },
-    [api]
+    [api, setState]
   )
   const updateAgentRun = React.useCallback(
     async (
@@ -263,7 +372,7 @@ function useBacklogStoreValue() {
       }))
       return nextRun
     },
-    [api]
+    [api, setState]
   )
   const finalizeAgentRun = React.useCallback(
     (
@@ -290,7 +399,7 @@ function useBacklogStoreValue() {
         }))
         return nextStory
       }),
-    [api]
+    [api, setState]
   )
   const updateAgentLocal = React.useCallback(
     (
@@ -300,16 +409,14 @@ function useBacklogStoreValue() {
       runInput?: UserStoryAgentRunUpdate
     ) => {
       recordPerformanceCount("backlog.store.update_agent_local")
-      React.startTransition(() => {
-        setState((current) => ({
-          ...current,
-          stories: current.stories.map((currentStory) =>
-            storyWithLocalAgentUpdate(currentStory, story, input, run, runInput)
-          ),
-        }))
-      })
+      setState((current) => ({
+        ...current,
+        stories: current.stories.map((currentStory) =>
+          storyWithLocalAgentUpdate(currentStory, story, input, run, runInput)
+        ),
+      }))
     },
-    []
+    [setState]
   )
   const activityDetail = React.useCallback(
     (story: UserStory, activityId: string) =>
@@ -348,7 +455,7 @@ function useBacklogStoreValue() {
       detailRequests.current.set(story.id, request)
       return request.then((loadedStory) => mergeUserStory(story, loadedStory))
     },
-    [api]
+    [api, setState]
   )
   const updateLocal = React.useCallback(
     (story: UserStory, input: UserStoryUpdate) => {
@@ -362,7 +469,7 @@ function useBacklogStoreValue() {
         ),
       }))
     },
-    []
+    [setState]
   )
 
   const remove = React.useCallback(
@@ -384,14 +491,9 @@ function useBacklogStoreValue() {
         ),
       }))
     },
-    [api, platform.agentScreenshots]
+    [api, platform.agentScreenshots, setState]
   )
 
-  const storiesForColumn = React.useCallback(
-    (column: BacklogColumnId) =>
-      state.stories.filter((story) => story.status === column),
-    [state.stories]
-  )
   const setStorySetupInitializing = React.useCallback(
     (story: UserStory, initializing: boolean) => {
       setState((current) => ({
@@ -403,12 +505,7 @@ function useBacklogStoreValue() {
         ),
       }))
     },
-    []
-  )
-  const storySetupInitializing = React.useCallback(
-    (story?: UserStory) =>
-      Boolean(story && state.setupInitializingStoryIds.has(story.id)),
-    [state.setupInitializingStoryIds]
+    [setState]
   )
   const setStoryCleanup = React.useCallback(
     (story: UserStory, cleanup: boolean) => {
@@ -421,40 +518,50 @@ function useBacklogStoreValue() {
         ),
       }))
     },
-    []
+    [setState]
   )
-  const storyCleanup = React.useCallback(
-    (story?: UserStory) =>
-      Boolean(story && state.cleanupStoryIds.has(story.id)),
-    [state.cleanupStoryIds]
+  return React.useMemo(
+    () => ({
+      activityDetail,
+      create,
+      createAgentRun,
+      createComment,
+      finalizeAgentRun,
+      load,
+      loadDetail,
+      projectId,
+      projectPath,
+      remove,
+      setStoryCleanup,
+      setStorySetupInitializing,
+      undoComment,
+      update,
+      updateAgentLocal,
+      updateAgentRun,
+      updateLocal,
+      validateCommentUndo,
+    }),
+    [
+      activityDetail,
+      create,
+      createAgentRun,
+      createComment,
+      finalizeAgentRun,
+      load,
+      loadDetail,
+      projectId,
+      projectPath,
+      remove,
+      setStoryCleanup,
+      setStorySetupInitializing,
+      undoComment,
+      update,
+      updateAgentLocal,
+      updateAgentRun,
+      updateLocal,
+      validateCommentUndo,
+    ]
   )
-
-  return {
-    ...state,
-    create,
-    createAgentRun,
-    createComment,
-    activityDetail,
-    loadDetail,
-    load,
-    finalizeAgentRun,
-    projectId,
-    projectPath,
-    remove,
-    setStoryCleanup,
-    setStorySetupInitializing,
-    storyCleanup,
-    storyDetailsLoaded: (story?: Pick<UserStory, "id">) =>
-      Boolean(story && state.detailedStoryIds?.has(story.id)),
-    storySetupInitializing,
-    storiesForColumn,
-    undoComment,
-    validateCommentUndo,
-    update,
-    updateAgentLocal,
-    updateAgentRun,
-    updateLocal,
-  }
 }
 
 function agentRunWithUpdate(

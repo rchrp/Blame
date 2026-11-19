@@ -1,7 +1,10 @@
 import { SidebarListSkeleton } from "@/components/shared/skeletons"
 import * as React from "react"
 
-import { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import {
+  useBacklogSelector,
+  type useBacklogStore,
+} from "@/components/backlog/data/backlog-store"
 import {
   selectBacklogStory,
   selectedBacklogStoryId,
@@ -18,7 +21,7 @@ import {
 const storyPageSize = 5
 
 export function ActiveBacklogStories({ pathname }: { pathname: string }) {
-  const backlog = useBacklogStore()
+  const backlog = useBacklogSelector(activeBacklog, sameActiveBacklog)
   const selectedStoryId = React.useSyncExternalStore(
     subscribeToBacklogStorySelection,
     selectedBacklogStoryId
@@ -27,11 +30,7 @@ export function ActiveBacklogStories({ pathname }: { pathname: string }) {
     count: storyPageSize,
     projectId: backlog.projectId,
   })
-  const stories = React.useMemo(
-    () =>
-      backlog.stories.filter(isActiveStory).sort(compareStoriesByMostRecent),
-    [backlog.stories]
-  )
+  const stories = backlog.stories
   const visibleCount =
     pagination.projectId === backlog.projectId
       ? pagination.count
@@ -105,6 +104,40 @@ export function ActiveBacklogStories({ pathname }: { pathname: string }) {
         </SidebarMenuSubItem>
       ) : null}
     </SidebarMenuSub>
+  )
+}
+
+// What the list shows, which an agent saving its run does not change.
+function activeBacklog(
+  backlog: Pick<
+    ReturnType<typeof useBacklogStore>,
+    "loading" | "projectId" | "stories"
+  >
+) {
+  return {
+    loading: backlog.loading,
+    projectId: backlog.projectId,
+    stories: backlog.stories
+      .filter(isActiveStory)
+      .sort(compareStoriesByMostRecent)
+      .map(({ id, status, title }) => ({ id, status, title })),
+  }
+}
+
+function sameActiveBacklog(
+  left: ReturnType<typeof activeBacklog>,
+  right: ReturnType<typeof activeBacklog>
+) {
+  return (
+    left.loading === right.loading &&
+    left.projectId === right.projectId &&
+    left.stories.length === right.stories.length &&
+    left.stories.every(
+      (story, index) =>
+        story.id === right.stories[index].id &&
+        story.status === right.stories[index].status &&
+        story.title === right.stories[index].title
+    )
   )
 }
 

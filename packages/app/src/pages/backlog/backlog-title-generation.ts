@@ -50,11 +50,21 @@ function queuedStoryTitleGenerationBlocked(
   )
 }
 
+// Marks the story while its title is generated. A failed generation leaves
+// the story as it is.
 export async function runQueuedStoryTitleGeneration(
-  request: QueuedUserStoryTitleRequest
+  request: QueuedUserStoryTitleRequest,
+  setGenerating: (generating: boolean) => void
 ) {
-  const title = await generatedQueuedStoryTitle(request)
-  return persistGeneratedQueuedStoryTitle(request, title)
+  setGenerating(true)
+  try {
+    const title = await generatedQueuedStoryTitle(request)
+    return await persistGeneratedQueuedStoryTitle(request, title)
+  } catch {
+    return undefined
+  } finally {
+    setGenerating(false)
+  }
 }
 
 async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {

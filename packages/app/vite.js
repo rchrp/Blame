@@ -3,7 +3,8 @@ import { readFileSync } from "node:fs"
 import { createRequire } from "node:module"
 import { fileURLToPath } from "node:url"
 import tailwindcss from "@tailwindcss/vite"
-import react from "@vitejs/plugin-react"
+import react, { reactCompilerPreset } from "@vitejs/plugin-react"
+import babel from "@rolldown/plugin-babel"
 import pdfAssets from "./vite-pdf-assets.js"
 
 const require = createRequire(import.meta.url)
@@ -65,5 +66,6 @@ export default [
     },
   },
   react(),
+  babel({ presets: [reactCompilerPreset()] }),
   tailwindcss(),
 ]

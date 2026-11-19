@@ -41,6 +41,7 @@ import {
 import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import {
   MarkdownEditor,
+  MarkdownMessage,
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import {
@@ -289,23 +290,29 @@ export function AgentConversationTimeline({
             {runs.map((run, index) => (
               <AgentConversationTurn
                 key={run.id}
+                activityAlwaysVisible={
+                  lastVisibleMessage?.type === "activity" &&
+                  lastVisibleMessage.runId === run.id
+                }
                 checkpointRunCount={
                   checkpointTargets[index]?.checkpointRunCount
+                }
+                commentAlwaysVisible={
+                  lastVisibleMessage?.type === "comment" &&
+                  lastVisibleMessage.runId === run.id
                 }
                 loadChangedFileDiffs={loadChangedFileDiffs}
                 comment={runComment(run, commentsById)}
                 highlightFinalResponse={
                   run.id === highlightedFinalResponseRunId
                 }
-                lastVisibleMessage={lastVisibleMessage}
                 onFileLinkClick={onFileLinkClick}
                 onChangedFileClick={onChangedFileClick}
-                onLoadActivityDetail={(activity) =>
-                  loadActivityDetail(run, activity)
-                }
+                onLoadActivityDetail={loadActivityDetail}
                 onUserMessageUndo={onUserMessageUndo}
                 modelSwitch={modelSwitched(runs[index - 1], run)}
-                responseHeader={responseHeaderForRun?.(run) ?? responseHeader}
+                responseHeader={responseHeader}
+                responseHeaderForRun={responseHeaderForRun}
                 run={run}
               />
             ))}
@@ -329,11 +336,14 @@ export function AgentConversationTimeline({
   )
 }
 
-function AgentConversationTurn({
+// A finished turn does not re-render while a later one streams: every prop
+// it gets stays the same until its own run or comment changes.
+const AgentConversationTurn = React.memo(function AgentConversationTurn({
+  activityAlwaysVisible,
   checkpointRunCount,
   comment,
+  commentAlwaysVisible,
   highlightFinalResponse,
-  lastVisibleMessage,
   onFileLinkClick,
   onChangedFileClick,
   onLoadActivityDetail,
@@ -341,12 +351,15 @@ function AgentConversationTurn({
   loadChangedFileDiffs,
   modelSwitch,
   responseHeader,
+  responseHeaderForRun,
   run,
 }: {
+  // Its last message keeps its actions shown (the conversation's last one).
+  activityAlwaysVisible: boolean
   checkpointRunCount?: number
   comment?: AgentConversationComment
+  commentAlwaysVisible: boolean
   highlightFinalResponse: boolean
-  lastVisibleMessage?: AgentConversationVisibleMessage
   onFileLinkClick?: (path: string) => void
   loadChangedFileDiffs?: (
     sessionId: string,
@@ -354,17 +367,26 @@ function AgentConversationTurn({
     diffEndRef: string
   ) => Promise<VcsFileDiff[]>
   onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
-  onLoadActivityDetail: (activity: UserStoryAgentActivity) => Promise<string>
+  onLoadActivityDetail: (
+    run: AgentConversationRun,
+    activity: UserStoryAgentActivity
+  ) => Promise<string>
   onUserMessageUndo?: (
     target: AgentConversationUserMessageUndo
   ) => Promise<void> | void
   // This turn runs on another model or reasoning than the one before.
   modelSwitch?: boolean
   responseHeader: AgentConversationResponseHeader
+  responseHeaderForRun?: (
+    run: AgentConversationRun
+  ) => AgentConversationResponseHeader | undefined
   run: AgentConversationRun
 }) {
   const activities = agentTimelineActivities(run)
   const sessionId = run.clineSessionId
+  const turnResponseHeader = responseHeaderForRun?.(run) ?? responseHeader
+  const loadActivityDetail = (activity: UserStoryAgentActivity) =>
+    onLoadActivityDetail(run, activity)
 
   function openChangedFile(path: string) {
     if (
@@ -385,10 +407,7 @@ function AgentConversationTurn({
   return (
     <section className="grid gap-5" aria-label="Conversation turn">
       <RunCommentItem
-        alwaysVisible={
-          lastVisibleMessage?.type === "comment" &&
-          lastVisibleMessage.runId === run.id
-        }
+        alwaysVisible={commentAlwaysVisible}
         comment={comment}
         run={run}
         onFileLinkClick={onFileLinkClick}
@@ -399,20 +418,17 @@ function AgentConversationTurn({
         }
       />
       {modelSwitch ? (
-        <ModelSwitchNote responseHeader={responseHeader} run={run} />
+        <ModelSwitchNote responseHeader={turnResponseHeader} run={run} />
       ) : null}
       <ScreenshotGroupProvider activities={activities}>
         <div className="grid min-w-0 gap-5">
           <AgentWorkDetails
             activities={activities}
-            alwaysVisible={
-              lastVisibleMessage?.type === "activity" &&
-              lastVisibleMessage.runId === run.id
-            }
+            alwaysVisible={activityAlwaysVisible}
             highlightFinalResponse={highlightFinalResponse}
             onFileLinkClick={onFileLinkClick}
-            onLoadDetail={onLoadActivityDetail}
-            responseHeader={responseHeader}
+            onLoadDetail={loadActivityDetail}
+            responseHeader={turnResponseHeader}
             run={run}
           />
           <TurnSummary
@@ -424,7 +440,7 @@ function AgentConversationTurn({
       </ScreenshotGroupProvider>
     </section>
   )
-}
+})
 
 export function AgentConversationComposer({
   agentRunning = false,
@@ -1393,13 +1409,10 @@ function AgentReasoning({
     }
   }, [activity, onLoadDetail])
   return (
-    <MarkdownEditor
+    <MarkdownMessage
       appearance="subtle"
       animateAppend={runActive && activity.status === "running"}
       markdown={readableReasoning(detail ?? activity.detail)}
-      minHeight="min-h-0"
-      placeholder=""
-      readOnly
       onFileLinkClick={onFileLinkClick}
     />
   )
@@ -1604,13 +1617,10 @@ function AgentMarkdownTimelineItem({
                 : undefined
             }
           >
-            <MarkdownEditor
+            <MarkdownMessage
               animateAppend={streaming}
               markdown={markdown}
-              readOnly
               onFileLinkClick={onFileLinkClick}
-              placeholder=""
-              minHeight="min-h-0"
             />
           </div>
           {collapsible && contentOverflows ? (

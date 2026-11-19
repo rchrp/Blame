@@ -1002,6 +1002,50 @@ function markdownEditorPointAfter(node: Node) {
   }
 }
 
+type MarkdownAppearance = "bubble" | "subtle"
+
+// Markdown that is only read, such as an agent's message: the editor's
+// frame and preview without the editor, which it would never use.
+export function MarkdownMessage({
+  animateAppend,
+  appearance = "bubble",
+  markdown,
+  onFileLinkClick,
+}: {
+  animateAppend?: boolean
+  appearance?: MarkdownAppearance
+  markdown: string
+  onFileLinkClick?: (path: string) => void
+}) {
+  return (
+    <div
+      data-slot="markdown-editor"
+      className={markdownFrameClassName(appearance)}
+    >
+      <MarkdownPreview
+        animateAppend={animateAppend}
+        className={cn("min-h-0", markdownPreviewPadding(appearance))}
+        markdown={markdown}
+        onFileLinkClick={onFileLinkClick}
+        placeholder=""
+      />
+    </div>
+  )
+}
+
+function markdownFrameClassName(appearance: MarkdownAppearance) {
+  return cn(
+    "relative max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
+    appearance === "subtle" &&
+      // The agent's reasoning: quiet italic, titles included.
+      "rounded-none bg-transparent p-0 text-muted-foreground italic shadow-none ring-0 dark:bg-transparent [&_*]:font-normal"
+  )
+}
+
+function markdownPreviewPadding(appearance: MarkdownAppearance) {
+  return appearance === "subtle" ? "py-2" : "px-4 py-3.5"
+}
+
 export const MarkdownEditor = React.forwardRef<
   HTMLDivElement,
   {
@@ -1009,7 +1053,7 @@ export const MarkdownEditor = React.forwardRef<
     speechSessionKey?: string
     // Where a dictation goes when this editor is closed meanwhile.
     speechTarget?: SpeechTarget
-    appearance?: "bubble" | "subtle"
+    appearance?: MarkdownAppearance
     // Typing outside any text field focuses this editor (when editable).
     focusOnType?: boolean
     markdown: string
@@ -1799,10 +1843,7 @@ export const MarkdownEditor = React.forwardRef<
             else if (ref) ref.current = element
           }}
           className={cn(
-            "relative max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
-            appearance === "subtle" &&
-              // The agent's reasoning: quiet italic, titles included.
-              "rounded-none bg-transparent p-0 text-muted-foreground italic shadow-none ring-0 dark:bg-transparent [&_*]:font-normal",
+            markdownFrameClassName(appearance),
             fileDropActive && "ring-2 ring-primary"
           )}
           onBlur={() => requestAnimationFrame(() => updateMention())}
@@ -1828,10 +1869,7 @@ export const MarkdownEditor = React.forwardRef<
           {readOnly ? (
             <MarkdownPreview
               animateAppend={animateAppend}
-              className={cn(
-                minHeight,
-                appearance === "subtle" ? "py-2" : "px-4 py-3.5"
-              )}
+              className={cn(minHeight, markdownPreviewPadding(appearance))}
               markdown={value}
               onFileLinkClick={onFileLinkClick}
               onTaskToggle={readOnly ? undefined : toggleTaskLine}

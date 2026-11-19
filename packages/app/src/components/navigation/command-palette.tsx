@@ -11,9 +11,9 @@ import {
   CloudIcon,
 } from "lucide-react"
 
-import { backlogColumns } from "@/components/backlog/data/backlog-data"
+import { backlogColumns, type UserStory } from "@/components/backlog/data/backlog-data"
 import { selectBacklogStory } from "@/components/backlog/data/backlog-navigation"
-import { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import { useBacklogSelector } from "@/components/backlog/data/backlog-store"
 import { quickChatSelectedEvent } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { routeShortcuts } from "@/components/navigation/app-shortcuts"
@@ -34,6 +34,7 @@ import { modKeyLabel } from "@/lib/keyboard"
 
 export const newUserStoryEvent = "blame:new-user-story"
 export const openCommandPaletteEvent = "blame:open-command-palette"
+const closedStories: UserStory[] = []
 
 const columnTitles = new Map<string, string>(
   backlogColumns.map((column) => [column.id, column.title])
@@ -47,7 +48,10 @@ export function CommandPalette({
   onShowShortcuts(): void
 }) {
   const [open, setOpen] = React.useState(false)
-  const backlog = useBacklogStore()
+  // Closed, the palette does not follow the backlog.
+  const backlogStories = useBacklogSelector((backlog) =>
+    open ? backlog.stories : closedStories
+  )
   const quickChats = useQuickChatStore()
   const projects = useProjects()
   const theme = useTheme()
@@ -74,7 +78,7 @@ export function CommandPalette({
     requestAnimationFrame(action)
   }
 
-  const stories = [...backlog.stories].sort((left, right) => right.storyNumber - left.storyNumber)
+  const stories = [...backlogStories].sort((left, right) => right.storyNumber - left.storyNumber)
   const recentProjects = projects.recentProjects.filter(
     (project) => project.path !== projects.activeProject?.path
   )
