@@ -435,6 +435,18 @@ Code 2.1): an agent worker holds ~220 MB (footprint) once its runtime is
 loaded and takes ~2 s to load it; a Claude Code process ~110–120 MB, idle
 or after a 160k-token turn.
 
+- The main process does not load the agent runtime (2026-11-19). The
+  package's main entry pulls the whole engine and the Cline SDK; the main
+  process takes the light utilities it needs from targeted entries
+  (`@blame/agent-runtime/preview-manifest`, `/project-run-configurations`,
+  …) and asks a worker for MCP OAuth, which needs the SDK. In the built
+  app on a project's backlog (`scripts/main-process-bench.mjs`, 5
+  interleaved launches): main process 262 → 90 MB of footprint and
+  3,045 → 773 modules loaded, first window 1.06 → 0.50 s, backlog
+  4.47 → 3.89 s; the renderer (97–98 MB) and the first worker, which the
+  backlog starts (222–224 MB, ready in ~0.8 s, first answer after
+  ~2.55 s), are unchanged. `check-main-process-imports.mjs` fails the
+  desktop build when the main process can load the engine again.
 - The pool (`agent-runtime-pool.ts`) starts up to `min(3, cores - 1)`
   workers for concurrent sessions. One-off requests (titles, commit
   messages, merges) go to an existing worker instead of starting one. A

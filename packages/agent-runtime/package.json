@@ -40,6 +40,34 @@
     "./tool-result-envelope": {
       "types": "./src/tool-result-envelope.ts",
       "default": "./dist/tool-result-envelope.js"
+    },
+    "./component-preview-request": {
+      "types": "./src/component-preview-request.ts",
+      "default": "./dist/component-preview-request.js"
+    },
+    "./preview-devtools-policy": {
+      "types": "./src/preview-devtools-policy.ts",
+      "default": "./dist/preview-devtools-policy.js"
+    },
+    "./preview-manifest": {
+      "types": "./src/preview-manifest.ts",
+      "default": "./dist/preview-manifest.js"
+    },
+    "./preview-package-manager": {
+      "types": "./src/preview-package-manager.ts",
+      "default": "./dist/preview-package-manager.js"
+    },
+    "./project-host-orchestration": {
+      "types": "./src/project-host-orchestration.ts",
+      "default": "./dist/project-host-orchestration.js"
+    },
+    "./project-run-configurations": {
+      "types": "./src/project-run-configurations.ts",
+      "default": "./dist/project-run-configurations.js"
+    },
+    "./workspace-revisions": {
+      "types": "./src/harness/workspace-revisions.ts",
+      "default": "./dist/harness/workspace-revisions.js"
     }
   },
   "scripts": {

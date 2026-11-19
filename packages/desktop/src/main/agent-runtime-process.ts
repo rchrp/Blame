@@ -3,9 +3,13 @@ import {
   type ProjectScanLocation,
 } from "./project-scan-resource.ts";
 import {
+  authorizeMcpOAuth,
   BlameAgentRuntime,
   claudeCodeBridgeIdle,
+  clearMcpOAuth,
   closeClaudeCodeSessions,
+  executeLightWorkspaceRequest,
+  listMcpOAuthStatuses,
   type AgentEvent,
   type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
@@ -194,6 +198,10 @@ function runtimeHandlers(runtime: BlameAgentRuntime) {
     ...providerHandlers(runtime),
     ...sessionHandlers(runtime),
     ...workflowHandlers(runtime),
+    ...mcpOAuthHandlers(),
+    // The packaged AppImage's run_task smoke test, where agents run it.
+    "lightWorkspace.execute": (input: unknown) =>
+      executeLightWorkspaceRequest(input as LightWorkspaceExecutionRequest),
     "runtime.prewarm": (input: unknown) => runtime.prewarm(input as never),
     "runtime.idle": (input: unknown) =>
       claudeCodeBridgeIdle(
@@ -227,6 +235,52 @@ function providerHandlers(runtime: BlameAgentRuntime) {
     "providers.subscriptionUsage": (input: unknown) =>
       runtime.providers.subscriptionUsage(input as never),
   };
+}
+
+// The main process keeps the MCP settings file; the Cline SDK reads and
+// writes its OAuth state here, where it is loaded.
+function mcpOAuthHandlers() {
+  return {
+    "mcpOAuth.statuses": (input: unknown) =>
+      listMcpOAuthStatuses(mcpOAuthInput(input).filePath),
+    "mcpOAuth.authorize": async (input: unknown) => {
+      const { filePath, serverName } = mcpOAuthInput(input);
+      await authorizeMcpOAuth({
+        filePath,
+        serverName,
+        openUrl: async (url) => {
+          await host.request("openExternalUrl", {
+            url: mcpAuthorizationUrl(url),
+          });
+        },
+      });
+    },
+    "mcpOAuth.clear": (input: unknown) => {
+      const { filePath, serverName } = mcpOAuthInput(input);
+      clearMcpOAuth(filePath, serverName);
+    },
+  };
+}
+
+function mcpOAuthInput(input: unknown) {
+  return input as { filePath: string; serverName: string };
+}
+
+function mcpAuthorizationUrl(value: string) {
+  const url = new URL(value);
+  const loopbackHttp =
+    url.protocol === "http:" &&
+    (url.hostname === "127.0.0.1" ||
+      url.hostname === "localhost" ||
+      url.hostname === "[::1]");
+  if (
+    url.username ||
+    url.password ||
+    (url.protocol !== "https:" && !loopbackHttp)
+  ) {
+    throw new Error("The MCP server returned an unsafe authorization URL");
+  }
+  return url.toString();
 }
 
 function sessionHandlers(runtime: BlameAgentRuntime) {

@@ -1,10 +1,6 @@
-import {
-  authorizeMcpOAuth,
-  clearMcpOAuth,
-  listMcpOAuthStatuses,
-} from "@blame/agent-runtime";
+import type { McpOAuthStatus } from "@blame/agent-runtime";
 import type { CloudMcpServerConfig, McpServerConfig } from "@blame/app";
-import { ipcMain, shell } from "electron";
+import { ipcMain } from "electron";
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -16,6 +12,7 @@ import {
   mergeCloudServers,
   type McpSettings,
 } from "./mcp-cloud-sync";
+import { runOnAgentRuntime } from "./agent-ipc";
 
 let settingsOperation: Promise<unknown> = Promise.resolve();
 let authorizationRunning = false;
@@ -120,10 +117,9 @@ export function registerMcpIpcHandlers() {
         throw new Error("Complete this MCP server setup before authorizing it");
       authorizationRunning = true;
       try {
-        await authorizeMcpOAuth({
+        await runOnAgentRuntime("mcpOAuth.authorize", {
           filePath: settingsPath(),
           serverName: name,
-          openUrl: openAuthorizationUrl,
         });
         return listServers();
       } finally {
@@ -134,7 +130,10 @@ export function registerMcpIpcHandlers() {
   );
   ipcMain.handle("mcp:disconnect-oauth", (_event, input) =>
     runSettingsOperation(async () => {
-      clearMcpOAuth(settingsPath(), validateName(input));
+      await runOnAgentRuntime("mcpOAuth.clear", {
+        filePath: settingsPath(),
+        serverName: validateName(input),
+      });
       await protectSettingsFile();
       return listServers();
     }),
@@ -147,23 +146,6 @@ async function runSettingsOperation<T>(
   const result = settingsOperation.then(operation, operation);
   settingsOperation = result.catch(() => undefined);
   return result;
-}
-
-async function openAuthorizationUrl(value: string) {
-  const url = new URL(value);
-  const loopbackHttp =
-    url.protocol === "http:" &&
-    (url.hostname === "127.0.0.1" ||
-      url.hostname === "localhost" ||
-      url.hostname === "[::1]");
-  if (
-    url.username ||
-    url.password ||
-    (url.protocol !== "https:" && !loopbackHttp)
-  ) {
-    throw new Error("The MCP server returned an unsafe authorization URL");
-  }
-  await shell.openExternal(url.toString());
 }
 
 function settingsPath() {
@@ -203,31 +185,26 @@ async function protectSettingsFile() {
   if (process.platform !== "win32") await chmod(settingsPath(), 0o600);
 }
 
-function listServers(
-  settings?: McpSettings,
-): Promise<McpServerConfig[]> | McpServerConfig[] {
-  if (!settings)
-    return readSettings().then(listServers) as Promise<McpServerConfig[]>;
+async function listServers(settings?: McpSettings): Promise<McpServerConfig[]> {
+  const servers = settings ?? (await readSettings());
   const statuses = new Map(
-    safeOAuthStatuses().map((status) => [status.serverName, status]),
+    (await safeOAuthStatuses()).map((status) => [status.serverName, status]),
   );
-  return Object.entries(settings.mcpServers).map(([name, value]) =>
+  return Object.entries(servers.mcpServers).map(([name, value]) =>
     deserializeServer(name, value, statuses.get(name)),
   );
 }
 
 function safeOAuthStatuses() {
-  try {
-    return listMcpOAuthStatuses(settingsPath());
-  } catch {
-    return [];
-  }
+  return runOnAgentRuntime<McpOAuthStatus[]>("mcpOAuth.statuses", {
+    filePath: settingsPath(),
+  }).catch((): McpOAuthStatus[] => []);
 }
 
 function deserializeServer(
   name: string,
   value: Record<string, unknown>,
-  oauth?: ReturnType<typeof listMcpOAuthStatuses>[number],
+  oauth?: McpOAuthStatus,
 ): McpServerConfig {
   const nested = isRecord(value.transport) ? value.transport : value;
   const transport =

@@ -175,7 +175,7 @@ void app.whenReady().then(() => {
 async function finishAppImageTaskSmoke() {
   try {
     const { runAppImageTaskSmoke } = await import("./appimage-run-task-smoke");
-    await runAppImageTaskSmoke();
+    await runAppImageTaskSmoke(desktopResources.agentRuntime);
     console.log("Packaged AppImage run_task smoke test passed");
     app.exit(0);
   } catch (error) {

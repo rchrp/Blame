@@ -1,4 +1,4 @@
-import { currentWorkspaceRevisionState } from "@blame/agent-runtime";
+import { currentWorkspaceRevisionState } from "@blame/agent-runtime/workspace-revisions";
 import type { PreviewLifecycleState } from "@blame/preview-contract";
 import { previewSessionLifecycle } from "@blame/preview-runtime";
 import {

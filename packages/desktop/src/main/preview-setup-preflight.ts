@@ -1,8 +1,8 @@
+import type { PreviewManifest } from "@blame/agent-runtime";
 import {
   hostOrchestratedManifestCommand,
   referencedScriptFiles,
-  type PreviewManifest,
-} from "@blame/agent-runtime";
+} from "@blame/agent-runtime/project-host-orchestration";
 import {
   findProjectFilesByName,
   joinWorkspacePath,

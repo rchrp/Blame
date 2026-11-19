@@ -1,10 +1,10 @@
-import {
-  parsePreviewManifest,
-  parseRunConfigurations,
-  type PreviewManifest,
-  type ProjectInitializationDatabaseMode,
-  type ProjectRunConfiguration,
+import type {
+  PreviewManifest,
+  ProjectInitializationDatabaseMode,
+  ProjectRunConfiguration,
 } from "@blame/agent-runtime";
+import { parsePreviewManifest } from "@blame/agent-runtime/preview-manifest";
+import { parseRunConfigurations } from "@blame/agent-runtime/project-run-configurations";
 import {
   compilePreviewManifest,
   type PreviewExecutionPlan,

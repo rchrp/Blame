@@ -18,10 +18,6 @@ export * from "./harness/light-tools.js";
 export * from "./harness/light-workspace.js";
 export * from "./harness/project-memory.js";
 export * from "./harness/session-journal.js";
-export {
-  currentWorkspaceRevisionState,
-  type WorkspaceRevisionState,
-} from "./harness/workspace-revisions.js";
 export type {
   AgentPersonalization,
   Ambition,
@@ -29,32 +25,12 @@ export type {
   Experience,
   ResponseStyle,
 } from "./personalization.js";
-export * from "./preview-devtools-policy.js";
-export * from "./component-preview-request.js";
 export type * from "./preview-environment-types.js";
 export type {
   PreviewEnvironmentToolInput,
   PreviewEnvironmentToolResult,
 } from "./preview-environment-tool.js";
-export { commandWithNextWebpackFallback } from "./next-webpack-fallback.js";
-export {
-  manifestWithProjectPackageManager,
-  projectPackageManager,
-} from "./preview-package-manager.js";
-export {
-  hostOrchestratedManifestCommand,
-  hostOrchestrationChain,
-  hostOrchestrationError,
-  referencedScriptFiles,
-} from "./project-host-orchestration.js";
-export { parseRunConfigurations } from "./project-initialization.js";
 export type { InitializationProgress } from "./initialization-progress.js";
-export {
-  normalizePreviewManifest,
-  normalizePreviewManifestWithPreferences,
-  parsePreviewManifest,
-  validatePreviewManifest,
-} from "./preview-manifest.js";
 export {
   authorizeMcpOAuth,
   clearMcpOAuth,

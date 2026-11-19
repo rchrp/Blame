@@ -12,7 +12,7 @@
     "predev": "pnpm run build:workspace-dependencies && pnpm run build:semantic-harness-payload",
     "dev": "node scripts/dev.mjs",
     "prebuild": "pnpm run build:workspace-dependencies && pnpm run build:semantic-harness-payload",
-    "build": "electron-vite build && node scripts/check-generated-javascript.mjs",
+    "build": "electron-vite build && node scripts/check-generated-javascript.mjs && node scripts/check-main-process-imports.mjs",
     "package": "node scripts/package.mjs",
     "package:linux": "node scripts/package.mjs --linux",
     "package:mac": "node scripts/package.mjs --mac",
@@ -30,7 +30,7 @@
     "test:performance": "pnpm run build:workspace-dependencies && node --test --experimental-strip-types src/main/agent-event-stream.test.ts src/main/preview-browser-partition.test.ts src/main/preview-browser/preview-navigation-policy.test.ts src/main/preview-browser/preview-route-table.test.ts src/main/preview-runtime/cloud-preview-client.test.ts src/main/preview-runtime/local/local-preview-driver.test.ts src/main/preview-runtime/local/local-preview-lifecycle.test.ts src/main/workspaces/workspace-artifact.test.ts src/main/workspaces/workspace-delta.test.ts src/main/workspaces/workspace-sync-service.test.ts src/main/workspaces/workspace-writer-registry.test.ts",
     "test:periodic-reads": "pnpm run build:workspace-dependencies && node --test --experimental-transform-types src/main/periodic-reads.test.ts",
     "typecheck": "tsc --noEmit",
-    "test:package": "node --test scripts/package-deploy-config.test.mjs scripts/package-integrity.test.mjs scripts/package-prune.test.mjs scripts/check-generated-javascript.test.mjs scripts/prepare-node-pty.test.mjs",
+    "test:package": "node --test scripts/package-deploy-config.test.mjs scripts/package-integrity.test.mjs scripts/package-prune.test.mjs scripts/check-generated-javascript.test.mjs scripts/check-main-process-imports.test.mjs scripts/prepare-node-pty.test.mjs",
     "test:local-api": "pnpm --filter @blame/api... run build && electron --experimental-strip-types scripts/local-api-smoke.mjs",
     "test:web-research": "pnpm --filter @blame/agent-runtime build && electron --experimental-strip-types scripts/web-research-smoke.mjs",
     "generate:android-grpc": "node scripts/generate-android-grpc.mjs"

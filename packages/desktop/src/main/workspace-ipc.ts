@@ -1,12 +1,14 @@
+import type {
+  ApplyPreviewInitializationInput,
+  ProjectPreviewRuntimeState,
+  ProjectRunConfiguration,
+} from "@blame/agent-runtime";
+import { parsePreviewManifest } from "@blame/agent-runtime/preview-manifest";
 import {
-  parsePreviewManifest,
-  parseRunConfigurations,
   manifestWithProjectPackageManager,
   projectPackageManager,
-  type ApplyPreviewInitializationInput,
-  type ProjectPreviewRuntimeState,
-  type ProjectRunConfiguration,
-} from "@blame/agent-runtime";
+} from "@blame/agent-runtime/preview-package-manager";
+import { parseRunConfigurations } from "@blame/agent-runtime/project-run-configurations";
 import { type PreviewManifest } from "@blame/preview-contract";
 import { type RuntimeProfileId } from "@blame/preview-runtime";
 import { BrowserWindow, ipcMain } from "electron";

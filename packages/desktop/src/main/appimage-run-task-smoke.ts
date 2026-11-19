@@ -1,13 +1,26 @@
-import { executeLightWorkspaceRequest } from "@blame/agent-runtime";
+import type { executeLightWorkspaceRequest } from "@blame/agent-runtime";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { AgentRuntimeProcessClient } from "./agent-runtime-process-client";
 
-export async function runAppImageTaskSmoke() {
+type TaskResult = Awaited<ReturnType<typeof executeLightWorkspaceRequest>>;
+
+// run_task runs in an agent worker, as it does for agents.
+export async function runAppImageTaskSmoke(agentRuntimeModule: string) {
   const workspace = await mkdtemp(join(tmpdir(), "blame-appimage-task-"));
+  const worker = new AgentRuntimeProcessClient({
+    environment: process.env,
+    handleHostRequest: async (method) => {
+      throw new Error(`The run_task smoke test has no ${method}`);
+    },
+    modulePath: agentRuntimeModule,
+    onEvent: () => undefined,
+    onExit: () => undefined,
+  });
   try {
     await prepareWorkspace(workspace);
-    const result = await executeLightWorkspaceRequest({
+    const result = await worker.request<TaskResult>("lightWorkspace.execute", {
       input: {
         kind: "project",
         task: "test",
@@ -17,6 +30,7 @@ export async function runAppImageTaskSmoke() {
     });
     assertPassed(result);
   } finally {
+    await worker.shutdown();
     await rm(workspace, { force: true, recursive: true });
   }
 }
@@ -35,9 +49,7 @@ async function prepareWorkspace(workspace: string) {
   await writeFile(join(workspace, "src", "index.js"), "export {}\n");
 }
 
-function assertPassed(
-  result: Awaited<ReturnType<typeof executeLightWorkspaceRequest>>,
-) {
+function assertPassed(result: TaskResult) {
   if (result.status !== "ok") throw new Error(result.message);
   const data = result.data as { exitCode?: number; diagnostic?: string };
   if (data.exitCode === 0) return;

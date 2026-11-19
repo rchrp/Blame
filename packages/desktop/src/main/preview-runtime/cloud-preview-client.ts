@@ -11,7 +11,7 @@ import type {
   PreviewSessionEvent,
   PreviewSessionView,
 } from "@blame/preview-runtime";
-import { parsePreviewManifest } from "@blame/agent-runtime";
+import { parsePreviewManifest } from "@blame/agent-runtime/preview-manifest";
 import type { DesktopBridgeGrant } from "../preview-browser/preview-bridge-grant";
 
 export type { DesktopBridgeGrant } from "../preview-browser/preview-bridge-grant";
