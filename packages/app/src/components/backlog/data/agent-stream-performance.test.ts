@@ -1,8 +1,9 @@
 import assert from "node:assert/strict"
 import { performance } from "node:perf_hooks"
-import test from "node:test"
+import test, { mock } from "node:test"
 
 import type { AgentEvent } from "@blame/agent-runtime"
+import { createAgentEventCoalescer } from "@blame/agent-runtime/agent-event-coalescer"
 
 import type { UserStoryAgentActivity } from "./backlog-data.ts"
 import { resumableEventStreamUrl } from "./agent-event-stream-url.ts"
@@ -359,6 +360,47 @@ test("flushes text before an activity boundary", async () => {
   await coordinator.disconnect()
 })
 
+test("renders the same conversation whether deltas arrive one by one or merged by the worker", async () => {
+  const oneByOne = sequenced(streamedRun().map(({ event }) => event))
+  const merged = sequenced(coalescedRun(streamedRun()))
+
+  assert.ok(merged.length < oneByOne.length / 2)
+  assert.deepEqual(await renderedRun(merged), await renderedRun(oneByOne))
+})
+
+test("a reconnection replaying merged deltas renders the whole conversation", async () => {
+  const merged = sequenced(coalescedRun(streamedRun()))
+  const persisted: AgentStreamSnapshot[] = []
+  const first = coordinatorWith(
+    new AgentStreamStore(new FrameScheduler()),
+    (snapshot) => {
+      persisted.push(snapshot)
+    }
+  )
+  merged.slice(0, 9).forEach((value) => void first.push(value))
+  await first.disconnect()
+
+  const store = recoveredStore(persisted)
+  const resumed = new AgentStreamCoordinator({
+    ...identity,
+    executionId: "00000000-0000-4000-8000-000000000001",
+    initialState: {},
+    persist: () => undefined,
+    recoveredSnapshots: persisted.map((snapshot) => ({
+      event: snapshot.persistenceEvent,
+      update: snapshot.update,
+    })),
+    store,
+  })
+  merged.forEach((value) => void resumed.push(value))
+  await resumed.disconnect()
+
+  assert.deepEqual(
+    renderedActivities(store),
+    await renderedRun(sequenced(streamedRun().map(({ event }) => event)))
+  )
+})
+
 const identity = { runId: "run-1", sessionId: "session-1" }
 
 function coordinatorWith(
@@ -502,4 +544,104 @@ function event(sequenceNumber: number, type: AgentEvent["type"]): AgentEvent {
     sessionId: identity.sessionId,
     type,
   }
+}
+
+type TimedEvent = { at: number; event: AgentEvent }
+
+// Deltas as a model streams them: reasoning, an answer split around a tool,
+// a blank delta opening a message, and a second iteration.
+function streamedRun(): TimedEvent[] {
+  const run: TimedEvent[] = []
+  let at = 0
+  const push = (type: AgentEvent["type"], payload: object, gapMs = 4) => {
+    at += gapMs
+    run.push({ at, event: { payload, sessionId: identity.sessionId, type } })
+  }
+  const stream = (
+    type: "reasoning" | "text",
+    text: string,
+    iteration: number
+  ) =>
+    text
+      .split(/(?<= )/)
+      .forEach((piece) =>
+        push(type, { iteration, phase: "started", text: piece })
+      )
+  stream("reasoning", "Je regarde le fichier de configuration avant tout. ", 1)
+  stream("text", "Je vais lire package.json puis les tests. ", 1)
+  push("tool", {
+    iteration: 1,
+    phase: "started",
+    toolCall: {
+      id: "call-1",
+      input: { path: "package.json" },
+      name: "read_files",
+    },
+  })
+  push(
+    "tool",
+    {
+      iteration: 1,
+      output: { content: "{}" },
+      phase: "finished",
+      toolCall: { id: "call-1", name: "read_files" },
+    },
+    60
+  )
+  push("text", { iteration: 1, phase: "started", text: "\n\n" })
+  stream("text", "Le fichier est vide, je le complète. ", 1)
+  push("text", { iteration: 1, phase: "finished" })
+  stream("reasoning", "Il reste à lancer les tests unitaires. ", 2)
+  stream("text", "Les tests passent tous maintenant. ", 2)
+  return run
+}
+
+function coalescedRun(run: TimedEvent[]) {
+  mock.timers.enable({ apis: ["setTimeout"] })
+  try {
+    const sent: AgentEvent[] = []
+    const coalescer = createAgentEventCoalescer((value) => sent.push(value))
+    let now = 0
+    for (const { at, event: value } of run) {
+      mock.timers.tick(at - now)
+      now = at
+      coalescer.push(value)
+    }
+    coalescer.flush()
+    return sent
+  } finally {
+    mock.timers.reset()
+  }
+}
+
+function sequenced(events: AgentEvent[]) {
+  return events.map((value, index) => ({
+    ...event(index + 1, value.type),
+    payload: value.payload,
+  }))
+}
+
+async function renderedRun(events: AgentEvent[]) {
+  const frames = new FrameScheduler()
+  const store = new AgentStreamStore(frames)
+  const coordinator = coordinatorWith(store, () => undefined)
+  events.forEach((value) => {
+    void coordinator.push(value)
+    frames.paint()
+  })
+  await coordinator.disconnect()
+  return renderedActivities(store)
+}
+
+function renderedActivities(store: AgentStreamStore) {
+  return streamedActivities(store).map(
+    ({ detail, id, iteration, kind, status, title }) => ({
+      detail,
+      id,
+      iteration,
+      kind,
+      status,
+      title,
+    })
+  )
 }
