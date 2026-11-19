@@ -7,4 +7,12 @@
 //! runtime VM and in the cloud, and runs in tests against in-memory fakes with
 //! no network and no clock.
 
+mod digest;
+pub mod policy;
 pub mod ports;
+pub mod projection;
+
+pub use policy::{
+    CompactionOptions, ContextPolicy, EngineOptions, NoContextEdits, RecoveryPolicy, RetryPolicy,
+    WatchdogOptions,
+};
