@@ -2,21 +2,23 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  chmod,
   mkdir,
   mkdtemp,
   readFile,
   rm,
+  symlink,
   unlink,
   utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { Readable } from "node:stream";
 import { promisify } from "node:util";
 import { gunzipSync } from "node:zlib";
 import test from "node:test";
-import { extract } from "tar-stream";
+import { extract, type Headers } from "tar-stream";
 import {
   buildWorkspaceArtifact,
   buildWorkspaceDeltaArtifact,
@@ -65,7 +67,8 @@ for (const configuration of ["committed", "untracked", "edited"] as const) {
       const artifact = await buildWorkspaceArtifact(root);
       const entries = await archiveEntries(artifact.content);
       assert.equal(entries.has("workspace/archives/results.zip"), false);
-      assert.equal(entries.has("workspace/archives/keep.json"), true);
+      // Committed and unchanged: the bundle carries it.
+      assert.equal(entries.has("workspace/archives/keep.json"), false);
       const transport = await mkdtemp(join(tmpdir(), "blame-cloud-clone-"));
       try {
         const bundle = join(transport, "repository.bundle");
@@ -83,6 +86,10 @@ for (const configuration of ["committed", "untracked", "edited"] as const) {
         await assert.rejects(readFile(join(clone, "archives/results.zip")), {
           code: "ENOENT",
         });
+        assert.equal(
+          await readFile(join(clone, "archives/keep.json"), "utf8"),
+          "{}\n",
+        );
         assert.equal(
           await readFile(join(clone, ".blameignore"), "utf8"),
           rules,
@@ -243,6 +250,68 @@ test("builds a reproducible source artifact without runtime secrets", async () =
     assert.equal(
       history.includes("HISTORICAL_SECRET=never-upload-history"),
       false,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("a full artifact carries only the files a clone of its bundle lacks", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-source-overlay-"));
+  try {
+    await committedRepository(root, {
+      "index.js": "console.log('base')\n",
+      "remove.js": "gone\n",
+      "run.sh": "#!/bin/sh\n",
+      "docs/readme.md": "# Docs\n",
+    });
+    await chmod(join(root, "run.sh"), 0o755);
+    await exec("git", ["-C", root, "add", "run.sh"]);
+    await commit(root, "executable");
+    await writeFile(join(root, "index.js"), "console.log('story')\n");
+    await unlink(join(root, "remove.js"));
+    await writeFile(join(root, "new.txt"), "new\n");
+    await chmod(join(root, "run.sh"), 0o644);
+
+    const artifact = await buildWorkspaceArtifact(root);
+
+    const overlay = [...(await archiveEntries(artifact.content)).keys()]
+      .filter((name) => name.startsWith("workspace/"))
+      .sort();
+    assert.deepEqual(overlay, [
+      "workspace/index.js",
+      "workspace/new.txt",
+      "workspace/run.sh",
+    ]);
+    assert.equal(
+      await runnerWorkspaceHash(artifact.content, root),
+      artifact.workspaceHash,
+    );
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("a full artifact carries the files Git converts on checkout", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-source-attributes-"));
+  try {
+    await committedRepository(root, {
+      ".gitattributes": "*.txt eol=crlf\nversion.c ident\n",
+      "crlf.txt": "first\nsecond\n",
+      "version.c": "// $Id$\n",
+      "plain.md": "# Plain\n",
+    });
+
+    const artifact = await buildWorkspaceArtifact(root);
+
+    const entries = await archiveEntries(artifact.content);
+    assert.equal(entries.has("workspace/crlf.txt"), true);
+    assert.equal(entries.has("workspace/version.c"), true);
+    assert.equal(entries.has("workspace/plain.md"), false);
+    assert.equal(entries.has("workspace/.gitattributes"), false);
+    assert.equal(
+      await runnerWorkspaceHash(artifact.content, root),
+      artifact.workspaceHash,
     );
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -442,6 +511,90 @@ for (const [kind, build, prefix] of [
       }
     });
   }
+}
+
+async function committedRepository(
+  root: string,
+  files: Record<string, string>,
+) {
+  await exec("git", ["init", "--quiet", root]);
+  for (const [path, content] of Object.entries(files)) {
+    await mkdir(dirname(join(root, path)), { recursive: true });
+    await writeFile(join(root, path), content);
+  }
+  await exec("git", ["-C", root, "add", "."]);
+  await commit(root, "base");
+}
+
+function commit(root: string, message: string) {
+  return exec("git", [
+    "-C",
+    root,
+    "-c",
+    "user.name=Blame Test",
+    "-c",
+    "user.email=test@blame.so",
+    "commit",
+    "--quiet",
+    "-m",
+    message,
+  ]);
+}
+
+// The sandbox runner's reconstruction of a full artifact: a clone of the
+// bundle without Git configuration, the files the manifest does not list
+// removed, the overlay copied on top. Returns the workspace hash.
+async function runnerWorkspaceHash(content: Buffer, scratch: string) {
+  const staging = await mkdtemp(join(scratch, ".runner-"));
+  const entries = new Map<string, { header: Headers; content: Buffer }>();
+  await new Promise<void>((resolve, reject) => {
+    const archive = extract();
+    archive.on("entry", (header, stream, next) => {
+      const chunks: Buffer[] = [];
+      stream.on("data", (chunk) => chunks.push(Buffer.from(chunk)));
+      stream.once("end", () => {
+        entries.set(header.name, { header, content: Buffer.concat(chunks) });
+        next();
+      });
+      stream.once("error", reject);
+    });
+    archive.once("finish", resolve);
+    archive.once("error", reject);
+    Readable.from(gunzipSync(content)).pipe(archive);
+  });
+  const bundle = join(staging, "repository.bundle");
+  const workspace = join(staging, "workspace");
+  await writeFile(bundle, entries.get(".blame/repository.bundle")!.content);
+  await exec(
+    "git",
+    ["clone", "--quiet", "--branch", "main", bundle, workspace],
+    {
+      env: {
+        ...process.env,
+        GIT_CONFIG_GLOBAL: "/dev/null",
+        GIT_CONFIG_NOSYSTEM: "1",
+      },
+    },
+  );
+  const manifest = JSON.parse(
+    entries.get(".blame/source-manifest.json")!.content.toString("utf8"),
+  ) as { files: Record<string, unknown> };
+  const { stdout } = await exec("git", ["-C", workspace, "ls-files", "-z"]);
+  for (const path of stdout.split("\0").filter(Boolean))
+    if (!manifest.files[path]) await unlink(join(workspace, path));
+  for (const [name, entry] of entries) {
+    if (!name.startsWith("workspace/")) continue;
+    const target = join(workspace, name.slice("workspace/".length));
+    await mkdir(dirname(target), { recursive: true });
+    await rm(target, { force: true });
+    if (entry.header.type === "symlink")
+      await symlink(entry.header.linkname!, target);
+    else {
+      await writeFile(target, entry.content);
+      await chmod(target, entry.header.mode!);
+    }
+  }
+  return (await snapshotWorkspace(workspace)).hash;
 }
 
 function archiveEntries(content: Buffer) {

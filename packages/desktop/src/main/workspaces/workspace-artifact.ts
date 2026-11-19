@@ -37,6 +37,8 @@ import {
 const execFileAsync = promisify(execFile);
 const archiveTimestamp = new Date(0);
 const maximumArtifactBytes = 256 * 1024 * 1024;
+// What Git applies when it checks a blob out on Linux without configuration.
+const checkoutAttributes = ["eol", "ident", "working-tree-encoding"];
 
 export type BuiltWorkspaceArtifact = {
   content: Buffer;
@@ -152,7 +154,7 @@ export async function buildWorkspaceArtifact(
     const baseFiles = source.canonical.files;
     const sourceMetadata = source.metadata;
     const bundlePath = join(temporary, "repository.bundle");
-    await createSanitizedBundle(
+    const convertedOnCheckout = await createSanitizedBundle(
       root,
       temporary,
       bundlePath,
@@ -190,7 +192,15 @@ export async function buildWorkspaceArtifact(
         ".blame/repository.bundle",
         0o600,
       );
+      // The runner clones the bundle, removes what the manifest does not
+      // list and copies this overlay on top: the files a clone already has
+      // as the worktree does stay out of it.
       for (const [path, metadata] of Object.entries(snapshot.files)) {
+        if (
+          !convertedOnCheckout.has(path) &&
+          sameSnapshotFile(baseFiles[path], metadata)
+        )
+          continue;
         const absolute = join(root, path);
         if (metadata.type === "symlink") {
           const target = await readlink(absolute);
@@ -849,6 +859,36 @@ async function createSanitizedBundle(
   );
   await git(repository, ["update-ref", "refs/heads/main", commit]);
   await git(repository, ["bundle", "create", bundlePath, "refs/heads/main"]);
+  return checkoutConvertedPaths(repository, entries, indexEnvironment);
+}
+
+// Paths whose checkout differs from their committed content, under the
+// .gitattributes committed with them: a clone cannot reproduce them.
+async function checkoutConvertedPaths(
+  repository: string,
+  entries: CanonicalEntry[],
+  indexEnvironment: Record<string, string>,
+) {
+  const converted = new Set<string>();
+  if (!entries.some(({ path }) => path.split("/").at(-1) === ".gitattributes"))
+    return converted;
+  const fields = (
+    await gitWithInput(
+      repository,
+      ["check-attr", "--cached", "-z", "--stdin"].concat(checkoutAttributes),
+      entries.map(({ path }) => `${path}\0`).join(""),
+      indexEnvironment,
+    )
+  ).split("\0");
+  for (let index = 0; index + 2 < fields.length; index += 3) {
+    const [path, attribute, value] = fields.slice(index, index + 3);
+    const changes =
+      attribute === "eol"
+        ? value === "crlf"
+        : value !== "unspecified" && value !== "unset";
+    if (changes) converted.add(path!);
+  }
+  return converted;
 }
 
 async function gitWithInput(
