@@ -22,6 +22,10 @@ pub(crate) struct Target {
     /// Rig's descriptor name for the provider (`anthropic`, `chatgpt`…),
     /// which Rig compares with a turn's origin before replaying its items.
     pub(crate) rig_provider: &'static str,
+    /// Whether replies cost the catalog's list price. A subscription (the
+    /// Claude Code bridge speaks Anthropic's API but bills a plan) or an
+    /// arbitrary server does not, whatever model it names.
+    pub(crate) priced: bool,
 }
 
 impl Target {

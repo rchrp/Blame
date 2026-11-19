@@ -74,7 +74,10 @@ pub(crate) fn events(mut reply: Streamed<Completion>, target: Target) -> ModelSt
             return;
         }
         let stop = stop_reason(&response);
-        let usage = usage(&response.usage);
+        let mut usage = usage(&response.usage);
+        if !target.priced {
+            usage.cost_micro_usd = None;
+        }
         // Should the parts and the blocks not pair up, the blocks take
         // their place in the reply as their index.
         ended.sort_unstable();

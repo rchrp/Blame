@@ -357,13 +357,12 @@ async fn replays_thinking_signatures_to_the_model_that_wrote_them() {
     second.cache.breakpoints = vec![2];
     let (events, error) = run(&provider, second).await;
     assert!(error.is_none(), "{error:?}");
-    assert!(matches!(
-        events.last(),
-        Some(ModelEvent::Finished {
-            stop: StopReason::EndTurn,
-            ..
-        })
-    ));
+    let Some(ModelEvent::Finished { stop, usage }) = events.last() else {
+        panic!("{events:#?}")
+    };
+    assert_eq!(*stop, StopReason::EndTurn);
+    // 20 in and 3 out at $3/$15 per million: the API is priced.
+    assert_eq!(usage.cost_micro_usd, Some(60 + 45));
 
     let sent = &mock.requests()[1].body;
     let messages = sent["messages"].as_array().expect("messages");
@@ -417,6 +416,13 @@ async fn the_claude_code_bridge_takes_a_bearer_token_at_its_own_address() {
     .await;
     assert!(error.is_none(), "{error:?}");
     assert!(matches!(events.last(), Some(ModelEvent::Finished { .. })));
+    let Some(ModelEvent::Finished { usage, .. }) = events.last() else {
+        panic!("{events:#?}")
+    };
+    assert_eq!(
+        usage.cost_micro_usd, None,
+        "the bridge bills a subscription"
+    );
     let sent = mock.only_request();
     assert_eq!(sent.target, "/bridge/v1/messages");
     assert_eq!(sent.header("authorization"), Some("Bearer bridge-token"));

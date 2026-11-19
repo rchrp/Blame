@@ -271,6 +271,10 @@ impl Provider {
             wire: self.kind.wire(),
             model: request.model.clone(),
             rig_provider,
+            priced: !matches!(
+                self.kind,
+                ProviderKind::ClaudeCode | ProviderKind::ChatGpt | ProviderKind::OpenAiCompatible
+            ),
         }
     }
 }
