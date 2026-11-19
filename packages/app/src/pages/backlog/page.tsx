@@ -58,15 +58,12 @@ import {
 } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import {
-  measurePerformanceOperation,
   recordPerformanceCount,
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { currentPersonalization } from "@/lib/agent-personalization"
 import { showSystemNotification } from "@/lib/system-notifications"
-import { celebrateStory } from "@/lib/celebrate"
-import { inviteToStarAfter } from "@/components/star-invite/star-invite"
 import { reportAgentPersistenceError } from "@/pages/backlog/backlog-rotation-helpers"
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
@@ -82,8 +79,7 @@ import {
 import { shouldCloseDrawerAfterDelete } from "./drawer-delete"
 import {
   approveAndMergeValidationError,
-  notifyMerged,
-  runPostMergeTasks,
+  mergeStoryIntoTarget,
 } from "./story-post-merge"
 import {
   asyncInactiveStoryCleanup,
@@ -91,14 +87,14 @@ import {
   deleteUserStoryWithRuntime,
   inactiveStoryCleanup,
 } from "./story-runtime-cleanup"
-import { activeStory, inactiveStoryFields } from "./story-runtime-state"
+import { activeStory } from "./story-runtime-state"
 import { useReviewCompletion } from "./use-review-completion"
 import { DirectSharedFilesDialog } from "./direct-shared-files-dialog"
 import { useDirectStoryCommit } from "./use-direct-story-commit"
 import { useStoryPullRequest } from "./use-story-pull-request"
 import { useStoryPullRequestSync } from "./use-story-pull-request-sync"
 import { useStoryAgentStream } from "./use-story-agent-stream"
-import { finalizeStoppedRun } from "./story-agent-control"
+import { finalizeStoppedRun, pauseAbortRefusal } from "./story-agent-control"
 import {
   replaceStoryAfterUndo,
   restoreStoryCheckpoint,
@@ -399,12 +395,10 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   )
   const pauseStoryAgent = React.useCallback(
     async (story: UserStory) => {
-      try {
-        if (story.clineSessionId && story.agentStatus !== "Paused")
-          await platform.agent?.sessions.abort(story.clineSessionId)
-      } catch (error) {
+      const refusal = await pauseAbortRefusal(story, platform.agent)
+      if (refusal) {
         toast.error("Couldn't pause the agent", {
-          description: errorMessage(error),
+          description: errorMessage(refusal.error),
           position: "bottom-right",
         })
         return story
@@ -524,6 +518,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     },
     [
       auth,
+      agentSelection.allProviders,
       agentSelection.currentModel,
       agentSelection.currentVariant,
       agentSelection.models,
@@ -712,62 +707,17 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         agentLastEvent: "Approve & Merge started.",
         agentStatus: "Running",
       })
-      try {
-        const codePractices = await projectCodePractices(auth, projects)
-        const result = await measurePerformanceOperation(
-          "agent.transition.approve_merge",
-          () =>
-            platform.agent!.approveAndMerge({
-              apiConnection: auth.apiConnection,
-              providerId: alternativeSelection.currentModel!.provider.id,
-              modelId: alternativeSelection.currentModel!.id,
-              credentialLabel:
-                alternativeSelection.currentModel!.credentialLabel,
-              reasoningEffort: alternativeSelection.currentVariant,
-              repositoryRoot: projects.activeProject!.path,
-              worktree: story.worktree!,
-              storyBranch: story.branch!,
-              targetBranch: story.targetBranch ?? undefined,
-              push: options.push,
-              title: story.title,
-              summary: story.summary,
-              codePractices,
-            })
-        )
-        notifyMerged(result, platform, projects.activeProject!.path)
-        celebrateStory(story.id)
-        inviteToStarAfter("merged")
-        const mergedStory = await updateStory(
-          runningStory,
-          {
-            ...inactiveStoryFields(),
-            agentLastError: null,
-            agentLastEvent: `Merged into ${result.targetBranch}.`,
-            baseCommit: result.baseCommit,
-            mergeCommit: result.mergeCommit,
-            mergedAt: new Date().toISOString(),
-            status: "done",
-          },
-          { cleanup: false }
-        )
-        void runPostMergeTasks(
-          runningStory,
-          platform,
-          projects.activeProject!.path,
-          {
-            apiConnection: auth.apiConnection,
-            fallbackBase: result.baseCommit,
-            modelId: alternativeSelection.currentModel!.id,
-            credentialLabel: alternativeSelection.currentModel!.credentialLabel,
-            platform,
-            projectId: projects.activeProject!.id,
-            providerId: alternativeSelection.currentModel!.provider.id,
-            reasoningEffort: alternativeSelection.currentVariant,
-            repositoryRoot: projects.activeProject!.path,
-          }
-        )
-        return mergedStory
-      } catch (error) {
+      return mergeStoryIntoTarget({
+        auth,
+        model: alternativeSelection.currentModel!,
+        platform,
+        projects,
+        push: options.push,
+        reasoningEffort: alternativeSelection.currentVariant,
+        runningStory,
+        story,
+        updateStory,
+      }).catch((error: unknown) => {
         const message = errorMessage(error)
         // Git asking who you are gets its dialog, not a raw error.
         const askedIdentity = gitIdentity?.handleError(message, () =>
@@ -786,7 +736,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           agentLastEvent: message,
           agentStatus: null,
         })
-      }
+      })
     },
     [
       auth,
@@ -911,14 +861,9 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         updateStory,
       })
       if (!request) return
-      setStoryTitleGenerating(story.id, true)
-      try {
-        return await runQueuedStoryTitleGeneration(request)
-      } catch {
-        return undefined
-      } finally {
-        setStoryTitleGenerating(story.id, false)
-      }
+      return runQueuedStoryTitleGeneration(request, (generating) =>
+        setStoryTitleGenerating(story.id, generating)
+      )
     },
     [
       auth,

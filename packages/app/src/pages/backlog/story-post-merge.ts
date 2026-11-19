@@ -2,11 +2,19 @@ import { toast } from "sonner"
 import type { ApproveAndMergeResult } from "@blame/agent-runtime"
 
 import { afterRendererPaint } from "@/components/backlog/data/agent-transition-scheduling"
-import type { UserStory } from "@/components/backlog/data/backlog-data"
+import type {
+  UserStory,
+  UserStoryUpdate,
+} from "@/components/backlog/data/backlog-data"
 import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
+import type { useModelSelection } from "@/components/model/model-selection"
+import { inviteToStarAfter } from "@/components/star-invite/star-invite"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
+import type { useProjects } from "@/context/projects"
+import { celebrateStory } from "@/lib/celebrate"
 import { measurePerformanceOperation } from "@/lib/performance-diagnostics"
+import { projectCodePractices } from "@/lib/project-code-practices"
 import {
   type PreviewEnvironmentSyncInput,
   syncPreviewEnvironment,
@@ -17,6 +25,7 @@ import {
   removeStoryWorktree,
   stopStoryProjectSetup,
 } from "./story-runtime-cleanup"
+import { inactiveStoryFields } from "./story-runtime-state"
 
 // Approve & Merge: what it needs before it starts, and what runs once the
 // story is merged (runtime cleanup, then the preview environment check).
@@ -35,6 +44,78 @@ export function approveAndMergeValidationError(
   if (!model) return "Select a model before approving the merge."
   if (!platform.agent?.approveAndMerge)
     return "Desktop agent runtime is not available."
+}
+
+type ApprovedStoryMerge = {
+  auth: ReturnType<typeof useCloudAuth>
+  model: NonNullable<ReturnType<typeof useModelSelection>["currentModel"]>
+  platform: ReturnType<typeof usePlatform>
+  projects: ReturnType<typeof useProjects>
+  push?: boolean
+  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
+  // The story as Approve & Merge started it.
+  runningStory: UserStory
+  story: UserStory
+  updateStory: (
+    story: UserStory,
+    input: UserStoryUpdate,
+    options: { cleanup?: boolean }
+  ) => Promise<UserStory>
+}
+
+// Merges a story that passed approveAndMergeValidationError, then cleans its
+// runtime in the background. Returns the merged story.
+export async function mergeStoryIntoTarget(input: ApprovedStoryMerge) {
+  const { auth, model, platform, projects, runningStory, story } = input
+  const repositoryRoot = projects.activeProject!.path
+  const codePractices = await projectCodePractices(auth, projects)
+  const result = await measurePerformanceOperation(
+    "agent.transition.approve_merge",
+    () =>
+      platform.agent!.approveAndMerge({
+        apiConnection: auth.apiConnection,
+        providerId: model.provider.id,
+        modelId: model.id,
+        credentialLabel: model.credentialLabel,
+        reasoningEffort: input.reasoningEffort,
+        repositoryRoot,
+        worktree: story.worktree!,
+        storyBranch: story.branch!,
+        targetBranch: story.targetBranch ?? undefined,
+        push: input.push,
+        title: story.title,
+        summary: story.summary,
+        codePractices,
+      })
+  )
+  notifyMerged(result, platform, repositoryRoot)
+  celebrateStory(story.id)
+  inviteToStarAfter("merged")
+  const mergedStory = await input.updateStory(
+    runningStory,
+    {
+      ...inactiveStoryFields(),
+      agentLastError: null,
+      agentLastEvent: `Merged into ${result.targetBranch}.`,
+      baseCommit: result.baseCommit,
+      mergeCommit: result.mergeCommit,
+      mergedAt: new Date().toISOString(),
+      status: "done",
+    },
+    { cleanup: false }
+  )
+  void runPostMergeTasks(runningStory, platform, repositoryRoot, {
+    apiConnection: auth.apiConnection,
+    fallbackBase: result.baseCommit,
+    modelId: model.id,
+    credentialLabel: model.credentialLabel,
+    platform,
+    projectId: projects.activeProject!.id,
+    providerId: model.provider.id,
+    reasoningEffort: input.reasoningEffort,
+    repositoryRoot,
+  })
+  return mergedStory
 }
 
 // Says where the story went. A target branch without upstream is not pushed:
