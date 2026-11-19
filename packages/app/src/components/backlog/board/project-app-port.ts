@@ -59,7 +59,14 @@ export function useLocalPortOwner({
       void client
         .inspectPort({ port, projectPath })
         .then((owner) => {
-          if (active) setState({ key, owner })
+          // Polled: keep the current answer when the owner stays the same.
+          if (!active) return
+          setState((current) =>
+            current?.key === key &&
+            JSON.stringify(current.owner) === JSON.stringify(owner)
+              ? current
+              : { key, owner }
+          )
         })
         .catch(() => undefined)
     }

@@ -172,20 +172,41 @@ function connects(host: string, port: number) {
   });
 }
 
+type CommandRunner = (
+  command: string,
+  args: string[],
+) => Promise<{ stdout: string }>;
+
+const runCommand: CommandRunner = (command, args) =>
+  execFileAsync(command, args, { timeout: 3_000 });
+
+// The folder a process runs in, by process: polled every few seconds, the
+// same server keeps answering on the port for hours.
+const processFolders = new Map<string, string>();
+const rememberedProcessFolders = 32;
+
 export async function unixListeningProcess(
   port: number,
   platform: NodeJS.Platform,
+  run: CommandRunner = runCommand,
 ): Promise<ListeningProcess | undefined> {
-  const { stdout } = await execFileAsync(
-    "lsof",
-    ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-Fpc"],
-    { timeout: 3_000 },
-  );
+  const { stdout } = await run("lsof", [
+    "-nP",
+    `-iTCP:${port}`,
+    "-sTCP:LISTEN",
+    "-Fpc",
+  ]);
   const listening = parseLsofProcess(stdout);
   if (!listening?.pid) return listening;
-  const cwd = await processFolder(listening.pid, platform).catch(
-    () => undefined,
-  );
+  const key = `${listening.pid}:${listening.processName ?? ""}`;
+  const cwd =
+    processFolders.get(key) ??
+    (await processFolder(listening.pid, platform, run).catch(() => undefined));
+  if (cwd && !processFolders.has(key)) {
+    processFolders.set(key, cwd);
+    if (processFolders.size > rememberedProcessFolders)
+      processFolders.delete(processFolders.keys().next().value!);
+  }
   return { ...listening, ...(cwd ? { cwd } : {}) };
 }
 
@@ -201,13 +222,20 @@ export function parseLsofProcess(output: string) {
   return { pid, ...(processName ? { processName } : {}) };
 }
 
-async function processFolder(pid: number, platform: NodeJS.Platform) {
+async function processFolder(
+  pid: number,
+  platform: NodeJS.Platform,
+  run: CommandRunner,
+) {
   if (platform === "linux") return readlink(`/proc/${pid}/cwd`);
-  const { stdout } = await execFileAsync(
-    "lsof",
-    ["-a", "-p", String(pid), "-d", "cwd", "-Fn"],
-    { timeout: 3_000 },
-  );
+  const { stdout } = await run("lsof", [
+    "-a",
+    "-p",
+    String(pid),
+    "-d",
+    "cwd",
+    "-Fn",
+  ]);
   return stdout
     .split("\n")
     .find((line) => line.startsWith("n"))
