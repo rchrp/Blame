@@ -1,6 +1,6 @@
 import * as React from "react"
 
-import { MarkdownEditor } from "@/components/backlog/drawer/markdown-editor"
+import { MarkdownMessage } from "@/components/backlog/drawer/markdown-editor"
 import {
   Dialog,
   DialogContent,
@@ -48,12 +48,7 @@ export function SpecialistThreadDialog({
                   Asked by the lead agent
                 </span>
                 <div className="rounded-2xl bg-muted/60 ring-1 ring-foreground/10 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0">
-                  <MarkdownEditor
-                    markdown={request}
-                    minHeight="min-h-0"
-                    placeholder=""
-                    readOnly
-                  />
+                  <MarkdownMessage markdown={request} />
                 </div>
               </section>
             ) : null}

@@ -41,6 +41,7 @@ import {
 import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import {
   MarkdownEditor,
+  MarkdownMessage,
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
 import {
@@ -1408,13 +1409,10 @@ function AgentReasoning({
     }
   }, [activity, onLoadDetail])
   return (
-    <MarkdownEditor
+    <MarkdownMessage
       appearance="subtle"
       animateAppend={runActive && activity.status === "running"}
       markdown={readableReasoning(detail ?? activity.detail)}
-      minHeight="min-h-0"
-      placeholder=""
-      readOnly
       onFileLinkClick={onFileLinkClick}
     />
   )
@@ -1619,13 +1617,10 @@ function AgentMarkdownTimelineItem({
                 : undefined
             }
           >
-            <MarkdownEditor
+            <MarkdownMessage
               animateAppend={streaming}
               markdown={markdown}
-              readOnly
               onFileLinkClick={onFileLinkClick}
-              placeholder=""
-              minHeight="min-h-0"
             />
           </div>
           {collapsible && contentOverflows ? (
