@@ -72,6 +72,7 @@ jobs:
           --files='tests/functional/projects.spec.ts'
           --files='tests/functional/project_agent_memories.spec.ts'
           --files='tests/functional/project_code_practices.spec.ts'
+          --files='tests/functional/quick_chat_message_cost.spec.ts'
           --files='tests/functional/security_audits.spec.ts'
           --files='tests/functional/story_numbering.spec.ts'
           --files='tests/functional/user_ai_preferences.spec.ts'

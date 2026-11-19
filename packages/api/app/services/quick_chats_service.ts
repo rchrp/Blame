@@ -121,7 +121,7 @@ export default class QuickChatsService {
   }
 
   async createMessage(userId: string, id: string, input: CreateQuickChatMessageInput) {
-    await this.find(userId, id)
+    await this.quickChatQuery(userId).where('id', id).firstOrFail()
     const attachments = await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
     const messageId = await db.transaction(async (transaction) => {
       const message = await QuickChatMessage.create(
@@ -191,8 +191,8 @@ export default class QuickChatsService {
   }
 
   async createAgentRun(userId: string, id: string, input: CreateQuickChatAgentRunInput) {
-    const quickChat = await this.find(userId, id)
-    if (input.messageId && !quickChat.messages.some((message) => message.id === input.messageId)) {
+    const quickChat = await this.quickChatQuery(userId).where('id', id).firstOrFail()
+    if (input.messageId && !(await quickChatHasMessage(quickChat.id, input.messageId))) {
       throw new Error('Quick chat message not found.')
     }
     return QuickChatAgentRun.create({
@@ -532,6 +532,15 @@ function agentRunCompletedAtUpdate(input: { completedAt?: DateTime | null; statu
   if (input.completedAt !== undefined) return { completedAt: input.completedAt }
   if (terminalStatus(input.status)) return { completedAt: DateTime.now() }
   return {}
+}
+
+async function quickChatHasMessage(quickChatId: string, messageId: string) {
+  const message = await QuickChatMessage.query()
+    .select('id')
+    .where('quickChatId', quickChatId)
+    .where('id', messageId)
+    .first()
+  return message !== null
 }
 
 function orderMessages(query: ReturnType<typeof QuickChatMessage.query>) {
