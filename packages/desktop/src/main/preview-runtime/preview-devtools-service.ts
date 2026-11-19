@@ -273,6 +273,10 @@ export class PreviewDevtoolsService {
       input,
       previewDevtoolsToolTimeoutMs("navigate_page"),
     );
+    // The daemon starts a screen stream on a loopback port, open to any
+    // local process and to pages served from localhost: the agent's page
+    // is only reachable through the proxy.
+    await context.cli(["stream", "disable"]);
     await context.cli(["get", "url"]);
     if (!connection.reconnected) return;
     connection.notice = await this.pageState.restore(

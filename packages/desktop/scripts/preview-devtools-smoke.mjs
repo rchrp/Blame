@@ -163,6 +163,7 @@ async function inspectAgentBrowser(iteration) {
   await verifyResize(call, iteration);
   const dark = await verifyDarkMode(call, iteration);
   await verifyNavigationScope(call);
+  assertDaemonListensNowhere();
   assert.equal(userView.webContents.getURL(), `${currentUrl}#user`);
   results.push({
     iteration,
@@ -321,6 +322,28 @@ function assertNoBrowserLaunched() {
   }).trim();
   assert.equal(downloaded, "", `agent-browser downloaded ${downloaded}`);
   assert.ok(agentBrowserExecutable());
+}
+
+// The agent-browser daemon reaches the page through the proxy only: its
+// screen stream, which would listen on a loopback port, is turned off.
+function assertDaemonListensNowhere() {
+  const executable = agentBrowserExecutable();
+  const daemons = execFileSync("ps", ["-axo", "pid=,command="], {
+    encoding: "utf8",
+  })
+    .split("\n")
+    .map((line) => line.trim().match(/^(\d+) (.*)$/u))
+    .filter((match) => match?.[2].startsWith(executable))
+    .map((match) => match[1]);
+  assert.ok(daemons.length, "an agent-browser daemon runs");
+  for (const pid of daemons) {
+    const listening = execFileSync(
+      "sh",
+      ["-c", `lsof -nP -a -p ${pid} -iTCP -sTCP:LISTEN || true`],
+      { encoding: "utf8" },
+    ).trim();
+    assert.equal(listening, "", `agent-browser listens: ${listening}`);
+  }
 }
 
 // Linux only: the Electron process must not listen on any TCP port other

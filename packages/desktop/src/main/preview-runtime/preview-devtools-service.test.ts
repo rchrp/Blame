@@ -96,6 +96,7 @@ test("one session attaches once, then runs each tool as an agent-browser command
   await service.call(input("press_key", { key: "Enter" }));
   await service.call(input("drag", { from: "@e1", to: "@e2" }));
   assert.deepEqual(commands(), [
+    "stream disable",
     "get url",
     "snapshot -i",
     "click @e1",
@@ -136,7 +137,7 @@ test("navigation stays on the preview and accepts a path", async () => {
   await service.call(input("navigate_page", { url: "/settings?tab=2" }));
   await service.call(input("navigate_page", { type: "back" }));
   // The page being left takes its console messages with it.
-  assert.deepEqual(commands().slice(1), [
+  assert.deepEqual(commands().slice(2), [
     "console --clear",
     "errors --clear",
     "open http://127.0.0.1:5173/settings?tab=2",
@@ -207,6 +208,7 @@ test("a command that never answers resets the connection, and the next call rest
   assert.deepEqual(
     after.map(({ args }) => args.join(" ")),
     [
+      "stream disable",
       "get url",
       "set viewport 941 620",
       "set media dark",
@@ -362,7 +364,7 @@ test("emulate refuses an empty or out-of-range setting before reaching the brows
     const result = await service.call(input("emulate", args));
     assert.equal(result.isError, true, JSON.stringify(args));
   }
-  assert.deepEqual(commands(), ["get url"]);
+  assert.deepEqual(commands(), ["stream disable", "get url"]);
   await service.dispose();
 });
 
