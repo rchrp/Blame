@@ -141,13 +141,24 @@ function useMarkdownPreviewBlocks(markdown: string, animateAppend: boolean) {
         : [],
   }))
 
+  // The blocks shown are this markdown's (parsed on mount, or by the last
+  // parse): only another markdown is sent to the worker.
+  const parsed = preview.markdown === markdown
+  if (parsed && preview.enabled !== animateAppend) {
+    setPreview({ ...preview, enabled: animateAppend, reveals: [] })
+  }
+  // One parse at a time per message: the text it streamed meanwhile is
+  // parsed once that one ends, only in its latest version.
+  const parseKey = React.useId()
   React.useEffect(() => {
+    if (parsed) return
     let active = true
     const controller = new AbortController()
     runWorkerTask<{ markdown: string }, MarkdownPreviewBlock[]>(
       new URL("./markdown-preview.worker.ts", import.meta.url),
       { markdown },
-      controller.signal
+      controller.signal,
+      parseKey
     )
       .catch((error) => {
         if (workerTaskAborted(error)) return []
@@ -163,7 +174,7 @@ function useMarkdownPreviewBlocks(markdown: string, animateAppend: boolean) {
       active = false
       controller.abort()
     }
-  }, [animateAppend, markdown])
+  }, [animateAppend, markdown, parseKey, parsed])
 
   const latestRevealId = preview.reveals.at(-1)?.id
   React.useEffect(() => {
