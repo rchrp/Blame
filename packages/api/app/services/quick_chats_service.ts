@@ -111,7 +111,7 @@ export default class QuickChatsService {
   }
 
   async update(userId: string, id: string, input: UpdateQuickChatInput) {
-    const quickChat = await this.find(userId, id)
+    const quickChat = await this.quickChatQuery(userId).where('id', id).firstOrFail()
     const update = await this.updateInput(quickChat, input)
     quickChat.merge(update)
     await quickChat.save()

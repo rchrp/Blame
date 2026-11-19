@@ -15,7 +15,7 @@ test.group('quick chat message cost', (group) => {
   group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
-  test('sends a message and starts its run without signing earlier attachments', async ({
+  test('sends a message, starts its run and marks the chat running without signing earlier attachments', async ({
     assert,
     client,
   }) => {
@@ -48,6 +48,14 @@ test.group('quick chat message cost', (group) => {
     })
     assert.equal(message.signatures, 0)
     assert.equal(run.signatures, 0)
+    const running = await measured(async () => {
+      const response = await client
+        .patch(`/api/v1/projects/quick-chats/${chat}`)
+        .loginAs(user)
+        .json({ agentStatus: 'Running' })
+      response.assertStatus(200)
+    })
+    assert.equal(running.signatures, 0)
   })
 
   test('refuses a chat, a message and an attachment the user may not use', async ({
@@ -74,6 +82,11 @@ test.group('quick chat message cost', (group) => {
       .loginAs(stranger)
       .json({ kind: 'resume', messageId: message })
     foreignRun.assertStatus(404)
+    const foreignUpdate = await client
+      .patch(`/api/v1/projects/quick-chats/${chat}`)
+      .loginAs(stranger)
+      .json({ title: 'Taken over' })
+    foreignUpdate.assertStatus(404)
     for (const messageId of [otherMessage, strangerMessage, crypto.randomUUID()]) {
       const misplacedRun = await client
         .post(`/api/v1/projects/quick-chats/${chat}/agent-runs`)
@@ -98,6 +111,8 @@ test.group('quick chat message cost', (group) => {
     )
     const runs = await db.from('quick_chat_agent_runs').where('quick_chat_id', chat)
     assert.lengthOf(runs, 0)
+    const stored = await db.from('quick_chats').where('id', chat).firstOrFail()
+    assert.equal(stored.title, 'Chat')
   })
 })
 
