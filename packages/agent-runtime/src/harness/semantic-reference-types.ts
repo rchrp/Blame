@@ -79,6 +79,11 @@ export const semanticReferenceLimits = {
   timeoutMs: 8_000,
   renameTimeoutMs: 12_000,
   workerHeapMb: 512,
+  // Of 1,178 gaps between an agent's successive search_code/read_code calls
+  // (57 sessions, 2026-11-19), 91% were under 30 s and 94% under 60 s; the
+  // longer ones are other work, often checks that need the memory.
+  serviceIdleMs: 30_000,
+  services: 3,
   rootFiles: 2_000,
   observedFiles: 6_000,
   observedExistence: 30_000,

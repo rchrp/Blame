@@ -182,3 +182,25 @@ test("only the JS/TS family is indexed; other files and declaration files return
     assert.equal(await links("src/math.cts"), "add ← user.cjs:2");
   });
 });
+
+test("workspaces with the same files keep their own resolutions and users", async () => {
+  const alias = 'import { mul } from "@/math";\nmul(1);\n';
+  await workspace({
+    "tsconfig.json": '{ "compilerOptions": { "paths": { "@/*": ["./src/*"] } } }',
+    "src/math.ts": math,
+    "src/calc.ts": 'import { add } from "./math.js";\n\nconst x = Math.add;\nexport const y = add(1, 2);\n',
+    "src/alias.ts": alias,
+  }, async (first) => {
+    await workspace({
+      "tsconfig.json": '{ "compilerOptions": { "paths": { "@/*": ["./lib/*"] } } }',
+      "src/math.ts": math,
+      "lib/math.ts": math,
+      "src/alias.ts": alias,
+    }, async (second) => {
+      assert.equal(await first("src/math.ts"), "add ← calc.ts:4 · mul ← alias.ts:2");
+      assert.equal(await second("src/math.ts"), undefined);
+      assert.equal(await second("lib/math.ts"), "mul ← alias.ts:2");
+      assert.equal(await first("src/math.ts"), "add ← calc.ts:4 · mul ← alias.ts:2");
+    });
+  });
+});
