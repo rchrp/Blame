@@ -55,7 +55,6 @@ import {
 } from "@/lib/performance-diagnostics"
 import {
   activeAgentRun,
-  activePreviewStory,
   clineLogPath,
   clineLogRelativePath,
   errorMessage,
@@ -72,6 +71,7 @@ import {
   runningStories,
   staleAgentRunAge,
 } from "./backlog-rotation-helpers"
+import { previewRecoveryStories } from "./preview-recovery-stories"
 import type { StoryAgentStreamControls } from "./use-story-agent-stream"
 import {
   activityUpdates,
@@ -535,7 +535,8 @@ export function useBacklogRotation(
   const recoverActivePreviews = React.useCallback(
     (stories: UserStory[]) => {
       if (!ensureProjectPreviewUrl) return
-      stories.filter(activePreviewStory).forEach((story) => {
+      const hidden = document.visibilityState === "hidden"
+      previewRecoveryStories(stories, hidden).forEach((story) => {
         if (!story.worktree || previewRecoveryStoryIds.current.has(story.id))
           return
         previewRecoveryStoryIds.current.add(story.id)
@@ -562,11 +563,16 @@ export function useBacklogRotation(
   React.useEffect(() => {
     if (!ensureProjectPreviewUrl || backlog.loading) return
     recoverActivePreviews(storiesRef.current)
-    const timer = window.setInterval(
-      () => recoverActivePreviews(storiesRef.current),
-      previewRecoveryIntervalMs
-    )
-    return () => window.clearInterval(timer)
+    const recover = () => recoverActivePreviews(storiesRef.current)
+    const timer = window.setInterval(recover, previewRecoveryIntervalMs)
+    const recoverWhenShown = () => {
+      if (document.visibilityState === "visible") recover()
+    }
+    document.addEventListener("visibilitychange", recoverWhenShown)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener("visibilitychange", recoverWhenShown)
+    }
   }, [
     backlog.loading,
     ensureProjectPreviewUrl,

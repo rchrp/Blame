@@ -111,13 +111,10 @@ const scenarios: Record<string, Poll[]> = {
     { name: "preview recovery", perMinute: 2, call: previewRecovery, stories },
     { name: "card diff stats", perMinute: 4, call: diffRead, stories },
   ],
-  // use-preview-runtime-polling reads nothing in a hidden window.
-  "preview tab, hidden": [
-    { name: "preview recovery", perMinute: 2, call: previewRecovery, stories },
-  ],
-  "diff tab, hidden": [
-    { name: "preview recovery", perMinute: 2, call: previewRecovery, stories },
-  ],
+  // In a hidden window, the drawer reads nothing and recovery keeps up
+  // only the previews of agents at work: none here.
+  "preview tab, hidden": [],
+  "diff tab, hidden": [],
 };
 
 test("counts the runtime commands of the app's periodic reads", async () => {

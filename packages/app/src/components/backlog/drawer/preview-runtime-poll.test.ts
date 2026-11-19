@@ -9,6 +9,8 @@ import {
   samePreviewRuntimeState,
   samePreviewWorktree,
 } from "./preview-runtime-poll.ts"
+import { previewRecoveryStories } from "../../../pages/backlog/preview-recovery-stories.ts"
+import type { UserStory } from "../data/backlog-data.ts"
 
 function runtime(
   statuses: ProjectPreviewRuntimeState["statuses"],
@@ -103,4 +105,20 @@ test("keeps the current state when a read brings nothing new", () => {
     false
   )
   assert.equal(samePreviewRuntimeState(undefined, current), false)
+})
+
+test("recovers in a hidden window only the previews agents use", () => {
+  const story = (id: string, agentStatus: UserStory["agentStatus"]) =>
+    ({
+      agentStatus,
+      id,
+      previewUrl: "http://localhost:3000/",
+      status: "in-progress",
+      worktree: `/w/${id}`,
+    }) as UserStory
+  const stories = [story("idle", "Paused"), story("working", "Running")]
+  const ids = (hidden: boolean) =>
+    previewRecoveryStories(stories, hidden).map(({ id }) => id)
+  assert.deepEqual(ids(false), ["idle", "working"])
+  assert.deepEqual(ids(true), ["working"])
 })

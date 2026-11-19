@@ -9,6 +9,7 @@ import type { useRuntimePreference } from "@/lib/runtime-preference"
 import { showSystemNotification } from "@/lib/system-notifications"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useModelSelection } from "@/components/model/model-selection"
+import { activePreviewStory } from "./preview-recovery-stories.ts"
 
 const agentCompletionRecoveryGraceMs = 60_000
 
@@ -141,14 +142,6 @@ export function clineLogPath(worktree: string, sessionId: string) {
 
 export function clineLogRelativePath(sessionId: string) {
   return `.blame/logs/cline-${sessionId}.log`
-}
-
-export function activePreviewStory(story: UserStory) {
-  return (
-    (story.status === "in-progress" || story.status === "in-review") &&
-    Boolean(story.worktree) &&
-    Boolean(story.previewUrl || story.runConfigurationId)
-  )
 }
 
 export function previewRecoveryStateKey(stories: UserStory[]) {
