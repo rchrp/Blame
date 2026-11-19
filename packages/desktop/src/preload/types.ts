@@ -434,7 +434,8 @@ export type BlameDesktopApi = {
       query: string;
       limit?: number;
     }): Promise<WorkspaceEntry[]>;
-    gitDiff(input: { root: string }): Promise<string>;
+    // `background`: a poll that neither starts the runtime nor counts as its use.
+    gitDiff(input: { background?: boolean; root: string }): Promise<string>;
     gitDiffStats(input: {
       from?: string;
       root: string;
@@ -445,11 +446,16 @@ export type BlameDesktopApi = {
       root: string;
       to: string;
     }): Promise<string>;
-    gitDiffFrom(input: { from: string; root: string }): Promise<string>;
+    gitDiffFrom(input: {
+      background?: boolean;
+      from: string;
+      root: string;
+    }): Promise<string>;
     gitSnapshot(input: { id: string; root: string }): Promise<string>;
     gitStatus(input: { root: string }): Promise<GitStatusResult>;
     gitCommitCount(input: { root: string }): Promise<number>;
     gitLog(input: {
+      background?: boolean;
       currentBranchOnly?: boolean;
       root: string;
       limit?: number;

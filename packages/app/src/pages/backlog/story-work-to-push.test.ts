@@ -26,6 +26,7 @@ function workspace({
     }) {
       calls.push("gitLog")
       assert.deepEqual(input, {
+        background: true,
         root: "/story-worktree",
         limit: 1,
         currentBranchOnly: true,
@@ -34,7 +35,7 @@ function workspace({
     },
     async gitDiff(input: { root: string }) {
       calls.push("gitDiff")
-      assert.deepEqual(input, { root: "/story-worktree" })
+      assert.deepEqual(input, { background: true, root: "/story-worktree" })
       return diff
     },
   }
@@ -78,7 +79,7 @@ test("a story without a pull request or a branch never asks git", async () => {
   }
 })
 
-test("an empty history or a git failure offers nothing to push", async () => {
+test("an empty history offers nothing to push", async () => {
   assert.equal(
     await storyWorkToPush(story, {
       async gitLog() {
@@ -90,15 +91,20 @@ test("an empty history or a git failure offers nothing to push", async () => {
     }),
     false
   )
+})
+
+// A stopped Blame Runtime fails the background read: the board keeps the
+// answer it showed.
+test("a git failure leaves the answer unknown", async () => {
   assert.equal(
     await storyWorkToPush(story, {
       async gitLog() {
-        throw new Error("Worktree unavailable")
+        throw new Error("Blame Runtime is stopped.")
       },
       async gitDiff() {
         assert.fail("No HEAD to compare with")
       },
     }),
-    false
+    undefined
   )
 })

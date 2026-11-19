@@ -1,8 +1,10 @@
 import * as React from "react"
-import { storyWorkingDiff } from "./story-working-diff.ts"
+import { boardDiffReads, storyWorkingDiff } from "./story-working-diff.ts"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import {
+  mergeUserStoryDiffStats,
+  pruneUserStoryDiffStats,
   totalDiffStats,
   type UserStoryDiffStats,
 } from "@/components/backlog/development/development-diff-stats-data"
@@ -259,7 +261,9 @@ async function loadUserStoryDiffStatValue(
   workspace: NonNullable<Platform["workspace"]>
 ) {
   if (target.mode === "working") {
-    return diffStatsFromPatch(await storyWorkingDiff(target, workspace))
+    return diffStatsFromPatch(
+      await storyWorkingDiff(target, boardDiffReads(workspace))
+    )
   }
   if (workspace.gitDiffStats) {
     return workspace.gitDiffStats({
@@ -270,49 +274,4 @@ async function loadUserStoryDiffStatValue(
   }
   const patch = await workspace.gitDiffBetween(target)
   return diffStatsFromPatch(patch)
-}
-
-function mergeUserStoryDiffStats(
-  current: Map<string, UserStoryDiffStats>,
-  targets: UserStoryDiffTarget[],
-  results: UserStoryDiffResult[]
-) {
-  const next = retainedUserStoryDiffStats(current, targets)
-  for (const result of results) {
-    if (result.stats) next.set(result.id, result.stats)
-    else next.delete(result.id)
-  }
-  return sameUserStoryDiffStats(current, next) ? current : next
-}
-
-function pruneUserStoryDiffStats(
-  current: Map<string, UserStoryDiffStats>,
-  targets: UserStoryDiffTarget[]
-) {
-  const next = retainedUserStoryDiffStats(current, targets)
-  return sameUserStoryDiffStats(current, next) ? current : next
-}
-
-function retainedUserStoryDiffStats(
-  current: Map<string, UserStoryDiffStats>,
-  targets: UserStoryDiffTarget[]
-) {
-  const storyIds = new Set(targets.map((target) => target.id))
-  return new Map([...current].filter(([id]) => storyIds.has(id)))
-}
-
-function sameUserStoryDiffStats(
-  current: Map<string, UserStoryDiffStats>,
-  next: Map<string, UserStoryDiffStats>
-) {
-  if (current.size !== next.size) return false
-  return [...current].every(([id, stats]) => {
-    const nextStats = next.get(id)
-    if (!nextStats) return false
-    return (
-      stats.additions === nextStats.additions &&
-      stats.deletions === nextStats.deletions &&
-      stats.files === nextStats.files
-    )
-  })
 }

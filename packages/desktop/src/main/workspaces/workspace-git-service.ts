@@ -31,6 +31,7 @@ import {
 } from "../workspace-runtime-git.ts";
 
 import { gitCommitFiles } from "./workspace-git-commit.ts";
+import { RuntimeStoppedError } from "../runtime-power.ts";
 
 export type GitLogInput = {
   currentBranchOnly?: boolean;
@@ -150,7 +151,9 @@ export async function gitLog(input: GitLogInput) {
   try {
     const { stdout } = await runRuntimeGit(cwd, gitLogArguments(input));
     return parseGitLog(stdout);
-  } catch {
+  } catch (error) {
+    // Not an empty history: a background read while the runtime is stopped.
+    if (error instanceof RuntimeStoppedError) throw error;
     return [];
   }
 }

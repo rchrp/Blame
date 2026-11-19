@@ -52,6 +52,14 @@ export function runtimeBackground<T>(work: () => T): T {
   return background.run(true, work);
 }
 
+/** A read the app marks as background (`background: true`), such as its board's polls. */
+export function runtimeBackgroundWhen<T>(
+  input: { background?: boolean } | undefined,
+  work: () => T,
+): T {
+  return input?.background ? runtimeBackground(work) : work();
+}
+
 /**
  * For a long-lived connection whose callbacks serve every caller: it must
  * not inherit the mode of the request that happened to open it.
