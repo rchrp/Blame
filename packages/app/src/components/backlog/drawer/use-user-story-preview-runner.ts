@@ -94,7 +94,7 @@ export function useUserStoryPreviewRunner(
     (configurationId: string) => setSelection({ configurationId, worktree }),
     [worktree]
   )
-  const pollRuntimeSoon = usePreviewRuntimePolling(
+  usePreviewRuntimePolling(
     workspace,
     worktree,
     enabled,
@@ -169,8 +169,7 @@ export function useUserStoryPreviewRunner(
     setRuntime,
     select,
     repairAction,
-    userStoryId,
-    pollRuntimeSoon
+    userStoryId
   )
   useResumeSuspendedLocalPreview(
     enabled && preference.profile === "local-container",
@@ -822,8 +821,7 @@ function usePreviewRuntimeControl(
   setRuntime: PreviewRuntimeSetter,
   setSelectedId: (configurationId: string) => void,
   repairAction: (error: string) => PreviewSetupRepairAction | undefined,
-  userStoryId: string | undefined,
-  pollRuntimeSoon: () => void
+  userStoryId: string | undefined
 ) {
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
@@ -835,7 +833,6 @@ function usePreviewRuntimeControl(
       if (!selectedId) return undefined
       setSelectedId(selectedId)
       setPendingOperation({ action, configurationId: selectedId })
-      pollRuntimeSoon()
       // A preview the user stopped stays stopped until they start it again.
       if (userStoryId && action === "stop")
         markCloudPreviewAutoStartDisabled(userStoryId)
@@ -853,7 +850,6 @@ function usePreviewRuntimeControl(
     },
     [
       pendingOperation,
-      pollRuntimeSoon,
       repairAction,
       setRuntime,
       setSelectedId,

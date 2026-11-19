@@ -114,6 +114,10 @@ import {
   stopLocalPreview,
 } from "./preview-runtime/local/local-preview-runner.ts";
 import {
+  localPreviewChanged,
+  onLocalPreviewChange,
+} from "./preview-runtime/local/local-preview-changes.ts";
+import {
   forgetPreviewWorktree,
   listLocalPreviewServices,
   localPreviewCurrentUrl,
@@ -402,6 +406,12 @@ export function registerWorkspaceIpcHandlers(
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
   setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   startIdlePreviewSuspension();
+  onLocalPreviewChange((worktree) => {
+    for (const window of BrowserWindow.getAllWindows())
+      window.webContents.send("workspace:project-preview-runtime-changed", {
+        worktree,
+      });
+  });
   ipcMain.handle("workspace:path-exists", (_event, input: { path: string }) =>
     pathExists(input.path),
   );
@@ -1116,7 +1126,10 @@ function startProjectCompose(
       }
       return startProjectComposeOperation(worktree, options);
     })
-    .finally(() => previewStarts.delete(worktree));
+    .finally(() => {
+      previewStarts.delete(worktree);
+      localPreviewChanged(worktree);
+    });
   previewStarts.set(worktree, next);
   return next;
 }

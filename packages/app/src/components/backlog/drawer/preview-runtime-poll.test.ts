@@ -4,10 +4,10 @@ import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime"
 
 import {
   previewRuntimeChangingPollMs,
-  previewRuntimeHiddenPollMs,
   previewRuntimePollDelay,
   previewRuntimeSettledPollMs,
   samePreviewRuntimeState,
+  samePreviewWorktree,
 } from "./preview-runtime-poll.ts"
 
 function runtime(
@@ -33,7 +33,7 @@ function runtime(
   }
 }
 
-const visible = { hidden: false, now: 1_000, quickUntil: 0 }
+const visible = { hidden: false }
 
 test("reads a settled preview's state rarely", () => {
   assert.equal(
@@ -76,24 +76,20 @@ test("reads a changing or unknown preview's state often", () => {
   )
 })
 
-test("reads often for a while after an action, rarely in a hidden window", () => {
-  const settled = runtime({ web: "running" })
+test("reads nothing while the window is hidden", () => {
   assert.equal(
     previewRuntimePollDelay({
-      ...visible,
-      quickUntil: 2_000,
-      runtime: settled,
-    }),
-    previewRuntimeChangingPollMs
-  )
-  assert.equal(
-    previewRuntimePollDelay({
-      ...visible,
       hidden: true,
       runtime: runtime({ web: "starting" }),
     }),
-    previewRuntimeHiddenPollMs
+    undefined
   )
+})
+
+test("matches the desktop's change to the worktree shown", () => {
+  assert.equal(samePreviewWorktree("/w/story-1", "/w/story-1/"), true)
+  assert.equal(samePreviewWorktree("C:\\w\\story-1", "C:/w/story-1"), true)
+  assert.equal(samePreviewWorktree("/w/story-1", "/w/story-12"), false)
 })
 
 test("keeps the current state when a read brings nothing new", () => {

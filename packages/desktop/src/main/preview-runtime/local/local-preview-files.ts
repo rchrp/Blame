@@ -23,6 +23,7 @@ import {
   writeFile,
   writeFileAtomic,
 } from "../../workspace-runtime.ts";
+import { localPreviewChanged } from "./local-preview-changes.ts";
 import { parseLocalPreviewRuntimeSelectionState } from "./local-preview-lifecycle.ts";
 
 // The files a story worktree keeps for its local preview, under `.blame`:
@@ -214,14 +215,15 @@ function parseLocalRuntimeState(
   }
 }
 
-export function writeLocalRuntimeState(
+export async function writeLocalRuntimeState(
   worktree: string,
   state: PreviewRuntimeSelectionState,
 ) {
-  return writeFileAtomic(
+  await writeFileAtomic(
     localPreviewPaths(worktree).runtimeState,
     `${JSON.stringify(state, null, 2)}\n`,
   );
+  localPreviewChanged(worktree);
 }
 
 // Local previews read the manifest through the same compiler as cloud

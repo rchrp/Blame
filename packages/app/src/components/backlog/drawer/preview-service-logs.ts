@@ -1,4 +1,5 @@
 import * as React from "react"
+import { samePreviewWorktree } from "@/components/backlog/drawer/preview-runtime-poll"
 import { usePlatform } from "@/context/platform"
 
 export function useManagedPreviewLog(sessionId?: string, service?: string) {
@@ -72,6 +73,8 @@ export function useManagedPreviewLog(sessionId?: string, service?: string) {
     : { content: "", error: "", loading: Boolean(sessionId) }
 }
 
+// The services of the preview's manifest, read again when the desktop
+// changes the preview's setup or state.
 export function useProjectServices(worktree?: string | null) {
   const platform = usePlatform()
   const [result, setResult] = React.useState<{
@@ -80,23 +83,35 @@ export function useProjectServices(worktree?: string | null) {
   }>({ services: [], worktree: "" })
 
   React.useEffect(() => {
-    if (!worktree || !platform.workspace?.listProjectServices) return
+    const workspace = platform.workspace
+    if (!worktree || !workspace?.listProjectServices) return
     let cancelled = false
+    const show = (services: string[]) =>
+      setResult((current) =>
+        current.worktree === worktree &&
+        current.services.join("\n") === services.join("\n")
+          ? current
+          : { services, worktree }
+      )
     const loadServices = () => {
-      platform.workspace
-        ?.listProjectServices?.({ worktree })
+      workspace
+        .listProjectServices?.({ worktree })
         .then((nextServices) => {
-          if (!cancelled) setResult({ services: nextServices, worktree })
+          if (!cancelled) show(nextServices)
         })
         .catch(() => {
-          if (!cancelled) setResult({ services: [], worktree })
+          if (!cancelled) show([])
         })
     }
     loadServices()
-    const interval = window.setInterval(loadServices, 2000)
+    const stopListening = workspace.onProjectPreviewRuntimeChanged?.(
+      (change) => {
+        if (samePreviewWorktree(change.worktree, worktree)) loadServices()
+      }
+    )
     return () => {
       cancelled = true
-      window.clearInterval(interval)
+      stopListening?.()
     }
   }, [platform.workspace, worktree])
 

@@ -21,12 +21,14 @@ import type { CommandResult, DockerHost } from "@blame/preview-runtime/compose";
 import { parse as parseYaml } from "yaml";
 import { allocatePreviewHostPorts } from "./local-preview-ports.ts";
 import { renderLocalPreview } from "./local-preview-render.ts";
+import { onLocalPreviewChange } from "./local-preview-changes.ts";
 import {
   localPreviewPaths,
   readLocalPreviewManifest,
   readLocalRunConfigurations,
   readLocalRuntimeState,
   writeLocalPreviewInitialization,
+  writeLocalRuntimeState,
 } from "./local-preview-files.ts";
 import {
   inspectLocalPreview,
@@ -102,6 +104,18 @@ const runConfigurations: ProjectRunConfiguration[] = [
     scopes: ["web"],
   },
 ];
+
+test("tells the app once the desktop wrote a preview's state", async (t) => {
+  const worktree = await worktreeFixture(t);
+  const changes: string[] = [];
+  t.after(onLocalPreviewChange((changed) => changes.push(changed)));
+  await mkdir(join(worktree, ".blame/initialization"), { recursive: true });
+  await writeLocalRuntimeState(worktree, { desiredStatus: "running" });
+  assert.deepEqual(changes, [worktree]);
+  assert.deepEqual(await readLocalRuntimeState(worktree), {
+    desiredStatus: "running",
+  });
+});
 
 for (const partial of [false, true]) {
   test(`prepares native story preview files ${partial ? "after a failed attempt left only logs" : "in a fresh worktree"}`, async (t) => {

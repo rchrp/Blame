@@ -111,13 +111,8 @@ const scenarios: Record<string, Poll[]> = {
     { name: "preview recovery", perMinute: 2, call: previewRecovery, stories },
     { name: "card diff stats", perMinute: 4, call: diffRead, stories },
   ],
+  // use-preview-runtime-polling reads nothing in a hidden window.
   "preview tab, hidden": [
-    {
-      name: "preview state",
-      perMinute: 1,
-      call: stateRead,
-      stories: [drawerStory],
-    },
     { name: "preview recovery", perMinute: 2, call: previewRecovery, stories },
   ],
   "diff tab, hidden": [
