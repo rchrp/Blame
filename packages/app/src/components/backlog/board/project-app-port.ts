@@ -132,7 +132,7 @@ export function projectAppAnswer(
   const base = {
     configuration: configuration.name,
     ...(previewUrl ? { previewUrl } : {}),
-    ...(session?.logs ? { logs: session.logs.slice(-6_000) } : {}),
+    ...(session ? { logs: session.log.recentText(6_000) } : {}),
   }
   if (session?.status === "running" || session?.status === "starting")
     return {

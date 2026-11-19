@@ -167,11 +167,14 @@ function attachChildProcess(
   session: Extract<TerminalSession, { runtime: true }>,
   child: ChildProcessWithoutNullStreams,
 ) {
-  child.stdout.on("data", (data: Buffer) =>
-    emitTerminalEvent(session.id, "stdout", data.toString()),
+  // Decoded across chunks: a character cut between two reads stays whole.
+  child.stdout.setEncoding("utf8");
+  child.stderr.setEncoding("utf8");
+  child.stdout.on("data", (data: string) =>
+    emitTerminalEvent(session.id, "stdout", data),
   );
-  child.stderr.on("data", (data: Buffer) =>
-    emitTerminalEvent(session.id, "stderr", data.toString()),
+  child.stderr.on("data", (data: string) =>
+    emitTerminalEvent(session.id, "stderr", data),
   );
   child.on("exit", (code) => {
     sessions.delete(session.id);

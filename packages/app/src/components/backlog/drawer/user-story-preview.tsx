@@ -156,7 +156,7 @@ export type ProjectRunPreview = {
     views: RunnerView[]
   }) => React.ReactNode
   logs: {
-    content: string
+    log?: import("@/components/backlog/board/run-log").RunLog
     // What the selected tab shows while it has no output.
     empty: RunLogEmpty
     items: RunLogItem[]

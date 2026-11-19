@@ -137,6 +137,7 @@ export type Platform = {
   securityAudits?: SecurityAuditClient
   systemNotifications?: SystemNotificationsClient
   terminal?: TerminalClient
+  runLogs?: import("./platform-run-logs").RunLogsClient
   previewDevices?: import("./platform-preview-devices").PreviewDevicesClient
   previewTerminal?: import("./platform-preview-surfaces").PreviewTerminalClient
   previewSurfaces?: import("./platform-preview-surfaces").PreviewSurfacesClient

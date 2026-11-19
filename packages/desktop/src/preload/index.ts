@@ -568,6 +568,13 @@ const api: BlameDesktopApi = {
       return () => ipcRenderer.removeListener(channel, handler);
     },
   },
+  runLogs: {
+    append: (id, lines) => ipcRenderer.send("run-log:append", id, lines),
+    read: (id, from, to) => ipcRenderer.invoke("run-log:read", id, from, to),
+    copy: (id, before, after, endsSelection) =>
+      ipcRenderer.invoke("run-log:copy", id, before, after, endsSelection),
+    close: (id) => ipcRenderer.send("run-log:close", id),
+  },
   terminal: {
     start: (input) => ipcRenderer.invoke("terminal:start", input),
     write: (input) => ipcRenderer.invoke("terminal:write", input),

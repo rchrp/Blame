@@ -26,8 +26,8 @@ export function ProjectRunLogPanel({
     <RunLogPanel
       empty={logs.empty}
       items={logs.items}
+      log={logs.log}
       notice={notice}
-      output={logs.content}
       placeholder="No apps to run yet"
       value={logs.selected}
       onValueChange={logs.onSelect}
@@ -81,7 +81,7 @@ export function ServiceLogPanel({
             })
       }
       items={items}
-      output={stopped ? "" : runtimeLog.content}
+      log={stopped ? undefined : runtimeLog.log}
       placeholder="Loading services"
       value={service}
       onValueChange={onServiceChange}

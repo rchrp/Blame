@@ -1,26 +1,30 @@
 import * as React from "react"
+import { RunLog } from "@/components/backlog/board/run-log"
 import { samePreviewWorktree } from "@/components/backlog/drawer/preview-runtime-poll"
 import { usePlatform } from "@/context/platform"
 
+type ServiceLogState = {
+  error: string
+  loading: boolean
+  log?: RunLog
+}
+
 export function useManagedPreviewLog(sessionId?: string, service?: string) {
   const platform = usePlatform()
-  const [state, setState] = React.useState({
-    content: "",
-    error: "",
-    loading: Boolean(sessionId),
-    service,
-    sessionId,
-  })
+  const [state, setState] = React.useState<
+    ServiceLogState & { service?: string; sessionId?: string }
+  >({ error: "", loading: Boolean(sessionId), service, sessionId })
 
   React.useEffect(() => {
-    if (!sessionId || !platform.previewRuntime?.onLog) return
+    const runLogs = platform.runLogs
+    if (!sessionId || !platform.previewRuntime?.onLog || !runLogs) return
+    const log = new RunLog(runLogs)
+    const shown = { error: "", loading: false, log, service, sessionId }
     // A preview whose services never started sends no log at all.
     const quiet = window.setTimeout(
       () =>
         setState((current) =>
-          current.sessionId === sessionId && current.service === service
-            ? { ...current, loading: false }
-            : { content: "", error: "", loading: false, service, sessionId }
+          current.log === log ? { ...current, loading: false } : shown
         ),
       5_000
     )
@@ -36,41 +40,25 @@ export function useManagedPreviewLog(sessionId?: string, service?: string) {
         )
           return
         const prefix = event.serviceId ? `${event.serviceId} | ` : ""
-        setState((current) => {
-          const content =
-            current.sessionId === sessionId && current.service === service
-              ? current.content
-              : ""
-          return {
-            content: `${content}${prefix}${event.message}\n`.slice(-250_000),
-            error: "",
-            loading: false,
-            service,
-            sessionId,
-          }
-        })
+        log.push(`${prefix}${event.message}\n`)
+        setState((current) =>
+          current.log === log && !current.loading && !current.error
+            ? current
+            : shown
+        )
       },
-      (error) =>
-        setState((current) => ({
-          content:
-            current.sessionId === sessionId && current.service === service
-              ? current.content
-              : "",
-          error,
-          loading: false,
-          service,
-          sessionId,
-        }))
+      (error) => setState({ ...shown, error })
     )
     return () => {
       window.clearTimeout(quiet)
       unsubscribe?.()
+      log.close()
     }
-  }, [platform.previewRuntime, service, sessionId])
+  }, [platform.previewRuntime, platform.runLogs, service, sessionId])
 
   return state.sessionId === sessionId && state.service === service
     ? state
-    : { content: "", error: "", loading: Boolean(sessionId) }
+    : { error: "", loading: Boolean(sessionId) }
 }
 
 // The services of the preview's manifest, read again when the desktop
@@ -123,55 +111,44 @@ export function useProjectServiceLog(
   service?: string
 ) {
   const platform = usePlatform()
-  const [state, setState] = React.useState({
-    content: "",
-    error: "",
-    loading: Boolean(worktree && service),
-    service,
-    worktree,
-  })
+  const { runLogs, workspace } = platform
+  const [state, setState] = React.useState<
+    ServiceLogState & { service?: string; worktree?: string | null }
+  >({ error: "", loading: Boolean(worktree && service), service, worktree })
 
   React.useEffect(() => {
-    if (!worktree || !service || !platform.workspace) return
     if (
-      !platform.workspace.startProjectServiceLogs ||
-      !platform.workspace.stopProjectServiceLogs ||
-      !platform.workspace.onProjectServiceLog
-    ) {
+      !worktree ||
+      !service ||
+      !runLogs ||
+      !workspace?.startProjectServiceLogs ||
+      !workspace.stopProjectServiceLogs ||
+      !workspace.onProjectServiceLog
+    )
       return
-    }
     let cancelled = false
     let cleanup = () => {}
     let activeStreamId = ""
-    void platform.workspace
+    // Each stream has a log of its own: output of the previous tab never
+    // lands in this one.
+    const log = new RunLog(runLogs)
+    void workspace
       .startProjectServiceLogs({ service, worktree })
       .then(({ streamId }) => {
         activeStreamId = streamId
         if (cancelled) {
-          void platform.workspace?.stopProjectServiceLogs?.({ streamId })
+          void workspace.stopProjectServiceLogs?.({ streamId })
           return
         }
-        // Each stream owns the state of its own service: output of the
-        // previous tab never lands in this one.
-        const own = (current: typeof state) =>
-          current.worktree === worktree && current.service === service
-        setState({ content: "", error: "", loading: false, service, worktree })
+        setState({ error: "", loading: false, log, service, worktree })
         cleanup =
-          platform.workspace?.onProjectServiceLog?.(streamId, (event) => {
-            if (event.type === "exit") return
-            setState((current) => ({
-              content: `${own(current) ? current.content : ""}${event.data}`,
-              error: "",
-              loading: false,
-              service,
-              worktree,
-            }))
+          workspace.onProjectServiceLog?.(streamId, (event) => {
+            if (event.type !== "exit") log.push(event.data)
           }) ?? (() => {})
       })
       .catch((error) => {
         if (!cancelled) {
           setState({
-            content: "",
             error:
               error instanceof Error
                 ? error.message
@@ -185,32 +162,24 @@ export function useProjectServiceLog(
     return () => {
       cancelled = true
       cleanup()
+      log.close()
       if (activeStreamId) {
-        void platform.workspace?.stopProjectServiceLogs?.({
-          streamId: activeStreamId,
-        })
+        void workspace.stopProjectServiceLogs?.({ streamId: activeStreamId })
       }
     }
-  }, [platform.workspace, service, worktree])
+  }, [runLogs, service, workspace, worktree])
 
-  if (!worktree || !service) {
-    return { content: "", error: "", loading: false, service, worktree }
-  }
+  if (!worktree || !service) return { error: "", loading: false }
   if (
-    !platform.workspace?.startProjectServiceLogs ||
-    !platform.workspace.stopProjectServiceLogs ||
-    !platform.workspace.onProjectServiceLog
+    !runLogs ||
+    !workspace?.startProjectServiceLogs ||
+    !workspace.stopProjectServiceLogs ||
+    !workspace.onProjectServiceLog
   ) {
-    return {
-      content: "",
-      error: "Desktop workspace bridge is unavailable.",
-      loading: false,
-      service,
-      worktree,
-    }
+    return { error: "Desktop workspace bridge is unavailable.", loading: false }
   }
   if (state.worktree !== worktree || state.service !== service) {
-    return { content: "", error: "", loading: true, service, worktree }
+    return { error: "", loading: true }
   }
   return state
 }

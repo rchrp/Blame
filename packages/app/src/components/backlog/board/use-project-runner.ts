@@ -9,11 +9,13 @@ import type {
   ProjectRunnerPendingOperation,
 } from "@/components/backlog/board/project-runner-types"
 import { usePlatform, type TerminalClient } from "@/context/platform"
+import type { RunLogsClient } from "@/context/platform-run-logs"
+import { RunLog } from "./run-log"
 import { writeProjectCommand } from "./project-runner-terminal"
 
 export type ProjectRunSession = {
   configurationId: string
-  logs: string
+  log: RunLog
   name: string
   sessionId?: string
   status: ProjectRunnerControlStatus
@@ -24,12 +26,20 @@ type SessionRuntime = {
   unsubscribe: () => void
 }
 
+// What an app prints, chunk by chunk (one-off tasks left out).
+export type ProjectRunOutput = {
+  configurationId: string
+  data: string
+  sessionId: string
+}
+
 export function useProjectRunner(
   configurations: ProjectRunConfiguration[],
   projectPath?: string
 ) {
   const platform = usePlatform()
   const terminal = platform.terminal
+  const runLogs = platform.runLogs
   const [selectedId, setSelectedId] = React.useState(
     () => defaultConfiguration(configurations)?.id
   )
@@ -39,7 +49,20 @@ export function useProjectRunner(
   const [pendingOperation, setPendingOperation] =
     React.useState<ProjectRunnerPendingOperation>()
   const runtimesRef = React.useRef(new Map<string, SessionRuntime>())
-  useRunnerCleanup(terminal, runtimesRef)
+  const logsRef = React.useRef(new Map<string, RunLog>())
+  const outputListenersRef = React.useRef(
+    new Set<(output: ProjectRunOutput) => void>()
+  )
+  useRunnerCleanup(terminal, runtimesRef, logsRef)
+  const onOutput = React.useCallback(
+    (listener: (output: ProjectRunOutput) => void) => {
+      outputListenersRef.current.add(listener)
+      return () => {
+        outputListenersRef.current.delete(listener)
+      }
+    },
+    []
+  )
   const selected = selectedConfiguration(configurations, selectedId)
   const selectedSession = sessionFor(sessions, selected?.id)
   const activeSession =
@@ -60,6 +83,7 @@ export function useProjectRunner(
       setSelectedId(id)
       if (sessionFor(sessions, id)) setActiveSessionId(id)
     },
+    onOutput,
     selectSession: setActiveSessionId,
     sessionFor: (id: string) => sessionFor(sessions, id),
     setLogsOpen,
@@ -90,8 +114,14 @@ export function useProjectRunner(
       runProjectTask(task, projectPath, terminal, runnerActions(), onOutput),
   }
 
-  function runnerActions(): RunnerActions {
+  function runnerActions(): RunnerActions | undefined {
+    if (!runLogs) return undefined
     return {
+      logs: logsRef.current,
+      output: (output) => {
+        for (const listener of outputListenersRef.current) listener(output)
+      },
+      runLogs,
       runtimes: runtimesRef.current,
       setActiveSessionId,
       setLogsOpen,
@@ -102,6 +132,9 @@ export function useProjectRunner(
 }
 
 type RunnerActions = {
+  logs: Map<string, RunLog>
+  output: (output: ProjectRunOutput) => void
+  runLogs: RunLogsClient
   runtimes: Map<string, SessionRuntime>
   setActiveSessionId: React.Dispatch<React.SetStateAction<string | undefined>>
   setLogsOpen: React.Dispatch<React.SetStateAction<boolean>>
@@ -126,10 +159,10 @@ async function runProjectTask(
   task: ProjectRunTask,
   projectPath: string | undefined,
   terminal: TerminalClient | undefined,
-  actions: RunnerActions,
+  actions: RunnerActions | undefined,
   onOutput?: (data: string) => void
 ) {
-  if (!projectPath || !terminal) return false
+  if (!projectPath || !terminal || !actions) return false
   if (actions.runtimes.has(task.id)) {
     await stopConfiguration(task.id, terminal, actions, false)
   }
@@ -184,10 +217,10 @@ async function startConfiguration(
   configuration: ProjectRunConfiguration | undefined,
   projectPath: string | undefined,
   terminal: TerminalClient | undefined,
-  actions: RunnerActions,
+  actions: RunnerActions | undefined,
   options: ProjectRunnerStartOptions = {}
 ) {
-  if (!configuration || !projectPath || !terminal) return
+  if (!configuration || !projectPath || !terminal || !actions) return
   actions.setPendingOperation({
     action: actions.runtimes.has(configuration.id) ? "restart" : "start",
     configurationId: configuration.id,
@@ -245,10 +278,9 @@ async function handleStartFailure(
   runtime?.unsubscribe()
   if (runtime) await terminal.stop(runtime.sessionId)
   actions.runtimes.delete(configuration.id)
-  updateSession(actions, configuration.id, {
-    logs: `${initialLogs(configuration, projectPath)}\n${errorText(error)}\n`,
-    status: "error",
-  })
+  const log = openLog(actions, configuration.id)
+  log.push(`${initialLogs(configuration, projectPath)}\n${errorText(error)}\n`)
+  updateSession(actions, configuration.id, { log, status: "error" })
   toast.error(`Unable to start ${configuration.name}`, {
     description: errorText(error),
     position: "bottom-right",
@@ -261,9 +293,11 @@ function openSession(
   actions: RunnerActions,
   revealLogs: boolean
 ) {
+  const log = openLog(actions, configuration.id)
+  log.push(initialLogs(configuration, projectPath))
   const session: ProjectRunSession = {
     configurationId: configuration.id,
-    logs: initialLogs(configuration, projectPath),
+    log,
     name: configuration.name,
     status: "starting",
   }
@@ -275,11 +309,11 @@ function openSession(
 async function stopConfiguration(
   configurationId: string,
   terminal: TerminalClient | undefined,
-  actions: RunnerActions,
+  actions: RunnerActions | undefined,
   trackPending = true
 ) {
-  const runtime = actions.runtimes.get(configurationId)
-  if (!runtime || !terminal) return
+  const runtime = actions?.runtimes.get(configurationId)
+  if (!runtime || !terminal || !actions) return
   if (trackPending) {
     actions.setPendingOperation({ action: "stop", configurationId })
   }
@@ -310,6 +344,7 @@ function subscribeToOutput(
   return terminal.onEvent(sessionId, (event) => {
     if (event.type !== "exit") {
       appendLogs(actions, configurationId, event.data)
+      actions.output({ configurationId, data: event.data, sessionId })
       return
     }
     appendLogs(
@@ -325,7 +360,8 @@ function subscribeToOutput(
 
 function useRunnerCleanup(
   terminal: TerminalClient | undefined,
-  runtimesRef: React.RefObject<Map<string, SessionRuntime>>
+  runtimesRef: React.RefObject<Map<string, SessionRuntime>>,
+  logsRef: React.RefObject<Map<string, RunLog>>
 ) {
   React.useEffect(
     () => () => {
@@ -337,25 +373,32 @@ function useRunnerCleanup(
     },
     [runtimesRef, terminal]
   )
+  React.useEffect(
+    () => () => {
+      for (const log of logsRef.current.values()) log.close()
+      logsRef.current.clear()
+    },
+    [logsRef]
+  )
 }
 
+// A new run starts a new log; the desktop drops the previous one.
+function openLog(actions: RunnerActions, configurationId: string) {
+  actions.logs.get(configurationId)?.close()
+  const log = new RunLog(actions.runLogs)
+  actions.logs.set(configurationId, log)
+  return log
+}
+
+// The output goes to the log alone: the sessions change with the status.
 function appendLogs(
   actions: RunnerActions,
   configurationId: string,
   output: string,
   status?: ProjectRunSession["status"]
 ) {
-  actions.setSessions((sessions) =>
-    sessions.map((session) =>
-      session.configurationId === configurationId
-        ? {
-            ...session,
-            logs: `${session.logs}${output}`,
-            status: status ?? session.status,
-          }
-        : session
-    )
-  )
+  actions.logs.get(configurationId)?.push(output)
+  if (status) updateSession(actions, configurationId, { status })
 }
 
 function updateSession(

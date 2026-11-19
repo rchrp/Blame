@@ -84,7 +84,7 @@ test("an app already running is reported, never started twice", () => {
   const blame = runner({
     sessionFor: () => ({
       configurationId: "web",
-      logs: "ready",
+      log: { recentText: () => "ready" } as never,
       name: "Web app",
       status: "running",
     }),
