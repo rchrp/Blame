@@ -361,6 +361,8 @@ function useCloudPreviewRuntime(input: {
   React.useEffect(() => {
     if (!sessionId || !client || !input.enabled || !input.userStoryId) return
     const interval = window.setInterval(() => {
+      // The session's events still come; the window reads again once shown.
+      if (document.visibilityState === "hidden") return
       void client
         .findForUserStory({
           userStoryId: input.userStoryId!,
