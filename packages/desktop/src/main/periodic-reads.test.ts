@@ -33,11 +33,7 @@ registerHooks({
     } catch (error) {
       // Main process sources import without extensions, as Vite resolves them.
       if (!specifier.startsWith(".")) throw error;
-      for (const candidate of [
-        `${specifier}.ts`,
-        specifier.replace(/\.js$/, ".ts"),
-        `${specifier}/index.ts`,
-      ])
+      for (const candidate of [`${specifier}.ts`, `${specifier}/index.ts`])
         try {
           return next(candidate, context);
         } catch {}
@@ -138,14 +134,39 @@ test("counts the runtime commands of the app's periodic reads", async () => {
       diffRead(story),
     ])
       await invoke(call);
+  const url = `http://localhost:${port}/`;
+  const checks = {
+    stateRead: (state: unknown) => {
+      const { previewUrl, statuses } = state as {
+        previewUrl?: string;
+        statuses: Record<string, string>;
+      };
+      assert.equal(previewUrl, url);
+      assert.deepEqual(statuses, { web: "running" });
+    },
+    previewRecovery: (previewUrl: unknown) => assert.equal(previewUrl, url),
+    diffRead: (diff: unknown) => {
+      for (const file of ["file-1.ts", "file-2.ts", "untracked-3.ts"])
+        assert.match(String(diff), new RegExp(`b/src/${file}`));
+      assert.doesNotMatch(String(diff), /SECRET|\.blame/);
+    },
+  };
+  // What one call costs at most, as requests and programs in the runtime.
+  const budgets = {
+    stateRead: { requests: 3, processes: 3 },
+    previewRecovery: { requests: 3, processes: 3 },
+    diffRead: { requests: 8, processes: 8 },
+  };
   const costs = new Map<string, { requests: number; processes: number }>();
   for (const call of [stateRead, previewRecovery, diffRead]) {
+    const name = call.name as keyof typeof budgets;
     await runtime.reset();
-    const result = await invoke(call(drawerStory));
+    checks[name](await invoke(call(drawerStory)));
     const count = await runtime.count();
-    console.log(call.name, JSON.stringify(count));
-    costs.set(call.name, count);
-    if (call === diffRead) assert.match(String(result), /untracked-3/);
+    console.log(name, JSON.stringify(count));
+    assert.ok(count.requests <= budgets[name].requests, name);
+    assert.ok(count.processes <= budgets[name].processes, name);
+    costs.set(name, count);
   }
   const rows = Object.entries(scenarios).map(([scenario, polls]) => {
     let requests = 0;

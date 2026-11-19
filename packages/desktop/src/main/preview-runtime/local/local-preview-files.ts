@@ -18,8 +18,7 @@ import {
   dirnameWorkspacePath,
   joinWorkspacePath,
   mkdir,
-  pathExists,
-  readFile,
+  readExistingFiles,
   rm,
   writeFile,
   writeFileAtomic,
@@ -118,10 +117,11 @@ export async function writeLocalPreviewInitialization(
 export async function readLocalDatabaseMode(
   worktree: string,
 ): Promise<ProjectInitializationDatabaseMode | undefined> {
+  const path = localPreviewPaths(worktree).environment;
   try {
-    const value = JSON.parse(
-      await readFile(localPreviewPaths(worktree).environment),
-    ) as { databaseMode?: unknown };
+    const value = JSON.parse((await readExistingFiles([path]))[path] ?? "") as {
+      databaseMode?: unknown;
+    };
     return value.databaseMode === "compose" || value.databaseMode === "existing"
       ? value.databaseMode
       : undefined;
@@ -130,36 +130,85 @@ export async function readLocalDatabaseMode(
   }
 }
 
+export type LocalPreviewFiles = {
+  configurations: ProjectRunConfiguration[];
+  /** Missing until Blame initialized the preview; invalid is an error. */
+  manifest: PreviewManifest | LocalPreviewError | undefined;
+  state: PreviewRuntimeSelectionState;
+};
+
+/**
+ * The manifest, run configurations and runtime state of a worktree, read
+ * together: the runtime agent reads them in one request, without starting
+ * a program. They are read again each time, since the agent's commands and
+ * setup scripts can change them too.
+ */
+export async function readLocalPreviewFiles(
+  worktree: string,
+): Promise<LocalPreviewFiles> {
+  const paths = localPreviewPaths(worktree);
+  const files = await readExistingFiles([
+    paths.manifest,
+    paths.runConfigurations,
+    paths.runtimeState,
+  ]);
+  return {
+    configurations: parseLocalRunConfigurations(files[paths.runConfigurations]),
+    manifest: parseLocalPreviewManifest(files[paths.manifest]),
+    state: parseLocalRuntimeState(files[paths.runtimeState]),
+  };
+}
+
+/** The manifest of `files`, which throws when it is invalid. */
+export function localPreviewManifest(files: LocalPreviewFiles) {
+  if (files.manifest instanceof LocalPreviewError) throw files.manifest;
+  return files.manifest;
+}
+
 export async function readLocalPreviewManifest(worktree: string) {
   const path = localPreviewPaths(worktree).manifest;
-  if (!(await pathExists(path))) return undefined;
+  const manifest = parseLocalPreviewManifest(
+    (await readExistingFiles([path]))[path],
+  );
+  if (manifest instanceof LocalPreviewError) throw manifest;
+  return manifest;
+}
+
+export async function readLocalRunConfigurations(worktree: string) {
+  const path = localPreviewPaths(worktree).runConfigurations;
+  return parseLocalRunConfigurations((await readExistingFiles([path]))[path]);
+}
+
+export async function readLocalRuntimeState(worktree: string) {
+  const path = localPreviewPaths(worktree).runtimeState;
+  return parseLocalRuntimeState((await readExistingFiles([path]))[path]);
+}
+
+function parseLocalPreviewManifest(text: string | null | undefined) {
+  if (typeof text !== "string") return undefined;
   try {
-    return parsePreviewManifest(JSON.parse(await readFile(path)));
+    return parsePreviewManifest(JSON.parse(text));
   } catch (error) {
-    throw new LocalPreviewError(
+    return new LocalPreviewError(
       "preview_manifest_invalid",
       `Persisted preview manifest is invalid: ${errorText(error)}`,
     );
   }
 }
 
-export async function readLocalRunConfigurations(
-  worktree: string,
-): Promise<ProjectRunConfiguration[]> {
-  const path = localPreviewPaths(worktree).runConfigurations;
-  if (!(await pathExists(path))) return [];
-  return parseRunConfigurations(JSON.parse(await readFile(path)));
+function parseLocalRunConfigurations(
+  text: string | null | undefined,
+): ProjectRunConfiguration[] {
+  if (typeof text !== "string") return [];
+  return parseRunConfigurations(JSON.parse(text));
 }
 
-export async function readLocalRuntimeState(
-  worktree: string,
-): Promise<PreviewRuntimeSelectionState> {
-  const path = localPreviewPaths(worktree).runtimeState;
-  if (!(await pathExists(path))) return { desiredStatus: "stopped" };
+function parseLocalRuntimeState(
+  text: string | null | undefined,
+): PreviewRuntimeSelectionState {
+  if (typeof text !== "string") return { desiredStatus: "stopped" };
   try {
-    return parseLocalPreviewRuntimeSelectionState(
-      JSON.parse(await readFile(path)),
-    );
+    return parseLocalPreviewRuntimeSelectionState(JSON.parse(text));
   } catch {
     return { desiredStatus: "stopped" };
   }

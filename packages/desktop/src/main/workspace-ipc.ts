@@ -9,7 +9,6 @@ import {
 } from "@blame/agent-runtime";
 import { type PreviewManifest } from "@blame/preview-contract";
 import { type RuntimeProfileId } from "@blame/preview-runtime";
-import type { ServiceState } from "@blame/preview-runtime/compose";
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
@@ -35,23 +34,20 @@ import { PreviewRecoveryCircuit } from "./preview-recovery-circuit";
 import { stalePreviewSetupReason } from "./preview-setup-preflight.ts";
 import {
   previewRunConfigurationServiceIds,
-  previewRunConfigurationStatus,
   selectedPreviewRunConfiguration,
   shouldStartBrowserPreview,
   type PreviewRuntimeSelectionState,
 } from "./preview-run-state";
 import {
   idleLocalPreviewLifecycle,
-  localPreviewLifecycle,
   localPreviewOperationInFlight,
   persistLocalPreviewFailure,
   readyLocalPreviewLifecycle,
-  selectsBrowserPreview,
   pendingLocalPreviewLifecycle,
   suspendedLocalPreviewLifecycle,
   runLocalPreviewOperation,
   trackLocalPreviewOperation,
-} from "./preview-runtime/local/local-preview-lifecycle.js";
+} from "./preview-runtime/local/local-preview-lifecycle.ts";
 import { LocalPreviewService } from "./preview-runtime/local/local-preview-service";
 import {
   previewRecoveryConfigurationFingerprint,
@@ -96,7 +92,10 @@ import {
   compileLocalPreviewPlan,
   localPreviewPaths,
   LocalPreviewError as PreviewRuntimeError,
+  localPreviewManifest,
+  readLocalPreviewFiles,
   readLocalPreviewManifest,
+  type LocalPreviewFiles,
   readLocalRunConfigurations,
   readLocalRuntimeState,
   writeLocalPreviewInitialization,
@@ -110,13 +109,18 @@ import {
   localPreviewProbesPass,
   localPreviewServicesRunning,
   assertLocalPreviewHasServices,
-  inspectLocalPreview,
-  localPreviewUrl,
-  type LocalPreviewInspection,
   prefetchLocalPreview,
   removeLocalPreview,
   stopLocalPreview,
 } from "./preview-runtime/local/local-preview-runner.ts";
+import {
+  forgetPreviewWorktree,
+  listLocalPreviewServices,
+  localPreviewCurrentUrl,
+  localPreviewRuntimeState,
+  previewWorktreeIsRepository,
+  unmanagedPreviewRuntimeState,
+} from "./preview-runtime/local/local-preview-state.ts";
 import {
   startLocalPreviewServing,
   startReviewBuildSweeper,
@@ -128,7 +132,6 @@ import {
   gitDiffBetween,
   gitDiffFrom,
   gitSnapshot,
-  isGitRepository,
   listGitDirectory,
   readGitFile,
   storyWorktreeAddArguments,
@@ -635,7 +638,7 @@ export function registerWorkspaceIpcHandlers(
   ipcMain.handle(
     "workspace:list-project-services",
     (_event, input: { worktree: string }) =>
-      listProjectServices(input.worktree),
+      listLocalPreviewServices(resolveRuntimePath(input.worktree)),
   );
   ipcMain.handle(
     "workspace:start-project-service-logs",
@@ -1227,6 +1230,7 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   if (removingWorktrees.has(worktree))
     throw new Error("The workspace is still being removed.");
   removingWorktrees.add(worktree);
+  forgetPreviewWorktree(worktree);
   const settled = worktreeActivity.close(worktree);
   worktreeLogs.discard(worktree);
   try {
@@ -1312,14 +1316,11 @@ export function schedulePreviewCleanup() {
 
 async function resolveProjectPreviewUrl(
   input: ResolveProjectPreviewUrlInput,
-  inspection?: LocalPreviewInspection,
+  files?: LocalPreviewFiles,
 ) {
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
-  if (!(await isWorkspaceGitRepository(worktree))) return null;
-  if ((await readPreviewRuntimeFileState(worktree)).desiredStatus === "stopped")
-    return null;
-  return (await localPreviewUrl(worktree, inspection)) ?? null;
+  return (await localPreviewCurrentUrl(worktree, files)) ?? null;
 }
 
 export async function localPreviewBridgeGrant(
@@ -1328,7 +1329,7 @@ export async function localPreviewBridgeGrant(
   const worktree = resolveRuntimePath(worktreeInput);
   if (removedWorktrees.has(worktree))
     throw new Error("Local preview worktree was removed");
-  if (!(await isWorkspaceGitRepository(worktree)))
+  if (!(await previewWorktreeIsRepository(worktree)))
     throw new Error("Local preview worktree is invalid");
   const { routes: endpoints, primary } = await localPreviewEndpoints(worktree);
   if (!endpoints.length)
@@ -1372,18 +1373,16 @@ async function ensureProjectPreviewUrl(input: EnsureProjectPreviewUrlInput) {
   const worktree = resolveRuntimePath(input.worktree);
   if (removedWorktrees.has(worktree)) return null;
   if (removingWorktrees.has(worktree)) return null;
-  if (!(await isWorkspaceGitRepository(worktree))) return null;
+  if (!(await previewWorktreeIsRepository(worktree))) return null;
   if (setupRunningForWorktree(worktree)) return null;
-  const [configurations, runtimeState, manifest] = await Promise.all([
-    readProjectRunConfigurations(worktree),
-    readPreviewRuntimeFileState(worktree),
-    readProjectPreviewManifest(worktree),
-  ]);
+  const files = await readLocalPreviewFiles(worktree);
+  const { configurations, state: runtimeState } = files;
+  const manifest = localPreviewManifest(files);
   if (runtimeState.desiredStatus === "stopped") return null;
   if (!shouldStartBrowserPreview(configurations, runtimeState, manifest)) {
     return null;
   }
-  const currentUrl = await resolveProjectPreviewUrl({ worktree });
+  const currentUrl = await resolveProjectPreviewUrl({ worktree }, files);
   // Polled for every story: a hibernated preview serves once woken.
   if (currentUrl && localPreviewHibernated(worktree)) return currentUrl;
   if (
@@ -1447,56 +1446,16 @@ export async function projectPreviewRuntimeState(
 ): Promise<ProjectPreviewRuntimeState> {
   const worktree = resolveRuntimePath(worktreeInput);
   // No managed preview runs for these: report it as stopped.
-  if (workspaceMode === "cloud-mirror" || workspaceMode === "direct") {
-    return cloudMirrorPreviewRuntimeState(worktree);
-  }
+  if (workspaceMode === "cloud-mirror" || workspaceMode === "direct")
+    return unmanagedPreviewRuntimeState(worktree);
   // Read before the files: an operation that settles during this read has
   // written its result by the time it stops being in flight.
   const inFlight =
     localPreviewOperationInFlight(worktree) || previewStarts.has(worktree);
-  const [configurations, runtimeState, inspection, manifest] =
-    await Promise.all([
-      readProjectRunConfigurations(worktree),
-      readPreviewRuntimeFileState(worktree),
-      inspectLocalPreview(worktree),
-      readProjectPreviewManifest(worktree).catch(() => undefined),
-    ]);
-  const containers = inspection.services;
-  const selected = selectedPreviewRunConfiguration(
-    configurations,
-    runtimeState,
-  );
-  const runtimeContainers = containers.map(previewRuntimeContainerState);
-  const statuses = previewConfigurationStatuses(
-    configurations,
-    runtimeContainers,
-    runtimeState,
-    manifest,
-  );
-  const browserPreview = selectsBrowserPreview(
-    selected?.previewService,
-    manifest,
-  );
-  const previewUrl =
-    runtimeState.desiredStatus === "running" && browserPreview
-      ? ((await resolveProjectPreviewUrl({ worktree }, inspection)) ??
-        undefined)
-      : undefined;
-  const lifecycle = localPreviewLifecycle(
-    runtimeState,
-    selected ? statuses[selected.id] : undefined,
-    browserPreview,
-    previewUrl,
+  return localPreviewRuntimeState(worktree, {
     inFlight,
-  );
-  return {
-    configurations,
-    desiredStatus: runtimeState.desiredStatus,
-    lifecycle,
-    ...(previewUrl ? { previewUrl } : {}),
-    ...(selected ? { selectedConfigurationId: selected.id } : {}),
-    statuses,
-  };
+    served: !removedWorktrees.has(worktree),
+  });
 }
 
 export async function projectPreviewLifecycleState(worktreeInput: string) {
@@ -1517,57 +1476,6 @@ export async function projectPreviewLifecycleState(worktreeInput: string) {
     return persisted.lifecycle;
   }
   return (await projectPreviewRuntimeState(worktree)).lifecycle;
-}
-
-async function cloudMirrorPreviewRuntimeState(
-  worktree: string,
-): Promise<ProjectPreviewRuntimeState> {
-  const [configurations, runtimeState] = await Promise.all([
-    readProjectRunConfigurations(worktree),
-    readPreviewRuntimeFileState(worktree),
-  ]);
-  const selected = selectedPreviewRunConfiguration(
-    configurations,
-    runtimeState,
-  );
-  return {
-    configurations,
-    desiredStatus: "stopped",
-    lifecycle: idleLocalPreviewLifecycle(runtimeState.lifecycle?.since),
-    ...(selected ? { selectedConfigurationId: selected.id } : {}),
-    statuses: Object.fromEntries(
-      configurations.map(({ id }) => [id, "stopped"]),
-    ),
-  };
-}
-
-function previewConfigurationStatuses(
-  configurations: ProjectRunConfiguration[],
-  containers: ReturnType<typeof previewRuntimeContainerState>[],
-  runtimeState: PreviewRuntimeSelectionState,
-  manifest: PreviewManifest | undefined,
-) {
-  return Object.fromEntries(
-    configurations.map((configuration) => [
-      configuration.id,
-      previewRunConfigurationStatus(
-        previewStatusConfiguration(configuration, manifest),
-        containers,
-        runtimeState,
-      ),
-    ]),
-  );
-}
-
-function previewStatusConfiguration(
-  configuration: ProjectRunConfiguration,
-  manifest: PreviewManifest | undefined,
-) {
-  if (!manifest) return configuration;
-  return {
-    ...configuration,
-    services: previewRunConfigurationServiceIds(configuration, manifest),
-  };
 }
 
 export async function controlProjectPreview(input: ControlProjectPreviewInput) {
@@ -1881,15 +1789,6 @@ const writePreviewRuntimeState: typeof writeLocalRuntimeState = (
   );
 const readProjectPreviewManifest = readLocalPreviewManifest;
 
-function previewRuntimeContainerState(service: ServiceState) {
-  return {
-    exitCode: service.exitCode,
-    health: service.health,
-    service: service.id,
-    status: service.state,
-  };
-}
-
 async function previewProbesPass(worktree: string) {
   const passed = await localPreviewProbesPass(worktree);
   if (!passed)
@@ -1965,14 +1864,6 @@ async function stopSetupRunsForWorktree(worktree: string) {
     run.abort.abort();
     setupRuns.delete(run.id);
   }
-}
-
-async function listProjectServices(worktreeInput: string) {
-  const worktree = resolveRuntimePath(worktreeInput);
-  const manifest = await readProjectPreviewManifest(worktree).catch(
-    () => undefined,
-  );
-  return (manifest?.services.map(({ id }) => id) ?? []).sort(serviceSort);
 }
 
 async function startProjectServiceLogs(input: ProjectServiceLogsInput) {
@@ -2089,7 +1980,7 @@ export async function readProjectServiceLogs(input: {
   worktree: string;
 }) {
   const worktree = resolveRuntimePath(input.worktree);
-  const services = await listProjectServices(worktree);
+  const services = await listLocalPreviewServices(worktree);
   const service = selectedProjectService(input.service, services);
   if (!service) {
     return {
@@ -2172,21 +2063,6 @@ function selectedProjectService(
 function serviceLogTailLines(value: number | undefined) {
   if (!Number.isFinite(value)) return 120;
   return Math.min(Math.max(Math.trunc(value ?? 120), 1), 1000);
-}
-
-function serviceSort(left: string, right: string) {
-  return (
-    servicePriority(left) - servicePriority(right) || left.localeCompare(right)
-  );
-}
-
-function servicePriority(service: string) {
-  if (/front|web|app/i.test(service)) return 0;
-  if (/back|api|server/i.test(service)) return 1;
-  if (/migrat/i.test(service)) return 2;
-  if (/db|postgres|mysql|mongo|redis/i.test(service)) return 3;
-  if (/install|deps|depend|init|volume/i.test(service)) return 4;
-  return 5;
 }
 
 // Follows the services' logs into the run log while the preview runs.
@@ -2320,16 +2196,6 @@ async function ensureWorkspaceGitRepository(
         ? "virtualized"
         : undefined,
   );
-}
-
-async function isWorkspaceGitRepository(root: string) {
-  if (!runtimeManagedPath(root)) return isGitRepository(root);
-  try {
-    await assertGitRepository(root);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 async function removeGitWorktree(
