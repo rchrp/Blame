@@ -401,21 +401,16 @@ async fn replays_thinking_signatures_to_the_model_that_wrote_them() {
 }
 
 #[tokio::test]
-async fn the_claude_code_bridge_takes_a_bearer_token_at_its_own_address() {
+async fn the_claude_code_bridge_is_the_anthropic_wire_at_its_own_address() {
     let mock = Mock::start(vec![Reply::sse(&final_reply())]).await;
-    let credential = Credential::Bearer {
-        token: "bridge-token".into(),
-        account: None,
-        base_url: Some(format!("{}/bridge", mock.base)),
-    };
+    // As the bridge's own client reaches it: its scoped token as the key,
+    // under a path prefix.
+    let credential = api_key("bcc1.scope.mac", &format!("{}/scope-1/v1", mock.base));
     let provider = connect("claude-code", &credential, &Options::default()).expect("provider");
-    let (events, error) = run(
-        &provider,
-        request(model("claude-code", MODEL), vec![user("hi")]),
-    )
-    .await;
+    let mut request = request(model("claude-code", MODEL), vec![user("hi")]);
+    request.reasoning = Some(blame_engine_protocol::ReasoningEffort::Xhigh);
+    let (events, error) = run(&provider, request).await;
     assert!(error.is_none(), "{error:?}");
-    assert!(matches!(events.last(), Some(ModelEvent::Finished { .. })));
     let Some(ModelEvent::Finished { usage, .. }) = events.last() else {
         panic!("{events:#?}")
     };
@@ -424,9 +419,11 @@ async fn the_claude_code_bridge_takes_a_bearer_token_at_its_own_address() {
         "the bridge bills a subscription"
     );
     let sent = mock.only_request();
-    assert_eq!(sent.target, "/bridge/v1/messages");
-    assert_eq!(sent.header("authorization"), Some("Bearer bridge-token"));
-    assert_eq!(sent.header("x-api-key"), None);
+    assert_eq!(sent.target, "/scope-1/v1/messages");
+    assert_eq!(sent.header("x-api-key"), Some("bcc1.scope.mac"));
+    // Claude Code takes `xhigh`, which the API catalog does not list for
+    // this model: it goes through as asked.
+    assert_eq!(sent.body["output_config"]["effort"], "xhigh");
 
     let without_url = Credential::Bearer {
         token: "t".into(),
@@ -438,6 +435,26 @@ async fn the_claude_code_bridge_takes_a_bearer_token_at_its_own_address() {
     let error =
         connect("anthropic", &Credential::Missing, &Options::default()).expect_err("credential");
     assert_eq!(error.kind, ErrorKind::Authentication);
+}
+
+#[tokio::test]
+async fn a_bearer_token_goes_in_the_authorization_header() {
+    let mock = Mock::start(vec![Reply::sse(&final_reply())]).await;
+    let credential = Credential::Bearer {
+        token: "oauth-token".into(),
+        account: None,
+        base_url: Some(mock.base.clone()),
+    };
+    let provider = connect("anthropic", &credential, &Options::default()).expect("provider");
+    let (_, error) = run(
+        &provider,
+        request(model("anthropic", MODEL), vec![user("hi")]),
+    )
+    .await;
+    assert!(error.is_none(), "{error:?}");
+    let sent = mock.only_request();
+    assert_eq!(sent.header("authorization"), Some("Bearer oauth-token"));
+    assert_eq!(sent.header("x-api-key"), None);
 }
 
 #[tokio::test]

@@ -86,11 +86,24 @@ pub(crate) async fn to_rig(
     // request: the loop asks for what it wants and each provider does what
     // it can.
     let mut options = GenerationOptions::new().on_unsupported(OnUnsupported::Ignore);
-    if let Some(reasoning) = request
-        .reasoning
-        .and_then(|effort| reasoning(effort, target, request.max_output_tokens))
-    {
-        options = options.reasoning(reasoning);
+    let mut raw = serde_json::Map::new();
+    match request.reasoning {
+        Some(effort) if target.effort_as_asked => {
+            let effort = match effort {
+                // Claude Code's lowest level.
+                ReasoningEffort::Minimal | ReasoningEffort::Low => "low",
+                ReasoningEffort::Medium => "medium",
+                ReasoningEffort::High => "high",
+                ReasoningEffort::Xhigh => "xhigh",
+            };
+            raw.insert("output_config".into(), json!({ "effort": effort }));
+        }
+        Some(effort) => {
+            if let Some(reasoning) = reasoning(effort, target, request.max_output_tokens) {
+                options = options.reasoning(reasoning);
+            }
+        }
+        None => {}
     }
     if !request.cache.key.is_empty() {
         options = options.cache_key(request.cache.key.clone());
@@ -123,16 +136,18 @@ pub(crate) async fn to_rig(
     // encrypted reasoning instead, so a session never depends on what
     // OpenAI still stores.
     if target.wire == Wire::OpenAiResponses && target.rig_provider == "openai" {
-        rig.additional_params = Some(json!({ "store": false }));
+        raw.insert("store".into(), json!(false));
     }
+    rig.additional_params = (!raw.is_empty()).then_some(serde_json::Value::Object(raw));
     Ok(rig)
 }
 
-/// The effort as the model takes it. A model that only takes a thinking
-/// budget (Gemini 2.5, Claude before 4.6) refuses an effort level, which
-/// would be skipped without a word, so the effort becomes a budget inside
-/// the range the catalog gives it and below the output cap, which the
-/// thinking counts towards. `None` when that leaves no room to think.
+/// The effort as the model takes it: the nearest level it lists. A model
+/// that only takes a thinking budget (Gemini 2.5, Claude before 4.6)
+/// refuses any level, which would be skipped without a word, so the effort
+/// becomes a budget inside the range the catalog gives it and below the
+/// output cap, which the thinking counts towards. `None` when that leaves
+/// no room to think.
 fn reasoning(
     effort: ReasoningEffort,
     target: &Target,
@@ -146,6 +161,9 @@ fn reasoning(
             budget: Some(range),
             ..
         }) if levels.is_empty() => range.clone(),
+        Some(ReasoningSupport::Listed { levels, .. }) if !levels.is_empty() => {
+            return Some(Reasoning::Effort(nearest(effort_of(effort), levels)));
+        }
         _ => return Some(Reasoning::Effort(effort_of(effort))),
     };
     let wanted: u32 = match effort {
@@ -160,6 +178,29 @@ fn reasoning(
     });
     let tokens = wanted.min(ceiling).max(*range.start());
     (tokens <= ceiling).then_some(Reasoning::Budget { tokens })
+}
+
+/// The level of `levels` closest to `wanted`, the lower one on a tie: a
+/// model without `minimal` gets its lowest, one without `xhigh` its
+/// `high` rather than a far dearer `max`.
+fn nearest(wanted: Effort, levels: &[Effort]) -> Effort {
+    const ORDER: [Effort; 6] = [
+        Effort::Minimal,
+        Effort::Low,
+        Effort::Medium,
+        Effort::High,
+        Effort::XHigh,
+        Effort::Max,
+    ];
+    let rank = |effort: &Effort| ORDER.iter().position(|level| level == effort);
+    let Some(target) = rank(&wanted) else {
+        return wanted;
+    };
+    levels
+        .iter()
+        .filter_map(|level| Some((rank(level)?, *level)))
+        .min_by_key(|(at, _)| (at.abs_diff(target), *at))
+        .map_or(wanted, |(_, level)| level)
 }
 
 fn effort_of(effort: ReasoningEffort) -> Effort {
@@ -284,4 +325,55 @@ async fn document(
 
 fn invalid(message: impl Into<String>) -> ProviderError {
     ProviderError::new(ErrorKind::InvalidRequest, message)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use blame_engine_protocol::ModelRef;
+
+    fn target(provider: &'static str, model: &str) -> Target {
+        Target {
+            wire: Wire::AnthropicMessages,
+            model: ModelRef {
+                provider: provider.to_owned(),
+                model: model.to_owned(),
+            },
+            rig_provider: provider,
+            priced: true,
+            effort_as_asked: false,
+        }
+    }
+
+    #[test]
+    fn an_effort_becomes_what_the_model_takes() {
+        let levels = [Effort::Low, Effort::Medium, Effort::High, Effort::Max];
+        assert_eq!(nearest(Effort::Minimal, &levels), Effort::Low);
+        assert_eq!(nearest(Effort::XHigh, &levels), Effort::High);
+        assert_eq!(nearest(Effort::Medium, &levels), Effort::Medium);
+
+        let sonnet = target("anthropic", "claude-sonnet-4-6");
+        assert_eq!(
+            reasoning(ReasoningEffort::Minimal, &sonnet, None),
+            Some(Reasoning::Effort(Effort::Low))
+        );
+        // Claude 4.5 thinks by budget, at least 1024 tokens and below the
+        // output cap.
+        let older = target("anthropic", "claude-sonnet-4-5");
+        assert_eq!(
+            reasoning(ReasoningEffort::Medium, &older, Some(64_000)),
+            Some(Reasoning::Budget { tokens: 8_192 })
+        );
+        assert_eq!(
+            reasoning(ReasoningEffort::High, &older, Some(4_000)),
+            Some(Reasoning::Budget { tokens: 3_999 })
+        );
+        assert_eq!(reasoning(ReasoningEffort::Low, &older, Some(1_000)), None);
+        // A model the catalog does not know gets the level as asked.
+        let unknown = target("anthropic", "claude-next");
+        assert_eq!(
+            reasoning(ReasoningEffort::Xhigh, &unknown, None),
+            Some(Reasoning::Effort(Effort::XHigh))
+        );
+    }
 }

@@ -275,6 +275,7 @@ impl Provider {
                 self.kind,
                 ProviderKind::ClaudeCode | ProviderKind::ChatGpt | ProviderKind::OpenAiCompatible
             ),
+            effort_as_asked: self.kind == ProviderKind::ClaudeCode,
         }
     }
 }

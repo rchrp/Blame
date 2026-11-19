@@ -26,6 +26,10 @@ pub(crate) struct Target {
     /// Claude Code bridge speaks Anthropic's API but bills a plan) or an
     /// arbitrary server does not, whatever model it names.
     pub(crate) priced: bool,
+    /// Whether the effort goes to the server as asked, past Rig's catalog:
+    /// the Claude Code bridge hands it to Claude Code's `--effort`, which
+    /// takes levels (`xhigh`) the API catalog does not list.
+    pub(crate) effort_as_asked: bool,
 }
 
 impl Target {
