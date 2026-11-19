@@ -295,12 +295,6 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("window:set-presentation", input),
     toggleMaximize: () => ipcRenderer.invoke("window:toggle-maximize"),
   },
-  previewDevtools: {
-    getAdvancedDiagnostics: (input) =>
-      ipcRenderer.invoke("preview-devtools:get-advanced", input),
-    setAdvancedDiagnostics: (input) =>
-      ipcRenderer.invoke("preview-devtools:set-advanced", input),
-  },
   previewServing: {
     getReviewBuilds: (input) =>
       ipcRenderer.invoke("preview-serving:get-review-builds", input),

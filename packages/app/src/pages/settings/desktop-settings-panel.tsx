@@ -11,7 +11,6 @@ import {
 } from "./settings-layout"
 import { useSystemNotificationsEnabled } from "@/lib/system-notifications"
 import { RuntimeSettingsGroup } from "./runtime-settings-group"
-import { BrowserDiagnosticsGroup } from "./browser-diagnostics-group"
 import { ReviewBuildsGroup } from "./review-builds-group"
 import { AgentGithubAccessGroup } from "./agent-github-access-group"
 import { ProjectGithubGroup } from "./project-github-group"
@@ -50,7 +49,6 @@ export function DesktopSettingsPanel() {
       <DesktopUpdatesGroup platform={platform} updates={updates} />
       <PrivacySettingsGroup />
       <RuntimeSettingsGroup />
-      <BrowserDiagnosticsGroup />
       <ReviewBuildsGroup />
       {auth.status === "authenticated" && auth.mode === "account" ? (
         <ProjectGithubGroup />

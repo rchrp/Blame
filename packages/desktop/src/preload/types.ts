@@ -67,7 +67,6 @@ import type {
   AgentScreenshotsClient,
   AgentGithubAccessClient,
   McpServersClient,
-  PreviewDevtoolsSettingsClient,
   PreviewEnvironmentClient,
   PreviewServingSettingsClient,
 } from "@blame/app";
@@ -335,7 +334,6 @@ export type BlameDesktopApi = {
   whatsNew: WhatsNewClient;
   projectWindows: ProjectWindows;
   agentScreenshots: AgentScreenshotsClient;
-  previewDevtools: PreviewDevtoolsSettingsClient;
   previewServing: PreviewServingSettingsClient;
   agentGithubAccess: AgentGithubAccessClient;
   previewEnvironment: PreviewEnvironmentClient;
