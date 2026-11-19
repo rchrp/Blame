@@ -142,6 +142,27 @@ test("commands show the command line and how they ended", () => {
   assert.equal(failed.bodies[0]!.type, "error")
 })
 
+test("a check that waited for a turn says how long", () => {
+  const result = view(
+    "run_task",
+    { kind: "command", command: "npm run build" },
+    {
+      status: "ok",
+      data: {
+        command: "npm run build",
+        exitCode: 0,
+        output: "built",
+        waitedForTurn: { seconds: 42, behind: "another agent's build or tests" },
+      },
+    }
+  )
+  assert.deepEqual(
+    result.chips.map((chip) => chip.label),
+    ["Done", "1.3 s", "Waited 42 s"]
+  )
+  assert.match(result.chips[2]!.title ?? "", /another agent's build or tests/)
+})
+
 test("test runs surface their counts", () => {
   const result = view(
     "run_task",

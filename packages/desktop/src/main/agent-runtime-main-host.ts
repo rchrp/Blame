@@ -25,6 +25,7 @@ import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
+import { agentHeavyChecks } from "./agent-heavy-checks.ts";
 import { sessionCommandCredentials, withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
 import { githubMcpService } from "./github-access/github-mcp-service.ts";
 import {
@@ -326,9 +327,11 @@ async function agentLightWorkspace(input: unknown, signal: AbortSignal) {
   ) {
     throw new Error("Invalid managed semantic workspace request");
   }
-  return runtimeAgentClient().lightWorkspace(
-    withSessionCommandCredentials(request),
-    signal,
+  return agentHeavyChecks.run(request, signal, () =>
+    runtimeAgentClient().lightWorkspace(
+      withSessionCommandCredentials(request),
+      signal,
+    ),
   );
 }
 // The agent process names the session; the desktop holds its token.
