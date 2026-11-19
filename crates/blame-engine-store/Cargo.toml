@@ -9,6 +9,25 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+blame-engine-protocol.workspace = true
+blame-engine-core.workspace = true
+async-trait.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio-util.workspace = true
+# Only the channel and notification primitives: the store never starts a
+# runtime, spawns a task or touches a timer (the injected `Clock` sleeps).
+tokio = { workspace = true, features = ["sync"] }
+# The embedded database. `bundled` compiles SQLite into the binary so the
+# engine behaves the same in the VM, on Windows and in the cloud, whatever
+# libsqlite the host happens to ship.
+rusqlite = { version = "0.43", default-features = false, features = ["bundled", "cache"] }
+# Content addresses of blobs. No default features: no std-only extras, the
+# CPU's SHA instructions are picked at run time.
+sha2 = { version = "0.11", default-features = false }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros", "time"] }
 
 [lints]
 workspace = true
