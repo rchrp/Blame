@@ -124,6 +124,11 @@ pub enum RecordBody {
         /// Workspace state to restore; absent for a conversation-only rewind.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         checkpoint: Option<CheckpointId>,
+        /// The workspace as it was just before the restore, taken so that
+        /// `RewindUndone` can put the files back too. Opaque, like
+        /// `CheckpointCreated::snapshot`; absent when no files are restored.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        undo_snapshot: Option<String>,
     },
     /// Every record after `to` and up to this one no longer counts.
     RewindFinished {
