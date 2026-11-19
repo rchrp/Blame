@@ -9,6 +9,15 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+blame-engine-core.workspace = true
+blame-engine-protocol.workspace = true
+async-trait.workspace = true
+# `rt` only for `spawn_blocking`: git is driven through blocking child
+# processes, which must not stall the engine's async threads.
+tokio = { workspace = true, features = ["rt"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt", "macros"] }
 
 [lints]
 workspace = true
