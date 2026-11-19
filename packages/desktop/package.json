@@ -28,6 +28,7 @@
     "test:preview-devtools-robustness": "electron --experimental-strip-types scripts/preview-devtools-robustness-smoke.mjs",
     "test:appimage-run-task": "node scripts/appimage-run-task-smoke.mjs",
     "test:performance": "pnpm run build:workspace-dependencies && node --test --experimental-strip-types src/main/agent-event-stream.test.ts src/main/preview-browser-partition.test.ts src/main/preview-browser/preview-navigation-policy.test.ts src/main/preview-browser/preview-route-table.test.ts src/main/preview-runtime/cloud-preview-client.test.ts src/main/preview-runtime/local/local-preview-driver.test.ts src/main/preview-runtime/local/local-preview-lifecycle.test.ts src/main/workspaces/workspace-artifact.test.ts src/main/workspaces/workspace-delta.test.ts src/main/workspaces/workspace-sync-service.test.ts src/main/workspaces/workspace-writer-registry.test.ts",
+    "test:periodic-reads": "pnpm run build:workspace-dependencies && node --test --experimental-transform-types src/main/periodic-reads.test.ts",
     "typecheck": "tsc --noEmit",
     "test:package": "node --test scripts/package-deploy-config.test.mjs scripts/package-integrity.test.mjs scripts/package-prune.test.mjs scripts/check-generated-javascript.test.mjs scripts/prepare-node-pty.test.mjs",
     "test:local-api": "pnpm --filter @blame/api... run build && electron --experimental-strip-types scripts/local-api-smoke.mjs",
