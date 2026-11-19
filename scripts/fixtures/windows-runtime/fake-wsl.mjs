@@ -19,7 +19,12 @@ else if (args[0] === "--warning") {
   stderr("e".repeat(262144));
   stdout(readFileSync(0, "utf8"));
 } else if (args[0] === "--status") stderr("WSL warning");
-else if (args[0] === "--list") {
+else if (args[0] === "--list" && args[1] === "--running") {
+  if (env.BLAME_TEST_WSL_STOPPED === "1") {
+    stdout("There are no running distributions.\n");
+    code = 1;
+  } else stdout("BlameRuntime\n");
+} else if (args[0] === "--list") {
   if (env.BLAME_TEST_WSL_LIST_CODE) {
     stdout(env.BLAME_TEST_WSL_LIST_STDOUT || "");
     stderr(env.BLAME_TEST_WSL_LIST_STDERR || "");

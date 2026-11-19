@@ -29,6 +29,16 @@ public class FakeWsl
             return 0;
         }
         if (args[0] == "--status") { Console.Error.Write("WSL warning"); return 0; }
+        if (args[0] == "--list" && args.Length > 1 && args[1] == "--running")
+        {
+            if (Env("BLAME_TEST_WSL_STOPPED") == "1")
+            {
+                Console.Write("There are no running distributions.\n");
+                return 1;
+            }
+            Console.Write("BlameRuntime\n");
+            return 0;
+        }
         if (args[0] == "--list")
         {
             if (Env("BLAME_TEST_WSL_LIST_CODE") != "")
