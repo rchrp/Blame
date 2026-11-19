@@ -25,6 +25,7 @@ import { runtimeHubPortConflict } from "./runtime-hub-port";
 import { withSessionStartDeadline } from "./session-start-deadline";
 import { AgentEventStream } from "./agent-event-stream";
 import { AgentRuntimePool } from "./agent-runtime-pool";
+import { agentHeavyChecks } from "./agent-heavy-checks";
 import {
   AgentRuntimeProcessClient,
   type AgentRuntimeProcessCallbacks,
@@ -255,6 +256,7 @@ function registerSessionControlIpcHandlers(
       return await agentRuntime().abortSession(sessionId);
     } finally {
       agentWorkspaceWriters.end(sessionId);
+      agentHeavyChecks.endSession(sessionId);
       if (typeof sessionId === "string") void stopSessionComponentPreviews(sessionId);
     }
   });
@@ -552,8 +554,8 @@ export function generateNewProjectWithAgent(
 }
 
 export function releaseAgentWorkspaceSessions(worktree: string) {
-  agentWorkspaceWriters.releaseWorkspace(worktree);
-  return agentRuntime().releaseWorkspace(worktree);
+  const sessionIds = agentWorkspaceWriters.releaseWorkspace(worktree);
+  return agentRuntime().releaseWorkspace(worktree, sessionIds);
 }
 
 export function localAgentOwnsWorkspace(worktree: string) {
@@ -614,6 +616,7 @@ function agentRuntime() {
 function emitAgentEvent(event: AgentEvent) {
   if (event.sessionId && (event.type === "done" || event.type === "error")) {
     agentWorkspaceWriters.end(event.sessionId);
+    agentHeavyChecks.endSession(event.sessionId);
     releaseAgentPreviewSession(event.sessionId);
     void stopSessionComponentPreviews(event.sessionId);
   }

@@ -7,6 +7,7 @@ import { getProviderCollectionSync, type ModelInfo } from "@cline/llms";
 import { saveLocalProviderCredential } from "../cloud-api.js";
 import type { AgentBackendConfig, ConnectClaudeCodeInput } from "../types.js";
 import { ClaudeCodeBridge } from "./claude-code-bridge.js";
+import type { ClaudeCodeBridgeHandle } from "./claude-code-bridge-client.js";
 import { readClaudeCodeStatus } from "./claude-code-cli.js";
 import { claudeCodeEfforts } from "./claude-code-protocol.js";
 
@@ -15,7 +16,7 @@ export const claudeCodeProviderId = "claude-code";
 /** Where the VM-hosted Cline hub reaches the Mac's loopback interface. */
 const limaHostAddress = "host.lima.internal";
 
-let bridge: Promise<ClaudeCodeBridge> | undefined;
+let bridge: Promise<ClaudeCodeBridgeHandle> | undefined;
 
 export function claudeCodeStatus() {
   return readClaudeCodeStatus();
@@ -59,7 +60,12 @@ export async function claudeCodeCredential<
 ): Promise<T> {
   if (!isClaudeCodeProvider(credential.providerId)) return credential;
   const host = bridgeHost(input.backend);
-  const active = await claudeCodeBridge();
+  let active = await claudeCodeBridge();
+  // The worker that hosted the bridge retired or stopped: host it here.
+  if (!(await active.reachable())) {
+    bridge = undefined;
+    active = await claudeCodeBridge();
+  }
   return {
     ...credential,
     apiKey: active.token(input.scope ?? `op:${randomUUID()}`),
@@ -115,11 +121,35 @@ export async function closeClaudeCodeBridge() {
   await (await current?.catch(() => undefined))?.close();
 }
 
+/**
+ * Whether this worker can stop without cutting a Claude Code conversation:
+ * it does not host the bridge, or the bridge has no process left and no
+ * other worker is working (its sessions may reach the bridge any time).
+ */
+export async function claudeCodeBridgeIdle(busyElsewhere: boolean) {
+  const active = await bridge?.catch(() => undefined);
+  if (!active?.hosting) return true;
+  return active.lanes === 0 && !busyElsewhere;
+}
+
+/** Closes the Claude Code processes of sessions that ended for good. */
+export async function closeClaudeCodeSessions(sessionIds: string[]) {
+  const active =
+    (await bridge?.catch(() => undefined)) ??
+    (await ClaudeCodeBridge.find(stateDirectory()));
+  await active?.closeScopes(sessionIds);
+}
+
+function stateDirectory() {
+  return (
+    process.env.BLAME_CLAUDE_CODE_STATE_DIR?.trim() ||
+    join(tmpdir(), "blame-claude-code")
+  );
+}
+
 function claudeCodeBridge() {
-  bridge ??= ClaudeCodeBridge.start({
-    stateDirectory:
-      process.env.BLAME_CLAUDE_CODE_STATE_DIR?.trim() ||
-      join(tmpdir(), "blame-claude-code"),
+  bridge ??= ClaudeCodeBridge.connect({
+    stateDirectory: stateDirectory(),
   }).catch((error) => {
     bridge = undefined;
     throw error;

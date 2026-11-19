@@ -4,6 +4,8 @@ import {
 } from "./project-scan-resource.ts";
 import {
   BlameAgentRuntime,
+  claudeCodeBridgeIdle,
+  closeClaudeCodeSessions,
   type AgentEvent,
   type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
@@ -193,6 +195,13 @@ function runtimeHandlers(runtime: BlameAgentRuntime) {
     ...sessionHandlers(runtime),
     ...workflowHandlers(runtime),
     "runtime.prewarm": (input: unknown) => runtime.prewarm(input as never),
+    "runtime.idle": (input: unknown) =>
+      claudeCodeBridgeIdle(
+        (input as { busyElsewhere?: boolean } | undefined)?.busyElsewhere ===
+          true,
+      ),
+    "claudeCode.closeSessions": (input: unknown) =>
+      closeClaudeCodeSessions(input as string[]),
     "approvals.resolve": (input) => runtime.approvals.resolve(input as never),
     shutdown: () => runtime.shutdown(),
   } satisfies Record<AgentRuntimeMethod, RuntimeHandler>;

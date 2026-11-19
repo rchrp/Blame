@@ -173,6 +173,97 @@ test("reports whether the worker running an initialization cancelled it", async 
   }
 });
 
+test("sends one-off requests to an existing worker", async () => {
+  const harness = poolHarness(2);
+  await harness.pool.startSession("sessions.start", {});
+
+  await harness.pool.run("promptOptimizer.generateTitle", {});
+
+  assert.equal(harness.processes.length, 1);
+  assert.equal(
+    harness.processes[0].calls.at(-1)?.method,
+    "promptOptimizer.generateTitle",
+  );
+});
+
+test("reports a resumed session live while it runs again", async () => {
+  const harness = poolHarness(1);
+  const session = await harness.pool.startSession("sessions.start", {});
+  harness.processes[0].emit({ payload: {}, sessionId: session.sessionId, type: "done" });
+
+  await harness.pool.startSession("sessions.startDevelopment", {
+    resumeSessionId: session.sessionId,
+  });
+
+  assert.equal(harness.pool.sessionLive(session.sessionId), true);
+});
+
+test("retires an idle extra worker and keeps the last one", async (context) => {
+  context.mock.timers.enable({ apis: ["setInterval", "Date"] });
+  const harness = poolHarness(3, 60_000);
+  const sessions = [
+    await harness.pool.startSession("sessions.start", {}),
+    await harness.pool.startSession("sessions.start", {}),
+    await harness.pool.startSession("sessions.start", {}),
+  ];
+  harness.processes.forEach((process, index) =>
+    process.emit({ payload: {}, sessionId: sessions[index]!.sessionId, type: "done" }),
+  );
+
+  await advance(context, 30_000);
+  assert.equal(harness.processes.filter((process) => process.alive).length, 3);
+  await advance(context, 60_000);
+
+  assert.equal(harness.processes.filter((process) => process.alive).length, 1);
+  await harness.pool.run("providers.list", {});
+  assert.equal(harness.processes.length, 3);
+});
+
+test("keeps an idle worker that still holds Claude Code processes", async (context) => {
+  context.mock.timers.enable({ apis: ["setInterval", "Date"] });
+  const harness = poolHarness(2, 60_000);
+  const first = await harness.pool.startSession("sessions.start", {});
+  const second = await harness.pool.startSession("sessions.start", {});
+  harness.processes[0].emit({ payload: {}, sessionId: first.sessionId, type: "done" });
+  harness.processes[0].idle = false;
+
+  await advance(context, 120_000);
+
+  assert.equal(harness.processes[0].alive, true);
+  assert.deepEqual(
+    harness.processes[0].calls.find(({ method }) => method === "runtime.idle")
+      ?.input,
+    { busyElsewhere: true },
+  );
+  assert.equal(harness.pool.sessionLive(second.sessionId), true);
+});
+
+test("an ended session's approvals no longer keep its worker", async (context) => {
+  context.mock.timers.enable({ apis: ["setInterval", "Date"] });
+  const harness = poolHarness(2, 60_000);
+  await harness.pool.startSession("sessions.start", {});
+  const second = await harness.pool.startSession("sessions.start", {});
+  harness.processes[1].emit(approvalEvent(second.sessionId, "approval-1"));
+  harness.processes[1].emit({ payload: {}, sessionId: second.sessionId, type: "done" });
+
+  await advance(context, 120_000);
+
+  assert.equal(harness.processes[1].alive, false);
+  assert.equal(harness.processes[0].alive, true);
+});
+
+test("closes the Claude Code processes of a released workspace's sessions", async () => {
+  const harness = poolHarness(2);
+  await harness.pool.startSession("sessions.start", {});
+
+  await harness.pool.releaseWorkspace("/worktree", ["session-a"]);
+
+  assert.deepEqual(harness.processes[0].calls.slice(-2), [
+    { input: "/worktree", method: "sessions.releaseWorkspace" },
+    { input: ["session-a"], method: "claudeCode.closeSessions" },
+  ]);
+});
+
 type FakeCall = {
   input?: unknown;
   method: AgentRuntimeMethod;
@@ -184,6 +275,7 @@ class FakeAgentRuntimeProcess implements AgentRuntimeProcessLike {
   readonly runningInitializations = new Set<string>();
   readonly sessionIds = new Set<string>();
   alive = true;
+  idle = true;
   private readonly callbacks: AgentRuntimeProcessCallbacks;
   private nextSession = 1;
 
@@ -207,6 +299,7 @@ class FakeAgentRuntimeProcess implements AgentRuntimeProcessLike {
       return [...this.sessionIds].map((sessionId) => ({ sessionId })) as Result;
     }
     if (method === "approvals.resolve") return true as Result;
+    if (method === "runtime.idle") return this.idle as Result;
     if (method === "initializations.cancel") {
       return this.runningInitializations.has(input as string) as Result;
     }
@@ -227,7 +320,7 @@ class FakeAgentRuntimeProcess implements AgentRuntimeProcessLike {
   }
 }
 
-function poolHarness(maximumWorkers: number) {
+function poolHarness(maximumWorkers: number, idleWorkerMs?: number) {
   const events: AgentEvent[] = [];
   const processes: FakeAgentRuntimeProcess[] = [];
   const pool = new AgentRuntimePool({
@@ -240,6 +333,7 @@ function poolHarness(maximumWorkers: number) {
       return process;
     },
     handleHostRequest: async () => undefined,
+    idleWorkerMs,
     maximumWorkers,
     onEvent: (event) => events.push(event),
   });
@@ -267,6 +361,14 @@ function sessionInputId(value: unknown) {
   if (!value || typeof value !== "object") return undefined;
   const input = value as Record<string, unknown>;
   return input.resumeSessionId ?? input.sessionId;
+}
+
+/** Moves the mocked clock a minute at a time, letting retirements settle. */
+async function advance(context: { mock: { timers: { tick(ms: number): void } } }, ms: number) {
+  for (let elapsed = 0; elapsed < ms; elapsed += 12_000) {
+    context.mock.timers.tick(12_000);
+    for (let turn = 0; turn < 5; turn += 1) await nextTurn();
+  }
 }
 
 function nextTurn() {

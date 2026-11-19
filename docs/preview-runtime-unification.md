@@ -272,8 +272,10 @@ previews skip both):
   after the first page and nothing changed for 5 s, with the same listing
   before and after the copy. Copies run in a busybox container through
   the Docker host, with no provisioning change.
-- **Compile turns** (`local-preview-compile-queue.ts`). A start waits for
-  a turn right before `up` ("Waiting for another preview to compile").
+- **Compile turns** (`runtime-heavy-work.ts`, shared with review builds
+  and agent checks since 2026-11-19: see "Heavy work and agent processes"
+  below). A start waits for a turn right before `up` ("Waiting for
+  another preview to compile", or for what else holds the turn).
   One start always runs; another joins while the host's `MemAvailable`
   covers every running estimate plus its own (cold 3.25 GiB, seeded 1.75
   GiB: the measured peaks plus a margin), so a 4 GiB Runtime compiles one
@@ -313,6 +315,93 @@ started, not during compilation (each container's swap peak stays under
 - Not seeded: Next's webpack cache (no gain measured, even on a story's
   own restart: 35–38 CPU s), Vite (its dependency cache is in the shared
   node_modules). Nuxt, SvelteKit and Astro were not measured.
+
+#### Heavy work and agent processes (2026-11-19)
+
+**One admission for heavy work in the Runtime** (`runtime-heavy-work.ts`).
+Cold and seeded preview starts, review builds and the checks agents run
+take turns in one queue in the desktop: one piece of work runs whenever
+none does, another joins while `MemAvailable` covers every running
+estimate plus its own (cold 3.25 GiB, seeded 1.75, review build and agent
+check 2 GiB each), in order. An agent's check never waits for anything
+but another agent's check, so an agent working alone is never held up, and
+a session's next check does not wait for its own (the harness already runs
+a session's commands one at a time).
+
+- Agent checks (`agent-heavy-checks.ts`, on the desktop's `lightWorkspace`
+  route to the Runtime): `finish_task`, project tasks, and commands that
+  run a package script named build, test, typecheck, check, lint, e2e,
+  verify, validate or ci, or a build, type check, test or lint tool (`tsc`,
+  `vitest`, `jest`, `next build`, `cargo test`, `go test`, `pytest`…). A
+  check the harness answers as still running (after its 15 s initial
+  wait) keeps its turn until an inspect sees the run end, the session ends
+  or aborts, or 5 minutes pass (the harness stops a command at 120 s). A
+  check that waited carries `data.waitedForTurn` (seconds, what it waited
+  for) for the agent; its tool call card shows "Waited N s".
+- Review builds take a `build` turn right before `compose run`, log what
+  they wait for, and give up when an agent takes the story back meanwhile.
+
+Measured in a throwaway VM (runtime image v13, 6 vCPU, 4 GiB, 4 GiB
+swapfile): three copies of a Next.js 16.4 app (9 pages with heavy client
+components, 60 typed modules), each verified with `tsc --noEmit` then
+`next build` (alone: 36 CPU-s and 650 MiB for `tsc`, 120 CPU-s and
+1.3 GiB for the build, MemAvailable down by 1.9 GiB). The Mac's load from
+other VMs changes everything, so runs are paired by load:
+
+| Three verifications | Mac load | All done | VM CPU-s | Min MemAvailable | Swap written | Killed |
+|---|---|---|---|---|---|---|
+| one after the other (2 runs) | ~20 | 134–204 s | 294–384 | 1.7–2.1 GiB | 0 | 0 |
+| at once (2 runs) | ~20 | 468–630 s | 1,153–1,545 | not sampled | up to 1.5 GiB | 1 build (OOM) |
+| one after the other (2 runs) | 6–14 | 41–54 s | 124–152 | 1.6–1.7 GiB | 0 | 0 |
+| at once (3 runs) | 6–14 | 34–59 s | 174–265 | 27–45 MiB | 0.5–1.4 GiB | 0 |
+
+At once, three builds exhaust a 4 GiB Runtime: they finish no sooner
+(one after the other, they are done at 12–17, 26–30 and 41–54 s), use
+1.1–1.9× the CPU, and on a loaded Mac three times the CPU, with the kernel
+killing a build while the swapfile was still free (reclaim could not keep
+up). In a 4 GiB Runtime the queue runs them one after the other; a larger
+Runtime runs several.
+
+**Agent processes.** Measured on macOS (Electron utility process, Claude
+Code 2.1): an agent worker holds ~220 MB (footprint) once its runtime is
+loaded and takes ~2 s to load it; a Claude Code process ~110–120 MB, idle
+or after a 160k-token turn.
+
+- The pool (`agent-runtime-pool.ts`) starts up to `min(3, cores - 1)`
+  workers for concurrent sessions. One-off requests (titles, commit
+  messages, merges) go to an existing worker instead of starting one. A
+  worker beyond the first with no work for 5 minutes retires, unless it
+  hosts the Claude Code bridge while lanes are open or other workers are
+  busy. The pool keeps only running sessions and drops an ended session's
+  approvals.
+- One Claude Code bridge for the app: the first worker to need it hosts
+  it, the others reach it through its saved port and secret
+  (`claude-code-bridge-client.ts`), so its caps (12 processes, 6 per
+  session) bound the whole app instead of each worker. Lanes still stay
+  55 minutes after a story's last turn: a new process replays the whole
+  transcript as one message, a full prompt-cache write (162k tokens for a
+  160k-token history) instead of a cache read, so the hour of prompt cache
+  is worth ~115 MB. A lane closes at once when its story's worktree is
+  removed (approved, merged, discarded, deleted) or a new project
+  generation ends, and an idle lane closes when a newer conversation of
+  the same session starts (a finished subagent, history Cline rewrote):
+  the bridge log of 2026-11-05 to 19 shows 23 such lanes kept to expiry,
+  36 lane-hours.
+- The semantic harness in the Runtime keeps a session's workspace (managed
+  runs, read coverage, indexes: ~7 MB of heap for 765 files, ~30 MB for
+  3,700) for an hour after its last request, at most 8, never while it
+  runs a command; it kept 32 until the VM stopped.
+
+Three stories at once, then inactivity (the pool's code with these sizes):
+
+| | During | 10 min after | 1 h after |
+|---|---|---|---|
+| Agent workers, before | 3 (~660 MB) | 3 | 3, until Blame quits |
+| Agent workers, after | 3 | 1 (~220 MB) | 1 |
+| Claude Code, before | 3+ (~115 MB each, one bridge per worker) | 3+ | 0 |
+| Claude Code, after | 3+ (one bridge) | those of stories not yet approved | 0 |
+
+Not tested: Windows (WSL2) for all of the above.
 
 ### Lighter dependencies and review builds (2026-11-15)
 

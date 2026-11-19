@@ -212,6 +212,7 @@ import {
   claudeCodeCredential,
   claudeCodeStatus,
   closeClaudeCodeBridge,
+  closeClaudeCodeSessions,
   connectClaudeCode,
 } from "./claude-code/claude-code-provider.js";
 import { readClaudeCodeUsage, readCodexUsage } from "./subscription-usage.js";
@@ -2291,6 +2292,8 @@ export class BlameAgentRuntime {
       };
     } finally {
       await this.unsubscribeSession(sessionId);
+      // Nothing continues a generation: its Claude Code process can go.
+      await closeClaudeCodeSessions([sessionId]).catch(() => undefined);
     }
   }
 

@@ -19,15 +19,23 @@ type AgentRuntimePoolOptions = {
   handleHostRequest: AgentRuntimeProcessCallbacks["handleHostRequest"];
   maximumWorkers?: number;
   onEvent(event: AgentEvent): void;
+  /** How long a worker beyond the first stays without work before it retires. */
+  idleWorkerMs?: number;
 };
 
 type AgentWorker = {
   activeRequests: number;
+  activeSessions: Set<string>;
   client: AgentRuntimeProcessLike;
-  sessionStates: Map<string, "active" | "terminal">;
+  /** Sessions that ended while a start on this worker had not answered yet. */
+  endedDuringStart: Set<string>;
+  lastWorkAt: number;
+  pendingStarts: number;
+  retiring: boolean;
 };
 
 type ApprovalRoute = {
+  sessionId?: string;
   toolName: string;
   worker: AgentWorker;
 };
@@ -41,22 +49,34 @@ const sessionRunMethods = new Set<AgentRuntimeMethod>([
   "sessions.sendDevelopment",
 ]);
 
+// A worker holds ~220 MB once its runtime is loaded (measured 2026-11-19 on
+// macOS, Electron utility process) and takes ~2 s to load it again. Extra
+// workers exist for concurrent sessions: one with nothing to do for this
+// long goes away, the last one stays.
+const idleWorkerMs = 5 * 60_000;
+
 export class AgentRuntimePool {
   private readonly alwaysAllowedTools = new Set<string>();
   private readonly approvalRoutes = new Map<string, ApprovalRoute>();
   private readonly maximumWorkers: number;
+  private readonly idleWorkerMs: number;
   private readonly options: AgentRuntimePoolOptions;
   private readonly sessionRoutes = new Map<string, AgentWorker>();
   private readonly workers: AgentWorker[] = [];
+  private retireTimer?: NodeJS.Timeout;
   private stopping = false;
 
   constructor(options: AgentRuntimePoolOptions) {
     this.options = options;
     this.maximumWorkers = options.maximumWorkers ?? agentRuntimeWorkerCount();
+    this.idleWorkerMs = options.idleWorkerMs ?? idleWorkerMs;
   }
 
+  /** One-off requests share the workers that exist: they never add one. */
   run<Result>(method: AgentRuntimeMethod, input?: unknown) {
-    return this.runOnWorker<Result>(this.selectWorker(), method, input);
+    const workers = this.availableWorkers();
+    const worker = workers.length ? leastLoaded(workers) : this.createWorker();
+    return this.runOnWorker<Result>(worker, method, input);
   }
 
   async startSession(
@@ -64,12 +84,22 @@ export class AgentRuntimePool {
     input: unknown,
   ) {
     const worker = this.selectStartWorker(input);
-    const result = await this.runOnWorker<SessionResult>(worker, method, input);
-    this.routeSession(worker, result.sessionId);
-    if (worker.sessionStates.get(result.sessionId) !== "terminal") {
-      worker.sessionStates.set(result.sessionId, "active");
+    worker.pendingStarts += 1;
+    try {
+      const result = await this.runOnWorker<SessionResult>(
+        worker,
+        method,
+        input,
+      );
+      this.routeSession(worker, result.sessionId);
+      if (!worker.endedDuringStart.has(result.sessionId)) {
+        worker.activeSessions.add(result.sessionId);
+      }
+      return result;
+    } finally {
+      worker.pendingStarts -= 1;
+      if (!worker.pendingStarts) worker.endedDuringStart.clear();
     }
-    return result;
   }
 
   runSession<Result>(
@@ -78,9 +108,7 @@ export class AgentRuntimePool {
     input?: unknown,
   ) {
     const worker = this.sessionWorker(sessionId);
-    if (sessionRunMethods.has(method)) {
-      worker.sessionStates.set(sessionId, "active");
-    }
+    if (sessionRunMethods.has(method)) worker.activeSessions.add(sessionId);
     return this.runOnWorker<Result>(worker, method, input);
   }
 
@@ -89,7 +117,7 @@ export class AgentRuntimePool {
   sessionLive(sessionId: string) {
     const worker = this.sessionRoutes.get(sessionId);
     return Boolean(
-      worker?.client.alive && worker.sessionStates.get(sessionId) === "active",
+      worker?.client.alive && worker.activeSessions.has(sessionId),
     );
   }
 
@@ -98,7 +126,7 @@ export class AgentRuntimePool {
     try {
       await this.runOnWorker(worker, "sessions.abort", sessionId);
     } finally {
-      worker.sessionStates.set(sessionId, "terminal");
+      this.endSession(worker, sessionId);
     }
   }
 
@@ -136,12 +164,26 @@ export class AgentRuntimePool {
     return uniqueSessions(lists.flat());
   }
 
-  async releaseWorkspace(worktree: string) {
+  /**
+   * The workspace is gone: every worker lets go of its sessions there, and
+   * the Claude Code processes of those sessions close.
+   */
+  async releaseWorkspace(worktree: string, sessionIds: string[] = []) {
+    const workers = this.liveWorkers();
     await Promise.allSettled(
-      this.liveWorkers().map((worker) =>
+      workers.map((worker) =>
         this.runOnWorker(worker, "sessions.releaseWorkspace", worktree),
       ),
     );
+    // The Claude Code bridge is shared: any worker reaches every lane.
+    const [worker] = this.liveWorkers();
+    if (worker && sessionIds.length) {
+      await this.runOnWorker(
+        worker,
+        "claudeCode.closeSessions",
+        sessionIds,
+      ).catch(() => undefined);
+    }
   }
 
   cancelSecurityAudit(auditId: string) {
@@ -162,6 +204,7 @@ export class AgentRuntimePool {
 
   async shutdown() {
     this.stopping = true;
+    this.stopRetireTimer();
     await Promise.allSettled(
       this.liveWorkers().map((worker) => worker.client.shutdown()),
     );
@@ -171,11 +214,9 @@ export class AgentRuntimePool {
   }
 
   private selectWorker() {
-    const workers = this.liveWorkers();
+    const workers = this.availableWorkers();
     if (!workers.length) return this.createWorker();
-    const selected = workers.reduce((least, worker) =>
-      workerLoad(worker) < workerLoad(least) ? worker : least,
-    );
+    const selected = leastLoaded(workers);
     if (workers.length < this.maximumWorkers && workerLoad(selected) > 0) {
       return this.createWorker();
     }
@@ -200,7 +241,11 @@ export class AgentRuntimePool {
     if (this.stopping) throw new Error("Agent runtime is shutting down");
     const worker = {
       activeRequests: 0,
-      sessionStates: new Map<string, "active" | "terminal">(),
+      activeSessions: new Set<string>(),
+      endedDuringStart: new Set<string>(),
+      lastWorkAt: Date.now(),
+      pendingStarts: 0,
+      retiring: false,
     } as AgentWorker;
     worker.client = this.options.createProcess({
       handleHostRequest: this.options.handleHostRequest,
@@ -208,6 +253,7 @@ export class AgentRuntimePool {
       onExit: (error) => this.handleExit(worker, error),
     });
     this.workers.push(worker);
+    if (this.workers.length > 1) this.startRetireTimer();
     return worker;
   }
 
@@ -217,17 +263,20 @@ export class AgentRuntimePool {
     input?: unknown,
   ) {
     worker.activeRequests += 1;
+    worker.lastWorkAt = Date.now();
     try {
       return await worker.client.request<Result>(method, input);
     } finally {
       worker.activeRequests = Math.max(0, worker.activeRequests - 1);
+      worker.lastWorkAt = Date.now();
     }
   }
 
   private handleEvent(worker: AgentWorker, event: AgentEvent) {
+    worker.lastWorkAt = Date.now();
     if (event.sessionId) this.routeSession(worker, event.sessionId);
     if (terminalEvent(event) && event.sessionId) {
-      worker.sessionStates.set(event.sessionId, "terminal");
+      this.endSession(worker, event.sessionId);
     }
     const approval = approvalRequest(event);
     if (approval && this.alwaysAllowedTools.has(approval.toolName)) {
@@ -236,11 +285,22 @@ export class AgentRuntimePool {
     }
     if (approval) {
       this.approvalRoutes.set(approval.id, {
+        sessionId: event.sessionId,
         toolName: approval.toolName,
         worker,
       });
     }
     this.options.onEvent(event);
+  }
+
+  // A finished session keeps its route, so a resume finds its worker, but
+  // no state: nothing waits on its approvals any more.
+  private endSession(worker: AgentWorker, sessionId: string) {
+    worker.activeSessions.delete(sessionId);
+    if (worker.pendingStarts) worker.endedDuringStart.add(sessionId);
+    for (const [requestId, route] of this.approvalRoutes) {
+      if (route.sessionId === sessionId) this.approvalRoutes.delete(requestId);
+    }
   }
 
   private async resolveAlwaysApproval(
@@ -254,17 +314,83 @@ export class AgentRuntimePool {
   }
 
   private handleExit(worker: AgentWorker, error: Error) {
-    removeItem(this.workers, worker);
-    removeWorkerRoutes(this.sessionRoutes, worker);
-    removeWorkerApprovals(this.approvalRoutes, worker);
+    this.forgetWorker(worker);
     if (this.stopping) return;
-    for (const sessionId of activeSessionIds(worker)) {
+    for (const sessionId of worker.activeSessions) {
       this.options.onEvent({
         payload: { message: error.message },
         sessionId,
         type: "error",
       });
     }
+  }
+
+  private forgetWorker(worker: AgentWorker) {
+    removeItem(this.workers, worker);
+    removeWorkerRoutes(this.sessionRoutes, worker);
+    removeWorkerApprovals(this.approvalRoutes, worker);
+    if (this.liveWorkers().length <= 1) this.stopRetireTimer();
+  }
+
+  private startRetireTimer() {
+    if (this.retireTimer) return;
+    const period = Math.max(1_000, Math.min(60_000, this.idleWorkerMs / 5));
+    this.retireTimer = setInterval(() => void this.retireIdleWorkers(), period);
+    this.retireTimer.unref?.();
+  }
+
+  private stopRetireTimer() {
+    if (this.retireTimer) clearInterval(this.retireTimer);
+    this.retireTimer = undefined;
+  }
+
+  private async retireIdleWorkers() {
+    const now = Date.now();
+    for (const worker of this.availableWorkers()) {
+      if (this.availableWorkers().length <= 1) return;
+      if (!this.retirable(worker, now)) continue;
+      await this.retire(worker);
+    }
+  }
+
+  private retirable(worker: AgentWorker, now: number) {
+    return (
+      workerLoad(worker) === 0 &&
+      !worker.pendingStarts &&
+      now - worker.lastWorkAt >= this.idleWorkerMs &&
+      ![...this.approvalRoutes.values()].some(
+        (route) => route.worker === worker,
+      )
+    );
+  }
+
+  // The worker says whether it still holds something a session needs (the
+  // shared Claude Code bridge while sessions run elsewhere or lanes are
+  // open). Work that arrives meanwhile cancels the retirement.
+  private async retire(worker: AgentWorker) {
+    worker.retiring = true;
+    const startedAt = worker.lastWorkAt;
+    const busyElsewhere = this.workers.some(
+      (other) =>
+        other !== worker && (workerLoad(other) > 0 || other.pendingStarts > 0),
+    );
+    const idle = await worker.client
+      .request<boolean>("runtime.idle", { busyElsewhere })
+      .catch(() => false);
+    worker.retiring = false;
+    if (!idle) {
+      worker.lastWorkAt = Date.now();
+      return;
+    }
+    if (
+      worker.lastWorkAt !== startedAt ||
+      workerLoad(worker) > 0 ||
+      !worker.client.alive ||
+      this.availableWorkers().length <= 1
+    )
+      return;
+    this.forgetWorker(worker);
+    await worker.client.shutdown().catch(() => undefined);
   }
 
   private routeSession(worker: AgentWorker, sessionId: string) {
@@ -280,6 +406,11 @@ export class AgentRuntimePool {
   private liveWorkers() {
     return this.workers.filter((worker) => worker.client.alive);
   }
+
+  /** Live workers new work may go to: not the one being retired. */
+  private availableWorkers() {
+    return this.liveWorkers().filter((worker) => !worker.retiring);
+  }
 }
 
 export function agentRuntimeWorkerCount(parallelism = availableParallelism()) {
@@ -287,7 +418,13 @@ export function agentRuntimeWorkerCount(parallelism = availableParallelism()) {
 }
 
 function workerLoad(worker: AgentWorker) {
-  return worker.activeRequests + activeSessionIds(worker).length;
+  return worker.activeRequests + worker.activeSessions.size;
+}
+
+function leastLoaded(workers: AgentWorker[]) {
+  return workers.reduce((least, worker) =>
+    workerLoad(worker) < workerLoad(least) ? worker : least,
+  );
 }
 
 function approvalRequest(event: AgentEvent) {
@@ -324,12 +461,6 @@ function requestedSessionId(input: unknown) {
 
 function terminalEvent(event: AgentEvent) {
   return event.type === "done" || event.type === "error";
-}
-
-function activeSessionIds(worker: AgentWorker) {
-  return [...worker.sessionStates]
-    .filter(([, state]) => state === "active")
-    .map(([sessionId]) => sessionId);
 }
 
 function removeItem<T>(items: T[], target: T) {

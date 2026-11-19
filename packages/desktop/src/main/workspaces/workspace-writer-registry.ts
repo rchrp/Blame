@@ -54,13 +54,17 @@ export class WorkspaceWriterRegistry {
     return [...new Set(workspaces.filter((path) => path !== undefined))];
   }
 
+  /** Forgets the sessions of a workspace and returns their ids. */
   releaseWorkspace(workspace: string) {
     const canonical = canonicalWorkspace(workspace);
+    const released: string[] = [];
     for (const [sessionId, candidate] of this.sessionWorkspaces) {
       if (candidate !== canonical) continue;
       this.activeSessions.delete(sessionId);
       this.sessionWorkspaces.delete(sessionId);
+      released.push(sessionId);
     }
+    return released;
   }
 
   clear() {

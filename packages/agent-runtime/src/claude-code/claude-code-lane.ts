@@ -205,6 +205,11 @@ export class ClaudeCodeLane {
     return this.state === "streaming";
   }
 
+  /** Its last turn ended with an answer: nothing waits on it. */
+  get idle() {
+    return this.state === "idle";
+  }
+
   get awaitingTools() {
     return this.state === "awaiting-tools";
   }

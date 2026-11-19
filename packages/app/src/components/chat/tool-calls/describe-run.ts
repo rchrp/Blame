@@ -84,7 +84,7 @@ export function describeCommand(source: ToolCallSource): ToolCallView {
     const task = str(input.task) ?? "task"
     const args = strings(input.args)
     const chips: ToolCallChip[] = []
-    if (counts) chips.push(...countChips(counts))
+    if (counts) chips.push(...countChips(counts), ...turnChips(harness))
     else chips.push(...statusChips(harness, exitCode, undefined))
     if (duration) chips.push({ label: duration })
     const bodies: ToolCallBody[] = []
@@ -403,7 +403,15 @@ function statusChips(
     chips.push(exitCode === 0 ? { label: "Done", tone: "success" } : { label: `Exit ${exitCode}`, tone: "danger" })
   }
   if (duration) chips.push({ label: duration })
-  return chips
+  return [...chips, ...turnChips(harness)]
+}
+
+// A check that waited for other heavy work in the Blame Runtime.
+function turnChips(harness: ReturnType<typeof harnessResult>): ToolCallChip[] {
+  const turn = record(harness?.data.waitedForTurn)
+  const seconds = num(turn.seconds)
+  if (seconds === undefined) return []
+  return [{ label: `Waited ${seconds} s`, title: `Waited for ${str(turn.behind) ?? "other work"}: heavy work in the Blame Runtime takes turns.` }]
 }
 
 function testCounts(counts: Record<string, unknown>): TestCounts | undefined {

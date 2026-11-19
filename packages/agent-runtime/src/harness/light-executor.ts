@@ -101,24 +101,62 @@ export function localLightWorkspaceExecutor(
   return (request, signal) => executeWithWorkspace(workspace, request, signal);
 }
 
+type CachedWorkspace = {
+  inFlight: number;
+  lastUsedAt: number;
+  workspace: LightWorkspace;
+};
+
 /**
  * One workspace per root and task contract, kept between requests: a
  * long-lived harness keeps a session's managed runs, its command queue and
  * its warm caches, where a process per request lost them after each call.
+ * Each holds its indexes (measured 2026-11-19: ~7 MB of heap for a 765-file
+ * project, ~30 MB for 3,700 files), so one that served nothing for an hour,
+ * like the Claude Code process of its session, is dropped, and at most
+ * `limit` stay; one running a command always stays.
  */
-export function cachedLightWorkspaceExecutor(limit = 32): LightWorkspaceExecutor {
-  const executors = new Map<string, LightWorkspaceExecutor>();
-  return (request, signal) => {
-    const key = JSON.stringify([request.workspaceRoot, request.taskContract ?? null]);
-    const executor = executors.get(key) ?? localLightWorkspaceExecutor(request.workspaceRoot, request.taskContract);
-    // Most recently used last, so the oldest session goes first past the limit.
-    executors.delete(key);
-    executors.set(key, executor);
-    for (const old of executors.keys()) {
-      if (executors.size <= limit) break;
-      executors.delete(old);
+export function cachedLightWorkspaceExecutor(
+  options: { idleMs?: number; limit?: number } = {},
+): LightWorkspaceExecutor {
+  const idleMs = options.idleMs ?? 60 * 60_000;
+  const limit = options.limit ?? 8;
+  const workspaces = new Map<string, CachedWorkspace>();
+  const busy = (entry: CachedWorkspace) => entry.inFlight > 0 || entry.workspace.tasks.running;
+  const sweep = () => {
+    const now = Date.now();
+    for (const [key, entry] of workspaces)
+      if (!busy(entry) && now - entry.lastUsedAt >= idleMs) workspaces.delete(key);
+    // Least recently used first.
+    for (const [key, entry] of workspaces) {
+      if (workspaces.size <= limit) break;
+      if (!busy(entry)) workspaces.delete(key);
     }
-    return executor(request, signal);
+  };
+  setInterval(sweep, Math.min(idleMs, 5 * 60_000)).unref();
+  return async (request, signal) => {
+    sweep();
+    const key = JSON.stringify([request.workspaceRoot, request.taskContract ?? null]);
+    const entry = workspaces.get(key) ?? {
+      inFlight: 0,
+      lastUsedAt: 0,
+      workspace: new LightWorkspace(request.workspaceRoot, {
+        sessionId: request.taskContract?.session_id ?? "unscoped-session",
+        taskContract: request.taskContract,
+      }),
+    };
+    workspaces.delete(key);
+    workspaces.set(key, entry);
+    entry.inFlight += 1;
+    entry.lastUsedAt = Date.now();
+    // A new workspace may take the place of the least recently used.
+    sweep();
+    try {
+      return await executeWithWorkspace(entry.workspace, request, signal);
+    } finally {
+      entry.inFlight -= 1;
+      entry.lastUsedAt = Date.now();
+    }
   };
 }
 

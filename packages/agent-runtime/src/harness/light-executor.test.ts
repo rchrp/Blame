@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { AgentToolContext } from "@cline/sdk";
-import { lightToolContext, localLightWorkspaceExecutor } from "./light-executor.js";
+import {
+  cachedLightWorkspaceExecutor,
+  lightToolContext,
+  localLightWorkspaceExecutor,
+  type LightWorkspaceExecutor,
+} from "./light-executor.js";
 import { lightSemanticHarnessTools } from "./light-tools.js";
 
 test("managed calls preserve compaction identity without transferring the transcript", () => {
@@ -45,6 +50,59 @@ for (const toolName of ["read_code", "edit_code"]) {
       await rm(root, { recursive: true, force: true });
     }
   });
+}
+
+test("drops workspaces idle past the limit and keeps one serving a request", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-cached-workspaces-"));
+  try {
+    const execute = cachedLightWorkspaceExecutor({ idleMs: 300 });
+    await command(execute, root, "idle", "echo idle");
+    const slow = command(execute, root, "busy", "sleep 1; echo busy");
+    await delay(700);
+    assert.equal(await runKnown(execute, root, "idle"), false);
+    await slow;
+    assert.equal(await runKnown(execute, root, "busy"), true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("keeps the most recently used workspaces up to the limit", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-cached-workspaces-"));
+  try {
+    const execute = cachedLightWorkspaceExecutor({ limit: 2 });
+    for (const session of ["a", "b", "c"]) await command(execute, root, session, "echo ok");
+    assert.equal(await runKnown(execute, root, "a"), false);
+    assert.equal(await runKnown(execute, root, "c"), true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+function command(execute: LightWorkspaceExecutor, root: string, session: string, text: string) {
+  return execute({
+    input: { kind: "command", command: text },
+    taskContract: { session_id: session, environment: { isolated: true, managedPreview: false } },
+    tool: "run_task",
+    toolContext: { sessionId: session, toolCallId: `${session}-command` },
+    workspaceRoot: root,
+  });
+}
+
+/** Whether the session's workspace still knows its first run. */
+async function runKnown(execute: LightWorkspaceExecutor, root: string, session: string) {
+  const result = await execute({
+    input: { kind: "inspect", run: "r1", until: "now" },
+    taskContract: { session_id: session, environment: { isolated: true, managedPreview: false } },
+    tool: "run_task",
+    toolContext: { sessionId: session, toolCallId: `${session}-inspect` },
+    workspaceRoot: root,
+  });
+  return result.status === "ok";
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function transcriptContext(): AgentToolContext {

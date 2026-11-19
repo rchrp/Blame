@@ -2,6 +2,10 @@ export {
   BlameAgentRuntime,
   createClineBaselineRuntime,
 } from "./cline-runtime.js";
+export {
+  claudeCodeBridgeIdle,
+  closeClaudeCodeSessions,
+} from "./claude-code/claude-code-provider.js";
 export type {
   LightWorkspaceExecutionRequest,
   LightWorkspaceExecutor,
@@ -86,17 +90,6 @@ export type {
   AssessProjectInitializationImpactResult,
   BlameModel,
   BlameProvider,
-  CodeGraphArchitectureOverviewInput,
-  CodeGraphImpactRadiusInput,
-  CodeGraphMinimalContextInput,
-  CodeGraphQueryInput,
-  CodeGraphQueryResult,
-  CodeGraphReviewContextInput,
-  CodeGraphStatus,
-  CodeGraphStatusState,
-  CodeGraphUpdateInput,
-  CodeGraphUpdateResult,
-  CodeReviewGraphProvider,
   CompareCheckpointInput,
   CompareCheckpointResult,
   DeleteProviderCredentialInput,
