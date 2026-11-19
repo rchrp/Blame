@@ -9,14 +9,15 @@ import {
   type CompileCacheTarget,
 } from "./local-preview-compile-cache.ts";
 import {
-  createCompileQueue,
-  type CompileQueue,
-  type CompileStartKind,
-} from "./local-preview-compile-queue.ts";
+  runtimeHeavyWork,
+  type HeavyWorkQueue,
+} from "../../runtime-heavy-work.ts";
+
+type CompileStartKind = "cold" | "seeded";
 
 // The start of a preview whose dev server has no compiled cache yet: it is
 // seeded from its dependency key's snapshot when one exists, then waits for
-// a turn to compile (local-preview-compile-queue.ts) right before its
+// a turn to compile (runtime-heavy-work.ts) right before its
 // services start. The turn ends once the first page answered; a cold start
 // keeps it until its compiler has written the cache, its memory peak, and
 // that cache became the snapshot of the next stories. Starts that find
@@ -44,17 +45,11 @@ export type ColdStartInput = {
   log?: (chunk: string) => void;
   step?: (step: string) => void;
   timing?: (label: string, durationMs: number) => void;
-  queue?: CompileQueue;
+  queue?: HeavyWorkQueue;
 };
 
 /** How long a cold start keeps its turn after its first page at most. */
 const coldTurnLimitMs = 3 * 60_000;
-
-let queueHost: DockerHost | undefined;
-const sharedQueue = createCompileQueue({
-  availableMemory: () =>
-    queueHost ? availableMemory(queueHost) : Promise.resolve(undefined),
-});
 
 export async function prepareColdStart(
   input: ColdStartInput,
@@ -75,7 +70,6 @@ export async function prepareColdStart(
   };
   const seeded = await seedFor(input, target);
   if (seeded.state === "warm") return undefined;
-  if (!input.queue) queueHost = input.host;
   return coldStart(input, target, seeded);
 }
 
@@ -113,7 +107,7 @@ function coldStart(
 ): ColdStart {
   const kind: CompileStartKind = seeded.state === "seeded" ? "seeded" : "cold";
   let capture = needsCapture(seeded);
-  const queue = input.queue ?? sharedQueue;
+  const queue = input.queue ?? runtimeHeavyWork;
   let leave: (() => void) | undefined;
   let handedOff = false;
   let enteredAt = 0;
@@ -130,9 +124,12 @@ function coldStart(
       if (leave || ended) return;
       const askedAt = Date.now();
       let waited = false;
-      leave = await queue.enter(kind, () => {
-        waited = true;
-        input.step?.("Waiting for another preview to compile");
+      leave = await queue.enter(kind, {
+        owner: input.worktree,
+        onWait: (reason) => {
+          waited = true;
+          input.step?.(`Waiting for ${reason}`);
+        },
       });
       // Dropped while it waited: give the turn back at once.
       if (ended) return leave();
@@ -169,15 +166,4 @@ function coldStart(
       if (!handedOff) finish();
     },
   };
-}
-
-/** MemAvailable of the Docker host, in bytes. */
-export async function availableMemory(host: DockerHost) {
-  const result = await host.run(
-    "sh",
-    ["-c", "awk '/^MemAvailable:/ { print $2 * 1024 }' /proc/meminfo"],
-    { timeoutMs: 10_000 },
-  );
-  const bytes = Number(result.stdout.trim());
-  return result.exitCode === 0 && bytes > 0 ? bytes : undefined;
 }

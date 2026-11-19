@@ -13,6 +13,7 @@ import {
   run,
   writeFileAtomic,
 } from "../../workspace-runtime.ts";
+import { runtimeHeavyWork } from "../../runtime-heavy-work.ts";
 import { errorText, localPreviewPaths } from "./local-preview-files.ts";
 import {
   localPreviewContext,
@@ -251,18 +252,34 @@ async function buildServices(
       (service) => service.id === id,
     )?.build?.command;
     if (command) {
+      // A build takes its turn of the Runtime's heavy work.
+      const leave = await runtimeHeavyWork.enter("build", {
+        owner: worktree,
+        onWait: (reason) =>
+          deps.log(
+            worktree,
+            `Waiting for ${reason} before building ${id} for review.\n`,
+          ),
+      });
+      // An agent may have taken the story back meanwhile.
+      if (!inReview(worktree, Date.now())) {
+        leave();
+        return false;
+      }
       deps.log(worktree, `Building ${id} for review.\n`);
       const startedAt = Date.now();
       // The development server keeps serving meanwhile, and its
       // dependencies are already running.
-      const result = await engine.compose(
-        ["run", "--rm", "--no-deps", "-T", id, "/bin/sh", "-lc", command],
-        {
-          timeoutMs: buildTimeoutMs,
-          onOutput: (chunk) => deps.log(worktree, chunk),
-        },
-        true,
-      );
+      const result = await engine
+        .compose(
+          ["run", "--rm", "--no-deps", "-T", id, "/bin/sh", "-lc", command],
+          {
+            timeoutMs: buildTimeoutMs,
+            onOutput: (chunk) => deps.log(worktree, chunk),
+          },
+          true,
+        )
+        .finally(leave);
       if (result.exitCode !== 0) {
         deps.log(
           worktree,

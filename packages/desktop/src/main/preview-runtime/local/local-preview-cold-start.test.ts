@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { DockerHost } from "@blame/preview-runtime/compose";
 import { prepareColdStart } from "./local-preview-cold-start.ts";
-import { createCompileQueue } from "./local-preview-compile-queue.ts";
+import { createHeavyWorkQueue } from "../../runtime-heavy-work.ts";
 
 const plan = {
   services: [{ id: "web", workingDir: "/workspace" }],
@@ -56,7 +56,7 @@ function fakeHost(input: {
 function inputFor(host: DockerHost, extra: Record<string, unknown> = {}) {
   const steps: string[] = [];
   const logs: string[] = [];
-  const queue = createCompileQueue({ availableMemory: async () => 0 });
+  const queue = createHeavyWorkQueue({ availableMemory: async () => 0 });
   return {
     steps,
     logs,
