@@ -181,6 +181,25 @@ test("counts the runtime commands of the app's periodic reads", async () => {
   console.table(rows);
 });
 
+test("checks once that the Windows runtime trusts a worktree", async () => {
+  const { runRuntimeGit } = await import("./workspace-runtime-git.ts");
+  Object.defineProperty(process, "platform", { value: "win32" });
+  try {
+    const windows = await RuntimeAgentTestHost.install(
+      join(scratch, "windows"),
+      "win32",
+    );
+    const head = () =>
+      runRuntimeGit(drawerStory.worktree, ["rev-parse", "HEAD"], "virtualized");
+    await head();
+    await windows.reset();
+    await head();
+    assert.equal((await windows.count()).requests, 1);
+  } finally {
+    Object.defineProperty(process, "platform", { value: "darwin" });
+  }
+});
+
 async function invoke({ channel, input }: Call) {
   const handler = ipcHandlers.get(channel);
   assert.ok(handler, channel);

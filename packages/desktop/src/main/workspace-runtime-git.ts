@@ -40,12 +40,18 @@ export async function worktreeRegistered(
   return stdout.split("\n").some((line) => worktreeLineMatches(line, worktree));
 }
 
+// Worktrees Git already trusts in the runtime. Should its configuration
+// lose one, the dubious ownership retry in runRuntimeGit adds it again.
+const safeDirectories = new Set<string>();
+
 export async function ensureRuntimeGitSafeDirectory(cwd: string) {
   if (process.platform !== "win32") return;
   const safeDirectory = runtimeGitSafeDirectory(cwd);
+  if (safeDirectories.has(safeDirectory)) return;
   const stdout = await configuredSafeDirectories();
-  if (safeDirectoryConfigured(stdout, safeDirectory)) return;
-  await addRuntimeGitSafeDirectory(cwd);
+  if (!safeDirectoryConfigured(stdout, safeDirectory))
+    await addRuntimeGitSafeDirectory(cwd);
+  safeDirectories.add(safeDirectory);
 }
 
 export async function runRuntimeGit(

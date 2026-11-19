@@ -35,11 +35,11 @@ export class RuntimeAgentTestHost {
   }
 
   /** Routes the runtime agent of this process to a new test host. */
-  static async install(directory: string) {
+  static async install(directory: string, platform = process.platform) {
     const host = new RuntimeAgentTestHost(directory);
     await host.writeWrappers();
     runtimeAgentClient({
-      platform: process.platform,
+      platform,
       spawnProcess: (() => host.agentProcess()) as never,
     });
     return host;
