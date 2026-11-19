@@ -1,6 +1,9 @@
 import * as React from "react"
 import { CopyIcon, RotateCwIcon } from "lucide-react"
-import { createTerminalView } from "../../development/terminal-view"
+import {
+  createTerminalView,
+  type TerminalView,
+} from "../../development/terminal-view"
 import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
 import type {
@@ -37,7 +40,8 @@ export function TerminalSurfaceView({
     let cancelled = false
     let attached: string | undefined
     let unsubscribe: (() => void) | undefined
-    const view = createTerminalView(
+    let view: TerminalView | undefined
+    void createTerminalView(
       element.current,
       (cols, rows) => {
         if (attached)
@@ -51,28 +55,33 @@ export function TerminalSurfaceView({
         if (attached) void client.write({ id: attached, data })
       }
     )
-    void client
-      .attach(latestScope.current)
-      .then((result) => {
+      .then((created) => {
         if (cancelled) {
-          void client.detach(result.id)
+          created.dispose()
           return
         }
-        attached = result.id
-        setSession(result.id)
-        setState(result)
-        view.terminal.write(result.replay, () => {
-          if (!cancelled) view.resize()
-        })
-        unsubscribe = client.onEvent(result.id, (event) => {
-          if (event.type === "stdout") view.terminal.write(event.data)
-          else {
-            try {
-              setState(JSON.parse(event.data))
-            } catch {
-              /* Ignore malformed state. */
-            }
+        view = created
+        return client.attach(latestScope.current).then((result) => {
+          if (cancelled) {
+            void client.detach(result.id)
+            return
           }
+          attached = result.id
+          setSession(result.id)
+          setState(result)
+          created.terminal.write(result.replay, () => {
+            if (!cancelled) created.resize()
+          })
+          unsubscribe = client.onEvent(result.id, (event) => {
+            if (event.type === "stdout") created.terminal.write(event.data)
+            else {
+              try {
+                setState(JSON.parse(event.data))
+              } catch {
+                /* Ignore malformed state. */
+              }
+            }
+          })
         })
       })
       .catch((error: Error) => {
@@ -84,7 +93,7 @@ export function TerminalSurfaceView({
       unsubscribe?.()
       if (attached) void client.detach(attached)
       setSession(undefined)
-      view.dispose()
+      view?.dispose()
     }
   }, [
     client,

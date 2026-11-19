@@ -1,4 +1,4 @@
-import { createTerminalView } from "./terminal-view"
+import { createTerminalView, type TerminalView } from "./terminal-view"
 import { ServerOffIcon, SquareIcon, TerminalIcon } from "lucide-react"
 import * as React from "react"
 
@@ -26,7 +26,39 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
     let cancelled = false
     let unsubscribe: (() => void) | undefined
     let sessionId: string | undefined
-    const view = createTerminalView(
+    let view: TerminalView | undefined
+    const startTerminal = ({ terminal, resize }: TerminalView) => {
+      terminal.write("\x1b[90mStarting terminal…\x1b[0m\r\n")
+      return terminalApi
+        .start({ cwd: worktree })
+        .then((session) => {
+          if (cancelled) {
+            void terminalApi.stop(session.id)
+            return
+          }
+          sessionId = session.id
+          terminalSession.current = session.id
+          setSessionId(session.id)
+          resize()
+          unsubscribe = terminalApi.onEvent(session.id, (event) => {
+            if (event.type === "exit") {
+              terminal.write(
+                `\r\n\x1b[90m[process exited ${event.data}]\x1b[0m\r\n`
+              )
+              terminalSession.current = undefined
+              setSessionId(undefined)
+              return
+            }
+            terminal.write(event.data)
+          })
+        })
+        .catch(() => {
+          if (cancelled) return
+          terminal.write("\r\n\x1b[31mUnable to start terminal.\x1b[0m\r\n")
+        })
+    }
+
+    void createTerminalView(
       element,
       (cols, rows) => {
         if (sessionId) void terminalApi.resize({ cols, id: sessionId, rows })
@@ -36,44 +68,22 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
         if (id) void terminalApi.write({ data, id })
       }
     )
-    const { terminal, resize } = view
-
-    terminal.write("\x1b[90mStarting terminal…\x1b[0m\r\n")
-    terminalApi
-      .start({ cwd: worktree })
-      .then((session) => {
+      .then((created) => {
         if (cancelled) {
-          void terminalApi.stop(session.id)
+          created.dispose()
           return
         }
-        sessionId = session.id
-        terminalSession.current = session.id
-        setSessionId(session.id)
-        resize()
-        unsubscribe = terminalApi.onEvent(session.id, (event) => {
-          if (event.type === "exit") {
-            terminal.write(
-              `\r\n\x1b[90m[process exited ${event.data}]\x1b[0m\r\n`
-            )
-            terminalSession.current = undefined
-            setSessionId(undefined)
-            return
-          }
-          terminal.write(event.data)
-        })
+        view = created
+        return startTerminal(created)
       })
-      .catch(() => {
-        if (cancelled) return
-        terminal.write("\r\n\x1b[31mUnable to start terminal.\x1b[0m\r\n")
-      })
-
+      .catch(() => undefined)
     return () => {
       cancelled = true
 
       unsubscribe?.()
       if (sessionId) void terminalApi.stop(sessionId)
       terminalSession.current = undefined
-      view.dispose()
+      view?.dispose()
     }
   }, [platform.terminal, userStory?.worktree])
 

@@ -1,5 +1,5 @@
 import * as React from "react"
-import RFB from "@novnc/novnc/core/rfb.js"
+import type RFB from "@novnc/novnc/core/rfb.js"
 import { ClipboardPasteIcon, CameraIcon, RotateCwIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
@@ -31,11 +31,14 @@ export function DisplaySurfaceView({
     let cancelled = false
     let rfb: RFB | undefined
     setMessage(undefined)
-    void client
-      .open(latestScope.current)
-      .then(({ url }) => {
+    // noVNC loads while the screen connects, not with the app.
+    void Promise.all([
+      client.open(latestScope.current),
+      import("@novnc/novnc/core/rfb.js"),
+    ])
+      .then(([{ url }, { default: VncClient }]) => {
         if (cancelled || !container.current) return
-        rfb = new RFB(container.current, url)
+        rfb = new VncClient(container.current, url)
         rfb.scaleViewport = true
         rfb.resizeSession = false
         rfb.addEventListener("disconnect", () => {

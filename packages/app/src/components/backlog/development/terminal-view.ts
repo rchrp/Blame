@@ -1,13 +1,20 @@
-import { FitAddon } from "@xterm/addon-fit"
-import { Terminal } from "@xterm/xterm"
 import "@xterm/xterm/css/xterm.css"
 
-/** Shared terminal rendering and fit behavior for host and preview terminals. */
-export function createTerminalView(
+export type TerminalView = Awaited<ReturnType<typeof createTerminalView>>
+
+/**
+ * Shared terminal rendering and fit behavior for host and preview terminals.
+ * xterm loads with the first terminal opened, not with the app.
+ */
+export async function createTerminalView(
   element: HTMLElement,
   onResize: (cols: number, rows: number) => void,
   onData: (data: string) => void
 ) {
+  const [{ Terminal }, { FitAddon }] = await Promise.all([
+    import("@xterm/xterm"),
+    import("@xterm/addon-fit"),
+  ])
   const terminal = new Terminal({
     convertEol: true,
     cursorBlink: true,
