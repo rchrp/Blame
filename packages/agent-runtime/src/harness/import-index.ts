@@ -1,6 +1,6 @@
 import { posix } from "node:path";
 import ts from "typescript";
-import { parseEntry, uses, type Entry } from "./import-index-parse.js";
+import { sharedEntry, uses, type Entry } from "./import-index-parse.js";
 import { sha256 } from "./light-identity.js";
 import type { WorkspaceFiles, WorkspaceSnapshot } from "./workspace-files.js";
 
@@ -136,7 +136,7 @@ export class ImportIndex {
     this.present.add(path);
     const previous = this.entries.get(path);
     if (previous) this.graph?.unlink(path, previous);
-    const entry = indexable(path, content) ? parseEntry(path, content.toString("utf8"), hash) : undefined;
+    const entry = indexable(path, content) ? sharedEntry(path, content, hash) : undefined;
     if (entry) this.entries.set(path, entry);
     else this.entries.delete(path);
     if (structural) this.graph = undefined;

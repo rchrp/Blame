@@ -21,7 +21,26 @@ export type Entry = {
   order: string[];
 };
 
-export function parseEntry(path: string, text: string, hash: string): Entry {
+// Workspaces on close branches share most files: one with the same bytes
+// (by hash) and script kind reuses the entry another parsed. An entry holds
+// only what those bytes say, no path or resolution, and is never changed;
+// it lives as long as an index holds it.
+const entries = new Map<string, WeakRef<Entry>>();
+const collected = new FinalizationRegistry<string>((key) => {
+  if (!entries.get(key)?.deref()) entries.delete(key);
+});
+
+export function sharedEntry(path: string, content: Buffer, hash: string): Entry {
+  const key = `${scriptKind(path)}:${hash}`;
+  const known = entries.get(key)?.deref();
+  if (known) return known;
+  const entry = parseEntry(path, content.toString("utf8"), hash);
+  entries.set(key, new WeakRef(entry));
+  collected.register(entry, key);
+  return entry;
+}
+
+function parseEntry(path: string, text: string, hash: string): Entry {
   const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, false, scriptKind(path));
   const imports: ImportRecord[] = [];
   const reexports: Reexport[] = [];
