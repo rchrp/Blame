@@ -5,7 +5,8 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { LightWorkspace } from "./light-workspace.js";
 import { sha256 } from "./light-identity.js";
-import { queryDependencyDeclaration, referenceFootprintIsCurrent } from "./semantic-reference-client.js";
+import { CompilerServices, queryDependencyDeclaration, referenceFootprintIsCurrent } from "./semantic-reference-client.js";
+import type { DependencyDeclarationReply } from "./semantic-reference-types.js";
 
 const consumer = `// é🧪 lexical decoy: transform(string)
 import DefaultApi, { transform as convert } from "sample-api";
@@ -178,7 +179,7 @@ test("missing configuration, excluded source, unresolved/ambiguous imports and J
   });
 });
 
-test("fresh queries see replacement and the original footprint rejects source/config/package/declaration changes", async () => {
+test("a kept service sees replacements and the original footprint rejects source/config/package/declaration changes", async () => {
   for (const [path, changed] of [
     ["consumer.ts", `${consumer}\n// changed`],
     ["tsconfig.json", JSON.stringify({ ...config, compilerOptions: { ...config.compilerOptions, strict: false } })],
@@ -219,6 +220,47 @@ test("pnpm package links and a shared node_modules root work; link retargeting i
     await symlink(".pnpm/sample-api@1.2.4/node_modules/sample-api", join(root, ".blame/shared/node_modules/sample-api"));
     await symlink(join(root, ".blame/shared/node_modules"), join(root, "node_modules"));
     assert.equal(data(await read(workspace)).sources[0]!.version, "1.2.4");
+  });
+});
+
+test("a kept service answers as a new one after dependencies are reinstalled or relinked", async () => {
+  await fixture(async (root) => {
+    const services = new CompilerServices();
+    const answersAsNew = async () => {
+      const fresh = new CompilerServices();
+      try {
+        const request = { root, declaration: true as const,
+          target: { path: "consumer.ts", name: "convert", hash: sha256(await readFile(join(root, "consumer.ts"))) } };
+        const kept = await services.query<DependencyDeclarationReply>(request, undefined, 8_000);
+        const expected = await fresh.query<DependencyDeclarationReply>(request, undefined, 8_000);
+        assert.equal(kept.status, "ok", JSON.stringify(kept));
+        const { footprint, ...answer } = kept as Extract<DependencyDeclarationReply, { status: "ok" }>;
+        assert.deepEqual({ ...expected, footprint }, kept);
+        assert.equal(await referenceFootprintIsCurrent(footprint), true);
+        return answer.declaration;
+      } finally { await fresh.close(); }
+    };
+    try {
+      assert.equal((await answersAsNew()).sources[0]!.version, "1.2.3");
+      // Reinstalled: new metadata and declarations in place.
+      await rm(join(root, "node_modules/sample-api"), { recursive: true });
+      await put(root, "node_modules/sample-api/package.json", '{"name":"sample-api","version":"1.3.0","type":"module","types":"index.d.ts"}');
+      await put(root, "node_modules/sample-api/index.d.ts", declaration.replace("input: number", "input: bigint"));
+      let answer = await answersAsNew();
+      assert.equal(answer.sources[0]!.version, "1.3.0");
+      assert.match(answer.content, /input: bigint/u);
+      // Relinked from a package store, as pnpm installs.
+      for (const version of ["2.0.0", "2.1.0"]) {
+        const store = `node_modules/.pnpm/sample-api@${version}/node_modules/sample-api`;
+        await put(root, `${store}/package.json`, `{"name":"sample-api","version":"${version}","type":"module","types":"index.d.ts"}`);
+        await put(root, `${store}/index.d.ts`, declaration.replace("input: number", `input: "${version}"`));
+        await rm(join(root, "node_modules/sample-api"), { recursive: true });
+        await symlink(join(root, store), join(root, "node_modules/sample-api"));
+        answer = await answersAsNew();
+        assert.equal(answer.sources[0]!.version, version);
+        assert.match(answer.content, new RegExp(`input: "${version.replaceAll(".", "\\.")}"`, "u"));
+      }
+    } finally { await services.close(); }
   });
 });
 

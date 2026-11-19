@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
+import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import test from "node:test";
 import ts from "typescript";
 import { LightWorkspace } from "./light-workspace.js";
@@ -10,9 +11,14 @@ import { LightReferenceSearch } from "./light-reference-search.js";
 import { sha256 } from "./light-identity.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 import {
+  CompilerServices,
   querySemanticReferences,
   referenceFootprintIsCurrent,
 } from "./semantic-reference-client.js";
+import type {
+  SemanticReferenceReply,
+  SemanticReferenceRequest,
+} from "./semantic-reference-types.js";
 
 const source =
   "export function calculate(n: number): number { return n + 1; }\n";
@@ -164,7 +170,7 @@ test("external body changes remain protected after a semantic query refreshes sy
   });
 });
 
-test("fresh worker sees added references and changed project configuration", async () => {
+test("a kept compiler service sees added references and changed project configuration", async () => {
   await fixture(async (workspace, root) => {
     assert.equal(data(await references(workspace)).referenceCount, 2);
     await writeFile(
@@ -400,6 +406,200 @@ test("reference worker has an outer timeout and cancellation releases it", async
     const pending = querySemanticReferences(request, controller.signal);
     controller.abort(new Error("cancelled during dispatch"));
     await assert.rejects(pending, /cancelled during/u);
+  });
+});
+
+type ReferenceAnswer = Extract<SemanticReferenceReply, { status: "ok" }>;
+
+async function compilerFixture(
+  sources: Record<string, string>,
+  run: (root: string, services: CompilerServices) => Promise<void>,
+) {
+  // Without the /var symlink of macOS: resolution through node_modules reports canonical paths.
+  const root = await realpath(await mkdtemp(join(tmpdir(), "light-compiler-service-")));
+  const services = new CompilerServices();
+  try {
+    for (const [path, text] of Object.entries(sources)) await put(root, path, text);
+    await run(root, services);
+  } finally {
+    await services.close();
+    await rm(root, { recursive: true, force: true });
+  }
+}
+async function put(root: string, path: string, text: string) {
+  await mkdir(dirname(join(root, path)), { recursive: true });
+  await writeFile(join(root, path), text);
+}
+// The first declaration named `name` in the file.
+async function target(root: string, path: string, name: string): Promise<SemanticReferenceRequest> {
+  const content = await readFile(join(root, path));
+  return { root, target: { path, name, start: 0, end: content.byteLength, hash: sha256(content) } };
+}
+// A kept service's answer is the one a new service gives. Its footprint also
+// keeps what earlier requests read, all of it still current.
+async function answersAsNew(services: CompilerServices, request: SemanticReferenceRequest) {
+  const fresh = new CompilerServices();
+  try {
+    const kept = await services.query<SemanticReferenceReply>(request, undefined, 8_000);
+    const expected = await fresh.query<SemanticReferenceReply>(request, undefined, 8_000);
+    assert.equal(kept.status, "ok", JSON.stringify(kept));
+    assert.equal(expected.status, "ok", JSON.stringify(expected));
+    const { footprint, ...answer } = kept as ReferenceAnswer;
+    const { footprint: freshFootprint, ...freshAnswer } = expected as ReferenceAnswer;
+    assert.deepEqual(answer, freshAnswer);
+    const keys = (entries: object[]) => new Set(entries.map((entry) => JSON.stringify(entry)));
+    const reads = keys(footprint.reads), existence = keys(footprint.existence);
+    for (const entry of freshFootprint.reads) assert.ok(reads.has(JSON.stringify(entry)), entry.path);
+    for (const entry of freshFootprint.existence) assert.ok(existence.has(JSON.stringify(entry)), entry.path);
+    assert.equal(await referenceFootprintIsCurrent(footprint), true);
+    return { answer, footprint };
+  } finally {
+    await fresh.close();
+  }
+}
+const referencePaths = (answer: { locations: Array<{ path: string }> }) =>
+  [...new Set(answer.locations.map((location) => location.path))].sort();
+
+test("a kept compiler service answers as a new one after edits, added and deleted files, a branch switch and a configuration change", async () => {
+  const project = { compilerOptions: { ...config.compilerOptions }, include: ["**/*.ts"] };
+  await compilerFixture({
+    "package.json": '{"type":"module"}',
+    "tsconfig.json": JSON.stringify(project),
+    "original.ts": source,
+    "consumer.ts": 'import { calculate } from "./original.js";\nexport const use = () => calculate(1);\n',
+    "probe/marker.ts": "export const marker = 1;\n",
+  }, async (root, services) => {
+    // A request in probe/ looks for probe/tsconfig.json; a project rebuilt
+    // since then no longer holds that lookup.
+    const marker = join(root, "probe/tsconfig.json");
+    const plant = async () => assert.equal(
+      (await services.query<SemanticReferenceReply>(await target(root, "probe/marker.ts", "marker"), undefined, 8_000)).status, "ok");
+    const kept = (footprint: ReferenceAnswer["footprint"]) => footprint.existence.some(({ path }) => path === marker);
+    const calculate = () => target(root, "original.ts", "calculate");
+    await plant();
+    let result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["consumer.ts"]);
+    assert.equal(kept(result.footprint), true);
+
+    // A rename plan checks its edits in memory only.
+    const renamed = await services.query<SemanticReferenceReply>(
+      { ...(await calculate()), renameTo: "compute" }, undefined, 12_000);
+    assert.equal(renamed.status, "ok", JSON.stringify(renamed));
+    result = await answersAsNew(services, await calculate());
+    assert.equal(kept(result.footprint), true);
+
+    // Edited sources are reparsed in the kept project.
+    await put(root, "consumer.ts", 'import { calculate } from "./original.js";\nexport const use = () => calculate(1) + calculate(2);\n');
+    await put(root, "original.ts", `// moved\n${source}export const again = calculate(3);\n`);
+    result = await answersAsNew(services, await calculate());
+    assert.equal(result.answer.locations.length, 4);
+    assert.equal(kept(result.footprint), true);
+
+    // A new file joins the project's roots.
+    await put(root, "extra.ts", 'import { calculate as c } from "./original.js";\nc(4);\n');
+    result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["consumer.ts", "extra.ts", "original.ts"]);
+    assert.equal(kept(result.footprint), true);
+
+    // A file the project read disappears: rebuilt.
+    await rm(join(root, "consumer.ts"));
+    result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["extra.ts", "original.ts"]);
+    assert.equal(kept(result.footprint), false);
+
+    // A branch switch changes, adds and deletes files at once.
+    const git = (...args: string[]) => execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", ...args], { cwd: root, stdio: "pipe" });
+    git("init", "-q", "-b", "main");
+    git("add", "-A");
+    git("commit", "-qm", "main");
+    git("checkout", "-qb", "feature");
+    await rm(join(root, "extra.ts"));
+    await put(root, "original.ts", `${source}export const twice = (n: number) => calculate(calculate(n));\n`);
+    await put(root, "caller.ts", 'import { calculate } from "./original.js";\ncalculate(5);\n');
+    git("add", "-A");
+    git("commit", "-qm", "feature");
+    git("checkout", "-q", "main");
+    await plant();
+    result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["extra.ts", "original.ts"]);
+    git("checkout", "-q", "feature");
+    result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["caller.ts", "original.ts"]);
+    assert.equal(result.answer.locations.length, 4);
+
+    // A changed configuration rebuilds the project.
+    await plant();
+    await put(root, "tsconfig.json", JSON.stringify({ ...project, include: ["original.ts"] }));
+    result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["original.ts"]);
+    assert.equal(kept(result.footprint), false);
+  });
+});
+
+test("a file or an installed package that takes over an import resolution rebuilds the kept project", async () => {
+  await compilerFixture({
+    "package.json": '{"type":"module"}',
+    "tsconfig.json": JSON.stringify({
+      compilerOptions: { strict: true, noEmit: true, module: "ESNext", moduleResolution: "Bundler", types: [] },
+      include: ["**/*.ts"],
+    }),
+    "original.ts": source,
+    "calc/index.ts": 'export { calculate } from "../original";\n',
+    "consumer.ts": 'import { calculate } from "./calc";\nexport const use = () => calculate(1);\n',
+    "node_modules/pkg/package.json": '{"name":"pkg","version":"1.0.0","types":"index.d.ts"}',
+    "node_modules/pkg/index.d.ts": "export declare function convert(n: number): number;\n",
+    "top.ts": 'import { convert } from "pkg";\nexport const one = convert(1);\n',
+    "sub/user.ts": 'import { convert } from "pkg";\nexport const two = convert(2);\n',
+    "sub/late.ts": 'import { later } from "late-pkg";\nexport const three = later;\n',
+  }, async (root, services) => {
+    const calculate = () => target(root, "original.ts", "calculate");
+    let result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["calc/index.ts", "consumer.ts"]);
+    assert.ok(result.answer.project.warnings.includes("unresolved_imports"));
+    // ./calc now names calc.ts before calc/index.ts.
+    await put(root, "calc.ts", "export function calculate(n: number) { return n; }\n");
+    result = await answersAsNew(services, await calculate());
+    assert.deepEqual(referencePaths(result.answer), ["calc/index.ts"]);
+
+    const convert = () => target(root, "node_modules/pkg/index.d.ts", "convert");
+    result = await answersAsNew(services, await convert());
+    assert.deepEqual(referencePaths(result.answer), ["sub/user.ts", "top.ts"]);
+    // A nearer installation serves sub/, and the missing package arrives there.
+    await put(root, "sub/node_modules/pkg/package.json", '{"name":"pkg","version":"2.0.0","types":"index.d.ts"}');
+    await put(root, "sub/node_modules/pkg/index.d.ts", "export declare function convert(n: number): number;\n");
+    await put(root, "sub/node_modules/late-pkg/package.json", '{"name":"late-pkg","version":"1.0.0","types":"index.d.ts"}');
+    await put(root, "sub/node_modules/late-pkg/index.d.ts", "export declare const later: number;\n");
+    result = await answersAsNew(services, await convert());
+    assert.deepEqual(referencePaths(result.answer), ["top.ts"]);
+    assert.ok(!result.answer.project.warnings.includes("unresolved_imports"));
+  });
+});
+
+test("compiler services take turns per root, keep at most their limit and stop when idle", async () => {
+  const sources = { "package.json": '{"type":"module"}', "tsconfig.json": JSON.stringify(config), "original.ts": source,
+    "consumer.ts": files["consumer.ts"] };
+  await compilerFixture(sources, async (first) => {
+    await compilerFixture(sources, async (second) => {
+      const services = new CompilerServices({ idleMs: 100, limit: 1 });
+      try {
+        const request = await target(first, "original.ts", "calculate");
+        // A request stopped while its worker starts leaves the next ones a working service.
+        assert.deepEqual(await services.query(request, undefined, 1), { status: "unavailable", reason: "query_timeout" });
+        const replies = await Promise.all([1, 2, 3].map(() =>
+          services.query<SemanticReferenceReply>(request, undefined, 8_000)));
+        assert.deepEqual(replies.map(({ status }) => status), ["ok", "ok", "ok"]);
+        assert.deepEqual(services.roots, [first]);
+        // Another root takes the place of the least recently used.
+        const other = await target(second, "original.ts", "calculate");
+        assert.equal((await services.query<SemanticReferenceReply>(other, undefined, 8_000)).status, "ok");
+        assert.deepEqual(services.roots, [second]);
+        await new Promise((done) => setTimeout(done, 400));
+        assert.deepEqual(services.roots, []);
+        assert.equal((await services.query<SemanticReferenceReply>(other, undefined, 8_000)).status, "ok");
+      } finally {
+        await services.close();
+      }
+    });
   });
 });
 
