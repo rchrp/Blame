@@ -54,3 +54,6 @@ yarn-error.log*
 /docs/experiments/**
 !/docs/experiments/**/
 !/docs/experiments/**/*.md
+
+# Rust build output
+/target

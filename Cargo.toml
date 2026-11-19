@@ -1,0 +1,39 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.100"
+license = "AGPL-3.0-only"
+repository = "https://github.com/rchrp/Blame"
+publish = false
+
+[workspace.dependencies]
+blame-engine-protocol = { path = "crates/blame-engine-protocol" }
+blame-engine-core = { path = "crates/blame-engine-core" }
+blame-engine-store = { path = "crates/blame-engine-store" }
+blame-engine-providers = { path = "crates/blame-engine-providers" }
+blame-engine-checkpoint = { path = "crates/blame-engine-checkpoint" }
+
+async-trait = "0.1"
+futures-core = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", default-features = false }
+tokio-util = { version = "0.7", default-features = false }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+# The engine ships inside the desktop app and the runtime images: size matters
+# as much as speed. Panics unwind so one failed session never takes the others.
+[profile.release]
+codegen-units = 1
+lto = "thin"
+strip = true
