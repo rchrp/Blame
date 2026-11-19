@@ -3,7 +3,7 @@
 //
 //   pnpm --filter @blame/desktop exec electron scripts/run-log-bench.mjs \
 //     [--streams build,dev-server,progress] [--sizes 16384,262144,1048576]
-//     [--measured 40] [--out results.json]
+//     [--measured 40] [--out results.json] [--check]
 //
 // It builds the app's bench page (packages/app/bench/run-log.html: the
 // project runner and its logs panel fed through a stand-in terminal, with
@@ -14,12 +14,17 @@
 // characters written into the DOM, time until laid out again (noisy on a
 // loaded Mac: compare the counts first), the page's JavaScript heap once
 // collected and the renderer's memory.
+//
+// With --check, it instead scrolls each log up to its first line, copies all
+// of it through the app's own copy, then scrolls back to the end, and tells
+// whether the panel showed and copied terminalText of all the output. The
+// text on the clipboard is put back.
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, clipboard } from "electron";
 import { registerRunLogIpcHandlers } from "../src/main/run-log-ipc.ts";
 
 const options = parseOptions(process.argv);
@@ -85,26 +90,30 @@ async function main() {
   try {
     for (const stream of options.streams) {
       for (const size of options.sizes) {
-        const row = { stream, size, ...(await measure(url, stream, size)) };
+        const measured = options.check
+          ? await check(url, stream, size)
+          : await measure(url, stream, size);
+        const row = { stream, size, ...measured };
         results.push(row);
         console.log(JSON.stringify(row));
       }
     }
-    console.table(
-      results.map((row) => ({
-        stream: row.stream,
-        logKb: Math.round(row.logChars / 1024),
-        scanned: row.scannedPerChunk,
-        commits: row.commitsPerChunk,
-        consumer: row.consumerRendersPerChunk,
-        commitMs: row.commitMsPerChunk,
-        domChars: row.domCharsPerChunk,
-        layoutMs: row.layoutMsMedian,
-        heapMb: Math.round(row.heapAfter / 1024 / 102.4) / 10,
-        domKb: Math.round(row.domTextChars / 1024),
-        rendererMb: row.rendererMb,
-      })),
-    );
+    if (!options.check)
+      console.table(
+        results.map((row) => ({
+          stream: row.stream,
+          logKb: Math.round(row.logChars / 1024),
+          scanned: row.scannedPerChunk,
+          commits: row.commitsPerChunk,
+          consumer: row.consumerRendersPerChunk,
+          commitMs: row.commitMsPerChunk,
+          domChars: row.domCharsPerChunk,
+          layoutMs: row.layoutMsMedian,
+          heapMb: Math.round(row.heapAfter / 1024 / 102.4) / 10,
+          domKb: Math.round(row.domTextChars / 1024),
+          rendererMb: row.rendererMb,
+        })),
+      );
     if (options.out)
       await writeFile(
         options.out,
@@ -119,6 +128,50 @@ async function main() {
 
 // Each case in a window of its own: a renderer that holds nothing else.
 async function measure(url, stream, size) {
+  const window = await benchWindow(url);
+  try {
+    const result = await window.webContents.executeJavaScript(
+      `window.runLogBench.run(${JSON.stringify({ measured: options.measured, size, stream })})`,
+    );
+    return { ...rounded(result), rendererMb: rendererMemory(window) };
+  } finally {
+    window.destroy();
+  }
+}
+
+async function check(url, stream, size) {
+  const window = await benchWindow(url);
+  const saved = await clipboard.readText();
+  try {
+    const top = await window.webContents.executeJavaScript(
+      `window.runLogBench.scrollToTop(${JSON.stringify({ size, stream })})`,
+    );
+    const sentinel = `run-log-bench ${Date.now()}`;
+    await clipboard.writeText(sentinel);
+    window.focus();
+    window.webContents.copy();
+    await waitFor(async () => (await clipboard.readText()) !== sentinel);
+    const copied = await clipboard.readText();
+    const expected = await window.webContents.executeJavaScript(
+      "window.runLogBench.expectedText()",
+    );
+    const end = await window.webContents.executeJavaScript(
+      "window.runLogBench.scrollToEnd()",
+    );
+    return {
+      ...top,
+      copiedAll: copied === expected,
+      copiedChars: copied.length,
+      expectedChars: expected.length,
+      ...end,
+    };
+  } finally {
+    await clipboard.writeText(saved);
+    window.destroy();
+  }
+}
+
+async function benchWindow(url) {
   const window = new BrowserWindow({
     height: 800,
     show: true,
@@ -134,18 +187,11 @@ async function measure(url, stream, size) {
   window.webContents.on("console-message", (event) => {
     if (event.level === "error") console.error(`page: ${event.message}`);
   });
-  try {
-    await window.loadURL(url);
-    await waitFor(() =>
-      window.webContents.executeJavaScript("Boolean(window.runLogBench)"),
-    );
-    const result = await window.webContents.executeJavaScript(
-      `window.runLogBench.run(${JSON.stringify({ measured: options.measured, size, stream })})`,
-    );
-    return { ...rounded(result), rendererMb: rendererMemory(window) };
-  } finally {
-    window.destroy();
-  }
+  await window.loadURL(url);
+  await waitFor(() =>
+    window.webContents.executeJavaScript("Boolean(window.runLogBench)"),
+  );
+  return window;
 }
 
 function rendererMemory(window) {
@@ -169,6 +215,7 @@ function parseOptions(argv) {
     return index === -1 ? fallback : argv[index + 1];
   };
   return {
+    check: argv.includes("--check"),
     measured: Number(value("measured", "40")),
     out: value("out"),
     sizes: value("sizes", "16384,262144,1048576,4194304")
@@ -182,7 +229,7 @@ async function waitFor(check, timeoutMs = 15_000) {
   const startedAt = Date.now();
   while (!(await check())) {
     if (Date.now() - startedAt > timeoutMs)
-      throw new Error("The bench page did not start");
+      throw new Error("The bench timed out");
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
