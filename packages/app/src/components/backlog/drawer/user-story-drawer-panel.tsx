@@ -46,6 +46,7 @@ import {
 import {
   loadAgentRunDiffs,
   } from "@/components/chat/agent-run-diffs"
+import { useRuntimeWarmup } from "@/context/blame-runtime"
 import { usePlatform } from "@/context/platform"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import { DrawerActions } from "@/components/backlog/drawer/user-story-drawer-actions"
@@ -312,6 +313,7 @@ export function UserStoryDrawerPanel({
   const [runMode, setRunMode] = React.useState<StoryRunMode | null>(
     userStory?.runMode ?? null
   )
+  useRuntimeWarmup(mode === "create" && (runMode ?? readStoryRunMode()) === "local-container")
   const [targetBranch, setTargetBranch] = React.useState<string | null>(
     userStory?.targetBranch ?? null
   )

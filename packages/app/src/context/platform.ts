@@ -209,6 +209,15 @@ export type RuntimeProgress = {
   totalBytes?: number
 }
 
+// The desktop starts the Blame Runtime when something needs it and stops it
+// once unused; every window hears each change.
+export type RuntimePowerEvent = {
+  // Why a start failed.
+  error?: string
+  progress?: RuntimeProgress
+  state: "starting" | "running" | "stopping" | "stopped"
+}
+
 // The Blame Runtime (Lima on macOS, WSL on Windows, containerd on Linux)
 // that runs local container previews.
 export type RuntimeStatusReport = {
@@ -922,6 +931,7 @@ export type WorkspaceClient = {
   ensureRuntimeReady?(
     onProgress?: (progress: RuntimeProgress) => void
   ): Promise<unknown>
+  onRuntimePowerChange?(callback: (event: RuntimePowerEvent) => void): () => void
   repairRuntime?(
     onProgress?: (progress: RuntimeProgress) => void
   ): Promise<unknown>

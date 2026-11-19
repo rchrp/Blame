@@ -21,7 +21,7 @@ export function RuntimeSettingsGroup() {
   return (
     <SettingsGroup
       title="Blame Runtime"
-      description="Runs Local Container stories and their previews in an isolated sandbox on this computer. Updates install on their own once no local story is running."
+      description="Runs Local Container stories and their previews in an isolated sandbox on this computer. It starts when a local story needs it and stops after 10 minutes unused; updates install on their own once no local story is running."
     >
       <SettingsRow
         title={
@@ -33,7 +33,9 @@ export function RuntimeSettingsGroup() {
                   ? "bg-emerald-500"
                   : busy || runtime.phase === "checking" || runtime.phase === "update-pending"
                     ? "bg-amber-500"
-                    : "bg-destructive"
+                    : runtime.phase === "stopped"
+                      ? "bg-muted-foreground/50"
+                      : "bg-destructive"
               )}
             />
             {busy ? runtimeProgressText(runtime.progress) : runtimePhaseLabel(runtime.phase)}

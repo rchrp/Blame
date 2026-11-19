@@ -25,8 +25,8 @@ test("reads the runtime report as one phase", () => {
   assert.equal(runtimePhaseFromReport({ ...report("repairable"), startRequired: true }), "stopped")
 })
 
-test("starts a stopped VM without labelling it as a repair", () => {
-  assert.equal(automaticRuntimeOperation({ autoRepairTried: true, canInstall: true, localRunsActive: 0, phase: "stopped" }), "start")
+test("leaves a stopped VM stopped until a story needs it", () => {
+  assert.equal(automaticRuntimeOperation({ autoRepairTried: false, canInstall: true, localRunsActive: 0, phase: "stopped" }), undefined)
   assert.equal(runtimeOperationTitle("start"), "Starting Blame Runtime")
   assert.equal(runtimeBlocksNewRuns("stopped"), true)
   assert.equal(runtimeBlocksNewRuns("starting"), true)

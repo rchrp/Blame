@@ -38,6 +38,7 @@ export type {
   McpServerConfig,
   McpServersClient,
   Platform,
+  RuntimePowerEvent,
   RuntimeProgress,
   SecurityAuditClient,
 } from "./context/platform"
