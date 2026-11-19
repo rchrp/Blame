@@ -370,7 +370,7 @@ function eventTextBytes(event: AgentEvent) {
   const payload = event.payload
   if (!payload || typeof payload !== "object") return 0
   const record = payload as Record<string, unknown>
-  const value = record.text ?? record.reasoning ?? record.accumulatedText ?? ""
+  const value = record.text ?? record.reasoning ?? ""
   if (typeof value !== "string") return 0
   return new TextEncoder().encode(value).byteLength
 }

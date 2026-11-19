@@ -433,17 +433,6 @@ test("removes provider labels from legacy agent errors", () => {
   )
 })
 
-test("replaces reasoning with accumulated text when it is available", () => {
-  const firstDelta = updateStory(story(), reasoningEvent({ text: "Now" }))
-  const accumulated = updateStory(
-    firstDelta,
-    reasoningEvent({ accumulatedText: "Now I understand." })
-  )
-
-  assert.equal(accumulated.agentActivities?.length, 1)
-  assert.equal(accumulated.agentActivities?.[0]?.detail, "Now I understand.")
-})
-
 test("keeps assistant messages between tools", () => {
   const firstMessage = updateStory(story(), textEvent({ text: "Je vais" }))
   const completedMessage = updateStory(
@@ -485,37 +474,6 @@ test("starts a new assistant message after a text content block closes", () => {
   assert.equal(secondMessage.agentActivities?.[0]?.detail, "Plan rapide.")
   assert.equal(secondMessage.agentActivities?.[0]?.status, "completed")
   assert.equal(secondMessage.agentActivities?.[1]?.detail, "Je continue.")
-})
-
-test("updates a closed streamed message with the complete assistant message", () => {
-  const partialText =
-    "Salut, oui ça va bien — et toi ?\n\n" +
-    "Je n’ai pas de demande d’implémentation concrète ici, donc je n’ai pas modifié le code. Si tu veux, je peux :\n" +
-    "- clarifier l’“Untitled user story” en critères d’acceptation,\n" +
-    "- analyser le projet et proposer une "
-  const completeText =
-    `${partialText}approche,\n` +
-    "- ou l’implémenter directement si tu me donnes le comportement attendu."
-  const toolStarted = updateStory(
-    story(),
-    toolEvent("tool_call", "skills", 1, "call-1")
-  )
-  const toolCompleted = updateStory(
-    toolStarted,
-    toolEvent("tool_result", "skills", 1, "call-1")
-  )
-  const streamed = updateStory(toolCompleted, textEvent({ text: partialText }))
-  const closed = updateStory(streamed, textEvent({ phase: "content_end" }))
-  const completed = updateStory(
-    closed,
-    textEvent({ accumulatedText: completeText, finishReason: "stop" })
-  )
-
-  assert.deepEqual(
-    completed.agentActivities?.map((activity) => activity.kind),
-    ["tool", "message"]
-  )
-  assert.equal(completed.agentActivities?.[1]?.detail, completeText)
 })
 
 test("keeps cline assistant messages and tools in canonical order", () => {
@@ -598,107 +556,6 @@ test("does not move a done response into a middle message", () => {
   assert.equal(completed.agentFinalResponse, "Réponse finale.")
 })
 
-test("starts a new assistant message from global accumulated text after a tool", () => {
-  const firstMessage = updateStory(
-    story(),
-    textEvent({ accumulatedText: "Plan rapide." })
-  )
-  const toolStarted = updateStory(
-    firstMessage,
-    toolEvent("tool_call", "get_code_minimal_context", 1, "call-1")
-  )
-  const secondMessage = updateStory(
-    toolStarted,
-    textEvent({ accumulatedText: "Plan rapide.\n\nJe vois le diff." })
-  )
-
-  assert.deepEqual(
-    secondMessage.agentActivities?.map((activity) => activity.kind),
-    ["message", "tool", "message"]
-  )
-  assert.equal(secondMessage.agentActivities?.[0]?.detail, "Plan rapide.")
-  assert.equal(secondMessage.agentActivities?.[2]?.detail, "Je vois le diff.")
-})
-
-test("keeps accumulated updates scoped to the current assistant message", () => {
-  const firstMessage = updateStory(
-    story(),
-    textEvent({ accumulatedText: "Plan rapide." })
-  )
-  const toolStarted = updateStory(
-    firstMessage,
-    toolEvent("tool_call", "get_code_minimal_context", 1, "call-1")
-  )
-  const secondMessage = updateStory(
-    toolStarted,
-    textEvent({ accumulatedText: "Plan rapide.\n\nJe vois" })
-  )
-  const updatedSecondMessage = updateStory(
-    secondMessage,
-    textEvent({ accumulatedText: "Plan rapide.\n\nJe vois le diff." })
-  )
-
-  assert.deepEqual(
-    updatedSecondMessage.agentActivities?.map((activity) => activity.kind),
-    ["message", "tool", "message"]
-  )
-  assert.equal(
-    updatedSecondMessage.agentActivities?.[0]?.detail,
-    "Plan rapide."
-  )
-  assert.equal(
-    updatedSecondMessage.agentActivities?.[2]?.detail,
-    "Je vois le diff."
-  )
-})
-
-test("does not cut current accumulated messages that share a previous prefix", () => {
-  const firstMessage = updateStory(
-    story(),
-    textEvent({ accumulatedText: "Je vais lire rapidement." })
-  )
-  const toolStarted = updateStory(
-    firstMessage,
-    toolEvent("tool_call", "read_files", 1, "call-1")
-  )
-  const secondMessage = updateStory(
-    toolStarted,
-    textEvent({
-      accumulatedText:
-        "Je vais lire rapidement les points d'entree: README, package root.",
-    })
-  )
-
-  assert.deepEqual(
-    secondMessage.agentActivities?.map((activity) => activity.kind),
-    ["message", "tool", "message"]
-  )
-  assert.equal(
-    secondMessage.agentActivities?.[2]?.detail,
-    "Je vais lire rapidement les points d'entree: README, package root."
-  )
-})
-
-test("deduplicates a repeated assistant message after tools", () => {
-  const firstMessage = updateStory(
-    story(),
-    textEvent({ accumulatedText: "Je vais inspecter." })
-  )
-  const toolStarted = updateStory(
-    firstMessage,
-    toolEvent("tool_call", "read_files", 1, "call-1")
-  )
-  const repeatedMessage = updateStory(
-    toolStarted,
-    textEvent({ accumulatedText: "Je vais inspecter." })
-  )
-
-  assert.deepEqual(
-    repeatedMessage.agentActivities?.map((activity) => activity.kind),
-    ["message", "tool"]
-  )
-})
-
 test("keeps repeated assistant text chunks when they are separate messages", () => {
   const firstMessage = updateStory(story(), textEvent({ text: "Ok." }))
   const toolStarted = updateStory(
@@ -745,22 +602,6 @@ test("marks a started-only tool incomplete when the run finishes", () => {
   assert.equal(completed.agentActivities?.[0]?.kind, "tool")
   assert.equal(completed.agentActivities?.[0]?.status, "failed")
   assert.match(completed.agentActivities?.[0]?.title ?? "", /incomplete/i)
-})
-
-test("keeps stopped assistant messages intermediate until done", () => {
-  const streaming = updateStory(story(), textEvent({ text: "Salut" }))
-  const stopped = updateStory(
-    streaming,
-    textEvent({ accumulatedText: "Salut !", finishReason: "stop" })
-  )
-  const activity = stopped.agentActivities?.[0]
-
-  assert.equal(stopped.agentActivities?.length, 1)
-  assert.equal(activity?.kind, "message")
-  assert.equal(activity?.messageKind, "intermediate")
-  assert.equal(activity?.title, "Agent message")
-  assert.equal(activity?.detail, "Salut !")
-  assert.equal(stopped.agentFinalResponse, undefined)
 })
 
 test("does not complete runs from assistant message stop events", () => {

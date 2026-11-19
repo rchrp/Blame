@@ -264,7 +264,6 @@ export function normalizeClineAgentPayload(
       sessionId,
       payload: {
         text: stringValue(payload.text) ?? "",
-        accumulatedText: stringValue(payload.accumulatedText),
         iteration: numberValue(payload.iteration),
         raw,
       },
@@ -277,20 +276,6 @@ export function normalizeClineAgentPayload(
       sessionId,
       payload: {
         text: stringValue(payload.text) ?? "",
-        accumulatedText: stringValue(payload.accumulatedText),
-        iteration: numberValue(payload.iteration),
-        raw,
-      },
-    };
-  }
-
-  if (type === "assistant-message") {
-    return {
-      type: "text",
-      sessionId,
-      payload: {
-        accumulatedText: agentMessageText(asRecord(payload.message)),
-        finishReason: stringValue(payload.finishReason),
         iteration: numberValue(payload.iteration),
         raw,
       },
@@ -678,11 +663,7 @@ export function removeOldEventSignatures(
 }
 
 function eventText(payload: Record<string, unknown>) {
-  return (
-    stringValue(payload.text) ??
-    stringValue(payload.message) ??
-    stringValue(payload.accumulatedText)
-  );
+  return stringValue(payload.text) ?? stringValue(payload.message);
 }
 
 export function lightTerminalState(state: RunTerminalState) {
@@ -913,18 +894,6 @@ function normalizeContentEndEvent(
     sessionId,
     payload: { phase: "finished", raw },
   };
-}
-
-function agentMessageText(message: Record<string, unknown>) {
-  const content = message.content;
-  if (!Array.isArray(content)) return "";
-  return content.map(agentMessagePartText).join("");
-}
-
-function agentMessagePartText(value: unknown) {
-  const part = asRecord(value);
-  if (stringValue(part.type) !== "text") return "";
-  return stringValue(part.text) ?? "";
 }
 
 export function asRecord(value: unknown) {
