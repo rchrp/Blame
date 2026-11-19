@@ -7,11 +7,14 @@ import { runtimeAgentClient } from "./runtime-agent.ts";
 
 // A Blame Runtime for tests that count what the desktop asks of it: the
 // runtime agent's requests run on this computer, without a VM. Each exec or
-// spawn starts one program; `git` and `docker` go through logging wrappers,
-// so the programs a shell script starts are counted too. Docker answers
+// spawn starts one program; Docker, Git and the usual file programs go
+// through logging wrappers, so the ones a shell script starts count too. Docker answers
 // from `dockerRows` and never reaches a real engine.
 
 type Request = { id: number; method: string; params: Record<string, unknown> };
+
+// Programs that shell scripts start, counted wherever they run.
+const countedPrograms = ["git", "cat", "cp", "mkdir", "mktemp", "mv", "rm"];
 
 export type RuntimeCount = {
   /** Requests sent to the runtime agent. */
@@ -60,7 +63,7 @@ export class RuntimeAgentTestHost {
       byMethod[method] = (byMethod[method] ?? 0) + 1;
       if (method !== "exec" && method !== "spawn") continue;
       const command = String(params.command);
-      if (command === "git" || command === "docker") continue;
+      if (command === "docker" || countedPrograms.includes(command)) continue;
       programs[command] = (programs[command] ?? 0) + 1;
       direct += 1;
     }
@@ -87,26 +90,30 @@ export class RuntimeAgentTestHost {
   private async writeWrappers() {
     await mkdir(this.bin, { recursive: true });
     await mkdir(this.home, { recursive: true });
-    const git = (
-      await new Promise<string>((resolve, reject) =>
-        execFile("sh", ["-c", "command -v git"], (error, stdout) =>
+    const wrappers: Record<string, string> = {};
+    for (const program of countedPrograms) {
+      const path = await new Promise<string>((resolve, reject) =>
+        execFile("sh", ["-c", `command -v ${program}`], (error, stdout) =>
           error ? reject(error) : resolve(stdout.trim()),
         ),
-      )
-    ).trim();
-    const wrappers = {
-      git: `#!/bin/sh\necho git >> '${this.launchLog}'\nexec '${git}' "$@"\n`,
-      docker: [
+      );
+      wrappers[program] = [
         "#!/bin/sh",
-        `echo docker >> '${this.launchLog}'`,
-        `rows='${join(this.directory, "docker-rows")}'`,
-        'case "$1" in',
-        '  ps) [ -s "$rows" ] && echo container ;;',
-        '  inspect) cat "$rows" ;;',
-        "esac",
+        `echo ${program} >> '${this.launchLog}'`,
+        `exec '${path}' "$@"`,
         "",
-      ].join("\n"),
-    };
+      ].join("\n");
+    }
+    wrappers.docker = [
+      "#!/bin/sh",
+      `echo docker >> '${this.launchLog}'`,
+      `rows='${join(this.directory, "docker-rows")}'`,
+      'case "$1" in',
+      '  ps) [ -s "$rows" ] && echo container ;;',
+      '  inspect) while IFS= read -r row || [ -n "$row" ]; do echo "$row"; done < "$rows" ;;',
+      "esac",
+      "",
+    ].join("\n");
     for (const [name, script] of Object.entries(wrappers)) {
       await writeFile(join(this.bin, name), script);
       await chmod(join(this.bin, name), 0o755);

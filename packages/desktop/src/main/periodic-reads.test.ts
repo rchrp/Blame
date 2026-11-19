@@ -155,7 +155,7 @@ test("counts the runtime commands of the app's periodic reads", async () => {
   const budgets = {
     stateRead: { requests: 3, processes: 3 },
     previewRecovery: { requests: 3, processes: 3 },
-    diffRead: { requests: 8, processes: 8 },
+    diffRead: { requests: 1, processes: 5 },
   };
   const costs = new Map<string, { requests: number; processes: number }>();
   for (const call of [stateRead, previewRecovery, diffRead]) {

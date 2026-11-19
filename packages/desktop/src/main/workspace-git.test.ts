@@ -343,6 +343,60 @@ test("excludes staged runtime env files from checkpoint worktree diffs", async (
   }
 });
 
+test("a checkpoint diff shows new files and leaves the index as it was", async () => {
+  const repository = await createRepository();
+  try {
+    const checkpoint = await revision(repository);
+    const files = ["src/one.ts", "src/deep/two.ts", "src/deep/three.ts"];
+    await mkdir(join(repository, "src", "deep"), { recursive: true });
+    for (const file of files)
+      await writeFile(join(repository, file), "export const value = 1;\n");
+    await writeFile(join(repository, "staged.txt"), "staged\n");
+    await git(repository, ["add", "staged.txt"]);
+    // Blame's own files and env files are usually ignored.
+    await writeFile(join(repository, ".git", "info", "exclude"), ".blame/\n.env\n");
+    await mkdir(join(repository, ".blame"));
+    await writeFile(join(repository, ".blame", "log.txt"), "internal\n");
+    await writeFile(join(repository, ".env"), "TOKEN=ignored\n");
+    const status = (await git(repository, ["status", "--porcelain"])).stdout;
+
+    const diff = await gitDiffFrom({ from: checkpoint, root: repository });
+
+    assert.equal(diff.split("new file mode 100644\n").length, 5);
+    assert.doesNotMatch(diff, /\.blame|TOKEN/);
+    for (const file of [...files, "staged.txt"])
+      assert.ok(diff.includes(`+++ b/${file}\n`), file);
+    assert.equal(
+      (await git(repository, ["status", "--porcelain"])).stdout,
+      status,
+    );
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
+test("excludes committed and nested runtime env files from checkpoint worktree diffs", async () => {
+  const repository = await createRepository();
+  try {
+    const checkpoint = await revision(repository);
+    const web = join(repository, "apps", "web");
+    await mkdir(web, { recursive: true });
+    await writeFile(join(repository, ".env"), "TOKEN=committed\n");
+    await commit(repository, "env");
+    await writeFile(join(web, ".env.production"), "TOKEN=nested\n");
+    await writeFile(join(web, ".env.sample"), "TOKEN=\n");
+    await writeFile(join(web, ".env.local.template"), "TOKEN=\n");
+
+    const diff = await gitDiffFrom({ from: checkpoint, root: repository });
+
+    assert.doesNotMatch(diff, /TOKEN=committed|TOKEN=nested/);
+    assert.match(diff, /apps\/web\/\.env\.sample/);
+    assert.match(diff, /apps\/web\/\.env\.local\.template/);
+  } finally {
+    await rm(repository, { force: true, recursive: true });
+  }
+});
+
 test("rejects unsafe Git history inputs", async () => {
   const repository = await createRepository();
   try {
