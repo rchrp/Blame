@@ -344,7 +344,9 @@ async fn an_interrupted_restore_is_finished_by_running_it_again() {
     write(&root, "one.txt", "");
     let meta = std::path::PathBuf::from(git(&root, &["rev-parse", "--absolute-git-dir"]).trim())
         .join("blame-checkpoints");
-    std::fs::write(meta.join("restore.index"), b"garbage").unwrap();
+    std::fs::write(meta.join("scratch-restore-1-0.index"), b"garbage").unwrap();
+    std::fs::write(meta.join("scratch-restore-1-0.index.lock"), b"").unwrap();
+    std::fs::write(meta.join("s1.index.lock"), b"").unwrap();
     c.restore(&root, &snap).await.unwrap();
     assert_eq!(state(&root, true), before);
 }
@@ -533,9 +535,23 @@ async fn a_folder_that_is_not_a_repository_uses_a_private_one() {
     write(&root, "skipped/c.log", "log\n");
     write(&root, ".gitignore", "*.log\n");
     write(&root, "nested/.git/HEAD", "ref: refs/heads/main\n");
+    write(&root, "node_modules/dep/index.js", "dependency\n");
     let c = checkpointer(&tmp);
     let before = state(&root, true);
     let snap = snapshot(&c, &root, "s1").await;
+    let listed = git(
+        &tmp.path().join("private").join(
+            std::fs::read_dir(tmp.path().join("private"))
+                .unwrap()
+                .next()
+                .unwrap()
+                .unwrap()
+                .file_name(),
+        ),
+        &["ls-tree", "-r", "--name-only", &snap],
+    );
+    assert!(!listed.contains("node_modules"), "{listed}");
+    assert!(listed.contains("sub/b.txt"));
     assert!(!root.join(".git").exists(), "the workspace is not modified");
     assert_eq!(
         state(&root, true),
@@ -973,4 +989,96 @@ async fn a_missing_workspace_is_unsupported() {
         Err(CheckpointError::Unsupported(_)) => {}
         other => panic!("{other:?}"),
     }
+}
+
+/// A git that kills the matching subcommand after the number of seconds in
+/// the `delay` file, as a crash or a power cut would.
+#[cfg(unix)]
+fn killing_git(tmp: &Tmp, subcommand: &str) -> std::path::PathBuf {
+    use std::os::unix::fs::PermissionsExt;
+    let real = std::process::Command::new("which")
+        .arg("git")
+        .output()
+        .unwrap();
+    let real = String::from_utf8_lossy(&real.stdout).trim().to_owned();
+    let wrapper = tmp.path().join("killing-git.sh");
+    std::fs::write(
+        &wrapper,
+        format!(
+            "#!/bin/sh\ncase \" $* \" in *\" {subcommand} \"*)\n  {real} \"$@\" &\n  pid=$!\n  sleep \"$(cat {delay})\"\n  kill -9 $pid 2>/dev/null\n  wait $pid\n  exit 137;;\nesac\nexec {real} \"$@\"\n",
+            delay = tmp.path().join("delay").display()
+        ),
+    )
+    .unwrap();
+    std::fs::set_permissions(&wrapper, std::fs::Permissions::from_mode(0o755)).unwrap();
+    wrapper
+}
+
+/// A restore whose git process is killed at an arbitrary moment is finished
+/// by the next restore, whatever the moment.
+#[cfg(unix)]
+#[tokio::test]
+async fn a_restore_killed_at_any_moment_is_finished_by_the_next() {
+    let tmp = Tmp::new();
+    let root = repo(&tmp);
+    for i in 0..1500 {
+        write(
+            &root,
+            &format!("many/d{}/f{i}.txt", i % 30),
+            &format!("original {i}\n"),
+        );
+    }
+    let wrapper = killing_git(&tmp, "read-tree");
+    let c = checkpointer(&tmp);
+    let killer = checkpointer(&tmp).with_git_program(wrapper.as_os_str());
+    let before = state(&root, true);
+    let snap = snapshot(&c, &root, "s1").await;
+    let mut interrupted = 0;
+    for delay in ["0.0", "0.02", "0.05", "0.1", "0.2"] {
+        std::fs::write(tmp.path().join("delay"), delay).unwrap();
+        for i in 0..1500 {
+            write(&root, &format!("many/d{}/f{i}.txt", i % 30), "agent edit\n");
+        }
+        std::fs::remove_dir_all(root.join("dir")).unwrap();
+        write(&root, "created/x.txt", "x\n");
+        if killer.restore(&root, &snap).await.is_err() {
+            interrupted += 1;
+        }
+        // The next restore, by an engine that never saw the kill.
+        checkpointer(&tmp).restore(&root, &snap).await.unwrap();
+        assert_eq!(state(&root, true), before, "after a kill at {delay}s");
+    }
+    assert!(interrupted > 0, "the wrapper never interrupted anything");
+}
+
+/// A snapshot killed while it updates its index leaves a lock file and maybe a
+/// half-written index behind; the session's next snapshot must still work.
+#[cfg(unix)]
+#[tokio::test]
+async fn a_snapshot_killed_at_any_moment_does_not_block_the_session() {
+    let tmp = Tmp::new();
+    let root = repo(&tmp);
+    for i in 0..1500 {
+        write(
+            &root,
+            &format!("many/d{}/f{i}.txt", i % 30),
+            &format!("content {i}\n"),
+        );
+    }
+    let wrapper = killing_git(&tmp, "update-index");
+    let killer = checkpointer(&tmp).with_git_program(wrapper.as_os_str());
+    let c = checkpointer(&tmp);
+    let mut interrupted = 0;
+    for delay in ["0.0", "0.02", "0.05", "0.1"] {
+        std::fs::write(tmp.path().join("delay"), delay).unwrap();
+        if killer.snapshot(&root, &session("s1")).await.is_err() {
+            interrupted += 1;
+        }
+        let snap = snapshot(&c, &root, "s1").await;
+        // The tree is complete: it restores the workspace as it is.
+        write(&root, "many/d0/f0.txt", "changed\n");
+        c.restore(&root, &snap).await.unwrap();
+        assert_eq!(read(&root, "many/d0/f0.txt"), "content 0\n");
+    }
+    assert!(interrupted > 0);
 }

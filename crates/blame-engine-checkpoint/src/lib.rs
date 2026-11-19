@@ -212,12 +212,25 @@ impl Inner {
         locks.entry(index.to_owned()).or_default().clone()
     }
 
+    fn scratch_index(&self, workspace: &Workspace, purpose: &str) -> PathBuf {
+        sweep_scratch(&workspace.meta);
+        let count = self.counter.fetch_add(1, Ordering::Relaxed);
+        workspace.meta.join(format!(
+            "{SCRATCH_PREFIX}{purpose}-{}-{count}.index",
+            std::process::id()
+        ))
+    }
+
     fn snapshot(&self, root: &Path, session: &str) -> Result<String, CheckpointError> {
         let key = session_key(session)?;
         let workspace = self.open(root, true)?.ok_or_else(|| unsupported(root))?;
         let index = workspace.meta.join(format!("{key}.index"));
         let lock = self.lock(&index);
         let _held = lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        // A snapshot killed while git held this index's lock leaves the lock
+        // behind, and nothing else would ever remove it. A session has one
+        // engine, and this process is the only one touching it right now.
+        remove_if_exists(&lock_file(&index))?;
 
         let tree = match write_tree(&workspace, &index) {
             Ok(tree) => tree,
@@ -241,13 +254,13 @@ impl Inner {
             .open(root, false)?
             .ok_or_else(|| CheckpointError::MissingSnapshot(snapshot.to_owned()))?;
         let tree = resolve_tree(&workspace, snapshot)?;
-        // A restore is not tied to a session; it works on a scratch index so
-        // that two restores of different snapshots never share one.
-        let index = workspace.meta.join("restore.index");
-        let lock = self.lock(&index);
-        let _held = lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-        // A scratch index left by a process that died is not to be trusted.
-        remove_if_exists(&index)?;
+        // A restore is not tied to a session. It works on a scratch index of
+        // its own, named for this call so that a scratch left by a killed
+        // process (and its lock) can never get in the way; the worktree's
+        // restores take turns.
+        let turn = self.lock(&workspace.meta.join("worktree"));
+        let _held = turn.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+        let index = self.scratch_index(&workspace, "restore");
         let result = (|| {
             // Describes the disk as it is, without storing its objects: this
             // state is about to be thrown away. Everything not in the
@@ -261,7 +274,7 @@ impl Inner {
             Ok(())
         })();
         // Never kept: its entries were hashed without storing objects.
-        let _ = std::fs::remove_file(&index);
+        remove_scratch(&index);
         result
     }
 
@@ -293,10 +306,9 @@ impl Inner {
                 )?
             }
             None => {
-                let index = workspace.meta.join("changes.index");
-                let lock = self.lock(&index);
-                let _held = lock.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
-                remove_if_exists(&index)?;
+                let turn = self.lock(&workspace.meta.join("worktree"));
+                let _held = turn.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                let index = self.scratch_index(&workspace, "changes");
                 let result = (|| {
                     workspace.sync_index(&index, true)?;
                     workspace.git.run(
@@ -313,7 +325,7 @@ impl Inner {
                         None,
                     )
                 })();
-                let _ = std::fs::remove_file(&index);
+                remove_scratch(&index);
                 result?
             }
         };
@@ -379,6 +391,43 @@ impl Inner {
             .unwrap_or_default();
         // The process id keeps two engines on one repository apart.
         format!("{nanos:x}-{:x}-{count:x}", std::process::id())
+    }
+}
+
+const SCRATCH_PREFIX: &str = "scratch-";
+
+fn lock_file(index: &Path) -> PathBuf {
+    let mut name = index.as_os_str().to_owned();
+    name.push(".lock");
+    PathBuf::from(name)
+}
+
+fn remove_scratch(index: &Path) {
+    let _ = std::fs::remove_file(index);
+    let _ = std::fs::remove_file(lock_file(index));
+}
+
+/// Removes scratch indexes (and locks) that a killed process left behind.
+/// Anything younger than ten minutes may belong to a live operation.
+fn sweep_scratch(meta: &Path) {
+    let Ok(entries) = std::fs::read_dir(meta) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let old = entry
+            .metadata()
+            .and_then(|meta| meta.modified())
+            .ok()
+            .and_then(|modified| modified.elapsed().ok())
+            .is_some_and(|age| age > std::time::Duration::from_secs(600));
+        if old
+            && entry
+                .file_name()
+                .to_string_lossy()
+                .starts_with(SCRATCH_PREFIX)
+        {
+            let _ = std::fs::remove_file(entry.path());
+        }
     }
 }
 

@@ -244,8 +244,18 @@ fn private_repository(
             )))
         }
     })?;
+    // A folder without a .gitignore would otherwise have its dependencies
+    // and caches copied into the private repository.
+    let info = dir.join("info");
+    std::fs::create_dir_all(&info).map_err(|error| io_error(&info, error))?;
+    let exclude = info.join("exclude");
+    std::fs::write(&exclude, DEFAULT_PRIVATE_IGNORES).map_err(|error| io_error(&exclude, error))?;
     Ok(Some(dir))
 }
+
+/// What a plain folder never wants snapshotted, whether or not it has a
+/// `.gitignore` of its own (which still applies on top).
+const DEFAULT_PRIVATE_IGNORES: &str = "node_modules/\n.venv/\n__pycache__/\n.DS_Store\n";
 
 /// A directory name that is readable and unique per workspace path.
 fn private_name(root: &Path) -> String {

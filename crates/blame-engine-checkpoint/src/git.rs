@@ -109,6 +109,11 @@ const SAFE_SETTINGS: &[&str] = &[
     "maintenance.auto=false",
     // Snapshots are written at the start of every turn: speed over size.
     "core.looseCompression=1",
+    // A ref must never name an object that a power cut lost: new objects and
+    // refs are flushed to disk (git writes the objects first). `batch` makes
+    // that one flush per command instead of one per file.
+    "core.fsync=loose-object,reference",
+    "core.fsyncMethod=batch",
 ];
 
 fn base_command(program: &OsString, cwd: &Path) -> Command {
