@@ -19,7 +19,9 @@ test("tracks one local writer across session binding and completion", () => {
 test("releasing a workspace removes active and resumable session ownership", () => {
   const registry = new WorkspaceWriterRegistry();
   registry.begin("session-a", "/work/story");
-  registry.releaseWorkspace("/work/story/.");
+  registry.begin("session-b", "/work/other");
+  registry.end("session-a");
+  assert.deepEqual(registry.releaseWorkspace("/work/story/."), ["session-a"]);
   assert.equal(registry.hasActiveWriter("/work/story"), false);
   assert.equal(registry.workspaceForSession("session-a"), undefined);
 });

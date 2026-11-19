@@ -552,8 +552,8 @@ export function generateNewProjectWithAgent(
 }
 
 export function releaseAgentWorkspaceSessions(worktree: string) {
-  agentWorkspaceWriters.releaseWorkspace(worktree);
-  return agentRuntime().releaseWorkspace(worktree);
+  const sessionIds = agentWorkspaceWriters.releaseWorkspace(worktree);
+  return agentRuntime().releaseWorkspace(worktree, sessionIds);
 }
 
 export function localAgentOwnsWorkspace(worktree: string) {
