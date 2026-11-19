@@ -17,9 +17,9 @@ import {
   storePreviewDevtoolsScreenshots,
 } from "./agent-screenshots/agent-screenshots-service.ts";
 import {
-  previewDevtoolsMcpService,
-  type PreviewDevtoolsMcpService,
-} from "./preview-runtime/preview-devtools-mcp-service.ts";
+  previewDevtoolsService,
+  type PreviewDevtoolsService,
+} from "./preview-runtime/preview-devtools-service.ts";
 import { PreviewHarnessService } from "./preview-runtime/preview-harness-service.ts";
 import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import type { PreviewService } from "./preview-runtime/preview-service.ts";
@@ -44,7 +44,7 @@ export function createAgentHostRequestHandler(previews: PreviewService) {
       input,
       signal,
       harness,
-      previewDevtoolsMcpService,
+      previewDevtoolsService,
       previews,
     );
 }
@@ -54,7 +54,7 @@ async function handleAgentHostRequest(
   input: unknown,
   signal: AbortSignal,
   harness: PreviewHarnessService,
-  devtools: PreviewDevtoolsMcpService,
+  devtools: PreviewDevtoolsService,
   previews: PreviewService,
 ) {
   await wakeAgentPreview(method, input);
@@ -69,11 +69,7 @@ async function handleAgentHostRequest(
   if (method === "previewDevtools") {
     return previewDevtoolsTarget(input, signal, harness, devtools);
   }
-  if (method === "previewDevtoolsTools") {
-    return devtools.listTools({
-      advanced: await advancedDiagnostics(recordInput(input).projectId),
-    });
-  }
+  if (method === "previewDevtoolsTools") return devtools.listTools();
   if (method === "previewDevtoolsCall") {
     return previewDevtoolsCall(input, signal, harness, devtools);
   }
@@ -227,7 +223,7 @@ async function previewDevtoolsTarget(
   input: unknown,
   signal: AbortSignal,
   harness: PreviewHarnessService,
-  devtools: PreviewDevtoolsMcpService,
+  devtools: PreviewDevtoolsService,
 ) {
   const request = recordInput(input);
   const target = await harness.target({ ...request, signal } as never);
@@ -254,7 +250,7 @@ async function previewDevtoolsCall(
   input: unknown,
   signal: AbortSignal,
   harness: PreviewHarnessService,
-  devtools: PreviewDevtoolsMcpService,
+  devtools: PreviewDevtoolsService,
 ) {
   const request = recordInput(input);
   const preview = await harness.inspect({ ...request, signal } as never);
@@ -267,7 +263,6 @@ async function previewDevtoolsCall(
   if (sessionId && scope.trim())
     holdAgentPreviewBrowser(scope.trim(), sessionId);
   const result = await devtools.call({
-    advanced: await advancedDiagnostics(request.projectId),
     arguments: recordInput(request.arguments),
     currentUrl: preview.currentUrl,
     openEndpoint: () => openPreviewDevtoolsEndpoint({ scope }),
@@ -413,14 +408,6 @@ function openAgentExternalUrl(input: unknown) {
 function recordInput(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== "object") return {};
   return input as Record<string, unknown>;
-}
-
-async function advancedDiagnostics(projectId: unknown) {
-  const { previewDevtoolsSettings } =
-    await import("./ipc/preview-devtools-settings-ipc.ts");
-  return previewDevtoolsSettings()
-    .advancedDiagnostics(optionalText(projectId))
-    .catch(() => false);
 }
 
 function optionalText(value: unknown) {

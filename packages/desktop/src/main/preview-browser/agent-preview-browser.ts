@@ -26,8 +26,9 @@ export type AgentPreviewSource = {
 export type AgentPreviewBrowser = {
   device?: "phone" | "tablet";
   destroyed: boolean;
-  // The viewport the agent sees, kept across DevTools reconnections.
-  viewport: { height: number; width: number };
+  // The page's size before any emulation: the default viewport, or the
+  // device's.
+  readonly viewport: { height: number; width: number };
   id: string;
   scope: string;
   state: PreviewBrowserState;

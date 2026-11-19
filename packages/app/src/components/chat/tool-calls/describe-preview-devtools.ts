@@ -8,7 +8,7 @@ import type {
 } from "./tool-call-view.ts"
 
 // The agent's browser tools (preview_devtools__*), read as sentences:
-// "Captured /settings/providers 1440×900 dark", "Clicked element 1_23".
+// "Captured /settings/providers 1440×900 dark", "Clicked @e3".
 
 export const previewDevtoolsPrefix = "preview_devtools__"
 const screenshotIdPattern = /^[0-9a-f]{64}$/u
@@ -19,26 +19,28 @@ type Describe = (
 ) => Pick<ToolCallView, "verb" | "target" | "chips">
 
 const describers: Record<string, Describe> = {
-  take_snapshot: (_input, source) => ({
+  take_snapshot: (input, source) => ({
     verb: source.running ? "Reading" : "Read",
-    target: { text: "the page structure" },
+    target: {
+      text: input.mode === "text" ? "the page text" : "the page structure",
+    },
     chips: [],
   }),
   click: (input, source) => ({
     verb:
-      input.dblClick === true
+      input.double === true
         ? source.running
           ? "Double-clicking"
           : "Double-clicked"
         : source.running
           ? "Clicking"
           : "Clicked",
-    target: element(input.uid),
+    target: element(input.target),
     chips: [],
   }),
   fill: (input, source) => ({
     verb: source.running ? "Filling" : "Filled",
-    target: element(input.uid),
+    target: element(input.target),
     chips: str(input.value)
       ? [
           {
@@ -52,11 +54,6 @@ const describers: Record<string, Describe> = {
   emulate: (input, source) => ({
     verb: source.running ? "Emulating" : "Emulated",
     target: { text: emulation(input) },
-    chips: [],
-  }),
-  resize_page: (input, source) => ({
-    verb: source.running ? "Resizing the page to" : "Resized the page to",
-    target: size(input.width, input.height),
     chips: [],
   }),
   list_console_messages: (_input, source) => ({
@@ -81,7 +78,7 @@ export function describePreviewDevtools(source: ToolCallSource): ToolCallView {
     ? describe(input, source)
     : {
         verb: humanize(name),
-        target: str(input.uid) ? element(input.uid) : undefined,
+        target: str(input.target) ? element(input.target) : undefined,
         chips: [],
       }
   const text = outputText(source.output)
@@ -136,7 +133,7 @@ function describeScreenshot(
     verb: source.running ? "Capturing" : "Captured",
     target: first?.pageUrl
       ? { text: pagePath(first.pageUrl), mono: true, title: first.pageUrl }
-      : { text: str(input.uid) ? `element ${input.uid}` : "the preview" },
+      : { text: str(input.target) ? String(input.target) : "the preview" },
     chips,
     bodies,
     failed,
@@ -266,41 +263,36 @@ function navigation(input: Record<string, unknown>, running: boolean) {
 
 function emulation(input: Record<string, unknown>) {
   const parts: string[] = []
+  const device = str(input.device)
+  if (device) parts.push(device)
+  const viewport = record(input.viewport)
+  const width = num(viewport.width)
+  const height = num(viewport.height)
+  if (width && height) parts.push(`a ${width}×${height} viewport`)
+  else if (input.viewport === null) parts.push("the default viewport")
   const scheme = str(input.colorScheme)
   if (scheme === "dark" || scheme === "light") parts.push(`${scheme} mode`)
   else if (scheme === "auto") parts.push("the default color scheme")
-  const viewport = str(input.viewport)?.match(/^(\d+)x(\d+)/u)
-  if (viewport)
-    parts.push(
-      `a ${viewport[1]}×${viewport[2]}${/mobile/u.test(String(input.viewport)) ? " mobile" : ""} viewport`
-    )
-  const network = str(input.networkConditions)
-  if (network) parts.push(network === "Offline" ? "offline" : network)
-  const cpu = num(input.cpuThrottlingRate)
-  if (cpu && cpu > 1) parts.push(`a ${cpu}× slower CPU`)
-  if (str(input.geolocation)) parts.push("a location")
-  if (typeof input.userAgent === "string")
-    parts.push(input.userAgent ? "a user agent" : "the default user agent")
+  if (input.offline === true) parts.push("offline")
+  else if (input.offline === false) parts.push("online")
+  if (input.geolocation) parts.push("a location")
   return parts.length ? parts.join(", ") : "the browser defaults"
 }
 
-function element(uid: unknown) {
-  return str(uid)
-    ? { text: `element ${uid}`, mono: true }
+// A ref from a snapshot (@e3) or a CSS selector.
+function element(target: unknown) {
+  return str(target)
+    ? { text: String(target), mono: true }
     : { text: "an element" }
-}
-
-function size(width: unknown, height: unknown) {
-  const w = num(width)
-  const h = num(height)
-  return w && h ? { text: `${w}×${h}`, mono: true } : { text: "a new size" }
 }
 
 function consoleChips(text: string): ToolCallChip[] {
   const messages = text
     .split("\n")
-    .filter((line) => /^msgid=/u.test(line.trim()))
-  const errors = messages.filter((line) => /\[error\]/iu.test(line)).length
+    .filter((line) => /^\[[^\]]+\] /u.test(line.trim()))
+  const errors = messages.filter((line) =>
+    /^\[(?:error|page error)\]/iu.test(line.trim())
+  ).length
   if (!messages.length) return text ? [] : [{ label: "No messages" }]
   return errors
     ? [

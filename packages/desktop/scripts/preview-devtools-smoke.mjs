@@ -9,8 +9,13 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { execFileSync } from "node:child_process";
 import { app, BrowserWindow, nativeImage, WebContentsView } from "electron";
-import { PreviewDevtoolsMcpService } from "../src/main/preview-runtime/preview-devtools-mcp-service.ts";
+import {
+  agentBrowserExecutable,
+  configureAgentBrowserHome,
+} from "../src/main/preview-runtime/agent-browser-cli.ts";
+import { PreviewDevtoolsService } from "../src/main/preview-runtime/preview-devtools-service.ts";
 import { electronCdpDebuggee } from "../src/main/preview-browser/electron-cdp-debuggee.ts";
 import { previewNavigationPolicy } from "../src/main/preview-browser/preview-navigation-policy.ts";
 import { startPreviewCdpProxy } from "../src/main/preview-browser/preview-cdp-proxy.ts";
@@ -25,19 +30,26 @@ import {
   storePreviewDevtoolsScreenshots,
 } from "../src/main/agent-screenshots/agent-screenshots-service.ts";
 
-// Drives chrome-devtools-mcp against the agent's offscreen browser while the
+// Drives agent-browser against the agent's offscreen browser while the
 // user's preview view stays hidden, through the scoped CDP proxy. No
-// Chromium debugging port is opened.
+// Chromium debugging port is opened, and agent-browser never launches a
+// browser of its own.
 
 const artifacts = await mkdtemp(join(tmpdir(), "blame-preview-smoke-"));
 app.setPath("userData", join(artifacts, "electron"));
 app.disableHardwareAcceleration();
+configureAgentBrowserHome(join(artifacts, "agent-browser"));
 const partition = "persist:blame-preview-smoke";
-const service = new PreviewDevtoolsMcpService();
+const service = new PreviewDevtoolsService();
 const fixture = await readFile(
   new URL("./fixtures/preview-devtools.html", import.meta.url),
 );
-const server = createServer((_request, response) => {
+const server = createServer((request, response) => {
+  if (request.url?.startsWith("/api/")) {
+    response.writeHead(200, { "Content-Type": "application/json" });
+    response.end('{"saved":true}');
+    return;
+  }
   response.writeHead(200, { "Content-Type": "text/html" });
   response.end(fixture);
 });
@@ -63,6 +75,7 @@ async function runSmoke() {
     await openHiddenUserPreview();
     for (let iteration = 0; iteration < 2; iteration += 1)
       await inspectAgentBrowser(iteration);
+    assertNoBrowserLaunched();
     console.log(
       JSON.stringify({
         status: "passed",
@@ -109,12 +122,7 @@ async function inspectAgentBrowser(iteration) {
       startPreviewCdpProxy(
         electronCdpDebuggee(agent.webContents, {
           activity: agent.use,
-          viewport: {
-            get: () => agent.viewport,
-            set: (size) => {
-              agent.viewport = size;
-            },
-          },
+          viewport: () => agent.viewport,
         }),
         previewNavigationPolicy(previewOrigin),
       ),
@@ -127,7 +135,7 @@ async function inspectAgentBrowser(iteration) {
     service.call({ ...input, toolName, arguments: args });
   assert.equal(userView.getVisible(), false);
   assert.match(
-    textContent(await call("take_snapshot")),
+    textContent(await call("take_snapshot", { mode: "text" })),
     /Preview inspection smoke/,
   );
   assertToolSuccess(await call("emulate", { colorScheme: "light" }));
@@ -142,13 +150,15 @@ async function inspectAgentBrowser(iteration) {
   );
   assertToolSuccess(
     await call("evaluate_script", {
-      function: '() => console.warn("agent console check")',
+      expression:
+        'console.warn("agent console check"), fetch("/api/save", { method: "POST", headers: { Authorization: "Bearer smoke-secret" } }).then((response) => response.status)',
     }),
   );
   assert.match(
     textContent(await call("list_console_messages")),
-    /agent console check/,
+    /\[warning\] agent console check/,
   );
+  await verifyNetwork(call);
   await verifyInteractions(call);
   await verifyResize(call, iteration);
   const dark = await verifyDarkMode(call, iteration);
@@ -162,22 +172,36 @@ async function inspectAgentBrowser(iteration) {
   });
 }
 
+// The request is listed, and its detail hides the credential it carried.
+async function verifyNetwork(call) {
+  const list = textContent(
+    await call("list_network_requests", { filter: "/api/" }),
+  );
+  const id = list.match(/^\[(\S+)\] POST \/api\/save 200/mu)?.[1];
+  assert.ok(id, list);
+  const detail = textContent(await call("get_network_request", { id }));
+  assert.match(detail, /"Authorization": "<redacted>"/u);
+  assert.doesNotMatch(detail, /smoke-secret/u);
+}
+
 async function verifyInteractions(call) {
   const snapshot = textContent(await call("take_snapshot"));
-  const advance = snapshot.match(/uid=(\S+) button "Advance project"/u)?.[1];
-  const drop = snapshot.match(/uid=(\S+) button "Drop project here"/u)?.[1];
+  const advance = snapshot.match(/button "Advance project" \[ref=(e\d+)/u)?.[1];
+  const drop = snapshot.match(/button "Drop project here" \[ref=(e\d+)/u)?.[1];
   assert.ok(advance && drop, snapshot);
-  assertToolSuccess(await call("click", { uid: advance }));
+  assertToolSuccess(await call("click", { target: `@${advance}` }));
   assertToolSuccess(await call("press_key", { key: "ArrowRight" }));
-  assertToolSuccess(await call("drag", { from_uid: advance, to_uid: drop }));
+  assertToolSuccess(
+    await call("drag", { from: `@${advance}`, to: `@${drop}` }),
+  );
   const state = await agent.webContents.executeJavaScript("window.inspection");
   assert.ok(
     state.clicks >= 1 && state.keys >= 1 && state.drops >= 1,
     JSON.stringify(state),
   );
   const animation = await call("evaluate_script", {
-    function:
-      "async () => { const start = performance.now(); for(let i = 0; i < 3; i++) await new Promise(requestAnimationFrame); return { elapsed: performance.now() - start }; }",
+    expression:
+      "(async () => { const start = performance.now(); for (let i = 0; i < 3; i++) await new Promise(requestAnimationFrame); return { elapsed: performance.now() - start }; })()",
   });
   const elapsed = Number(
     textContent(animation).match(/"elapsed"\s*:\s*([\d.]+)/u)?.[1],
@@ -186,19 +210,16 @@ async function verifyInteractions(call) {
 }
 
 async function verifyResize(call, iteration) {
-  assertToolSuccess(await call("resize_page", { width: 941, height: 620 }));
+  assertToolSuccess(
+    await call("emulate", { viewport: { width: 941, height: 620 } }),
+  );
   const size = await agent.webContents.executeJavaScript(
     "({ width: innerWidth, height: innerHeight })",
   );
   assert.deepEqual(size, { width: 941, height: 620 });
   const resized = await screenshot(call, `resized-${iteration}`);
   assert.deepEqual([resized.width, resized.height], [941, 620]);
-  assertToolSuccess(
-    await call("resize_page", {
-      width: agentPreviewViewport.width,
-      height: agentPreviewViewport.height,
-    }),
-  );
+  assertToolSuccess(await call("emulate", { viewport: null }));
 }
 
 async function verifyDarkMode(call, iteration) {
@@ -220,7 +241,7 @@ async function verifyDarkMode(call, iteration) {
 // The main process path: the original is stored, the model gets a named,
 // bounded copy, and the page state is recorded.
 async function verifyStoredScreenshot(call) {
-  const result = await call("take_screenshot", { format: "png" });
+  const result = await call("take_screenshot");
   const stored = await storePreviewDevtoolsScreenshots(result, {
     page: await agentPreviewPageState("smoke"),
     runId: "smoke-run",
@@ -247,10 +268,19 @@ async function verifyStoredScreenshot(call) {
 }
 
 async function verifyNavigationScope(call) {
-  await assert.rejects(
-    call("navigate_page", { type: "url", url: "https://example.com/" }),
-    /can only open this story's preview/,
+  const outside = await call("navigate_page", {
+    type: "url",
+    url: "https://example.com/",
+  });
+  assert.equal(outside.isError, true);
+  assert.match(textContent(outside), /can only open this story's preview/);
+  // A page script cannot take the browser off the preview either.
+  assertToolSuccess(
+    await call("evaluate_script", {
+      expression: 'location.href = "https://example.com/", 1',
+    }),
   );
+  assert.equal(new URL(agent.webContents.getURL()).origin, previewOrigin);
   assertToolSuccess(
     await call("navigate_page", { type: "url", url: "/?agent=1" }),
   );
@@ -258,7 +288,7 @@ async function verifyNavigationScope(call) {
 }
 
 async function screenshot(call, name) {
-  const result = await call("take_screenshot", { format: "png" });
+  const result = await call("take_screenshot");
   const block = result.content.find((entry) => entry.type === "image");
   assert.ok(block?.data, textContent(result));
   const buffer = Buffer.from(block.data, "base64");
@@ -276,6 +306,21 @@ function averageBrightness(bitmap) {
     samples += 1;
   }
   return total / samples;
+}
+
+// agent-browser only attached to the proxy: no Chrome for Testing was
+// downloaded into its home, and no other browser process runs from it.
+function assertNoBrowserLaunched() {
+  const processes = execFileSync("ps", ["-axo", "ppid=,command="], {
+    encoding: "utf8",
+  });
+  assert.doesNotMatch(processes, /Chrome for Testing|chrome-headless-shell/u);
+  const home = join(artifacts, "agent-browser");
+  const downloaded = execFileSync("find", [home, "-iname", "*chrome*"], {
+    encoding: "utf8",
+  }).trim();
+  assert.equal(downloaded, "", `agent-browser downloaded ${downloaded}`);
+  assert.ok(agentBrowserExecutable());
 }
 
 // Linux only: the Electron process must not listen on any TCP port other

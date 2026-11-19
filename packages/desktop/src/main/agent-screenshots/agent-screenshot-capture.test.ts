@@ -131,7 +131,9 @@ test("large captures reach the model resized, as JPEG when PNG stays heavy", () 
 
 test("results without images are returned unchanged", () =>
   withStore(async (store) => {
-    const value = { content: [{ type: "text", text: "uid=1" }] };
+    const value = {
+      content: [{ type: "text", text: '- heading "Board" [ref=e1]' }],
+    };
     assert.equal(
       await storeResultScreenshots(
         value,

@@ -56,7 +56,7 @@ test("a screenshot result reaches the model as text and a native image", () => {
 
 test("results without images keep their object shape", () => {
   const result = {
-    content: [{ type: "text", text: "uid=1 heading" }],
+    content: [{ type: "text", text: '- heading "Board" [ref=e1]' }],
     _meta: { previewReadyEvidence: { status: "passed" } },
   };
   assert.equal(previewToolModelOutput(result), result);

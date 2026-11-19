@@ -292,6 +292,7 @@ const config: Configuration = {
   detectUpdateChannel: false,
   onNodeModuleFile: (file) => typeScriptDefaultLibrary.test(file),
   asarUnpack: [
+    "**/node_modules/@agent-browser/cli-*/**/*",
     "**/node_modules/@ast-grep/lang-*/**/*",
     "**/node_modules/@vscode/ripgrep-*/**/*",
     "**/node_modules/npm/**/*",

@@ -45,12 +45,6 @@ function previewState(
   return {
     available: status === "ready",
     loading: status === "starting",
-    mcp: {
-      enabledCapabilities: [],
-      pageScoped: true,
-      unavailableCapabilities: [],
-      version: "1.8.0",
-    },
     message:
       status === "stopped"
         ? "The preview is not running."

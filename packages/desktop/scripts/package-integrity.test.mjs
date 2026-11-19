@@ -60,15 +60,26 @@ async function fixture(
     });
     await file(`node_modules/@blame/${name}/src/index.ts`);
   }
+  // agent-browser's binary, for a platform no test host runs.
+  const agentBrowser = "node_modules/@agent-browser/cli-fixture";
+  await file(`${agentBrowser}/package.json`, {
+    name: "@agent-browser/cli-fixture",
+    version: "1.0.0",
+    os: ["fixture"],
+    cpu: ["fixture"],
+  });
   async function pack() {
     await mkdir(dirname(archive), { recursive: true });
     const output = await asar.createPackage(source, archive);
     // ASAR returns its write stream before the final buffered bytes are flushed.
     await finished(output);
     asar.uncache(archive);
+    const binary = join(`${archive}.unpacked`, agentBrowser, "bin/agent-browser");
+    await mkdir(dirname(binary), { recursive: true });
+    await writeFile(binary, "");
   }
   try {
-    await action({ source, dist, archive, file, pack });
+    await action({ source, dist, archive, file, pack, agentBrowser });
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -168,6 +179,19 @@ test("resolves the TypeScript compatibility wrapper and checks its implementatio
       await file(`node_modules/@typescript/old/lib/${library}`);
     await pack();
     await verifyPackagedWorkspaceRuntime(dist);
+  });
+});
+
+test("requires agent-browser's binary outside the archive", async () => {
+  await fixture(async ({ archive, dist, file, pack, agentBrowser }) => {
+    for (const name of ["harness-core", "model-catalog"]) {
+      await file(`node_modules/@blame/${name}/dist/index.js`);
+    }
+    await pack();
+    await rm(join(`${archive}.unpacked`, agentBrowser, "bin"), {
+      recursive: true,
+    });
+    await assert.rejects(verifyPackagedWorkspaceRuntime(dist), /agent-browser/);
   });
 });
 

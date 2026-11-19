@@ -1,11 +1,6 @@
 import type { WorkspaceRevisionState } from "@blame/agent-runtime";
 import type { PreviewLifecycleState } from "@blame/preview-contract";
 import type { PreviewDevtoolsTarget } from "../preview-browser/preview-browser-manager.ts";
-import {
-  previewDevtoolsEnabledCapabilities,
-  previewDevtoolsMcpVersion,
-  previewDevtoolsUnavailableCapabilities,
-} from "../preview-browser/preview-devtools-config.ts";
 
 export type PreviewHarnessStatus =
   | "failed"
@@ -17,15 +12,6 @@ export type PreviewHarnessStatus =
 export type PreviewHarnessState = PreviewDevtoolsTarget & {
   lifecycle?: PreviewLifecycleState;
   message: string;
-  mcp: {
-    enabledCapabilities: readonly string[];
-    pageScoped: true;
-    unavailableCapabilities: ReadonlyArray<{
-      capability: string;
-      reason: string;
-    }>;
-    version: string;
-  };
   reason: string;
   readiness: {
     browser_ready: boolean;
@@ -67,12 +53,6 @@ export function previewHarnessState(
     ...browser,
     available: status === "ready",
     ...(lifecycle ? { lifecycle } : {}),
-    mcp: {
-      enabledCapabilities: previewDevtoolsEnabledCapabilities,
-      pageScoped: true,
-      unavailableCapabilities: previewDevtoolsUnavailableCapabilities,
-      version: previewDevtoolsMcpVersion,
-    },
     ...previewHarnessStatusMessage(status, browser, lifecycle),
     readiness,
     ...(revisions ? { revisions } : {}),

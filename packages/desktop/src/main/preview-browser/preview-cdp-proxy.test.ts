@@ -16,11 +16,9 @@ function fakeDebuggee() {
     (method: string, params: unknown, sessionId?: string) => void
   >();
   const detachListeners = new Set<() => void>();
-  const sizes: Array<[number, number]> = [];
   let detached = 0;
   const debuggee: CdpDebuggee = {
     attach: async () => ({ targetId: "PAGE-TARGET" }),
-    contentSize: () => ({ height: 900, width: 1440 }),
     detach: () => {
       detached += 1;
     },
@@ -44,9 +42,6 @@ function fakeDebuggee() {
         };
       return { echoed: method };
     },
-    setContentSize(width, height) {
-      sizes.push([width, height]);
-    },
     title: () => "Preview",
     url: () => "http://127.0.0.1:5173/",
     userAgent: () => "Test",
@@ -62,7 +57,6 @@ function fakeDebuggee() {
       detachListeners.forEach((listener) => listener());
     },
     sent,
-    sizes,
   };
 }
 
@@ -115,27 +109,16 @@ class Client {
   }
 }
 
+// What agent-browser does: discover the targets, then attach to the page.
 async function attachedClient(proxy: PreviewCdpProxy) {
   const client = await Client.open(proxy.wsEndpoint);
   await client.send("Target.setDiscoverTargets", { discover: true });
-  await client.send("Target.setAutoAttach", {
-    autoAttach: true,
+  const { result } = await client.send("Target.getTargets");
+  const attached = await client.send("Target.attachToTarget", {
     flatten: true,
+    targetId: result.targetInfos[0].targetId,
   });
-  const tab = client.events.find(
-    (event) => event.method === "Target.attachedToTarget",
-  ).params;
-  await client.send(
-    "Target.setAutoAttach",
-    { autoAttach: true },
-    tab.sessionId,
-  );
-  const page = client.events.find(
-    (event) =>
-      event.method === "Target.attachedToTarget" &&
-      event.sessionId === tab.sessionId,
-  ).params;
-  return { client, pageSession: page.sessionId as string, tab };
+  return { client, pageSession: attached.result.sessionId as string };
 }
 
 function startProxy(fake = fakeDebuggee()) {
@@ -157,25 +140,13 @@ function get(url: string, headers: Record<string, string> = {}) {
   });
 }
 
-test("lists only the scoped page, and only with the token", async () => {
+test("answers no HTTP discovery, even with the token", async () => {
   const { proxy } = await startProxy();
   try {
-    const port = new URL(proxy.wsEndpoint).port;
-    assert.equal((await get(`http://127.0.0.1:${port}/json`)).status, 404);
-    assert.equal(
-      (await get(`http://127.0.0.1:${port}/json/version`)).status,
-      404,
-    );
-    const listed = await get(`${proxy.httpUrl}/json/list`);
-    assert.equal(listed.status, 200);
-    const pages = JSON.parse(listed.body);
-    assert.equal(pages.length, 1);
-    assert.equal(pages[0].type, "page");
-    assert.equal(pages[0].id, "PAGE-TARGET");
-    const foreignHost = await get(`${proxy.httpUrl}/json`, {
-      Host: `evil.test:${port}`,
-    });
-    assert.equal(foreignHost.status, 404);
+    const { port, pathname } = new URL(proxy.wsEndpoint);
+    const token = pathname.split("/").at(-1);
+    for (const path of ["/json", "/json/version", `/${token}/json/list`])
+      assert.equal((await get(`http://127.0.0.1:${port}${path}`)).status, 404);
   } finally {
     await proxy.close();
   }
@@ -212,18 +183,15 @@ test("refuses a wrong token, a browser origin and a second client", async () => 
   }
 });
 
-test("presents one tab and one page, and relays page commands", async () => {
+test("presents one page, and relays page commands", async () => {
   const { fake, proxy } = await startProxy();
   try {
     const client = await Client.open(proxy.wsEndpoint);
-    assert.deepEqual((await client.send("Target.getBrowserContexts")).result, {
-      browserContextIds: [],
-    });
     await client.send("Target.setDiscoverTargets", { discover: true });
     const created = client.events
       .filter((event) => event.method === "Target.targetCreated")
       .map((event) => event.params.targetInfo.type);
-    assert.deepEqual(created, ["tab", "page"]);
+    assert.deepEqual(created, ["page"]);
     const version = await client.send("Browser.getVersion");
     assert.equal(version.result.product, "Chrome/146.0.0.0");
 
@@ -286,6 +254,8 @@ test("refuses new targets, other targets and closing the page", async () => {
       ["Target.getTargets", {}, pageSession],
       ["Target.attachToTarget", { targetId: "MAIN-WINDOW" }, pageSession],
       ["Page.close", {}, pageSession],
+      ["Browser.setContentsSize", { width: 390, height: 844 }, pageSession],
+      ["Browser.setWindowBounds", { windowId: 1, bounds: {} }],
     ] as const) {
       const reply = await client.send(method, params, sessionId);
       assert.ok(reply.error, `${method} should be refused`);
@@ -294,30 +264,20 @@ test("refuses new targets, other targets and closing the page", async () => {
       fake.sent.some(({ method }) => method.startsWith("Target.")),
       false,
     );
-    const alias = await client.send("Target.attachToTarget", {
+    const second = await client.send("Target.attachToTarget", {
       targetId: "PAGE-TARGET",
       flatten: true,
     });
-    assert.match(alias.result.sessionId, /^[0-9A-F]{32}$/u);
+    assert.match(second.result.sessionId, /^[0-9A-F]{32}$/u);
     fake.emit("Network.requestWillBeSent", { requestId: "1" });
     await new Promise((resolve) => setTimeout(resolve, 20));
-    assert.equal(
-      client.events.filter(
-        (event) =>
-          event.method === "Network.requestWillBeSent" &&
-          event.sessionId === alias.result.sessionId,
-      ).length,
-      1,
-    );
-    const disabled = await client.send(
-      "Network.disable",
-      {},
-      alias.result.sessionId,
-    );
-    assert.deepEqual(disabled.result, {});
-    assert.equal(
-      fake.sent.some(({ method }) => method === "Network.disable"),
-      false,
+    // Each session opened on the page gets its events.
+    assert.deepEqual(
+      client.events
+        .filter((event) => event.method === "Network.requestWillBeSent")
+        .map((event) => event.sessionId)
+        .sort(),
+      [pageSession, second.result.sessionId].sort(),
     );
     client.close();
   } finally {
@@ -355,24 +315,19 @@ test("blocks navigation outside the preview origin", async () => {
   }
 });
 
-test("resizes through the window and closes when the page goes away", async () => {
+test("closes when the page goes away", async () => {
   const { fake, proxy } = await startProxy();
   const { client, pageSession } = await attachedClient(proxy);
-  const window = await client.send(
-    "Browser.getWindowForTarget",
-    {},
-    pageSession,
-  );
-  assert.deepEqual(window.result.bounds.width, 1440);
-  await client.send(
-    "Browser.setContentsSize",
-    { windowId: window.result.windowId, width: 390, height: 844 },
-    pageSession,
-  );
-  assert.deepEqual(fake.sizes, [[390, 844]]);
   fake.gone();
   await proxy.closed;
   await new Promise((resolve) => setTimeout(resolve, 50));
+  assert.ok(
+    client.events.some(
+      (event) =>
+        event.method === "Target.detachedFromTarget" &&
+        event.params.sessionId === pageSession,
+    ),
+  );
   assert.ok(
     client.events.some((event) => event.method === "Target.targetDestroyed"),
   );

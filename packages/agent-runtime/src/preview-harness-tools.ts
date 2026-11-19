@@ -61,7 +61,6 @@ export type PreviewRuntimeContext = {
   componentPreview?: boolean;
   surface?: PreviewSurfaceInfo;
   previewManifest?: PreviewInitialization["previewManifest"];
-  // Lets the desktop app apply the project's browser tool settings.
   projectId?: string;
   scope?: string;
   storyId?: string;
