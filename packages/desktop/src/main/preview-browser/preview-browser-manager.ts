@@ -112,7 +112,7 @@ export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
     throw new Error("The agent preview browser closed while opening.");
   const proxy = await startPreviewCdpProxy(
     electronCdpDebuggee(agent.webContents, {
-      activity: agent.touch,
+      activity: agent.use,
       viewport: {
         get: () => agent.viewport,
         set: (size) => {

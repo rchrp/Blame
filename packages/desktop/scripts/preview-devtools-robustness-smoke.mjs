@@ -59,7 +59,7 @@ const input = {
     });
     const proxy = await startPreviewCdpProxy(
       electronCdpDebuggee(agent.webContents, {
-        activity: agent.touch,
+        activity: agent.use,
         viewport: {
           get: () => agent.viewport,
           set: (size) => {

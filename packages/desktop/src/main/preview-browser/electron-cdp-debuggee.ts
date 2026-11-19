@@ -5,7 +5,8 @@ export { previewNavigationPolicy } from "./preview-navigation-policy.ts";
 type Size = { height: number; width: number };
 
 type ElectronDebuggeeOptions = {
-  activity?(): void;
+  // A command starts; the returned function is called once it settles.
+  activity?(): () => void;
   contentSize?(): Size;
   // An emulated viewport at scale 1, applied on attach and restored when
   // emulation is cleared. Captures then have the requested size whatever
@@ -89,17 +90,17 @@ export function electronCdpDebuggee(
     },
     sendCommand(method, params, sessionId) {
       if (!attached) return Promise.reject(new Error("Target closed"));
-      options.activity?.();
-      if (
+      const settled = options.activity?.();
+      const result =
         method === "Emulation.clearDeviceMetricsOverride" &&
         !sessionId &&
         options.viewport
-      )
-        return debuggerApi.sendCommand(
-          "Emulation.setDeviceMetricsOverride",
-          baselineMetrics(options.viewport.get()),
-        );
-      return debuggerApi.sendCommand(method, params, sessionId);
+          ? debuggerApi.sendCommand(
+              "Emulation.setDeviceMetricsOverride",
+              baselineMetrics(options.viewport.get()),
+            )
+          : debuggerApi.sendCommand(method, params, sessionId);
+      return settled ? result.finally(settled) : result;
     },
     ...(options.viewport
       ? {

@@ -108,7 +108,7 @@ async function inspectAgentBrowser(iteration) {
     openEndpoint: () =>
       startPreviewCdpProxy(
         electronCdpDebuggee(agent.webContents, {
-          activity: agent.touch,
+          activity: agent.use,
           viewport: {
             get: () => agent.viewport,
             set: (size) => {
