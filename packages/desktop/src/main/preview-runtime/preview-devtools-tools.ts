@@ -379,9 +379,13 @@ async function navigate(
 }
 
 async function consoleMessages(clear: boolean, cli: PreviewToolContext["cli"]) {
-  const flags = clear ? ["--clear"] : [];
-  const messages = await cli(["console", ...flags]);
-  const errors = await cli(["errors", ...flags]);
+  const messages = await cli(["console"]);
+  const errors = await cli(["errors"]);
+  // agent-browser's --clear empties a list without printing it.
+  if (clear) {
+    await cli(["console", "--clear"]);
+    await cli(["errors", "--clear"]);
+  }
   const lines = [
     ...records(messages.messages).map(
       (entry) => `[${String(entry.type ?? "log")}] ${String(entry.text ?? "")}`,

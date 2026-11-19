@@ -279,7 +279,7 @@ test("waits the agent asks for set agent-browser's limit inside the call's", asy
 });
 
 test("console, network and request details stay short and hide credentials", async () => {
-  const { input, service } = harness((run) => {
+  const { input, runs, service } = harness((run) => {
     if (run.args[0] === "console")
       return {
         messages: [
@@ -332,6 +332,12 @@ test("console, network and request details stay short and hide credentials", asy
   assert.equal(
     text(await service.call(input("list_console_messages"))),
     "[log] ready\n[error] bad\n[page error] Error: boom (http://127.0.0.1:5173/app.js:3)",
+  );
+  // Clearing reads the lists first: agent-browser's --clear prints nothing.
+  await service.call(input("list_console_messages", { clear: true }));
+  assert.deepEqual(
+    runs.slice(-4).map(({ args }) => args.join(" ")),
+    ["console", "errors", "console --clear", "errors --clear"],
   );
   const list = text(await service.call(input("list_network_requests")));
   assert.equal(

@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import { createHash, randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readdir, rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -62,6 +62,32 @@ export function agentBrowserSession(scope: string) {
 export async function runAgentBrowser(input: AgentBrowserRun) {
   input.signal?.throwIfAborted();
   const environment = await agentBrowserEnvironment(input);
+  try {
+    return await runCommand(input, environment);
+  } finally {
+    // agent-browser keeps a file per session next to its socket, even once
+    // closed; sessions are never reused.
+    if (input.args[0] === "close")
+      await removeSessionFiles(
+        environment.AGENT_BROWSER_SOCKET_DIR!,
+        input.session,
+      );
+  }
+}
+
+async function removeSessionFiles(sockets: string, session: string) {
+  const files = await readdir(sockets).catch(() => []);
+  await Promise.all(
+    files
+      .filter((name) => name.startsWith(`${session}.`))
+      .map((name) => rm(join(sockets, name), { force: true })),
+  );
+}
+
+async function runCommand(
+  input: AgentBrowserRun,
+  environment: Record<string, string>,
+) {
   const stdout = await new Promise<string>((resolve, reject) => {
     const child = execFile(
       agentBrowserExecutable(),
