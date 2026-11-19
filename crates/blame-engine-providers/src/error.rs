@@ -75,6 +75,8 @@ pub(crate) fn classify(report: &ErrorReport) -> ErrorKind {
         Some(500..=599) => ErrorKind::Overloaded,
         Some(_) if report.is_context_overflow() => ErrorKind::ContextOverflow,
         Some(_) if billing => ErrorKind::Billing,
+        // Gemini answers a bad key with 400 INVALID_ARGUMENT.
+        Some(_) if says(&["api_key_invalid", "api key not valid"]) => ErrorKind::Authentication,
         Some(_) => ErrorKind::InvalidRequest,
         // An error sent inside a stream that had already opened with a 200:
         // only its code and wording say what it is.

@@ -18,8 +18,10 @@ use rig_core::streaming::{Item, PartKind, StreamEvent, Streamed};
 
 pub(crate) fn events(mut reply: Streamed<Completion>, target: Target) -> ModelStream {
     Box::pin(async_stream::stream! {
-        // Parts in the order they ended, which is the order the folded
-        // reply lists the blocks it kept.
+        // The parts that ended with a block. The folded reply lists those
+        // blocks in the order their parts started, which is not the order
+        // they ended: Rig closes a Responses reasoning item only once the
+        // reply is complete, after the calls that followed it.
         let mut ended: Vec<u32> = Vec::new();
         while let Some(item) = reply.next().await {
             let event = match item {
@@ -73,9 +75,10 @@ pub(crate) fn events(mut reply: Streamed<Completion>, target: Target) -> ModelSt
         }
         let stop = stop_reason(&response);
         let usage = usage(&response.usage);
-        // Should a part end without a block (Rig drops an empty one), the
-        // positions no longer pair up; the blocks then take their place in
-        // the reply as their index.
+        // Should the parts and the blocks not pair up, the blocks take
+        // their place in the reply as their index.
+        ended.sort_unstable();
+        ended.dedup();
         let paired = ended.len() == response.choice.len();
         for (at, block) in response.choice.into_iter().enumerate() {
             let index = match paired {

@@ -8,14 +8,16 @@ use blame_engine_core::ports::{ModelMessage, ModelRequest, ProviderError, ToolRe
 use blame_engine_protocol::{
     AssistantBlock, BlobRef, ErrorKind, ReasoningEffort, ToolOutcome, ToolResultBlock, UserBlock,
 };
+use rig_core::catalog::{Catalog, ReasoningSupport};
 use rig_core::completion::{
     CachePoint, CacheRetention, CompletionRequest, Effort, GenerationOptions, OnUnsupported,
-    ToolDefinition,
+    Reasoning, ToolDefinition,
 };
 use rig_core::message::{
     CallId, Document, DocumentData, DocumentMediaType, DocumentSourceKind, Image, ImageMediaType,
     Message, MimeType, Text, ToolName, ToolResult, ToolResultContent, UserContent,
 };
+use rig_core::providers::registry::ProviderId;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -84,8 +86,11 @@ pub(crate) async fn to_rig(
     // request: the loop asks for what it wants and each provider does what
     // it can.
     let mut options = GenerationOptions::new().on_unsupported(OnUnsupported::Ignore);
-    if let Some(effort) = request.reasoning {
-        options = options.reasoning(effort_of(effort));
+    if let Some(reasoning) = request
+        .reasoning
+        .and_then(|effort| reasoning(effort, target, request.max_output_tokens))
+    {
+        options = options.reasoning(reasoning);
     }
     if !request.cache.key.is_empty() {
         options = options.cache_key(request.cache.key.clone());
@@ -121,6 +126,40 @@ pub(crate) async fn to_rig(
         rig.additional_params = Some(json!({ "store": false }));
     }
     Ok(rig)
+}
+
+/// The effort as the model takes it. A model that only takes a thinking
+/// budget (Gemini 2.5, Claude before 4.6) refuses an effort level, which
+/// would be skipped without a word, so the effort becomes a budget inside
+/// the range the catalog gives it and below the output cap, which the
+/// thinking counts towards. `None` when that leaves no room to think.
+fn reasoning(
+    effort: ReasoningEffort,
+    target: &Target,
+    max_output_tokens: Option<u32>,
+) -> Option<Reasoning> {
+    let spec = ProviderId::catalog(target.rig_provider)
+        .and_then(|provider| Catalog::builtin().get(provider, &target.model.model));
+    let range = match spec.map(|found| &found.spec.reasoning) {
+        Some(ReasoningSupport::Listed {
+            levels,
+            budget: Some(range),
+            ..
+        }) if levels.is_empty() => range.clone(),
+        _ => return Some(Reasoning::Effort(effort_of(effort))),
+    };
+    let wanted: u32 = match effort {
+        ReasoningEffort::Minimal => 1_024,
+        ReasoningEffort::Low => 2_048,
+        ReasoningEffort::Medium => 8_192,
+        ReasoningEffort::High => 16_384,
+        ReasoningEffort::Xhigh => 32_768,
+    };
+    let ceiling = max_output_tokens.map_or(*range.end(), |cap| {
+        (*range.end()).min(cap.saturating_sub(1))
+    });
+    let tokens = wanted.min(ceiling).max(*range.start());
+    (tokens <= ceiling).then_some(Reasoning::Budget { tokens })
 }
 
 fn effort_of(effort: ReasoningEffort) -> Effort {
