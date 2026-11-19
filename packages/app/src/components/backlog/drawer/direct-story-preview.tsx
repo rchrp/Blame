@@ -58,7 +58,7 @@ export function DirectStoryPreview({
         hostWindow={{
           mode: "direct",
           status,
-          logs: runner.sessionFor(selected.id)?.logs,
+          log: runner.sessionFor(selected.id)?.log,
           onStart: () => runner.start(selected.id, { revealLogs: false }),
           onStop: () => runner.stop(selected.id),
           onRestart: () => runner.start(selected.id, { revealLogs: false }),

@@ -72,7 +72,10 @@ export function useProjectDependencies(input: {
   // Offers the person turned down, by root and kind: guesses read from the
   // output are not repeated. A missing install is, on each start.
   const declined = React.useRef(new Set<string>())
-  const scanned = React.useRef(new Map<string, number>())
+  // The end of each app's output so far, in its current run.
+  const outputEnds = React.useRef(
+    new Map<string, { sessionId: string; text: string }>()
+  )
   const files = React.useMemo(
     () =>
       workspace?.pathExists && projectPath
@@ -287,24 +290,34 @@ export function useProjectDependencies(input: {
   )
 
   // What the apps print. Tasks such as the install itself are left out.
-  React.useEffect(() => {
-    for (const session of runner.sessions) {
-      if (!session.sessionId) continue
-      const configuration = configurations.find(
-        (item) => item.id === session.configurationId
-      )
-      if (!configuration) continue
-      const read = scanned.current.get(session.sessionId) ?? 0
-      if (session.logs.length <= read) continue
-      scanned.current.set(session.sessionId, session.logs.length)
-      // A little overlap catches a message split across two chunks.
-      const fresh = session.logs.slice(Math.max(0, read - 400))
-      const builds = blockedBuildScripts(fresh)
-      const packages = missingPackagesInOutput(fresh)
-      if (builds.length || packages.length || outputSaysNothingInstalled(fresh))
-        void inspect(configuration, { builds, packages }).catch(() => undefined)
-    }
-  }, [configurations, inspect, runner.sessions])
+  const { onOutput } = runner
+  React.useEffect(
+    () =>
+      onOutput(({ configurationId, data, sessionId }) => {
+        const configuration = configurations.find(
+          (item) => item.id === configurationId
+        )
+        if (!configuration) return
+        // A little overlap catches a message split across two chunks.
+        const end = outputEnds.current.get(configurationId)
+        const fresh = `${end?.sessionId === sessionId ? end.text : ""}${data}`
+        outputEnds.current.set(configurationId, {
+          sessionId,
+          text: fresh.slice(-400),
+        })
+        const builds = blockedBuildScripts(fresh)
+        const packages = missingPackagesInOutput(fresh)
+        if (
+          builds.length ||
+          packages.length ||
+          outputSaysNothingInstalled(fresh)
+        )
+          void inspect(configuration, { builds, packages }).catch(
+            () => undefined
+          )
+      }),
+    [configurations, inspect, onOutput]
+  )
 
   // Starts as input.start does, then checks the app's packages.
   const start = useLatestCallback(

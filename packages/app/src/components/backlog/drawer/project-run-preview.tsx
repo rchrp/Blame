@@ -89,9 +89,9 @@ function projectRunLogs(
     : (runner.activeSession?.configurationId ?? runner.selected?.id)
   const item = items.find(({ id }) => id === selected)
   return {
-    content: runningOutside(runner, selected ?? "")
-      ? ""
-      : (runner.sessionFor(selected ?? "")?.logs ?? ""),
+    log: runningOutside(runner, selected ?? "")
+      ? undefined
+      : runner.sessionFor(selected ?? "")?.log,
     empty: projectRunLogEmpty(runner, item, start),
     items,
     selected,

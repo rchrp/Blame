@@ -6,7 +6,8 @@
 //     [--measured 40] [--out results.json]
 //
 // It builds the app's bench page (packages/app/bench/run-log.html: the
-// project runner and its logs panel fed through a stand-in terminal) and,
+// project runner and its logs panel fed through a stand-in terminal, with
+// the desktop's run log store in this process) and,
 // for each kind of output and each log size, writes that much output then
 // measures the next chunks one at a time: characters handed to string
 // scans, React commits (the panel's and the runner's other readers'),
@@ -19,6 +20,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { app, BrowserWindow } from "electron";
+import { registerRunLogIpcHandlers } from "../src/main/run-log-ipc.ts";
 
 const options = parseOptions(process.argv);
 const appDirectory = fileURLToPath(new URL("../../app/", import.meta.url));
@@ -40,6 +42,8 @@ void app
   });
 
 async function main() {
+  // The run logs' disk store, as in the app.
+  registerRunLogIpcHandlers();
   const vite = await import(pathToFileURL(appRequire.resolve("vite")).href);
   const outDir = join(scratch, "page");
   await vite.build({
@@ -119,7 +123,13 @@ async function measure(url, stream, size) {
     height: 800,
     show: true,
     width: 1100,
-    webPreferences: { backgroundThrottling: false, sandbox: true },
+    webPreferences: {
+      backgroundThrottling: false,
+      preload: fileURLToPath(
+        new URL("./run-log-bench-preload.cjs", import.meta.url),
+      ),
+      sandbox: true,
+    },
   });
   window.webContents.on("console-message", (event) => {
     if (event.level === "error") console.error(`page: ${event.message}`);

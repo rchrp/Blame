@@ -19,11 +19,14 @@ import {
   type TerminalClient,
   type TerminalEvent,
 } from "@/context/platform"
+import type { RunLogsClient } from "@/context/platform-run-logs"
 
 type BenchRun = { measured: number; size: number; stream: RunLogStream }
 
 declare global {
   interface Window {
+    // The desktop's run log store, in the bench's main process.
+    benchRunLogs?: RunLogsClient
     gc?: () => void
     runLogBench?: { run(input: BenchRun): Promise<Record<string, number>> }
   }
@@ -128,7 +131,7 @@ function BenchRunner() {
       <div className="h-[640px] w-[960px]">
         <ProjectRunLogPanel
           logs={{
-            content: session?.logs ?? "",
+            log: session?.log,
             empty: { title: "No output yet" },
             items: [
               {
@@ -180,7 +183,10 @@ window.runLogBench = {
     scenario += 1
     const bench = benchTerminal()
     root.render(
-      <Bench key={scenario} platform={{ terminal: bench.terminal }} />
+      <Bench
+        key={scenario}
+        platform={{ runLogs: window.benchRunLogs, terminal: bench.terminal }}
+      />
     )
     while (!bench.ready()) await frame()
     const events = runLogEvents(stream, 7)
