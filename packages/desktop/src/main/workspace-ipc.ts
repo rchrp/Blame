@@ -12,7 +12,7 @@ import { type RuntimeProfileId } from "@blame/preview-runtime";
 import { BrowserWindow, ipcMain } from "electron";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join, posix, relative, resolve, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import {
   generateNewProjectWithAgent,
   releaseAgentWorkspaceSessions,
@@ -160,9 +160,14 @@ import {
   runtimeManagedPath,
   pathExists as runtimePathExists,
   storyBranch,
+  toWorkspacePath,
   worktreePath,
   writeFileAtomic as writeRuntimeFileAtomic,
 } from "./workspace-runtime";
+import {
+  searchWorkspaceFiles,
+  type WorkspaceSearchInput,
+} from "./workspace-file-search.ts";
 import {
   branchExists,
   ensureRuntimeGitSafeDirectory,
@@ -213,11 +218,6 @@ const setupEnvironmentCacheTtlMs = 2_000;
 type WorkspacePathInput = {
   root: string;
   path?: string;
-};
-
-type WorkspaceSearchInput = WorkspacePathInput & {
-  query: string;
-  limit?: number;
 };
 
 type CreateWorktreeInput = {
@@ -379,7 +379,7 @@ export function registerWorkspaceIpcHandlers(
   );
   ipcMain.handle(
     "workspace:search-files",
-    (_event, input: WorkspaceSearchInput) => searchFiles(input),
+    (_event, input: WorkspaceSearchInput) => searchWorkspaceFiles(input),
   );
   // The board's polls send `background`: they leave a stopped runtime stopped.
   ipcMain.handle(
@@ -635,36 +635,6 @@ async function readWorkspaceFile(input: WorkspacePathInput) {
   const fileStat = await stat(filePath);
   if (!fileStat.isFile()) throw new Error("Path is not a file");
   return readFile(filePath, "utf8");
-}
-
-async function searchFiles(input: WorkspaceSearchInput) {
-  const root = resolveRuntimePath(input.root);
-  const query = normalizeWorkspaceSearchText(input.query);
-  if (!query) return [];
-  const limit = Math.min(input.limit ?? 30, 100);
-  if (runtimeManagedPath(root)) return searchRuntimeFiles(root, query, limit);
-  const matches: Array<{ name: string; path: string; type: "file" }> = [];
-  await walk(root, root, query, limit, matches);
-  return matches;
-}
-
-async function searchRuntimeFiles(root: string, query: string, limit: number) {
-  const { stdout } = await runRuntime("find", [root, "-type", "f"]);
-  return stdout
-    .split("\n")
-    .filter(Boolean)
-    .map((path) => ({ name: posix.basename(path), path }))
-    .map((entry) => ({
-      name: entry.name,
-      path: toWorkspacePath(root, entry.path),
-      type: "file" as const,
-    }))
-    .filter(
-      (entry) =>
-        normalizeWorkspaceSearchText(entry.name).includes(query) ||
-        normalizeWorkspaceSearchText(entry.path).includes(query),
-    )
-    .slice(0, limit);
 }
 
 async function createWorktree(input: CreateWorktreeInput) {
@@ -2076,46 +2046,6 @@ async function recordPreviewStartStep(worktree: string, step: string) {
   } catch {}
 }
 
-async function walk(
-  root: string,
-  directory: string,
-  query: string,
-  limit: number,
-  matches: Array<{ name: string; path: string; type: "file" }>,
-) {
-  if (matches.length >= limit) return;
-  const entries = await readdir(directory, { withFileTypes: true });
-
-  for (const entry of entries) {
-    if (matches.length >= limit || shouldSkip(entry.name)) continue;
-    const entryPath = resolve(directory, entry.name);
-    if (entry.isDirectory()) {
-      await walk(root, entryPath, query, limit, matches);
-      continue;
-    }
-    const relativePath = toWorkspacePath(root, entryPath);
-    if (
-      entry.isFile() &&
-      (normalizeWorkspaceSearchText(entry.name).includes(query) ||
-        normalizeWorkspaceSearchText(relativePath).includes(query))
-    ) {
-      matches.push({
-        name: entry.name,
-        path: relativePath,
-        type: "file",
-      });
-    }
-  }
-}
-
-function normalizeWorkspaceSearchText(value: string) {
-  return value
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/[^\p{Letter}\p{Number}]+/gu, "");
-}
-
 function resolveWorkspacePath(input: WorkspacePathInput) {
   const root = resolveRuntimePath(input.root);
   const target = joinWorkspacePath(root, input.path ?? ".");
@@ -2123,18 +2053,6 @@ function resolveWorkspacePath(input: WorkspacePathInput) {
   if (target !== root && !target.startsWith(`${root}${separator}`))
     throw new Error("Path escapes workspace");
   return target;
-}
-
-function toWorkspacePath(root: string, target: string) {
-  const resolvedRoot = resolveRuntimePath(root);
-  const path = resolvedRoot.includes("/")
-    ? posix.relative(resolvedRoot, target.replace(/\\/g, "/"))
-    : relative(resolve(root), target);
-  return path || ".";
-}
-
-function shouldSkip(name: string) {
-  return [".git", "node_modules", "dist", "build", ".turbo"].includes(name);
 }
 
 async function assertGitRepository(cwd: string) {
