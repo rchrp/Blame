@@ -1059,6 +1059,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
 
   return (
     <div className="flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
+      <WhileShown shown={active}>
       <BacklogToolbar
         disabled={!backlog.projectPath}
         onOpenStatusPip={platform.backlogStatusPip ? openStatusPip : undefined}
@@ -1153,12 +1154,22 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           drawerUserStory ? storyTitleGenerating(drawerUserStory) : false
         }
       />
+      </WhileShown>
       <UserStoryPreviewWarmup userStories={backlog.stories} />
       <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
       <DirectSharedFilesDialog {...sharedFilesDialog} />
     </div>
   )
 }
+
+// While another page shows, the board and the drawer keep what they last
+// rendered instead of following the backlog; they catch up once shown.
+const WhileShown = React.memo(
+  function WhileShown({ children }: { children: React.ReactNode; shown: boolean }) {
+    return children
+  },
+  (previous, next) => !previous.shown && !next.shown
+)
 
 function useLatestCallback<Arguments extends unknown[], Result>(
   callback: (...arguments_: Arguments) => Result
