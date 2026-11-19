@@ -119,6 +119,11 @@ export class LightTaskRunner {
     this.refreshPreviewDependencies = options.refreshPreviewDependencies;
   }
 
+  /** A command it started is still running. */
+  get running() {
+    return [...this.runs.values()].some((run) => !run.result);
+  }
+
   run(input: LightRunTaskInput, context: RunnerContext = {}) {
     if (input.kind === "analyze")
       return Promise.resolve(blocked("input", "Symbolic analysis requires workspace symbol resolution."));
