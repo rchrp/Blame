@@ -316,6 +316,39 @@ test("retries a turn whose stream stayed silent before any output", async () => 
   );
 });
 
+test("other workers reach the bridge one worker hosts and close its sessions", async () => {
+  await withBridge(async (host, stateDirectory) => {
+    const shared = await ClaudeCodeBridge.connect({ stateDirectory });
+    assert.equal(host.hosting, true);
+    assert.equal(shared.hosting, false);
+    assert.equal(shared.baseUrl("127.0.0.1"), host.baseUrl("127.0.0.1"));
+    assert.equal(shared.token("session-shared"), host.token("session-shared"));
+
+    const key = shared.token("session-shared");
+    await stream(host, key, [{ role: "user", content: "hello" }]);
+    await stream(host, shared.token("session-kept"), [{ role: "user", content: "hello" }]);
+    assert.equal(host.lanes, 2);
+
+    await shared.closeScopes(["session-shared"]);
+    assert.equal(host.lanes, 1);
+    await host.close();
+    assert.equal(await shared.reachable(), false);
+  });
+});
+
+test("closes an idle conversation that a newer one of its session replaces", async () => {
+  await withBridge(async (bridge) => {
+    const key = bridge.token("session-superseded");
+    await stream(bridge, key, [{ role: "user", content: "please use tool" }]);
+    await stream(bridge, key, [{ role: "user", content: "a subagent" }]);
+    // The first one waits for a tool result: it stays.
+    assert.equal(openLanes(bridge), 2);
+
+    await stream(bridge, key, [{ role: "user", content: "another subagent" }]);
+    assert.equal(openLanes(bridge), 2);
+  });
+});
+
 async function withBridge(
   run: (bridge: ClaudeCodeBridge, stateDirectory: string) => Promise<void>,
   options: { env?: NodeJS.ProcessEnv; stallMs?: number; toolsWaitMs?: number; wakeStallMs?: number; watchIntervalMs?: number } = {},
@@ -323,11 +356,11 @@ async function withBridge(
   chmodSync(fakeClaudeCode, 0o755);
   const stateDirectory = mkdtempSync(join(tmpdir(), "blame-claude-code-"));
   const { env, ...bridgeOptions } = options;
-  const bridge = await ClaudeCodeBridge.start({
+  const bridge = (await ClaudeCodeBridge.start({
     env: { ...process.env, ...env, BLAME_CLAUDE_CODE_PATH: fakeClaudeCode },
     stateDirectory,
     ...bridgeOptions,
-  });
+  })) as ClaudeCodeBridge;
   try {
     await run(bridge, stateDirectory);
   } finally {

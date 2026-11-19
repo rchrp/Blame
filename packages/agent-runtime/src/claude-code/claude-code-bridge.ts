@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import http from "node:http";
 import { join } from "node:path";
@@ -8,6 +8,13 @@ import {
   claudeCodeEnvironment,
   findClaudeCodeExecutable,
 } from "./claude-code-cli.js";
+import {
+  bridgeMac,
+  bridgeToken,
+  SharedClaudeCodeBridge,
+  tokenPrefix,
+  type ClaudeCodeBridgeHandle,
+} from "./claude-code-bridge-client.js";
 import { laneEventLog, type LaneLog } from "./claude-code-events.js";
 import { ClaudeCodeLane, type BridgeSink } from "./claude-code-lane.js";
 import {
@@ -35,7 +42,11 @@ export type ClaudeCodeBridgeOptions = {
 };
 
 const maxBodyBytes = 64 * 1024 * 1024;
-// Each Claude Code process holds a few hundred MB: keep few, close idle ones.
+// Each Claude Code process holds ~110-120 MB, whatever its context size
+// (measured 2026-11-19, Claude Code 2.1, idle and after a 160k-token turn).
+// Every agent worker shares one bridge, so these bound the whole app: three
+// running stories with their subagents, and the last conversation of the
+// stories under review.
 const maxLanesPerToken = 6;
 const maxLanes = 12;
 // Claude Code caches prompts for an hour: a follow-up within it reuses the
@@ -51,15 +62,16 @@ const wakeStallMs = 20_000;
 const watchIntervalMs = 5_000;
 // The wall clock moving this much more than the monotonic one means sleep.
 const sleepGapMs = 15_000;
-const tokenPrefix = "bcc1";
 
 /**
  * A loopback server that lets Cline use the user's own Claude Code login.
  * Cline talks to it as an Anthropic Messages endpoint; Claude Code reaches
- * Blame's tools through its MCP endpoint.
+ * Blame's tools through its MCP endpoint. The first agent worker to need it
+ * hosts it; the others reach it through its saved port and secret.
  */
-export class ClaudeCodeBridge {
-  private readonly lanes = new Map<string, ClaudeCodeLane[]>();
+export class ClaudeCodeBridge implements ClaudeCodeBridgeHandle {
+  readonly hosting = true;
+  private readonly lanesByToken = new Map<string, ClaudeCodeLane[]>();
   private readonly lanesById = new Map<string, ClaudeCodeLane>();
   private readonly reaper: NodeJS.Timeout;
   private readonly watcher: NodeJS.Timeout;
@@ -68,18 +80,17 @@ export class ClaudeCodeBridge {
   private readonly server: http.Server;
   private readonly secret: Buffer;
   private readonly options: ClaudeCodeBridgeOptions;
-  readonly port: number;
+  /** Set once the server listens. */
+  port = 0;
 
   private constructor(
     server: http.Server,
     secret: Buffer,
-    port: number,
     options: ClaudeCodeBridgeOptions,
     log: LaneLog,
   ) {
     this.server = server;
     this.secret = secret;
-    this.port = port;
     this.options = options;
     this.log = log;
     this.reaper = setInterval(() => this.reapLanes(), 30_000);
@@ -91,7 +102,27 @@ export class ClaudeCodeBridge {
     this.watcher.unref();
   }
 
-  static async start(options: ClaudeCodeBridgeOptions) {
+  /** The bridge another worker hosts, or a new one hosted here. */
+  static async connect(
+    options: ClaudeCodeBridgeOptions,
+  ): Promise<ClaudeCodeBridgeHandle> {
+    return (
+      (await ClaudeCodeBridge.find(options.stateDirectory)) ??
+      ClaudeCodeBridge.start(options)
+    );
+  }
+
+  /** The bridge running in another worker, if one answers. */
+  static async find(stateDirectory: string) {
+    const state = readState(join(stateDirectory, "bridge.json"));
+    if (!state.port || !state.secret) return undefined;
+    const shared = new SharedClaudeCodeBridge(state.port, state.secret);
+    return (await shared.reachable()) ? shared : undefined;
+  }
+
+  static async start(
+    options: ClaudeCodeBridgeOptions,
+  ): Promise<ClaudeCodeBridgeHandle> {
     const lanesDirectory = join(options.stateDirectory, "lanes");
     mkdirSync(lanesDirectory, { recursive: true, mode: 0o700 });
     const statePath = join(options.stateDirectory, "bridge.json");
@@ -108,16 +139,27 @@ export class ClaudeCodeBridge {
     });
     server.requestTimeout = 0;
     server.headersTimeout = 120_000;
-    const port = await listen(server, state.port);
-    writeFileSync(statePath, JSON.stringify({ port, secret }), { mode: 0o600 });
-    target.bridge = new ClaudeCodeBridge(
+    const bridge = new ClaudeCodeBridge(
       server,
       Buffer.from(secret),
-      port,
       { ...options, stateDirectory: lanesDirectory },
       laneEventLog(join(options.stateDirectory, "bridge-events.log")),
     );
-    return target.bridge;
+    target.bridge = bridge;
+    let port = state.port ? await listen(server, state.port) : undefined;
+    if (!port && state.port) {
+      // Another worker started the bridge at the same time.
+      const shared = new SharedClaudeCodeBridge(state.port, secret);
+      if (await shared.reachable()) {
+        await bridge.close();
+        return shared;
+      }
+    }
+    // The saved port is taken: any free one works, sessions get a new URL.
+    port ??= (await listen(server, 0))!;
+    bridge.port = port;
+    writeFileSync(statePath, JSON.stringify({ port, secret }), { mode: 0o600 });
+    return bridge;
   }
 
   /**
@@ -125,8 +167,7 @@ export class ClaudeCodeBridge {
    * are one-off operations whose Claude Code process closes soon after.
    */
   token(scope: string) {
-    const encoded = Buffer.from(scope).toString("base64url");
-    return `${tokenPrefix}.${encoded}.${this.mac(encoded)}`;
+    return bridgeToken(this.secret, scope);
   }
 
   /** The endpoint Cline calls; an effort picked in Blame rides in the path. */
@@ -135,11 +176,26 @@ export class ClaudeCodeBridge {
     return `http://${host}:${this.port}${prefix}/v1`;
   }
 
+  /** Claude Code processes this bridge runs. */
+  get lanes() {
+    return this.lanesById.size;
+  }
+
+  async reachable() {
+    return true;
+  }
+
+  /** Closes the Claude Code processes of conversations that ended for good. */
+  async closeScopes(scopes: string[]) {
+    for (const scope of scopes) this.closeToken(this.token(scope));
+  }
+
   async close() {
     clearInterval(this.reaper);
     clearInterval(this.watcher);
     for (const lane of [...this.lanesById.values()]) lane.close("Blame closed.");
-    await new Promise<void>((resolve) => this.server.close(() => resolve()));
+    if (this.server.listening)
+      await new Promise<void>((resolve) => this.server.close(() => resolve()));
   }
 
   private async handle(
@@ -148,6 +204,7 @@ export class ClaudeCodeBridge {
   ) {
     const url = new URL(request.url ?? "/", "http://bridge");
     if (url.pathname === "/health") return json(response, 200, { ok: true });
+    if (url.pathname === "/bridge") return this.control(request, response);
     const messages = /^(?:\/effort\/([a-z]+))?\/v1\/messages$/.exec(url.pathname);
     if (messages && request.method === "POST")
       return this.messages(request, response, effortValue(messages[1]));
@@ -194,13 +251,17 @@ export class ClaudeCodeBridge {
         ),
       );
     const sink = parsed.stream ? streamSink(response) : jsonSink(response);
-    const lanes = (this.lanes.get(token) ?? []).filter((lane) => !lane.closed);
+    const lanes = (this.lanesByToken.get(token) ?? []).filter((lane) => !lane.closed);
     const lane = lanes.find((candidate) => candidate.accepts(parsed));
     let active: ClaudeCodeLane;
     if (lane) {
       lane.continue(parsed, sink);
       active = lane;
     } else {
+      // An idle conversation of this scope that does not continue here is
+      // over: a finished subagent, or history Cline rewrote.
+      for (const old of lanes)
+        if (old.idle) old.close("Superseded by a newer conversation of the same session.");
       active = new ClaudeCodeLane(parsed, sink, {
         env,
         executablePath,
@@ -217,7 +278,7 @@ export class ClaudeCodeBridge {
         onClose: (closed) => this.forget(token, closed),
       });
       this.lanesById.set(active.id, active);
-      this.lanes.set(token, [...lanes, active]);
+      this.lanesByToken.set(token, [...lanes.filter((open) => !open.closed), active]);
       this.evict(token);
     }
     response.on("close", () => {
@@ -267,18 +328,28 @@ export class ClaudeCodeBridge {
     if (body.method === "tools/list") lane.noteToolsListed();
   }
 
+  /**
+   * Another worker checks the bridge answers (GET), or closes the
+   * conversations of one scope (DELETE), with that scope's key.
+   */
+  private control(request: http.IncomingMessage, response: http.ServerResponse) {
+    const token = requestToken(request);
+    if (!token || !this.validToken(token))
+      return json(response, 401, anthropicError("authentication_error", "Invalid Claude Code bridge key."));
+    if (request.method === "DELETE") this.closeToken(token);
+    json(response, 200, { lanes: this.lanesById.size });
+  }
+
+  private closeToken(token: string) {
+    for (const lane of this.lanesByToken.get(token) ?? [])
+      lane.close("The session ended.");
+  }
+
   private validToken(token: string) {
     const [prefix, encoded, mac, extra] = token.split(".");
     if (prefix !== tokenPrefix || !encoded || !mac || extra !== undefined)
       return false;
-    return sameSecret(this.mac(encoded), mac);
-  }
-
-  private mac(value: string) {
-    return createHmac("sha256", this.secret)
-      .update(value)
-      .digest("base64url")
-      .slice(0, 32);
+    return sameSecret(bridgeMac(this.secret, encoded), mac);
   }
 
   /** Closes the least useful processes: finished turns first, oldest first. */
@@ -297,15 +368,15 @@ export class ClaudeCodeBridge {
         count -= 1;
       }
     };
-    closeBeyond(this.lanes.get(token) ?? [], maxLanesPerToken);
+    closeBeyond(this.lanesByToken.get(token) ?? [], maxLanesPerToken);
     closeBeyond([...this.lanesById.values()], maxLanes);
   }
 
   private forget(token: string, lane: ClaudeCodeLane) {
     this.lanesById.delete(lane.id);
-    const lanes = (this.lanes.get(token) ?? []).filter((item) => item !== lane);
-    if (lanes.length) this.lanes.set(token, lanes);
-    else this.lanes.delete(token);
+    const lanes = (this.lanesByToken.get(token) ?? []).filter((item) => item !== lane);
+    if (lanes.length) this.lanesByToken.set(token, lanes);
+    else this.lanesByToken.delete(token);
   }
 
   /** Notices a wake from sleep, then lets each lane check its stream. */
@@ -471,23 +542,15 @@ function readState(path: string): { port?: number; secret?: string } {
   }
 }
 
-async function listen(server: http.Server, preferred?: number) {
-  const bind = (port: number) =>
-    new Promise<number>((resolve, reject) => {
-      const onError = (error: Error) => reject(error);
-      server.once("error", onError);
-      server.listen(port, "127.0.0.1", () => {
-        server.off("error", onError);
-        const address = server.address();
-        resolve(typeof address === "object" && address ? address.port : port);
-      });
+/** The port the server listens on, or undefined when that one is taken. */
+function listen(server: http.Server, port: number) {
+  return new Promise<number | undefined>((resolve) => {
+    const onError = () => resolve(undefined);
+    server.once("error", onError);
+    server.listen(port, "127.0.0.1", () => {
+      server.off("error", onError);
+      const address = server.address();
+      resolve(typeof address === "object" && address ? address.port : port);
     });
-  if (preferred) {
-    try {
-      return await bind(preferred);
-    } catch {
-      // The previous port is taken: any free port works, sessions get a new URL.
-    }
-  }
-  return bind(0);
+  });
 }
