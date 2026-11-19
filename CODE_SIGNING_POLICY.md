@@ -15,7 +15,7 @@ What will be signed, for each Windows release:
 - `Blame.exe`, the application executable;
 - `blame-win-x64.exe`, the installer.
 
-Only files built from this repository's source are signed. Third-party binaries that Blame ships unchanged (Electron's libraries, ripgrep, node-pty's helpers, pnpm) keep their upstream signature or none.
+Only files built from this repository's source are signed. Third-party binaries that Blame ships unchanged (Electron's libraries, ripgrep, agent-browser, node-pty's helpers, pnpm) keep their upstream signature or none.
 
 ## macOS
 

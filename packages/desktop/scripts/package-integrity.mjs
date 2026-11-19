@@ -169,6 +169,26 @@ async function verifyUnpackedNpm(archive) {
   }
 }
 
+// The agent's browser tools run agent-browser's native binary: exactly one,
+// for the target, outside the archive. It runs when the host can run it.
+export async function verifyUnpackedAgentBrowser(archive) {
+  const asar = asarTools();
+  const manifests = asar
+    .listPackage(archive)
+    .map((entry) => entry.split(sep).join("/").replace(/^\//, ""))
+    .filter((path) => /(?:^|\/)node_modules\/@agent-browser\/cli-[\w-]+\/package\.json$/.test(path));
+  if (manifests.length !== 1)
+    throw new Error(`Desktop package needs one agent-browser binary, found ${manifests.length} in ${archive}`);
+  const manifest = JSON.parse(asar.extractFile(archive, normalize(manifests[0])).toString("utf8"));
+  const name = manifest.os?.includes("win32") ? "agent-browser.exe" : "agent-browser";
+  const executable = join(`${archive}.unpacked`, posix.dirname(manifests[0]), "bin", name);
+  await access(executable);
+  if (!manifest.os?.includes(process.platform) || !manifest.cpu?.includes(process.arch)) return;
+  const { stdout } = await promisify(execFile)(executable, ["--version"], { timeout: 15000 });
+  if (stdout.trim() !== `agent-browser ${manifest.version}`)
+    throw new Error(`Packaged agent-browser version mismatch in ${manifests[0]}: ${stdout.trim()}`);
+}
+
 export function verifyAsarGeneratedJavaScript(archive) {
   const asar = asarTools();
   let count = 0;
@@ -209,6 +229,7 @@ export async function verifyPackagedWorkspaceRuntime(dist) {
     const count = await verifyAsarWorkspaceRuntime(archive);
     const compilers = verifyAsarTypeScriptLibraries(archive);
     await verifyUnpackedNpm(archive);
+    await verifyUnpackedAgentBrowser(archive);
     const manifest = JSON.parse(asarTools().extractFile(archive, "package.json").toString("utf8"));
     if (archive.split(sep).join("/").endsWith(".app/Contents/Resources/app.asar") && manifest.dependencies?.["node-pty"]) {
       await verifyNodePtyHelpers(join(`${archive}.unpacked`, "node_modules/node-pty"));

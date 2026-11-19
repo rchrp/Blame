@@ -8,11 +8,13 @@ import {
   updatedPreviewBrowserState,
 } from "./preview-browser-state.ts";
 import { previewNavigationAllowed } from "./preview-navigation-policy.ts";
+import { paintOnDemand } from "./offscreen-painting.ts";
 
 // A browser reserved for the agent, one per preview scope. It is never
-// shown, keeps rendering while the user looks elsewhere, and navigates
-// independently of the user's preview. It shares the user's session
-// partition, so cookies, sign-in and the managed network bridge apply.
+// shown and navigates independently of the user's preview. Its scripts keep
+// running while the user looks elsewhere, but it paints only while a
+// DevTools command uses it. It shares the user's session partition, so
+// cookies, sign-in and the managed network bridge apply.
 
 export type AgentPreviewSource = {
   device?: "phone" | "tablet";
@@ -24,12 +26,15 @@ export type AgentPreviewSource = {
 export type AgentPreviewBrowser = {
   device?: "phone" | "tablet";
   destroyed: boolean;
-  // The viewport the agent sees, kept across DevTools reconnections.
-  viewport: { height: number; width: number };
+  // The page's size before any emulation: the default viewport, or the
+  // device's.
+  readonly viewport: { height: number; width: number };
   id: string;
   scope: string;
   state: PreviewBrowserState;
-  touch(): void;
+  // A DevTools command is running: the page paints until the returned
+  // function is called, and a moment after.
+  use(): () => void;
   webContents: WebContents;
   window: BrowserWindow;
 };
@@ -39,6 +44,7 @@ type AgentRecord = AgentPreviewBrowser & {
   idleTimer?: NodeJS.Timeout;
   previewOrigin?: string;
   ready: Promise<void>;
+  touch(): void;
 };
 
 export const agentPreviewViewport = { height: 900, width: 1440 };
@@ -50,6 +56,9 @@ const agentPreviewHeldIdleMs = 60 * 60_000;
 const agentPreviewLoadTimeoutMs = 30_000;
 const agentPreviewProbeTimeoutMs = 2_000;
 const agentPreviewFrameRate = 30;
+// Covers the pauses between the commands of one tool call, such as a wait
+// before a capture, so animations the agent watches keep running.
+const agentPreviewPaintGraceMs = 3_000;
 const agents = new Map<string, AgentRecord>();
 // Agent sessions currently using each scope's browser.
 const holders = new Map<string, Set<string>>();
@@ -162,7 +171,10 @@ function createAgentRecord(scope: string, source: AgentPreviewSource) {
     width: viewport.width,
   });
   const webContents = window.webContents;
-  webContents.setFrameRate(agentPreviewFrameRate);
+  const painting = paintOnDemand(webContents, {
+    frameRate: agentPreviewFrameRate,
+    graceMs: agentPreviewPaintGraceMs,
+  });
   webContents.setAudioMuted(true);
   const id = randomUUID();
   if (source.device) emulatePreviewDevice(window.webContents, source.device);
@@ -175,6 +187,10 @@ function createAgentRecord(scope: string, source: AgentPreviewSource) {
     scope,
     state: { id, loading: true, url: source.initialUrl },
     touch: () => restartIdleTimer(record),
+    use: () => {
+      restartIdleTimer(record);
+      return painting.begin();
+    },
     viewport: { ...viewport },
     webContents,
     window,
@@ -183,6 +199,7 @@ function createAgentRecord(scope: string, source: AgentPreviewSource) {
     if (agents.get(scope) === record) agents.delete(scope);
     record.destroyed = true;
     if (record.idleTimer) clearTimeout(record.idleTimer);
+    painting.dispose();
   });
   webContents.setWindowOpenHandler(() => ({ action: "deny" }));
   attachAgentEvents(record);

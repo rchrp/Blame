@@ -418,12 +418,12 @@ test("a failed screenshot shows its error and no capture", () => {
 test("a screenshot without metadata still reads as a sentence", () => {
   const result = view(
     "preview_devtools__take_screenshot",
-    { uid: "1_4" },
+    { target: "@e4" },
     {
-      content: [{ type: "text", text: "Took a screenshot." }],
+      content: [{ type: "text", text: "Screenshot taken." }],
     }
   )
-  assert.equal(row(result), "Captured element 1_4")
+  assert.equal(row(result), "Captured @e4")
   assert.deepEqual(result.bodies, [])
 })
 
@@ -433,18 +433,24 @@ test("common browser tools read as sentences", () => {
     "Read the page structure"
   )
   assert.equal(
-    row(view("preview_devtools__click", { uid: "1_23" }, { content: [] })),
-    "Clicked element 1_23"
+    row(
+      view("preview_devtools__take_snapshot", { mode: "text" }, { content: [] })
+    ),
+    "Read the page text"
+  )
+  assert.equal(
+    row(view("preview_devtools__click", { target: "@e23" }, { content: [] })),
+    "Clicked @e23"
   )
   assert.equal(
     row(
       view(
         "preview_devtools__fill",
-        { uid: "1_8", value: "hello@blame.so" },
+        { target: "#email", value: "hello@blame.so" },
         { content: [] }
       )
     ),
-    "Filled element 1_8 “hello@blame.so”"
+    "Filled #email “hello@blame.so”"
   )
   assert.equal(
     row(
@@ -470,21 +476,21 @@ test("common browser tools read as sentences", () => {
     row(
       view(
         "preview_devtools__emulate",
-        { colorScheme: "dark", viewport: "390x844x3,mobile,touch" },
+        { colorScheme: "dark", viewport: { width: 941, height: 620 } },
         { content: [] }
       )
     ),
-    "Emulated dark mode, a 390×844 mobile viewport"
+    "Emulated a 941×620 viewport, dark mode"
   )
   assert.equal(
     row(
       view(
-        "preview_devtools__resize_page",
-        { width: 941, height: 620 },
+        "preview_devtools__emulate",
+        { device: "iPhone 16", offline: true },
         { content: [] }
       )
     ),
-    "Resized the page to 941×620"
+    "Emulated iPhone 16, offline"
   )
   assert.equal(
     row(
@@ -495,7 +501,7 @@ test("common browser tools read as sentences", () => {
           content: [
             {
               type: "text",
-              text: "## Console messages\nmsgid=1 [log] ready\nmsgid=2 [error] boom",
+              text: "[log] ready\n[page error] Error: boom",
             },
           ],
         }
@@ -504,8 +510,8 @@ test("common browser tools read as sentences", () => {
     "Read console messages 1 error"
   )
   assert.equal(
-    row(view("preview_devtools__hover", { uid: "1_2" }, { content: [] })),
-    "Hover element 1_2"
+    row(view("preview_devtools__hover", { target: "@e2" }, { content: [] })),
+    "Hover @e2"
   )
 })
 

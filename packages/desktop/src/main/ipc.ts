@@ -12,7 +12,6 @@ import { installApplicationMenu } from "./application-menu";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
-import { registerPreviewDevtoolsSettingsIpcHandlers } from "./ipc/preview-devtools-settings-ipc";
 import { registerPreviewServingIpcHandlers } from "./ipc/preview-serving-ipc";
 import {
   requestDevelopmentServing,
@@ -150,9 +149,6 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerAgentScreenshotIpcHandlers({ isAppWindow: options.isAppWindow });
   registerProjectAppIpcHandlers({ isAppWindow: options.isAppWindow });
   registerGitIdentityIpcHandlers({ isAppWindow: options.isAppWindow });
-  registerPreviewDevtoolsSettingsIpcHandlers({
-    isAppWindow: options.isAppWindow,
-  });
   registerAgentGithubAccessIpcHandlers({ isAppWindow: options.isAppWindow });
   registerPreviewEnvironmentIpcHandlers({ isAppWindow: options.isAppWindow });
   registerMcpIpcHandlers();

@@ -5,12 +5,12 @@ export { previewNavigationPolicy } from "./preview-navigation-policy.ts";
 type Size = { height: number; width: number };
 
 type ElectronDebuggeeOptions = {
-  activity?(): void;
-  contentSize?(): Size;
+  // A command starts; the returned function is called once it settles.
+  activity?(): () => void;
   // An emulated viewport at scale 1, applied on attach and restored when
   // emulation is cleared. Captures then have the requested size whatever
   // screen the hidden window would be clamped to, and whatever its density.
-  viewport?: { get(): Size; set(size: Size): void };
+  viewport?(): Size;
 };
 
 // Only one proxy may drive a page's debugger at a time. A new connection
@@ -50,7 +50,7 @@ export function electronCdpDebuggee(
         if (options.viewport)
           await debuggerApi.sendCommand(
             "Emulation.setDeviceMetricsOverride",
-            baselineMetrics(options.viewport.get()),
+            baselineMetrics(options.viewport()),
           );
         return { targetId: targetInfo.targetId };
       } catch (error) {
@@ -58,9 +58,6 @@ export function electronCdpDebuggee(
         throw error;
       }
     },
-    contentSize: () =>
-      options.viewport?.get() ??
-      options.contentSize?.() ?? { height: 0, width: 0 },
     detach: release,
     onDetach(listener) {
       const detached = () => {
@@ -89,30 +86,18 @@ export function electronCdpDebuggee(
     },
     sendCommand(method, params, sessionId) {
       if (!attached) return Promise.reject(new Error("Target closed"));
-      options.activity?.();
-      if (
+      const settled = options.activity?.();
+      const result =
         method === "Emulation.clearDeviceMetricsOverride" &&
         !sessionId &&
         options.viewport
-      )
-        return debuggerApi.sendCommand(
-          "Emulation.setDeviceMetricsOverride",
-          baselineMetrics(options.viewport.get()),
-        );
-      return debuggerApi.sendCommand(method, params, sessionId);
+          ? debuggerApi.sendCommand(
+              "Emulation.setDeviceMetricsOverride",
+              baselineMetrics(options.viewport()),
+            )
+          : debuggerApi.sendCommand(method, params, sessionId);
+      return settled ? result.finally(settled) : result;
     },
-    ...(options.viewport
-      ? {
-          async setContentSize(width: number, height: number) {
-            options.viewport!.set({ height, width });
-            if (attached)
-              await debuggerApi.sendCommand(
-                "Emulation.setDeviceMetricsOverride",
-                baselineMetrics({ height, width }),
-              );
-          },
-        }
-      : {}),
     title: () => (webContents.isDestroyed() ? "" : webContents.getTitle()),
     url: () => (webContents.isDestroyed() ? "" : webContents.getURL()),
     userAgent: () =>

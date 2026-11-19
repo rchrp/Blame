@@ -96,8 +96,9 @@ export type PreviewDevtoolsTarget = {
   scope?: string;
 };
 
-// No Chromium debugging port is ever opened. Each MCP connection gets a
-// loopback proxy, guarded by a random token, that only reaches this page.
+// No Chromium debugging port is ever opened. Each agent-browser connection
+// gets a loopback proxy, guarded by a random token, that only reaches this
+// page.
 // The proxy drives the agent's own browser for the scope, never the view
 // the user is looking at.
 export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
@@ -112,13 +113,8 @@ export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
     throw new Error("The agent preview browser closed while opening.");
   const proxy = await startPreviewCdpProxy(
     electronCdpDebuggee(agent.webContents, {
-      activity: agent.touch,
-      viewport: {
-        get: () => agent.viewport,
-        set: (size) => {
-          agent.viewport = size;
-        },
-      },
+      activity: agent.use,
+      viewport: () => agent.viewport,
     }),
     previewNavigationPolicy(source.previewOrigin),
   );
@@ -126,6 +122,7 @@ export async function openPreviewDevtoolsEndpoint(input: { scope: string }) {
     ...proxy,
     pageUrl: () =>
       agent.webContents.isDestroyed() ? "" : agent.webContents.getURL(),
+    viewport: agent.viewport,
   };
 }
 

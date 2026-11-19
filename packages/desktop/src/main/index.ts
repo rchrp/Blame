@@ -39,7 +39,8 @@ import {
 } from "./desktop-live-log";
 import { checkForUpdatesOnStartup } from "./desktop-update-ipc";
 import { destroyAllPreviewBrowsers } from "./preview-browser-ipc";
-import { shutdownPreviewDevtoolsMcp } from "./preview-runtime/preview-devtools-mcp-service";
+import { configureAgentBrowserHome } from "./preview-runtime/agent-browser-cli";
+import { shutdownPreviewDevtools } from "./preview-runtime/preview-devtools-service";
 import { shutdownGithubMcp } from "./github-access/github-mcp-service";
 import { shutdownComponentPreviews } from "./component-preview/component-preview-agent";
 import { shutdownTerminalSessions } from "./terminal-ipc";
@@ -104,6 +105,7 @@ const billingDeepLink = "blame://billing/refresh";
 app.setName(appIdentity.name);
 app.setAppUserModelId(appIdentity.appId);
 app.setPath("userData", join(app.getPath("appData"), appIdentity.appId));
+configureAgentBrowserHome(join(app.getPath("userData"), "agent-browser"));
 if (protocolClientArguments.length === 0) {
   app.setAsDefaultProtocolClient("blame");
 } else {
@@ -714,7 +716,7 @@ async function cleanupApplication() {
     shutdownTerminalSessions(),
     shutdownWorkspaceProcesses(),
     shutdownAgentRuntime(),
-    shutdownPreviewDevtoolsMcp(),
+    shutdownPreviewDevtools(),
     shutdownGithubMcp(),
     shutdownComponentPreviews(),
     stopAllDevices(),

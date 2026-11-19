@@ -15,7 +15,7 @@ export const toolOutputLimits = {
   /** A browser DevTools result: a DOM snapshot, script value, trace or list. */
   previewDevtools: {
     characters: 40_000,
-    more: "Narrow the call: snapshot or inspect one element, page list results with pageIdx/pageSize, or return less from evaluate_script.",
+    more: "Narrow the call: take_snapshot with a selector, list_network_requests with a filter, or return less from evaluate_script.",
   },
   /** A terminal, display or device surface result. */
   previewSurface: {

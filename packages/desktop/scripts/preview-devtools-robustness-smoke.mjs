@@ -4,7 +4,8 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { app, BrowserWindow, nativeImage } from "electron";
-import { PreviewDevtoolsMcpService } from "../src/main/preview-runtime/preview-devtools-mcp-service.ts";
+import { configureAgentBrowserHome } from "../src/main/preview-runtime/agent-browser-cli.ts";
+import { PreviewDevtoolsService } from "../src/main/preview-runtime/preview-devtools-service.ts";
 import { electronCdpDebuggee } from "../src/main/preview-browser/electron-cdp-debuggee.ts";
 import { previewNavigationPolicy } from "../src/main/preview-browser/preview-navigation-policy.ts";
 import { startPreviewCdpProxy } from "../src/main/preview-browser/preview-cdp-proxy.ts";
@@ -17,7 +18,7 @@ import {
 } from "../src/main/preview-browser/agent-preview-browser.ts";
 
 // What goes wrong in a long agent run, against the real Electron browser and
-// chrome-devtools-mcp: a tool stuck past its timeout, a long wait, a
+// agent-browser: a tool stuck past its timeout, a long wait, a
 // renderer crash in the middle of a call, the dev server restarting, and a
 // long chain of calls. Each time the next call must work, with the page,
 // viewport and emulation the agent had set.
@@ -25,9 +26,10 @@ import {
 const artifacts = await mkdtemp(join(tmpdir(), "blame-preview-robustness-"));
 app.setPath("userData", join(artifacts, "electron"));
 app.disableHardwareAcceleration();
+configureAgentBrowserHome(join(artifacts, "agent-browser"));
 const partition = "persist:blame-preview-robustness";
 const scope = "robustness";
-const service = new PreviewDevtoolsMcpService();
+const service = new PreviewDevtoolsService();
 const fixture = await readFile(
   new URL("./fixtures/preview-devtools.html", import.meta.url),
 );
@@ -59,13 +61,8 @@ const input = {
     });
     const proxy = await startPreviewCdpProxy(
       electronCdpDebuggee(agent.webContents, {
-        activity: agent.touch,
-        viewport: {
-          get: () => agent.viewport,
-          set: (size) => {
-            agent.viewport = size;
-          },
-        },
+        activity: agent.use,
+        viewport: () => agent.viewport,
       }),
       previewNavigationPolicy(previewOrigin),
     );
@@ -111,37 +108,54 @@ async function run() {
 }
 
 async function setUp() {
-  assertToolSuccess(await call("resize_page", { width: 941, height: 620 }));
-  assertToolSuccess(await call("emulate", { colorScheme: "dark" }));
+  assertToolSuccess(
+    await call("emulate", {
+      colorScheme: "dark",
+      viewport: { width: 941, height: 620 },
+    }),
+  );
   assertToolSuccess(
     await call("navigate_page", { type: "url", url: "/second" }),
   );
   await expectAgentState("after setup");
 }
 
-// evaluate_script has no timeout of its own: the service cuts it at 15 s,
-// while chrome-devtools-mcp keeps waiting for it and holds its tool lock.
+// A page script that never settles: agent-browser gives up at its own
+// limit (10 s), or the service cuts it at 15 s and resets the connection.
+// Either way the next call must not queue behind it.
 async function stuckTool() {
   const started = Date.now();
-  await assert.rejects(
-    call("evaluate_script", {
-      function: "() => new Promise((resolve) => setTimeout(resolve, 60000))",
-    }),
-    /evaluate_script did not finish within 15 s\. The browser connection was reset/u,
+  const stuck = await call("evaluate_script", {
+    expression: "new Promise((resolve) => setTimeout(resolve, 60000))",
+  }).then(
+    (result) => ({ result }),
+    (error) => ({ error: error.message }),
   );
   const cut = Date.now() - started;
+  if (stuck.error)
+    assert.match(
+      stuck.error,
+      /evaluate_script did not finish within 15 s\. The browser connection was reset/u,
+    );
+  else assert.equal(stuck.result.isError, true, textContent(stuck.result));
+  assert.ok(cut < 16_000, `stuck call took ${cut} ms`);
   const next = Date.now();
-  const snapshot = await call("take_snapshot");
+  const snapshot = await call("take_snapshot", { mode: "text" });
   const recovered = Date.now() - next;
-  assert.match(
-    textContent(snapshot),
-    /reconnected after the previous call ran out of time.*Restored: viewport 941×620, emulation \(dark color scheme\)/u,
-  );
+  if (stuck.error)
+    assert.match(
+      textContent(snapshot),
+      /reconnected after the previous call ran out of time.*Restored: emulation \(viewport 941×620, dark color scheme\)/u,
+    );
   assert.match(textContent(snapshot), /Second page/u);
   // Without the reset, this call would queue behind the stuck one.
   assert.ok(recovered < 10_000, `next call took ${recovered} ms`);
   await expectAgentState("after the reset");
-  return { cutAfterMs: cut, nextCallMs: recovered };
+  return {
+    cutAfterMs: cut,
+    endedBy: stuck.error ? "service reset" : "agent-browser timeout",
+    nextCallMs: recovered,
+  };
 }
 
 // A wait the agent asked for: the browser gives up at 30 s, before the
@@ -149,7 +163,7 @@ async function stuckTool() {
 async function longWait() {
   const started = Date.now();
   const result = await call("wait_for", {
-    text: ["This text never appears"],
+    text: "This text never appears",
     timeout: 30_000,
   }).catch((error) => ({ thrown: error.message }));
   const waited = Date.now() - started;
@@ -167,7 +181,7 @@ async function longWait() {
 async function rendererCrash() {
   const agent = agentPreviewBrowser(scope);
   const running = call("evaluate_script", {
-    function: "() => new Promise((resolve) => setTimeout(resolve, 8000))",
+    expression: "new Promise((resolve) => setTimeout(resolve, 8000))",
   }).then(
     (value) => ({ value }),
     (error) => ({ error: error.message }),
@@ -181,7 +195,7 @@ async function rendererCrash() {
   assert.notEqual(agentPreviewBrowser(scope)?.id, agent.id, "a new browser");
   assert.match(
     textContent(snapshot),
-    /reconnected because the preview browser closed.*Restored: viewport 941×620, emulation \(dark color scheme\), page \/second/u,
+    /reconnected because the preview browser closed.*Restored: emulation \(viewport 941×620, dark color scheme\), page \/second/u,
   );
   await expectAgentState("after the crash");
   return {
@@ -201,7 +215,10 @@ async function devServerRestart() {
   assertToolSuccess(
     await call("navigate_page", { type: "url", url: "/second" }),
   );
-  assert.match(textContent(await call("take_snapshot")), /Second page/u);
+  assert.match(
+    textContent(await call("take_snapshot", { mode: "text" })),
+    /Second page/u,
+  );
   await expectAgentState("after the restart");
   return {
     whileDown: down.thrown ?? textContent(down).slice(0, 120),
@@ -219,12 +236,8 @@ async function chainedCalls() {
     ][index % 4];
     const args =
       toolName === "evaluate_script"
-        ? {
-            function: `() => { console.log("step ${index}"); return ${index}; }`,
-          }
-        : toolName === "take_screenshot"
-          ? { format: "png" }
-          : {};
+        ? { expression: `console.log("step ${index}"), ${index}` }
+        : {};
     const started = Date.now();
     const result = await call(toolName, args);
     durations.push(Date.now() - started);
@@ -253,7 +266,7 @@ async function runHold() {
 async function expectAgentState(label) {
   const agent = agentPreviewBrowser(scope);
   assert.equal(new URL(agent.webContents.getURL()).pathname, "/second", label);
-  const shot = await call("take_screenshot", { format: "png" });
+  const shot = await call("take_screenshot");
   const block = shot.content.find((entry) => entry.type === "image");
   assert.ok(block?.data, `${label}: ${textContent(shot)}`);
   const image = nativeImage.createFromBuffer(Buffer.from(block.data, "base64"));

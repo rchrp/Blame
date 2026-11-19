@@ -815,9 +815,6 @@ importers:
       '@xterm/headless':
         specifier: 6.0.0
         version: 6.0.0
-      chrome-devtools-mcp:
-        specifier: 1.12.0
-        version: 1.12.0
       cross-spawn:
         specifier: 7.0.6
         version: 7.0.6
@@ -939,6 +936,22 @@ importers:
       zone.js:
         specifier: 0.16.3
         version: 0.16.3
+    optionalDependencies:
+      '@agent-browser/cli-darwin-arm64':
+        specifier: 0.43.0
+        version: 0.43.0
+      '@agent-browser/cli-darwin-x64':
+        specifier: 0.43.0
+        version: 0.43.0
+      '@agent-browser/cli-linux-arm64-gnu':
+        specifier: 0.43.0
+        version: 0.43.0
+      '@agent-browser/cli-linux-x64-gnu':
+        specifier: 0.43.0
+        version: 0.43.0
+      '@agent-browser/cli-win32-x64-msvc':
+        specifier: 0.43.0
+        version: 0.43.0
 
   packages/harness-core:
     devDependencies:
@@ -1443,6 +1456,33 @@ packages:
 
   '@adonisjs/tsconfig@2.0.0':
     resolution: {integrity: sha512-Uz8qvB6KR9otCh9zei2VEj7tPwdsrT7R+voYoN4tUfEijWRdTNgJ8d1CtyLKHaggCCOwZIwZLVklV/h2FDHgNw==}
+
+  '@agent-browser/cli-darwin-arm64@0.43.0':
+    resolution: {integrity: sha512-HV6GP59IjNnowlrXR/5rVM8msPWwQDEONt/tWC8STzUfKZQHKZI/Iv9sf2h2ZhwK8xwoqLhxpf+KxcFgJ0sExQ==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@agent-browser/cli-darwin-x64@0.43.0':
+    resolution: {integrity: sha512-3NKnKFOWLYDYTz4bJxo4jt+GwjM4VtcW5FDrQY35eUrytig65FEDdXmXKuRbZGq9jEEWxh6rmpS4R6xS53XCaw==}
+    cpu: [x64]
+    os: [darwin]
+
+  '@agent-browser/cli-linux-arm64-gnu@0.43.0':
+    resolution: {integrity: sha512-8DC234LGlXCn8A2YXGk6woy1uTjyexvtHd/TOQHLrV2sfUMZD647HTHEJyF+2z1J1oR34LaB5jqHJ9d0REC+Cw==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@agent-browser/cli-linux-x64-gnu@0.43.0':
+    resolution: {integrity: sha512-WY8vy2Saa3oRt6XEmz4Sae1W5qS9TjYcbX6IE+dxb8s2APfL9XyQjMHC6jBZrhwqDBIvUeTMCT/P2cq3XLPSBw==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@agent-browser/cli-win32-x64-msvc@0.43.0':
+    resolution: {integrity: sha512-xhk8wnHk3aiBFSR0pd1Ye3ay2jKjgRardgBJLiB9nXJv0ZkbeP/wh3X7jMiKUfUGE1qqJrKdaM5szQ6iz8/8+w==}
+    cpu: [x64, arm64]
+    os: [win32]
 
   '@ai-sdk/amazon-bedrock@5.0.119':
     resolution: {integrity: sha512-puD4BskLsQdPICawt2dhxfd5+WGCPU7PvwxLK0Z8ZFfydyqqj40wKo7C0YvKyoHaseZxxWdU+vJKdxGH61E2oQ==}
@@ -7479,19 +7519,6 @@ packages:
   chownr@3.0.0:
     resolution: {integrity: sha512-+IxzY9BZOQd/XuYPRmrvEVjF/nqj5kgT4kEq7VofrDoM1MxoRjEWkrCC3EtLi59TVawxTAn+orJwFQcrqEN1+g==}
     engines: {node: '>=18'}
-
-  chrome-devtools-mcp@1.12.0:
-    resolution: {integrity: sha512-lAGpH0zXT1ZdaPefP1KK/MvxwihOlu7VGQ7p4wbhD9OhN17vUC4KWk/ImUYR9DE4s+7r4r0ySV4xr2OkTa7ZMA==}
-    engines: {node: ^20.19.0 || ^22.12.0 || >=23}
-    hasBin: true
-    peerDependencies:
-      '@blackwell-systems/gcf': ^2.2.2
-      '@toon-format/toon': ^4.1.0
-    peerDependenciesMeta:
-      '@blackwell-systems/gcf':
-        optional: true
-      '@toon-format/toon':
-        optional: true
 
   chromium-pickle-js@0.2.0:
     resolution: {integrity: sha512-1R5Fho+jBq0DDydt+/vHWj5KJNJCKdARKOCwZUen84I5BreWoLqRLANH1U87eJy1tiASPtMnGqJJq0ZsLoRPOw==}
@@ -13551,6 +13578,21 @@ snapshots:
       '@japa/plugin-adonisjs': 5.2.0(@adonisjs/core@7.6.0(@adonisjs/assembler@8.6.0(@typescript/typescript6@6.0.2))(@vinejs/vine@4.4.0)(pino-pretty@13.2.0)(supports-color@10.2.2)(youch@4.1.1))(@japa/api-client@3.2.1(@japa/assert@4.2.0(@japa/runner@5.4.0))(@japa/runner@5.4.0)(supports-color@10.2.2))(@japa/runner@5.4.0)
 
   '@adonisjs/tsconfig@2.0.0': {}
+
+  '@agent-browser/cli-darwin-arm64@0.43.0':
+    optional: true
+
+  '@agent-browser/cli-darwin-x64@0.43.0':
+    optional: true
+
+  '@agent-browser/cli-linux-arm64-gnu@0.43.0':
+    optional: true
+
+  '@agent-browser/cli-linux-x64-gnu@0.43.0':
+    optional: true
+
+  '@agent-browser/cli-win32-x64-msvc@0.43.0':
+    optional: true
 
   '@ai-sdk/amazon-bedrock@5.0.119(zod@4.6.7)':
     dependencies:
@@ -19755,8 +19797,6 @@ snapshots:
       readdirp: 5.1.1
 
   chownr@3.0.0: {}
-
-  chrome-devtools-mcp@1.12.0: {}
 
   chromium-pickle-js@0.2.0: {}
 

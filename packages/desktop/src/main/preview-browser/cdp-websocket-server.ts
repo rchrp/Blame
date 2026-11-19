@@ -23,12 +23,10 @@ export type CdpSocketHandlers = {
 
 export type CdpWebSocketServerOptions = {
   connect(socket: CdpSocket): CdpSocketHandlers;
-  json(path: "list" | "version"): unknown;
 };
 
 export type CdpWebSocketServer = {
   close(): Promise<void>;
-  httpUrl: string;
   port: number;
   token: string;
   wsEndpoint: string;
@@ -43,9 +41,11 @@ export async function startCdpWebSocketServer(
   const token = randomBytes(32).toString("hex");
   const sockets = new Set<Socket>();
   let connected = false;
-  const server = createServer((request, response) =>
-    handleHttp(request, response, token, server, options),
-  );
+  // The client connects straight to the WebSocket: no HTTP discovery.
+  const server = createServer((_request, response) => {
+    response.writeHead(404, { "Content-Type": "text/plain" });
+    response.end("Not found");
+  });
   server.on("connection", (socket) => {
     sockets.add(socket);
     socket.once("close", () => sockets.delete(socket));
@@ -68,46 +68,10 @@ export async function startCdpWebSocketServer(
   const { port } = server.address() as AddressInfo;
   return {
     close: () => closeServer(server, sockets),
-    httpUrl: `http://127.0.0.1:${port}/${token}`,
     port,
     token,
     wsEndpoint: `ws://127.0.0.1:${port}/devtools/browser/${token}`,
   };
-}
-
-function handleHttp(
-  request: IncomingMessage,
-  response: ServerResponse,
-  token: string,
-  server: Server,
-  options: CdpWebSocketServerOptions,
-) {
-  const path = requestPath(request);
-  const prefix = `/${token}/json`;
-  if (
-    request.method !== "GET" ||
-    !trustedRequest(request, server) ||
-    !path ||
-    !tokenPrefixMatches(path, prefix)
-  ) {
-    response.writeHead(404, { "Content-Type": "text/plain" });
-    response.end("Not found");
-    return;
-  }
-  const rest = path.slice(prefix.length);
-  const kind =
-    rest === "" || rest === "/" || rest === "/list"
-      ? "list"
-      : rest === "/version"
-        ? "version"
-        : undefined;
-  if (!kind) {
-    response.writeHead(404, { "Content-Type": "text/plain" });
-    response.end("Not found");
-    return;
-  }
-  response.writeHead(200, { "Content-Type": "application/json" });
-  response.end(JSON.stringify(options.json(kind)));
 }
 
 function authorizedUpgrade(
@@ -143,10 +107,6 @@ function requestPath(request: IncomingMessage) {
   } catch {
     return undefined;
   }
-}
-
-function tokenPrefixMatches(path: string, prefix: string) {
-  return sameSecret(path.slice(0, prefix.length), prefix);
 }
 
 function sameSecret(left: string, right: string) {

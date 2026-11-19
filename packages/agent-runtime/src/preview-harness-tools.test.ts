@@ -107,13 +107,11 @@ test("unexpected preview implementation errors remain errors", async (context) =
 test("each browser tool waits longer than the desktop service does", async (context) => {
   const workspace = await mkdtemp(join(tmpdir(), "blame-preview-timeouts-"));
   context.after(() => rm(workspace, { recursive: true, force: true }));
-  const listed: unknown[] = [];
   const options = await readyPreviewOptions(workspace, () => {
     throw new Error("not called");
   });
-  options.previewDevtoolsTools = (input) => {
-    listed.push(input);
-    return ["click", "lighthouse_audit"].map((name) => ({
+  options.previewDevtoolsTools = () => {
+    return ["click", "wait_for"].map((name) => ({
       name,
       inputSchema: { type: "object", properties: {} },
     }));
@@ -126,9 +124,9 @@ test("each browser tool waits longer than the desktop service does", async (cont
   const timeouts = Object.fromEntries(
     tools.map((tool) => [tool.name, tool.timeoutMs]),
   );
-  // The service may stretch a call up to its ceiling (slow emulation, a
-  // long wait asked by the agent); the agent always waits past it.
-  for (const name of ["click", "lighthouse_audit"]) {
+  // The service may stretch a call up to its ceiling (a long wait asked by
+  // the agent); the agent always waits past it.
+  for (const name of ["click", "wait_for"]) {
     assert.ok(
       timeouts[`preview_devtools__${name}`]! > previewDevtoolsMaxTimeoutMs,
     );
@@ -136,12 +134,9 @@ test("each browser tool waits longer than the desktop service does", async (cont
       timeouts[`preview_devtools__${name}`]! >
         previewDevtoolsToolTimeoutMs(name, {
           arguments: { timeout: 10_000_000 },
-          slowdown: { cpuThrottlingRate: 20, networkConditions: "Slow 3G" },
         }),
     );
   }
-  // The project decides whether advanced tools are listed.
-  assert.equal((listed[0] as { projectId?: string }).projectId, "project-1");
 });
 
 async function readyPreviewOptions(
@@ -235,7 +230,7 @@ test("a long DevTools result is cut to its own limit, with a way to narrow it", 
   });
   const snapshot = Array.from(
     { length: 5_000 },
-    (_, index) => `uid=${index} button "Item ${index}"`,
+    (_, index) => `- button "Item ${index}" [ref=e${index}]`,
   ).join("\n");
   options.previewDevtoolsCall = () => ({
     content: [{ type: "text", text: snapshot }],
@@ -251,7 +246,7 @@ test("a long DevTools result is cut to its own limit, with a way to narrow it", 
   } as never)) as { content: Array<{ type: string; text: string }> };
   const text = result.content.map((part) => part.text).join("\n");
   assert.ok(text.length < 41_000);
-  assert.ok(text.startsWith('uid=0 button "Item 0"'));
+  assert.ok(text.startsWith('- button "Item 0" [ref=e0]'));
   assert.match(text, /\[Cut to 40000 characters: .* Narrow the call/u);
 });
 

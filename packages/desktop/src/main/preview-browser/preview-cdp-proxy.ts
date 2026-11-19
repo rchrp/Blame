@@ -5,9 +5,11 @@ import {
   type CdpWebSocketServer,
 } from "./cdp-websocket-server.ts";
 
-// Presents one preview page to chrome-devtools-mcp as if it were a whole
-// browser. Browser-level CDP is answered here; page commands go to the
-// page's own debugger, without opening any Chromium debugging port.
+// Presents one preview page to agent-browser as a browser with a single
+// page. Browser-level CDP is answered here; page commands go to the page's
+// own debugger, without opening any Chromium debugging port. The client can
+// attach to that page and its frames only: it cannot open, create or close
+// targets, and navigation stays on the preview.
 
 export type CdpDebuggee = {
   attach(): Promise<{ targetId: string }>;
@@ -21,8 +23,6 @@ export type CdpDebuggee = {
     params: Record<string, unknown> | undefined,
     sessionId?: string,
   ): Promise<unknown>;
-  contentSize(): { height: number; width: number };
-  setContentSize?(width: number, height: number): Promise<void> | void;
   title(): string;
   url(): string;
   userAgent(): string;
@@ -36,7 +36,6 @@ export type CdpProxyPolicy = {
 export type PreviewCdpProxy = {
   close(): Promise<void>;
   closed: Promise<void>;
-  httpUrl: string;
   wsEndpoint: string;
 };
 
@@ -49,7 +48,6 @@ type ClientMessage = {
 
 type Reply = { error: string } | { result: unknown };
 
-const windowId = 1;
 const browserContextId = sessionToken();
 
 export class CdpProxyError extends Error {}
@@ -63,7 +61,6 @@ export async function startPreviewCdpProxy(
   let closing: Promise<void> | undefined;
   let resolveClosed!: () => void;
   const closed = new Promise<void>((resolve) => (resolveClosed = resolve));
-  let wsEndpoint = "";
   const server: CdpWebSocketServer = await startCdpWebSocketServer({
     connect: (socket) => {
       state.connect(socket);
@@ -72,12 +69,10 @@ export async function startPreviewCdpProxy(
         message: (text) => void state.receive(text),
       };
     },
-    json: (kind) => state.json(kind, wsEndpoint),
   }).catch((error) => {
     debuggee.detach();
     throw error;
   });
-  wsEndpoint = server.wsEndpoint;
   const stopDetach = debuggee.onDetach(() => {
     state.targetGone();
     void close();
@@ -91,24 +86,15 @@ export async function startPreviewCdpProxy(
     })();
     return closing;
   }
-  return {
-    close,
-    closed,
-    httpUrl: server.httpUrl,
-    wsEndpoint: server.wsEndpoint,
-  };
+  return { close, closed, wsEndpoint: server.wsEndpoint };
 }
 
 class ProxyState {
-  private readonly aliases = new Set<string>();
+  // Sessions the client opened on the page, and on its frames and workers.
+  private readonly pageSessions = new Set<string>();
   private readonly children = new Set<string>();
-  private readonly pageSession = sessionToken();
-  private readonly tabSession = sessionToken();
-  private readonly tabId = sessionToken();
-  private pageAttached = false;
   private socket?: CdpSocket;
   private stopMessages?: () => void;
-  private tabAttached = false;
   private url: string;
 
   private readonly debuggee: CdpDebuggee;
@@ -138,28 +124,13 @@ class ProxyState {
   }
 
   targetGone() {
-    if (this.pageAttached)
-      this.emit(
-        "Target.detachedFromTarget",
-        { sessionId: this.pageSession, targetId: this.targetId },
-        this.tabSession,
-      );
+    this.pageSessions.forEach((sessionId) =>
+      this.emit("Target.detachedFromTarget", {
+        sessionId,
+        targetId: this.targetId,
+      }),
+    );
     this.emit("Target.targetDestroyed", { targetId: this.targetId });
-    this.emit("Target.targetDestroyed", { targetId: this.tabId });
-  }
-
-  json(kind: "list" | "version", wsEndpoint: string) {
-    if (kind === "version")
-      return { ...this.version(), webSocketDebuggerUrl: wsEndpoint };
-    return [
-      {
-        description: "",
-        id: this.targetId,
-        title: this.debuggee.title(),
-        type: "page",
-        url: this.url,
-      },
-    ];
   }
 
   async receive(text: string) {
@@ -171,9 +142,9 @@ class ProxyState {
     }
     if (typeof message?.id !== "number" || typeof message.method !== "string")
       return;
-    const reply = await this.dispatch(message).catch(
-      (error): Reply => ({ error: errorMessage(error) }),
-    );
+    const reply = await this.dispatch(message).catch((error): Reply => ({
+      error: errorMessage(error),
+    }));
     this.send({
       id: message.id,
       ...("error" in reply
@@ -186,12 +157,8 @@ class ProxyState {
   private async dispatch(message: ClientMessage): Promise<Reply> {
     const params = message.params ?? {};
     if (!message.sessionId) return this.browserCommand(message.method, params);
-    if (message.sessionId === this.tabSession)
-      return this.tabCommand(message.method);
-    if (message.sessionId === this.pageSession)
-      return this.pageCommand(message.method, params, "primary");
-    if (this.aliases.has(message.sessionId))
-      return this.pageCommand(message.method, params, "alias");
+    if (this.pageSessions.has(message.sessionId))
+      return this.pageCommand(message.method, params);
     if (this.children.has(message.sessionId))
       return this.childCommand(message.method, params, message.sessionId);
     return { error: `Session with given id not found: ${message.sessionId}` };
@@ -200,81 +167,43 @@ class ProxyState {
   private browserCommand(
     method: string,
     params: Record<string, unknown>,
-  ): Reply | Promise<Reply> {
+  ): Reply {
     switch (method) {
       case "Browser.getVersion":
         return { result: this.version() };
-      case "Target.getBrowserContexts":
-        return { result: { browserContextIds: [] } };
       case "Target.setDiscoverTargets":
-        if (params.discover === true) {
-          this.emit("Target.targetCreated", { targetInfo: this.tabInfo() });
+        if (params.discover === true)
           this.emit("Target.targetCreated", { targetInfo: this.pageInfo() });
-        }
-        return { result: {} };
-      case "Target.setAutoAttach":
-        if (params.autoAttach === true && !this.tabAttached) {
-          this.tabAttached = true;
-          this.emit("Target.attachedToTarget", {
-            sessionId: this.tabSession,
-            targetInfo: this.tabInfo(),
-            waitingForDebugger: false,
-          });
-        }
         return { result: {} };
       case "Target.getTargets":
-        return { result: { targetInfos: [this.tabInfo(), this.pageInfo()] } };
+        return { result: { targetInfos: [this.pageInfo()] } };
       case "Target.getTargetInfo":
-        return this.targetInfo(params.targetId);
+        return params.targetId === undefined ||
+          params.targetId === this.targetId
+          ? { result: { targetInfo: this.pageInfo() } }
+          : { error: "No target with given id found" };
       case "Target.activateTarget":
-        return this.knownTarget(params.targetId)
+        return params.targetId === this.targetId
           ? { result: {} }
           : notAllowed(method);
       case "Target.attachToTarget":
-        return this.attachAlias(params);
+        return this.attachPage(params);
       case "Target.detachFromTarget":
-        return this.detachAlias(params);
+        return this.detachPage(params);
       default:
-        return this.windowCommand(method, params) ?? notAllowed(method);
+        return notAllowed(method);
     }
-  }
-
-  private tabCommand(method: string): Reply {
-    if (method === "Target.setAutoAttach") {
-      if (!this.pageAttached) {
-        this.pageAttached = true;
-        this.emit(
-          "Target.attachedToTarget",
-          {
-            sessionId: this.pageSession,
-            targetInfo: this.pageInfo(),
-            waitingForDebugger: false,
-          },
-          this.tabSession,
-        );
-      }
-      return { result: {} };
-    }
-    if (method === "Runtime.runIfWaitingForDebugger") return { result: {} };
-    if (method === "Target.getTargetInfo")
-      return { result: { targetInfo: this.tabInfo() } };
-    return notAllowed(method);
   }
 
   private async pageCommand(
     method: string,
     params: Record<string, unknown>,
-    kind: "alias" | "primary",
   ): Promise<Reply> {
-    if (method === "Target.setAutoAttach" && kind === "alias")
-      return { result: {} };
-    if (kind === "alias" && method.endsWith(".disable")) return { result: {} };
     if (method === "Target.getTargetInfo")
       return { result: { targetInfo: this.pageInfo() } };
-    if (method === "Target.activateTarget") return { result: {} };
-    if (method.startsWith("Browser."))
-      return this.windowCommand(method, params) ?? notAllowed(method);
-    if (method === "Page.close") return notAllowed(method);
+    if (method === "Browser.getVersion") return { result: this.version() };
+    if (method.startsWith("Browser.") || method === "Page.close")
+      return notAllowed(method);
     return this.forward(method, params, undefined);
   }
 
@@ -322,39 +251,7 @@ class ProxyState {
     this.assertNavigation(entry?.url);
   }
 
-  private windowCommand(
-    method: string,
-    params: Record<string, unknown>,
-  ): Reply | Promise<Reply> | undefined {
-    if (method === "Browser.getVersion") return { result: this.version() };
-    if (method === "Browser.getWindowForTarget") {
-      if (params.targetId !== undefined && !this.knownTarget(params.targetId))
-        return { error: "No target with given id found" };
-      return { result: { bounds: this.bounds(), windowId } };
-    }
-    if (method === "Browser.getWindowBounds")
-      return { result: { bounds: this.bounds() } };
-    if (method === "Browser.setContentsSize")
-      return this.resize(params.width, params.height);
-    if (method === "Browser.setWindowBounds") {
-      const bounds = recordValue(params.bounds);
-      return this.resize(bounds.width, bounds.height);
-    }
-    return undefined;
-  }
-
-  private async resize(width: unknown, height: unknown): Promise<Reply> {
-    if (!this.debuggee.setContentSize)
-      return { error: "Resizing is not available for this preview." };
-    const current = this.debuggee.contentSize();
-    await this.debuggee.setContentSize(
-      dimension(width, current.width),
-      dimension(height, current.height),
-    );
-    return { result: {} };
-  }
-
-  private attachAlias(params: Record<string, unknown>): Reply {
+  private attachPage(params: Record<string, unknown>): Reply {
     if (params.targetId !== this.targetId)
       return {
         error: "Blame preview DevTools only exposes the scoped preview page.",
@@ -362,7 +259,7 @@ class ProxyState {
     if (params.flatten !== true)
       return { error: "Only flattened sessions are supported." };
     const sessionId = sessionToken();
-    this.aliases.add(sessionId);
+    this.pageSessions.add(sessionId);
     this.emit("Target.attachedToTarget", {
       sessionId,
       targetInfo: this.pageInfo(),
@@ -371,11 +268,11 @@ class ProxyState {
     return { result: { sessionId } };
   }
 
-  private detachAlias(params: Record<string, unknown>): Reply {
+  private detachPage(params: Record<string, unknown>): Reply {
     const sessionId = params.sessionId;
-    if (typeof sessionId !== "string" || !this.aliases.has(sessionId))
+    if (typeof sessionId !== "string" || !this.pageSessions.has(sessionId))
       return notAllowed("Target.detachFromTarget");
-    this.aliases.delete(sessionId);
+    this.pageSessions.delete(sessionId);
     this.emit("Target.detachedFromTarget", {
       sessionId,
       targetId: this.targetId,
@@ -383,6 +280,8 @@ class ProxyState {
     return { result: {} };
   }
 
+  // The page's events go to every session the client opened on it; a
+  // frame's or worker's go to its own session.
   private relay(method: string, params: unknown, sessionId?: string) {
     if (sessionId) {
       if (!this.children.has(sessionId)) return;
@@ -391,10 +290,7 @@ class ProxyState {
       return;
     }
     this.trackChildren(method, params);
-    if (!this.pageAttached) return;
-    this.emit(method, params, this.pageSession);
-    if (!method.startsWith("Target."))
-      this.aliases.forEach((alias) => this.emit(method, params, alias));
+    this.pageSessions.forEach((session) => this.emit(method, params, session));
     this.trackNavigation(method, params);
   }
 
@@ -414,46 +310,20 @@ class ProxyState {
     } else if (method === "Page.navigatedWithinDocument") {
       if (typeof value.url !== "string") return;
       this.url = value.url;
-    } else if (method !== "Page.loadEventFired") return;
+    } else return;
     this.emit("Target.targetInfoChanged", { targetInfo: this.pageInfo() });
-    this.emit("Target.targetInfoChanged", { targetInfo: this.tabInfo() });
-  }
-
-  private targetInfo(targetId: unknown): Reply {
-    if (targetId === undefined || targetId === this.targetId)
-      return { result: { targetInfo: this.pageInfo() } };
-    if (targetId === this.tabId)
-      return { result: { targetInfo: this.tabInfo() } };
-    return { error: "No target with given id found" };
-  }
-
-  private knownTarget(targetId: unknown) {
-    return targetId === this.targetId || targetId === this.tabId;
   }
 
   private pageInfo() {
-    return this.info(this.targetId, "page", this.pageAttached);
-  }
-
-  private tabInfo() {
-    return this.info(this.tabId, "tab", this.tabAttached);
-  }
-
-  private info(targetId: string, type: string, attached: boolean) {
     return {
-      attached,
+      attached: this.pageSessions.size > 0,
       browserContextId,
       canAccessOpener: false,
-      targetId,
+      targetId: this.targetId,
       title: this.debuggee.title(),
-      type,
+      type: "page",
       url: this.url,
     };
-  }
-
-  private bounds() {
-    const { height, width } = this.debuggee.contentSize();
-    return { height, left: 0, top: 0, width, windowState: "normal" };
   }
 
   private version() {
@@ -492,11 +362,6 @@ function notAllowed(method: string): Reply {
   return {
     error: `${method} is not allowed in Blame preview DevTools.`,
   };
-}
-
-function dimension(value: unknown, fallback: number) {
-  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
-  return Math.min(Math.max(Math.round(value), 200), 4_096);
 }
 
 function recordValue(value: unknown): Record<string, unknown> {
