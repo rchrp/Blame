@@ -99,12 +99,19 @@ class CompilerService {
   // Stops the request the worker is answering.
   private stopCurrent?: () => void;
 
+  private readonly root: string;
+  private readonly idleMs: number;
+  private readonly onIdle: () => void;
+
   constructor(
-    private readonly root: string,
-    private readonly idleMs: number,
+    root: string,
+    idleMs: number,
     ready: Promise<void> | undefined,
-    private readonly onIdle: () => void,
+    onIdle: () => void,
   ) {
+    this.root = root;
+    this.idleMs = idleMs;
+    this.onIdle = onIdle;
     this.tail = ready ?? Promise.resolve();
   }
 
