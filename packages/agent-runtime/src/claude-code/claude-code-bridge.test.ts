@@ -336,6 +336,14 @@ test("other workers reach the bridge one worker hosts and close its sessions", a
   });
 });
 
+test("a worker starting the bridge at the same time as another joins it", async () => {
+  await withBridge(async (host, stateDirectory) => {
+    const late = await ClaudeCodeBridge.start({ stateDirectory });
+    assert.equal(late.hosting, false);
+    assert.equal(late.baseUrl("127.0.0.1"), host.baseUrl("127.0.0.1"));
+  });
+});
+
 test("closes an idle conversation that a newer one of its session replaces", async () => {
   await withBridge(async (bridge) => {
     const key = bridge.token("session-superseded");
