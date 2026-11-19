@@ -82,8 +82,7 @@ const ambilightPatches: {
   },
 ]
 
-// Paused, the glow stays but stops drifting: each frame of the drift
-// redraws eight large blurs.
+// Paused, the glow stays but stops drifting.
 export function PreviewAmbilightCloud({
   ambilight,
   paused,
@@ -91,13 +90,15 @@ export function PreviewAmbilightCloud({
   ambilight?: PreviewAmbilight
   paused?: boolean
 }) {
+  const cloudRef = React.useRef<HTMLDivElement>(null)
+  useAmbilightDrift(cloudRef, Boolean(ambilight) && !paused)
   return (
     <div
+      ref={cloudRef}
       aria-hidden="true"
       className={cn(
         "pointer-events-none absolute inset-0 transition-opacity duration-1000",
-        ambilight ? "opacity-60 dark:opacity-85" : "opacity-0",
-        paused && "preview-ambilight-paused"
+        ambilight ? "opacity-60 dark:opacity-85" : "opacity-0"
       )}
     >
       {ambilight
@@ -125,6 +126,41 @@ export function PreviewAmbilightCloud({
         : null}
     </div>
   )
+}
+
+// Each frame of the drift redraws the drawer around the page and every blur
+// over it. At the display's rate that is up to 120 a second for a glow that
+// moves a few pixels a second under a 56px blur: 30 steps a second move it
+// by under one level of color each, on the same path. The drift's CSS
+// animations stay paused; this moves them on.
+const ambilightDriftStepMs = 1_000 / 30
+
+function useAmbilightDrift(
+  cloudRef: React.RefObject<HTMLDivElement | null>,
+  running: boolean
+) {
+  React.useEffect(() => {
+    const cloud = cloudRef.current
+    if (!cloud || !running) return
+    // None when motion is reduced: the patches stay still.
+    const drifts = cloud
+      .getAnimations({ subtree: true })
+      .filter(
+        (animation) =>
+          animation instanceof CSSAnimation &&
+          animation.animationName === "preview-ambilight-drift"
+      )
+    if (!drifts.length) return
+    let last = performance.now()
+    const timer = window.setInterval(() => {
+      const now = performance.now()
+      for (const drift of drifts) {
+        drift.currentTime = Number(drift.currentTime ?? 0) + (now - last)
+      }
+      last = now
+    }, ambilightDriftStepMs)
+    return () => window.clearInterval(timer)
+  }, [cloudRef, running])
 }
 
 // The frame's own depth, under the colored cloud.
