@@ -7,6 +7,7 @@ import {
   parseLsofProcess,
   parseWindowsProcess,
   previewPort,
+  unixListeningProcess,
 } from "./local-port-owner.ts";
 
 test("a process running in the project folder is the project's app", () => {
@@ -160,6 +161,26 @@ test("a busy port reports its owner, and an unreadable one stays unknown", async
     },
   );
   assert.deepEqual(unreadable, { status: "busy", owner: "unknown" });
+});
+
+test("looks up the folder of a listening process once", async () => {
+  const calls: string[][] = [];
+  const run = async (_command: string, args: string[]) => {
+    calls.push(args);
+    return {
+      stdout: args.includes("cwd")
+        ? "p4242\nn/Users/raph/site-a\n"
+        : "p4242\ncnode\n",
+    };
+  };
+  for (let read = 0; read < 3; read += 1)
+    assert.deepEqual(await unixListeningProcess(3000, "darwin", run), {
+      cwd: "/Users/raph/site-a",
+      pid: 4242,
+      processName: "node",
+    });
+  assert.equal(calls.filter((args) => args.includes("cwd")).length, 1);
+  assert.equal(calls.length, 4);
 });
 
 test("finds the local port of a preview address", () => {

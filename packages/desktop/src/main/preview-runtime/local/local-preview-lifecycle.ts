@@ -4,6 +4,7 @@ import type {
   ProjectPreviewRuntimeState,
 } from "@blame/agent-runtime";
 import { stripTerminalCodes } from "@blame/preview-runtime/compose";
+import { localPreviewChanged } from "./local-preview-changes.ts";
 import type { PreviewRuntimeSelectionState } from "../../preview-run-state.js";
 
 type WritePreviewRuntimeState = (
@@ -152,6 +153,7 @@ export async function trackLocalPreviewOperation<T>(
     const remaining = (operations.get(worktree) ?? 1) - 1;
     if (remaining > 0) operations.set(worktree, remaining);
     else operations.delete(worktree);
+    localPreviewChanged(worktree);
   }
 }
 

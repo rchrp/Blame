@@ -279,10 +279,14 @@ export class ComposeEngine {
   /**
    * Reads the state of each service's container from the Docker Engine.
    * Previews are polled every few seconds, and `docker compose ps` costs
-   * about fifteen times more CPU than asking the engine directly.
+   * about fifteen times more CPU than asking the engine directly. A caller
+   * that read the prepared project already passes it.
    */
-  async inspect(plan: Pick<PreviewExecutionPlan, "services">) {
-    const project = await this.prepared();
+  async inspect(
+    plan: Pick<PreviewExecutionPlan, "services">,
+    known?: { project: PreparedProject | undefined },
+  ) {
+    const project = known ? known.project : await this.prepared();
     const result = project
       ? await this.options.host.run("sh", [
           "-c",

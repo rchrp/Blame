@@ -30,10 +30,11 @@ import {
   errorText,
   LocalPreviewError,
   localPreviewPaths,
+  localPreviewManifest,
   readLocalDatabaseMode,
+  readLocalPreviewFiles,
   readLocalPreviewManifest,
-  readLocalRunConfigurations,
-  readLocalRuntimeState,
+  type LocalPreviewFiles,
 } from "./local-preview-files.ts";
 import {
   previewEndpoint,
@@ -128,22 +129,24 @@ export type LocalPreviewContext = Awaited<
   ReturnType<typeof localPreviewContext>
 >;
 
-/** The manifest, plan and selected run configuration of a worktree. */
+/**
+ * The manifest, plan and selected run configuration of a worktree, from
+ * its files when the caller read them already.
+ */
 export async function localPreviewContext(
   worktree: string,
   serving?: PreviewServing,
+  files?: LocalPreviewFiles,
 ) {
-  const manifest = await readLocalPreviewManifest(worktree);
+  const { configurations, state, ...read } =
+    files ?? (await readLocalPreviewFiles(worktree));
+  const manifest = localPreviewManifest({ configurations, state, ...read });
   if (!manifest) {
     throw new LocalPreviewError(
       "preview_manifest_invalid",
       "A canonical preview manifest is required",
     );
   }
-  const [configurations, state] = await Promise.all([
-    readLocalRunConfigurations(worktree),
-    readLocalRuntimeState(worktree),
-  ]);
   const plan = compileLocalPreviewPlan(manifest, serving);
   const selected = selectedPreviewRunConfiguration(configurations, state);
   return { manifest, plan, configurations, state, selected };
@@ -336,19 +339,25 @@ export async function removeLocalPreview(worktree: string) {
   await rm(localPreviewPaths(worktree).engineState);
 }
 
+type PreparedProject = Awaited<ReturnType<ComposeEngine["prepared"]>>;
+
 export type LocalPreviewInspection = {
   context?: LocalPreviewContext;
+  project?: PreparedProject;
   services: ServiceState[];
 };
 
 /** The worktree's preview context and its containers, read once. */
 export async function inspectLocalPreview(
   worktree: string,
+  files?: LocalPreviewFiles,
 ): Promise<LocalPreviewInspection> {
   try {
-    const context = await localPreviewContext(worktree);
-    const services = await localPreviewEngine(worktree).inspect(context.plan);
-    return { context, services };
+    const context = await localPreviewContext(worktree, undefined, files);
+    const engine = localPreviewEngine(worktree);
+    const project = await engine.prepared();
+    const services = await engine.inspect(context.plan, { project });
+    return { context, project, services };
   } catch {
     return { services: [] };
   }
@@ -366,13 +375,9 @@ export async function localPreviewUrl(
   worktree: string,
   inspection?: LocalPreviewInspection,
 ) {
-  const engine = localPreviewEngine(worktree);
-  const project = await engine.prepared();
-  if (!project) return undefined;
-  const context =
-    inspection?.context ??
-    (await localPreviewContext(worktree).catch(() => undefined));
-  if (!context) return undefined;
+  const { context, project, services } =
+    inspection ?? (await inspectLocalPreview(worktree));
+  if (!project || !context) return undefined;
   if (
     !shouldStartBrowserPreview(
       context.configurations,
@@ -383,10 +388,7 @@ export async function localPreviewUrl(
     return undefined;
   const endpoint = previewEndpoint(context.plan, context.selected);
   if (!endpoint) return undefined;
-  const states = inspection?.context
-    ? inspection.services
-    : await engine.inspect(context.plan);
-  if (!states.find(({ id }) => id === endpoint.serviceId)?.running)
+  if (!services.find(({ id }) => id === endpoint.serviceId)?.running)
     return undefined;
   return previewUrl(
     context,

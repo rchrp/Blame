@@ -910,6 +910,10 @@ export type WorkspaceClient = {
     workspaceMode?: "local-container" | "cloud-mirror" | "direct"
     worktree: string
   }): Promise<ProjectPreviewRuntimeState>
+  /** The desktop changed a local preview's state: read it again. */
+  onProjectPreviewRuntimeChanged?(
+    callback: (change: { worktree: string }) => void
+  ): () => void
   controlProjectPreview?(input: {
     action: "start" | "stop" | "restart"
     configurationId?: string

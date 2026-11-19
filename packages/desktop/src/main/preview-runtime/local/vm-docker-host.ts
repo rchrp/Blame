@@ -6,7 +6,7 @@ import type {
 import {
   dirnameWorkspacePath,
   mkdir,
-  readFile,
+  readExistingFiles,
   spawnRuntime,
   writeFileAtomic,
 } from "../../workspace-runtime.ts";
@@ -19,7 +19,12 @@ const outputLimit = 4 * 1024 * 1024;
 
 export const blameRuntimeDockerHost: DockerHost = {
   run: runOnDockerHost,
-  readFile: (path) => readFile(path).catch(() => undefined),
+  // The runtime agent reads the engine's state files without a program.
+  readFile: (path) =>
+    readExistingFiles([path]).then(
+      (files) => files[path] ?? undefined,
+      () => undefined,
+    ),
   async writeFile(path, content) {
     await mkdir(dirnameWorkspacePath(path));
     await writeFileAtomic(path, content);

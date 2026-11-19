@@ -105,6 +105,10 @@ export function useDevelopmentWorkspace(
     [directory, historicalRefs, platform.workspace]
   )
 
+  // Polled: the same diff keeps its parsed files, so nothing renders again.
+  const parsedDiff = React.useRef<{ diffs: VcsFileDiff[]; source: string }>(
+    undefined
+  )
   const loadDiffs = React.useCallback(async () => {
     if (!directory || !platform.workspace) return []
     const diff = historicalRefs
@@ -121,7 +125,10 @@ export function useDevelopmentWorkspace(
           },
           platform.workspace
         )
-    return normalizeDiffs(parseGitDiff(diff))
+    if (parsedDiff.current?.source === diff) return parsedDiff.current.diffs
+    const diffs = normalizeDiffs(parseGitDiff(diff))
+    parsedDiff.current = { diffs, source: diff }
+    return diffs
   }, [
     directory,
     historicalRefs,

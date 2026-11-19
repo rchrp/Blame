@@ -29,12 +29,14 @@ export function useLiveSyncStatus(sessionId: string | undefined) {
   React.useEffect(() => {
     if (!sessionId || !previewRuntime?.syncStatus) return
     let active = true
-    const refresh = () =>
+    const refresh = () => {
+      // Polled every second while the window shows.
+      if (document.visibilityState === "hidden") return
       void previewRuntime.syncStatus!({ sessionId })
         .then((next) => {
           if (!active) return
           const status = next ?? undefined
-          // Polled every second: render again only when it changed.
+          // Render again only when it changed.
           setEntry((current) =>
             current?.sessionId === sessionId &&
             JSON.stringify(current.status) === JSON.stringify(status)
@@ -43,6 +45,7 @@ export function useLiveSyncStatus(sessionId: string | undefined) {
           )
         })
         .catch(() => undefined)
+    }
     refresh()
     const timer = window.setInterval(refresh, pollMilliseconds)
     return () => {

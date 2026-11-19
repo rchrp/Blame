@@ -1,21 +1,21 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, realpath, rm } from "node:fs/promises";
+import { copyFile, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { constants as osConstants, setPriority, tmpdir } from "node:os";
 import { basename, join, posix, resolve } from "node:path";
 import { promisify } from "node:util";
 import { pLimit } from "./concurrency.ts";
 import { hostGitCommand } from "./host-git.ts";
 import { workspaceDiffStats } from "./workspace-diff-stats.ts";
-import {
-  ignoredGitDiffPathspecs,
-  isIgnoredWorkspaceDiffPath,
-} from "./workspace-diff-policy.ts";
+import { ignoredGitDiffPathspecs } from "./workspace-diff-policy.ts";
 import {
   resolveWorkspacePath,
   run as runRuntime,
   runtimeManagedPath,
 } from "./workspace-runtime.ts";
-import { runRuntimeGit } from "./workspace-runtime-git.ts";
+import {
+  ensureRuntimeGitSafeDirectory,
+  runRuntimeGit,
+} from "./workspace-runtime-git.ts";
 import type { WorkspaceExecution } from "./workspace-mode.ts";
 
 const execFileAsync = promisify(execFile);
@@ -164,28 +164,92 @@ async function updateSnapshotRef(root: string, id: string, ref: string) {
   ]);
 }
 
-export async function gitDiffFrom(input: GitDiffFromInput) {
+// A worktree's diff from a revision, polled while its Diff tab shows. New
+// files show as added through intent-to-add entries in a copy of the index,
+// and an attribute leaves runtime env files out (as runtimeEnvPath does):
+// one diff for the whole worktree, whatever the number of new files. The
+// copy and the attributes live in the worktree's Git directory.
+const workingDiffAttributes = [
+  ".env blame-env",
+  ".env.* blame-env",
+  "*.example -blame-env",
+  "*.sample -blame-env",
+  "*.template -blame-env",
+].join("\n");
+// Naming an ignored path, such as .blame, would fail the add.
+const workingDiffAddPathspecs = [".", ":(exclude,attr:blame-env)"];
+const workingDiffPathspecs = [
+  ...workingDiffAddPathspecs,
+  ...ignoredGitDiffPathspecs,
+];
+const workingDiffScript = `set -e
+git_dir=$(git rev-parse --absolute-git-dir)
+attributes="$git_dir/blame-diff-attributes"
+index="$git_dir/blame-diff-index"
+printf '%s\\n' "$1" > "$attributes"
+from=$2
+shift 2
+if [ -f "$git_dir/index" ]; then cp "$git_dir/index" "$index"; else rm -f "$index"; fi
+export GIT_INDEX_FILE="$index"
+git -c core.attributesFile="$attributes" add --intent-to-add -- ${workingDiffAddPathspecs.map(shellQuote).join(" ")}
+exec git -c core.attributesFile="$attributes" diff --no-ext-diff "$from" -- "$@"
+`;
+// Diffs of a worktree share its index copy: one at a time.
+const workingDiffs = new Map<string, Promise<unknown>>();
+
+export function gitDiffFrom(input: GitDiffFromInput) {
   const from = revision(input.from);
-  const [committedEnvFiles, changedEnvFiles] = await Promise.all([
-    committedRuntimeEnvPathspecs(input.root, from, "HEAD"),
-    changedRuntimeEnvPathspecs(input.root),
+  const previous = workingDiffs.get(input.root) ?? Promise.resolve();
+  const next = previous
+    .catch(() => undefined)
+    .then(() => workingDiff(input.root, from));
+  workingDiffs.set(input.root, next);
+  void next
+    .finally(() => {
+      if (workingDiffs.get(input.root) === next)
+        workingDiffs.delete(input.root);
+    })
+    .catch(() => undefined);
+  return next;
+}
+
+async function workingDiff(root: string, from: string) {
+  if (runtimeManagedPath(root)) {
+    await ensureRuntimeGitSafeDirectory(root);
+    const { stdout } = await runRuntime(
+      "sh",
+      [
+        "-c",
+        workingDiffScript,
+        "sh",
+        workingDiffAttributes,
+        from,
+        ...workingDiffPathspecs,
+      ],
+      { cwd: root, execution: "virtualized", maxBuffer },
+    );
+    return stdout;
+  }
+  const { stdout: gitDirectory } = await runGit(root, [
+    "rev-parse",
+    "--absolute-git-dir",
   ]);
-  const excludedEnvFiles = [
-    ...new Set([...committedEnvFiles, ...changedEnvFiles]),
-  ];
-  const [{ stdout }, untracked] = await Promise.all([
-    runGit(input.root, [
-      "diff",
-      "--no-ext-diff",
-      from,
-      "--",
-      ".",
-      ...excludedEnvFiles,
-      ...ignoredGitDiffPathspecs,
-    ]),
-    untrackedGitDiffs(input.root),
-  ]);
-  return [stdout, ...untracked].filter(Boolean).join("\n");
+  const directory = gitDirectory.trim();
+  const attributes = join(directory, "blame-diff-attributes");
+  const index = join(directory, "blame-diff-index");
+  await writeFile(attributes, `${workingDiffAttributes}\n`);
+  await copyFile(join(directory, "index"), index).catch(async (error) => {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+    await rm(index, { force: true });
+  });
+  const git = (args: string[]) =>
+    runGit(root, ["-c", `core.attributesFile=${attributes}`, ...args], {
+      GIT_INDEX_FILE: index,
+    });
+  await git(["add", "--intent-to-add", "--", ...workingDiffAddPathspecs]);
+  return (
+    await git(["diff", "--no-ext-diff", from, "--", ...workingDiffPathspecs])
+  ).stdout;
 }
 
 export async function gitDiffBetween(input: GitDiffInput) {
@@ -417,46 +481,6 @@ async function trackedRuntimeEnvPaths(
   return stdout.split("\0").filter(Boolean).filter(runtimeEnvPath);
 }
 
-async function untrackedGitDiffs(root: string) {
-  const { stdout } = await runGit(root, [
-    "ls-files",
-    "--others",
-    "--exclude-standard",
-    "-z",
-  ]);
-  const paths = stdout
-    .split("\0")
-    .filter(Boolean)
-    .filter((path) => !isIgnoredWorkspaceDiffPath(path))
-    .filter((path) => !runtimeEnvPath(path));
-  return Promise.all(
-    paths.map((path) => gitReadLimit(() => untrackedGitDiff(root, path))),
-  );
-}
-
-async function untrackedGitDiff(root: string, path: string) {
-  try {
-    return (
-      await runGit(root, [
-        "diff",
-        "--no-ext-diff",
-        "--no-index",
-        "--",
-        "/dev/null",
-        gitPath(path),
-      ])
-    ).stdout;
-  } catch (error) {
-    if (gitDiffOutput(error)) return gitDiffOutput(error);
-    throw error;
-  }
-}
-
-function gitDiffOutput(error: unknown) {
-  if (!error || typeof error !== "object" || !("stdout" in error)) return "";
-  return typeof error.stdout === "string" ? error.stdout : "";
-}
-
 function gitPath(value?: string) {
   const normalized = posix.normalize((value ?? "").replaceAll("\\", "/"));
   if (!normalized || normalized === ".") return "";
@@ -584,4 +608,8 @@ async function readGitTree(root: string, ref: string, path: string) {
     if (!path) throw error;
     return "";
   }
+}
+
+function shellQuote(value: string) {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
 }

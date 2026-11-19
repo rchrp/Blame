@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   previewRuntimePollDelay,
   samePreviewRuntimeState,
+  samePreviewWorktree,
 } from "@/components/backlog/drawer/preview-runtime-poll"
 import { usePlatform } from "@/context/platform"
 
@@ -11,7 +12,9 @@ type PreviewRuntimeSetter = React.Dispatch<
   React.SetStateAction<ProjectPreviewRuntimeState | undefined>
 >
 
-// Keeps a story's local preview state current while its preview shows.
+// Keeps a story's local preview state current while its preview shows:
+// read again when the desktop changes it, polled for what only Docker
+// sees, and not at all while the window is hidden.
 export function usePreviewRuntimePolling(
   workspace: ReturnType<typeof usePlatform>["workspace"],
   worktree: string | null | undefined,
@@ -21,9 +24,6 @@ export function usePreviewRuntimePolling(
   configuredCount: number | undefined,
   setRuntime: PreviewRuntimeSetter
 ) {
-  const quickUntilRef = React.useRef(0)
-  const pollSoonRef = React.useRef<(() => void) | undefined>(undefined)
-
   React.useEffect(() => {
     setRuntime(undefined)
   }, [enabled, setRuntime, workspace, workspaceMode, worktree])
@@ -33,12 +33,17 @@ export function usePreviewRuntimePolling(
     const polling = !(stopAfterConfigured && configuredCount)
     let cancelled = false
     let reading = false
+    let readAgain = false
     let timer: number | undefined
     let latest: ProjectPreviewRuntimeState | undefined
-    // One read at a time; the next waits for the last one's answer.
+    // One read at a time; a change during a read is read once it answers.
     const refresh = () => {
-      if (reading) return
+      if (reading) {
+        readAgain = true
+        return
+      }
       reading = true
+      readAgain = false
       window.clearTimeout(timer)
       void readPreviewRuntime(workspace, worktree, workspaceMode).then(
         (next) => {
@@ -50,33 +55,32 @@ export function usePreviewRuntimePolling(
               samePreviewRuntimeState(current, next) ? current : next
             )
           }
+          if (readAgain) return refresh()
           if (!polling) return
-          timer = window.setTimeout(
-            refresh,
-            previewRuntimePollDelay({
-              hidden: document.visibilityState === "hidden",
-              now: Date.now(),
-              quickUntil: quickUntilRef.current,
-              runtime: latest,
-            })
-          )
+          const delay = previewRuntimePollDelay({
+            hidden: document.visibilityState === "hidden",
+            runtime: latest,
+          })
+          if (delay !== undefined) timer = window.setTimeout(refresh, delay)
         }
       )
     }
     const refreshWhenShown = () => {
-      if (document.visibilityState !== "hidden") refresh()
+      if (document.visibilityState === "hidden") window.clearTimeout(timer)
+      else refresh()
     }
-    pollSoonRef.current = () => {
-      quickUntilRef.current = Date.now() + previewRuntimeQuickWindowMs
-      refresh()
-    }
+    const stopListening = workspace.onProjectPreviewRuntimeChanged?.(
+      (change) => {
+        if (samePreviewWorktree(change.worktree, worktree)) refresh()
+      }
+    )
     refresh()
     document.addEventListener("visibilitychange", refreshWhenShown)
     return () => {
       cancelled = true
       window.clearTimeout(timer)
+      stopListening?.()
       document.removeEventListener("visibilitychange", refreshWhenShown)
-      pollSoonRef.current = undefined
     }
   }, [
     configuredCount,
@@ -87,13 +91,7 @@ export function usePreviewRuntimePolling(
     workspaceMode,
     worktree,
   ])
-
-  // After an action, read soon and often until the preview settles.
-  return React.useCallback(() => pollSoonRef.current?.(), [])
 }
-
-// An action's effect can take a moment to show in the preview's state.
-const previewRuntimeQuickWindowMs = 20_000
 
 async function readPreviewRuntime(
   workspace: ReturnType<typeof usePlatform>["workspace"],

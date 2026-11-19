@@ -514,6 +514,16 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:project-runtime-healthy", input),
     projectPreviewRuntimeState: (input) =>
       ipcRenderer.invoke("workspace:project-preview-runtime-state", input),
+    onProjectPreviewRuntimeChanged: (callback) => {
+      const handler = (_event: unknown, change: { worktree: string }) =>
+        callback(change);
+      ipcRenderer.on("workspace:project-preview-runtime-changed", handler);
+      return () =>
+        ipcRenderer.removeListener(
+          "workspace:project-preview-runtime-changed",
+          handler,
+        );
+    },
     controlProjectPreview: (input) =>
       ipcRenderer.invoke("workspace:control-project-preview", input),
     applyProjectPreviewInitialization: (input) =>

@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   mkdir,
   mkdtemp,
   readFile,
   rm,
   unlink,
+  utimes,
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -109,6 +111,29 @@ for (const configuration of ["committed", "untracked", "edited"] as const) {
     }
   });
 }
+
+test("snapshots hash again a file whose content changed, even with its old times", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-desktop-snapshot-"));
+  try {
+    const file = join(root, "page.ts");
+    await writeFile(file, "export const a = 1;\n");
+    const old = new Date(Date.now() - 60_000);
+    await utimes(file, old, old);
+    const first = await snapshotWorkspace(root);
+    assert.equal((await snapshotWorkspace(root)).hash, first.hash);
+    // Same size and modification time: only the change time differs.
+    await writeFile(file, "export const b = 1;\n");
+    await utimes(file, old, old);
+    const changed = await snapshotWorkspace(root);
+    assert.notEqual(changed.hash, first.hash);
+    assert.equal(
+      changed.files["page.ts"]!.sha256,
+      createHash("sha256").update("export const b = 1;\n").digest("hex"),
+    );
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+});
 
 test("desktop snapshots apply cloud exclusions while preserving manual exceptions", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-desktop-cloud-ignore-"));

@@ -1,24 +1,30 @@
 import type { ProjectPreviewRuntimeState } from "@blame/agent-runtime"
 
-// Each read of a local preview's state runs a few dozen commands in Blame
-// Runtime. Read it often while it changes, rarely once it has settled. The
-// desktop also counts each read from a visible window as use of the preview,
+// Each read of a local preview's state asks Blame Runtime for its files
+// and containers. The desktop tells the app when it changes the state
+// itself; polls catch what only Docker sees, often while the preview
+// changes, rarely once it settled, never in a hidden window. The desktop
+// also counts each read from a visible window as use of the preview,
 // which keeps it awake and wakes it if it hibernates.
 export const previewRuntimeChangingPollMs = 2_000
 export const previewRuntimeSettledPollMs = 10_000
-export const previewRuntimeHiddenPollMs = 60_000
 
+/** The delay before the next read, none while the window is hidden. */
 export function previewRuntimePollDelay(input: {
   hidden: boolean
-  quickUntil: number
-  now: number
   runtime: ProjectPreviewRuntimeState | undefined
 }) {
-  if (input.hidden) return previewRuntimeHiddenPollMs
-  if (input.now < input.quickUntil) return previewRuntimeChangingPollMs
+  if (input.hidden) return undefined
   return previewRuntimeSettled(input.runtime)
     ? previewRuntimeSettledPollMs
     : previewRuntimeChangingPollMs
+}
+
+/** Whether the desktop's change concerns the worktree the app shows. */
+export function samePreviewWorktree(changed: string, shown: string) {
+  const normalized = (path: string) =>
+    path.replaceAll("\\", "/").replace(/\/+$/, "")
+  return normalized(changed) === normalized(shown)
 }
 
 // Starting, stopping or not read yet: the next read may differ.
