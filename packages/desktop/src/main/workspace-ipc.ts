@@ -10,7 +10,7 @@ import {
 import { type PreviewManifest } from "@blame/preview-contract";
 import { type RuntimeProfileId } from "@blame/preview-runtime";
 import type { ServiceState } from "@blame/preview-runtime/compose";
-import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
+import { BrowserWindow, ipcMain } from "electron";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, posix, relative, resolve, sep } from "node:path";
@@ -67,14 +67,7 @@ import {
   collectProjectInitializationDiagnostics,
   type CollectProjectInitializationDiagnosticsInput,
 } from "./project-initialization-diagnostics";
-import {
-  ensureRuntimeReady,
-  getRuntimeStatus,
-  repairRuntime,
-  resetRuntime,
-  uninstallRuntime,
-  type RuntimeProgress,
-} from "./runtime-manager";
+import { runtimeBackground } from "./runtime-power";
 import {
   collectPreviewGarbage,
   removePreviewProject,
@@ -91,6 +84,7 @@ import {
   ensureLocalPreviewAwake,
   hibernateLocalPreview,
   localPreviewHibernated,
+  localPreviewWaking,
 } from "./preview-runtime/local/local-preview-hibernation.ts";
 import {
   compileLocalPreviewPlan,
@@ -153,7 +147,6 @@ import {
   readExistingFiles as readExistingRuntimeFiles,
   readDirectory as readRuntimeDirectory,
   readFile as readRuntimeFile,
-  resetRuntimeGitIdentityConfigured,
   resolveWorkspacePath as resolveRuntimePath,
   rm as rmRuntime,
   run as runRuntime,
@@ -257,10 +250,6 @@ type CheckHostDependenciesInput = {
   worktree?: string;
 };
 
-type RuntimeOperationInput = {
-  operationId?: string;
-};
-
 type StopProjectSetupInput = {
   workspaceMode?: WorkspaceMode;
   worktree: string;
@@ -355,45 +344,10 @@ const {
   timing: appendTimingLog,
 } = worktreeLogs;
 const localPreviewService = new LocalPreviewService();
-function runtimeProgressReporter(
-  event: IpcMainInvokeEvent,
-  operationId?: string,
-) {
-  if (!operationId || !/^[a-f0-9-]{36}$/.test(operationId)) return undefined;
-  const channel = `workspace:runtime-progress:${operationId}`;
-  return (progress: RuntimeProgress) => {
-    if (event.sender.isDestroyed()) return;
-    try {
-      event.sender.send(channel, progress);
-    } catch {
-      return;
-    }
-  };
-}
-
-function registerRuntimeOperationHandler(
-  channel: string,
-  operation: typeof ensureRuntimeReady,
-  onRuntimeReady?: () => void,
-) {
-  ipcMain.handle(channel, async (event, input: RuntimeOperationInput = {}) => {
-    resetRuntimeGitIdentityConfigured();
-    const report = await operation({
-      env: runtimeManagerEnvironment(),
-      onProgress: runtimeProgressReporter(event, input.operationId),
-    });
-    if (report.status === "ready") {
-      onRuntimeReady?.();
-      schedulePreviewCleanup();
-    }
-    return report;
-  });
-}
 
 export function registerWorkspaceIpcHandlers(
   input: {
     beforeGitWrite?(worktree: string): Promise<void>;
-    onRuntimeReady?(): void;
   } = {},
 ) {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
@@ -562,28 +516,6 @@ export function registerWorkspaceIpcHandlers(
         setupScript: input.setupScript ?? "",
       }),
   );
-  ipcMain.handle("workspace:get-runtime-status", () =>
-    getRuntimeStatus({ env: runtimeManagerEnvironment() }),
-  );
-  registerRuntimeOperationHandler(
-    "workspace:ensure-runtime-ready",
-    ensureRuntimeReady,
-    input.onRuntimeReady,
-  );
-  registerRuntimeOperationHandler(
-    "workspace:repair-runtime",
-    repairRuntime,
-    input.onRuntimeReady,
-  );
-  registerRuntimeOperationHandler(
-    "workspace:reset-runtime",
-    resetRuntime,
-    input.onRuntimeReady,
-  );
-  ipcMain.handle("workspace:uninstall-runtime", async () => {
-    resetRuntimeGitIdentityConfigured();
-    return uninstallRuntime({ env: runtimeManagerEnvironment() });
-  });
   ipcMain.handle(
     "workspace:stop-project-setup",
     (_event, input: StopProjectSetupInput) => stopProjectSetup(input),
@@ -599,8 +531,9 @@ export function registerWorkspaceIpcHandlers(
   );
   ipcMain.handle(
     "workspace:ensure-project-preview-url",
+    // A recovery poll for every story: it neither starts the runtime nor uses it.
     (_event, input: EnsureProjectPreviewUrlInput) =>
-      ensureProjectPreviewUrl(input),
+      runtimeBackground(() => ensureProjectPreviewUrl(input)),
   );
   ipcMain.handle(
     "workspace:project-runtime-healthy",
@@ -611,15 +544,16 @@ export function registerWorkspaceIpcHandlers(
     "workspace:project-preview-runtime-state",
     (event, input: { worktree: string; workspaceMode?: WorkspaceMode }) => {
       // The app reads the state while the preview is open and on screen:
-      // that is use, and wakes it if it hibernates.
+      // that is use, and wakes it (and the runtime) if it sleeps.
       const window = BrowserWindow.fromWebContents(event.sender);
-      if (window?.isVisible() && !window.isMinimized()) {
-        void ensureLocalPreviewAwake(
-          input.worktree,
-          "the app showing it",
-        ).catch(() => undefined);
-      }
-      return projectPreviewRuntimeState(input.worktree, input.workspaceMode);
+      const read = () =>
+        projectPreviewRuntimeState(input.worktree, input.workspaceMode);
+      if (!window?.isVisible() || window.isMinimized())
+        return runtimeBackground(read);
+      void ensureLocalPreviewAwake(input.worktree, "the app showing it").catch(
+        () => undefined,
+      );
+      return read();
     },
   );
   ipcMain.handle(
@@ -1454,6 +1388,7 @@ export async function projectPreviewRuntimeState(
   // written its result by the time it stops being in flight.
   const inFlight =
     localPreviewOperationInFlight(worktree) || previewStarts.has(worktree);
+  const waking = localPreviewWaking(worktree);
   const [configurations, runtimeState, inspection, manifest] =
     await Promise.all([
       readProjectRunConfigurations(worktree),
@@ -1462,6 +1397,9 @@ export async function projectPreviewRuntimeState(
       readProjectPreviewManifest(worktree).catch(() => undefined),
     ]);
   const containers = inspection.services;
+  // Woken after the runtime stopped: its containers went with it, and the
+  // wake is starting it again.
+  const restarting = waking && !containers.some(({ state }) => state);
   const selected = selectedPreviewRunConfiguration(
     configurations,
     runtimeState,
@@ -1487,7 +1425,7 @@ export async function projectPreviewRuntimeState(
     selected ? statuses[selected.id] : undefined,
     browserPreview,
     previewUrl,
-    inFlight,
+    inFlight || restarting,
   );
   return {
     configurations,
@@ -2189,7 +2127,8 @@ function servicePriority(service: string) {
   return 5;
 }
 
-// Follows the services' logs into the run log while the preview runs.
+// Follows the services' logs into the run log while the preview runs. Not
+// a use of the runtime: it ends when the runtime stops.
 async function startProjectLogStream(worktree: string) {
   if (worktreeActivity.isClosed(worktree)) return;
   await stopProjectLogStream(worktree);
@@ -2197,11 +2136,13 @@ async function startProjectLogStream(worktree: string) {
   if (worktreeActivity.isClosed(worktree)) return;
   const stream: ProjectLogStream = { abort: new AbortController() };
   projectLogStreams.set(worktree, stream);
-  void followLocalPreviewLogs(
-    worktree,
-    undefined,
-    (chunk) => appendRunLog(worktree, chunk),
-    stream.abort.signal,
+  void runtimeBackground(() =>
+    followLocalPreviewLogs(
+      worktree,
+      undefined,
+      (chunk) => appendRunLog(worktree, chunk),
+      stream.abort.signal,
+    ),
   )
     .catch(() => undefined)
     .finally(() => {
@@ -2452,13 +2393,6 @@ async function buildSetupEnvironment(
 
 function invalidateSetupEnvironment(worktree: string) {
   setupEnvironmentCache.delete(worktree);
-}
-
-function runtimeManagerEnvironment() {
-  return {
-    ...process.env,
-    PATH: setupPath(),
-  };
 }
 
 async function worktreeRuntimeEnvironment(worktree: string) {

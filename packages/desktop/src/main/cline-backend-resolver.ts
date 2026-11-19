@@ -3,7 +3,6 @@ import { createHash, randomUUID } from "node:crypto";
 import type { AgentBackendConfig } from "@blame/agent-runtime";
 import { setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient } from "./runtime-agent.ts";
-import { ensureRuntimeReady } from "./runtime-manager.ts";
 import { runtimeHostPath, runtimeManagedPath } from "./workspace-runtime.ts";
 
 export type AgentWorkspaceResolution = {
@@ -15,7 +14,6 @@ type ResolverInput = {
     clineHubEnsure(): Promise<{ authToken?: string; url?: string }>;
   };
   env?: NodeJS.ProcessEnv;
-  ensureReady?: typeof ensureRuntimeReady;
   platform?: NodeJS.Platform;
 };
 
@@ -40,9 +38,7 @@ export async function resolveAgentWorkspaceInput<
     return localWorkspaceInput(input, platform);
   }
   if (!runtimeField) return localWorkspaceInput(input, platform);
-  await (options.ensureReady ?? ensureRuntimeReady)(
-    runtimeEnvironment(options, platform),
-  );
+  // The hub request starts the runtime when it is stopped (runtime-power.ts).
   const hub = await ensureRuntimeClineHub(options, platform);
   const identity = runtimeHubBackendIdentity(platform, hub);
   return {

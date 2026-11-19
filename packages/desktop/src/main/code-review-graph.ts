@@ -17,6 +17,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { setupPath } from "./host-tool-path.ts";
+import { ensureRuntimeRunning } from "./runtime-power.ts";
 import {
   joinWorkspacePath,
   pathExists as runtimePathExists,
@@ -572,6 +573,8 @@ class CodeReviewGraphMcpClient implements GraphMcpClient {
   }
 
   private async open(signal?: AbortSignal) {
+    // The graph runs in the Blame Runtime, reached without its agent.
+    await ensureRuntimeRunning();
     const args = [
       ...this.command.args,
       ...codeReviewGraphMcpArgs(this.worktree),
@@ -691,21 +694,16 @@ async function readGitSnapshot(worktree: string) {
   };
 }
 
-function runWorkspaceCommand(
+async function runWorkspaceCommand(
   command: string,
   args: string[],
   cwd: string,
   timeoutMs: number,
   signal?: AbortSignal,
 ) {
-  if (signal?.aborted)
-    return Promise.reject(new Error("Code graph request aborted"));
-  let child: ChildProcessWithoutNullStreams;
-  try {
-    child = spawnWorkspaceCommand(command, args, cwd);
-  } catch (error) {
-    return Promise.reject(error);
-  }
+  if (signal?.aborted) throw new Error("Code graph request aborted");
+  await ensureRuntimeRunning();
+  const child = spawnWorkspaceCommand(command, args, cwd);
   return new Promise<CommandResult>((resolve, reject) => {
     const state = workspaceCommandState(command, args, child, resolve, reject);
     state.timer = workspaceCommandTimer(state, timeoutMs);

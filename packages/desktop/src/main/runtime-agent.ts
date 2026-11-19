@@ -10,6 +10,12 @@ import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline";
 import log from "electron-log";
 import { setupPath } from "./host-tool-path.ts";
+import {
+  ensureRuntimeRunning,
+  holdRuntime,
+  outsideRuntimeBackground,
+  runtimeConnectionLost,
+} from "./runtime-power.ts";
 
 type AgentRequest = {
   id: number;
@@ -137,6 +143,8 @@ export class RuntimeAgentClient {
     const child = new AgentChildProcess((processId) => {
       void this.kill(processId).catch(() => undefined);
     });
+    // A shell, a log stream or a dev command uses the VM while it runs.
+    child.once("exit", holdRuntime());
     void this.request("spawn", input)
       .then((result) => {
         const processId = String((result as { processId: string }).processId);
@@ -198,7 +206,11 @@ export class RuntimeAgentClient {
     const operationId = randomUUID();
     // The cancel goes to the agent running the operation, even if a newer
     // one has replaced it since.
-    const agent = this.connection();
+    const release = holdRuntime();
+    const agent = await this.connection().catch((error: unknown) => {
+      release();
+      throw error;
+    });
     return this.requestOn(
       agent,
       "lightWorkspace",
@@ -213,7 +225,7 @@ export class RuntimeAgentClient {
           5_000,
         ).catch(() => undefined);
       },
-    );
+    ).finally(release);
   }
 
   async kill(processId: string) {
@@ -252,24 +264,33 @@ export class RuntimeAgentClient {
     }
   }
 
-  private request(
+  private async request(
     method: string,
     params: Record<string, unknown>,
     timeoutMs?: number,
     signal?: AbortSignal,
     onAbort?: () => void,
   ) {
+    const release = holdRuntime();
     try {
-      const agent = this.connection();
-      return this.requestOn(agent, method, params, timeoutMs, signal, onAbort);
-    } catch (error) {
-      return Promise.reject(error as Error);
+      const agent = await this.connection();
+      return await this.requestOn(
+        agent,
+        method,
+        params,
+        timeoutMs,
+        signal,
+        onAbort,
+      );
+    } finally {
+      release();
     }
   }
 
-  private connection() {
+  private async connection() {
     if (!runtimeAgentSupported(this.platform))
       throw new Error("Runtime agent is not supported");
+    await ensureRuntimeRunning();
     return this.ensureProcess();
   }
 
@@ -338,6 +359,10 @@ export class RuntimeAgentClient {
 
   private ensureProcess() {
     if (this.process && this.process.exitCode === null) return this.process;
+    return outsideRuntimeBackground(() => this.startProcess());
+  }
+
+  private startProcess() {
     const spec = agentCommand(this.platform, this.env);
     log.info(`Spawning runtime agent: ${spec.command} ${spec.args.join(" ")}`);
     const child = this.spawnProcess(spec.command, spec.args, {
@@ -356,6 +381,7 @@ export class RuntimeAgentClient {
           `Runtime agent process exited with code: ${code}, signal: ${signal}`,
         );
         this.process = undefined;
+        runtimeConnectionLost();
       }
       this.retiring.delete(child);
       this.rejectPending(

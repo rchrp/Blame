@@ -7,6 +7,7 @@ import { posix } from "node:path";
 import { promisify } from "node:util";
 import { runtimeToolScript, setupPath } from "./host-tool-path.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
+import { RuntimeStoppedError } from "./runtime-power.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -168,6 +169,7 @@ async function runRuntimeCommand(
     } catch (error) {
       if (
         runtimeAgentCommandFailed(error) ||
+        error instanceof RuntimeStoppedError ||
         !runtimeAgentFallbackAllowed(command, args)
       ) {
         throw error;

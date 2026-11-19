@@ -17,7 +17,7 @@ import {
   type IpcMainInvokeEvent,
   type WebContents,
 } from "electron";
-import { prewarmAgentRuntime, shutdownAgentRuntime } from "./agent-ipc";
+import { shutdownAgentRuntime } from "./agent-ipc";
 import { desktopAppIdentity } from "./desktop-app-identity";
 import { desktopRuntimeEnvironment } from "./desktop-runtime-environment";
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery";
@@ -165,7 +165,6 @@ void app.whenReady().then(() => {
       await shutdownApplication();
       readyToQuit = true;
     },
-    onRuntimeReady: () => void prewarmAgentRuntime(true),
   });
   replaceMainWindow("compact");
   checkForUpdatesOnStartup();

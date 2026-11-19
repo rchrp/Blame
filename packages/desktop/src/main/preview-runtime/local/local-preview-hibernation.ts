@@ -1,3 +1,4 @@
+import { runtimeBackground } from "../../runtime-power.ts";
 import { resolveWorkspacePath } from "../../workspace-runtime.ts";
 import { recordPreviewUse } from "./local-preview-idle.ts";
 import {
@@ -44,6 +45,7 @@ type HibernationHooks = {
 
 const hibernations = new Map<string, Hibernation>();
 const queues = new Map<string, Promise<unknown>>();
+const wakes = new Map<string, number>();
 let hooks: HibernationHooks = {
   log: () => undefined,
   restart: async () => undefined,
@@ -55,6 +57,11 @@ export function configureLocalPreviewHibernation(next: HibernationHooks) {
 
 export function localPreviewHibernated(worktree: string) {
   return hibernations.has(resolveWorkspacePath(worktree));
+}
+
+/** A wake under way, which may be restarting the preview. */
+export function localPreviewWaking(worktree: string) {
+  return wakes.has(resolveWorkspacePath(worktree));
 }
 
 /**
@@ -73,7 +80,14 @@ export async function ensureLocalPreviewAwake(
   // Right after Blame started, a paused preview may not be known yet.
   if (!adopted) await adoptPausedLocalPreviews();
   if (!hibernations.has(worktree) && !queues.has(worktree)) return;
-  await serialized(worktree, () => wake(worktree, reason));
+  wakes.set(worktree, (wakes.get(worktree) ?? 0) + 1);
+  try {
+    await serialized(worktree, () => wake(worktree, reason));
+  } finally {
+    const left = (wakes.get(worktree) ?? 1) - 1;
+    if (left > 0) wakes.set(worktree, left);
+    else wakes.delete(worktree);
+  }
 }
 
 /** Pauses an unused preview and evicts its memory. */
@@ -144,9 +158,11 @@ export async function adoptPausedLocalPreviews() {
 }
 
 async function adoptNow() {
-  const result = await localDockerHost()
-    .run("sh", ["-c", pausedPreviewsScript], { timeoutMs: 30_000 })
-    .catch(() => undefined);
+  const result = await runtimeBackground(() =>
+    localDockerHost().run("sh", ["-c", pausedPreviewsScript], {
+      timeoutMs: 30_000,
+    }),
+  ).catch(() => undefined);
   if (result?.exitCode !== 0) return;
   adopted = true;
   for (const paused of parsePausedPreviews(result.stdout)) {
@@ -271,8 +287,10 @@ function refreshWatcher() {
   watcher = current;
   const startedAt = Date.now();
   let pending = "";
-  void localDockerHost()
-    .run(
+  // It neither starts nor holds the runtime: a runtime stop ends it, and it
+  // waits for the runtime to come back.
+  void runtimeBackground(() =>
+    localDockerHost().run(
       "sh",
       [
         "-c",
@@ -298,7 +316,8 @@ function refreshWatcher() {
           }
         },
       },
-    )
+    ),
+  )
     .catch(() => undefined)
     .finally(() => {
       if (watcher !== current) return;

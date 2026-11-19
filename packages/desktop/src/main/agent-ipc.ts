@@ -32,10 +32,11 @@ import {
 import { createAgentHostRequestHandler } from "./agent-runtime-main-host";
 import { prepareSessionGithubAccess } from "./ipc/agent-github-access-ipc";
 import { setupPath } from "./host-tool-path";
-import { getRuntimeStatus } from "./runtime-manager";
+import { keepRuntimeRunningWhile, onRuntimeRunning } from "./runtime-power";
 import { runtimeAgentClient } from "./runtime-agent";
 import { registerSecurityAuditIpcHandlers } from "./security-audit-ipc";
 import { WorkspaceWriterRegistry } from "./workspaces/workspace-writer-registry";
+import { runtimeManagedPath } from "./workspace-runtime";
 import type { PreviewService } from "./preview-runtime/preview-service";
 import { useAgentWorkspaceCheck } from "./preview-runtime/local/local-preview-idle.ts";
 
@@ -48,7 +49,7 @@ type AgentRuntimeRegistration = {
 };
 
 let runtime: AgentRuntimePool | undefined;
-let runtimePrewarmPromise: Promise<boolean> | undefined;
+let runtimePrewarmPromise: Promise<void> | undefined;
 const runtimePrewarmWorkspace =
   "/home/blame/.local/share/blame/runtime/worktrees/.prewarm";
 const agentWorkspaceWriters = new WorkspaceWriterRegistry();
@@ -57,6 +58,14 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   runtime ??= createAgentRuntimePool(input);
   // A preview stays up while an agent works in its worktree.
   useAgentWorkspaceCheck(localAgentOwnsWorkspace);
+  // The Blame Runtime starts when a story, preview or terminal needs it:
+  // an agent is likely next. One at work there keeps it running.
+  onRuntimeRunning(() => void prewarmAgentRuntime());
+  keepRuntimeRunningWhile(() =>
+    agentWorkspaceWriters
+      .activeWorkspaces()
+      .some((workspace) => runtimeManagedPath(workspace)),
+  );
   registerProviderIpcHandlers();
   registerSessionStartIpcHandlers(input.beforeWorkspaceWrite);
   registerSessionControlIpcHandlers(input.beforeWorkspaceWrite);
@@ -77,35 +86,21 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   registerDeliveryWorkflowIpcHandlers(input.beforeDelivery);
 }
 
-export function prewarmAgentRuntime(runtimeAlreadyReady = false) {
-  if (process.platform !== "darwin") return Promise.resolve(false);
-  if (runtimePrewarmPromise) return runtimePrewarmPromise;
+// Once per start of the runtime: a stop takes its Cline hub with it.
+function prewarmAgentRuntime() {
+  if (process.platform !== "darwin" || runtimePrewarmPromise) return;
   const startedAt = Date.now();
-  const prewarm = prewarmMacosAgentRuntime(runtimeAlreadyReady)
-    .then((ready) => {
-      if (ready) {
-        log.info(
-          `Agent runtime prewarm completed in ${Date.now() - startedAt}ms`,
-        );
-      }
-      return ready;
-    })
-    .catch((error) => {
-      log.warn("Agent runtime prewarm failed", error);
-      return false;
-    });
-  runtimePrewarmPromise = prewarm;
-  void prewarm.then((ready) => {
-    if (!ready && runtimePrewarmPromise === prewarm) {
+  runtimePrewarmPromise = prewarmMacosAgentRuntime()
+    .then(() =>
+      log.info(`Agent runtime prewarm completed in ${Date.now() - startedAt}ms`),
+    )
+    .catch((error) => log.warn("Agent runtime prewarm failed", error))
+    .finally(() => {
       runtimePrewarmPromise = undefined;
-    }
-  });
-  return prewarm;
+    });
 }
 
-async function prewarmMacosAgentRuntime(runtimeAlreadyReady: boolean) {
-  const report = runtimeAlreadyReady ? undefined : await getRuntimeStatus();
-  if (report && report.status !== "ready") return false;
+async function prewarmMacosAgentRuntime() {
   const client = runtimeAgentClient();
   await client.exec({
     args: ["-p", runtimePrewarmWorkspace],
@@ -117,21 +112,9 @@ async function prewarmMacosAgentRuntime(runtimeAlreadyReady: boolean) {
       cwd: runtimePrewarmWorkspace,
       workspaceRoot: runtimePrewarmWorkspace,
     },
-    {
-      agentClient: client,
-      ensureReady: async () =>
-        report ?? {
-          issues: [],
-          platform: "darwin",
-          runtime: "BlameRuntime",
-          status: "ready",
-          updateRequired: false,
-        },
-      platform: "darwin",
-    },
+    { agentClient: client, platform: "darwin" },
   );
   await agentRuntime().run("runtime.prewarm", workspace);
-  return true;
 }
 
 function registerProviderIpcHandlers() {

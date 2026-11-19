@@ -8,6 +8,13 @@
 // client connecting to its port. An agent coding in the worktree does not
 // keep its preview awake (it wakes on the agent's next look), but keeps it
 // from being stopped: the user usually reviews it once the agent is done.
+// A preview awake keeps the Blame Runtime running; hibernated ones do not
+// (a runtime stop loses their pause: they start again when next used).
+
+import {
+  keepRuntimeRunningWhile,
+  runtimeBackground,
+} from "../../runtime-power.ts";
 
 export const previewHibernateAfterMs = 5 * 60_000;
 export const previewIdleTimeoutMs = 2 * 60 * 60_000;
@@ -17,6 +24,8 @@ const lastUse = new Map<string, number>();
 const lastAgentWork = new Map<string, number>();
 let agentWorksIn: (worktree: string) => boolean = () => false;
 let sweeper: NodeJS.Timeout | undefined;
+// The previews running at the last sweep, hibernated or not.
+let runningAtSweep: string[] = [];
 
 /** Records that the user, an agent or Blame itself used this preview. */
 export function recordPreviewUse(worktree: string, now = Date.now()) {
@@ -95,8 +104,11 @@ export function startIdlePreviewSweeper(dependencies: {
 }) {
   if (sweeper) return;
   const since = Date.now();
+  keepRuntimeRunningWhile(() =>
+    runningAtSweep.some((worktree) => !dependencies.hibernated(worktree)),
+  );
   sweeper = setInterval(() => {
-    void sweep(dependencies, since);
+    void runtimeBackground(() => sweep(dependencies, since));
   }, sweepIntervalMs);
   sweeper.unref?.();
 }
@@ -111,6 +123,7 @@ async function sweep(
   sweeping = true;
   try {
     const running = await dependencies.runningWorktrees().catch(() => []);
+    runningAtSweep = running;
     const now = Date.now();
     for (const worktree of running) {
       if (agentWorksIn(worktree)) lastAgentWork.set(worktree, now);
@@ -129,6 +142,7 @@ async function sweep(
       lastUse.delete(worktree);
       lastAgentWork.delete(worktree);
     }
+    runningAtSweep = running.filter((worktree) => !stop.includes(worktree));
     for (const worktree of hibernate) {
       await dependencies.hibernate(worktree).catch(() => undefined);
     }
