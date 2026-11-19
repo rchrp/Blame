@@ -63,7 +63,7 @@ import {
   collectProjectInitializationDiagnostics,
   type CollectProjectInitializationDiagnosticsInput,
 } from "./project-initialization-diagnostics";
-import { runtimeBackground } from "./runtime-power";
+import { runtimeBackground, runtimeBackgroundWhen } from "./runtime-power";
 import {
   collectPreviewGarbage,
   removePreviewProject,
@@ -351,6 +351,7 @@ const {
   timing: appendTimingLog,
 } = worktreeLogs;
 const localPreviewService = new LocalPreviewService();
+type GitRead<T> = T & { background?: boolean };
 
 export function registerWorkspaceIpcHandlers(
   input: {
@@ -380,8 +381,11 @@ export function registerWorkspaceIpcHandlers(
     "workspace:search-files",
     (_event, input: WorkspaceSearchInput) => searchFiles(input),
   );
-  ipcMain.handle("workspace:git-diff", (_event, input: { root: string }) =>
-    gitDiff(input.root),
+  // The board's polls send `background`: they leave a stopped runtime stopped.
+  ipcMain.handle(
+    "workspace:git-diff",
+    (_event, input: GitRead<{ root: string }>) =>
+      runtimeBackgroundWhen(input, () => gitDiff(input.root)),
   );
   ipcMain.handle(
     "workspace:git-diff-stats",
@@ -391,8 +395,10 @@ export function registerWorkspaceIpcHandlers(
   ipcMain.handle("workspace:git-diff-between", (_event, input: GitDiffInput) =>
     gitDiffBetween(input),
   );
-  ipcMain.handle("workspace:git-diff-from", (_event, input: GitDiffFromInput) =>
-    gitDiffFrom(input),
+  ipcMain.handle(
+    "workspace:git-diff-from",
+    (_event, input: GitRead<GitDiffFromInput>) =>
+      runtimeBackgroundWhen(input, () => gitDiffFrom(input)),
   );
   ipcMain.handle("workspace:git-snapshot", (_event, input: GitSnapshotInput) =>
     gitSnapshot(input),
@@ -404,8 +410,8 @@ export function registerWorkspaceIpcHandlers(
     "workspace:git-commit-count",
     (_event, input: { root: string }) => gitCommitCount(input.root),
   );
-  ipcMain.handle("workspace:git-log", (_event, input: GitLogInput) =>
-    gitLog(input),
+  ipcMain.handle("workspace:git-log", (_event, input: GitRead<GitLogInput>) =>
+    runtimeBackgroundWhen(input, () => gitLog(input)),
   );
   ipcMain.handle("workspace:git-file-diff", (_event, input: GitPathInput) =>
     gitFileDiff(input),

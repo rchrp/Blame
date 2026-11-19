@@ -8,7 +8,8 @@ const refreshDelayMs = 15_000
 
 // Whether the story's open pull request is behind its branch: the agent
 // reworked the story after changes were requested. Checked on the host, when
-// the story is saved and every few seconds while the app is visible.
+// the story is saved and every few seconds while the app is visible; while
+// the Blame Runtime is stopped the last answer stays.
 export function useStoryWorkToPush(story: UserStory | undefined) {
   const { workspace } = usePlatform()
   const [checked, setChecked] = React.useState<{
@@ -33,7 +34,8 @@ export function useStoryWorkToPush(story: UserStory | undefined) {
         { branch, pullRequestUrl, worktree },
         workspace
       ).then((workToPush) => {
-        if (!cancelled) setChecked({ storyId, workToPush })
+        if (!cancelled && workToPush !== undefined)
+          setChecked({ storyId, workToPush })
       })
     }
     refresh()

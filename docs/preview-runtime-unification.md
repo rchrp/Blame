@@ -244,11 +244,79 @@ are recreated once on their next start.
   growing the VM.
 - Lima attaches a memory balloon but never drives it, and the vz balloon
   has no free page reporting: the VM keeps every page it touched (4.1 GB
-  on the Mac for 400 MB used in Linux). Quitting Blame stops the VM in a
-  detached process; it boots again in about 8 s (765 MB after boot).
+  on the Mac for 400 MB used in Linux). The VM therefore runs only while
+  something uses it; see "The runtime on demand" below.
 - Not done: sharing pnpm's store with node_modules by hard links. Links
   need one mount; putting the virtual store outside the project breaks
   Vite and Turbopack, and a per-install store loses the shared cache.
+
+#### The runtime on demand (2026-11-19)
+
+The Blame Runtime VM starts when something needs it and stops once
+nothing used it for 10 minutes (`runtime-power.ts`).
+
+- One place starts it: the runtime agent asks `ensureRuntimeRunning`
+  before every request, and every command reaches the VM through it
+  (git, files, Docker, terminals, previews, the Cline hub); the code
+  graph, the only direct `blame-lima-runtime` caller, asks too. A start
+  checks the runtime first: it boots an installed VM (and updates an
+  outdated one, as `ensure` does) but never installs a missing one.
+- The app no longer starts it at launch. A queued or interrupted local
+  story, the drawer writing a new Local Container story, an open story's
+  preview, a terminal or an agent start it; the agent prewarm follows each
+  start. A start the desktop decides on shows the app's "Starting Blame
+  Runtime" notice; stopped is a resting state in Settings.
+- Background work never starts it and is not use: the idle and review
+  build sweeps, the port watcher, adoption of paused previews, the run log
+  follower (`docker compose logs -f`, which otherwise held it as long as a
+  preview existed), the backlog's preview recovery poll, preview state
+  reads from a hidden window, and the board's git polls (each local
+  story's diff and pull request check, every 15 s while it shows). These
+  fail at once while it is stopped; the board keeps the numbers it last
+  showed.
+- Use is any other request or open stream (a terminal, a log the user
+  follows); an agent at work in the runtime and an awake preview count as
+  use while they last. It never stops during an install, update, repair or
+  reset, which go through `runtimeLifecycleOperation`. A stop takes the
+  runtime's lifecycle lock (`blame-lima-runtime stop`, `wsl --terminate`
+  on Windows, where the status read no longer starts the distribution).
+- Hibernated previews do not keep it: a stop loses their pause, and their
+  next use restarts them. Their state reads "pending", not "error", while
+  that wake restarts them. A client outside Blame (a browser, a device)
+  cannot reach a preview while the runtime is stopped.
+- The delay: previews hibernate after 5 minutes unused, so by then the VM
+  holds almost nothing in Linux but still 2 to 4 GB on the Mac. A stop
+  costs the next use a boot of 14 to 23 s on a loaded Mac (`limactl start`
+  is about 10 s of it, three status checks and `docker-ensure` the rest)
+  and each hibernated preview a restart instead of a resume.
+
+Measured in a throwaway VM (runtime v15, 6 vCPU, 4 GiB) with the dev
+app, a `next dev` 16.4 preview per story; memory is the footprint of the
+vz process on the Mac, the dev app's own processes stay at 0.7 to 1.4 GB
+in both builds:
+
+| Scenario | Before (`main`) | After |
+|---|---|---|
+| App open, project without local story | VM booted at launch: 1.3 GB within a minute, then constant | stopped: 0 |
+| App open, three local stories in review on the visible board | — | stopped for 5 min: 0 |
+| One story in review, preview, then idle | 2.1 GB, constant for 10 min (no stop) | 2.8–3.0 GB¹, preview hibernated at 5 min, VM stopped 10 min later: 0 |
+| Three stories in review, previews, then idle, board visible | — | 4.0 GB, previews hibernated at 5 min, VM stopped 10 min later: 0 |
+
+¹ an earlier run that also installed node_modules; `main` stays up
+whatever it holds, since nothing stops it before Blame quits.
+
+- First use with the VM stopped: creating a story's worktree took 14.9 s
+  instead of 0.3 s; the boot itself 13 to 23 s. Opening a story whose
+  preview hibernated before the stop: its state reads "pending" then
+  "ready", and its first page answers 19 to 22 s after the open.
+- Not possible without a stop: the vz balloon releases nothing to the
+  Mac (Lima's balloon PR #4226 was closed for that reason; a 7 GiB
+  deflation elsewhere returned nothing in 7 minutes). Lima's krunkit
+  driver does return freed pages (libkrun free page reporting) but needs
+  krunkit from a third-party Homebrew tap, libkrun 1.19+ and a new VM,
+  and was not tried. On Windows, WSL2 already returns freed memory
+  (`autoMemoryReclaim=dropCache` by default) and shuts its VM down 60 s
+  after the last distribution stops; Windows was not tested.
 
 #### Cold starts (2026-11-15)
 

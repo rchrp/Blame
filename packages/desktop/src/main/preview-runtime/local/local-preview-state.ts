@@ -103,10 +103,10 @@ export async function localPreviewRuntimeState(
     (await previewWorktreeIsRepository(worktree))
       ? await localPreviewUrl(worktree, inspection)
       : undefined;
-  // Woken after the runtime stopped: its containers went with it, and the
-  // wake is starting it again.
+  // Woken after the runtime stopped: its containers exited with it, and
+  // the wake is starting it again (a paused container counts as running).
   const restarting =
-    input.waking && !inspection.services.some(({ state }) => state);
+    input.waking && !inspection.services.some(({ running }) => running);
   const lifecycle = localPreviewLifecycle(
     state,
     selected ? statuses[selected.id] : undefined,

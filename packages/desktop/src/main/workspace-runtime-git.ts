@@ -9,6 +9,7 @@ import {
   type WorkspaceExecution,
   type WorkspaceMode,
 } from "./workspace-mode.ts";
+import { inRuntimeBackground } from "./runtime-power.ts";
 
 export async function branchExists(
   cwd: string,
@@ -63,7 +64,9 @@ export async function runRuntimeGit(
 ) {
   if (execution === "virtualized") {
     await ensureRuntimeGitSafeDirectory(cwd);
-    await ensureRuntimeGitUserIdentity();
+    // A background read needs no identity, and must not retry configuring
+    // it every few seconds while the runtime is stopped.
+    if (!inRuntimeBackground()) await ensureRuntimeGitUserIdentity();
   }
   try {
     return await runRuntime("git", args, { cwd, execution });

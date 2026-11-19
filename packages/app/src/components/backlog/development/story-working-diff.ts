@@ -5,13 +5,33 @@ export type StoryWorkingDiffInput = {
 }
 
 type StoryDiffWorkspace = {
-  gitDiff(input: { root: string }): Promise<string>
-  gitDiffFrom(input: { from: string; root: string }): Promise<string>
+  gitDiff(input: { background?: boolean; root: string }): Promise<string>
+  gitDiffFrom(input: {
+    background?: boolean
+    from: string
+    root: string
+  }): Promise<string>
   gitLog?(input: {
+    background?: boolean
     root: string
     limit: number
     currentBranchOnly?: boolean
   }): Promise<{ hash: string }[]>
+}
+
+// The board's own reads, every few seconds while it shows: they neither
+// start the Blame Runtime nor count as its use, so a board left open lets
+// it stop. They fail while it is stopped.
+export function boardDiffReads(
+  workspace: StoryDiffWorkspace
+): StoryDiffWorkspace {
+  const gitLog = workspace.gitLog
+  return {
+    gitDiff: (input) => workspace.gitDiff({ ...input, background: true }),
+    gitDiffFrom: (input) =>
+      workspace.gitDiffFrom({ ...input, background: true }),
+    gitLog: gitLog && ((input) => gitLog({ ...input, background: true })),
+  }
 }
 
 export async function storyDiffBase(

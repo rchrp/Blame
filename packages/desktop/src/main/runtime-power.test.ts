@@ -4,6 +4,7 @@ import {
   RuntimePower,
   RuntimeStoppedError,
   runtimeBackground,
+  runtimeBackgroundWhen,
   runtimeIdleStopMs,
   type RuntimeAvailability,
   type RuntimePowerEvent,
@@ -211,4 +212,17 @@ test("looks again after its connection to the runtime was lost", async () => {
   runtime.power.connectionLost();
   await runtime.power.ensureRunning();
   assert.deepEqual(runtime.calls, ["availability", "start", "availability"]);
+});
+
+test("a read the app marks as background leaves a stopped runtime stopped", async () => {
+  const runtime = fakeRuntime();
+  await assert.rejects(
+    runtimeBackgroundWhen({ background: true }, () =>
+      runtime.power.ensureRunning(),
+    ),
+    RuntimeStoppedError,
+  );
+  assert.equal(runtime.power.current(), "stopped");
+  await runtimeBackgroundWhen({}, () => runtime.power.ensureRunning());
+  assert.equal(runtime.power.current(), "running");
 });
