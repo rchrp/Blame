@@ -274,14 +274,12 @@
   }
 
   /* A patch of the preview's glow: it drifts, turns and swells slowly, each
-     on its own beat, so the colors around the page move like a cloud. */
+     on its own beat, so the colors around the page move like a cloud. The
+     animation stays paused: preview-ambilight.tsx steps it on. */
   .preview-ambilight-patch {
-    animation: preview-ambilight-drift 20s ease-in-out infinite alternate;
+    animation: preview-ambilight-drift 20s ease-in-out infinite alternate
+      paused;
     will-change: transform;
-  }
-
-  .preview-ambilight-paused .preview-ambilight-patch {
-    animation-play-state: paused;
   }
 
   @media (prefers-reduced-motion: reduce) {
