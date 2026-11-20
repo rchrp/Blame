@@ -5,7 +5,7 @@ import type {
   ProjectMemoryCandidate,
   ProjectMemoryPersistence,
   ProjectMemoryRecord,
-} from "@blame/agent-runtime";
+} from "@blame/agent-runtime/engine";
 
 export class ProjectMemoryFile implements ProjectMemoryPersistence {
   constructor(private readonly path: string) {}

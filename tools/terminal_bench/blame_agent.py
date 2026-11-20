@@ -195,15 +195,11 @@ class BlameAgent(BaseInstalledAgent):
     def _run_command(self, instruction_path: str) -> str:
         logs = self.environment_logs_dir
         task_id = self.session_id or "terminal-bench"
-        harness = self._get_env("BLAME_BENCHMARK_HARNESS") or "blame"
-        if harness not in {"blame", "cline"}:
-            raise ValueError(f"Unsupported benchmark harness: {harness}")
         return (
             "workspace=$(pwd -P); "
             f"printf '%s' \"$$\" > {shlex.quote((logs / 'runner.pid').as_posix())}; "
             f"test ! -e {shlex.quote((logs / 'runner.stop').as_posix())} || exit 130; "
             "exec blame-headless run "
-            f"--harness {harness} "
             '--workspace "$workspace" '
             f"--instruction-file {shlex.quote(instruction_path)} "
             f"--task-id {shlex.quote(task_id)} "

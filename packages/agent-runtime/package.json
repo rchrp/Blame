@@ -69,6 +69,10 @@
       "types": "./src/engine/protocol.ts",
       "default": "./dist/engine/protocol.js"
     },
+    "./engine-testing": {
+      "types": "./src/engine/testing.ts",
+      "default": "./dist/engine/testing.js"
+    },
     "./harness-runner-path": {
       "types": "./src/harness/runner-path.ts",
       "default": "./dist/harness/runner-path.js"

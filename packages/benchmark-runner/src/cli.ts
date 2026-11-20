@@ -3,7 +3,8 @@ import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { JsonlEventRecorder } from "./event-recorder.js";
 import { parseBenchmarkCommand } from "./config.js";
-import { runBenchmark, runtimeFactory } from "./benchmark-run.js";
+import { runBenchmark } from "./benchmark-run.js";
+import { benchmarkEngine } from "./benchmark-engine.js";
 import type { BenchmarkResult } from "./contracts.js";
 import { HeadlessConfigurationError } from "./dev-guard.js";
 
@@ -24,7 +25,7 @@ Options:
   --workspace <path>
   --task-id <id>
   --events <path>
-  --harness <blame|cline>
+  --harness-trace <path> (each harness call's raw result; default beside the events)
   --result <path>
   --max-iterations <count>
   --timeout-seconds <seconds>`;
@@ -74,7 +75,7 @@ async function executeBenchmark(argumentsList: string[], signal: AbortSignal) {
   ]);
   const result = await runBenchmark(parsed.config, {
     createRecorder: () => new JsonlEventRecorder(parsed.paths.eventsPath),
-    createRuntime: runtimeFactory,
+    createEngine: benchmarkEngine,
     signal,
   });
   await writeResult(parsed.paths.resultPath, result);

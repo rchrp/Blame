@@ -1,273 +1,179 @@
+// One benchmark run: a development story's agent on Blame's engine, run as
+// a task with no person in it (`EngineHost.runStoryTask`). It ends through a
+// finish_task the harness accepted, at the request limit (`maxIterations`),
+// or at the benchmark's deadline. Its events come from the session's records
+// and the harness trace once it has ended.
+import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import type {
+  JsonValue,
+  SessionRecord,
+  TaskOutcome,
+} from "@blame/engine-client";
 import {
-  BlameAgentRuntime,
-  type AgentEvent,
-} from "@blame/agent-runtime";
+  acceptedFinish,
+  benchmarkEvents,
+  usageSummary,
+  type HarnessTraceEntry,
+} from "./engine-events.js";
 import type {
   BenchmarkConfig,
-  BenchmarkEventRecorder,
+  BenchmarkEngine,
   BenchmarkResult,
   BenchmarkRunDependencies,
-  BenchmarkRuntime,
-  BenchmarkSessionInput,
+  BenchmarkStatus,
 } from "./contracts.js";
-import { ProjectMemoryFile } from "./project-memory-file.js";
 import { boundedCleanup } from "./bounded-cleanup.js";
 
-class BenchmarkTimeoutError extends Error {}
-class BenchmarkCancelledError extends Error {}
-
-type SessionState = { requested: boolean; sessionId?: string; failure?: unknown };
+type Ending = { status: BenchmarkStatus; error?: string };
 
 export async function runBenchmark(
   config: BenchmarkConfig,
   dependencies: BenchmarkRunDependencies,
 ): Promise<BenchmarkResult> {
-  const startedAt = (dependencies.now ?? currentDate)();
+  const now = dependencies.now ?? (() => new Date());
+  const startedAt = now();
   const recorder = dependencies.createRecorder();
-  const terminal = terminalObserver(recorder);
-  const runtime = dependencies.createRuntime(
-    terminal.events,
-    config.harness,
-    config,
-  );
   const cleanupTimeoutMs = dependencies.cleanupTimeoutMs ?? 5_000;
-  let shutdownIncomplete: boolean;
-  let outcome;
-  try {
-    outcome = await executeSession(
-      config,
-      runtime,
-      terminal.promise,
-      cleanupTimeoutMs,
-      dependencies.signal,
-    );
-  } finally {
-    shutdownIncomplete = !(await boundedCleanup(() => runtime.shutdown(), cleanupTimeoutMs)).completed;
-    terminal.stop();
-    await recorder.close();
-  }
-  const finishedAt = (dependencies.now ?? currentDate)();
-  return benchmarkResult({
-    config,
-    finishedAt,
-    recorder,
-    startedAt,
-    ...outcome,
-    cleanupIncomplete: shutdownIncomplete || outcome.cleanupIncomplete,
-  });
-}
-
-async function executeSession(
-  config: BenchmarkConfig,
-  runtime: BenchmarkRuntime,
-  terminal: Promise<AgentEvent>,
-  cleanupTimeoutMs: number,
-  signal?: AbortSignal,
-) {
-  const state: SessionState = { requested: false };
-  let usage;
-  let terminalEvent: AgentEvent | undefined;
+  const session = `benchmark-${randomUUID()}`;
+  const stop = new AbortController();
+  let stopped: BenchmarkStatus | undefined;
+  const end = (status: BenchmarkStatus) => {
+    stopped ??= status;
+    stop.abort();
+  };
+  const timer = setTimeout(() => end("timed_out"), config.timeoutMs);
+  const cancel = () => end("cancelled");
+  if (dependencies.signal?.aborted) cancel();
+  dependencies.signal?.addEventListener("abort", cancel, { once: true });
+  let engine: BenchmarkEngine | undefined;
+  let ending: Ending;
+  let outcome: TaskOutcome | undefined;
+  let records: SessionRecord[] = [];
   let cleanupIncomplete = false;
   try {
-    if (signal?.aborted) throw new BenchmarkCancelledError("Benchmark cancelled.");
-    const execution = startSession(config, runtime, terminal, state, cleanupTimeoutMs);
-    terminalEvent = await waitForTerminal(execution, config.timeoutMs, signal);
+    if (stopped) throw new Error("Benchmark cancelled.");
+    engine = dependencies.createEngine(config);
+    outcome = (await engine.runStoryTask(storyTask(config, session, stop.signal)))
+      .outcome;
+    ending = stopped
+      ? { status: stopped, error: stoppedMessage(stopped) }
+      : outcomeEnding(outcome);
+    const read = await boundedCleanup(() => engine!.records(session), cleanupTimeoutMs);
+    records = read.value ?? [];
+    cleanupIncomplete ||= !read.completed;
   } catch (error) {
-    state.failure = error;
-    cleanupIncomplete = state.requested && !state.sessionId;
-    cleanupIncomplete ||= !(await abortSession(runtime, state.sessionId, cleanupTimeoutMs));
+    ending = stopped
+      ? { status: stopped, error: stoppedMessage(stopped) }
+      : { status: "failed", error: errorMessage(error) };
   } finally {
-    if (state.sessionId) {
-      const collected = await boundedCleanup(() => runtime.sessions.usage(state.sessionId!), cleanupTimeoutMs);
-      usage = collected.value;
-      cleanupIncomplete ||= !collected.completed;
-    }
+    clearTimeout(timer);
+    dependencies.signal?.removeEventListener("abort", cancel);
   }
-  return { cleanupIncomplete, failure: state.failure, sessionId: state.sessionId, terminalEvent, usage };
-}
-
-async function startSession(
-  config: BenchmarkConfig,
-  runtime: BenchmarkRuntime,
-  terminal: Promise<AgentEvent>,
-  state: SessionState,
-  cleanupTimeoutMs: number,
-) {
-  state.requested = true;
-  const { sessionId } = await runtime.sessions.startDevelopment(sessionInput(config));
-  if (state.failure) {
-    await abortSession(runtime, sessionId, cleanupTimeoutMs);
-    throw state.failure;
+  const trace = await readTrace(config.harnessTracePath);
+  for (const { at, event } of benchmarkEvents(session, records, trace))
+    recorder.record(event, at);
+  if (engine) {
+    const shutdown = await boundedCleanup(() => engine!.shutdown(), cleanupTimeoutMs);
+    cleanupIncomplete ||= !shutdown.completed;
   }
-  state.sessionId = sessionId;
-  return terminal;
-}
-
-export function runtimeFactory(
-  events: { emit(event: AgentEvent): void },
-  harness: BenchmarkConfig["harness"],
-  config: BenchmarkConfig,
-) {
-  return new BlameAgentRuntime(events, {
-    developmentHarness: harness,
-    modelInactivityTimeoutMs: config.timeoutMs,
-    ...(harness === "blame" && config.projectMemoryFile
-      ? { projectMemoryPersistence: new ProjectMemoryFile(config.projectMemoryFile) }
-      : {}),
-  });
-}
-
-function sessionInput(config: BenchmarkConfig): BenchmarkSessionInput {
+  await recorder.close();
+  const finishedAt = now();
+  const finish = acceptedFinish(trace);
   return {
-    isolatedEnvironment: config.isolatedEnvironment,
-    apiConnection: { token: config.apiToken, url: config.apiUrl },
-    credentialLabel: config.credentialLabel,
-    cwd: config.workspaceRoot,
-    maxIterations: config.maxIterations,
+    ...(cleanupIncomplete ? { cleanupIncomplete: true } : {}),
+    completion: finish.completion,
+    durationMs: finishedAt.getTime() - startedAt.getTime(),
+    ...(ending.error ? { error: ending.error } : {}),
+    eventCount: recorder.eventCount,
+    finishedAt: finishedAt.toISOString(),
+    harness: "blame",
+    isolatedEnvironment: config.isolatedEnvironment === true,
+    metrics: recorder.metrics(startedAt, finishedAt),
     modelId: config.modelId,
     providerId: config.providerId,
-    projectId: config.projectId,
     reasoningEffort: config.reasoningEffort,
-    summary: config.instruction,
-    ...(config.requiredChecks ? { requiredChecks: config.requiredChecks } : {}),
-    title: "Requested task",
-    workspaceRoot: config.workspaceRoot,
+    maxIterations: config.maxIterations,
+    timeoutMs: config.timeoutMs,
+    schemaVersion: 1,
+    ...(records.length ? { sessionId: session } : {}),
+    startedAt: startedAt.toISOString(),
+    status: ending.status,
+    taskId: config.taskId,
+    toolEventCount: recorder.toolEventCount,
+    ...(records.length ? { usage: usageSummary(records) } : {}),
+    verified: finish.verified,
   };
 }
 
-function terminalObserver(recorder: BenchmarkEventRecorder) {
-  let active = true;
-  let resolveTerminal: (event: AgentEvent) => void = () => undefined;
-  const promise = new Promise<AgentEvent>((resolve) => {
-    resolveTerminal = resolve;
-  });
-  const record = (event: AgentEvent) => {
-    if (!active) return false;
-    recorder.record(event);
-    return true;
-  };
+/** The story the benchmark runs: its instruction, isolation, checks and limit. */
+function storyTask(config: BenchmarkConfig, session: string, signal: AbortSignal) {
   return {
-    events: {
-      captureHiddenToolEvent: record,
-      emit(event: AgentEvent) {
-        if (record(event) && isTerminalEvent(event)) resolveTerminal(event);
+    session,
+    signal,
+    instruction: config.instruction,
+    settings: {
+      workspace: { root: config.workspaceRoot, location: "host" as const },
+      // An isolated environment is the run's own, like a story's worktree.
+      workspaceMode: config.isolatedEnvironment
+        ? ("local-container" as const)
+        : ("direct" as const),
+      projectId: config.projectId ?? "",
+      storyId: config.taskId,
+      title: "Requested task",
+      model: {
+        providerId: config.providerId,
+        modelId: config.modelId,
+        ...(config.credentialLabel ? { credentialLabel: config.credentialLabel } : {}),
+        ...(config.reasoningEffort ? { reasoning: config.reasoningEffort } : {}),
       },
     },
-    promise,
-    stop: () => { active = false; },
+    limits: { max_requests_per_turn: config.maxIterations },
+    taskContract: {
+      acceptance_criteria: [config.instruction],
+      ...(config.requiredChecks
+        ? { required_checks: config.requiredChecks as unknown as JsonValue }
+        : {}),
+    },
   };
 }
 
-function isTerminalEvent(event: AgentEvent) {
-  if (event.type === "done") return true;
-  if (event.type !== "error") return false;
-  return recordValue(event.payload)?.recoverable !== true;
+function outcomeEnding(outcome: TaskOutcome): Ending {
+  if (outcome.status === "completed") return { status: "succeeded" };
+  if (outcome.status === "interrupted")
+    return { status: "cancelled", error: "The run was stopped." };
+  const { failure } = outcome;
+  switch (failure.kind) {
+    case "contract_unmet":
+      return {
+        status: "failed",
+        error: "The agent stopped without a finish_task the harness accepted.",
+      };
+    case "limit_reached":
+      return { status: "failed", error: `The run stopped at its ${failure.limit} limit.` };
+    case "provider_error":
+      return { status: "failed", error: failure.error.message };
+  }
 }
 
-function waitForTerminal(
-  terminal: Promise<AgentEvent>,
-  timeoutMs: number,
-  signal?: AbortSignal,
-) {
-  return new Promise<AgentEvent>((resolve, reject) => {
-    let settled = false;
-    const finish = () => {
-      if (settled) return false;
-      settled = true;
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", cancel);
-      return true;
-    };
-    const resolveOnce = (event: AgentEvent) => {
-      if (finish()) resolve(event);
-    };
-    const rejectOnce = (error: unknown) => {
-      if (finish()) reject(error);
-    };
-    const timer = setTimeout(
-      () => rejectOnce(new BenchmarkTimeoutError("Benchmark timed out.")),
-      timeoutMs,
-    );
-    const cancel = () =>
-      rejectOnce(new BenchmarkCancelledError("Benchmark cancelled."));
-    if (signal?.aborted) return cancel();
-    signal?.addEventListener("abort", cancel, { once: true });
-    terminal.then(resolveOnce, rejectOnce);
-  });
+function stoppedMessage(status: BenchmarkStatus) {
+  return status === "timed_out" ? "Benchmark timed out." : "Benchmark cancelled.";
 }
 
-async function abortSession(runtime: BenchmarkRuntime, sessionId: string | undefined, timeoutMs: number) {
-  if (!sessionId) return true;
-  return (await boundedCleanup(() => runtime.sessions.abort(sessionId), timeoutMs)).completed;
-}
-
-function benchmarkResult(input: {
-  cleanupIncomplete?: boolean;
-  config: BenchmarkConfig;
-  failure?: unknown;
-  finishedAt: Date;
-  recorder: BenchmarkEventRecorder;
-  sessionId?: string;
-  startedAt: Date;
-  terminalEvent?: AgentEvent;
-  usage?: BenchmarkResult["usage"];
-}): BenchmarkResult {
-  const terminalPayload = recordValue(input.terminalEvent?.payload);
-  return {
-    ...(input.cleanupIncomplete ? { cleanupIncomplete: true } : {}),
-    completion: terminalPayload?.completion,
-    durationMs: input.finishedAt.getTime() - input.startedAt.getTime(),
-    error: resultError(input.failure, input.terminalEvent),
-    eventCount: input.recorder.eventCount,
-    finishedAt: input.finishedAt.toISOString(),
-    harness: input.config.harness,
-    isolatedEnvironment: input.config.isolatedEnvironment === true,
-    metrics: input.recorder.metrics(input.startedAt, input.finishedAt),
-    modelId: input.config.modelId,
-    providerId: input.config.providerId,
-    reasoningEffort: input.config.reasoningEffort,
-    maxIterations: input.config.maxIterations,
-    timeoutMs: input.config.timeoutMs,
-    schemaVersion: 1,
-    sessionId: input.sessionId,
-    startedAt: input.startedAt.toISOString(),
-    status: resultStatus(input.failure, input.terminalEvent),
-    taskId: input.config.taskId,
-    toolEventCount: input.recorder.toolEventCount,
-    usage: input.usage,
-    verified: booleanValue(terminalPayload?.verified),
-  };
-}
-
-function resultStatus(failure: unknown, terminal?: AgentEvent) {
-  if (failure instanceof BenchmarkTimeoutError) return "timed_out" as const;
-  if (failure instanceof BenchmarkCancelledError) return "cancelled" as const;
-  if (failure || terminal?.type === "error") return "failed" as const;
-  return "succeeded" as const;
-}
-
-function resultError(failure: unknown, terminal?: AgentEvent) {
-  if (failure) return errorMessage(failure);
-  if (terminal?.type !== "error") return undefined;
-  return String(
-    recordValue(terminal.payload)?.message ?? "Agent session failed.",
-  );
-}
-
-function recordValue(value: unknown) {
-  return value && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
-function booleanValue(value: unknown) {
-  return typeof value === "boolean" ? value : undefined;
+async function readTrace(path: string): Promise<HarnessTraceEntry[]> {
+  const text = await readFile(path, "utf8").catch(() => "");
+  return text
+    .split("\n")
+    .filter(Boolean)
+    .flatMap((line) => {
+      try {
+        return [JSON.parse(line) as HarnessTraceEntry];
+      } catch {
+        return [];
+      }
+    });
 }
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
-}
-
-function currentDate() {
-  return new Date();
 }

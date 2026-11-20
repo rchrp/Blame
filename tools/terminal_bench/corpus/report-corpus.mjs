@@ -53,20 +53,6 @@ function aggregateRuns(runs) {
       runs,
       (run) => run.metrics?.navigation?.returnedBytes,
     ),
-    contextComposition: {
-      messages: total(
-        runs,
-        (run) => run.metrics?.context?.composition?.messageBytes,
-      ),
-      systemPrompt: total(
-        runs,
-        (run) => run.metrics?.context?.composition?.systemPromptBytes,
-      ),
-      toolDefinitions: total(
-        runs,
-        (run) => run.metrics?.context?.composition?.toolDefinitionBytes,
-      ),
-    },
     totalBlockedEdits: total(runs, (run) => run.metrics?.editing?.blocked),
     runs,
   };

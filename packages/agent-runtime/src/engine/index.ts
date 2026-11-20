@@ -15,5 +15,11 @@ export { desktopServices, desktopServiceNames } from "./desktop-services.js";
 export type { DesktopServices, DesktopServiceName } from "./desktop-services.js";
 export * from "./tools/index.js";
 export * from "./protocol.js";
+export type { ReasoningSelection, RequiredProjectCheck } from "../types.js";
+export type {
+  ProjectMemoryCandidate,
+  ProjectMemoryPersistence,
+  ProjectMemoryRecord,
+} from "../harness/project-memory.js";
 /** The harness runner the engine starts (`--harness-command`). */
 export { harnessRunnerPath } from "../harness/runner-path.js";

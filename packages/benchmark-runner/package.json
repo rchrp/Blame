@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@blame/agent-runtime": "workspace:*"
+    "@blame/agent-runtime": "workspace:*",
+    "@blame/engine-client": "workspace:*"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
