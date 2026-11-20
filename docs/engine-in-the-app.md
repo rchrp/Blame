@@ -25,8 +25,8 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   graph), so it stays a small Node process.
 - **Main** spawns the engine host, starts it again after a crash, routes
   renderer calls to it and its events back to the windows that follow a
-  session. It serves the host the few desktop services a tool needs
-  (`renderWebPage`). It imports only types and a tiny protocol module from
+  session. It serves the host the desktop services the tools need
+  (see "Desktop services"). It imports only types and a tiny protocol module from
   `@blame/agent-runtime/engine-protocol`: the main process stays light
   (`scripts/check-main-process-imports.mjs` still passes).
   On quit it asks the host to shut down: the engine ends running turns as
@@ -57,6 +57,11 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
 | `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended and what the agent last reported (`lastReply`: its `finish_task` summary, or its last text). |
+| `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
+| `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
+| `signInChatGpt({ label })` | `blame-engine auth chatgpt login`: opens the sign-in in the browser (`openExternal`, served by main) and keeps the tokens in the API. |
+| `claudeCodeStatus()`, `connectClaudeCode({ label })` | Whether Claude Code is installed and signed in here; saves the connection. |
+| `planUsage({ providerId, credentialLabel })` | How much of the ChatGPT or Claude plan is used. |
 
 Every call that names a session also takes `location` (`"host"`, the
 default, or `"vm"`). The host picks the engine from it; today only `"host"`
@@ -157,32 +162,137 @@ later day does not rewrite it and the provider's prompt cache holds.
   story, a story's agent fields above) and nothing about runs: no run rows,
   no activities, no outboxes.
 
+## Providers and models
+
+The engine's providers are the product's: the app, the API (credentials,
+preferences, validators) and the engine all say `anthropic`, `claude-code`,
+`openai`, `chatgpt`, `gemini`, `openrouter` and `openai-compatible`
+(`packages/api/app/validators/provider_id.ts`). There is no other provider.
+
+The models come from models.dev, through the engine (`crates/README.md`,
+"The model catalog"): `catalog/list` gives every client the same list, a
+model published there shows in the pickers the next time one opens, and a
+model the provider refuses fails the turn as `model_unavailable` with a
+message that names the model and the provider and quotes the provider. The
+host shapes the list for the pickers (`engine/provider-list.ts`); the API
+keeps no catalog and only ranks what it is sent
+(`POST /providers/recommendations`: OpenRouter's benchmarks and the
+person's usage). Reasoning: the selector's `none` is the engine's `off`,
+`max` is `max`, and a model is offered only the levels models.dev lists for
+it.
+
 ## Credentials
 
 `host/credential { provider, session }` is answered from the user's provider
 credentials in the API (`/providers/credentials/resolve`):
 
-| engine id | app (API) id | answer |
-| --- | --- | --- |
-| `anthropic` | `anthropic` | `api_key` |
-| `openai` | `openai-native` | `api_key` |
-| `chatgpt` | `openai-codex` | `bearer` with the account id; refreshed with `blame-engine auth chatgpt refresh` and saved back to the API |
-| `gemini` | `gemini` | `api_key` |
-| `openrouter` | `openrouter` | `api_key` |
-| `openai-compatible` | `openai` | `api_key` with its base URL |
-| `claude-code` | `claude-code` | the shared Claude Code bridge: a key scoped to the session and the bridge URL |
+| provider | answer |
+| --- | --- |
+| `anthropic`, `openai`, `gemini`, `openrouter` | `api_key` |
+| `chatgpt` | `bearer` with the account id; signed in with `blame-engine auth chatgpt login`, refreshed with `blame-engine auth chatgpt refresh` and saved back to the API |
+| `openai-compatible` | `api_key` with its base URL |
+| `claude-code` | the shared Claude Code bridge: a key scoped to the session and the bridge URL |
 
-Other app providers have no engine provider yet: such a model cannot start a
-conversation on the engine.
+The Cline story path, until it moves to the engine, maps `openai` and
+`chatgpt` to Cline's own ids in one place
+(`agent-runtime/src/supplemental-model-config.ts`).
 
 ## Tools
 
 A client tool is a `ClientTool` (`engine/tool.ts`): name, description, JSON
 Schema, effect, `endsTurn`, `needsApproval`, and `run(input, context)` with
-the call's `signal` and `progress(text)`. A `ToolSet` turns tools into the
-session's `client_tools` specs and serves `host/tool`; progress goes back to
-the engine as `tool/progress` and reaches viewers as `tool_progress` deltas.
-Engine tools (the harness) run inside the engine, next to the files.
+the call's `session`, `turn`, `call`, `signal` and `progress(text)`. A
+`ToolSet` turns tools into the session's `client_tools` specs and serves
+`host/tool`; progress goes back to the engine as `tool/progress` and reaches
+viewers as `tool_progress` deltas. Engine tools (the harness) run inside the
+engine, next to the files.
+
+The host's one tool set does three things for every call, whatever the tool:
+
+- **Policy** (`engine/tools/policy.ts`): one table gives each tool its effect
+  and whether the user approves it. An MCP tool takes `read_only` when its
+  server says so (`readOnlyHint`), else Blame's rule for its own servers
+  (GitHub read-only, preview DevTools `command`), else `external`. The engine
+  runs read-only calls in parallel and lists command and external calls as
+  not undone on a rewind. No conversation tool needs approval today.
+- **Guards** (`engine/tools/guards.ts`): a call whose input names a developer
+  env file (`.env`, `.env.local`, not `.env.example`) is refused; what an MCP
+  server answers (GitHub, preview DevTools, the user's servers) is masked
+  before the model and the transcript see it. Blame's own tools mask their
+  own answers.
+- **Images**: a tool answers `{ type: "image", data, mediaType }` blocks; the
+  set stores each as a blob (`blob/put`) and the record keeps
+  `ToolResultBlock::Image { blob }`. The model receives the image, and a
+  reopened conversation still has it (the engine reads it from its store).
+
+### A conversation's tools
+
+Tools shared by every session (web research) are given to the `ToolSet` at
+construction. A conversation's own tools are bound to its session:
+`host.conversationTools.ensure(session)` (`engine/tools/index.ts`,
+`ConversationTools`) lists them once with `conversationClientTools(services,
+session)`, binds them to the session in the tool set and returns their specs
+and the prompt section they need (the skills' scopes). A purpose builder puts
+those specs in `client_tools` and the prompt in `system_prompt`.
+
+The list stays the same for the whole conversation in this host: the specs
+are part of the session's config and of the provider's prompt cache, and the
+host only rebuilds a config with a message (`applySettings`). An MCP
+server's tools are listed when the conversation's tools are; a tool the
+server dropped later fails with the server's message, a new one shows in new
+conversations, or in this one after the app restarts (one `ConfigChanged`,
+one cache miss).
+
+| tool | needs | story | plan | new project | quick chat (proposed) |
+| --- | --- | --- | --- | --- | --- |
+| `search_web`, `read_web_page` | API connection, `renderWebPage` | yes | yes | yes | yes (today) |
+| `read_attachment` | workspace (an executor for the VM) | yes | yes | yes | no: attachments are message blocks |
+| `get_preview_devtools` | `previewDevtools`, a preview without surface | yes | yes | no | no |
+| `preview_devtools__*` | `previewDevtools`, `previewDevtoolsTools`, `previewDevtoolsCall`, a preview scope | yes | yes | no | no |
+| `preview_terminal`, `preview_display`, `preview_device` | `previewSurfaceInfo`, `previewSurfaceCall` (replace the DevTools tools) | yes | yes | no | no |
+| `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no |
+| `repair_preview_initialization` | `repairPreviewInitialization` (a one-shot agent, session 3) | yes | no | no | no |
+| `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no |
+| `open_component_preview` | `componentPreview`, a Vite-capable workspace | yes | no | no | no |
+| `propose_user_stories` | a project | yes | yes | no | yes |
+| `propose_project_stack` | nothing | no | no | yes | no |
+| `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | no | yes |
+| `github__*` | `githubMcpTools`, `githubMcpCall`: read-only GitHub access for the session id | yes | yes | no | no |
+| `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | no | yes |
+| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.cline/skills`… and Blame's own) | yes | yes | no | yes |
+
+Not yet client tools: `consult_specialist` and spawned agents (engine tasks),
+`finish_task` and the harness (Rust harness), project memory.
+
+### Desktop services
+
+The tools ask the main process for what only it has through typed desktop
+services (`engine/desktop-services.ts`, `DesktopServices`): the preview's
+browser, readiness, logs, variables and screen, the screenshot store, the
+component preview server, the session's GitHub MCP connection (its token
+never leaves main), the project runner, Git and page rendering. The host
+sends `desktop-request { method, input }`; main answers it in
+`packages/desktop/src/main/engine/engine-desktop-services.ts` (the same
+functions the agent runtime host uses, which delegates to it) and an aborted
+call sends `desktop-cancel`, which aborts the work in main.
+
+### The user's MCP servers and skills
+
+MCP servers are read from the MCP settings file Settings → MCP writes
+(`mcp-settings.ts`), connected with `@modelcontextprotocol/sdk` (stdio,
+Streamable HTTP, SSE), one connection per server for the whole host, closed
+when it shuts down. OAuth state stays in that file next to the server
+(`mcp-oauth.ts`); authorizing opens the server's sign-in page and waits for
+the loopback redirect. Skills are `SKILL.md` folders read from the
+workspace (`.clinerules`, `.cline`, `.claude`, `.agents` `/skills`), the
+user's home (`~/.cline/skills`, `~/.agents/skills`) and Blame's own
+(`plugins/blame-native/skills`); the prompt lists their scopes as they were
+when the conversation started and the `skills` tool reads the current files.
+A plugin folder (`BLAME_AGENT_PLUGIN_PATHS`) adds its skills only.
+
+Until stories move to the engine, the conversations on Cline get these same
+tools through one adapter (`cline-client-tools.ts`): Cline's own MCP loading
+and skill service are off, so each tool has one implementation.
 
 ## Approvals
 

@@ -8,10 +8,7 @@ import { storyMaxInputTokens } from "@/components/backlog/data/story-context-lim
 import { useEngineCompaction } from "@/components/backlog/drawer/story-context-compaction"
 import type { QuickChat } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
-import {
-  engineModelChoice,
-  engineModelUnavailable,
-} from "@/components/chat/engine/engine-model"
+import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import { transcriptConversation } from "@/components/chat/engine/transcript-conversation"
 import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import { useModelSelection } from "@/components/model/model-selection"
@@ -82,7 +79,7 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
       platform,
       projectPath: project?.path,
     })
-    return error ?? engineModelUnavailable(selection)
+    return error
   }
 
   // A new chat gets its row, then its engine session; the title improves

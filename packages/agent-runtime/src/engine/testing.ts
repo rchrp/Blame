@@ -14,7 +14,9 @@ type Reply =
   /** The beginning of a reply, then silence: a turn that stays in flight. */
   | { kind: "stall"; text: string }
   /** An HTTP error, as the provider sends one. */
-  | { kind: "error"; status: number; type: string };
+  | { kind: "error"; status: number; type: string }
+  /** An HTTP error with a JSON body, as a provider refuses a request. */
+  | { kind: "refuse"; status: number; body: unknown };
 
 export const text = (...pieces: string[]): Reply => ({ kind: "text", pieces });
 export const tools = (
@@ -28,6 +30,11 @@ export const failure = (status: number, type: string): Reply => ({
   kind: "error",
   status,
   type,
+});
+export const refuse = (status: number, body: unknown): Reply => ({
+  kind: "refuse",
+  status,
+  body,
 });
 
 function sse(events: Array<[string, unknown]>) {
@@ -172,6 +179,12 @@ export class MockModel {
             );
           return;
         }
+        if (reply.kind === "refuse") {
+          response
+            .writeHead(reply.status, { "content-type": "application/json" })
+            .end(JSON.stringify(reply.body));
+          return;
+        }
         response.writeHead(200, { "content-type": "text/event-stream" });
         if (reply.kind === "text")
           return response.end(sse(textEvents(reply.pieces)));
@@ -273,6 +286,20 @@ export class FakeApi {
             .writeHead(200, { "content-type": "application/octet-stream" })
             .end(held.bytes);
         }
+        if (path === "/providers/credentials" && request.method === "GET")
+          return json(200, {
+            data: [
+              {
+                id: "c1",
+                userId: "user",
+                providerId: "anthropic",
+                label: "Default",
+                baseUrl: this.modelBase,
+                createdAt: "2026-11-20T00:00:00Z",
+                updatedAt: null,
+              },
+            ],
+          });
         if (path === "/providers/credentials/resolve") {
           const { providerId } = JSON.parse(raw.toString()) as {
             providerId: string;
@@ -334,4 +361,67 @@ export class FakeApi {
     this.server.closeAllConnections();
     await new Promise((resolve) => this.server.close(resolve));
   }
+}
+
+/**
+ * models.dev's `api.json`, served with an `ETag` and answering a matching
+ * `If-None-Match` with `304`, as models.dev does.
+ */
+export class ModelsDev {
+  requests = 0;
+  private data: Record<string, { models: Record<string, unknown> }>;
+  private version = 1;
+  private readonly server: Server;
+  url = "";
+
+  private constructor(
+    data: Record<string, { models: Record<string, unknown> }>,
+  ) {
+    this.data = data;
+    this.server = createServer((request, response) => {
+      this.requests += 1;
+      const etag = `"v${this.version}"`;
+      if (request.headers["if-none-match"] === etag)
+        return response.writeHead(304).end();
+      response
+        .writeHead(200, { "content-type": "application/json", etag })
+        .end(JSON.stringify(this.data));
+    });
+  }
+
+  static async start(
+    data: Record<string, { models: Record<string, unknown> }>,
+  ) {
+    const modelsDev = new ModelsDev(data);
+    modelsDev.url = `${await listen(modelsDev.server)}/api.json`;
+    return modelsDev;
+  }
+
+  /** A model of `provider` appears upstream. */
+  publish(provider: string, id: string, row: Record<string, unknown>) {
+    this.data[provider] ??= { models: {} };
+    this.data[provider]!.models[id] = row;
+    this.version += 1;
+  }
+
+  async close() {
+    this.server.closeAllConnections();
+    await new Promise((resolve) => this.server.close(resolve));
+  }
+}
+
+/** A models.dev row with what an agent's model needs. */
+export function modelsDevRow(name: string, output = 64_000) {
+  return {
+    id: name.toLowerCase().replaceAll(" ", "-"),
+    name,
+    attachment: true,
+    reasoning: true,
+    tool_call: true,
+    release_date: "2026-11-20",
+    last_updated: "2026-11-20",
+    modalities: { input: ["text", "image", "pdf"], output: ["text"] },
+    limit: { context: 1_000_000, output },
+    cost: { input: 3, output: 15 },
+  };
 }

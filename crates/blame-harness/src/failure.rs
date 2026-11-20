@@ -15,6 +15,10 @@ pub struct Failure {
     /// `SymbolResolutionError.candidates`, shown as the blocked result's recovery.
     pub candidates: Vec<Json>,
     pub cancelled: bool,
+    /// `LightCommitConflict`: the worktree changed under an edit.
+    pub conflict: bool,
+    /// A scoped patch's recovery text (`ScopedEditRecovery`).
+    pub recovery: Option<String>,
 }
 
 pub type Outcome<T> = Result<T, Failure>;
@@ -26,6 +30,15 @@ impl Failure {
             code: None,
             candidates: Vec::new(),
             cancelled: false,
+            conflict: false,
+            recovery: None,
+        }
+    }
+
+    pub fn conflict(message: impl Into<String>) -> Failure {
+        Failure {
+            conflict: true,
+            ..Failure::new(message)
         }
     }
 

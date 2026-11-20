@@ -1,81 +1,47 @@
-import {
-  missingProviderModels,
-  supplementalModels,
-  type SupplementalModel,
-} from "@blame/model-catalog";
-import { getProviderCollectionSync, type ModelInfo } from "@cline/llms";
+import { getProviderCollectionSync } from "@cline/llms";
 import type { CoreModelConfig } from "@cline/sdk";
 
 import { claudeCodeModelConfig } from "./claude-code/claude-code-provider.js";
 
-// Models resolved from the Blame API catalog, which tracks newer Cline releases
-// and live provider catalogs than the SDK bundled in this runtime.
-const catalogModels = new Map<string, Record<string, ModelInfo>>();
+// The Cline story path until it moves to the engine. The app names providers
+// by the engine's ids; Cline names two of them its own way. This mapping
+// dies with the Cline path.
+const clineIds: Record<string, string> = {
+  openai: "openai-native",
+  chatgpt: "openai-codex",
+};
 
-/** knownModels is serialized by Cline for local, remote and delegated sessions. */
+/** Cline's id for the engine's provider id. */
+export function clineProviderId(providerId: string) {
+  return clineIds[providerId] ?? providerId;
+}
+
+/** A Cline config with Cline's provider ids and the Claude Code bridge's model. */
 export function supplementalModelConfig<T extends CoreModelConfig>(
   requested: T,
-  entries: readonly SupplementalModel[] = supplementalModels,
 ): T {
-  const config = claudeCodeModelConfig(requested);
-  const providerId = config.providerConfig?.providerId ?? config.providerId;
-  const official = getProviderCollectionSync(providerId)?.models;
-  // Never invent a new provider or overwrite a Cline registry entry.
-  if (!official) return config;
-  const missing = {
-    ...missingProviderModels(providerId, official, entries),
-    ...withoutOfficial(catalogModels.get(providerId), official),
-  };
-  const modelId = config.providerConfig?.modelId ?? config.modelId;
-  if (!Object.hasOwn(missing, modelId)) return config;
-  return {
-    ...config,
-    knownModels: { ...missing, ...config.knownModels },
-    ...(config.providerConfig
+  const config = claudeCodeModelConfig({
+    ...requested,
+    providerId: clineProviderId(requested.providerId),
+    ...(requested.providerConfig
       ? {
           providerConfig: {
-            ...config.providerConfig,
-            knownModels: { ...missing, ...config.providerConfig.knownModels },
+            ...requested.providerConfig,
+            providerId: clineProviderId(requested.providerConfig.providerId),
           },
         }
       : {}),
-  };
+  });
+  return config;
 }
 
 /**
- * Fetches catalog metadata for a model the bundled Cline registry lacks, so a
- * model released after this runtime starts with its real limits. Failures keep
- * the bundled behaviour.
+ * Metadata of a model from the registry bundled with Cline. A model it does
+ * not know runs with Cline's defaults: the engine, not Cline, reads
+ * models.dev.
  */
-export async function loadCatalogModel(
-  fetchModel: () => Promise<ModelInfo | undefined>,
-  providerId: string,
-  modelId: string,
-) {
-  const official = getProviderCollectionSync(providerId)?.models;
-  if (!official || Object.hasOwn(official, modelId)) return;
-  if (catalogModels.get(providerId)?.[modelId]) return;
-  const model = await fetchModel().catch(() => undefined);
-  if (!model || typeof model !== "object") return;
-  catalogModels.set(providerId, {
-    ...catalogModels.get(providerId),
-    [modelId]: model,
-  });
-}
-
-function withoutOfficial(
-  models: Record<string, ModelInfo> | undefined,
-  official: Record<string, unknown>,
-) {
-  return Object.fromEntries(
-    Object.entries(models ?? {}).filter(([id]) => !Object.hasOwn(official, id)),
-  );
-}
-
-/** Metadata of a model, from the bundled registry or the Blame catalog. */
 export function knownModelInfo(providerId: string, modelId: string) {
-  return (
-    getProviderCollectionSync(providerId)?.models[modelId] ??
-    catalogModels.get(providerId)?.[modelId]
-  );
+  return getProviderCollectionSync(clineProviderId(providerId))?.models[
+    modelId
+  ];
 }

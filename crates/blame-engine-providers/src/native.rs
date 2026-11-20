@@ -6,6 +6,8 @@
 //! `AssistantContent::with_native` does from the bare item. A block's item
 //! is replayed only to the wire, provider and model that produced it.
 
+use crate::catalog::Catalog;
+use crate::registry::ProviderKind;
 use crate::wire::Wire;
 use blame_engine_protocol::{AssistantBlock, ModelRef, NativeItem, ToolCallId};
 use rig_core::message::{
@@ -13,10 +15,14 @@ use rig_core::message::{
     ToolFunction, ToolName,
 };
 use serde_json::Value;
+use std::sync::Arc;
 
 /// Who a request goes to: the context in which stored items may replay.
 #[derive(Clone, Debug)]
 pub(crate) struct Target {
+    pub(crate) kind: ProviderKind,
+    /// The catalog copy the request is encoded with, start to end.
+    pub(crate) catalog: Arc<Catalog>,
     pub(crate) wire: Wire,
     pub(crate) model: ModelRef,
     /// Rig's descriptor name for the provider (`anthropic`, `chatgpt`…),
@@ -33,6 +39,17 @@ pub(crate) struct Target {
 }
 
 impl Target {
+    /// The model's catalog entry, as this provider serves it.
+    pub(crate) fn spec(&self) -> Option<rig_core::catalog::ModelSpec> {
+        self.catalog
+            .spec(self.kind, self.rig_provider, &self.model.model)
+    }
+
+    pub(crate) fn facts(&self) -> rig_core::catalog::ModelFacts {
+        self.catalog
+            .facts(self.kind, self.rig_provider, &self.model.model)
+    }
+
     fn owns(&self, native: &NativeItem) -> bool {
         native.wire == self.wire.name() && native.model == self.model
     }

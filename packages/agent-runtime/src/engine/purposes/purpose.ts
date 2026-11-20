@@ -4,7 +4,6 @@
 
 import type { SessionConfig } from "@blame/engine-client";
 import {
-  engineProviderId,
   engineReasoning,
   type EngineMessage,
   type EngineModelChoice,
@@ -44,16 +43,11 @@ export type Purpose<Settings> = {
   ): Promise<EngineMessage>;
 };
 
-/** The engine's model for the app's choice, or a clear refusal. */
+/** The engine's model for the picked one (the app uses the engine's provider ids). */
 export function engineModel(choice: EngineModelChoice) {
-  const provider = engineProviderId(choice.providerId);
-  if (!provider)
-    throw new Error(
-      `${choice.providerId} models do not run on Blame's agent engine yet. Pick a model from Anthropic, OpenAI, ChatGPT, Gemini, OpenRouter, an OpenAI-compatible provider or Claude Code.`,
-    );
   const reasoning = engineReasoning(choice.reasoning);
   return {
-    model: { provider, model: choice.modelId },
+    model: { provider: choice.providerId, model: choice.modelId },
     ...(reasoning ? { reasoning } : {}),
   };
 }

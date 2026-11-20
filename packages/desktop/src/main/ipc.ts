@@ -12,6 +12,7 @@ import { openAttachment } from "./attachment-open";
 import { installApplicationMenu } from "./application-menu";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { engineBinaryPath } from "./engine/engine-binary";
+import { engineDesktopServices } from "./engine/engine-desktop-services";
 import { registerEngineIpcHandlers } from "./engine/engine-host-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
@@ -144,10 +145,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     binary: engineBinaryPath({ applicationPath: app.getAppPath() }),
     clientVersion: app.getVersion(),
     isAppWindow: options.isAppWindow,
-    renderWebPage: async (url, signal) => {
-      const { renderResearchPage } = await import("./web-research-browser.ts");
-      return renderResearchPage(url, signal);
-    },
+    desktop: engineDesktopServices(previews),
   });
   useServingAgentCheck(localAgentOwnsWorkspace);
   registerPreviewServingIpcHandlers({ isAppWindow: options.isAppWindow });

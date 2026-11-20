@@ -625,26 +625,6 @@ const api: BlameDesktopApi = {
     },
   },
   agent: {
-    providers: {
-      list: (connection) =>
-        ipcRenderer.invoke("agent:providers:list", connection),
-      saveCredential: (connection, input) =>
-        ipcRenderer.invoke(
-          "agent:providers:save-credential",
-          connection,
-          input,
-        ),
-      deleteCredential: (connection, id) =>
-        ipcRenderer.invoke("agent:providers:delete-credential", connection, id),
-      loginOAuth: (input) =>
-        ipcRenderer.invoke("agent:providers:login-oauth", input),
-      claudeCodeStatus: () =>
-        ipcRenderer.invoke("agent:providers:claude-code-status"),
-      connectClaudeCode: (input) =>
-        ipcRenderer.invoke("agent:providers:connect-claude-code", input),
-      subscriptionUsage: (input) =>
-        ipcRenderer.invoke("agent:providers:subscription-usage", input),
-    },
     // Progress of the one-shot agents; conversations are on platform.engine.
     sessions: {
       onEvent: (sessionId, callback) => {

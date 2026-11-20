@@ -15,6 +15,7 @@ import {
   type EngineHostMessage,
   type EngineHostMethod,
 } from "@blame/agent-runtime/engine-protocol";
+import type { EngineDesktopHandlers } from "./engine-desktop-services.ts";
 import { EngineHostRouter } from "./engine-host-router.ts";
 
 export type EngineHostRegistration = {
@@ -24,10 +25,8 @@ export type EngineHostRegistration = {
   dataDir: string;
   clientVersion: string;
   isAppWindow(sender: WebContents): boolean;
-  renderWebPage(
-    url: string,
-    signal: AbortSignal,
-  ): Promise<{ url: string; html: string }>;
+  /** The services the agents' tools use (engine-desktop-services.ts). */
+  desktop: EngineDesktopHandlers;
 };
 
 const readyTimeoutMs = 15_000;
@@ -142,6 +141,8 @@ class EngineHostProcess {
     }
     if (message.kind === "desktop-request")
       void this.serveDesktop(child, message);
+    if (message.kind === "desktop-cancel")
+      this.desktopRequests.get(message.id)?.abort();
   }
 
   private async serveDesktop(
@@ -151,11 +152,11 @@ class EngineHostProcess {
     const controller = new AbortController();
     this.desktopRequests.set(message.id, controller);
     try {
-      const { url } = message.input as { url: string };
-      const result = await this.registration.renderWebPage(
-        String(url ?? ""),
-        controller.signal,
-      );
+      const service = this.registration.desktop[message.method] as
+        ((input: unknown, signal: AbortSignal) => Promise<unknown>) | undefined;
+      if (!service)
+        throw new Error(`Unknown desktop service ${String(message.method)}`);
+      const result = await service(message.input, controller.signal);
       child.postMessage({
         kind: "desktop-response",
         id: message.id,

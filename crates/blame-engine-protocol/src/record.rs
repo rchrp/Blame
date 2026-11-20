@@ -359,6 +359,9 @@ pub enum ErrorKind {
     /// Quota, credit or subscription limits.
     Billing,
     InvalidRequest,
+    /// The provider does not serve the model asked for, or not to this
+    /// account or plan: another model may work.
+    ModelUnavailable,
     /// The connection failed or dropped.
     Transport,
     /// The provider stopped sending without closing the stream.

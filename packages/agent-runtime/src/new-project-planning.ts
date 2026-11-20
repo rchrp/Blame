@@ -1,4 +1,4 @@
-import type { AgentTool } from "./cline-initialization.js";
+import { defineTool, type ClientTool } from "./engine/tool.js";
 import {
   advancedOptionLabels,
   backendOptions,
@@ -19,19 +19,20 @@ import {
 
 export const projectStackProposalToolName = "propose_project_stack";
 
-export function projectStackProposalTool(): AgentTool {
-  return {
+export function projectStackProposalTool(): ClientTool<never> {
+  return defineTool<Record<string, unknown>>({
     name: projectStackProposalToolName,
     description:
       "Propose the complete stack for the new project, using only the catalog in your instructions. The person reviews it in the wizard summary before the project is created. Call it again with the full configuration to revise it. An invalid choice returns an error that names it.",
     inputSchema: projectStackSchema(),
-    execute(value: unknown) {
+    effect: "read_only",
+    run(value) {
       const configuration = parseNewProjectConfiguration(
         recordValue(value).configuration,
       );
-      return { accepted: true, configuration };
+      return { json: { accepted: true, configuration } };
     },
-  };
+  });
 }
 
 /** The catalog the assistant must choose from, for its system prompt. */

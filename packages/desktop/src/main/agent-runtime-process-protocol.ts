@@ -3,13 +3,6 @@ import { randomUUID } from "node:crypto";
 export const agentRuntimeMethods = [
   "runtime.prewarm",
   "claudeCode.closeSessions",
-  "providers.list",
-  "providers.saveCredential",
-  "providers.deleteCredential",
-  "providers.loginOAuth",
-  "providers.claudeCodeStatus",
-  "providers.connectClaudeCode",
-  "providers.subscriptionUsage",
   "sessions.releaseWorkspace",
   "initializations.run",
   "initializations.cancel",

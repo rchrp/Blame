@@ -1008,30 +1008,17 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['check']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
-  'providers.model_catalog.show': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/providers/catalog'
+  'providers.model_recommendations.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/providers/recommendations'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/model_recommendations').modelRecommendationsValidator)>>
       paramsTuple: []
       params: {}
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
-    }
-  }
-  'providers.model_catalog.model': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/providers/catalog/model'
-    types: {
-      body: {}
-      paramsTuple: []
-      params: {}
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
+      query: ExtractQuery<InferInput<(typeof import('#validators/model_recommendations').modelRecommendationsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_recommendations_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_recommendations_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/model_recommendations_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'providers.provider_credentials.index': {

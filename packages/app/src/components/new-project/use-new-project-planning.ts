@@ -6,10 +6,7 @@ import {
   projectStackProposalToolName,
   proposedConfiguration,
 } from "@/components/chat/proposals/proposal-tools"
-import {
-  engineModelChoice,
-  engineModelUnavailable,
-} from "@/components/chat/engine/engine-model"
+import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import {
   useEngineConversation,
   type EngineConversationMessage,
@@ -39,7 +36,7 @@ export function useNewProjectPlanning(input: {
       ? "Sign in to describe your project to the agent."
       : !input.selection.currentModel
         ? "Choose an AI model below to get started."
-        : engineModelUnavailable(input.selection)
+        : undefined
   // No storage key: each opening of the wizard is a new conversation.
   const chat = useEngineConversation({
     settings: () => ({

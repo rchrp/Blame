@@ -176,8 +176,9 @@ fn version_and_catalog_print_on_stdout() {
         .output()
         .unwrap();
     assert!(catalog.status.success());
-    let providers: Value = serde_json::from_slice(&catalog.stdout).expect("JSON");
-    let ids: Vec<&str> = providers
+    let listing: Value = serde_json::from_slice(&catalog.stdout).expect("JSON");
+    assert_eq!(listing["source"], "snapshot");
+    let ids: Vec<&str> = listing["providers"]
         .as_array()
         .unwrap()
         .iter()

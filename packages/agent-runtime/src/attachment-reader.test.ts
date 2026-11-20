@@ -1,70 +1,17 @@
 import assert from "node:assert/strict";
-import {
-  mkdir,
-  mkdtemp,
-  readFile,
-  rm,
-  symlink,
-  writeFile,
-} from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { AgentToolContext } from "@cline/sdk";
-import { attachmentTools } from "./attachment-tools.js";
 import { readAttachment } from "./attachment-reader.js";
 import { readPdfAttachment } from "./attachment-pdf.js";
 import { storeWorkspaceAttachment } from "./development-attachments.js";
-import { executeLightWorkspaceRequest } from "./harness/light-executor.js";
 import {
   developmentUserInput,
   newAttachmentDirectory,
 } from "./cline-runtime-prompts.js";
 
-const context = {
-  sessionId: "attachment-test",
-  toolCallId: "read-1",
-} as AgentToolContext;
 const fixtures = new URL("../src/fixtures/attachments/", import.meta.url);
-
-for (const executor of [undefined, executeLightWorkspaceRequest]) {
-  test(`reads original documents through ${executor ? "the workspace bridge" : "the local tool"}`, async () => {
-    await fixture(async (root) => {
-      const tool = attachmentTools(root, executor)[0]!;
-      for (const [name, expected] of [
-        ["report.pdf", "revenue is 42 EUR"],
-        ["report.docx", "owner is Alice"],
-        ["report.xlsx", "Travel\t42"],
-      ]) {
-        const bytes = await readFile(new URL(name!, fixtures));
-        const path = await store(root, name!, bytes);
-        const result = (await tool.execute({ path }, context)) as {
-          status: string;
-          data: { text: string; pages?: number };
-        };
-        assert.equal(result.status, "ok", JSON.stringify(result));
-        assert.ok(result.data.text.includes(expected!), result.data.text);
-        assert.deepEqual(await readFile(path), bytes);
-        if (name === "report.pdf") {
-          assert.equal(result.data.pages, 2);
-          const second = await tool.execute({ path, page: 2 }, context);
-          assert.match(JSON.stringify(second), /deadline is Friday/);
-          assert.equal(
-            (await readAttachment(root, { path, page: 3 })).status,
-            "blocked",
-          );
-        }
-        if (name === "report.xlsx")
-          assert.match(
-            JSON.stringify(
-              await tool.execute({ path, sheet: "Schedule" }, context),
-            ),
-            /Friday/,
-          );
-      }
-    });
-  });
-}
 
 test("feedback prompts point at readable originals without embedding document contents", async () => {
   await fixture(async (root) => {
@@ -146,51 +93,6 @@ test("bounds text results and rejects unsupported files, traversal and symlink e
       (await readAttachment(root, { path: large })).status,
       "blocked",
     );
-  });
-});
-
-test("reads PDF, DOCX and XLSX documents anywhere in the workspace, but not beyond it", async () => {
-  await fixture(async (root) => {
-    const bytes = await readFile(new URL("report.pdf", fixtures));
-    await mkdir(join(root, "hw1"));
-    await writeFile(join(root, "hw1", "HW 1 - report.pdf"), bytes);
-    const tool = attachmentTools(root, executeLightWorkspaceRequest)[0]!;
-    assert.match(
-      JSON.stringify(
-        await tool.execute({ path: "hw1/HW 1 - report.pdf" }, context),
-      ),
-      /revenue is 42 EUR/,
-    );
-    assert.match(
-      JSON.stringify(
-        await readAttachment(root, {
-          path: join(root, "hw1/HW 1 - report.pdf"),
-        }),
-      ),
-      /revenue is 42 EUR/,
-    );
-    const docx = await readFile(new URL("report.docx", fixtures));
-    await writeFile(join(root, "notes.docx"), docx);
-    assert.match(
-      JSON.stringify(await readAttachment(root, { path: "notes.docx" })),
-      /owner is Alice/,
-    );
-    const elsewhere = await mkdtemp(join(tmpdir(), "blame-outside-"));
-    try {
-      const outside = join(elsewhere, "secret.pdf");
-      await writeFile(outside, bytes);
-      assert.equal(
-        (await readAttachment(root, { path: outside })).status,
-        "blocked",
-      );
-      await symlink(outside, join(root, "linked.pdf"));
-      assert.equal(
-        (await readAttachment(root, { path: "linked.pdf" })).status,
-        "blocked",
-      );
-    } finally {
-      await rm(elsewhere, { force: true, recursive: true });
-    }
   });
 });
 

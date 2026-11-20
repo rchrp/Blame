@@ -468,17 +468,11 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"projects"],[1,"projectId"],[0,"initialization"],[0,"check"]],
     types: placeholder as Registry['projects.project_initializations.check']['types'],
   },
-  'providers.model_catalog.show': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/providers/catalog',
-    tokens: [[0,"api"],[0,"v1"],[0,"providers"],[0,"catalog"]],
-    types: placeholder as Registry['providers.model_catalog.show']['types'],
-  },
-  'providers.model_catalog.model': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/providers/catalog/model',
-    tokens: [[0,"api"],[0,"v1"],[0,"providers"],[0,"catalog"],[0,"model"]],
-    types: placeholder as Registry['providers.model_catalog.model']['types'],
+  'providers.model_recommendations.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/providers/recommendations',
+    tokens: [[0,"api"],[0,"v1"],[0,"providers"],[0,"recommendations"]],
+    types: placeholder as Registry['providers.model_recommendations.store']['types'],
   },
   'providers.provider_credentials.index': {
     methods: ["GET","HEAD"],

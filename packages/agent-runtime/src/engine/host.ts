@@ -19,6 +19,7 @@ import { selectProjectMemory } from "../harness/project-memory.js";
 import type { ApiConnection } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
+import type { DesktopServices } from "./desktop-services.js";
 import type {
   EngineHostEvent,
   EngineHostInput,
@@ -32,9 +33,16 @@ import type {
 } from "./protocol.js";
 import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
 import { purposeClientTools } from "./purposes/tool-sets.js";
+import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
 import { ToolSet, type ClientTool } from "./tool.js";
+import {
+  ConversationTools,
+  McpConnections,
+  clientToolGuards,
+  clientToolPolicy,
+} from "./tools/index.js";
 import { webResearchClientTools } from "./tools/web-research.js";
 
 export type EngineHostOptions = {
@@ -48,6 +56,10 @@ export type EngineHostOptions = {
   emit(event: EngineHostEvent): void;
   /** Desktop services, served by the main process. */
   renderWebPage?: RenderWebPage;
+  /** The desktop services the conversations' tools use (`desktop-services.ts`). */
+  desktop?: DesktopServices;
+  /** Where the engine refreshes the models.dev catalog, when not models.dev. */
+  catalogUrl?: string;
   env?: NodeJS.ProcessEnv;
   onLog?(line: EngineLogLine): void;
   /** For tests: replaces parts of how credentials are found. */
@@ -88,18 +100,37 @@ export class EngineHost {
   private readonly supervisor: EngineSupervisor;
   private readonly hub: SessionHub;
   private readonly tools: ToolSet;
+  private readonly mcp = new McpConnections({
+    log: (message, payload) => console.warn(message, payload ?? {}),
+  });
+  /** Each conversation's own client tools, for the purpose builders. */
+  readonly conversationTools: ConversationTools;
   private readonly credentials: CredentialResolver;
+  private readonly providers: EngineProviders;
   private readonly options: EngineHostOptions;
 
   constructor(options: EngineHostOptions) {
     this.options = options;
-    this.tools = new ToolSet([
-      ...webResearchClientTools({
-        connection: () => this.api,
-        render: options.renderWebPage,
-      }),
-      ...(options.extraTools ?? []),
-    ]);
+    this.tools = new ToolSet(
+      [
+        ...webResearchClientTools({
+          connection: () => this.api,
+          render: options.renderWebPage ?? options.desktop?.renderWebPage,
+        }),
+        ...(options.extraTools ?? []),
+      ],
+      {
+        policy: clientToolPolicy,
+        guards: clientToolGuards,
+        putBlob: async (params, signal) =>
+          (await this.supervisor.client()).putBlob(params, { signal }),
+      },
+    );
+    this.conversationTools = new ConversationTools(this.tools, {
+      ...options.desktop,
+      connection: () => this.api,
+      mcp: this.mcp,
+    });
     this.credentials = new CredentialResolver(
       {
         connection: () => this.api,
@@ -121,6 +152,7 @@ export class EngineHost {
             ...(options.harnessCommand
               ? { harnessCommand: JSON.stringify(options.harnessCommand) }
               : {}),
+            ...(options.catalogUrl ? { catalogUrl: options.catalogUrl } : {}),
           },
           options.env,
         ),
@@ -138,6 +170,16 @@ export class EngineHost {
       ),
     );
     this.supervisor.onStarted(() => this.credentials.engineRestarted());
+    this.providers = new EngineProviders({
+      connection: () => this.api,
+      catalog: async (refresh) =>
+        (await this.supervisor.client()).request("catalog/list", { refresh }),
+      credentials: this.credentials,
+      engineBinary: options.binary,
+      openExternal: async (url) => {
+        await options.desktop?.openExternal?.({ url });
+      },
+    });
     this.hub = new SessionHub(this.supervisor, options.emit);
   }
 
@@ -255,6 +297,13 @@ export class EngineHost {
         sessions.map((session) => this.sessionStatus(client, session, running)),
       );
     },
+    providers: ({ refresh }) => this.providers.list(refresh ?? false),
+    saveCredential: (input) => this.providers.saveCredential(input),
+    deleteCredential: ({ id }) => this.providers.deleteCredential(id),
+    signInChatGpt: ({ label }) => this.providers.signInChatGpt(label),
+    claudeCodeStatus: () => this.providers.claudeCodeStatus(),
+    connectClaudeCode: ({ label }) => this.providers.connectClaudeCode(label),
+    planUsage: (input) => this.providers.planUsage(input),
     shutdown: async () => {
       await this.shutdown();
       return null;
@@ -268,6 +317,7 @@ export class EngineHost {
     this.approvals.clear();
     await this.supervisor.stop();
     await this.credentials.close();
+    await this.mcp.close();
   }
 
   /**

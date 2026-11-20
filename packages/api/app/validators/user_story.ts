@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { engineProviderId } from '#validators/provider_id'
 import { DateTime } from 'luxon'
 import { sessionIdPattern } from '#lib/engine/engine_log_records'
 
@@ -9,7 +10,7 @@ const agentStatus = vine.enum(['Running', 'Paused'])
 const agentModels = vine
   .array(
     vine.object({
-      providerId: vine.string().trim().minLength(1).maxLength(80),
+      providerId: engineProviderId.clone(),
       modelId: vine.string().trim().minLength(1).maxLength(255),
       reasoningEffort: vine.string().trim().maxLength(32).nullable().optional(),
     })

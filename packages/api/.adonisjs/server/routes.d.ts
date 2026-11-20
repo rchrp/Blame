@@ -81,8 +81,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.cancel': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.check': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
-    'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
+    'providers.model_recommendations.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
@@ -144,8 +143,6 @@ export type ScannedRoutes = {
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
-    'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'engine.engine_sessions.index': { paramsTuple?: []; params?: {} }
@@ -187,8 +184,6 @@ export type ScannedRoutes = {
     'projects.project_code_practice_analyses.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.security_audits.index': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.show': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
-    'providers.model_catalog.show': { paramsTuple?: []; params?: {} }
-    'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'engine.engine_sessions.index': { paramsTuple?: []; params?: {} }
@@ -240,6 +235,7 @@ export type ScannedRoutes = {
     'projects.project_initializations.cancel': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.repair': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'projects.project_initializations.check': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
+    'providers.model_recommendations.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_o_auth': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.store_local': { paramsTuple?: []; params?: {} }

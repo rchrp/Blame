@@ -7,10 +7,7 @@ import {
   proposedStories,
   storyProposalToolName,
 } from "@/components/chat/proposals/proposal-tools"
-import {
-  engineModelChoice,
-  engineModelUnavailable,
-} from "@/components/chat/engine/engine-model"
+import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import {
   useEngineConversation,
   type EngineConversationMessage,
@@ -44,7 +41,7 @@ export function usePlanMode() {
         ? "Sign in to plan with your agent."
         : !selection.currentModel
           ? "Choose an AI model below to start planning."
-          : engineModelUnavailable(selection)
+          : undefined
   const conversation = useEngineConversation({
     settings: () => ({
       purpose: "plan",

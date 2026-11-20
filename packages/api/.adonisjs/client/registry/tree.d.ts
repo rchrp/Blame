@@ -176,9 +176,8 @@ export interface ApiDefinition {
     }
   }
   providers: {
-    modelCatalog: {
-      show: typeof routes['providers.model_catalog.show']
-      model: typeof routes['providers.model_catalog.model']
+    modelRecommendations: {
+      store: typeof routes['providers.model_recommendations.store']
     }
     providerCredentials: {
       index: typeof routes['providers.provider_credentials.index']

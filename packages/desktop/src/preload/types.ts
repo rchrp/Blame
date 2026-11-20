@@ -18,11 +18,6 @@ import type {
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
-  ClaudeCodeStatus,
-  ConnectClaudeCodeInput,
-  SubscriptionUsage,
-  SubscriptionUsageInput,
-  LoginOAuthProviderInput,
   OpenPullRequestInput,
   OpenPullRequestResult,
   OptimizeUserStoryPromptInput,
@@ -31,7 +26,6 @@ import type {
   PreviewManifest,
   ProjectPreviewRuntimeState,
   ProjectRunConfiguration,
-  ProviderListResponse,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
   PullRequestState,
@@ -40,7 +34,6 @@ import type {
   RepairProjectInitializationResult,
   ResolveMergeConflictsInput,
   ResolveMergeConflictsResult,
-  SaveProviderCredentialInput,
 } from "@blame/agent-runtime";
 import type {
   BacklogStatusPipRequest,
@@ -626,20 +619,6 @@ export type BlameDesktopApi = {
   };
   engine: EnginePlatformClient;
   agent: {
-    providers: {
-      list(connection: ApiConnection): Promise<ProviderListResponse>;
-      saveCredential(
-        connection: ApiConnection,
-        input: SaveProviderCredentialInput,
-      ): Promise<unknown>;
-      deleteCredential(connection: ApiConnection, id: string): Promise<void>;
-      loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>;
-      claudeCodeStatus(): Promise<ClaudeCodeStatus>;
-      connectClaudeCode(input: ConnectClaudeCodeInput): Promise<unknown>;
-      subscriptionUsage(
-        input: SubscriptionUsageInput,
-      ): Promise<SubscriptionUsage | null>;
-    };
     // Progress of the one-shot agents; conversations are on `engine`.
     sessions: {
       onEvent(

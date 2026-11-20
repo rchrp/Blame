@@ -14,6 +14,7 @@ import type {
   Initialized,
   LogPushed,
   MessageAccepted,
+  ModelCatalog,
   Records,
   Rewound,
   SessionList,
@@ -75,6 +76,7 @@ export interface ClientResults {
   "session/configure": null;
   "session/close": null;
   "blob/put": BlobRef;
+  "catalog/list": ModelCatalog;
   shutdown: null;
 }
 

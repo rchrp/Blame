@@ -1,5 +1,5 @@
 import type { AgentPlugin } from "@cline/sdk";
-import { redactSecurityValue } from "./security-secret-redaction.js";
+import { redactExternalResult } from "./engine/tools/guards.js";
 
 // Cline gives this result policy to the tools it builds from MCP servers
 // (createMcpTools: cline_mcp_settings.json, agent plugins, Blame's preview
@@ -33,7 +33,7 @@ export function mcpResultRedactionExtension(): AgentPlugin {
       }: AfterToolContext): { result: ToolResult } | undefined {
         if (tool.resultPolicy !== externalToolResultPolicy) return undefined;
         return {
-          result: { ...result, output: redactSecurityValue(result.output) },
+          result: { ...result, output: redactExternalResult(result.output) },
         };
       },
     },

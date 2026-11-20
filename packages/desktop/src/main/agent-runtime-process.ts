@@ -9,6 +9,7 @@ import {
   closeClaudeCodeSessions,
   executeLightWorkspaceRequest,
   listMcpOAuthStatuses,
+  mcpSettingsPath,
   type AgentEvent,
   type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
@@ -64,6 +65,7 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
   return new BlameAgentRuntime(
     { emit: (event) => events.push(serializableAgentEvent(event)) },
     {
+      mcpSettingsPath: mcpSettingsPath(),
       git: (cwd, args) => hostClient.request<string>("git", { args, cwd }),
       renderWebPage: (input) => hostRequest<{ url: string; html: string }>(hostClient, 'renderWebPage', input),
       openExternalUrl: (url) => {
@@ -210,23 +212,6 @@ function runtimeHandlers(runtime: BlameAgentRuntime) {
 
 function providerHandlers(runtime: BlameAgentRuntime) {
   return {
-    "providers.list": (input: unknown) =>
-      runtime.providers.list(input as never),
-    "providers.saveCredential": (input: unknown) => {
-      const [connection, credential] = input as [never, never];
-      return runtime.providers.saveCredential(connection, credential);
-    },
-    "providers.deleteCredential": (input: unknown) => {
-      const [connection, id] = input as [never, string];
-      return runtime.providers.deleteCredential(connection, id);
-    },
-    "providers.loginOAuth": (input: unknown) =>
-      runtime.providers.loginOAuth(input as never),
-    "providers.claudeCodeStatus": () => runtime.providers.claudeCodeStatus(),
-    "providers.connectClaudeCode": (input: unknown) =>
-      runtime.providers.connectClaudeCode(input as never),
-    "providers.subscriptionUsage": (input: unknown) =>
-      runtime.providers.subscriptionUsage(input as never),
   };
 }
 

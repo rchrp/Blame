@@ -57,7 +57,6 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
       .activeWorkspaces()
       .some((workspace) => runtimeManagedPath(workspace)),
   );
-  registerProviderIpcHandlers();
   registerSessionEventIpcHandlers();
   registerAnalysisWorkflowIpcHandlers(input.beforeWorkspaceWrite);
   registerSecurityAuditIpcHandlers({
@@ -103,34 +102,6 @@ async function prewarmMacosAgentRuntime() {
     { agentClient: client, platform: "darwin" },
   );
   await agentRuntime().run("runtime.prewarm", workspace);
-}
-
-function registerProviderIpcHandlers() {
-  ipcMain.handle("agent:providers:list", (_event, connection) =>
-    agentRuntime().run("providers.list", connection),
-  );
-  ipcMain.handle(
-    "agent:providers:save-credential",
-    (_event, connection, input) =>
-      agentRuntime().run("providers.saveCredential", [connection, input]),
-  );
-  ipcMain.handle(
-    "agent:providers:delete-credential",
-    (_event, connection, id) =>
-      agentRuntime().run("providers.deleteCredential", [connection, id]),
-  );
-  ipcMain.handle("agent:providers:login-oauth", (_event, input) =>
-    agentRuntime().run("providers.loginOAuth", input),
-  );
-  ipcMain.handle("agent:providers:claude-code-status", () =>
-    agentRuntime().run("providers.claudeCodeStatus", undefined),
-  );
-  ipcMain.handle("agent:providers:connect-claude-code", (_event, input) =>
-    agentRuntime().run("providers.connectClaudeCode", input),
-  );
-  ipcMain.handle("agent:providers:subscription-usage", (_event, input) =>
-    agentRuntime().run("providers.subscriptionUsage", input),
-  );
 }
 
 // Progress of the one-shot agents (project setup, new-project generation).

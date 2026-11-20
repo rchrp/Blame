@@ -221,6 +221,9 @@ impl Engine {
             .arg("serve")
             .arg("--data-dir")
             .arg(data_dir)
+            // No test reaches models.dev; one that wants a catalog server
+            // passes its own `--catalog-url`, which comes later and wins.
+            .args(["--catalog-url", "http://127.0.0.1:9/api.json"])
             .args(extra)
             // Fast enough for tests; durability itself is the store's test.
             .args(["--durability", "relaxed"])
