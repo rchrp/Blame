@@ -31,11 +31,7 @@ impl WorkspaceLock {
         let lock_directory = directory.with_extension("lock");
         for attempt in 0..=RETRIES {
             match fs::create_dir(&lock_directory) {
-                Ok(()) => {
-                    let lock = WorkspaceLock { lock_directory };
-                    lock.recover_interrupted_write(&directory)?;
-                    return Ok(lock);
-                }
+                Ok(()) => return Ok(WorkspaceLock { lock_directory }),
                 Err(error) if error.kind() == ErrorKind::AlreadyExists => {
                     if is_stale(&lock_directory) {
                         let _ = fs::remove_dir(&lock_directory);
@@ -52,18 +48,6 @@ impl WorkspaceLock {
         Err(Failure::new(
             "The workspace is busy: another Blame session or process is changing it. Retry in a moment.",
         ))
-    }
-
-    /// An edit interrupted mid-write left `pending.json`: restoring it is the
-    /// editing part's job, so a read refuses rather than see half an edit.
-    fn recover_interrupted_write(&self, directory: &Path) -> Outcome<()> {
-        let pending = directory.join("pending.json");
-        match fs::metadata(&pending) {
-            Ok(metadata) if metadata.len() > 0 => Err(Failure::new(
-                "An interrupted edit is waiting for recovery; this harness cannot restore it yet. Use the TypeScript harness to recover the workspace.",
-            )),
-            _ => Ok(()),
-        }
     }
 }
 

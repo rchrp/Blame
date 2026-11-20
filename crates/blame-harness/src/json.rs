@@ -69,6 +69,21 @@ impl Json {
         self
     }
 
+    /// The same entries in the given key order (others keep theirs, after).
+    pub fn reordered(self, keys: &[&str]) -> Json {
+        let Json::Obj(mut entries) = self else {
+            return self;
+        };
+        let mut ordered = Vec::new();
+        for key in keys {
+            if let Some(index) = entries.iter().position(|(name, _)| name == key) {
+                ordered.push(entries.remove(index));
+            }
+        }
+        ordered.extend(entries);
+        Json::Obj(ordered)
+    }
+
     pub fn remove(&mut self, key: &str) -> Option<Json> {
         match self {
             Json::Obj(entries) => {

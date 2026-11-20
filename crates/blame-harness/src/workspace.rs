@@ -18,7 +18,6 @@ use crate::identity::sha256_hex;
 use crate::journal::{ObservationAudit, SessionJournal};
 use crate::json::Json;
 use crate::languages::capability_for_path;
-use crate::lock::WorkspaceLock;
 use crate::navigation::{
     ReadInput, edit_target_symbols, enclosing_symbol, qualified_target, requested_line_range,
     routed_view,
@@ -90,6 +89,7 @@ pub struct Workspace {
     ready: bool,
     /// Names this workspace to the compiler side process (its import index).
     instance: String,
+    edits: crate::edit::EditService,
 }
 
 static INSTANCES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -117,6 +117,7 @@ impl Workspace {
             focus: Vec::new(),
             latest_snapshot: None,
             ready: false,
+            edits: crate::edit::EditService::default(),
             instance: format!(
                 "w{}",
                 INSTANCES.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1
@@ -134,7 +135,7 @@ impl Workspace {
             return Ok(());
         }
         {
-            let _lock = WorkspaceLock::acquire(&self.files.root)?;
+            let _lock = crate::commit::locked(&self.files)?;
             self.journal.hydrate();
         }
         self.aliases.hydrate(self.journal.current_aliases());
@@ -169,7 +170,7 @@ impl Workspace {
         self.ensure_ready()?;
         let request = SearchInput { raw: input.clone() };
         let result = {
-            let _lock = WorkspaceLock::acquire(&self.files.root)?;
+            let _lock = crate::commit::locked(&self.files)?;
             let mut search = CodeSearch {
                 files: &self.files,
                 aliases: &mut self.aliases,
@@ -189,6 +190,89 @@ impl Workspace {
         Ok(result)
     }
 
+    pub fn edit_code(&mut self, input: &Json, signal: &Signal) -> Outcome<Json> {
+        self.ensure_ready()?;
+        let operations: Vec<crate::edit::Operation> = input
+            .get("operations")
+            .and_then(Json::as_array)
+            .into_iter()
+            .flatten()
+            .map(crate::edit::Operation::from_json)
+            .collect();
+        if let Some(marker) = self.copied_marker(&operations) {
+            return Ok(obj! {
+                "status" => "blocked",
+                "category" => "input",
+                "message" => format!("This edit copies the folded-view line \"{marker}\", which stands for hidden source lines. Read them (the sN alias or the line range it names) and write the actual code."),
+            });
+        }
+        let mut context = crate::edit::EditContext {
+            files: &self.files,
+            aliases: &mut self.aliases,
+            journal: &mut self.journal,
+            compiler: &*self.compiler,
+            signal,
+        };
+        let result = self.edits.edit(&operations, &mut context)?;
+        if is_ok(&result) {
+            let changes = result
+                .get("data")
+                .and_then(|data| data.get("changes"))
+                .and_then(Json::as_array)
+                .cloned()
+                .unwrap_or_default();
+            for change in changes {
+                let Some(path) = change.get("path").and_then(Json::string_value) else {
+                    continue;
+                };
+                self.coverage.invalidate_path(path);
+                self.attention.changed(path);
+                let symbols: Vec<String> = change
+                    .get("symbols")
+                    .and_then(Json::as_array)
+                    .into_iter()
+                    .flatten()
+                    .filter_map(|symbol| symbol.string_value().map(str::to_string))
+                    .collect();
+                self.attention.edit(path, &symbols);
+            }
+        }
+        self.journal.record_coverage(self.coverage.snapshot())?;
+        self.journal.record_attention(self.attention.snapshot())?;
+        // The validation state and repair plan of an edit come from checks
+        // run_task recorded; without them (the only case until run_task is
+        // ported) the TypeScript workspace adds neither.
+        Ok(result)
+    }
+
+    /// A folded-view marker line copied into new source.
+    fn copied_marker(&self, operations: &[crate::edit::Operation]) -> Option<String> {
+        for operation in operations {
+            let text = if operation.kind == "symbol" {
+                operation.content.clone().unwrap_or_default()
+            } else {
+                let patch = operation.patch.clone().unwrap_or_default();
+                if crate::text::js_trim_start(&patch).starts_with("*** Begin Patch") {
+                    patch
+                        .split('\n')
+                        .filter_map(|line| line.strip_prefix('+'))
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                } else {
+                    patch
+                }
+            };
+            if let Some(found) = text
+                .split('\n')
+                .map(crate::text::js_trim)
+                .find(|line| self.shown_markers.contains(line))
+            {
+                return Some(found.to_string());
+            }
+        }
+        None
+    }
+
     pub fn read_code(
         &mut self,
         input: &ReadInput,
@@ -197,7 +281,7 @@ impl Workspace {
     ) -> Outcome<Json> {
         let outcome = self.ensure_ready().and_then(|()| {
             let result = {
-                let _lock = WorkspaceLock::acquire(&self.files.root)?;
+                let _lock = crate::commit::locked(&self.files)?;
                 self.read_current_workspace(input, context, signal)?
             };
             self.record_observation_audit(
@@ -1365,21 +1449,7 @@ fn matches_image_signature(content: &[u8], media_type: &str) -> bool {
 }
 
 pub fn base64(bytes: &[u8]) -> String {
-    const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut output = String::with_capacity(bytes.len().div_ceil(3) * 4);
-    for chunk in bytes.chunks(3) {
-        let value = (u32::from(chunk[0]) << 16)
-            | (u32::from(*chunk.get(1).unwrap_or(&0)) << 8)
-            | u32::from(*chunk.get(2).unwrap_or(&0));
-        for index in 0..4 {
-            if index <= chunk.len() {
-                output.push(ALPHABET[((value >> (18 - 6 * index)) & 63) as usize] as char);
-            } else {
-                output.push('=');
-            }
-        }
-    }
-    output
+    crate::base64::encode(bytes)
 }
 
 #[cfg(test)]

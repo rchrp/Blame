@@ -144,6 +144,13 @@ impl Harness {
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 workspace.read_code(&read_input(&input), &context, signal)
             }
+            "edit_code" => {
+                let workspace = self.workspace(root, contract);
+                let mut workspace = workspace
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                workspace.edit_code(&input, signal)
+            }
             "session_journal" => session_journal(root, &context, &input),
             other => Err(Failure::new(format!(
                 "{other} is not available in the Rust harness yet."
