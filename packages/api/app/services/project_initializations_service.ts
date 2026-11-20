@@ -6,7 +6,6 @@ import type { Infer } from '@vinejs/vine/types'
 import { Exception } from '@adonisjs/core/exceptions'
 import { parsePreviewManifest, type PreviewManifest } from '@blame/preview-contract'
 import type {
-  cancelProjectInitializationValidator,
   checkProjectInitializationValidator,
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
@@ -17,7 +16,6 @@ import type {
 type StartInput = Infer<typeof startProjectInitializationValidator>
 type CompleteInput = Infer<typeof completeProjectInitializationValidator>
 type FailInput = Infer<typeof failProjectInitializationValidator>
-type CancelInput = Infer<typeof cancelProjectInitializationValidator>
 type RepairInput = Infer<typeof repairProjectInitializationValidator>
 type CheckInput = Infer<typeof checkProjectInitializationValidator>
 
@@ -33,7 +31,6 @@ export default class ProjectInitializationsService {
     initialization.merge({
       status: 'running',
       step: 'agent_analysis',
-      clineSessionId: input.clineSessionId ?? null,
       agentProviderId: input.providerId,
       agentModelId: input.modelId,
       previewManifest: null,
@@ -55,7 +52,6 @@ export default class ProjectInitializationsService {
     initialization.merge({
       status: 'done',
       step: 'completed',
-      clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       previewManifest,
       runConfigurations,
       databaseMode: input.databaseMode ?? null,
@@ -73,7 +69,6 @@ export default class ProjectInitializationsService {
     initialization.merge({
       status: 'error',
       step: 'failed',
-      clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       error: input.error,
     })
     await initialization.save()
@@ -84,7 +79,7 @@ export default class ProjectInitializationsService {
    * The person stopped the running analysis. The project keeps no setup, so
    * its stories run in Direct mode until an analysis runs again.
    */
-  async cancel(userId: string, projectId: string, input: CancelInput) {
+  async cancel(userId: string, projectId: string) {
     await new ProjectsService().findForUser(userId, projectId)
     const initialization = await ProjectInitialization.find(projectId)
     if (initialization?.status === 'cancelled') return this.snapshot(projectId)
@@ -97,7 +92,6 @@ export default class ProjectInitializationsService {
     initialization.merge({
       status: 'cancelled',
       step: 'cancelled',
-      clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       error: null,
     })
     await initialization.save()
@@ -113,7 +107,6 @@ export default class ProjectInitializationsService {
     initialization.merge({
       status: 'done',
       step: 'completed',
-      clineSessionId: input.clineSessionId ?? initialization.clineSessionId,
       previewManifest,
       runConfigurations,
       databaseMode: input.databaseMode ?? initialization.databaseMode,

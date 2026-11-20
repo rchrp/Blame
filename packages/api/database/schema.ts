@@ -681,14 +681,12 @@ export class ProjectAgentMemorySchema extends BaseModel {
 }
 
 export class ProjectCodePracticeAnalysisSchema extends BaseModel {
-  static $columns = ['agentModelId', 'agentProviderId', 'clineSessionId', 'createdAt', 'error', 'projectId', 'status', 'updatedAt', 'viewedAt'] as const
+  static $columns = ['agentModelId', 'agentProviderId', 'createdAt', 'error', 'projectId', 'status', 'updatedAt', 'viewedAt'] as const
   $columns = ProjectCodePracticeAnalysisSchema.$columns
   @column()
   declare agentModelId: string | null
   @column()
   declare agentProviderId: string | null
-  @column()
-  declare clineSessionId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
@@ -805,7 +803,7 @@ export class ProjectDeploymentSchema extends BaseModel {
 }
 
 export class ProjectInitializationSchema extends BaseModel {
-  static $columns = ['agentModelId', 'agentProviderId', 'checkedCommit', 'clineSessionId', 'createdAt', 'databaseMode', 'error', 'previewManifest', 'projectId', 'repairReason', 'runConfigurations', 'status', 'step', 'updatedAt'] as const
+  static $columns = ['agentModelId', 'agentProviderId', 'checkedCommit', 'createdAt', 'databaseMode', 'error', 'previewManifest', 'projectId', 'repairReason', 'runConfigurations', 'status', 'step', 'updatedAt'] as const
   $columns = ProjectInitializationSchema.$columns
   @column()
   declare agentModelId: string | null
@@ -813,8 +811,6 @@ export class ProjectInitializationSchema extends BaseModel {
   declare agentProviderId: string | null
   @column()
   declare checkedCommit: string | null
-  @column()
-  declare clineSessionId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()

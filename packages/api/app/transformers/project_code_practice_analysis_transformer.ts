@@ -6,7 +6,6 @@ export default class ProjectCodePracticeAnalysisTransformer extends BaseTransfor
     return {
       projectId: this.resource.projectId,
       status: this.resource.status,
-      clineSessionId: this.resource.clineSessionId,
       agentProviderId: this.resource.agentProviderId,
       agentModelId: this.resource.agentModelId,
       error: this.resource.error,

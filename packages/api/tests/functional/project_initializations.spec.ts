@@ -11,7 +11,6 @@ type InitializationBody = {
   data: {
     initialization: {
       status: string
-      clineSessionId: string | null
       previewManifest: Record<string, unknown> | null
       runConfigurations: Array<{
         id: string
@@ -64,7 +63,6 @@ test.group('project initializations', (group) => {
       .post(`/api/v1/projects/${project.id}/initialization/complete`)
       .loginAs(user)
       .json({
-        clineSessionId: 'session-1',
         previewManifest: previewManifest('high'),
         setupScript: 'echo setup',
         dockerCompose: 'services: {}',
@@ -87,7 +85,7 @@ test.group('project initializations', (group) => {
     completeResponse.assertStatus(200)
     const completed = completeResponse.body() as InitializationBody
     assert.equal(completed.data.initialization?.status, 'done')
-    assert.equal(completed.data.initialization?.clineSessionId, 'session-1')
+    assert.notProperty(completed.data.initialization ?? {}, 'clineSessionId')
     assert.notProperty(completed.data.initialization?.previewManifest ?? {}, 'version')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.command, 'pnpm dev')
     assert.equal(completed.data.initialization?.runConfigurations[0]?.category, 'web')
@@ -124,12 +122,10 @@ test.group('project initializations', (group) => {
     const cancelled = await client
       .post(`/api/v1/projects/${project.id}/initialization/cancel`)
       .loginAs(user)
-      .json({ clineSessionId: 'session-1' })
 
     cancelled.assertStatus(200)
     const body = cancelled.body() as InitializationBody
     assert.equal(body.data.initialization?.status, 'cancelled')
-    assert.equal(body.data.initialization?.clineSessionId, 'session-1')
     assert.isNull(body.data.initialization?.previewManifest)
     assert.isNull(body.data.initialization?.error)
 
@@ -183,19 +179,6 @@ test.group('project initializations', (group) => {
     assert.equal(initialization?.previewManifest?.confidence, 'high')
   })
 
-  test('validates the cancellation of an initialization', async ({ client }) => {
-    const user = await createUser()
-    const project = await createProject(user.id, 'Alpha')
-    await startInitialization(client, user, project.id)
-
-    const response = await client
-      .post(`/api/v1/projects/${project.id}/initialization/cancel`)
-      .loginAs(user)
-      .json({ clineSessionId: 's'.repeat(256) })
-
-    response.assertStatus(422)
-  })
-
   test('rejects initialization cancellation for another user project', async ({
     client,
     assert,
@@ -234,7 +217,6 @@ test.group('project initializations', (group) => {
       .post(`/api/v1/projects/${project.id}/initialization/repair`)
       .loginAs(user)
       .json({
-        clineSessionId: 'repair-session',
         previewManifest: previewManifest('high'),
         runConfigurations: [
           {
@@ -256,7 +238,6 @@ test.group('project initializations', (group) => {
     response.assertStatus(200)
     const body = response.body() as InitializationBody
     assert.equal(body.data.initialization?.status, 'done')
-    assert.equal(body.data.initialization?.clineSessionId, 'repair-session')
     assert.equal(
       body.data.initialization?.repairReason,
       'The previous command forwarded invalid arguments.'

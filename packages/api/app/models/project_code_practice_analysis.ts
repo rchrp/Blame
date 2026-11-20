@@ -13,9 +13,6 @@ export default class ProjectCodePracticeAnalysis extends BaseModel {
   declare status: ProjectCodePracticeAnalysisStatus
 
   @column()
-  declare clineSessionId: string | null
-
-  @column()
   declare agentProviderId: string | null
 
   @column()

@@ -19,7 +19,6 @@ function initialization(
     projectId: "project",
     status,
     step: status,
-    clineSessionId: null,
     agentProviderId: null,
     agentModelId: null,
     previewManifest,
