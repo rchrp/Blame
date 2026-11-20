@@ -68,3 +68,17 @@ test("adds files changed by commands and keeps the latest test counts", () => {
   assert.equal(changes.commands, 3)
   assert.deepEqual(changes.tests, { passed: 3, failed: 0, skipped: undefined, total: 3 })
 })
+
+test("leaves out the component preview file, the agent's scratch", () => {
+  const changes = turnChanges([
+    tool("edit_code", { operations: [] }, editOutput("src/card.tsx", 4, 1)),
+    tool("edit_code", { operations: [] }, editOutput("src/card.blame-preview.tsx", 30, 0)),
+    tool("run_task", { command: "pnpm lint --fix" }, {
+      status: "ok",
+      data: { changed: true, paths: ["src/card.blame-preview.tsx", "src/other.ts"] },
+    }),
+  ])
+  assert.deepEqual(changes.files.map((file) => file.path), ["src/card.tsx", "src/other.ts"])
+  assert.equal(changes.additions, 4)
+  assert.equal(changes.deletions, 1)
+})
