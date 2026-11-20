@@ -67,15 +67,21 @@ export type EngineHostMethods = {
     input: EngineSessionSettings & { session: SessionId };
     result: { session: SessionId; head: Seq };
   };
+  /** Sets the settings when the config they build differs from the session's. */
   configure: {
     input: EngineSessionSettings & { session: SessionId };
-    result: null;
+    result: { changed: boolean };
   };
   send: {
     input: {
       session: SessionId;
       message: EngineMessage;
       delivery: "turn" | "steer";
+      /**
+       * The settings picked when the message was sent: applied first, as
+       * `configure` does, so the turn runs with them.
+       */
+      settings?: EngineSessionSettings;
     };
     result: { turn: string; started: boolean };
   };
@@ -231,7 +237,10 @@ export type EngineWindowMethod = Exclude<
   "follow" | "unfollow" | "shutdown"
 >;
 
-export type EngineActivityEvent = Extract<EngineHostEvent, { type: "activity" }>;
+export type EngineActivityEvent = Extract<
+  EngineHostEvent,
+  { type: "activity" }
+>;
 
 /** `platform.engine`: the renderer's only way to the engine. */
 export type EnginePlatformClient = {

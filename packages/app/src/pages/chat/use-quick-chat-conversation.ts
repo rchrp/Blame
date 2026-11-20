@@ -127,24 +127,14 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     const error = validationError()
     if (error) throw new Error(error)
     const target = chat?.engineSessionId ? chat : await startChat(message.text)
-    const sessionId = target.engineSessionId!
-    // The person picked another model or reasoning since the last turn.
-    const config = transcript?.config
-    const model = selection.currentModel!
-    if (
-      config &&
-      chat?.id === target.id &&
-      (config.model.provider !== engineProviderId(model.provider.id) ||
-        config.model.model !== model.id)
-    )
-      await platform.engine!.call("configure", {
-        session: sessionId,
-        ...(await settings(target)),
-      })
+    // The settings picked now go with the message: the engine host applies
+    // them first when they changed (model, reasoning, context cap,
+    // personalization, practices), so the turn runs with them.
     await platform.engine!.call("send", {
-      session: sessionId,
+      session: target.engineSessionId!,
       message,
       delivery: running && steer ? "steer" : "turn",
+      settings: await settings(target),
     })
     quickChats.touch(target.id)
   }

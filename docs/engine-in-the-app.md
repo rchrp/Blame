@@ -47,8 +47,8 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | --- | --- |
 | `connect({ api })` | The API connection (URL, user token) the host uses for credentials, logs, blobs and web search. Sent at start and on every sign-in or token change. |
 | `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`: system prompt, tools, harness options). The renderer never builds a `SessionConfig`. |
-| `configure({ session, purpose, settings })` | Rebuilds and sets the config (model or reasoning changed). |
-| `send({ session, message, delivery })` | Uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. |
+| `configure({ session, purpose, settings })` | Rebuilds the config from the settings and sets it only when it differs from the session's current one (`{ changed }`). |
+| `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. |
 | `interrupt`, `compact`, `undoRewind({ session })` | The engine calls of the same name. |
 | `rewind({ session, to, restoreWorkspace })` | `session/rewind`: undo a message and, when asked, its files. |
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
@@ -72,6 +72,17 @@ reload alike. `components/chat/engine/transcript-conversation.ts` maps a
 `Transcript` to the shared `AgentConversationTimeline`; that mapping is the
 only place that knows both shapes. Undo of a message is `rewind` to the
 item's `rewind.to` with `restoreWorkspace` when it has a checkpoint.
+
+## Settings during a conversation
+
+Every message carries the settings picked when it is sent: model, reasoning,
+context cap, personalization and code practices. The host rebuilds the
+session's config from them and appends a `ConfigChanged` only when the result
+differs from the config in effect (it reads it from the records after a
+restart or a rewind), so a change of any of them applies from that message on,
+and an unchanged one adds nothing. The prompt keeps the day the conversation
+started (`CURRENT_DATE` comes from its first record), so a message sent on a
+later day does not rewrite it and the provider's prompt cache holds.
 
 ## Who writes what to the database
 
