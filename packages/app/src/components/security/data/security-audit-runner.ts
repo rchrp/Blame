@@ -173,6 +173,7 @@ export function createSecurityAuditRunner(
             repository,
           })
       )
+      void _session
       assertActive(run)
       updateStep(run, step, {
         status: "completed",
