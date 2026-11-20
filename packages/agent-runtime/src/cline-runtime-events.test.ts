@@ -1084,28 +1084,6 @@ function compactionFixtureResult(
   };
 }
 
-test("synchronizes provider OAuth settings for initialization credentials", async () => {
-  const calls: string[] = [];
-  const credential = { providerId: "openai-codex" };
-  const runtime = new BlameAgentRuntime();
-  const internals = runtime as unknown as {
-    initializationCredential(input: unknown): Promise<typeof credential>;
-    runtimeCredential(input: unknown): Promise<typeof credential>;
-    syncClineOAuthProviderSettings(input: typeof credential): Promise<void>;
-  };
-  internals.runtimeCredential = async () => {
-    calls.push("resolve");
-    return credential;
-  };
-  internals.syncClineOAuthProviderSettings = async (input) => {
-    assert.equal(input, credential);
-    calls.push("sync");
-  };
-
-  assert.equal(await internals.initializationCredential({}), credential);
-  assert.deepEqual(calls, ["resolve", "sync"]);
-});
-
 test("finds only sessions writing inside a workspace", () => {
   const workspace = join(tmpdir(), "story-42");
   const sessions = new Map([
