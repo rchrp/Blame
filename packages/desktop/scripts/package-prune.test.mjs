@@ -43,6 +43,10 @@ const files = [
   "node_modules/.pnpm/next@16.0.0/node_modules/@next/env/index.js",
   "node_modules/.pnpm/@next+swc-darwin-arm64@16.0.0/node_modules/@next/swc-darwin-arm64/next-swc.node",
   "node_modules/.pnpm/sharp@0.34.0/node_modules/@img/sharp-libvips-darwin-arm64/libvips.dylib",
+  // The engine binaries live outside node_modules; the VM's Linux ones are
+  // named like another platform's prebuilds and must stay.
+  "resources/engine/darwin-arm64/blame-engine",
+  "resources/engine/linux-arm64/blame-engine",
 ];
 
 async function fixture(action) {
@@ -94,6 +98,8 @@ test("removes files the packaged app never loads", async () => {
       "node_modules/pty/prebuilds/darwin-arm64/pty.node",
       "node_modules/linked/target/index.js",
       "node_modules/.pnpm/next@16.0.0/node_modules/@next/env/index.js",
+      "resources/engine/darwin-arm64/blame-engine",
+      "resources/engine/linux-arm64/blame-engine",
     ];
     const gone = [
       "node_modules/plain/index.js.map",

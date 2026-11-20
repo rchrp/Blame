@@ -1,8 +1,12 @@
-import { access, readFile, readdir, realpath } from "node:fs/promises";
+import { access, open, readFile, readdir, realpath, stat } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { join, normalize, posix, relative, sep } from "node:path";
+import { basename, dirname, join, normalize, posix, relative, sep } from "node:path";
+import {
+  engineExecutables,
+  packagedEngineTargets,
+} from "../../../scripts/build-engine-binaries.mjs";
 import { checkJavaScript } from "./check-generated-javascript.mjs";
 import { verifyNodePtyHelpers } from "./prepare-node-pty.mjs";
 
@@ -203,6 +207,90 @@ export function verifyAsarGeneratedJavaScript(archive) {
   return count;
 }
 
+// The Rust binaries in resources/engine (docs/engine-in-the-app.md, "Engine
+// binaries"): exactly the app's own target and the VM's Linux one, each an
+// executable of that platform and architecture; the Linux ones static, so
+// they run in any runtime image. Checked from the file headers, so a package
+// built for another platform is checked too.
+const executableFormats = {
+  darwin: { format: "Mach-O", machines: { arm64: 0x0100000c, x64: 0x01000007 } },
+  linux: { format: "ELF", machines: { arm64: 183, x64: 62 } },
+  win32: { format: "PE", machines: { arm64: 0xaa64, x64: 0x8664 } },
+};
+
+export async function verifyPackagedEngineBinaries(resources, platform) {
+  const directory = join(resources, "engine");
+  const present = (await readdir(directory).catch(() => [])).sort();
+  const own = present.filter((name) => name.startsWith(`${platform}-`));
+  const expected =
+    own.length === 1
+      ? packagedEngineTargets(platform, own[0].slice(platform.length + 1)).sort()
+      : [];
+  if (!expected.length || present.join() !== expected.join())
+    throw new Error(
+      `Desktop package needs the engine binaries for one ${platform} target and its VM in ${directory}, found: ${present.join(", ") || "none"}`,
+    );
+  for (const target of expected) {
+    const [targetPlatform, arch] = target.split("-");
+    for (const executable of engineExecutables(target)) {
+      const path = join(directory, target, executable);
+      const info = await stat(path).catch(() => undefined);
+      if (!info?.isFile())
+        throw new Error(`Desktop package is missing ${path}`);
+      if (process.platform !== "win32" && targetPlatform !== "win32" && !(info.mode & 0o111))
+        throw new Error(`Desktop package has a non-executable ${path}`);
+      const header = await executableHeader(path);
+      const { format, machines } = executableFormats[targetPlatform];
+      if (header.format !== format || header.machine !== machines[arch])
+        throw new Error(
+          `Desktop package needs ${format} for ${arch} at ${path}, found ${header.format ?? "another format"}`,
+        );
+      if (header.interpreter)
+        throw new Error(`Desktop package has a dynamically linked ${path}: the VM needs a static build`);
+    }
+  }
+  return expected;
+}
+
+async function executableHeader(path) {
+  const file = await open(path, "r");
+  try {
+    const read = async (position, length) => {
+      const buffer = Buffer.alloc(length);
+      await file.read(buffer, 0, length, position);
+      return buffer;
+    };
+    const head = await read(0, 64);
+    if (head.readUInt32LE(0) === 0xfeedfacf)
+      return { format: "Mach-O", machine: head.readUInt32LE(4) };
+    if (head.readUInt32BE(0) === 0x7f454c46) {
+      const offset = Number(head.readBigUInt64LE(32));
+      const size = head.readUInt16LE(54);
+      const count = head.readUInt16LE(56);
+      const headers = await read(offset, size * count);
+      let interpreter = false;
+      for (let index = 0; index < count; index++)
+        if (headers.readUInt32LE(index * size) === 3) interpreter = true;
+      return { format: "ELF", machine: head.readUInt16LE(18), interpreter };
+    }
+    if (head.toString("latin1", 0, 2) === "MZ") {
+      const pe = await read(head.readUInt32LE(0x3c), 6);
+      if (pe.toString("latin1", 0, 4) === "PE\0\0")
+        return { format: "PE", machine: pe.readUInt16LE(4) };
+    }
+    return {};
+  } finally {
+    await file.close();
+  }
+}
+
+// mac-arm64/Blame.app/Contents/Resources, win-unpacked/resources, linux-unpacked/resources
+function packagedPlatform(archive) {
+  const resources = dirname(archive);
+  if (resources.split(sep).join("/").endsWith(".app/Contents/Resources")) return "darwin";
+  return basename(dirname(resources)).startsWith("win-") ? "win32" : "linux";
+}
+
 /** Run after electron-builder, before installers can be copied or uploaded. */
 export async function verifyPackagedWorkspaceRuntime(dist) {
   const archives = [];
@@ -230,12 +318,13 @@ export async function verifyPackagedWorkspaceRuntime(dist) {
     const compilers = verifyAsarTypeScriptLibraries(archive);
     await verifyUnpackedNpm(archive);
     await verifyUnpackedAgentBrowser(archive);
+    const engineTargets = await verifyPackagedEngineBinaries(dirname(archive), packagedPlatform(archive));
     const manifest = JSON.parse(asarTools().extractFile(archive, "package.json").toString("utf8"));
     if (archive.split(sep).join("/").endsWith(".app/Contents/Resources/app.asar") && manifest.dependencies?.["node-pty"]) {
       await verifyNodePtyHelpers(join(`${archive}.unpacked`, "node_modules/node-pty"));
     }
     console.log(
-      `Verified ${generatedFiles} generated files, ${count} workspace packages and the default libraries of ${compilers} TypeScript compiler(s) in ${archive}`,
+      `Verified ${generatedFiles} generated files, ${count} workspace packages, the default libraries of ${compilers} TypeScript compiler(s) and the ${engineTargets.join(" and ")} engine binaries in ${archive}`,
     );
   }
 }
