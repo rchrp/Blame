@@ -26,6 +26,12 @@ version = "0.1.0"
 [[package]]
 name = "blame-engine-checkpoint"
 version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "blame-engine-core",
+ "blame-engine-protocol",
+ "tokio",
+]
 
 [[package]]
 name = "blame-engine-core"
