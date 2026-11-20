@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { engineProviderId } from '#validators/provider_id'
 import { agentActivity, agentUsage, nullableDateTime } from '#validators/user_story'
 
 const kind = vine.enum(['initial', 'change-request', 'resume'])
@@ -28,7 +29,7 @@ export const createUserStoryAgentRunValidator = vine.create({
   executionId: vine.string().trim().uuid().nullable().optional(),
   checkpointRunCount: vine.number().withoutDecimals().positive().nullable().optional(),
   status: status.optional(),
-  providerId: vine.string().trim().maxLength(80).nullable().optional(),
+  providerId: engineProviderId.clone().nullable().optional(),
   modelId: vine.string().trim().maxLength(255).nullable().optional(),
   reasoningEffort: vine.string().trim().maxLength(32).nullable().optional(),
 })

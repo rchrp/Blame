@@ -85,7 +85,7 @@ test.group('model recommendation service', () => {
   }) => {
     // New models get an intelligence index first; coding and agentic
     // indexes, or a design arena win rate, are on other scales.
-    const provider = catalogProvider('openai-codex', [
+    const provider = catalogProvider('chatgpt', [
       model('gpt-5.6-luna', 0.2, 37, '2026-07-09'),
       model('gpt-5.6-terra', 2, 42, '2026-07-09'),
       model('gpt-5.6-sol', 4, 47, '2026-07-09'),

@@ -73,7 +73,7 @@ test.group('model catalog matcher', () => {
     ])
 
     const match = matcher.match(
-      'openai-codex',
+      'chatgpt',
       catalogModel('gpt-6-sol-codex-max', 'GPT-6 Sol Codex Max')
     )
 
@@ -85,7 +85,7 @@ test.group('model catalog matcher', () => {
       openRouterModel('openai/gpt-5.5-codex', 'GPT-5.5 Codex'),
     ])
 
-    const match = matcher.match('openai-codex', catalogModel('gpt-5.6-codex', 'GPT-5.6 Codex'))
+    const match = matcher.match('chatgpt', catalogModel('gpt-5.6-codex', 'GPT-5.6 Codex'))
 
     assert.isUndefined(match)
   })

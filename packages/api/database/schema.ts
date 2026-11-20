@@ -296,23 +296,6 @@ export class GithubAppInstallationSchema extends BaseModel {
   declare userId: string
 }
 
-export class ModelCatalogSnapshotSchema extends BaseModel {
-  static $columns = ['catalogHash', 'createdAt', 'id', 'payload', 'refreshedAt', 'updatedAt'] as const
-  $columns = ModelCatalogSnapshotSchema.$columns
-  @column()
-  declare catalogHash: string
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare payload: string
-  @column.dateTime()
-  declare refreshedAt: DateTime
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
-}
-
 export class PasskeySchema extends BaseModel {
   static $columns = ['aaguid', 'backedUp', 'counter', 'createdAt', 'credentialId', 'deviceType', 'id', 'name', 'publicKey', 'transports', 'userId'] as const
   $columns = PasskeySchema.$columns

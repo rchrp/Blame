@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { engineProviderId } from '#validators/provider_id'
 import { DateTime } from 'luxon'
 
 const status = vine.enum(['backlog', 'ready', 'in-progress', 'in-review', 'done', 'discarded'])
@@ -14,26 +15,11 @@ export const agentActivityKind = vine.enum([
 ])
 export const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
 export const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
-const agentErrorCode = vine.enum([
-  'cline_not_subscribed',
-  'cline_org_subscription_unsupported',
-  'cline_pass_limit',
-  'cline_free_model_limit',
-  'cline_model_not_found',
-])
 export const agentActivity = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
   kind: agentActivityKind,
   title: vine.string().trim().minLength(1).maxLength(255),
   detail: vine.string().maxLength(262144),
-  actionUrl: vine
-    .string()
-    .trim()
-    .url({ protocols: ['https'] })
-    .maxLength(2048)
-    .optional(),
-  errorCode: agentErrorCode.optional(),
-  resetAt: vine.string().trim().maxLength(255).optional(),
   status: agentActivityStatus.optional(),
   iteration: vine.number().optional(),
   messageKind: agentActivityMessageKind.optional(),
@@ -125,7 +111,7 @@ export const createUserStoryValidator = vine.create({
   ambition: vine.enum(['quick', 'standard', 'ambitious']).nullable().optional(),
   agentStatus: agentStatus.nullable().optional(),
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
-  agentProviderId: vine.string().trim().maxLength(80).nullable().optional(),
+  agentProviderId: engineProviderId.clone().nullable().optional(),
   agentModelId: vine.string().trim().maxLength(255).nullable().optional(),
   agentLastEvent: vine.string().trim().maxLength(4096).nullable().optional(),
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
@@ -160,7 +146,7 @@ export const updateUserStoryValidator = vine.create({
   ambition: vine.enum(['quick', 'standard', 'ambitious']).nullable().optional(),
   agentStatus: agentStatus.nullable().optional(),
   clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
-  agentProviderId: vine.string().trim().maxLength(80).nullable().optional(),
+  agentProviderId: engineProviderId.clone().nullable().optional(),
   agentModelId: vine.string().trim().maxLength(255).nullable().optional(),
   agentLastEvent: vine.string().trim().maxLength(4096).nullable().optional(),
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
