@@ -234,10 +234,11 @@ took effect is unknown. Check before relying on it or running it again.",
     /// The runner, started if it is not running.
     async fn running(&self) -> Result<Arc<Process>, HarnessError> {
         let mut slot = self.process.lock().await;
-        if let Some(process) = slot.as_ref()
-            && !process.dead.is_cancelled()
-        {
-            return Ok(process.clone());
+        if let Some(process) = slot.as_ref() {
+            if !process.dead.is_cancelled() {
+                return Ok(process.clone());
+            }
+            log!(Warn, "the harness had stopped; starting it again");
         }
         if self.stopped.load(Ordering::Relaxed) {
             return Err(HarnessError::Stopped);
@@ -285,7 +286,7 @@ took effect is unknown. Check before relying on it or running it again.",
                         let _ = reply.send(message);
                     }
                 }
-                log!(Warn, "the harness exited");
+                log!(Debug, "the harness's output closed");
                 dead.cancel();
                 // Every waiting call learns that its answer will not come.
                 lock(&pending).clear();

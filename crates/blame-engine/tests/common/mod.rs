@@ -197,6 +197,8 @@ pub struct Engine {
     notifications: tokio::sync::Mutex<mpsc::UnboundedReceiver<EngineNotification>>,
     next_id: AtomicU64,
     pub data_dir: PathBuf,
+    /// What the engine wrote to stderr so far.
+    pub logs: Arc<Mutex<Vec<String>>>,
 }
 
 pub fn binary() -> &'static str {
@@ -215,10 +217,23 @@ impl Engine {
             .env("BLAME_ENGINE_LOG", "debug")
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
+            .stderr(Stdio::piped())
             .kill_on_drop(true)
             .spawn()
             .expect("the engine starts");
+        let logs: Arc<Mutex<Vec<String>>> = Arc::default();
+        {
+            // Shown as the test's own output, and kept for assertions.
+            let logs = logs.clone();
+            let stderr = child.stderr.take().unwrap();
+            tokio::spawn(async move {
+                let mut lines = BufReader::new(stderr).lines();
+                while let Ok(Some(line)) = lines.next_line().await {
+                    eprintln!("{line}");
+                    logs.lock().unwrap().push(line);
+                }
+            });
+        }
         let stdin = Arc::new(tokio::sync::Mutex::new(child.stdin.take()));
         let stdout = child.stdout.take().unwrap();
         let pending: Arc<Mutex<HashMap<u64, oneshot::Sender<Outcome>>>> = Arc::default();
@@ -285,6 +300,7 @@ impl Engine {
             notifications: tokio::sync::Mutex::new(notifications),
             next_id: AtomicU64::new(1),
             data_dir: data_dir.to_owned(),
+            logs,
         }
     }
 
@@ -430,6 +446,14 @@ impl Engine {
     pub async fn shutdown(self) -> ExitStatus {
         let _: Value = self.call(ClientRequest::Shutdown {}).await;
         self.wait_exit().await
+    }
+
+    pub fn logged(&self, text: &str) -> bool {
+        self.logs
+            .lock()
+            .unwrap()
+            .iter()
+            .any(|line| line.contains(text))
     }
 
     pub fn pid(&self) -> u32 {

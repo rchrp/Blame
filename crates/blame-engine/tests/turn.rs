@@ -188,3 +188,140 @@ fn version_and_catalog_print_on_stdout() {
         "{ids:?}"
     );
 }
+
+#[tokio::test]
+async fn approvals_go_to_the_client_and_an_interrupt_withdraws_its_request() {
+    let mock = mock(vec![
+        tool_reply(&[("deploy", json!({}))]),
+        text_reply(&["Deployed."]),
+        tool_reply(&[("preview", json!({ "path": "/slow" }))]),
+    ])
+    .await;
+    let mut client = FakeClient::new(&mock.base);
+    let hold = Arc::new(tokio::sync::Notify::new());
+    client.hold_tools = Some(hold.clone());
+    let client = Arc::new(client);
+    let engine = Engine::ready(&temp_dir("approval"), &[], client.clone()).await;
+    let mut config = config(&temp_dir("approval-workspace"));
+    config.client_tools.push(blame_engine_protocol::ToolSpec {
+        name: "deploy".into(),
+        description: "Deploys.".into(),
+        input_schema: json!({"type": "object"}),
+        effect: blame_engine_protocol::ToolEffect::External,
+        ends_turn: false,
+        needs_approval: true,
+    });
+    let session = engine.create(config).await;
+    engine.subscribe(&session, 0).await;
+    engine.send(&session, "deploy it").await;
+    let mut seen = engine
+        .until_record(|r| matches!(r.body, RecordBody::ToolCallStarted { .. }))
+        .await;
+    hold.notify_one();
+    seen.extend(engine.until_turn_ended().await);
+    let records = records_of(&seen);
+    assert_eq!(
+        kinds(&records),
+        [
+            "created",
+            "user",
+            "request",
+            "reply",
+            "approval?",
+            "approval",
+            "tool",
+            "result",
+            "request",
+            "reply",
+            "ended"
+        ],
+        "{:?}",
+        kinds(&records)
+    );
+
+    // A client tool still running when the user stops the turn: the engine
+    // withdraws its request.
+    engine.send(&session, "look at /slow").await;
+    engine
+        .until_record(|r| matches!(r.body, RecordBody::ToolCallStarted { .. }))
+        .await;
+    let _: Value = engine
+        .call(ClientRequest::Interrupt {
+            session: session.clone(),
+        })
+        .await;
+    let records = records_of(&engine.until_turn_ended().await);
+    assert!(matches!(
+        &records[records.len() - 2].body,
+        RecordBody::ToolCallFinished {
+            outcome: ToolOutcome::Cancelled,
+            ..
+        }
+    ));
+    assert_eq!(client.cancelled.lock().unwrap().len(), 1, "one $/cancel");
+    hold.notify_one();
+    assert!(engine.shutdown().await.success());
+}
+
+#[tokio::test]
+async fn sessions_run_side_by_side_and_idle_ones_leave_memory() {
+    let mock = mock((0..4).map(|_| text_reply(&["Done."])).collect()).await;
+    let client = Arc::new(FakeClient::new(&mock.base));
+    let engine = Engine::ready(&temp_dir("many"), &["--idle-timeout", "1"], client).await;
+    let mut sessions = Vec::new();
+    for n in 0..3 {
+        let session = engine
+            .create(config(&temp_dir(&format!("many-workspace-{n}"))))
+            .await;
+        engine.subscribe(&session, 0).await;
+        sessions.push(session);
+    }
+    for session in &sessions {
+        engine.send(session, "go").await;
+    }
+    let mut ended = 0;
+    while ended < 3 {
+        if let blame_engine_protocol::rpc::EngineNotification::Record { record, .. } =
+            engine.next_notification().await
+            && matches!(
+                record.body,
+                RecordBody::TurnEnded {
+                    outcome: TurnOutcome::Completed,
+                    ..
+                }
+            )
+        {
+            ended += 1;
+        }
+    }
+    for session in &sessions {
+        let _: Value = engine
+            .call(ClientRequest::Unsubscribe {
+                session: session.clone(),
+            })
+            .await;
+    }
+    // Idle and unwatched for longer than --idle-timeout: dropped, then
+    // opened again from the log when used.
+    for _ in 0..100 {
+        if sessions
+            .iter()
+            .all(|s| engine.logged(&format!("session {s} dropped from memory")))
+        {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+    }
+    assert!(engine.logged(&format!("session {} dropped from memory", sessions[0])));
+    engine.subscribe(&sessions[0], 0).await;
+    engine.send(&sessions[0], "again").await;
+    let records = records_of(&engine.until_record(|r| r.seq == 9).await);
+    assert!(matches!(
+        &records.last().unwrap().body,
+        RecordBody::TurnEnded {
+            outcome: TurnOutcome::Completed,
+            ..
+        }
+    ));
+    assert!(engine.shutdown().await.success());
+}
