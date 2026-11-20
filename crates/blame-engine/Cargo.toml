@@ -8,7 +8,37 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[[bin]]
+name = "blame-engine"
+path = "src/main.rs"
+
 [dependencies]
+blame-engine-protocol.workspace = true
+blame-engine-core.workspace = true
+blame-engine-store.workspace = true
+blame-engine-providers.workspace = true
+blame-engine-checkpoint.workspace = true
+async-trait.workspace = true
+futures-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+# `rt` for the tracker of requests still running at exit.
+tokio-util = { workspace = true, features = ["rt"] }
+# One thread runs every session: the engine waits on the network, the
+# store's own threads and child processes, and git runs on blocking threads.
+# `process` for the harness, `signal` to stop cleanly when the app goes away.
+tokio = { workspace = true, features = ["rt", "macros", "sync", "time", "io-std", "io-util", "process", "signal", "fs"] }
+# Already in the tree through the providers crate; listed because the binary
+# uses them directly (blob bytes on the wire, random ids, stream adapters).
+base64 = "0.22"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+uuid = { version = "1", default-features = false, features = ["v4"] }
+
+[dev-dependencies]
+blame-engine-core = { workspace = true, features = ["testing"] }
+blame-engine-providers = { workspace = true, features = ["testing"] }
+tokio = { workspace = true, features = ["rt", "macros", "sync", "time", "io-util", "process", "net"] }
 
 [lints]
 workspace = true

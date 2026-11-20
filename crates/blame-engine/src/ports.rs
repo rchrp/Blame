@@ -1,0 +1,246 @@
+//! The core's ports that the binary implements itself: time, ids, and what
+//! is asked of the client (approvals, credentials, the copy of the logs in
+//! Blame's database).
+
+use crate::connection::{Host, HostError};
+use crate::log::log;
+use async_trait::async_trait;
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
+use blame_engine_core::ports::{
+    ApprovalRequest, Approver, Clock, IdSource, ModelEvent, ModelProvider, ModelRequest,
+    ModelStream, ProviderError, RemoteLog, StoreError,
+};
+use blame_engine_protocol::rpc::{
+    Approval, BlobPulled, Credential, EngineRequest, LogPushed, Records,
+};
+use blame_engine_protocol::{ApprovalDecision, BlobRef, ErrorKind, Record, Seq, SessionId};
+use blame_engine_providers::{Options, Provider, connect};
+use futures_util::StreamExt;
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex, PoisonError};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+/// The wall clock, and tokio's timer for waiting.
+pub struct RealClock;
+
+#[async_trait]
+impl Clock for RealClock {
+    fn now_ms(&self) -> u64 {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX))
+    }
+
+    async fn sleep(&self, duration: Duration) {
+        tokio::time::sleep(duration).await;
+    }
+}
+
+/// Random ids: 122 random bits never repeat, across restarts or machines
+/// (a session reopened elsewhere keeps adding turns and calls to its log).
+pub struct RandomIds;
+
+impl IdSource for RandomIds {
+    fn next(&self, prefix: &str) -> String {
+        format!("{prefix}-{}", uuid::Uuid::new_v4().simple())
+    }
+}
+
+/// Approvals through `host/approval`. With no client, or one that cannot
+/// answer, the call is denied: the loop records that, and the user can ask
+/// again.
+pub struct ClientApprover {
+    pub host: Arc<Host>,
+}
+
+#[async_trait]
+impl Approver for ClientApprover {
+    async fn approve(&self, request: ApprovalRequest) -> ApprovalDecision {
+        let call = EngineRequest::Approval {
+            session: request.session,
+            turn: request.turn,
+            call: request.call,
+            tool: request.tool,
+            input: request.input,
+        };
+        // Dropping this future (an interrupt) withdraws the question.
+        match self.host.request::<Approval>(call).await {
+            Ok(approval) => approval.decision,
+            Err(error) => {
+                log!(Warn, "approval denied: {error}");
+                ApprovalDecision::Denied
+            }
+        }
+    }
+}
+
+/// Blame's database, reached through the client (`host/log/*`,
+/// `host/blob/*`). Used only when the client announced `remote_log`.
+pub struct ClientRemoteLog {
+    pub host: Arc<Host>,
+}
+
+fn remote_error(error: HostError) -> StoreError {
+    StoreError::Io(format!("remote log: {error}"))
+}
+
+#[async_trait]
+impl RemoteLog for ClientRemoteLog {
+    async fn push(&self, session: &SessionId, records: &[Record]) -> Result<Seq, StoreError> {
+        let pushed: LogPushed = self
+            .host
+            .request(EngineRequest::LogPush {
+                session: session.clone(),
+                records: records.to_vec(),
+            })
+            .await
+            .map_err(remote_error)?;
+        Ok(pushed.acked)
+    }
+
+    async fn pull(&self, session: &SessionId, after: Seq) -> Result<Vec<Record>, StoreError> {
+        let records: Records = self
+            .host
+            .request(EngineRequest::LogPull {
+                session: session.clone(),
+                after,
+            })
+            .await
+            .map_err(remote_error)?;
+        Ok(records.records)
+    }
+
+    async fn push_blob(&self, blob: &BlobRef, bytes: &[u8]) -> Result<(), StoreError> {
+        self.host
+            .request::<serde_json::Value>(EngineRequest::BlobPush {
+                blob: blob.clone(),
+                data: BASE64.encode(bytes),
+            })
+            .await
+            .map_err(remote_error)?;
+        Ok(())
+    }
+
+    async fn pull_blob(&self, sha256: &str) -> Result<Option<Vec<u8>>, StoreError> {
+        let pulled: BlobPulled = self
+            .host
+            .request(EngineRequest::BlobPull {
+                sha256: sha256.to_owned(),
+            })
+            .await
+            .map_err(remote_error)?;
+        pulled
+            .data
+            .map(|data| {
+                BASE64
+                    .decode(data)
+                    .map_err(|error| StoreError::Corrupt(format!("blob {sha256}: {error}")))
+            })
+            .transpose()
+    }
+}
+
+/// Every provider, connected on first use with the credential the client
+/// gives through `host/credential`. Credentials stay in memory only; one that
+/// the provider refuses is asked for again, once per request.
+pub struct ProviderRouter {
+    host: Arc<Host>,
+    options: Options,
+    connected: Mutex<HashMap<String, Slot>>,
+}
+
+/// A provider once connected; locked while its credential is asked for.
+type Slot = Arc<tokio::sync::Mutex<Option<Arc<Provider>>>>;
+
+impl ProviderRouter {
+    pub fn new(host: Arc<Host>, options: Options) -> Self {
+        Self {
+            host,
+            options,
+            connected: Mutex::new(HashMap::new()),
+        }
+    }
+
+    /// The connected provider `id`, asking the client for a credential when
+    /// there is none yet or when `fresh` (the last one was refused).
+    async fn provider(&self, id: &str, fresh: bool) -> Result<Arc<Provider>, ProviderError> {
+        let slot = self
+            .connected
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .entry(id.to_owned())
+            .or_default()
+            .clone();
+        // One question per provider at a time: three sessions starting
+        // together ask once.
+        let mut slot = slot.lock().await;
+        if !fresh && let Some(provider) = slot.as_ref() {
+            return Ok(provider.clone());
+        }
+        *slot = None;
+        let credential = match self
+            .host
+            .request::<Credential>(EngineRequest::Credential {
+                provider: id.to_owned(),
+            })
+            .await
+        {
+            Ok(credential) => credential,
+            Err(error) => {
+                log!(Warn, "no credential for `{id}`: {error}");
+                Credential::Missing
+            }
+        };
+        let provider = Arc::new(connect(id, &credential, &self.options)?);
+        *slot = Some(provider.clone());
+        Ok(provider)
+    }
+
+    /// Starts the request; `Err` with the authentication error when the
+    /// provider refused the credential before streaming anything.
+    async fn attempt(
+        provider: &Provider,
+        request: ModelRequest,
+    ) -> Result<Result<ModelStream, ProviderError>, ProviderError> {
+        let mut stream = match provider.stream(request).await {
+            Ok(stream) => stream,
+            Err(error) if error.kind == ErrorKind::Authentication => return Err(error),
+            Err(error) => return Ok(Err(error)),
+        };
+        // HTTP errors arrive as the stream's first and only item: look at it
+        // before handing the stream over, and put it back in front.
+        let first = stream.next().await;
+        if let Some(Err(error)) = &first
+            && error.kind == ErrorKind::Authentication
+        {
+            return Err(error.clone());
+        }
+        let first: Option<Result<ModelEvent, ProviderError>> = first;
+        let replay = futures_util::stream::iter(first);
+        Ok(Ok(Box::pin(replay.chain(stream))))
+    }
+}
+
+#[async_trait]
+impl ModelProvider for ProviderRouter {
+    async fn stream(&self, request: ModelRequest) -> Result<ModelStream, ProviderError> {
+        let id = request.model.provider.clone();
+        let provider = self.provider(&id, false).await?;
+        match Self::attempt(&provider, request.clone()).await {
+            Ok(result) => result,
+            Err(refused) => {
+                log!(
+                    Info,
+                    "`{id}` refused its credential ({}); asking the client again",
+                    refused.message
+                );
+                let provider = self.provider(&id, true).await?;
+                match Self::attempt(&provider, request).await {
+                    Ok(result) => result,
+                    Err(error) => Err(error),
+                }
+            }
+        }
+    }
+}
