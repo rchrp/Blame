@@ -17,7 +17,7 @@ use crate::log::log;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use blame_engine_core::ports::{InterruptedCall, SessionStore, ToolInvocation, ToolOutput};
-use blame_engine_protocol::{ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec};
+use blame_engine_protocol::{RecordBody, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::process::Stdio;
@@ -145,7 +145,7 @@ impl Harness {
         store: &dyn SessionStore,
         cancel: CancellationToken,
     ) -> ToolOutput {
-        let call = json!({
+        let mut call = json!({
             "tool": invocation.name,
             "input": invocation.input,
             "workspaceRoot": invocation.workspace_root,
@@ -157,6 +157,11 @@ impl Harness {
                 "metadata": { "contextGeneration": context_generation(invocation) },
             },
         });
+        // finish_task shows only screenshots this conversation took: the ones
+        // its tool results named (`screenshot:<id>`).
+        if invocation.name == "finish_task" {
+            call["knownScreenshots"] = json!(known_screenshots(invocation, store).await);
+        }
         let reply = match self.request(json!({ "call": call }), &cancel).await {
             Ok(reply) => reply,
             Err(HarnessError::Cancelled) => {
@@ -437,6 +442,52 @@ pub fn interrupted(name: &str) -> InterruptedCall {
     }
 }
 
+/// The screenshot ids the session's tool results named, as
+/// `screenshot:<64 hex>`, oldest first.
+async fn known_screenshots(invocation: &ToolInvocation, store: &dyn SessionStore) -> Vec<String> {
+    let records = store
+        .read(&invocation.session, 0, None)
+        .await
+        .unwrap_or_default();
+    let mut ids: Vec<String> = Vec::new();
+    for record in records {
+        let RecordBody::ToolCallFinished { content, .. } = record.body else {
+            continue;
+        };
+        for block in content {
+            if let ToolResultBlock::Text { text } = block {
+                for id in screenshot_references(&text) {
+                    if !ids.contains(&id) {
+                        ids.push(id);
+                    }
+                }
+            }
+        }
+    }
+    ids
+}
+
+/// The ids of every `screenshot:<64 lowercase hex>` in a text.
+fn screenshot_references(text: &str) -> Vec<String> {
+    let mut ids = Vec::new();
+    let mut rest = text;
+    while let Some(at) = rest.find("screenshot:") {
+        let candidate = &rest[at + "screenshot:".len()..];
+        let id: String = candidate.chars().take(64).collect();
+        let next = candidate.chars().nth(64);
+        if id.len() == 64
+            && id
+                .chars()
+                .all(|c| c.is_ascii_digit() || ('a'..='f').contains(&c))
+            && !next.is_some_and(|c| c.is_ascii_hexdigit())
+        {
+            ids.push(id);
+        }
+        rest = candidate;
+    }
+    ids
+}
+
 /// The model-facing content: a string, or text and image parts in order.
 /// Images go to the store, so the log holds their address, not their bytes.
 async fn blocks(content: Option<&Value>, store: &dyn SessionStore) -> Vec<ToolResultBlock> {
@@ -493,4 +544,22 @@ async fn blocks(content: Option<&Value>, store: &dyn SessionStore) -> Vec<ToolRe
         }
     }
     blocks
+}
+
+#[cfg(test)]
+mod screenshot_tests {
+    use super::screenshot_references;
+
+    #[test]
+    fn finds_each_screenshot_reference_of_a_text() {
+        let a = "a".repeat(64);
+        let b = "0123456789abcdef".repeat(4);
+        let text = format!(
+            "Screenshot saved as screenshot:{a}. Render 2: screenshot:{b}\nnot screenshot:{short} nor screenshot:{long}",
+            short = "c".repeat(10),
+            long = "d".repeat(65),
+        );
+        assert_eq!(screenshot_references(&text), vec![a, b]);
+        assert!(screenshot_references("no references").is_empty());
+    }
 }

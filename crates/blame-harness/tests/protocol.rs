@@ -334,6 +334,14 @@ fn an_engine_finish_answers_its_summary_and_leaves_the_memory() {
             obj! { "summary" => "x", "images" => Json::Arr(vec![obj! { "ref" => format!("screenshot:{}", "a".repeat(64)), "caption" => "after" }]) },
         ),
         call("5", "finish_task", obj! { "summary" => "" }),
+        // A screenshot the engine says this conversation took is accepted.
+        obj! { "id" => "6", "call" => obj! {
+            "tool" => "finish_task", "workspaceRoot" => root.as_str(),
+            "input" => obj! { "summary" => "Shown.", "images" => Json::Arr(vec![obj! { "ref" => format!("screenshot:{}", "b".repeat(64)), "caption" => "the card" }]) },
+            "taskContract" => obj! { "session_id" => session, "objective" => "Change the answer" },
+            "toolContext" => obj! { "sessionId" => session, "toolCallId" => "6" },
+            "knownScreenshots" => Json::Arr(vec![Json::Str("b".repeat(64))]),
+        } },
     ]);
     let presented = |id: &str| {
         answers
@@ -369,6 +377,10 @@ fn an_engine_finish_answers_its_summary_and_leaves_the_memory() {
             .and_then(Json::as_str)
             .unwrap()
             .starts_with("finish_task images must be screenshots taken in this conversation.")
+    );
+    assert_eq!(
+        presented("6").stringify(),
+        r#"{"ok":true,"content":"Shown."}"#
     );
     assert_eq!(
         presented("5").get("content").and_then(Json::as_str),
