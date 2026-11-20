@@ -1,10 +1,5 @@
-import {
-  runtimeClineHubPort,
-  runtimeDistroName,
-} from "./desktop-runtime-environment.ts";
+import { runtimeDistroName } from "./desktop-runtime-environment.ts";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { randomUUID } from "node:crypto";
-import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { EventEmitter } from "node:events";
 import { PassThrough } from "node:stream";
 import { createInterface } from "node:readline";
@@ -71,13 +66,6 @@ type AgentScanEnvFilesResult = {
 
 type AgentReadExistingFilesResult = {
   files: Record<string, string | null>;
-};
-
-export type AgentClineHubResult = {
-  action?: string;
-  authToken?: string;
-  status?: string;
-  url?: string;
 };
 
 type RuntimeAgentClientInput = {
@@ -168,66 +156,6 @@ export class RuntimeAgentClient {
     return result as AgentReadExistingFilesResult;
   }
 
-  async clineHubEnsure(): Promise<AgentClineHubResult> {
-    // Provisioning can replace the agent on disk while this RPC process is
-    // still running. Always load the installed launcher for hub lifecycle work.
-    const result = await this.requestWithTransportRetry(
-      "exec",
-      {
-        command: "/usr/local/bin/blame-runtime-agent",
-        args: [
-          "cline-hub-ensure",
-          runtimeClineHubPort({ ...process.env, ...this.env }),
-        ],
-        user: "root",
-        timeoutMs: 90_000,
-      },
-      90_000,
-    );
-    return JSON.parse(
-      (result as AgentExecResult).stdout,
-    ) as AgentClineHubResult;
-  }
-
-  async clineHubStatus(): Promise<AgentClineHubResult> {
-    const result = await this.request("clineHubStatus", {}, 10_000);
-    return result as AgentClineHubResult;
-  }
-
-  async clineHubStop(): Promise<AgentClineHubResult> {
-    const result = await this.request("clineHubStop", {}, 10_000);
-    return result as AgentClineHubResult;
-  }
-
-  async lightWorkspace(
-    input: LightWorkspaceExecutionRequest,
-    signal?: AbortSignal,
-  ) {
-    const operationId = randomUUID();
-    // The cancel goes to the agent running the operation, even if a newer
-    // one has replaced it since.
-    const release = holdRuntime();
-    const agent = await this.connection().catch((error: unknown) => {
-      release();
-      throw error;
-    });
-    return this.requestOn(
-      agent,
-      "lightWorkspace",
-      { ...input, operationId },
-      15 * 60_000,
-      signal,
-      () => {
-        void this.requestOn(
-          agent,
-          "lightWorkspaceCancel",
-          { operationId },
-          5_000,
-        ).catch(() => undefined);
-      },
-    ).finally(release);
-  }
-
   async kill(processId: string) {
     const owner = this.streamOwners.get(processId);
     await (owner
@@ -246,22 +174,6 @@ export class RuntimeAgentClient {
     this.process = undefined;
     this.retiring.add(agent);
     this.stopIfDone(agent);
-  }
-
-  private async requestWithTransportRetry(
-    method: string,
-    params: Record<string, unknown>,
-    timeoutMs: number,
-  ) {
-    try {
-      return await this.request(method, params, timeoutMs);
-    } catch (error) {
-      if (!(error instanceof RuntimeAgentTransportError)) throw error;
-      log.warn(
-        `Runtime agent transport interrupted during ${method}; retrying`,
-      );
-      return this.request(method, params, timeoutMs);
-    }
   }
 
   private async request(
