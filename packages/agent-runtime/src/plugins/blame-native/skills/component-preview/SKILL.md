@@ -5,7 +5,7 @@ description: Use after creating a UI component or changing how one renders, in a
 
 # Component preview
 
-Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3, Svelte 5 or Angular package without one, such as a Next.js, Vue CLI, Nuxt, Rollup or Angular CLI app, and for a React Native package with `react-native-web`, such as an Expo app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The story's own preview, if any, keeps running untouched.
+Show one component on its own, with props and data you make up, rendered by a temporary Vite server that `open_component_preview` starts for the session: with the package's own Vite config, a SvelteKit app's included, or with Blame's own Vite for a React, Vue 3, Svelte 5 or Angular package without one, such as a Next.js, Vue CLI, Nuxt, Rollup or Angular CLI app, and for a React Native package with `react-native-web`, such as an Expo app. You avoid sign-in, the backend and real data, and see every state that matters in one call. The app's own preview, if any, keeps running untouched.
 
 ## When to use it
 
@@ -15,6 +15,7 @@ Use it by default whenever you create a UI component or change how one renders: 
 - **App captures as a complement, if you want them.** When the story also has a visual preview of the app (a managed preview, a Direct app, a screen or a device), you may also capture it with that preview's tools for what the component alone cannot show: a whole screen, a flow, where the component sits in its page, navigation between screens.
 - **The app alone only when the component preview costs more than the app.** For example, the component needs heavy fakes (several providers, global state, real data) while the state you need shows directly in the app's preview; or the change is about how the screen integrates the component rather than how the component renders.
 - **No visual preview of the app**, such as a native desktop app without a web service: the component preview is the visual check available. It shows the component, never the app window, so never claim you inspected the app.
+- **In a chat**, when the person asks what a component looks like, how it handles a state, or to compare its themes and widths: render the existing component in those states with made-up data. Write only the preview file; change the component itself only if they ask for it. They see the screenshots in the conversation.
 
 ## Write the preview file
 
@@ -189,8 +190,8 @@ Choose the renders that answer the question, at most 6 in one call:
 
 1. Call `open_component_preview` with `file`, the `states`, and the `themes` and `widths` that matter. One call renders every combination of states × themes × widths, at most 6, and returns one screenshot per render.
 2. Read what each render reports: an error overlay, a reported error or console errors mean it is broken. Fix the preview file or the component, then call again: the same server shows the change.
-3. Use the screenshots for what is visual: layout, spacing, color, contrast, overflow. `preview_devtools__take_snapshot` and the other `preview_devtools__*` tools still drive the story's own preview, not this render.
+3. Use the screenshots for what is visual: layout, spacing, color, contrast, overflow. `preview_devtools__take_snapshot` and the other `preview_devtools__*` tools still drive the app's own preview, not this render.
 
 ## Finish
 
-Attach the useful screenshots to `finish_task` with `images`, using the `screenshot:<id>` references from the results. Screenshots of the isolated component and of the app can be mixed: each one-line caption says which of the two it shows, such as "Isolated component: empty state, dark" or "App: settings page with the new panel". The temporary files are ignored by Git and removed when the task finishes; the screenshots stay available.
+Attach the useful screenshots to `finish_task` with `images`, using the `screenshot:<id>` references from the results. Screenshots of the isolated component and of the app can be mixed: each one-line caption says which of the two it shows, such as "Isolated component: empty state, dark" or "App: settings page with the new panel". The temporary files are ignored by Git and removed when your turn ends, and the server stops: write the file again in a later turn. The screenshots stay available.

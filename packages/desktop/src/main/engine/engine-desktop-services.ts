@@ -11,6 +11,7 @@ import type {
 } from "@blame/agent-runtime/engine-protocol";
 import { vmEngineBinaries } from "./engine-binary.ts";
 import { prepareVmEngine, vmEngineTarget } from "./vm-engine.ts";
+import log from "electron-log";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -103,6 +104,8 @@ export function engineDesktopServices(
         await import("../component-preview/component-preview-agent.ts");
       return componentPreviewHostRequest(input, signal, previews);
     },
+    prepareComponentPreview: (input) =>
+      prepareComponentPreview(String(record(input).worktree ?? "")),
     githubMcpTools: async (input) =>
       githubMcpService.listTools(optionalText(record(input).sessionId)),
     githubMcpCall: (input, signal) => githubMcpCall(input, signal),
@@ -322,6 +325,34 @@ async function previewDevtoolsCall(
     sessionId: optionalText(request.sessionId),
     toolCallId: optionalText(request.toolCallId),
   });
+}
+
+// A conversation whose workspace holds a Vite, React, Vue 3, Nuxt 3 or later,
+// Svelte 5 or Angular project gets open_component_preview, whatever its
+// workspace: a managed preview, local or cloud, the project folder, or no
+// web service at all. Other projects, such as an Ember, Vue 2, Nuxt 2 or
+// Svelte 4 app, do not. Git ignores the temporary preview files from then
+// on; a cloud preview's sandbox ignores them when its server starts.
+async function prepareComponentPreview(worktree: string) {
+  if (!worktree) return false;
+  const startedAt = performance.now();
+  const [{ hasComponentPreviewProject }, { excludeComponentPreviewFiles }] =
+    await Promise.all([
+      import("../component-preview/component-preview-location.ts"),
+      import("../component-preview-exclude.ts"),
+    ]);
+  const supported = await hasComponentPreviewProject(worktree);
+  if (supported)
+    await excludeComponentPreviewFiles(worktree).catch((error: unknown) =>
+      log.warn("Could not hide temporary component previews from Git", {
+        error: error instanceof Error ? error.message : String(error),
+      }),
+    );
+  log.info("Component preview check", {
+    supported,
+    durationMs: Math.round(performance.now() - startedAt),
+  });
+  return supported;
 }
 
 // A screenshot belongs to the conversation when it was taken in the same

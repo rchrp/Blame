@@ -156,7 +156,13 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     environment: engineHostEnvironment(),
     // A session's preview browsers stay open while it works.
     onActivity: ({ session, running }) => {
-      if (!running) releaseAgentPreviewSession(session);
+      if (running) return;
+      releaseAgentPreviewSession(session);
+      // The turn's component previews end with it: files, then servers.
+      void import("./component-preview/component-preview-agent").then(
+        ({ endSessionComponentPreviews }) =>
+          endSessionComponentPreviews(session),
+      );
     },
     desktop: engineDesktopServices(previews),
     beforeCall: async (method, input, api) => {
