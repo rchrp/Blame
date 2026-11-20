@@ -174,8 +174,9 @@ fn serve(settings: Settings) -> Result<(), String> {
         let (inbound, outbound) = transport::stdio();
         server::serve(settings, Box::new(inbound), Box::new(outbound)).await;
     });
-    // Tasks still parked (a forwarder, a request the client never answered)
-    // hold nothing that is not already on disk.
-    runtime.shutdown_timeout(Duration::from_secs(1));
+    // What is left are parked tasks holding nothing that is not already on
+    // disk, and tokio's thread blocked reading stdin, which only the
+    // client can end: do not wait for it.
+    runtime.shutdown_background();
     Ok(())
 }
