@@ -505,6 +505,13 @@ async fn session_call(
             input,
             delivery,
         } => reply(on_session!(&session, |s| s.send(input, delivery))),
+        ClientRequest::Withdraw { session, turn } => {
+            on_session!(&session, |s| s.withdraw(turn));
+            Ok(Some(Value::Null))
+        }
+        ClientRequest::Promote { session, turn } => {
+            reply(on_session!(&session, |s| s.promote(turn)))
+        }
         ClientRequest::Interrupt { session } => {
             on_session!(&session, |s| s.interrupt());
             Ok(Some(Value::Null))
@@ -730,7 +737,8 @@ fn engine_error(error: EngineError) -> RpcError {
         | EngineError::NothingToUndo
         | EngineError::InvalidFork { .. }
         | EngineError::Task(_)
-        | EngineError::InvalidContract(_) => ErrorKind::InvalidRequest,
+        | EngineError::InvalidContract(_)
+        | EngineError::NotQueued(_) => ErrorKind::InvalidRequest,
         _ => ErrorKind::Internal,
     };
     rpc_error(-32000, error.to_string(), kind)

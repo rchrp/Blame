@@ -189,7 +189,9 @@ export class TranscriptReducer {
       turns: stored
         ? this.turnOrder.map((turn) => this.turns.get(turn)!)
         : previous.turns,
-      runningTurn: this.s.open[0],
+      runningTurn: this.s.open.find(
+        (turn) => this.turns.get(turn)?.status === "running",
+      ),
       pendingApprovals: stored
         ? this.awaiting.map(
             (call) => this.items[this.callIndex.get(call)!] as ToolCallItem,
@@ -317,6 +319,16 @@ export class TranscriptReducer {
   private applyRecordEffect(record: SessionRecord): void {
     const at = record.at_ms;
     const body: RecordBody = record;
+    // A queued turn runs from its first checkpoint or request: until then
+    // it waits, also after a quit, when the engine keeps the queue waiting.
+    if (
+      (body.type === "checkpoint_created" || body.type === "request_started") &&
+      this.turns.get(body.turn)?.status === "queued"
+    )
+      this.updateTurn(body.turn, record, (view) => ({
+        ...view,
+        status: "running",
+      }));
     switch (body.type) {
       case "session_created":
         this.setScalars({ config: body.config });
@@ -468,6 +480,11 @@ export class TranscriptReducer {
           code: body.code,
           text: body.text,
         });
+        return;
+      case "turn_continued":
+        // The engine asked the model to carry on after it acknowledged a
+        // message sent mid-turn: plumbing of the loop, not something the
+        // person said or needs to see.
         return;
       case "contract_correction":
         // The engine told the model it may not stop yet: shown like a
@@ -662,7 +679,6 @@ export class TranscriptReducer {
     record: SessionRecord,
     body: Extract<RecordBody, { type: "turn_ended" }>,
   ): void {
-    const wasRunning = this.s.open[0] === body.turn;
     this.closeCalls(body.turn);
     this.updateTurn(body.turn, record, (view) => ({
       ...view,
@@ -681,10 +697,6 @@ export class TranscriptReducer {
     });
     // Whatever steer the turn did not get is handed to the next request.
     this.setScalars({ open, retry: undefined });
-    const next = open[0];
-    if (wasRunning && next !== undefined) {
-      this.updateTurn(next, record, (view) => ({ ...view, status: "running" }));
-    }
   }
 
   /** The cut of a rewind: every turn still open ends where the log was cut. */

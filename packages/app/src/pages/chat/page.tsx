@@ -6,6 +6,7 @@ import { projectPreviewConfiguration } from "@/components/backlog/board/project-
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { EngineApprovalProvider } from "@/components/chat/engine/engine-approvals"
+import { QueuedMessages } from "@/components/chat/engine/queued-messages"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import { ExcerptTargetProvider } from "@/components/backlog/shared/selection-excerpt-actions"
@@ -111,8 +112,8 @@ function QuickChatProjectPage() {
     })
   }
 
-  // While the agent works, ↵ queues the message as the next turn and ⌘↵
-  // hands it to the agent right away, inside the turn it is running.
+  // While the agent works, ↵ hands the message to the agent right away,
+  // inside the turn it is running, and ⌘↵ queues it as the next turn.
   async function submitDraft(steer = false) {
     if (!draftHasContent() || (sending && !chat.running)) return
     const message = quickChatMessage(
@@ -164,6 +165,13 @@ function QuickChatProjectPage() {
                   onChangedFileClick: openPath,
                   onFileLinkClick: openPath,
                   onUserMessageUndo: undoMessage,
+                  queued: (
+                    <QueuedMessages
+                      controls={chat.queue}
+                      onFileLinkClick={openPath}
+                      queued={chat.conversation.queued}
+                    />
+                  ),
                   responseHeader,
                   runs,
                 }
@@ -197,9 +205,9 @@ function QuickChatProjectPage() {
             onMessageSendNow: () => void submitDraft(true),
             onAgentCancel: cancelAgent,
             placeholder: chat.running
-              ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
+              ? "Message the agent: ↵ right now, ⌘↵ when it finishes"
               : "Ask for a focused code change",
-            submitLabel: chat.running ? "Queue message" : "Send",
+            submitLabel: chat.running ? "Send to the agent now" : "Send",
           }}
           preview={{
             configuration: previewConfiguration,

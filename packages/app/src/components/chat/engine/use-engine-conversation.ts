@@ -27,6 +27,7 @@ export type EngineConversationMessage = {
 
 const emptyConversation: TranscriptConversation = {
   comments: [],
+  queued: [],
   rewindTargets: new Map(),
   runs: [],
 }

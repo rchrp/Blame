@@ -1,5 +1,5 @@
 use crate::ports::{CheckpointError, StoreError};
-use blame_engine_protocol::Seq;
+use blame_engine_protocol::{Seq, TurnId};
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
@@ -26,4 +26,8 @@ pub enum EngineError {
     Task(&'static str),
     #[error("invalid completion contract: {0}")]
     InvalidContract(String),
+    /// Withdraw or promote named a turn that is not waiting in the queue
+    /// (it runs, ended, or never existed).
+    #[error("turn {0} is not waiting in the queue")]
+    NotQueued(TurnId),
 }

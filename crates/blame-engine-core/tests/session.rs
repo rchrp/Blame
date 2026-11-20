@@ -310,7 +310,9 @@ async fn a_steer_reaches_the_model_at_its_next_request() {
     world
         .provider
         .push(Script::tool_calls(&[("run", json!({ "command": "test" }))]))
-        .push(Script::text("ok, also that"));
+        .push(Script::text("ok, also that"))
+        // The text-only acknowledgement is asked to carry on (steering.rs).
+        .push(Script::text("done"));
     let session = create(&world).await;
     let first = session.send(text("task"), Delivery::Turn).await.unwrap();
     tool_running(&world).await;
@@ -322,7 +324,7 @@ async fn a_steer_reaches_the_model_at_its_next_request() {
     gate.notify_one();
     session.wait_idle().await;
     let requests = world.provider.request_messages();
-    assert_eq!(requests.len(), 2);
+    assert_eq!(requests.len(), 3);
     let second = &requests[1];
     assert!(matches!(second[2], ModelMessage::ToolResults(_)));
     assert_eq!(user_texts(&second[3..]), ["and check the docs"]);

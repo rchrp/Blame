@@ -24,9 +24,20 @@ import type {
   AgentConversationRun,
 } from "@/components/chat/agent-conversation"
 
+/** A message queued behind the running turn: shown with its controls, not as a turn. */
+export type QueuedMessage = {
+  /** The engine turn it opens when it runs (what withdraw and promote name). */
+  turn: string
+  comment: AgentConversationComment
+  /** Text only: an edit sends its new text again (files are not re-sent). */
+  editable: boolean
+}
+
 export type TranscriptConversation = {
   comments: AgentConversationComment[]
   runs: AgentConversationRun[]
+  /** Messages waiting for the running turn to end, oldest first. */
+  queued: QueuedMessage[]
   /** Where each message can be undone to, by the comment (user item) key. */
   rewindTargets: ReadonlyMap<string, { to: number; workspace: boolean }>
 }
@@ -40,6 +51,7 @@ export function transcriptConversation(
   } = {}
 ): TranscriptConversation {
   const comments: AgentConversationComment[] = []
+  const queued: QueuedMessage[] = []
   const rewindTargets = new Map<string, { to: number; workspace: boolean }>()
   const itemsByTurn = new Map<string, TranscriptItem[]>()
   for (const item of transcript.items) {
@@ -53,8 +65,31 @@ export function transcriptConversation(
   // A turn changed what lies between its snapshot and the next one's (the
   // files now, for the last).
   const snapshots = new Map(transcript.checkpoints.map((checkpoint) => [checkpoint.turn, checkpoint.snapshot]))
-  const kept = transcript.turns.filter((turn) => turn.status !== "rewound")
-  for (const [index, turn] of kept.entries()) {
+  // A withdrawn turn never ran (its message was removed, or sent into the
+  // running turn, where it shows as a steer).
+  const kept = transcript.turns.filter(
+    (turn) => turn.status !== "rewound" && turn.status !== "withdrawn"
+  )
+  for (const turn of kept) {
+    if (turn.status !== "queued") continue
+    const opening = (itemsByTurn.get(turn.turn) ?? []).find(
+      (item): item is UserItem => item.kind === "user" && item.delivery === "turn"
+    )
+    if (!opening) continue
+    queued.push({
+      turn: turn.turn,
+      comment: {
+        author,
+        body: userText(opening.blocks),
+        createdAt: iso(opening.atMs),
+        fileAttachments: userFiles(opening.blocks, opening.key),
+        id: opening.key,
+      },
+      editable: opening.blocks.every((block) => block.type === "text"),
+    })
+  }
+  const ran = kept.filter((turn) => turn.status !== "queued")
+  for (const [index, turn] of ran.entries()) {
     const brief = options.brief && runs.length === 0
     const items = itemsByTurn.get(turn.turn) ?? []
     const opening = items.find(
@@ -89,7 +124,7 @@ export function transcriptConversation(
       completedAt: turn.endedAtMs ? iso(turn.endedAtMs) : null,
       createdAt: iso(turn.startedAtMs),
       diffStartRef: snapshots.get(turn.turn) ?? null,
-      diffEndRef: kept.slice(index + 1).map((next) => snapshots.get(next.turn)).find(Boolean) ?? null,
+      diffEndRef: ran.slice(index + 1).map((next) => snapshots.get(next.turn)).find(Boolean) ?? null,
       finalResponse: reply ?? null,
       id: turn.turn,
       kind: brief ? "initial" : "change-request",
@@ -104,7 +139,7 @@ export function transcriptConversation(
       usage: agentUsage(turn.usage, transcript.usage.spent),
     })
   }
-  return { comments, rewindTargets, runs }
+  return { comments, queued, rewindTargets, runs }
 }
 
 function runStatus(turn: TurnView): UserStoryAgentRunStatus {
@@ -189,14 +224,16 @@ function itemActivity(
     case "tool_call":
       return toolActivity(item, transcript.toolProgress.get(item.call))
     case "user":
-      // A message that joined the running turn (the opening one is the comment).
+      // A message that joined the running turn (the opening one is the
+      // comment): the person's own message, where it joined the work.
       if (item.delivery !== "steer") return undefined
       return {
         ...base,
-        kind: "notice",
-        title: `${author} added`,
+        kind: "user",
+        title: author,
         detail: userText(item.blocks),
         status: "completed",
+        fileAttachments: userFiles(item.blocks, item.key),
       }
     case "request_failed":
       if (item.retried) return undefined

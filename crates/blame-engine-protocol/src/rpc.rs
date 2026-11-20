@@ -131,6 +131,17 @@ pub enum ClientRequest {
         input: Vec<UserBlock>,
         delivery: Delivery,
     },
+    /// Takes back a queued message before its turn runs: the turn ends as
+    /// `Withdrawn` and the model never reads it. Result: `null`. Fails when
+    /// the turn is not queued (it runs, ended, or does not exist).
+    #[serde(rename = "session/withdraw")]
+    Withdraw { session: SessionId, turn: TurnId },
+    /// Sends a queued message into the running turn now: its turn ends as
+    /// `Withdrawn` and the same input joins the running turn as a steer, in
+    /// one write, so it is read once. Result: [`MessageAccepted`] (the
+    /// running turn). Fails when the turn is not queued behind a running one.
+    #[serde(rename = "session/promote")]
+    Promote { session: SessionId, turn: TurnId },
     /// Stops the running turn; tool calls in flight are cancelled.
     /// Result: `null`.
     #[serde(rename = "session/interrupt")]

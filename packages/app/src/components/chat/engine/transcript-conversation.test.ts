@@ -126,14 +126,119 @@ test("a running turn shows what streams, and a queued message waits", () => {
       { type: "text", request: "r1", index: 0, text: "Working on" },
     ]
   )
+  // The queued message is not a turn yet: it waits, with its controls.
   assert.deepEqual(
     result.runs.map((run) => run.status),
-    ["running", "pending"]
+    ["running"]
   )
+  assert.deepEqual(
+    result.queued.map((queued) => [queued.turn, queued.comment.body, queued.editable]),
+    [["t2", "then this", true]]
+  )
+  assert.equal(result.comments.length, 1)
   const live = result.runs[0]!.activities!.at(-1)!
   assert.equal(live.detail, "Working on")
   assert.equal(live.status, "running")
   assert.equal(live.messageKind, "intermediate")
+})
+
+// A turn the person steers: work, their message, the acknowledgement with
+// the next call, more work, the reply.
+function steeredTurn(through: "steer" | "acknowledged" | "ended") {
+  const records = [
+    record({ type: "session_created", config }),
+    record({ type: "user_message", turn: "t1", input: [{ type: "text", text: "build it" }], delivery: "turn" }),
+    record({ type: "request_started", turn: "t1", request: "r1", model, attempt: 1, prefix_digest: "d" }),
+    record({
+      type: "assistant_message", turn: "t1", request: "r1", stop: "tool_use", usage,
+      blocks: [{ type: "tool_call", call: "c1", name: "run_command", input: { command: "test" } }],
+    }),
+    record({ type: "tool_call_started", turn: "t1", call: "c1", name: "run_command", effect: "mutating" }),
+    record({ type: "user_message", turn: "t1", input: [{ type: "text", text: "check the docs too" }], delivery: "steer" }),
+    record({ type: "tool_call_finished", turn: "t1", call: "c1", outcome: "completed", content: [{ type: "text", text: "ok" }] }),
+    record({ type: "request_started", turn: "t1", request: "r2", model, attempt: 1, prefix_digest: "d" }),
+  ]
+  if (through === "steer") return records
+  records.push(
+    record({
+      type: "assistant_message", turn: "t1", request: "r2", stop: "tool_use", usage,
+      blocks: [
+        { type: "text", text: "Noted, I will check the docs too." },
+        { type: "tool_call", call: "c2", name: "read_file", input: { path: "docs.md" } },
+      ],
+    }),
+    record({ type: "tool_call_started", turn: "t1", call: "c2", name: "read_file", effect: "read_only" }),
+    record({ type: "tool_call_finished", turn: "t1", call: "c2", outcome: "completed", content: [{ type: "text", text: "docs" }] }),
+    record({ type: "request_started", turn: "t1", request: "r3", model, attempt: 1, prefix_digest: "d" }),
+  )
+  if (through === "acknowledged") return records
+  records.push(
+    record({
+      type: "assistant_message", turn: "t1", request: "r3", stop: "end_turn", usage,
+      blocks: [{ type: "text", text: "Built, and the docs agree." }],
+    }),
+    record({ type: "turn_ended", turn: "t1", outcome: { status: "completed" } })
+  )
+  return records
+}
+
+test("a message sent into the running turn is the person's own, where it joined", () => {
+  seq = 0
+  // Live: the steer has joined and the acknowledgement streams.
+  const live = conversation(steeredTurn("steer"), [
+    { type: "activity", activity: { state: "streaming" } },
+    { type: "block_started", request: "r2", index: 0, kind: "text" },
+    { type: "text", request: "r2", index: 0, text: "Noted, I will" },
+  ])
+  assert.equal(live.runs.length, 1, "one run around it")
+  assert.equal(live.comments.length, 1)
+  const liveKinds = live.runs[0]!.activities!.map((activity) => activity.kind)
+  assert.deepEqual(liveKinds, ["tool", "user", "message"])
+  const steer = live.runs[0]!.activities![1]!
+  assert.equal(steer.title, "You")
+  assert.equal(steer.detail, "check the docs too")
+  assert.equal(live.runs[0]!.activities![2]!.messageKind, "intermediate")
+
+  // Replayed after the turn: same place, and the acknowledgement is not
+  // the turn's reply.
+  seq = 0
+  const replayed = conversation(steeredTurn("ended"))
+  const run = replayed.runs[0]!
+  assert.deepEqual(
+    run.activities!.map((activity) => [activity.kind, activity.detail]),
+    [
+      ["tool", run.activities![0]!.detail],
+      ["user", "check the docs too"],
+      ["message", "Noted, I will check the docs too."],
+      ["tool", run.activities![3]!.detail],
+      ["message", "Built, and the docs agree."],
+    ]
+  )
+  assert.equal(run.activities![2]!.messageKind, "intermediate")
+  assert.equal(run.finalResponse, "Built, and the docs agree.")
+  assert.equal(replayed.queued.length, 0)
+})
+
+test("a queued message taken back disappears; one sent now shows once, as a steer", () => {
+  seq = 0
+  const base = steeredTurn("acknowledged").filter(
+    (r) => !(r.type === "user_message" && r.delivery === "steer")
+  )
+  const result = conversation([
+    ...base,
+    record({ type: "user_message", turn: "t2", input: [{ type: "text", text: "never mind" }], delivery: "turn" }),
+    record({ type: "user_message", turn: "t3", input: [{ type: "text", text: "now please" }], delivery: "turn" }),
+    record({ type: "turn_ended", turn: "t2", outcome: { status: "withdrawn" } }),
+    record({ type: "turn_ended", turn: "t3", outcome: { status: "withdrawn" } }),
+    record({ type: "user_message", turn: "t1", input: [{ type: "text", text: "now please" }], delivery: "steer" }),
+  ])
+  assert.equal(result.runs.length, 1)
+  assert.equal(result.queued.length, 0)
+  const texts = result.runs[0]!.activities!
+    .filter((activity) => activity.kind === "user")
+    .map((activity) => activity.detail)
+  assert.deepEqual(texts, ["now please"])
+  assert.ok(!JSON.stringify(result).includes("never mind"))
 })
 
 test("a failed turn ends on its error", () => {

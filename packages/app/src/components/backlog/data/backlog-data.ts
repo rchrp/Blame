@@ -42,7 +42,16 @@ export type UserStoryAgentUsage = {
 }
 export type UserStoryAgentActivity = {
   id: string
-  kind: "reasoning" | "message" | "tool" | "approval" | "notice" | "error"
+  // "user": a message the person sent into the running turn (a steer);
+  // `title` is its author, `detail` its text.
+  kind:
+    | "reasoning"
+    | "message"
+    | "tool"
+    | "approval"
+    | "notice"
+    | "error"
+    | "user"
   title: string
   detail: string
   status?: "running" | "completed" | "failed"
@@ -59,6 +68,8 @@ export type UserStoryAgentActivity = {
   originalDetailLength?: number
   // Screenshots the agent chose to show above its final reply.
   images?: Array<{ caption: string; id: string }>
+  // The files of a steered message ("user").
+  fileAttachments?: UserStoryFileAttachment[]
   createdAt: string
   updatedAt?: string
 }

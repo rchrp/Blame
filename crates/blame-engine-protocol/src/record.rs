@@ -195,6 +195,14 @@ pub enum RecordBody {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         forced_tool: Option<String>,
     },
+    /// The model answered a message the user sent into the running turn
+    /// with text alone, after the turn had already worked: an
+    /// acknowledgement, not the end of the work. `text` is sent to it as the
+    /// next message of the turn, so it carries on.
+    TurnContinued {
+        turn: TurnId,
+        text: String,
+    },
 }
 
 /// Everything the engine needs to run a session, stored with it so the
@@ -340,6 +348,10 @@ pub enum TurnOutcome {
     ContractUnmet {
         unmet: Vec<Obligation>,
     },
+    /// A queued turn the user took back before it ran: removed from the
+    /// queue, or sent into the running turn instead (`session/promote`). The
+    /// model never saw its message as a turn of its own.
+    Withdrawn,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

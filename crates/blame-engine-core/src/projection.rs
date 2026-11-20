@@ -156,6 +156,15 @@ pub struct TurnState<'a> {
     pub correction_pending: bool,
     /// The tool the latest correction forces, until a reply arrives.
     pub forced_tool: Option<&'a str>,
+    /// The latest request gave the model a message the user sent into the
+    /// running turn (a steer), for the first time.
+    pub steer_in_last_request: bool,
+    /// The turn had made tool calls before the latest request: work was
+    /// under way when that request was sent.
+    pub worked_before_last_request: bool,
+    /// The model was asked to carry on after acknowledging a steer
+    /// (`TurnContinued`), and the next request is not sent yet.
+    pub continue_pending: bool,
 }
 
 impl TurnState<'_> {
@@ -173,6 +182,8 @@ pub struct View<'a> {
     edits: HashMap<(Seq, u32), &'a str>,
     results: HashMap<&'a ToolCallId, &'a Record>,
     open_turns: Vec<&'a TurnId>,
+    /// Open turns that have begun: a checkpoint or a request of their own.
+    started: Vec<&'a TurnId>,
 }
 
 impl<'a> View<'a> {
@@ -183,9 +194,11 @@ impl<'a> View<'a> {
         let mut edits = HashMap::new();
         let mut results = HashMap::new();
         let mut open: Vec<&'a TurnId> = Vec::new();
+        let mut started: Vec<&'a TurnId> = Vec::new();
         for item in &items {
             let Item::Record(record) = item else {
                 open.clear();
+                started.clear();
                 continue;
             };
             match &record.body {
@@ -213,7 +226,16 @@ impl<'a> View<'a> {
                         open.push(turn);
                     }
                 }
-                RecordBody::TurnEnded { turn, .. } => open.retain(|t| *t != turn),
+                RecordBody::CheckpointCreated { turn, .. }
+                | RecordBody::RequestStarted { turn, .. } => {
+                    if !started.contains(&turn) {
+                        started.push(turn);
+                    }
+                }
+                RecordBody::TurnEnded { turn, .. } => {
+                    open.retain(|t| *t != turn);
+                    started.retain(|t| *t != turn);
+                }
                 _ => {}
             }
         }
@@ -224,6 +246,7 @@ impl<'a> View<'a> {
             edits,
             results,
             open_turns: open,
+            started,
         }
     }
 
@@ -240,6 +263,13 @@ impl<'a> View<'a> {
     /// others wait their turn.
     pub fn open_turns(&self) -> &[&'a TurnId] {
         &self.open_turns
+    }
+
+    /// Whether an open turn has begun (a checkpoint or a request of its
+    /// own). One that has not is a message still waiting: it can be taken
+    /// back, and a quit leaves it waiting.
+    pub fn has_started(&self, turn: &TurnId) -> bool {
+        self.started.contains(&turn)
     }
 
     pub fn compacted_through(&self) -> Option<Seq> {
@@ -317,7 +347,8 @@ impl<'a> View<'a> {
                 RecordBody::RequestStarted { .. } => flush(&mut out, &mut steer),
                 // Joins the turn like a steer: the model reads it at the
                 // start of the next request.
-                RecordBody::ContractCorrection { text, .. } => {
+                RecordBody::ContractCorrection { text, .. }
+                | RecordBody::TurnContinued { text, .. } => {
                     if shown {
                         steer.push(UserBlock::Text { text: text.clone() });
                     }
@@ -480,7 +511,12 @@ impl<'a> View<'a> {
             corrections: 0,
             correction_pending: false,
             forced_tool: None,
+            steer_in_last_request: false,
+            worked_before_last_request: false,
+            continue_pending: false,
         };
+        // The turn made a tool call in a reply so far.
+        let mut made_calls = false;
         let mut seen_requests: Vec<&RequestId> = Vec::new();
         let mut calls: HashMap<&ToolCallId, usize> = HashMap::new();
         // Every call of the turn by its id, for the tools that completed.
@@ -518,6 +554,10 @@ impl<'a> View<'a> {
                     if !seen_requests.contains(&request) {
                         seen_requests.push(request);
                         state.requests += 1;
+                        // A retry of the same request carries the same
+                        // messages: only a new request delivers a steer.
+                        state.steer_in_last_request = state.steer_pending;
+                        state.worked_before_last_request = made_calls;
                     }
                     let overflows = match &state.last_request {
                         Some(last) if last.request == request => last.overflows,
@@ -532,6 +572,7 @@ impl<'a> View<'a> {
                     });
                     state.steer_pending = false;
                     state.correction_pending = false;
+                    state.continue_pending = false;
                     state.compacted_since_failure = false;
                 }
                 RecordBody::AssistantMessage {
@@ -568,6 +609,7 @@ impl<'a> View<'a> {
                             });
                         }
                     }
+                    made_calls |= !state.calls.is_empty();
                     if let Some(last) = &mut state.last_request
                         && last.request == request
                     {
@@ -662,6 +704,9 @@ impl<'a> View<'a> {
                     state.corrections += 1;
                     state.correction_pending = true;
                     state.forced_tool = forced_tool.as_deref();
+                }
+                RecordBody::TurnContinued { turn: t, .. } if t == turn => {
+                    state.continue_pending = true;
                 }
                 _ => {}
             }
@@ -931,7 +976,8 @@ pub fn task_outcome(records: &[Record]) -> Option<TaskOutcome> {
                 }),
             }
         }
-        TurnOutcome::Interrupted => TaskOutcome::Interrupted,
+        // A task takes no messages, so none of its turns is ever withdrawn.
+        TurnOutcome::Interrupted | TurnOutcome::Withdrawn => TaskOutcome::Interrupted,
         TurnOutcome::LimitReached { limit } => failed(TaskFailure::LimitReached {
             limit: limit.clone(),
         }),

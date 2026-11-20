@@ -26,6 +26,7 @@ import {
   hasConversation,
   isEditable,
 } from "@/components/backlog/drawer/user-story-drawer-helpers"
+import { QueuedMessages } from "@/components/chat/engine/queued-messages"
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
@@ -349,10 +350,10 @@ function UserStoryCommentComposer({
       }
       placeholder={
         agentRunning
-          ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
+          ? "Message the agent: ↵ right now, ⌘↵ when it finishes"
           : commentPlaceholder(status)
       }
-      submitLabel={agentRunning ? "Queue comment" : commentButtonLabel(status)}
+      submitLabel={agentRunning ? "Send to the agent now" : commentButtonLabel(status)}
       toolbarEnd={
         userStory && status !== "done" ? (
           <StoryCommentModelSelector userStory={userStory} />
@@ -420,7 +421,7 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
   userStory,
 }: AgentRunTimelineProps) {
   const modelSelection = useModelSelection()
-  const { conversation } = useStoryConversation()
+  const { conversation, queue } = useStoryConversation()
   const lastModel = userStory?.agentModels?.at(-1)
   const responseHeader = agentConversationResponseHeader({
     modelId: lastModel?.modelId,
@@ -455,6 +456,15 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
       onFileLinkClick={onFileLinkClick}
       onChangedFileClick={onChangedFileClick}
       onUserMessageUndo={onCommentUndo ? undo : undefined}
+      queued={
+        queue && conversation?.queued.length ? (
+          <QueuedMessages
+            controls={queue}
+            onFileLinkClick={onFileLinkClick}
+            queued={conversation.queued}
+          />
+        ) : undefined
+      }
       responseHeader={responseHeader}
       responseHeaderForRun={responseHeaderForRun}
       runs={conversation?.runs ?? []}

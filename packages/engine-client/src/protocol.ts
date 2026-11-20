@@ -69,6 +69,8 @@ export interface ClientResults {
   "session/subscribe": Subscribed;
   "session/unsubscribe": null;
   "session/send": MessageAccepted;
+  "session/withdraw": null;
+  "session/promote": MessageAccepted;
   "session/interrupt": null;
   "session/rewind": Rewound;
   "session/undo_rewind": null;

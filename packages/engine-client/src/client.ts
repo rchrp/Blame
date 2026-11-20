@@ -264,6 +264,16 @@ export class EngineClient {
     return this.request("session/send", params, options);
   }
 
+  /** Takes back a queued message before its turn runs. */
+  withdraw(params: ParamsOf<"session/withdraw">, options?: RequestOptions) {
+    return this.request("session/withdraw", params, options);
+  }
+
+  /** Sends a queued message into the running turn now, once. */
+  promote(params: ParamsOf<"session/promote">, options?: RequestOptions) {
+    return this.request("session/promote", params, options);
+  }
+
   interrupt(params: ParamsOf<"session/interrupt">, options?: RequestOptions) {
     return this.request("session/interrupt", params, options);
   }

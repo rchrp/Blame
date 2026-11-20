@@ -117,6 +117,17 @@ async fn iteration(inner: &Arc<Inner>) -> Result<bool, EngineError> {
                 )
                 .await?;
         }
+        Step::Continue => {
+            inner
+                .append_locked(
+                    &mut core,
+                    vec![RecordBody::TurnContinued {
+                        turn: turn.clone(),
+                        text: step::CONTINUE_TEXT.into(),
+                    }],
+                )
+                .await?;
+        }
         Step::Checkpoint => {
             drop(core);
             checkpoint(inner, &turn, &config.workspace_root).await?;

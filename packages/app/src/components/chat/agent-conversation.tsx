@@ -53,6 +53,7 @@ import {
 } from "@/components/backlog/shared/selection-excerpt-actions"
 import type { AgentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { checkpointRunTargets } from "@/components/chat/agent-run-checkpoints"
+import { agentRunSegments } from "@/components/chat/agent-run-segments"
 import type { AgentTurnMetrics } from "@/components/chat/agent-turn-metrics"
 import { getVariantLabel } from "@/components/model/model-selection"
 import { ProviderMark } from "@/components/model/model-selector"
@@ -377,6 +378,7 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
   run: AgentConversationRun
 }) {
   const activities = agentTimelineActivities(run)
+  const segments = agentRunSegments(activities)
   const turnResponseHeader = responseHeaderForRun?.(run) ?? responseHeader
   const loadActivityDetail = (activity: UserStoryAgentActivity) =>
     onLoadActivityDetail(run, activity)
@@ -409,15 +411,44 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
       ) : null}
       <ScreenshotGroupProvider activities={activities}>
         <div className="grid min-w-0 gap-5">
-          <AgentWorkDetails
-            activities={activities}
-            alwaysVisible={activityAlwaysVisible}
-            highlightFinalResponse={highlightFinalResponse}
-            onFileLinkClick={onFileLinkClick}
-            onLoadDetail={loadActivityDetail}
-            responseHeader={turnResponseHeader}
-            run={run}
-          />
+          {/* Messages sent into the running turn split its work: each shows
+              where it joined, with the agent's acknowledgement under it. */}
+          {segments.map((segment, index) => (
+            <React.Fragment key={segment.steer?.id ?? "work"}>
+              {segment.steer ? (
+                <RunCommentItem
+                  alwaysVisible={false}
+                  comment={steerComment(segment.steer)}
+                  onFileLinkClick={onFileLinkClick}
+                  run={run}
+                />
+              ) : null}
+              {segment.acknowledgement ? (
+                <AgentStreamMessage
+                  activity={segment.acknowledgement}
+                  activityId={segment.acknowledgement.id}
+                  alwaysVisible={false}
+                  highlightFinalResponse={false}
+                  onFileLinkClick={onFileLinkClick}
+                  onLoadDetail={loadActivityDetail}
+                  responseHeader={turnResponseHeader}
+                  run={run}
+                />
+              ) : null}
+              <AgentWorkDetails
+                activities={segment.activities}
+                alwaysVisible={
+                  activityAlwaysVisible && index === segments.length - 1
+                }
+                earlier={index < segments.length - 1}
+                highlightFinalResponse={highlightFinalResponse}
+                onFileLinkClick={onFileLinkClick}
+                onLoadDetail={loadActivityDetail}
+                responseHeader={turnResponseHeader}
+                run={run}
+              />
+            </React.Fragment>
+          ))}
           <TurnSummary
             activities={activities}
             onFileClick={openChangedFile}
@@ -460,8 +491,8 @@ export function AgentConversationComposer({
   toolbarEnd,
   turnMetrics,
 }: {
-  // While the agent runs, typing turns Stop into Send (the message waits
-  // for the agent, or interrupts it on demand) instead of blocking.
+  // While the agent runs, typing turns Stop into Send (the message goes
+  // into the running turn, or waits for it with ⌘↵) instead of blocking.
   queueWhileRunning?: boolean
   agentRunning?: boolean
   cancelingAgent?: boolean
@@ -482,8 +513,11 @@ export function AgentConversationComposer({
   onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
   onFileLinkClick?: (path: string) => void
   onMessageChange: (message: string) => void
+  // Sends the message; while the agent runs, queues it for when it finishes
+  // (⌘↵ / Ctrl+↵ then).
   onMessageSubmit: () => void
-  // While the agent runs: ⌘↵ sends the message now instead of queuing it.
+  // While the agent runs: ↵ and the send button hand the message to the
+  // running turn at once (a steer).
   onMessageSendNow?: () => void
   onAgentCancel?: () => void
   placeholder: string
@@ -498,14 +532,16 @@ export function AgentConversationComposer({
     message.trim() || codeSelectionAttachments.length || fileAttachments.length
   )
 
-  function submitMessage() {
-    if (disabled || submitting || !hasMessageBody) return
-    onMessageSubmit()
-  }
-
   const sendWhileRunning = Boolean(
     agentRunning && queueWhileRunning && hasMessageBody
   )
+
+  // ↵ (and the send button): now, into the running turn when there is one.
+  function submitMessage() {
+    if (disabled || submitting || !hasMessageBody) return
+    if (sendWhileRunning && onMessageSendNow) onMessageSendNow()
+    else onMessageSubmit()
+  }
   const stopAction = Boolean(agentRunning && !sendWhileRunning)
 
   function handlePrimaryAction() {
@@ -545,9 +581,10 @@ export function AgentConversationComposer({
             event.nativeEvent.isComposing
           )
             return
+          // ⌘↵ / Ctrl+↵ while the agent runs: queue it for when it finishes.
           event.preventDefault()
           event.stopPropagation()
-          if (!event.repeat && !disabled && !submitting) onMessageSendNow()
+          if (!event.repeat && !disabled && !submitting) onMessageSubmit()
         }}
       >
         <AgentTurnTab metrics={turnMetrics} />
@@ -802,6 +839,8 @@ function QueuedMessageFooter({ actions }: { actions: QueuedMessageActions }) {
 type AgentWorkDetailsProps = {
   activities: UserStoryAgentActivity[]
   alwaysVisible: boolean
+  // The work before a message sent into the turn: done, the turn goes on.
+  earlier?: boolean
   highlightFinalResponse: boolean
   onFileLinkClick?: (path: string) => void
   onLoadDetail: (activity: UserStoryAgentActivity) => Promise<string>
@@ -812,7 +851,9 @@ type AgentWorkDetailsProps = {
 function AgentWorkDetails(props: AgentWorkDetailsProps) {
   const registry = useAgentActivityRegistry(props.activities, props.run)
   if (!registry.activityIds.length) {
-    return props.run.status === "running" ? <AgentThinkingTimelineItem /> : null
+    return props.run.status === "running" && !props.earlier ? (
+      <AgentThinkingTimelineItem />
+    ) : null
   }
   const responseActivityId = terminalResponseActivityId(props, registry)
   // Proposals (stories, a stack) are cards under the reply, not steps.
@@ -867,7 +908,8 @@ function AgentWorkAccordion({
   registry: ReturnType<typeof useAgentActivityRegistry>
   responseActivityId?: string
 }) {
-  const shouldExpand = props.run.status === "running" && !responseActivityId
+  const running = props.run.status === "running" && !props.earlier
+  const shouldExpand = running && !responseActivityId
   const phase = shouldExpand ? "running" : "finished"
   const [selection, setSelection] = React.useState({
     expanded: shouldExpand,
@@ -886,10 +928,12 @@ function AgentWorkAccordion({
       <AccordionItem className="border-b-0!" value="work">
         <AccordionTrigger className="items-center py-0 hover:no-underline">
           <AgentWorkState
-            running={props.run.status === "running"}
-            stateLabel={agentWorkStateLabel(props.run.status)}
+            running={running}
+            stateLabel={
+              props.earlier ? "Worked" : agentWorkStateLabel(props.run.status)
+            }
             stepCount={activityIds.length}
-            status={props.run.status}
+            status={props.earlier ? "completed" : props.run.status}
           />
         </AccordionTrigger>
         <AccordionContent className="pt-2 pb-0">
@@ -2005,6 +2049,19 @@ function messageActionDateLabel(value: string | null | undefined) {
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date)
+}
+
+// A message sent into the running turn, shown as the person's own message.
+function steerComment(
+  activity: UserStoryAgentActivity
+): AgentConversationComment {
+  return {
+    author: activity.title,
+    body: activity.detail,
+    createdAt: activity.createdAt,
+    fileAttachments: activity.fileAttachments,
+    id: activity.id,
+  }
 }
 
 function runComment(
