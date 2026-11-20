@@ -267,6 +267,21 @@ impl Engine {
                             let client = client.clone();
                             let stdin = stdin.clone();
                             tokio::spawn(async move {
+                                if let EngineRequest::Tool { call: running, .. } = &call {
+                                    let progress = client.progress.lock().unwrap().clone();
+                                    for text in progress {
+                                        let message: Message<ClientRequest> =
+                                            Message::Notification {
+                                                jsonrpc: Version::V2,
+                                                call: ClientRequest::ToolProgress {
+                                                    call: running.clone(),
+                                                    text,
+                                                },
+                                            };
+                                        write(&stdin, &serde_json::to_string(&message).unwrap())
+                                            .await;
+                                    }
+                                }
                                 let outcome = match client.answer(call).await {
                                     Ok(value) => Outcome::Result(value),
                                     Err(error) => Outcome::Error(error),

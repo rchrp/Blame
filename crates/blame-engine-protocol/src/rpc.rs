@@ -168,6 +168,21 @@ pub enum ClientRequest {
     /// Result: `null`.
     #[serde(rename = "session/close")]
     Close { session: SessionId },
+    /// Stores bytes the client attaches to a message (an image, a
+    /// document) and returns the reference to put in a [`UserBlock`]. The
+    /// blob is copied to Blame's database with the record that uses it.
+    /// Result: [`BlobRef`].
+    #[serde(rename = "blob/put")]
+    PutBlob {
+        media_type: String,
+        /// The bytes, base64-encoded.
+        data: String,
+    },
+    /// What a client tool is doing while it runs (`host/tool` not yet
+    /// answered). Reaches the session's viewers as a `tool_progress` delta.
+    /// A notification: it has no answer.
+    #[serde(rename = "tool/progress")]
+    ToolProgress { call: ToolCallId, text: String },
     /// Stops every session and exits. Result: `null`.
     #[serde(rename = "shutdown")]
     Shutdown {},

@@ -8,8 +8,8 @@ import {
 } from "./errors.js";
 import {
   carriesRemoteLog,
-  type HostContext,
   type HostHandlers,
+  type ToolHostContext,
 } from "./host.js";
 import {
   PROTOCOL_VERSION,
@@ -72,7 +72,7 @@ interface Pending {
   cleanup(): void;
 }
 
-type HostHandler = (params: never, context: HostContext) => unknown;
+type HostHandler = (params: never, context: ToolHostContext) => unknown;
 type NotificationListener = (notification: EngineNotification) => void;
 
 const DEFAULT_START_TIMEOUT_MS = 60_000;
@@ -293,6 +293,11 @@ export class EngineClient {
     return this.request("session/close", params, options);
   }
 
+  /** Stores the bytes of an attachment (base64) and returns the reference a message carries. */
+  putBlob(params: ParamsOf<"blob/put">, options?: RequestOptions) {
+    return this.request("blob/put", params, options);
+  }
+
   /**
    * Asks the engine to stop every session and exit, then waits for it. Kills
    * it when it does not exit within the timeout. Safe to call twice.
@@ -456,10 +461,22 @@ export class EngineClient {
     }
     const controller = new AbortController();
     this.inbound.set(id, controller);
+    // Only `host/tool` handlers are given this (see `ToolHostContext`).
+    const call = (params as { call?: unknown }).call;
+    const progress = (text: string) => {
+      // Progress after the answer, or for a withdrawn call, goes nowhere.
+      if (
+        method === "host/tool" &&
+        !controller.signal.aborted &&
+        this.inbound.has(id)
+      )
+        this.notify("tool/progress", { call, text });
+    };
     try {
       const result = await handler(params as never, {
         signal: controller.signal,
         id,
+        progress,
       });
       // A withdrawn request is not answered: the engine already moved on.
       if (!controller.signal.aborted) reply({ result: result ?? null });
