@@ -1,7 +1,8 @@
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-const executable = process.platform === "win32" ? "blame-engine.exe" : "blame-engine";
+const executable =
+  process.platform === "win32" ? "blame-engine.exe" : "blame-engine";
 
 /**
  * The one place that finds the `blame-engine` binary. `BLAME_ENGINE_BIN`

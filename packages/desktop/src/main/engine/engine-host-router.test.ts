@@ -6,13 +6,14 @@ import { EngineHostRouter, type EngineViewer } from "./engine-host-router.ts";
 function viewer(id: number) {
   const received: EngineHostEvent[] = [];
   let destroyed = false;
-  const value: EngineViewer & { received: EngineHostEvent[]; destroy(): void } = {
-    id,
-    received,
-    isDestroyed: () => destroyed,
-    send: (_channel, event) => received.push(event),
-    destroy: () => (destroyed = true),
-  };
+  const value: EngineViewer & { received: EngineHostEvent[]; destroy(): void } =
+    {
+      id,
+      received,
+      isDestroyed: () => destroyed,
+      send: (_channel, event) => received.push(event),
+      destroy: () => (destroyed = true),
+    };
   return value;
 }
 
@@ -32,7 +33,9 @@ it("sends a session's events to the window that follows it, activity to all", ()
   router.route(records("b"));
   router.route({ type: "activity", session: "s", running: true });
   assert.equal(one.received.length, 2);
-  assert.deepEqual(two.received, [{ type: "activity", session: "s", running: true }]);
+  assert.deepEqual(two.received, [
+    { type: "activity", session: "s", running: true },
+  ]);
   router.observe(one, "unfollow", { subscription: "a" });
   router.route(records("a"));
   assert.equal(one.received.length, 2);

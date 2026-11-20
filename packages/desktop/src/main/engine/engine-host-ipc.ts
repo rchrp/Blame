@@ -3,7 +3,12 @@
 // windows' calls and routes its events back. It loads only the host's
 // protocol module, so the main process stays light.
 
-import { ipcMain, utilityProcess, type UtilityProcess, type WebContents } from "electron";
+import {
+  ipcMain,
+  utilityProcess,
+  type UtilityProcess,
+  type WebContents,
+} from "electron";
 import {
   engineHostMethods,
   isEngineHostMessage,
@@ -19,7 +24,10 @@ export type EngineHostRegistration = {
   dataDir: string;
   clientVersion: string;
   isAppWindow(sender: WebContents): boolean;
-  renderWebPage(url: string, signal: AbortSignal): Promise<{ url: string; html: string }>;
+  renderWebPage(
+    url: string,
+    signal: AbortSignal,
+  ): Promise<{ url: string; html: string }>;
 };
 
 const readyTimeoutMs = 15_000;
@@ -52,7 +60,12 @@ class EngineHostProcess {
     const id = this.nextId++;
     return new Promise((resolve, reject) => {
       this.pending.set(id, { resolve, reject });
-      child.postMessage({ kind: "request", id, method, input } satisfies EngineHostMessage);
+      child.postMessage({
+        kind: "request",
+        id,
+        method,
+        input,
+      } satisfies EngineHostMessage);
     });
   }
 
@@ -63,7 +76,12 @@ class EngineHostProcess {
     if (!child) return;
     const exited = new Promise((resolve) => child.once("exit", resolve));
     const id = this.nextId++;
-    child.postMessage({ kind: "request", id, method: "shutdown", input: undefined } satisfies EngineHostMessage);
+    child.postMessage({
+      kind: "request",
+      id,
+      method: "shutdown",
+      input: undefined,
+    } satisfies EngineHostMessage);
     const timer = setTimeout(() => child.kill(), shutdownTimeoutMs);
     await exited;
     clearTimeout(timer);
@@ -80,7 +98,11 @@ class EngineHostProcess {
     const child = utilityProcess.fork(modulePath, [], {
       env: {
         ...process.env,
-        BLAME_ENGINE_HOST_CONFIG: JSON.stringify({ binary, dataDir, clientVersion }),
+        BLAME_ENGINE_HOST_CONFIG: JSON.stringify({
+          binary,
+          dataDir,
+          clientVersion,
+        }),
       },
       serviceName: "Blame Engine Host",
       stdio: "inherit",
@@ -118,21 +140,34 @@ class EngineHostProcess {
       else pending?.resolve(message.result);
       return;
     }
-    if (message.kind === "desktop-request") void this.serveDesktop(child, message);
+    if (message.kind === "desktop-request")
+      void this.serveDesktop(child, message);
   }
 
-  private async serveDesktop(child: UtilityProcess, message: Extract<EngineHostMessage, { kind: "desktop-request" }>) {
+  private async serveDesktop(
+    child: UtilityProcess,
+    message: Extract<EngineHostMessage, { kind: "desktop-request" }>,
+  ) {
     const controller = new AbortController();
     this.desktopRequests.set(message.id, controller);
     try {
       const { url } = message.input as { url: string };
-      const result = await this.registration.renderWebPage(String(url ?? ""), controller.signal);
-      child.postMessage({ kind: "desktop-response", id: message.id, result } satisfies EngineHostMessage);
+      const result = await this.registration.renderWebPage(
+        String(url ?? ""),
+        controller.signal,
+      );
+      child.postMessage({
+        kind: "desktop-response",
+        id: message.id,
+        result,
+      } satisfies EngineHostMessage);
     } catch (error) {
       child.postMessage({
         kind: "desktop-response",
         id: message.id,
-        error: { message: error instanceof Error ? error.message : String(error) },
+        error: {
+          message: error instanceof Error ? error.message : String(error),
+        },
       } satisfies EngineHostMessage);
     } finally {
       this.desktopRequests.delete(message.id);
@@ -146,7 +181,9 @@ class EngineHostProcess {
     for (const controller of this.desktopRequests.values()) controller.abort();
     this.desktopRequests.clear();
     for (const pending of this.pending.values())
-      pending.reject(new Error(`The engine host stopped (${code}); try again.`));
+      pending.reject(
+        new Error(`The engine host stopped (${code}); try again.`),
+      );
     this.pending.clear();
     if (this.stopping) return;
     // Started again at once if a window follows a session, after a pause
@@ -163,17 +200,22 @@ class EngineHostProcess {
 
 let host: EngineHostProcess | undefined;
 
-export function registerEngineIpcHandlers(registration: EngineHostRegistration) {
+export function registerEngineIpcHandlers(
+  registration: EngineHostRegistration,
+) {
   if (host) return;
   const engine = new EngineHostProcess(registration);
   host = engine;
   const known = new Set<number>();
   ipcMain.handle("engine:call", (event, method: unknown, input: unknown) => {
-    if (!registration.isAppWindow(event.sender)) throw new Error("Untrusted engine request");
+    if (!registration.isAppWindow(event.sender))
+      throw new Error("Untrusted engine request");
     if (!engineHostMethods.includes(method as EngineHostMethod))
       throw new Error(`Unknown engine call ${String(method)}`);
     const viewer = event.sender;
-    if (!engine.router.observe(viewer, method as EngineHostMethod, input as never))
+    if (
+      !engine.router.observe(viewer, method as EngineHostMethod, input as never)
+    )
       throw new Error(`${String(method)} cannot be called from a window`);
     if (!known.has(viewer.id)) {
       known.add(viewer.id);

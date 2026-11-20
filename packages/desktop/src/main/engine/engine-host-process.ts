@@ -24,13 +24,23 @@ const config = JSON.parse(
 ) as EngineHostProcessConfig;
 
 const post = (message: EngineHostMessage) => parentPort.postMessage(message);
-const desktopPending = new Map<number, { resolve(value: unknown): void; reject(error: Error): void }>();
+const desktopPending = new Map<
+  number,
+  { resolve(value: unknown): void; reject(error: Error): void }
+>();
 let nextDesktopId = 1;
 
-function desktop<Result>(method: EngineDesktopMethod, input: unknown, signal?: AbortSignal) {
+function desktop<Result>(
+  method: EngineDesktopMethod,
+  input: unknown,
+  signal?: AbortSignal,
+) {
   const id = nextDesktopId++;
   return new Promise<Result>((resolve, reject) => {
-    desktopPending.set(id, { resolve: resolve as (value: unknown) => void, reject });
+    desktopPending.set(id, {
+      resolve: resolve as (value: unknown) => void,
+      reject,
+    });
     signal?.addEventListener("abort", () => {
       desktopPending.delete(id);
       reject(signal.reason);
@@ -45,7 +55,11 @@ const host = new EngineHost({
   clientVersion: config.clientVersion,
   // Electron runs the harness runner as plain Node.
   harnessCommand: [process.execPath, harnessRunnerPath(), "--serve"],
-  env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", BLAME_ENGINE_HOST_CONFIG: undefined },
+  env: {
+    ...process.env,
+    ELECTRON_RUN_AS_NODE: "1",
+    BLAME_ENGINE_HOST_CONFIG: undefined,
+  },
   emit: (event) => post({ kind: "event", event }),
   renderWebPage: ({ url, signal }) => desktop("renderWebPage", { url }, signal),
   onLog: ({ source, text }) => {
@@ -72,7 +86,9 @@ parentPort.on("message", ({ data }) => {
         post({
           kind: "response",
           id: data.id,
-          error: { message: error instanceof Error ? error.message : String(error) },
+          error: {
+            message: error instanceof Error ? error.message : String(error),
+          },
         }),
     )
     .finally(() => {
