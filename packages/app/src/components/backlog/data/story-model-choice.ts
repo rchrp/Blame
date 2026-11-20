@@ -12,7 +12,7 @@ import type { ReasoningSelection } from "@blame/agent-runtime"
 // until the person picks another one for it; the saved default only applies
 // to new stories. Kept per story in local storage.
 
-const storageKey = "blame.story-model-choice.v1"
+const storageKey = "blame.story-model-choice.v2"
 const listeners = new Set<() => void>()
 let choices: Record<string, CloudAiModelPreference> = readChoices()
 

@@ -248,39 +248,10 @@ function errorActivities(
       kind: "error",
       title: event.type === "error" ? "Agent error" : "Recoverable agent error",
       detail,
-      actionUrl: safeErrorActionUrl(stringValue(payload.actionUrl)),
-      errorCode: agentErrorCode(payload.code),
-      resetAt: stringValue(payload.resetAt),
       status: "failed",
       iteration,
     },
   ])
-}
-
-function agentErrorCode(value: unknown) {
-  if (
-    value === "cline_not_subscribed" ||
-    value === "cline_org_subscription_unsupported" ||
-    value === "cline_pass_limit" ||
-    value === "cline_free_model_limit" ||
-    value === "cline_model_not_found"
-  ) {
-    return value
-  }
-  return undefined
-}
-
-function safeErrorActionUrl(value: string | undefined) {
-  if (!value) return undefined
-  try {
-    const url = new URL(value)
-    if (url.protocol !== "https:" || url.username || url.password) {
-      return undefined
-    }
-    return url.toString()
-  } catch {
-    return undefined
-  }
 }
 
 function nextErrorActivityId(

@@ -7,7 +7,6 @@ import {
   ChevronUpIcon,
   ClockIcon,
   CopyIcon,
-  ExternalLinkIcon,
   LoaderCircleIcon,
   MessageSquareIcon,
   RotateCcwIcon,
@@ -74,7 +73,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { usePlatform } from "@/context/platform"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 import { cn } from "@/lib/utils"
@@ -1301,12 +1299,9 @@ function AgentStreamError({
 }) {
   return (
     <AgentErrorTimelineItem
-      actionUrl={activity.actionUrl}
       alwaysVisible={alwaysVisible}
       createdAt={activity.createdAt}
       detail={activity.detail}
-      errorCode={activity.errorCode}
-      resetAt={activity.resetAt}
     />
   )
 }
@@ -1653,21 +1648,14 @@ function AgentMarkdownTimelineItem({
 }
 
 function AgentErrorTimelineItem({
-  actionUrl,
   alwaysVisible,
   createdAt,
   detail,
-  errorCode,
-  resetAt,
 }: {
-  actionUrl?: string
   alwaysVisible: boolean
   createdAt: string
   detail: string
-  errorCode?: UserStoryAgentActivity["errorCode"]
-  resetAt?: string
 }) {
-  const platform = usePlatform()
   const entering = useEnterAnimation(createdAt)
   return (
     <div
@@ -1684,21 +1672,6 @@ function AgentErrorTimelineItem({
           <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap">
             {detail}
           </p>
-          {resetAt ? (
-            <p className="mt-2 text-xs">{clineLimitResetLabel(resetAt)}</p>
-          ) : null}
-          {actionUrl && platform.openExternalLink ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={() => platform.openExternalLink?.(actionUrl)}
-            >
-              <ExternalLinkIcon />
-              {clineErrorActionLabel(errorCode)}
-            </Button>
-          ) : null}
         </div>
       </div>
       <MarkdownMessageActions
@@ -1708,19 +1681,6 @@ function AgentErrorTimelineItem({
       />
     </div>
   )
-}
-
-function clineErrorActionLabel(errorCode: UserStoryAgentActivity["errorCode"]) {
-  return errorCode === "cline_not_subscribed"
-    ? "View ClinePass"
-    : "Manage ClinePass"
-}
-
-function clineLimitResetLabel(resetAt: string) {
-  const date = new Date(resetAt)
-  return Number.isNaN(date.getTime())
-    ? `Limit resets ${resetAt}.`
-    : `Limit resets ${date.toLocaleString()}.`
 }
 
 function modelSwitched(

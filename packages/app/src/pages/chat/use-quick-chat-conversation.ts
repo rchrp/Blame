@@ -3,7 +3,6 @@ import type {
   EngineMessage,
   EngineSessionSettings,
 } from "@blame/agent-runtime/engine-protocol"
-import { engineProviderId } from "@blame/agent-runtime/engine-protocol"
 
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import type { StoryContextCompaction } from "@/components/backlog/drawer/story-context-compaction"
@@ -88,8 +87,6 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
       projectPath: project?.path,
     })
     if (error) return error
-    if (!engineProviderId(selection.currentModel!.provider.id))
-      return `${selection.currentModel!.provider.name} models do not run on Blame's agent engine yet: pick another model.`
   }
 
   // A new chat gets its row, then its engine session; the title improves
