@@ -23,6 +23,9 @@ import type {
 
 export * from "./generated/protocol.js"
 
+/** Position of a record in its session, from 1. (A Rust type alias, so not generated.) */
+export type Seq = number
+
 /** JSON-RPC ids are numbers on both sides of this protocol. */
 export type RpcId = number
 

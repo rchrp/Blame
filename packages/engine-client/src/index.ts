@@ -11,3 +11,8 @@ export type {
   TransportExit,
   TransportFactory,
 } from "./transport.js"
+export { EngineSupervisor, fixedClient } from "./supervisor.js"
+export type { ClientSource } from "./supervisor.js"
+export { followSession } from "./follow.js"
+export type { FollowEvent, FollowOptions, FollowState, SessionFollower } from "./follow.js"
+export * from "./transcript/index.js"

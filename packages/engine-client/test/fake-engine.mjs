@@ -9,7 +9,8 @@
 //                          initialize), exit-after-start, silent-start,
 //                          ignore-shutdown (survives shutdown and stdin EOF),
 //                          ignore-sigterm, backlog-after, duplicate-backlog,
-//                          noisy, stderr-banner, announce-pid
+//                          noisy, stderr-banner, announce-pid,
+//                          drop-live-3 (never pushes every third record live)
 //
 // A `session/send` whose first text block starts with one of these words
 // drives a scenario: crash, slow, tool, tools, approval, credential, cancel,
@@ -69,6 +70,7 @@ const fail = (id, message, kind = "invalid_request", code = -32000) =>
 
 function notifyRecord(session, record) {
   if (!subscribed.has(session)) return
+  if (flags.has("drop-live-3") && record.seq % 3 === 0) return
   write({ method: "session/record", params: { session, record } })
   if (flags.has("duplicate-backlog")) write({ method: "session/record", params: { session, record } })
 }
@@ -209,6 +211,7 @@ async function runTurn(session, turn, text) {
     })
   }
   append(session, { type: "turn_ended", turn, outcome: { status: "completed" } })
+  delta(session, { type: "activity", activity: { state: "idle" } })
 }
 
 const handlers = {
