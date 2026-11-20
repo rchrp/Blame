@@ -187,7 +187,7 @@ pub struct SessionConfig {
     /// Settings of each engine tool set, by its name in `engine_tools`
     /// (the harness takes its task contract here). Opaque to the loop: only
     /// the tool host reads them.
-    #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
+    #[serde(default)]
     pub tool_options: serde_json::Map<String, Value>,
     #[serde(default)]
     pub limits: Limits,

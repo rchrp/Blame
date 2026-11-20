@@ -16,6 +16,7 @@ export const config: SessionConfig = {
   system_prompt: "system",
   engine_tools: [],
   client_tools: [],
+  tool_options: {},
   limits: {},
   checkpoints: true,
 };

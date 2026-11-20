@@ -219,7 +219,13 @@ engine_tools: Array<string>,
  * Tools the client runs on the engine's behalf (previews, anything that
  * needs the desktop). Unavailable while no client is attached.
  */
-client_tools: Array<ToolSpec>, limits: Limits, 
+client_tools: Array<ToolSpec>, 
+/**
+ * Settings of each engine tool set, by its name in `engine_tools`
+ * (the harness takes its task contract here). Opaque to the loop: only
+ * the tool host reads them.
+ */
+tool_options: { [key in string]: JsonValue }, limits: Limits, 
 /**
  * Whether a workspace checkpoint is taken at the start of each turn.
  */
