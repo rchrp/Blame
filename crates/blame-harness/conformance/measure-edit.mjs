@@ -11,7 +11,7 @@
 // 2. Side process: a compiler reference query on this monorepo, cold then
 //    warm, the memory of the harness, its side process and worker, and the
 //    idle stops (worker after 30 s, side process after
-//    BLAME_HARNESS_COMPILER_IDLE_MS, here 45 s).
+//    BLAME_HARNESS_COMPILER_IDLE_MS, 60 s by default).
 
 import { execFileSync, spawn } from "node:child_process";
 import { cpSync, mkdtempSync, rmSync } from "node:fs";
@@ -102,7 +102,7 @@ for (const row of rows)
   console.log(`| ${row.name} | ${row.first.toFixed(1)} ms (${row.status}) | ${row.body.toFixed(1)} ms | ${row.patch.toFixed(1)} ms | ${row.memory.toFixed(1)} MB |`);
 
 // The side process on this monorepo.
-const harness = server(binary, ["serve"], { BLAME_HARNESS_COMPILER: compiler, BLAME_HARNESS_COMPILER_IDLE_MS: "45000" });
+const harness = server(binary, ["serve"], { BLAME_HARNESS_COMPILER: compiler });
 const startup = await harness.readyAt;
 const session = `side-${process.pid}`;
 const query = { query: "packages/agent-runtime/src/harness/light-identity.ts#sha256", mode: "references" };
@@ -114,14 +114,14 @@ const warm = [];
 for (let round = 0; round < runs; round += 1) warm.push((await harness.send("search_code", query, repository, session)).ms);
 await sleep(35_000);
 const afterWorker = side.reduce((sum, pid) => sum + footprint(pid), 0);
-await sleep(15_000);
+await sleep(30_000);
 const alive = children(harness.child.pid).length;
 harness.child.stdin.end();
 await new Promise((done) => harness.child.on("close", done));
 console.log(`side process: harness start-up ${startup.toFixed(1)} ms, harness footprint ${before.toFixed(1)} MB before the first query`);
 console.log(`cold reference query ${cold.ms.toFixed(0)} ms (engine ${cold.result?.data?.engine}, ${cold.result?.data?.referenceCount} references; side process + compiler program load), warm median ${median(warm).toFixed(0)} ms`);
 console.log(`after the query: harness ${afterCold.rust.toFixed(1)} MB, side process with its worker ${afterCold.node.toFixed(1)} MB`);
-console.log(`35 s idle (worker stopped after 30 s): side process ${afterWorker.toFixed(1)} MB; 50 s idle: side processes still running ${alive} (exits after 45 s)`);
+console.log(`35 s idle (worker stopped after 30 s): side process ${afterWorker.toFixed(1)} MB; 65 s idle: side processes still running ${alive} (exits after 60 s)`);
 // This run's session journal in the monorepo.
 const { createHash } = await import("node:crypto");
 rmSync(join(repository, ".blame/harness/light", `${createHash("sha256").update(session).digest("hex").slice(0, 24)}.jsonl`), { force: true });
