@@ -346,7 +346,7 @@ function githubMcpCall(input: unknown, signal: AbortSignal) {
   });
 }
 
-async function agentGit(input: unknown) {
+export async function agentGit(input: unknown) {
   const request = recordInput(input);
   const cwd = request.cwd;
   const args = request.args;

@@ -25,7 +25,8 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
 - **Main** spawns the engine host, starts it again after a crash, routes
   renderer calls to it and its events back to the windows that follow a
   session. It serves the host the few desktop services a tool needs
-  (`renderWebPage`). It imports only types and a tiny protocol module from
+  (`renderWebPage`) and the git of the git flows (`git`: on this machine,
+  or in the runtime VM for its worktrees). It imports only types and a tiny protocol module from
   `@blame/agent-runtime/engine-protocol`: the main process stays light
   (`scripts/check-main-process-imports.mjs` still passes).
   On quit it asks the host to shut down: the engine ends running turns as
@@ -210,12 +211,31 @@ project in the runtime VM (its folder is the temporary one). A task that
 works on files of a project in the VM fails with `VM_WORKSPACE_UNSUPPORTED`
 until the engine runs in the VM; there is no Cline fallback.
 
+### Git flows
+
+Approve & Merge, Open PR, the Git page's commit message and conflict
+resolution run in the engine host (`engine/git/`), not in a renderer or the
+Cline runtime: a flow is git work with agent steps in it, and each step is
+an engine task (`GitAgent`). Main adds what only it knows to these calls
+(`engineGitFlowCall` in `agent-ipc.ts`): whether the worktree is in the
+runtime VM (`inVm`), the worktrees where an agent runs (`activeWorktrees`,
+so a target branch never moves under one), the preview sync before a
+delivery, and the worktree counted as written while the flow runs. Git runs
+through main (`git` desktop service); gh runs in the host with the person's
+own sign-in. A failed commit message agent leaves Blame's own message.
+The conflict agent cannot run git mutations (its workspace is not isolated):
+the host stages each conflicted file it left without markers, then Git says
+what is still conflicted, as before.
+
 ### The tasks
 
 | renderer call | purpose | result tool | tools |
 | --- | --- | --- | --- |
 | `generateTitle` | `title` | `submit_title` (run configuration ids in the schema) | none |
 | `optimizeUserStory` | `user-story-optimization` | `submit_user_story` | none |
+| `generateCommitMessage`, and in `approveAndMerge`, `openPullRequest` | `commit-message` | `submit_commit_message` (its first line is the subject) | none: the changes are in the instruction |
+| `openPullRequest` | `pull-request-text` | `submit_pull_request` (`agentSummary` required when the story has one) | none |
+| `resolveMergeConflicts`, and in `approveAndMerge` | `merge-conflict-resolution` | `submit_merge_resolution` (`resolved`, `reason`) | harness: `search_code`, `read_code`, `edit_code`, `run_task`; `required: ["read_code"]`; `VM_WORKSPACE_UNSUPPORTED` in the VM |
 
 ## Rules for the next slices
 

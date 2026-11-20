@@ -8,16 +8,12 @@ import type {
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
-  ApproveAndMergeInput,
-  ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
-  GenerateCommitMessageInput,
-  GenerateCommitMessageResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -26,8 +22,6 @@ import type {
   SubscriptionUsage,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
-  OpenPullRequestInput,
-  OpenPullRequestResult,
   ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
@@ -40,8 +34,6 @@ import type {
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
-  ResolveMergeConflictsInput,
-  ResolveMergeConflictsResult,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
   SaveProviderCredentialInput,
@@ -695,22 +687,12 @@ export type BlameDesktopApi = {
       ): Promise<AnalyzeProjectCodePracticesResult>;
     };
     newProjects: NewProjectsClient;
-    approveAndMerge(
-      input: ApproveAndMergeInput,
-    ): Promise<ApproveAndMergeResult>;
-    openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>;
     pullRequestAvailability(
       input: PullRequestAvailabilityInput,
     ): Promise<PullRequestAvailability>;
     pullRequestState(input: PullRequestStateInput): Promise<PullRequestState>;
-    generateCommitMessage(
-      input: GenerateCommitMessageInput,
-    ): Promise<GenerateCommitMessageResult>;
     directStoryFiles(
       input: DirectStoryFilesInput,
     ): Promise<DirectStoryFilesResult>;
-    resolveMergeConflicts(
-      input: ResolveMergeConflictsInput,
-    ): Promise<ResolveMergeConflictsResult>;
   };
 };

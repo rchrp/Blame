@@ -3,9 +3,11 @@
 
 import { randomUUID } from "node:crypto";
 import type { EngineClient } from "@blame/engine-client";
+import type { GhRunner } from "../../pull-request.js";
 import { titleTask } from "../purposes/title.js";
 import { userStoryTask } from "../purposes/user-story.js";
 import type { EngineTaskMethods, TaskCall } from "../task-protocol.js";
+import { gitTaskHandlers } from "./git.js";
 import type { TaskRunner, TaskSpec } from "./runner.js";
 
 export type TaskHost = {
@@ -18,6 +20,8 @@ export type TaskHost = {
   ): void;
   /** Drops what the host keeps of a deleted session. */
   forget(session: string): void;
+  /** gh for Open PR; the person's own, on this machine, by default. */
+  gh?: GhRunner;
 };
 
 type Handlers = {
@@ -36,6 +40,7 @@ export function taskHandlers(host: TaskHost): Handlers {
     return host.runner.run(spec, { session, what });
   };
   return {
+    ...gitTaskHandlers(host, host.gh),
     generateTitle: async (input) => {
       const { session, result } = await run(
         input,

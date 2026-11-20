@@ -13,9 +13,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import type { ClineCoreStartInput } from "@cline/sdk";
 
-import { BlameAgentRuntime } from "./cline-runtime.js";
+import { setGitRunner } from "../../runtime-git.js";
+import { mergeConflictTools } from "../purposes/merge-conflicts.js";
+import type { ApproveAndMergeTask } from "../task-protocol.js";
+import { VM_WORKSPACE_UNSUPPORTED, type TaskSpec } from "../tasks/runner.js";
+import type { GitAgent } from "./agent.js";
+import { approveAndMerge } from "./story-merge.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -79,11 +83,9 @@ test("merges into a dirty target branch and restores its local changes", async (
     await git(repositoryRoot, ["add", "local-staged-deleted.txt"]);
     await unlink(join(repositoryRoot, "local-staged-deleted.txt"));
 
-    const runtime = new BlameAgentRuntime();
+    const runtime = mergeTestRuntime();
     const result = await runtime.approveAndMerge({
-      apiConnection: { url: "https://api.example" },
-      modelId: "test-model",
-      providerId: "test-provider",
+      model,
       repositoryRoot,
       storyBranch: "story/test-dirty-target",
       targetBranch: "main",
@@ -166,12 +168,10 @@ test("leaves the target branch unchanged when local changes truly conflict", asy
     await git(worktree, ["commit", "-m", "story change"]);
     await writeFile(join(repositoryRoot, "shared.txt"), "local\n");
 
-    const runtime = new BlameAgentRuntime();
+    const runtime = mergeTestRuntime();
     await assert.rejects(
       runtime.approveAndMerge({
-        apiConnection: { url: "https://api.example" },
-        modelId: "test-model",
-        providerId: "test-provider",
+        model,
         repositoryRoot,
         storyBranch: "story/test-conflicting-target",
         summary: "Exercise a real local conflict.",
@@ -237,23 +237,20 @@ test("merges a VM story through host credentials and preserves unpublished targe
     await git(repositoryRoot, ["add", "."]);
     await git(repositoryRoot, ["commit", "-m", "local target commit"]);
     const baseCommit = await git(repositoryRoot, ["rev-parse", "HEAD"]);
-    const runtime = new BlameAgentRuntime(undefined, {
-      git: async (cwd, args) => {
-        if (args[0] === "fetch" || args[0] === "push") {
-          assert.equal(
-            cwd,
-            repositoryRoot,
-            "remote credentials exist only on the host",
-          );
-          if (args[0] === "fetch") fetches.push(cwd);
-        }
-        return git(cwd, args);
-      },
+    setGitRunner(async (cwd, args) => {
+      if (args[0] === "fetch" || args[0] === "push") {
+        assert.equal(
+          cwd,
+          repositoryRoot,
+          "remote credentials exist only on the host",
+        );
+        if (args[0] === "fetch") fetches.push(cwd);
+      }
+      return git(cwd, args);
     });
+    const runtime = mergeTestRuntime();
     const result = await runtime.approveAndMerge({
-      apiConnection: { url: "https://api.example" },
-      modelId: "test-model",
-      providerId: "test-provider",
+      model,
       repositoryRoot,
       worktree,
       storyBranch: "story/retry",
@@ -278,7 +275,7 @@ test("merges a VM story through host credentials and preserves unpublished targe
     );
     assert.deepEqual(fetches, [repositoryRoot]);
   } finally {
-    new BlameAgentRuntime(undefined, { git });
+    setGitRunner(undefined);
     await rm(directory, { recursive: true, force: true });
   }
 });
@@ -318,24 +315,21 @@ test("early merge failures clean only their temporary checkout and retain VM reg
     await rename(vmWorktree, join(directory, "vm-storage"));
     await writeFile(join(repositoryRoot, "base.txt"), "local work\n");
     for (const failure of ["fetch", "story-status"]) {
-      const runtime = new BlameAgentRuntime(undefined, {
-        git: async (cwd, args) => {
-          if (
-            (failure === "fetch" && args[0] === "fetch") ||
-            (failure === "story-status" &&
-              cwd === worktree &&
-              args[0] === "status")
-          ) {
-            throw new Error(`Intentional ${failure} failure`);
-          }
-          return git(cwd, args);
-        },
+      setGitRunner(async (cwd, args) => {
+        if (
+          (failure === "fetch" && args[0] === "fetch") ||
+          (failure === "story-status" &&
+            cwd === worktree &&
+            args[0] === "status")
+        ) {
+          throw new Error(`Intentional ${failure} failure`);
+        }
+        return git(cwd, args);
       });
+      const runtime = mergeTestRuntime();
       await assert.rejects(
         runtime.approveAndMerge({
-          apiConnection: { url: "https://api.example" },
-          modelId: "test-model",
-          providerId: "test-provider",
+          model,
           repositoryRoot,
           worktree,
           storyBranch: "story/review",
@@ -360,7 +354,7 @@ test("early merge failures clean only their temporary checkout and retain VM reg
       );
     }
   } finally {
-    new BlameAgentRuntime(undefined, { git });
+    setGitRunner(undefined);
     await rm(directory, { recursive: true, force: true });
   }
 });
@@ -371,30 +365,20 @@ async function git(cwd: string, args: string[]) {
 }
 
 for (const pending of [false, true]) {
-  test(`resolves ${pending ? "an interrupted" : "a new"} story merge with enabled workspace tools`, async () => {
+  test(`resolves ${pending ? "an interrupted" : "a new"} story merge with the harness in the worktree`, async () => {
     const fixture = await conflictingStoryFixture();
     let resolutions = 0;
-    const runtime = mergeTestRuntime(async (request) => {
+    const runtime = mergeTestRuntime(async (spec) => {
       resolutions += 1;
-      assert.equal(request.source, "blame-merge-conflict-resolution");
-      assert.equal(request.config.cwd, fixture.input.worktree);
-      for (const tool of [
-        "read_files",
-        "search_codebase",
-        "editor",
-        "apply_patch",
-        "run_commands",
-      ]) {
-        assert.deepEqual(request.toolPolicies?.[tool], {
-          enabled: true,
-          autoApprove: true,
-        });
-      }
-      assert.equal(request.config.enableSpawnAgent, false);
-      assert.equal(request.toolPolicies?.ask_question?.enabled, false);
+      assert.equal(spec.config.purpose, "merge-conflict-resolution");
+      assert.equal(spec.config.workspace_root, fixture.input.worktree);
+      assert.deepEqual(spec.config.engine_tools, ["harness"]);
+      assert.deepEqual(spec.config.contract?.required, ["read_code"]);
+      assert.deepEqual(spec.config.contract?.allowed, mergeConflictTools);
+      assert.match(spec.instruction, /Conflicted files:\nshared\.txt/);
       assert.match(await readFile(fixture.file, "utf8"), /<<<<<<< HEAD/);
+      // The agent cannot stage: Blame stages the file it resolved.
       await writeFile(fixture.file, "story and target\n");
-      await git(fixture.input.worktree, ["add", "shared.txt"]);
     });
     try {
       if (pending) {
@@ -442,7 +426,6 @@ test("a failed resolver restores a usable story and can be retried", async () =>
       throw new Error("Resolver unavailable");
     }
     await writeFile(fixture.file, "story and target\n");
-    await git(fixture.input.worktree, ["add", "shared.txt"]);
   });
   try {
     await assert.rejects(
@@ -477,40 +460,19 @@ test("a failed resolver restores a usable story and can be retried", async () =>
   }
 });
 
-test("resolves a VM story's conflicts through the runtime hub", async () => {
+test("stops a VM story's conflicting merge before its agent, and keeps the story usable", async () => {
   const fixture = await conflictingStoryFixture();
-  const calls: string[] = [];
-  // Like the Blame Runtime hub: start() returns at once without a result, and
-  // only a sent turn runs the agent and answers with its result.
-  const runtime = mergeTestRuntime(undefined, {
-    async start(input: ClineCoreStartInput) {
-      calls.push(`start:${input.interactive}:${input.prompt ?? ""}`);
-      return { sessionId: "hub-merge", result: undefined };
-    },
-    async send(input: { sessionId: string; prompt: string }) {
-      calls.push(`send:${input.sessionId}`);
-      assert.match(input.prompt, /Conflicted files:\nshared\.txt/);
-      await writeFile(fixture.file, "story and target\n");
-      await git(fixture.input.worktree, ["add", "shared.txt"]);
-      return { status: "done" };
-    },
-    async stop(sessionId: string) {
-      calls.push(`stop:${sessionId}`);
-    },
+  const runtime = mergeTestRuntime(async () => {
+    throw new Error("the agent must not run");
   });
   try {
-    await runtime.approveAndMerge({
-      ...fixture.input,
-      backend: { mode: "remote", endpoint: "ws://blame-runtime" },
-    });
-    assert.deepEqual(calls, [
-      "start:true:",
-      "send:hub-merge",
-      "stop:hub-merge",
-    ]);
-    assert.equal(
-      await readFile(join(fixture.input.repositoryRoot, "shared.txt"), "utf8"),
-      "story and target\n",
+    await assert.rejects(
+      runtime.approveAndMerge({ ...fixture.input, inVm: true }),
+      (error: Error) => error.message === VM_WORKSPACE_UNSUPPORTED,
+    );
+    assert.equal(await readFile(fixture.file, "utf8"), "story\n");
+    await assert.rejects(
+      git(fixture.input.worktree, ["rev-parse", "--verify", "MERGE_HEAD"]),
     );
   } finally {
     await runtime.shutdown();
@@ -518,17 +480,16 @@ test("resolves a VM story's conflicts through the runtime hub", async () => {
   }
 });
 
-test("reports a resolver that returned no result instead of the conflicts", async () => {
+test("reports why the resolver could not resolve the conflicts", async () => {
   const fixture = await conflictingStoryFixture();
   const runtime = mergeTestRuntime(undefined, {
-    async start() {
-      return { sessionId: "silent-merge", result: undefined };
-    },
+    resolved: false,
+    reason: "Both sides rewrite the same line differently.",
   });
   try {
     await assert.rejects(
       runtime.approveAndMerge(fixture.input),
-      /merge conflict agent returned no result/,
+      /could not resolve the conflicts: Both sides rewrite the same line/,
     );
     assert.equal(await readFile(fixture.file, "utf8"), "story\n");
   } finally {
@@ -615,9 +576,7 @@ test("merges two stories approved at once into the same repository one after the
     await git(worktree, ["add", "."]);
     await git(worktree, ["commit", "-m", name]);
     stories.push({
-      apiConnection: { url: "https://api.example" },
-      providerId: "test-provider",
-      modelId: "test-model",
+      model,
       repositoryRoot,
       worktree,
       storyBranch,
@@ -668,8 +627,14 @@ test("advances a target branch checked out nowhere and pushes it to its own upst
       await git(repositoryRoot, ["rev-parse", "develop"]),
       fixture.storyCommit,
     );
-    assert.equal(await git(remote, ["rev-parse", "develop"]), fixture.storyCommit);
-    assert.equal(await git(repositoryRoot, ["branch", "--show-current"]), "main");
+    assert.equal(
+      await git(remote, ["rev-parse", "develop"]),
+      fixture.storyCommit,
+    );
+    assert.equal(
+      await git(repositoryRoot, ["branch", "--show-current"]),
+      "main",
+    );
     assert.equal(
       await git(repositoryRoot, ["rev-parse", "HEAD"]),
       fixture.mainCommit,
@@ -809,9 +774,7 @@ async function targetBranchFixture(name: string) {
     storyCommit,
     worktree,
     input: {
-      apiConnection: { url: "https://api.example" },
-      providerId: "test-provider",
-      modelId: "test-model",
+      model,
       repositoryRoot,
       worktree,
       storyBranch: "story/target",
@@ -821,29 +784,25 @@ async function targetBranchFixture(name: string) {
     },
   };
 }
+const model = { providerId: "anthropic", modelId: "test-model" };
+
+// The flow with a stand-in for its engine tasks: no commit message agent (the
+// fallback message is used), and a resolver that edits the worktree.
 function mergeTestRuntime(
-  resolve?: (input: ClineCoreStartInput) => Promise<void>,
-  core?: Record<string, unknown>,
+  resolve?: (spec: TaskSpec<unknown>) => Promise<void>,
+  resolution = { resolved: true, reason: "Kept both changes." },
 ) {
-  const runtime = new BlameAgentRuntime(undefined, {
-    createCore: async () =>
-      ({
-        async start(input: ClineCoreStartInput) {
-          await resolve?.(input);
-          return { sessionId: "merge-test", result: { status: "done" } };
-        },
-        async dispose() {},
-        ...core,
-      }) as never,
-  });
-  const internals = runtime as unknown as {
-    runtimeCredential(): Promise<{ apiKey: string; baseUrl: null }>;
+  const agent: GitAgent = async (_call, spec) => {
+    if (spec.config.purpose !== "merge-conflict-resolution")
+      throw new Error("No commit message agent in this test.");
+    await resolve?.(spec);
+    return { session: "merge-test", result: spec.result(resolution) };
   };
-  internals.runtimeCredential = async () => ({
-    apiKey: "test-key",
-    baseUrl: null,
-  });
-  return runtime;
+  return {
+    approveAndMerge: (input: ApproveAndMergeTask) =>
+      approveAndMerge(input, agent),
+    async shutdown() {},
+  };
 }
 
 async function conflictingStoryFixture() {
@@ -878,9 +837,7 @@ async function conflictingStoryFixture() {
     storyCommit,
     targetCommit,
     input: {
-      apiConnection: { url: "https://api.example" },
-      providerId: "test-provider",
-      modelId: "test-model",
+      model,
       repositoryRoot,
       worktree,
       storyBranch: "story/review",

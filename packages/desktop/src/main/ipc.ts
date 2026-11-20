@@ -10,7 +10,12 @@ import {
 } from "electron";
 import { openAttachment } from "./attachment-open";
 import { installApplicationMenu } from "./application-menu";
-import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
+import {
+  engineGitFlowCall,
+  localAgentOwnsWorkspace,
+  registerAgentIpcHandlers,
+} from "./agent-ipc";
+import { agentGit } from "./agent-runtime-main-host";
 import { engineBinaryPath } from "./engine/engine-binary";
 import { registerEngineIpcHandlers } from "./engine/engine-host-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
@@ -132,7 +137,6 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     ...options.agentRuntime,
     packaged: options.packaged,
     previewService: previews,
-    beforeDelivery: (worktree) => previews.syncBarrier(worktree),
     beforeWorkspaceWrite: (worktree) => {
       // A story that changes again needs its development server back.
       void requestDevelopmentServing(worktree).catch(() => undefined);
@@ -148,6 +152,11 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
       const { renderResearchPage } = await import("./web-research-browser.ts");
       return renderResearchPage(url, signal);
     },
+    git: async (cwd, args) => String(await agentGit({ cwd, args })),
+    prepareCall: (method, input, call) =>
+      engineGitFlowCall(method, input, call, (worktree) =>
+        previews.syncBarrier(worktree),
+      ),
   });
   useServingAgentCheck(localAgentOwnsWorkspace);
   registerPreviewServingIpcHandlers({ isAppWindow: options.isAppWindow });

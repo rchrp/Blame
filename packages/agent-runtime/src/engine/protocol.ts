@@ -150,6 +150,8 @@ export type EngineDesktopMethods = {
     input: { url: string; timeoutMs?: number };
     result: { url: string; html: string };
   };
+  /** One git command of a git flow, run by main on this machine or in the runtime VM. */
+  git: { input: { cwd: string; args: string[] }; result: string };
 };
 
 export type EngineDesktopMethod = keyof EngineDesktopMethods;

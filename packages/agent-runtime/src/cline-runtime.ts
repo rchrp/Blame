@@ -42,7 +42,6 @@ import type {
   OAuthServerListeningInfo,
 } from "@cline/sdk";
 
-import { assertTargetChangesRestorable, stashTargetChanges, type TargetChangesStash } from "./approve-merge-git.js";
 import {
   codePracticesConfig,
   codePracticesPrompt,
@@ -80,21 +79,16 @@ import {
   blameNativePluginPath,
   clineDefaultToolPolicies,
   codePracticesToolPolicies,
-  commitMessageConfig,
   coreBackendOptions,
   extensionContext,
   initializationImpactConfig,
   initializationRepairConfig,
   initializationToolPolicies,
-  mergeConflictConfig,
-  mergeConflictToolPolicies,
   newProjectGenerationConfig,
   newProjectGenerationToolPolicies,
   productionLogger,
   toolPolicies,
   withConfigExtensions,
-  type CommitMessageRuntimeInput,
-  type MergeConflictRuntimeInput,
 } from "./cline-runtime-configuration.js";
 import {
   asRecord,
@@ -130,30 +124,14 @@ import {
 } from "./cline-runtime-events.js";
 import {
   appendLog,
-  approveMergeLogPath,
-  commitMessageLogPath,
-  mergeConflictLogPath,
-  pullRequestLogPath,
   sessionLogPath,
   startLogPath,
-} from "./cline-runtime-log.js";
-import { runOneShotAgent } from "./one-shot-agent.js";
+} from "./runtime-log.js";
 import {
-  createPullRequest,
-  openPullRequestUrl,
   pullRequestAvailability,
-  pullRequestBody,
   readPullRequestState,
-  requirePullRequestRepository,
   runHostGh,
 } from "./pull-request.js";
-import {
-  parsePullRequestText,
-  pullRequestTextConfig,
-  pullRequestTextPrompt,
-  type PullRequestText,
-} from "./pull-request-text.js";
-import { runRepositoryMerge } from "./repository-merge-queue.js";
 import {
   buildDevelopmentSystemPrompt,
   clineDefaultSystemPrompt,
@@ -184,7 +162,6 @@ import {
   saveProviderCredential,
 } from "./cloud-api.js";
 import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
-import { commitMessagePaths } from "./commit-message.js";
 import {
   clineOAuthProvider,
   forceOAuthRefresh,
@@ -193,17 +170,6 @@ import {
   supportedClineOAuthProvider,
   toBlameOAuthCredentials,
 } from "./cline-oauth-providers.js";
-import {
-  addStoryChanges,
-  commitMessagePrompt,
-  fallbackCommitMessage,
-  maxMergeConflictResolutionAttempts,
-  mergeConflictPrompt,
-  removeRuntimeEnvChanges,
-  storyStatus,
-  withStoryIssueTrailers,
-} from "./story-worktree-git.js";
-import { linkedIssueNumbers } from "./linked-issues.js";
 import {
   knownModelInfo,
   loadCatalogModel,
@@ -254,7 +220,6 @@ import type { ProductionSessionContext } from "./production.js";
 import {
   appendProductionConfig,
   applyProductionEnvironment,
-  assertRepositoryPath,
   assertWorkspacePath,
   blameCheckpointConfig,
   blameCompactionConfig,
@@ -309,17 +274,12 @@ import type {
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
-  ApproveAndMergeInput,
-  ApproveAndMergePush,
-  ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
   DiscoverSecurityAuditInput,
   DirectStoryFilesInput,
-  GenerateCommitMessageInput,
-  GenerateCommitMessageResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ConnectClaudeCodeInput,
@@ -327,15 +287,11 @@ import type {
   LoginOAuthProviderInput,
   MapSecurityAuditInput,
   NewProjectGenerationResult,
-  OpenPullRequestInput,
-  OpenPullRequestResult,
   PullRequestAvailabilityInput,
   PullRequestStateInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
-  ResolveMergeConflictsInput,
-  ResolveMergeConflictsResult,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
   SaveProviderCredentialInput,
@@ -348,30 +304,7 @@ import type {
 } from "./types.js";
 import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
 import { webResearchTools, webResearchGuidance } from './web-research-tools.js';
-import {
-  advanceTargetBranch,
-  assertGitRepository,
-  cleanGitStatus,
-  currentGitBranch,
-  defaultPushRemote,
-  setGitRunner,
-  git,
-  type GitUpstream,
-  hasMergeConflicts,
-  hasPendingMerge,
-  integrationWorktree,
-  mergeConflictFiles,
-  optionalGitUpstream,
-  originRemoteUrl,
-  pullIntegrationWorktree,
-  pushTargetBranch,
-  removeIntegrationWorktree,
-  restoreTargetChanges,
-  samePath,
-  targetBranchCheckout,
-  updateDetachedTargetBranch,
-  validateMergeBranches,
-} from "./runtime-git.js";
+import { assertRepositoryPath, setGitRunner } from "./runtime-git.js";
 
 export {
   backendKey,
@@ -429,24 +362,6 @@ type InitializationCredential = {
   authMethod?: string;
   baseUrl: string | null;
 };
-
-type StoryMergePreparation = {
-  baseCommit: string;
-  integration: string;
-  placement: StoryMergePlacement;
-  previousTargetCommit: string;
-  targetBranch: string;
-  upstream?: GitUpstream;
-};
-
-// How the target branch is advanced, from where it is checked out.
-type StoryMergePlacement =
-  // In its own checkout: the clean project folder or another worktree.
-  | "in-place"
-  // In the project folder with local changes, stashed around the merge.
-  | "stash"
-  // Checked out nowhere: moved by update-ref from a temporary checkout.
-  | "detached";
 
 type SessionTermination = {
   cline: ClineCore;
@@ -634,12 +549,6 @@ export class BlameAgentRuntime {
       this.generateNewProject(input),
   };
 
-  approveAndMerge = (input: ApproveAndMergeInput) =>
-    this.approveAndMergeStory(input);
-
-  openPullRequest = (input: OpenPullRequestInput) =>
-    this.openStoryPullRequest(input);
-
   pullRequestAvailability = (input: PullRequestAvailabilityInput) => {
     assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
     return pullRequestAvailability(input.repositoryRoot, this.gh);
@@ -650,16 +559,10 @@ export class BlameAgentRuntime {
     return readPullRequestState(input.repositoryRoot, input.url, this.gh);
   };
 
-  generateCommitMessage = (input: GenerateCommitMessageInput) =>
-    this.generateWorkspaceCommitMessage(input);
-
   directStoryFiles = (input: DirectStoryFilesInput) => {
     assertRepositoryPath(input.root, "root");
     return findDirectStoryFiles(input);
   };
-
-  resolveMergeConflicts = (input: ResolveMergeConflictsInput) =>
-    this.resolveWorkspaceMergeConflicts(input);
 
   async shutdown() {
     const sessionIds = await this.activeSessionIds();
@@ -2302,530 +2205,8 @@ export class BlameAgentRuntime {
     );
   }
 
-  private async approveAndMergeStory(
-    input: ApproveAndMergeInput,
-  ): Promise<ApproveAndMergeResult> {
-    return runRepositoryMerge(input.repositoryRoot, () =>
-      this.approveAndMergeStoryOperation(input),
-    );
-  }
-
-  private async approveAndMergeStoryOperation(
-    input: ApproveAndMergeInput,
-  ): Promise<ApproveAndMergeResult> {
-    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
-    assertRepositoryPath(input.worktree, "worktree");
-    const logFile = approveMergeLogPath(input.worktree);
-    await appendLog(
-      logFile,
-      "approve merge requested",
-      approveMergeContext(input),
-    );
-    const preparation = await this.prepareStoryMerge(input);
-    try {
-      // A previous approval may have stopped with an unresolved merge. Resolve
-      // its index before the ordinary commit path can stage conflict markers.
-      await this.completePendingStoryMerge(input, preparation.targetBranch);
-      await this.commitStoryWork(input);
-      await this.mergeTargetIntoStory(
-        input,
-        preparation.targetBranch,
-        preparation.baseCommit,
-      );
-      await removeRuntimeEnvChanges(input.worktree, preparation.baseCommit);
-      return await this.finalizeStoryMerge(input, logFile, preparation);
-    } finally {
-      if (preparation.placement !== "in-place") {
-        await removeIntegrationWorktree(
-          input.repositoryRoot,
-          preparation.integration,
-        );
-      }
-    }
-  }
-
-  private async prepareStoryMerge(
-    input: ApproveAndMergeInput,
-  ): Promise<StoryMergePreparation> {
-    await assertGitRepository(input.repositoryRoot);
-    await assertGitRepository(input.worktree);
-    // Stories created before the target branch was recorded merge into the
-    // branch checked out in the project folder, as they always did.
-    const targetBranch =
-      input.targetBranch?.trim() ||
-      (await currentGitBranch(input.repositoryRoot));
-    await validateMergeBranches(input, targetBranch);
-    const upstream = await optionalGitUpstream(
-      input.repositoryRoot,
-      targetBranch,
-    );
-    const previousTargetCommit = await git(input.repositoryRoot, [
-      "rev-parse",
-      `refs/heads/${targetBranch}`,
-    ]);
-    const { integration, placement } = await storyMergeIntegration(
-      input,
-      targetBranch,
-    );
-    try {
-      await pullIntegrationWorktree(input.repositoryRoot, integration, upstream);
-      const baseCommit = await git(integration, ["rev-parse", "HEAD"]);
-      return {
-        baseCommit,
-        integration,
-        placement,
-        previousTargetCommit,
-        targetBranch,
-        upstream,
-      };
-    } catch (error) {
-      if (placement !== "in-place") {
-        await removeIntegrationWorktree(input.repositoryRoot, integration);
-      }
-      throw error;
-    }
-  }
-
-  private async finalizeStoryMerge(
-    input: ApproveAndMergeInput,
-    logFile: string,
-    preparation: StoryMergePreparation,
-  ): Promise<ApproveAndMergeResult> {
-    const {
-      baseCommit,
-      integration,
-      placement,
-      previousTargetCommit,
-      targetBranch,
-      upstream,
-    } = preparation;
-    let targetChanges: TargetChangesStash | undefined;
-    try {
-      if (placement === "stash") {
-        targetChanges = await stashTargetChanges(input.repositoryRoot, git);
-        if (targetChanges) {
-          await appendLog(logFile, "local target changes stashed", {
-            commit: targetChanges.commit,
-          });
-        }
-      }
-      await git(integration, ["merge", "--ff-only", input.storyBranch]);
-      const mergeCommit = await git(integration, ["rev-parse", "HEAD"]);
-      if (placement === "stash") {
-        await assertTargetChangesRestorable(integration, targetChanges, git);
-        await advanceTargetBranch(
-          input.repositoryRoot,
-          targetBranch,
-          input.storyBranch,
-        );
-        const changesToRestore = targetChanges;
-        targetChanges = undefined;
-        await restoreTargetChanges(
-          input.repositoryRoot,
-          changesToRestore,
-          logFile,
-        );
-      }
-      if (placement === "detached") {
-        await updateDetachedTargetBranch(
-          input.repositoryRoot,
-          targetBranch,
-          mergeCommit,
-          previousTargetCommit,
-        );
-      }
-      const push = await this.publishMergedTarget(
-        input,
-        targetBranch,
-        upstream,
-        logFile,
-      );
-      await appendLog(logFile, "approve merge completed", {
-        baseCommit,
-        mergeCommit,
-        placement,
-        targetBranch,
-      });
-      return { baseCommit, mergeCommit, push, targetBranch };
-    } finally {
-      if (targetChanges) {
-        await restoreTargetChanges(
-          input.repositoryRoot,
-          targetChanges,
-          logFile,
-        );
-      }
-    }
-  }
-
-  private async publishMergedTarget(
-    input: ApproveAndMergeInput,
-    targetBranch: string,
-    upstream: GitUpstream | undefined,
-    logFile: string,
-  ): Promise<ApproveAndMergePush> {
-    if (input.push !== true) {
-      await appendLog(logFile, "approve merge push skipped", {
-        reason: "not requested",
-      });
-      return { status: "skipped" };
-    }
-    await pushTargetBranch(input.repositoryRoot, targetBranch, upstream, logFile);
-    return upstream
-      ? { status: "pushed", upstream: `${upstream.remote}/${upstream.branch}` }
-      : {
-          status: "no-upstream",
-          remote: await defaultPushRemote(input.repositoryRoot),
-        };
-  }
-
   private get gh() {
     return this.options.gh ?? runHostGh;
-  }
-
-  // Runs with the merges of its repository: both commit in the story worktree
-  // and read the target branch.
-  private async openStoryPullRequest(
-    input: OpenPullRequestInput,
-  ): Promise<OpenPullRequestResult> {
-    return runRepositoryMerge(input.repositoryRoot, () =>
-      this.openStoryPullRequestOperation(input),
-    );
-  }
-
-  private async openStoryPullRequestOperation(
-    input: OpenPullRequestInput,
-  ): Promise<OpenPullRequestResult> {
-    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
-    assertRepositoryPath(input.worktree, "worktree");
-    const logFile = pullRequestLogPath(input.worktree);
-    await appendLog(logFile, "pull request requested", approveMergeContext(input));
-    await assertGitRepository(input.repositoryRoot);
-    await assertGitRepository(input.worktree);
-    const targetBranch =
-      input.targetBranch?.trim() ||
-      (await currentGitBranch(input.repositoryRoot));
-    await validateMergeBranches(input, targetBranch);
-    // Checked before anything is committed or pushed.
-    const repository = await requirePullRequestRepository(
-      input.repositoryRoot,
-      this.gh,
-    );
-    await this.commitStoryWork(input);
-    // Runtime env files stay out of GitHub, as they stay out of merges.
-    const forkPoint = await git(input.repositoryRoot, [
-      "merge-base",
-      `refs/heads/${targetBranch}`,
-      `refs/heads/${input.storyBranch}`,
-    ]);
-    await removeRuntimeEnvChanges(input.worktree, forkPoint);
-    // The project checkout owns the remote credentials; the story worktree
-    // may run in a VM without them.
-    await git(input.repositoryRoot, [
-      "push",
-      "origin",
-      `refs/heads/${input.storyBranch}:refs/heads/${input.storyBranch}`,
-    ]);
-    const existingUrl = await openPullRequestUrl(
-      input.repositoryRoot,
-      repository,
-      input.storyBranch,
-      this.gh,
-    );
-    const url =
-      existingUrl ??
-      (await this.createEnglishPullRequest(
-        input,
-        { repository, targetBranch },
-        logFile,
-      ));
-    await appendLog(logFile, "pull request ready", {
-      created: !existingUrl,
-      repository,
-      targetBranch,
-      url,
-    });
-    return { url, created: !existingUrl, targetBranch };
-  }
-
-  private async createEnglishPullRequest(
-    input: OpenPullRequestInput,
-    destination: { repository: string; targetBranch: string },
-    logFile: string,
-  ) {
-    const text = await this.englishPullRequestText(input, logFile);
-    // From the story as written: its English rewrite may drop the links.
-    const origin = await originRemoteUrl(input.repositoryRoot);
-    const issues = linkedIssueNumbers(input, origin);
-    return createPullRequest(
-      input.repositoryRoot,
-      {
-        body: pullRequestBody(text, issues),
-        repository: destination.repository,
-        storyBranch: input.storyBranch,
-        targetBranch: destination.targetBranch,
-        title: text.title,
-      },
-      this.gh,
-    );
-  }
-
-  // Failing is retryable: the work is already pushed, so opening the pull
-  // request again only repeats this step.
-  private async englishPullRequestText(
-    input: OpenPullRequestInput,
-    logFile: string,
-  ): Promise<PullRequestText> {
-    const startedAt = Date.now();
-    const credential = await this.runtimeCredential(input);
-    const cline = await this.core(input.backend);
-    const session = await runOneShotAgent(
-      cline,
-      {
-        prompt: pullRequestTextPrompt(input),
-        config: pullRequestTextConfig(input, credential),
-        interactive: false,
-        source: "blame-pull-request-text",
-        toolPolicies: initializationToolPolicies(),
-      },
-      input.backend,
-    );
-    const result = asRecord(session.result);
-    const text = parsePullRequestText(
-      result.text,
-      Boolean(input.agentSummary?.trim()),
-    );
-    await appendLog(logFile, "pull request text agent finished", {
-      durationMs: Date.now() - startedAt,
-      sessionId: session.sessionId,
-      status: resultStatus(result),
-      success: Boolean(text),
-    });
-    if (!text)
-      throw new Error(
-        "The agent did not write the pull request in English. Open the pull request again to retry.",
-      );
-    return text;
-  }
-
-private async commitStoryWork(input: ApproveAndMergeInput) {
-    if (await hasMergeConflicts(input.worktree)) {
-      throw new Error(
-        "Resolve the active Git conflicts before committing the story.",
-      );
-    }
-    const status = await storyStatus(input.worktree, "--porcelain");
-    if (!status.trim()) return;
-    const generated = await this.generateCommitMessageWithAgent(
-      input,
-      approveMergeLogPath(input.worktree),
-      "blame-approve-merge",
-    );
-    const message = await withStoryIssueTrailers(generated, input);
-    await addStoryChanges(input.worktree);
-    await git(input.worktree, ["commit", "-m", message]);
-    const nextStatus = await storyStatus(input.worktree, "--porcelain");
-    if (nextStatus.trim())
-      throw new Error(
-        "Story worktree still has uncommitted changes after commit.",
-      );
-  }
-
-  private async generateWorkspaceCommitMessage(
-    input: GenerateCommitMessageInput,
-  ): Promise<GenerateCommitMessageResult> {
-    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
-    assertRepositoryPath(input.worktree, "worktree");
-    await assertGitRepository(input.repositoryRoot);
-    await assertGitRepository(input.worktree);
-    const status = await storyStatus(
-      input.worktree,
-      "--porcelain",
-      commitMessagePaths(input),
-    );
-    if (!status.trim())
-      throw new Error(
-        "No selected changes available for commit message generation.",
-      );
-    const logFile = commitMessageLogPath(input.worktree);
-    await appendLog(logFile, "commit message generation requested", {
-      providerId: input.providerId,
-      modelId: input.modelId,
-      reasoningEffort: input.reasoningEffort,
-      repositoryRoot: input.repositoryRoot,
-      selectedPaths: input.selectedPaths ?? [],
-      worktree: input.worktree,
-    });
-    const message = await this.generateCommitMessageWithAgent(
-      input,
-      logFile,
-      "blame-commit-message-generation",
-    );
-    // A Direct story's commit; the Git page's own commits don't ask.
-    if (input.closeLinkedIssues)
-      return { message: await withStoryIssueTrailers(message, input) };
-    return { message };
-  }
-
-  private async generateCommitMessageWithAgent(
-    input: CommitMessageRuntimeInput,
-    logFile: string,
-    source: string,
-  ) {
-    try {
-      const startedAt = Date.now();
-      const credential = await this.runtimeCredential(input);
-      const cline = await this.core(input.backend);
-      const session = await runOneShotAgent(cline, {
-        prompt: await commitMessagePrompt(input),
-        config: commitMessageConfig(input, credential),
-        interactive: false,
-        source,
-        toolPolicies: initializationToolPolicies(),
-      }, input.backend);
-      const message = commitMessageFromAgentResult(session.result);
-      await appendLog(logFile, "commit message agent finished", {
-        durationMs: Date.now() - startedAt,
-        sessionId: session.sessionId,
-        status: resultStatus(asRecord(session.result)),
-        success: Boolean(message),
-      });
-      if (message) return message;
-    } catch (error) {
-      await appendLog(logFile, "commit message agent failed", {
-        errorType: errorType(error),
-        status: "failed",
-      });
-    }
-    await appendLog(logFile, "commit message fallback selected", {
-      status: "fallback",
-      success: true,
-    });
-    return fallbackCommitMessage(input);
-  }
-
-  private async mergeTargetIntoStory(
-    input: ApproveAndMergeInput,
-    targetBranch: string,
-    targetCommit: string,
-  ) {
-    // Preparation fetched through the project checkout, which owns remote
-    // credentials. Reuse its exact target, including unpublished local commits;
-    // the story worktree may run in a VM without those credentials.
-    try {
-      await git(input.worktree, ["merge", targetCommit]);
-      return;
-    } catch (error) {
-      if (!(await hasMergeConflicts(input.worktree))) throw error;
-    }
-    try {
-      await this.completePendingStoryMerge(input, targetBranch);
-    } catch (error) {
-      // Story work was committed before this merge. Restore that usable revision
-      // if the resolver fails, rather than leave the preview on conflict markers.
-      try {
-        await git(input.worktree, ["merge", "--abort"]);
-      } catch (abortError) {
-        throw new AggregateError(
-          [error, abortError],
-          `Merge resolution failed and Git could not abort the merge: ${errorMessage(abortError)}`,
-          { cause: abortError },
-        );
-      }
-      throw error;
-    }
-  }
-
-  private async completePendingStoryMerge(
-    input: ApproveAndMergeInput,
-    targetBranch: string,
-  ) {
-    if (!(await hasPendingMerge(input.worktree))) return;
-    await this.resolveMergeConflictsWithAgent(
-      input,
-      targetBranch,
-      approveMergeLogPath(input.worktree),
-    );
-    const conflicts = await mergeConflictFiles(input.worktree);
-    if (conflicts.length)
-      throw new Error(unresolvedMergeConflictMessage(conflicts));
-    await addStoryChanges(input.worktree);
-    await git(input.worktree, ["commit", "--no-edit"]);
-  }
-
-  private async resolveWorkspaceMergeConflicts(
-    input: ResolveMergeConflictsInput,
-  ): Promise<ResolveMergeConflictsResult> {
-    assertRepositoryPath(input.repositoryRoot, "repositoryRoot");
-    assertRepositoryPath(input.worktree, "worktree");
-    const logFile = mergeConflictLogPath(input.worktree);
-    await appendLog(logFile, "merge conflict resolution requested", {
-      providerId: input.providerId,
-      modelId: input.modelId,
-      reasoningEffort: input.reasoningEffort,
-      repositoryRoot: input.repositoryRoot,
-      worktree: input.worktree,
-    });
-    await assertGitRepository(input.repositoryRoot);
-    await assertGitRepository(input.worktree);
-    const targetBranch =
-      input.targetBranch || (await currentGitBranch(input.worktree)) || "HEAD";
-    await this.resolveMergeConflictsWithAgent(
-      input,
-      targetBranch,
-      logFile,
-      false,
-    );
-    const conflicts = await mergeConflictFiles(input.worktree);
-    return { conflicts, resolved: conflicts.length === 0 };
-  }
-
-  private async resolveMergeConflictsWithAgent(
-    input: MergeConflictRuntimeInput,
-    targetBranch: string,
-    logFile: string,
-    throwOnUnresolved = true,
-  ) {
-    let conflicts = await mergeConflictFiles(input.worktree);
-    for (
-      let attempt = 1;
-      attempt <= maxMergeConflictResolutionAttempts && conflicts.length;
-      attempt += 1
-    ) {
-      const failure = await this.runMergeConflictAgent(input, targetBranch, attempt, logFile);
-      conflicts = await mergeConflictFiles(input.worktree);
-      await appendLog(logFile, "merge conflict agent finished", {
-        status: conflicts.length ? "conflicts_remaining" : "resolved",
-        success: !conflicts.length,
-      });
-      if (failure && conflicts.length) throw new Error(failure);
-    }
-    if (conflicts.length && throwOnUnresolved)
-      throw new Error(unresolvedMergeConflictMessage(conflicts));
-  }
-
-  private async runMergeConflictAgent(
-    input: MergeConflictRuntimeInput,
-    targetBranch: string,
-    attempt: number,
-    logFile: string,
-  ) {
-    const startedAt = Date.now();
-    const credential = await this.runtimeCredential(input);
-    const cline = await this.core(input.backend);
-    const session = await runOneShotAgent(cline, {
-      prompt: await mergeConflictPrompt(input, targetBranch, attempt),
-      config: mergeConflictConfig(input, credential),
-      interactive: false,
-      source: "blame-merge-conflict-resolution",
-      toolPolicies: mergeConflictToolPolicies(),
-    }, input.backend);
-    await appendLog(logFile, "merge conflict agent run completed", {
-      durationMs: Date.now() - startedAt,
-      sessionId: session.sessionId,
-      status: resultStatus(asRecord(session.result)),
-    });
-    return session.result === undefined ? "The merge conflict agent returned no result." : resultFailureMessage(session.result);
   }
 
   private async subscribeSession(
@@ -4210,80 +3591,6 @@ async function fileExists(path: string) {
 
 function createBlameSessionId() {
   return `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`;
-}
-
-function commitMessageFromAgentResult(result: unknown) {
-  const payload = asRecord(result);
-  return (
-    firstTextLine(payload.text) ??
-    firstTextLine(payload.outputText) ??
-    firstTextLine(payload.message)
-  );
-}
-
-function unresolvedMergeConflictMessage(conflicts: string[]) {
-  return `Merge conflict agent finished with unresolved conflicts: ${conflicts.join(", ")}`;
-}
-
-function firstTextLine(value: unknown) {
-  const line = stringValue(value)
-    ?.trim()
-    .replace(/^```(?:text)?\s*/, "")
-    .replace(/\s*```$/, "")
-    .split("\n")
-    .find(Boolean)
-    ?.trim();
-  return line?.replace(/^["'`]|["'`]$/g, "");
-}
-
-function approveMergeContext(input: ApproveAndMergeInput) {
-  return {
-    providerId: input.providerId,
-    modelId: input.modelId,
-    reasoningEffort: input.reasoningEffort,
-    repositoryRoot: input.repositoryRoot,
-    worktree: input.worktree,
-    storyBranch: input.storyBranch,
-    targetBranch: input.targetBranch,
-  };
-}
-
-// Where the target branch can be fast-forwarded to the story: its own
-// checkout when that is safe, otherwise a temporary detached one.
-async function storyMergeIntegration(
-  input: ApproveAndMergeInput,
-  targetBranch: string,
-): Promise<{ integration: string; placement: StoryMergePlacement }> {
-  const checkout = await targetBranchCheckout(input.repositoryRoot, targetBranch);
-  if (checkout.kind === "worktree") {
-    await assertTargetWorktreeAvailable(input, targetBranch, checkout.path);
-    return { integration: checkout.path, placement: "in-place" };
-  }
-  if (checkout.kind === "project" && (await cleanGitStatus(input.repositoryRoot)))
-    return { integration: input.repositoryRoot, placement: "in-place" };
-  return {
-    integration: await integrationWorktree(input.repositoryRoot, targetBranch),
-    placement: checkout.kind === "project" ? "stash" : "detached",
-  };
-}
-
-// Another worktree, often another story, holds the target branch: it moves
-// there only when nothing would be lost or raced.
-async function assertTargetWorktreeAvailable(
-  input: ApproveAndMergeInput,
-  targetBranch: string,
-  worktree: string,
-) {
-  for (const active of input.activeWorktrees ?? []) {
-    if (await samePath(active, worktree))
-      throw new Error(
-        `${targetBranch} is checked out in ${worktree}, where an agent is running. Approve & Merge again once it stops.`,
-      );
-  }
-  if (!(await cleanGitStatus(worktree)))
-    throw new Error(
-      `${targetBranch} is checked out in ${worktree}, which has uncommitted changes. Commit or stash them there, then approve again.`,
-    );
 }
 
 async function settleWithTimeout(

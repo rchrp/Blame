@@ -175,19 +175,22 @@ test("collects each session of the story once", () => {
   assert.deepEqual(storySessionIds({} as never), [])
 })
 
-test("needs a project folder, a signed-in provider, a model and the desktop runtime", () => {
-  const agent = { directStoryFiles: () => {}, generateCommitMessage: () => {} }
+test("needs a project folder, a signed-in provider, a model, the desktop runtime and the engine", () => {
+  const agent = { directStoryFiles: () => {} }
+  const engine = { call: () => {} }
   const workspace = { gitCommit: () => {}, gitLog: () => {} }
   const error = (
     storyInput: { worktree: string | null },
     authStatus: string,
     runtime: unknown,
-    model: unknown
+    model: unknown,
+    withEngine = true
   ) =>
     directCommitValidationError(
       storyInput,
       authStatus,
       runtime as never,
+      (withEngine ? engine : undefined) as never,
       workspace as never,
       model
     )
@@ -197,4 +200,5 @@ test("needs a project folder, a signed-in provider, a model and the desktop runt
   assert.match(error({ worktree: "/project" }, "signed-out", agent, {}) ?? "", /Reconnect/)
   assert.match(error({ worktree: "/project" }, "authenticated", agent, undefined) ?? "", /Select a model/)
   assert.match(error({ worktree: "/project" }, "authenticated", undefined, {}) ?? "", /not available/)
+  assert.match(error({ worktree: "/project" }, "authenticated", agent, {}, false) ?? "", /agent engine is not available/)
 })

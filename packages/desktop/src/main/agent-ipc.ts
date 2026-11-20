@@ -46,7 +46,6 @@ type AgentRuntimeRegistration = {
   modulePath: string;
   packaged: boolean;
   previewService: PreviewService;
-  beforeDelivery?(worktree: string): Promise<void>;
   beforeWorkspaceWrite?(worktree: string): Promise<void>;
 };
 
@@ -85,7 +84,7 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
     cancel: (auditId) => agentRuntime().cancelSecurityAudit(auditId),
     finish: (auditId) => agentRuntime().finishSecurityAudit(auditId),
   });
-  registerDeliveryWorkflowIpcHandlers(input.beforeDelivery);
+  registerDeliveryWorkflowIpcHandlers();
 }
 
 // Once per start of the runtime: a stop takes its Cline hub with it.
@@ -330,61 +329,19 @@ function registerAnalysisWorkflowIpcHandlers(
   );
 }
 
-function registerDeliveryWorkflowIpcHandlers(
-  beforeDelivery?: (worktree: string) => Promise<void>,
-) {
+function registerDeliveryWorkflowIpcHandlers() {
   ipcMain.handle("agent:new-projects:generate", (_event, input) =>
     agentRuntime().run("newProjects.generate", input),
   );
-  ipcMain.handle("agent:approve-and-merge", async (_event, input) => {
-    const resolved = {
-      ...(await agentWorkspaceInput(input)),
-      // The target branch is never advanced under a running agent.
-      activeWorktrees: agentWorkspaceWriters.activeWorkspaces(),
-    };
-    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
-      throw new Error("Agent delivery worktree is invalid");
-    }
-    if (beforeDelivery) await beforeDelivery(resolved.worktree);
-    return runWorkspaceTask(resolved.worktree, () =>
-      agentRuntime().run("approveAndMerge", resolved),
-    );
-  });
-  // gh runs here, on the host, with the person's own sign-in.
-  ipcMain.handle("agent:open-pull-request", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
-      throw new Error("Agent pull request worktree is invalid");
-    }
-    if (beforeDelivery) await beforeDelivery(resolved.worktree);
-    return runWorkspaceTask(resolved.worktree, () =>
-      agentRuntime().run("openPullRequest", resolved),
-    );
-  });
   ipcMain.handle("agent:pull-request-availability", (_event, input) =>
     agentRuntime().run("pullRequestAvailability", input),
   );
   ipcMain.handle("agent:pull-request-state", (_event, input) =>
     agentRuntime().run("pullRequestState", input),
   );
-  ipcMain.handle("agent:generate-commit-message", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("generateCommitMessage", resolved),
-    ),
-  );
   ipcMain.handle("agent:direct-story-files", (_event, input) =>
     agentRuntime().run("directStoryFiles", input),
   );
-  ipcMain.handle("agent:resolve-merge-conflicts", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
-      throw new Error("Agent merge-conflict worktree is invalid");
-    }
-    if (beforeDelivery) await beforeDelivery(resolved.worktree);
-    return runWorkspaceTask(resolved.worktree, () =>
-      agentRuntime().run("resolveMergeConflicts", resolved),
-    );
-  });
 }
 
 // A session of a Vite, React, Vue 3, Nuxt 3 or later, Svelte 5 or Angular
@@ -498,6 +455,45 @@ async function runWorkspaceSession(
     agentWorkspaceWriters.end(sessionId);
     throw error;
   }
+}
+
+// The git flows run in the engine host; main adds what only it knows. The
+// worktree's preview is synced first, the worktree counts as written while
+// the flow runs, the target branch never moves under a running agent, and a
+// worktree in the runtime VM is said to be one.
+const engineGitFlows = new Set([
+  "approveAndMerge",
+  "openPullRequest",
+  "generateCommitMessage",
+  "resolveMergeConflicts",
+]);
+const engineDeliveries = new Set([
+  "approveAndMerge",
+  "openPullRequest",
+  "resolveMergeConflicts",
+]);
+
+export async function engineGitFlowCall(
+  method: string,
+  input: unknown,
+  call: (input: unknown) => Promise<unknown>,
+  beforeDelivery?: (worktree: string) => Promise<void>,
+) {
+  if (!engineGitFlows.has(method)) return call(input);
+  const flow = (input ?? {}) as Record<string, unknown>;
+  const worktree = flow.worktree;
+  if (typeof worktree !== "string" || !worktree)
+    throw new Error("The git flow's worktree is invalid");
+  const resolved = {
+    ...flow,
+    inVm: runtimeManagedPath(worktree),
+    ...(method === "approveAndMerge"
+      ? { activeWorktrees: agentWorkspaceWriters.activeWorkspaces() }
+      : {}),
+  };
+  if (!engineDeliveries.has(method)) return call(resolved);
+  if (beforeDelivery) await beforeDelivery(worktree);
+  return runWorkspaceTask(worktree, () => call(resolved));
 }
 
 async function runWorkspaceTask<T>(

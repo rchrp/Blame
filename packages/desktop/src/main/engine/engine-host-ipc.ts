@@ -12,9 +12,13 @@ import {
 import {
   engineHostMethods,
   isEngineHostMessage,
+  type EngineDesktopMethods,
   type EngineHostMessage,
   type EngineHostMethod,
 } from "@blame/agent-runtime/engine-protocol";
+
+type EngineDesktopInput<M extends keyof EngineDesktopMethods> =
+  EngineDesktopMethods[M]["input"];
 import { EngineHostRouter } from "./engine-host-router.ts";
 
 export type EngineHostRegistration = {
@@ -28,6 +32,14 @@ export type EngineHostRegistration = {
     url: string,
     signal: AbortSignal,
   ): Promise<{ url: string; html: string }>;
+  /** A git command of the host's git flows, on this machine or in the runtime VM. */
+  git(cwd: string, args: string[]): Promise<string>;
+  /** Adds what only main knows to a window's call (the git flows'), then makes it. */
+  prepareCall?(
+    method: EngineHostMethod,
+    input: unknown,
+    call: (input: unknown) => Promise<unknown>,
+  ): Promise<unknown>;
 };
 
 const readyTimeoutMs = 15_000;
@@ -151,11 +163,7 @@ class EngineHostProcess {
     const controller = new AbortController();
     this.desktopRequests.set(message.id, controller);
     try {
-      const { url } = message.input as { url: string };
-      const result = await this.registration.renderWebPage(
-        String(url ?? ""),
-        controller.signal,
-      );
+      const result = await this.desktopService(message, controller.signal);
       child.postMessage({
         kind: "desktop-response",
         id: message.id,
@@ -172,6 +180,20 @@ class EngineHostProcess {
     } finally {
       this.desktopRequests.delete(message.id);
     }
+  }
+
+  private desktopService(
+    message: Extract<EngineHostMessage, { kind: "desktop-request" }>,
+    signal: AbortSignal,
+  ) {
+    if (message.method === "git") {
+      const { cwd, args } = message.input as EngineDesktopInput<"git">;
+      if (typeof cwd !== "string" || !Array.isArray(args))
+        throw new Error("Invalid git request");
+      return this.registration.git(cwd, args.map(String));
+    }
+    const { url } = message.input as EngineDesktopInput<"renderWebPage">;
+    return this.registration.renderWebPage(String(url ?? ""), signal);
   }
 
   private onExit(child: UtilityProcess, code: number) {
@@ -225,7 +247,11 @@ export function registerEngineIpcHandlers(
           void engine.call("unfollow", { subscription }).catch(() => undefined);
       });
     }
-    return engine.call(method as EngineHostMethod, input);
+    const call = (prepared: unknown) =>
+      engine.call(method as EngineHostMethod, prepared);
+    return registration.prepareCall
+      ? registration.prepareCall(method as EngineHostMethod, input, call)
+      : call(input);
   });
 }
 

@@ -1,14 +1,7 @@
-import type { ApproveAndMergeInput } from "./types.js";
 import { restoreTargetChanges as restoreStashedTargetChanges, type TargetChangesStash } from "./approve-merge-git.js";
-import { appendLog } from "./cline-runtime-log.js";
-import {
-  asRecord,
-  errorMessage,
-  errorType,
-  stringValue,
-} from "./cline-runtime-events.js";
+import { appendLog } from "./runtime-log.js";
 import { realpath, rm, stat } from "node:fs/promises";
-import { basename, dirname, join, normalize, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, normalize, resolve } from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 
@@ -30,8 +23,19 @@ export async function currentGitBranch(cwd: string) {
   return git(cwd, ["branch", "--show-current"]);
 }
 
+/** The story a merge or a pull request starts from. */
+export type StoryBranchInput = {
+  repositoryRoot: string;
+  worktree: string;
+  storyBranch: string;
+};
+
+export function assertRepositoryPath(path: string, label: string) {
+  if (!isAbsolute(path)) throw new Error(`${label} must be an absolute path.`);
+}
+
 export async function validateMergeBranches(
-  input: ApproveAndMergeInput,
+  input: StoryBranchInput,
   targetBranch: string,
 ) {
   await assertNoGitOperationInProgress(input.repositoryRoot);
@@ -350,4 +354,22 @@ function gitErrorMessage(args: string[], error: unknown) {
   const output = stringValue(record.stderr) || stringValue(record.stdout);
   const message = output?.trim() || errorMessage(error);
   return `git ${args.join(" ")} failed: ${message}`;
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function errorType(error: unknown) {
+  return error instanceof Error ? error.constructor.name : "Error";
+}
+
+function asRecord(value: unknown) {
+  if (value && typeof value === "object")
+    return value as Record<string, unknown>;
+  return {};
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" ? value : undefined;
 }

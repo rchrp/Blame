@@ -12,6 +12,8 @@ import {
   type SessionConfig,
   type UserBlock,
 } from "@blame/engine-client";
+import { runHostGh, type GhRunner } from "../pull-request.js";
+import { setGitRunner } from "../runtime-git.js";
 import type { ApiConnection } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
@@ -42,6 +44,10 @@ export type EngineHostOptions = {
   emit(event: EngineHostEvent): void;
   /** Desktop services, served by the main process. */
   renderWebPage?: RenderWebPage;
+  /** How the git flows run git: through the main process, which reaches the runtime VM. */
+  git?: (cwd: string, args: string[]) => Promise<string>;
+  /** For tests: gh for Open PR (the person's own by default). */
+  gh?: GhRunner;
   env?: NodeJS.ProcessEnv;
   onLog?(line: EngineLogLine): void;
   /** For tests: replaces parts of how credentials are found. */
@@ -83,6 +89,7 @@ export class EngineHost {
 
   constructor(options: EngineHostOptions) {
     this.options = options;
+    if (options.git) setGitRunner(options.git);
     this.tools = new ToolSet([
       ...webResearchClientTools({
         connection: () => this.api,
@@ -229,6 +236,7 @@ export class EngineHost {
         this.known.delete(session);
         this.current.delete(session);
       },
+      gh: (cwd, args) => (this.options.gh ?? runHostGh)(cwd, args),
     }),
   };
 

@@ -8,7 +8,7 @@ import type {
   CoreSessionConfig,
   SessionUsageSummary,
 } from "@cline/sdk";
-import { redactSecuritySecrets } from "./security-secret-redaction.js";
+import { logRecord, safeLogPayload, type LogSeverity } from "./runtime-log.js";
 import type {
   AgentRuntimeConfigExtension,
   AgentUsageSummary,
@@ -52,84 +52,6 @@ export type ProductionSessionContext = {
 
 type UsageSummary = AgentUsageSummary | SessionUsageSummary;
 type UsageTotals = AgentUsageTotals | NonNullable<SessionUsageSummary["usage"]>;
-
-const secretKeys = [
-  "access",
-  "apiKey",
-  "authorization",
-  "headers",
-  "oauthCredentials",
-  "refresh",
-  "token",
-];
-
-const allowedLogKeys = new Set([
-  "cacheReadTokens",
-  "cacheWriteTokens",
-  "capsuleHash",
-  "ccrHashCount",
-  "checkpointEnabled",
-  "compressed",
-  "compactedEventHash",
-  "compressionRatio",
-  "contextUtilizationRatio",
-  "configExtensions",
-  "cost",
-  "disableMcpSettingsTools",
-  "durationMs",
-  "errorType",
-  "estimatedInputTokens",
-  "fallback",
-  "inputTokens",
-  "maxIterations",
-  "maxInputTokens",
-  "messageBuilderMaxToolResultChars",
-  "messageBuilderMaxTotalTextBytes",
-  "messageBuilderMinOutdatedRewriteBytes",
-  "messageCount",
-  "messageCountAfter",
-  "messageCountBefore",
-  "maxParallelToolCalls",
-  "mode",
-  "modelId",
-  "outputTokens",
-  "promptLength",
-  "providerId",
-  "pluginPathCount",
-  "sessionId",
-  "status",
-  "storyId",
-  "success",
-  "tailMessages",
-  "targetTokens",
-  "toolName",
-  "toolResultTokens",
-  "totalCacheReadTokens",
-  "totalCacheWriteTokens",
-  "totalCost",
-  "totalInputTokens",
-  "totalOutputTokens",
-  "tokensAfter",
-  "tokensBefore",
-  "tokensSaved",
-  "transformsApplied",
-  "triggerTokens",
-]);
-
-const stableStringLogKeys = new Set([
-  "capsuleHash",
-  "compactedEventHash",
-  "errorType",
-  "mode",
-  "modelId",
-  "providerId",
-  "sessionId",
-  "status",
-  "storyId",
-  "toolName",
-]);
-
-const stableStringPattern = /^[A-Za-z0-9][A-Za-z0-9._:@-]{0,127}$/;
 
 export function loadProductionConfig(
   env: NodeJS.ProcessEnv = process.env,
@@ -197,23 +119,6 @@ export function createProductionLogger(): BasicLogger {
       writeProductionLog("info", "blame.agent.sdk.log", metadata),
     error: (_message: string, metadata?: unknown) =>
       writeProductionLog("error", "blame.agent.sdk.error", metadata),
-  };
-}
-
-type LogSeverity = "debug" | "info" | "error";
-
-// The app reads `event_name` and `attributes` back from run logs to recover
-// interrupted runs.
-export function logRecord(
-  severity: LogSeverity,
-  eventName: string,
-  attributes: Record<string, unknown>,
-) {
-  return {
-    timestamp: new Date().toISOString(),
-    severity_text: severity.toUpperCase(),
-    event_name: eventName,
-    attributes,
   };
 }
 
@@ -323,10 +228,6 @@ export function assertWorkspacePath(
   }
 }
 
-export function assertRepositoryPath(path: string, label: string) {
-  if (!isAbsolute(path)) throw new Error(`${label} must be an absolute path.`);
-}
-
 export function summarizeUsage(summary: UsageSummary | undefined) {
   const usage = summary?.aggregateUsage ?? summary?.usage;
   if (!usage) return {};
@@ -404,31 +305,6 @@ export function usageLimitMessage(
     return `Output token limit exceeded (${config.maxOutputTokens})`;
   }
   return "Usage limit exceeded.";
-}
-
-export function safeLogPayload(value: unknown): Record<string, unknown> {
-  if (!isRecord(value)) return {};
-  return Object.fromEntries(
-    Object.entries(value)
-      .filter(([key]) => allowedLogKeys.has(key) && !secretKeys.includes(key))
-      .map(([key, field]) => [key, safeLogValue(key, field)])
-      .filter(
-        (entry): entry is [string, string | number | boolean] =>
-          entry[1] !== undefined,
-      ),
-  );
-}
-
-function safeLogValue(
-  key: string,
-  value: unknown,
-): string | number | boolean | undefined {
-  if (typeof value === "number" || typeof value === "boolean") return value;
-  if (typeof value !== "string" || !stableStringLogKeys.has(key))
-    return undefined;
-  const sanitizedValue = redactSecuritySecrets(value);
-  if (stableStringPattern.test(sanitizedValue)) return sanitizedValue;
-  return undefined;
 }
 
 function positiveNumber(value: string | undefined, fallback?: number) {
@@ -533,8 +409,4 @@ function isPathInside(path: string, parent: string) {
     (!pathRelativeToParent.startsWith("..") &&
       !isAbsolute(pathRelativeToParent))
   );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return !!value && typeof value === "object";
 }

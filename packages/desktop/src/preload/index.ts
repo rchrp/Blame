@@ -703,20 +703,12 @@ const api: BlameDesktopApi = {
       generate: (input) =>
         ipcRenderer.invoke("agent:new-projects:generate", input),
     },
-    approveAndMerge: (input) =>
-      ipcRenderer.invoke("agent:approve-and-merge", input),
-    openPullRequest: (input) =>
-      ipcRenderer.invoke("agent:open-pull-request", input),
     pullRequestAvailability: (input) =>
       ipcRenderer.invoke("agent:pull-request-availability", input),
     pullRequestState: (input) =>
       ipcRenderer.invoke("agent:pull-request-state", input),
-    generateCommitMessage: (input) =>
-      ipcRenderer.invoke("agent:generate-commit-message", input),
     directStoryFiles: (input) =>
       ipcRenderer.invoke("agent:direct-story-files", input),
-    resolveMergeConflicts: (input) =>
-      ipcRenderer.invoke("agent:resolve-merge-conflicts", input),
   },
 };
 
