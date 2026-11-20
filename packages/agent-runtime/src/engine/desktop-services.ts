@@ -54,6 +54,8 @@ export type DesktopServices = {
     sessionId: string;
   }): Promise<readonly GithubMcpToolDescriptor[]>;
   githubMcpCall?(input: GithubMcpCallInput): Promise<unknown>;
+  // Opens a sign-in page in the person's browser.
+  openExternal?(input: { url: string; signal?: AbortSignal }): Promise<null>;
   // Git on the computer that holds the worktree (the runtime VM's included).
   git?(input: { cwd: string; args: string[] }): Promise<string>;
 };
@@ -85,6 +87,7 @@ export const desktopServiceNames = [
   "githubMcpTools",
   "githubMcpCall",
   "git",
+  "openExternal",
 ] as const satisfies readonly DesktopServiceName[];
 
 export type DesktopRequest = (

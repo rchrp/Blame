@@ -6,7 +6,7 @@ type Storage = Pick<globalThis.Storage, "getItem" | "removeItem" | "setItem">
 
 type Entry<T> = { fetchedAt: number; key: string; value: T }
 
-const storageKey = "blame.app.provider-list.v1"
+const storageKey = "blame.app.provider-list.v2"
 // A picker opened again within this delay reuses the list as is.
 const freshForMs = 30_000
 // The stored copy stays well under the storage quota.

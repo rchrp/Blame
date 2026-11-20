@@ -14,7 +14,6 @@ import {
   saveOAuthCredential,
 } from "../cloud-api.js";
 import type { ApiConnection, OAuthCredentials } from "../types.js";
-import { appProviderId } from "./protocol.js";
 
 type ResolvedCredential = Awaited<ReturnType<typeof resolveProviderCredential>>;
 
@@ -29,7 +28,7 @@ type ChatGptTokens = {
 export type CredentialServices = {
   connection(): ApiConnection | undefined;
   /** The credential label the session's model was chosen with, if any. */
-  label?(session: string, appProvider: string): string | undefined;
+  label?(session: string, provider: string): string | undefined;
   /** Refreshes ChatGPT tokens; by default with the engine binary. */
   refreshChatGpt?(refreshToken: string): Promise<ChatGptTokens>;
   /** The Claude Code bridge; by default the one every Blame process shares. */
@@ -57,15 +56,15 @@ export class CredentialResolver {
   }
 
   async resolve(params: HostParamsOf<"host/credential">): Promise<Credential> {
-    const appProvider = appProviderId(params.provider);
-    if (appProvider === "claude-code") return this.claudeCode(params.session);
+    const provider = params.provider;
+    if (provider === "claude-code") return this.claudeCode(params.session);
     const connection = this.services.connection();
     if (!connection) return { type: "missing" };
     let credential: ResolvedCredential;
     try {
       credential = await resolveProviderCredential(connection, {
-        providerId: appProvider,
-        label: this.services.label?.(params.session, appProvider),
+        providerId: provider,
+        label: this.services.label?.(params.session, provider),
       });
     } catch {
       // No credential for this provider: the turn fails with an
@@ -98,6 +97,23 @@ export class CredentialResolver {
       token: tokens.access,
       ...(tokens.accountId ? { account: tokens.accountId } : {}),
     };
+  }
+
+  /**
+   * A ChatGPT token that is good for a while yet, for reading the plan's
+   * usage; `undefined` without a ChatGPT sign-in.
+   */
+  async chatGptToken(label?: string): Promise<OAuthCredentials | undefined> {
+    const connection = this.services.connection();
+    if (!connection) return undefined;
+    const credential = await resolveProviderCredential(connection, {
+      providerId: "chatgpt",
+      label,
+    }).catch(() => undefined);
+    const tokens = credential?.oauthCredentials;
+    if (!credential || !tokens) return undefined;
+    if (tokens.expires >= Date.now() + refreshMarginMs) return tokens;
+    return this.refreshChatGpt(connection, credential, tokens);
   }
 
   private async refreshChatGpt(

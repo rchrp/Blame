@@ -15,7 +15,7 @@ import { accountRequiredRoutes, hostedRoutes, previewEdgeRoutes } from '#start/r
 import { localRoutes } from '#start/routes/local'
 
 const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
-const ModelCatalogController = () => import('#controllers/model_catalog_controller')
+const ModelRecommendationsController = () => import('#controllers/model_recommendations_controller')
 const ProjectCodePracticesController = () =>
   import('#controllers/project_code_practices_controller')
 const ProjectAgentMemoriesController = () =>
@@ -114,8 +114,7 @@ router
 
     router
       .group(() => {
-        router.get('catalog', [ModelCatalogController, 'show'])
-        router.get('catalog/model', [ModelCatalogController, 'model'])
+        router.post('recommendations', [ModelRecommendationsController, 'store'])
         router.get('credentials', [ProviderCredentialsController, 'index'])
         router.post('credentials', [ProviderCredentialsController, 'store'])
         router.post('credentials/oauth', [ProviderCredentialsController, 'storeOAuth'])

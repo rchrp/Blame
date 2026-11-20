@@ -1,11 +1,10 @@
-import type { ModelInfo } from "@cline/llms";
 import type {
   ApiConnection,
   DeleteProviderCredentialInput,
   OAuthCredentials,
   ProviderCredentialSummary,
+  ModelRecommendations,
   ProviderAuthMethod,
-  ProviderListResponse,
   SaveLocalProviderCredentialInput,
   SaveOAuthCredentialInput,
   SaveProviderCredentialInput,
@@ -37,35 +36,40 @@ type ResolvedCredential = {
   oauthCredentials?: OAuthCredentials | null;
 };
 
-export async function listProviders(connection: ApiConnection) {
-  const [catalog, credentials] = await Promise.all([
-    request<Pick<ProviderListResponse, "all" | "default" | "recommendations">>(
-      connection,
-      "/providers/catalog?view=selector",
-    ),
-    request<unknown>(connection, "/providers/credentials"),
-  ]);
-  const credentialList = normalizeCredentials(credentials);
-  const connected: string[] = Array.from(
-    new Set(credentialList.map((credential) => credential.providerId)),
+/** The person's provider credentials, without their secrets. */
+export async function listProviderCredentials(connection: ApiConnection) {
+  return normalizeCredentials(
+    await request<unknown>(connection, "/providers/credentials"),
   );
-  return {
-    ...catalog,
-    connected,
-    credentials: credentialList,
-  } satisfies ProviderListResponse;
 }
 
-/** Complete Cline metadata for a model the bundled SDK may not know yet. */
-export async function fetchCatalogModel(
+/** One model offered, as the API ranks it: what models.dev says of it. */
+export type RecommendationCandidate = {
+  providerId: string;
+  modelId: string;
+  name: string;
+  releaseDate?: string;
+  /** USD per million tokens. */
+  cost: { input: number | null; output: number | null; cacheRead?: number | null };
+};
+
+/**
+ * The API's ranking of the models offered (benchmarks, the person's usage):
+ * it keeps no catalog, so it ranks the one the engine gives.
+ */
+export function fetchModelRecommendations(
   connection: ApiConnection,
-  providerId: string,
-  modelId: string,
+  input: { connected: string[]; models: RecommendationCandidate[] },
 ) {
-  const query = new URLSearchParams({ providerId, modelId });
-  return request<ModelInfo>(connection, `/providers/catalog/model?${query}`, {
-    signal: AbortSignal.timeout(2_000),
-  });
+  return request<ModelRecommendations>(
+    connection,
+    "/providers/recommendations",
+    {
+      body: JSON.stringify(input),
+      method: "POST",
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
 }
 
 export function saveProviderCredential(

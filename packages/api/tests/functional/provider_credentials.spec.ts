@@ -52,6 +52,22 @@ test.group('provider credentials', (group) => {
     assert.isUndefined(list.data[0].apiKey)
   })
 
+  test('accepts only the providers the agent engine serves', async ({ client }) => {
+    const user = await createUser()
+    for (const providerId of ['openai-native', 'openai-codex', 'cline', 'bedrock']) {
+      const response = await client
+        .post('/api/v1/providers/credentials')
+        .loginAs(user)
+        .json({ providerId, apiKey: 'sk-test' })
+      response.assertStatus(422)
+    }
+    const response = await client
+      .post('/api/v1/providers/credentials')
+      .loginAs(user)
+      .json({ providerId: 'chatgpt', apiKey: 'sk-test' })
+    response.assertStatus(200)
+  })
+
   test('resolves credentials for the owner only and deletes them', async ({ client, assert }) => {
     const owner = await createUser()
     const other = await createUser()

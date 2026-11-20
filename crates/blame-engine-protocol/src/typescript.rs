@@ -9,6 +9,7 @@
 //! set and untagged, which TypeScript cannot express faithfully from the Rust
 //! side; clients write that small part by hand.
 
+use crate::catalog::ModelCatalog;
 use crate::delta::{BlockKind, Delta, SessionActivity};
 use crate::rpc::{
     Approval, BlobPulled, ClientRequest, Credential, EngineNotification, EngineRequest,
@@ -87,6 +88,7 @@ pub fn declarations() -> String {
     collector.collect::<RpcErrorData>();
     collector.collect::<Outcome>();
     collector.collect::<Version>();
+    collector.collect::<ModelCatalog>();
 
     let mut declarations = collector.declarations;
     declarations.sort_by(|a, b| a.0.cmp(&b.0));

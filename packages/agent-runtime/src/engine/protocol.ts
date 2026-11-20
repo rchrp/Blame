@@ -14,17 +14,22 @@ import type {
 import type { AgentPersonalization } from "../personalization.js";
 import type {
   ApiConnection,
+  ClaudeCodeStatus,
   ProjectCodePracticePreference,
+  ProviderCredentialSummary,
+  ProviderListResponse,
   ReasoningSelection,
+  SaveProviderCredentialInput,
+  SubscriptionUsage,
 } from "../types.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
 
 /** What a conversation is for; each has its own config builder in the host. */
 export type EnginePurpose = "quick-chat";
 
-/** The model a conversation uses, in the app's ids (the API's provider ids). */
+/** The model a conversation uses. */
 export type EngineModelChoice = {
-  /** The app's provider id, e.g. `openai-codex` (see `engineProviderId`). */
+  /** The engine's provider id, e.g. `chatgpt`: the one the whole app uses. */
   providerId: string;
   modelId: string;
   /** Which of the user's credentials for this provider, when they have several. */
@@ -105,6 +110,30 @@ export type EngineHostMethods = {
   follow: { input: { session: SessionId; subscription: string }; result: null };
   unfollow: { input: { subscription: string }; result: null };
   running: { input: undefined; result: SessionId[] };
+  /**
+   * The providers and models to offer (the engine's models.dev catalog) with
+   * the person's credentials; `refresh` asks models.dev first.
+   */
+  providers: { input: { refresh?: boolean }; result: ProviderListResponse };
+  saveCredential: {
+    input: SaveProviderCredentialInput;
+    result: ProviderCredentialSummary;
+  };
+  deleteCredential: { input: { id: string }; result: null };
+  /** The ChatGPT sign-in in the browser, kept in the API. */
+  signInChatGpt: {
+    input: { label?: string };
+    result: ProviderCredentialSummary;
+  };
+  claudeCodeStatus: { input: undefined; result: ClaudeCodeStatus };
+  connectClaudeCode: {
+    input: { label?: string };
+    result: { credential: ProviderCredentialSummary; status: ClaudeCodeStatus };
+  };
+  planUsage: {
+    input: { providerId: string; credentialLabel?: string };
+    result: SubscriptionUsage | null;
+  };
   shutdown: { input: undefined; result: null };
 };
 
@@ -127,6 +156,13 @@ export const engineHostMethods = [
   "follow",
   "unfollow",
   "running",
+  "providers",
+  "saveCredential",
+  "deleteCredential",
+  "signInChatGpt",
+  "claudeCodeStatus",
+  "connectClaudeCode",
+  "planUsage",
   "shutdown",
 ] as const satisfies readonly EngineHostMethod[];
 
@@ -189,46 +225,17 @@ export function isEngineHostMessage(
 }
 
 /**
- * The engine's provider id for an app provider id, or undefined when the
- * engine has no such provider yet. The app's ids are Cline's, kept in the
- * API's provider credentials; a later slice gives the app the engine's own.
- */
-export function engineProviderId(appProviderId: string): string | undefined {
-  return appToEngine[appProviderId];
-}
-
-/** The app's provider id for an engine provider id. */
-export function appProviderId(engineProvider: string): string {
-  return engineToApp[engineProvider] ?? engineProvider;
-}
-
-/**
- * The engine's reasoning effort for the selector's choice. The engine has
- * no "off": `none` asks for the least, and `enabled` leaves the provider's
- * default.
+ * The engine's reasoning effort for the selector's choice: `none` turns
+ * reasoning off (the engine asks for the least where a model cannot stop),
+ * `enabled` leaves the provider's default.
  */
 export function engineReasoning(
   selection: ReasoningSelection | undefined,
 ): ReasoningEffort | undefined {
   if (!selection || selection === "enabled") return undefined;
-  if (selection === "none") return "minimal";
-  if (selection === "max") return "xhigh";
+  if (selection === "none") return "off";
   return selection;
 }
-
-const appToEngine: Record<string, string> = {
-  anthropic: "anthropic",
-  "openai-native": "openai",
-  "openai-codex": "chatgpt",
-  gemini: "gemini",
-  openrouter: "openrouter",
-  openai: "openai-compatible",
-  "claude-code": "claude-code",
-};
-
-const engineToApp: Record<string, string> = Object.fromEntries(
-  Object.entries(appToEngine).map(([app, engine]) => [engine, app]),
-);
 
 /** Calls a window makes itself; following goes through `follow` below. */
 export type EngineWindowMethod = Exclude<

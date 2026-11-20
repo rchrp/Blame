@@ -62,6 +62,15 @@ export function engineDesktopServices(
       const { renderResearchPage } = await import("../web-research-browser.ts");
       return renderResearchPage(String(record(input).url ?? ""), signal);
     },
+    // The ChatGPT sign-in page; nothing else asks.
+    openExternal: async (input) => {
+      const url = String(record(input).url ?? "");
+      if (!/^https:\/\/auth\.openai\.com\//.test(url))
+        throw new Error("Only the ChatGPT sign-in opens from the engine host.");
+      const { shell } = await import("electron");
+      await shell.openExternal(url);
+      return null;
+    },
     previewDevtools: (input, signal) =>
       previewDevtoolsTarget(input, signal, harness, devtools) as never,
     previewDevtoolsTools: async () => devtools.listTools() as never,

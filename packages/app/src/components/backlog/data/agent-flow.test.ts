@@ -392,8 +392,6 @@ test("records agent errors as dedicated failed activities", () => {
   const streaming = updateStory(story(), textEvent({ text: "Working." }))
   const failed = updateStory(streaming, {
     payload: {
-      actionUrl: "https://app.cline.bot/dashboard/subscription?personal=true",
-      code: "cline_not_subscribed",
       error: { message: "Cline: Provider unavailable" },
       iteration: 2,
     },
@@ -409,11 +407,6 @@ test("records agent errors as dedicated failed activities", () => {
   assert.equal(activities[1]?.detail, "Provider unavailable")
   assert.equal(activities[1]?.status, "failed")
   assert.equal(activities[1]?.title, "Agent error")
-  assert.equal(activities[1]?.errorCode, "cline_not_subscribed")
-  assert.equal(
-    activities[1]?.actionUrl,
-    "https://app.cline.bot/dashboard/subscription?personal=true"
-  )
 })
 
 test("removes provider labels from legacy agent errors", () => {

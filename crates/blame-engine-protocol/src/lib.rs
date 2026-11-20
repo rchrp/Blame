@@ -13,6 +13,7 @@
 //!
 //! This crate has no I/O and no async: it only describes data.
 
+pub mod catalog;
 mod content;
 mod delta;
 mod ids;

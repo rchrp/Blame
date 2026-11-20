@@ -194,6 +194,8 @@ export function App() {
   if (onboardingScreen) {
     return (
       <OnboardingStage screen={onboardingScreen}>
+        {/* Connecting a provider goes through the engine host. */}
+        <EngineConnection />
         {onboardingElement(onboardingScreen, accountFlow, closePremium)}
       </OnboardingStage>
     )

@@ -62,9 +62,7 @@ const providerIconSprite = new URL(
 const providerIconAliases: Partial<Record<string, IconName>> = {
   "claude-code": "anthropic",
   gemini: "google",
-  vertex: "google-vertex",
-  "openai-codex": "openai",
-  "openai-native": "openai",
+  chatgpt: "openai",
 }
 type ModelDialog =
   | { type: "providers" }
@@ -149,9 +147,14 @@ function ModelPicker({
         )
     if (model) selectModelWithoutWaiting(selection, model)
   })
+  const openPicker = (next: boolean) => {
+    setOpen(next)
+    // A model out minutes ago appears while the list is open.
+    if (next) void selection.refreshCatalog()
+  }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={openPicker}>
       <PopoverAnchor asChild>
         <SelectorGroup>
           <ModelPickerTrigger
@@ -851,8 +854,12 @@ function AdvancedModelSelect({
     void selection.setModel(model)
     setOpen(false)
   }
+  const openPicker = (next: boolean) => {
+    setOpen(next)
+    if (next) void selection.refreshCatalog()
+  }
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={openPicker}>
       <AdvancedModelSelectTrigger
         model={selection.currentModel}
         open={open}

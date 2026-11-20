@@ -64,6 +64,8 @@ const host = new EngineHost({
   },
   emit: (event) => post({ kind: "event", event }),
   desktop: desktopServices(desktop),
+  // A models.dev stand-in, for tests and isolated profiles.
+  catalogUrl: process.env.BLAME_MODELS_DEV_URL || undefined,
   onLog: ({ source, text }) => {
     if (source === "engine-stderr" || /threw|ignored/.test(text))
       console.error(`[engine] ${text}`);

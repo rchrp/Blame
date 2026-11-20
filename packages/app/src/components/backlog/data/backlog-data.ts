@@ -28,12 +28,6 @@ export type BacklogAction =
 
 export type UserStoryPriority = "Low" | "Medium" | "High"
 export type UserStoryAgentStatus = "Running" | "Paused"
-export type UserStoryAgentErrorCode =
-  | "cline_not_subscribed"
-  | "cline_org_subscription_unsupported"
-  | "cline_pass_limit"
-  | "cline_free_model_limit"
-  | "cline_model_not_found"
 export type UserStoryAgentUsage = {
   cacheReadTokens?: number
   cacheWriteTokens?: number
@@ -51,9 +45,6 @@ export type UserStoryAgentActivity = {
   kind: "reasoning" | "message" | "tool" | "approval" | "notice" | "error"
   title: string
   detail: string
-  actionUrl?: string
-  errorCode?: UserStoryAgentErrorCode
-  resetAt?: string
   status?: "running" | "completed" | "failed"
   iteration?: number
   messageKind?: "intermediate" | "final"

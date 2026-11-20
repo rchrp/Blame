@@ -142,7 +142,7 @@ export function codexUsage(body: unknown): SubscriptionUsage | null {
   );
   if (!windows.length) return null;
   return {
-    ...usage("openai-codex", windows),
+    ...usage("chatgpt", windows),
     ...(typeof body.plan_type === "string" ? { planType: body.plan_type } : {}),
   };
 }

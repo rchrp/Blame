@@ -11,7 +11,7 @@ import type {
   UsageTotals,
   UserItem,
 } from "@blame/engine-client/transcript"
-import { appProviderId } from "@blame/agent-runtime/engine-protocol"
+import type { ErrorKind } from "@blame/engine-client"
 
 import type {
   UserStoryAgentActivity,
@@ -82,8 +82,12 @@ export function transcriptConversation(
       id: turn.turn,
       kind: "change-request",
       modelId: modelRef?.model ?? null,
-      providerId: modelRef ? appProviderId(modelRef.provider) : null,
-      reasoningEffort: transcript.config?.reasoning ?? null,
+      providerId: modelRef?.provider ?? null,
+      // The selector says "none" for what the engine calls "off".
+      reasoningEffort:
+        transcript.config?.reasoning === "off"
+          ? "none"
+          : (transcript.config?.reasoning ?? null),
       status: runStatus(turn),
       usage: agentUsage(turn.usage, transcript.usage.spent),
     })
@@ -116,6 +120,10 @@ function turnActivities(
   const activities: UserStoryAgentActivity[] = []
   for (const item of items) {
     const activity = itemActivity(item, transcript, author)
+    // The turn ends on the failure its request just showed: say it once.
+    const previous = activities.at(-1)
+    if (activity?.kind === "error" && previous?.kind === "error" && previous.detail === activity.detail)
+      continue
     if (activity) activities.push(activity)
   }
   if (transcript.live && transcript.runningTurn === turn.turn)
@@ -162,15 +170,38 @@ function itemActivity(
       }
     case "request_failed":
       if (item.retried) return undefined
-      return { ...base, kind: "error", title: "The model request failed", detail: item.error.message, status: "failed" }
+      return { ...base, kind: "error", title: errorTitle(item.error.kind), detail: item.error.message, status: "failed" }
     case "turn_ended":
       if (item.outcome.status === "failed")
-        return { ...base, kind: "error", title: "The agent stopped", detail: item.outcome.error.message, status: "failed" }
+        return { ...base, kind: "error", title: errorTitle(item.outcome.error.kind), detail: item.outcome.error.message, status: "failed" }
       if (item.outcome.status === "limit_reached")
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
       return undefined
     default:
       return undefined
+  }
+}
+
+/** What went wrong, in a few words; the engine's message says the rest. */
+function errorTitle(kind: ErrorKind) {
+  switch (kind) {
+    case "model_unavailable":
+      return "Model not available"
+    case "authentication":
+      return "Sign-in refused"
+    case "billing":
+      return "Plan or credit limit reached"
+    case "rate_limited":
+      return "Rate limited"
+    case "overloaded":
+      return "Provider unavailable"
+    case "context_overflow":
+      return "Conversation too long for this model"
+    case "transport":
+    case "stalled":
+      return "Connection lost"
+    default:
+      return "The agent stopped"
   }
 }
 

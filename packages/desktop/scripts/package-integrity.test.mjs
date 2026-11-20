@@ -50,10 +50,10 @@ async function fixture(
   await file("node_modules/@blame/agent-runtime/package.json", {
     name: "@blame/agent-runtime",
     exports: { ".": { types: "./src/index.ts", default: "./dist/index.js" } },
-    dependencies: { "@blame/harness-core": "1", "@blame/model-catalog": "1" },
+    dependencies: { "@blame/harness-core": "1", "@blame/preview-contract": "1" },
   });
   await file("node_modules/@blame/agent-runtime/dist/index.js");
-  for (const name of ["harness-core", "model-catalog"]) {
+  for (const name of ["harness-core", "preview-contract"]) {
     await file(`node_modules/@blame/${name}/package.json`, {
       name: `@blame/${name}`,
       exports: { ".": { types: "./src/index.ts", default: "./dist/index.js" } },
@@ -115,7 +115,7 @@ for (const archivePath of [
 ]) {
   test(`accepts compiled transitive packages without TypeScript sources in ${archivePath}`, async () => {
     await fixture(async ({ source, dist, file, pack }) => {
-      for (const name of ["harness-core", "model-catalog"]) {
+      for (const name of ["harness-core", "preview-contract"]) {
         await file(`node_modules/@blame/${name}/dist/index.js`);
         await rm(join(source, `node_modules/@blame/${name}/src`), {
           recursive: true,
@@ -130,7 +130,7 @@ for (const archivePath of [
 
 test("detects a dependency lost between deployment and packaging", async () => {
   await fixture(async ({ source, archive, file, pack }) => {
-    for (const name of ["harness-core", "model-catalog"])
+    for (const name of ["harness-core", "preview-contract"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
     await verifyStagedWorkspaceRuntime(source);
     await rm(join(source, "node_modules/@blame/harness-core"), {
@@ -147,7 +147,7 @@ test("detects a dependency lost between deployment and packaging", async () => {
 for (const compilerPackage of ["typescript", "@typescript/typescript6", "@typescript/old"]) {
 test(`requires the default libraries of packaged ${compilerPackage}`, async () => {
   await fixture(async ({ dist, file, pack }) => {
-    for (const name of ["harness-core", "model-catalog"])
+    for (const name of ["harness-core", "preview-contract"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
     await file(`node_modules/${compilerPackage}/lib/typescript.js`);
     await file(`node_modules/${compilerPackage}/lib/lib.d.ts`);
@@ -167,7 +167,7 @@ test(`requires the default libraries of packaged ${compilerPackage}`, async () =
 
 test("resolves the TypeScript compatibility wrapper and checks its implementation libraries", async () => {
   await fixture(async ({ dist, file, pack }) => {
-    for (const name of ["harness-core", "model-catalog"])
+    for (const name of ["harness-core", "preview-contract"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
     await file("node_modules/typescript/lib/typescript.js", 'module.exports = require("@typescript/old");\n');
     await pack();
@@ -184,7 +184,7 @@ test("resolves the TypeScript compatibility wrapper and checks its implementatio
 
 test("requires agent-browser's binary outside the archive", async () => {
   await fixture(async ({ archive, dist, file, pack, agentBrowser }) => {
-    for (const name of ["harness-core", "model-catalog"]) {
+    for (const name of ["harness-core", "preview-contract"]) {
       await file(`node_modules/@blame/${name}/dist/index.js`);
     }
     await pack();
@@ -207,7 +207,7 @@ test("refuses success when no packaged application was produced", async () => {
 
 test("resolves pnpm transitive dependencies from the package's real location", async () => {
   await fixture(async ({ source, file }) => {
-    for (const name of ["harness-core", "model-catalog"]) {
+    for (const name of ["harness-core", "preview-contract"]) {
       await file(`node_modules/@blame/${name}/dist/index.js`);
     }
     const scope = join(
@@ -218,8 +218,8 @@ test("resolves pnpm transitive dependencies from the package's real location", a
     const runtime = join(source, "node_modules/@blame/agent-runtime");
     await rename(runtime, join(scope, "agent-runtime"));
     await rename(
-      join(source, "node_modules/@blame/model-catalog"),
-      join(scope, "model-catalog"),
+      join(source, "node_modules/@blame/preview-contract"),
+      join(scope, "preview-contract"),
     );
     await symlink(join(scope, "agent-runtime"), runtime, "junction");
     assert.equal(await verifyStagedWorkspaceRuntime(source), 4);
