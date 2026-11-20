@@ -90,8 +90,12 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
 - **Completion contract**: `storyCompletionContract` (`finish_task`) is
   declared in the purpose; the one-shot agents slice enforces it from there.
 - **Tools**: `purposeClientTools` / `purposeHarnessTools`
-  (`engine/purposes/tool-sets.ts`) is the one place a purpose's tool set
-  plugs in.
+  (`engine/purposes/tool-sets.ts`) name the shared tools; the host adds the
+  conversation's own (`conversationTools.ensure`: preview, story history and
+  proposals, GitHub, MCP, attachments, skills) to every purpose's config.
+  A story's preview tools follow the project's saved preview environment.
+- **Project memory**: an accepted `finish_task` leaves its memory next to
+  the harness journal; the host saves it to the account when the turn ends.
 - **Lifecycle**, all from the renderer through `platform.engine`
   (`pages/backlog/story-engine.ts`, `use-backlog-rotation.ts`,
   `use-story-comments.ts`): start creates the session and sends the brief;
