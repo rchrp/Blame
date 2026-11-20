@@ -186,11 +186,17 @@ function itemActivity(
         return { ...base, kind: "error", title: errorTitle(item.outcome.error.kind), detail: item.outcome.error.message, status: "failed" }
       if (item.outcome.status === "limit_reached")
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
+      if (item.outcome.status === "contract_unmet")
+        return { ...base, kind: "error", title: "Not finished", detail: unfinishedTurnText, status: "failed" }
       return undefined
     default:
       return undefined
   }
 }
+
+/** A turn the agent ended without a finish the checks accepted. */
+export const unfinishedTurnText =
+  "The agent stopped without finishing: its work was not checked with finish_task."
 
 /** What went wrong, in a few words; the engine's message says the rest. */
 function errorTitle(kind: ErrorKind) {

@@ -87,8 +87,10 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
 - **First message**: the host wraps the person's brief with the story's
   title, the hint about earlier stories, and the project memory selected for
   it (`<task_briefing>`).
-- **Completion contract**: `storyCompletionContract` (`finish_task`) is
-  declared in the purpose; the one-shot agents slice enforces it from there.
+- **Completion contract**: `storyCompletionContract` makes `finish_task`
+  the engine-checked end of a turn (see "Tasks"): a reply that stops
+  without one is corrected, and a turn the agent still does not finish ends
+  as `contract_unmet`, which pauses the story with that reason.
 - **Tools**: `purposeClientTools` / `purposeHarnessTools`
   (`engine/purposes/tool-sets.ts`) name the shared tools; the host adds the
   conversation's own (`conversationTools.ensure`: preview, story history and
