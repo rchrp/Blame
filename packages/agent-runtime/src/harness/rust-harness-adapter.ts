@@ -74,6 +74,11 @@ function toolContext(context: Partial<AgentToolContext> | undefined) {
   return JSON.parse(JSON.stringify(copy)) as Record<string, unknown>;
 }
 
+function cancelled(signal: AbortSignal): LightToolResult<unknown> {
+  const reason = signal.reason instanceof Error ? signal.reason.message : String(signal.reason);
+  return { status: "blocked", category: "input", message: reason, diagnosticId: `read-${Date.now().toString(36)}` };
+}
+
 /** The Rust harness behind the TypeScript workspace's interface. */
 class RustLightWorkspace {
   private readonly process = new RustHarnessProcess();
@@ -88,10 +93,19 @@ class RustLightWorkspace {
   /** The tests look at a workspace's managed runs; the Rust harness has none yet. */
   readonly tasks = { running: false };
 
-  private request(tool: string, input: unknown, context: Partial<AgentToolContext> | undefined, signal?: AbortSignal) {
-    return this.process.send("request", {
-      tool, input, workspaceRoot: this.root, taskContract: this.taskContract, toolContext: toolContext(context),
-    }, signal) as Promise<LightToolResult<unknown>>;
+  private async request(tool: string, input: unknown, context: Partial<AgentToolContext> | undefined, signal?: AbortSignal) {
+    // In process, a cancelled operation comes back blocked with the abort
+    // reason; over the protocol a cancel carries no reason, so the adapter
+    // restores it. An already aborted call is not sent at all.
+    if (signal?.aborted) return cancelled(signal);
+    try {
+      return await this.process.send("request", {
+        tool, input, workspaceRoot: this.root, taskContract: this.taskContract, toolContext: toolContext(context),
+      }, signal) as LightToolResult<unknown>;
+    } catch (error) {
+      if (signal?.aborted) return cancelled(signal);
+      throw error;
+    }
   }
 
   searchCode(input: unknown, signal?: AbortSignal) {
