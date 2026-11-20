@@ -16,6 +16,8 @@ export type EngineHostProcessConfig = {
   binary: string;
   dataDir: string;
   clientVersion: string;
+  /** The runtime VM's folders and host alias, where the platform has a VM. */
+  vm?: { workspaceRoots: string[]; hostAlias?: string };
 };
 
 const parentPort = process.parentPort;
@@ -51,6 +53,7 @@ function desktop<Result>(
   });
 }
 
+const services = desktopServices(desktop);
 const host = new EngineHost({
   binary: config.binary,
   dataDir: config.dataDir,
@@ -63,7 +66,19 @@ const host = new EngineHost({
     BLAME_ENGINE_HOST_CONFIG: undefined,
   },
   emit: (event) => post({ kind: "event", event }),
-  desktop: desktopServices(desktop),
+  desktop: services,
+  ...(config.vm
+    ? {
+        vm: {
+          ...config.vm,
+          // Main installs the engine in the VM and says how to run it.
+          prepare: async () => {
+            const command = await services.prepareVmEngine!({});
+            return { ...command, env: { ...process.env, ...command.env } };
+          },
+        },
+      }
+    : {}),
   // A models.dev stand-in, for tests and isolated profiles.
   catalogUrl: process.env.BLAME_MODELS_DEV_URL || undefined,
   onLog: ({ source, text }) => {

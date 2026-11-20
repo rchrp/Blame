@@ -4,7 +4,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type { SecurityAuditDiscoveryResult } from "../../types.js";
-import { VM_WORKSPACE_UNSUPPORTED } from "../tasks/runner.js";
 import { securityDiscoveryTask } from "./security-discovery.js";
 import { securityValidationTask } from "./security-validation.js";
 
@@ -232,29 +231,15 @@ test("the validator may name only the candidates it was given", () => {
     );
 });
 
-test("an audit of a project in the runtime VM is not run on this machine", () => {
-  assert.throws(
-    () =>
-      securityDiscoveryTask({
-        model,
-        workspace: { root: "/home/blame/app", inVm: true },
-        mode: "standard",
-        perspective: "baseline",
-        repository,
-      }),
-    (error: unknown) =>
-      error instanceof Error && error.message === VM_WORKSPACE_UNSUPPORTED,
-  );
-  assert.throws(
-    () =>
-      securityValidationTask({
-        model,
-        workspace: { root: "/home/blame/app", inVm: true },
-        mode: "standard",
-        repository,
-        discoveries: [discovery],
-      }),
-    (error: unknown) =>
-      error instanceof Error && error.message === VM_WORKSPACE_UNSUPPORTED,
-  );
+test("an audit of a project in the runtime VM works in its folder there", () => {
+  const vmWorkspace = { root: "/home/blame/app", inVm: true };
+  const discovery = securityDiscoveryTask({
+    model,
+    workspace: vmWorkspace,
+    mode: "standard",
+    perspective: "baseline",
+    repository,
+  });
+  // The runner sends a task under a VM folder to the VM's engine.
+  assert.equal(discovery.config.workspace_root, "/home/blame/app");
 });

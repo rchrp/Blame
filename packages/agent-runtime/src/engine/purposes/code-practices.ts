@@ -13,7 +13,12 @@ import { scanProjectCodePractices } from "../../project-code-practices-scan.js";
 import { loadPrompt } from "../../prompt-loader.js";
 import type { ProjectCodePracticeResult } from "../../types.js";
 import type { AnalyzeCodePracticesTask } from "../task-protocol.js";
-import { submitTool, taskConfig, type TaskSpec } from "../tasks/runner.js";
+import {
+  assertHostScan,
+  submitTool,
+  taskConfig,
+  type TaskSpec,
+} from "../tasks/runner.js";
 import { readOnlyHarness } from "./project-initialization.js";
 
 export const CODE_PRACTICES_TOOL = "submit_project_code_practices";
@@ -21,7 +26,8 @@ export const CODE_PRACTICES_TOOL = "submit_project_code_practices";
 export async function codePracticesTask(
   input: AnalyzeCodePracticesTask,
 ): Promise<TaskSpec<ProjectCodePracticeResult[]>> {
-  // Built before the scan: a workspace in the VM fails here.
+  // The scan reads the folder on this computer: never one in the VM.
+  assertHostScan(input.workspace);
   const config = taskConfig({
     purpose: "code-practices",
     model: input.model,

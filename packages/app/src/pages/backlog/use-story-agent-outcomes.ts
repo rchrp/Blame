@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { EngineLocation } from "@blame/agent-runtime/engine-protocol"
 import type { TurnOutcome } from "@blame/engine-client"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
@@ -59,18 +60,30 @@ export function useStoryAgentOutcomes(
         !settled.current.has(story.engineSessionId)
     )
     for (const story of left) settled.current.add(story.engineSessionId!)
-    const host = left.filter(
-      (story) =>
-        storyLocation(story.workspaceMode ?? "direct", platform.platform) ===
-        "host"
-    )
-    if (!host.length) return
-    const statuses = await engine
-      .call("status", { sessions: host.map((story) => story.engineSessionId!) })
-      .catch(() => [])
+    // Each engine answers for its own sessions (this computer's, the VM's).
+    const byLocation = new Map<EngineLocation, UserStory[]>()
+    for (const story of left) {
+      const location = storyLocation(
+        story.workspaceMode ?? "direct",
+        platform.platform
+      )
+      byLocation.set(location, [...(byLocation.get(location) ?? []), story])
+    }
+    const statuses = (
+      await Promise.all(
+        [...byLocation].map(([location, stories]) =>
+          engine
+            .call("status", {
+              sessions: stories.map((story) => story.engineSessionId!),
+              location,
+            })
+            .catch(() => [])
+        )
+      )
+    ).flat()
     for (const status of statuses) {
       if (status.running) continue
-      const story = host.find((item) => item.engineSessionId === status.session)
+      const story = left.find((item) => item.engineSessionId === status.session)
       if (!story) continue
       void backlog
         .update(story, {

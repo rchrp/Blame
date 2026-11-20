@@ -24,9 +24,9 @@ import { codeSelectionLineLabel } from "../../components/backlog/shared/comment-
 import { unfinishedTurnText } from "../../components/chat/engine/transcript-conversation.ts"
 
 /**
- * Where a story's worktree is. A local-container worktree lives in the
- * Blame Runtime VM on macOS and Windows (on Linux, on the host): the engine
- * host refuses it until an engine runs in the VM.
+ * Where a story's worktree is, so its agent runs on the engine next to it. A
+ * local-container worktree lives in the Blame Runtime VM on macOS and
+ * Windows (on Linux, on the host).
  */
 export function storyLocation(
   workspaceMode: StoryWorkspaceMode,

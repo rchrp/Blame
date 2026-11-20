@@ -18,6 +18,7 @@ import {
   type EngineHostMessage,
   type EngineHostMethod,
 } from "@blame/agent-runtime/engine-protocol";
+import { vmWorkspaceRoots } from "./vm-engine.ts";
 import type { BinaryLookup } from "./engine-binary.ts";
 import type { EngineDesktopHandlers } from "./engine-desktop-services.ts";
 import { EngineHostRouter } from "./engine-host-router.ts";
@@ -123,6 +124,7 @@ class EngineHostProcess {
           binary: binary.path,
           dataDir,
           clientVersion,
+          ...engineHostVmConfig(),
         }),
       },
       serviceName: "Blame Engine Host",
@@ -283,4 +285,18 @@ export function engineActiveWorkspaces(): string[] {
 
 export async function shutdownEngineHost() {
   await host?.shutdown();
+}
+
+/**
+ * The runtime VM, for the engine host: where its folders are and how the VM
+ * reaches this computer. Linux runs local-container worktrees natively.
+ */
+function engineHostVmConfig() {
+  if (process.platform === "darwin")
+    return {
+      vm: { workspaceRoots: vmWorkspaceRoots, hostAlias: "host.lima.internal" },
+    };
+  if (process.platform === "win32")
+    return { vm: { workspaceRoots: vmWorkspaceRoots } };
+  return {};
 }

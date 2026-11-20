@@ -7,6 +7,8 @@ import {
   EngineSupervisor,
   TranscriptReducer,
   localEngine,
+  type Credential,
+  type EngineCommand,
   type EngineLogLine,
   type HostParamsOf,
   type SessionConfig,
@@ -73,6 +75,11 @@ export type EngineHostOptions = {
   desktop?: DesktopServices;
   /** Where the engine refreshes the models.dev catalog, when not models.dev. */
   catalogUrl?: string;
+  /**
+   * The runtime VM (Lima, WSL) where local-container workspaces live; absent
+   * where there is none (Linux runs those on the host).
+   */
+  vm?: VmEngineOptions;
   env?: NodeJS.ProcessEnv;
   onLog?(line: EngineLogLine): void;
   /** For tests: replaces parts of how credentials are found. */
@@ -110,8 +117,8 @@ export class EngineHost {
   private readonly awaitingFirst = new Map<string, EngineSessionSettings>();
   private readonly approvals = new Map<string, Waiting>();
   private readonly earlyDecisions = new Map<string, "approved" | "denied">();
-  private readonly supervisor: EngineSupervisor;
-  private readonly hub: SessionHub;
+  /** The native engine, then the VM's once a VM workspace needs it. */
+  private readonly engines = new Map<EngineLocation, Engine>();
   private readonly tools: ToolSet;
   private readonly mcp = new McpConnections({
     log: (message, payload) => console.warn(message, payload ?? {}),
@@ -127,7 +134,15 @@ export class EngineHost {
   // Before `handlers`, which hand it out. A task is not watched like a
   // conversation (no activity events): a window that shows its progress
   // follows it, after the call that runs it.
-  private readonly tasks = new TaskRunner(() => this.supervisor.client());
+  private readonly tasks = new TaskRunner(
+    (location) => this.engineAt(location).supervisor.client(),
+    (root) =>
+      this.options.vm?.workspaceRoots.some(
+        (vmRoot) => root === vmRoot || root.startsWith(`${vmRoot}/`),
+      )
+        ? "vm"
+        : "host",
+  );
 
   constructor(options: EngineHostOptions) {
     this.options = options;
@@ -144,8 +159,12 @@ export class EngineHost {
       {
         policy: clientToolPolicy,
         guards: clientToolGuards,
-        putBlob: async (params, signal) =>
-          (await this.supervisor.client()).putBlob(params, { signal }),
+        // A tool's image goes to the store of the engine that ran the call.
+        putBlob: async (params, signal, session) =>
+          (await this.engineFor({ session }).supervisor.client()).putBlob(
+            params,
+            { signal },
+          ),
       },
     );
     this.conversationTools = new ConversationTools(this.tools, {
@@ -164,60 +183,89 @@ export class EngineHost {
       },
       options.binary,
     );
-    const logs = remoteLogHandlers({
-      connection: () => this.api,
-      projectId: (session) => this.known.get(session)?.projectId,
-    });
-    this.supervisor = new EngineSupervisor(() =>
-      EngineClient.start(
-        localEngine(
-          options.binary,
-          {
-            dataDir: options.dataDir,
-            ...(options.harnessCommand
-              ? { harnessCommand: JSON.stringify(options.harnessCommand) }
-              : {}),
-            ...(options.catalogUrl ? { catalogUrl: options.catalogUrl } : {}),
-          },
-          options.env,
-        ),
-        {
-          clientName: "blame-desktop",
-          clientVersion: options.clientVersion,
-          onLog: options.onLog,
-          handlers: {
-            tool: (params, context) =>
-              this.tasks.handleTool(params, context) ??
-              this.tools.handle(params, context),
-            credential: (params) => this.credentials.resolve(params),
-            approval: (params, { signal }) => this.approval(params, signal),
-            ...logs,
-          },
-        },
-      ),
-    );
-    this.supervisor.onStarted(() => this.credentials.engineRestarted());
+    // The native engine starts with the host: the catalog and every host
+    // workspace use it.
+    this.engineAt("host");
     this.providers = new EngineProviders({
       connection: () => this.api,
       catalog: async (refresh) =>
-        (await this.supervisor.client()).request("catalog/list", { refresh }),
+        (await this.engineAt("host").supervisor.client()).request(
+          "catalog/list",
+          { refresh },
+        ),
       credentials: this.credentials,
       engineBinary: options.binary,
       openExternal: async (url) => {
         await options.desktop?.openExternal?.({ url });
       },
     });
-    this.hub = new SessionHub(this.supervisor, (event) => {
-      if (event.type === "activity" && !event.running)
+  }
+
+  /**
+   * An engine for a location, started on its first call: this computer's
+   * runs `blame-engine` directly, the VM's through the runtime (Lima, WSL)
+   * with the same JSON-RPC over stdio. Both answer to this host: credentials,
+   * tools, approvals and replication to the API work alike.
+   */
+  private startEngine(location: EngineLocation): Engine {
+    const options = this.options;
+    const vm = options.vm;
+    if (location === "vm" && !vm)
+      throw new Error(
+        "This workspace is in the Blame Runtime VM, which this computer does not use.",
+      );
+    const logs = remoteLogHandlers({
+      connection: () => this.api,
+      projectId: (session) => this.known.get(session)?.projectId,
+    });
+    const command = async () =>
+      location === "vm"
+        ? vm!.prepare()
+        : localEngine(
+            options.binary,
+            {
+              dataDir: options.dataDir,
+              ...(options.harnessCommand
+                ? { harnessCommand: JSON.stringify(options.harnessCommand) }
+                : {}),
+              ...(options.catalogUrl ? { catalogUrl: options.catalogUrl } : {}),
+            },
+            options.env,
+          );
+    const supervisor = new EngineSupervisor(async () =>
+      EngineClient.start(await command(), {
+        clientName: "blame-desktop",
+        clientVersion: options.clientVersion,
+        onLog: options.onLog,
+        handlers: {
+          tool: (params, context) =>
+            this.tasks.handleTool(params, context) ??
+            this.tools.handle(params, context),
+          credential: async (params) => {
+            const credential = await this.credentials.resolve(params);
+            return location === "vm"
+              ? vmCredential(credential, vm!)
+              : credential;
+          },
+          approval: (params, { signal }) => this.approval(params, signal),
+          ...logs,
+        },
+      }),
+    );
+    supervisor.onStarted(() => this.credentials.engineRestarted());
+    const hub = new SessionHub(supervisor, (event) => {
+      if (event.type === "activity" && !event.running && location === "host")
         void this.saveCompletionMemory(event.session);
       options.emit(event);
     });
+    return { supervisor, hub };
   }
 
   /**
    * A story's accepted finish_task may have left a memory for its project
    * (harness/completion-memory.ts): saved to the account when the turn
-   * ends, as the agent runtime did after its own sessions.
+   * ends, as the agent runtime did after its own sessions. Only on this
+   * computer: a VM story's memory file is in the VM.
    */
   private async saveCompletionMemory(session: string) {
     const config = this.current.get(session)?.config;
@@ -263,8 +311,10 @@ export class EngineHost {
         session,
       );
       const engine = this.engineAt(workspace.location);
-      // A scratch workspace (the new-project assistant) exists before its agent.
-      await mkdir(workspace.root, { recursive: true });
+      // A scratch workspace (the new-project assistant) exists before its
+      // agent. A VM workspace is the story's worktree, made by the desktop.
+      if (workspace.location === "host")
+        await mkdir(workspace.root, { recursive: true });
       const promptDate = this.now();
       const config = await this.config(session, settings, promptDate);
       const client = await engine.supervisor.client();
@@ -341,10 +391,12 @@ export class EngineHost {
       return null;
     },
     unfollow: async ({ subscription }) => {
-      this.hub.unsubscribe(subscription);
+      for (const engine of this.engines.values())
+        engine.hub.unsubscribe(subscription);
       return null;
     },
-    running: async () => this.hub.running(),
+    running: async () =>
+      [...this.engines.values()].flatMap((engine) => engine.hub.running()),
     status: async ({ sessions, location }) => {
       const engine = this.engineAt(location ?? "host");
       const client = await engine.supervisor.client();
@@ -372,7 +424,8 @@ export class EngineHost {
     return {
       runner: this.tasks,
       clientTools: (names) => this.tools.specs(names),
-      client: () => this.supervisor.client(),
+      client: (location) =>
+        this.engineAt(location ?? "host").supervisor.client(),
       register: (session, known) => this.known.set(session, known),
       forget: (session) => {
         this.known.delete(session);
@@ -394,10 +447,16 @@ export class EngineHost {
   /** Stops following, ends running turns as interrupted and stops the engine. */
   async shutdown() {
     this.tasks.cancelAll();
-    await this.hub.stop();
+    await Promise.all(
+      [...this.engines.values()].map((engine) => engine.hub.stop()),
+    );
     for (const waiting of this.approvals.values()) waiting.resolve("denied");
     this.approvals.clear();
-    await this.supervisor.stop();
+    // Every engine ends its turns as interrupted and exits, the VM's too:
+    // local agents stop with the app.
+    await Promise.all(
+      [...this.engines.values()].map((engine) => engine.supervisor.stop()),
+    );
     await this.credentials.close();
     await this.mcp.close();
   }
@@ -490,18 +549,14 @@ export class EngineHost {
     };
   }
 
-  /**
-   * The engine for a workspace's location. Only this computer's exists: a
-   * workspace in the Blame Runtime VM needs an engine running inside it,
-   * which is one more location here (`limaEngine`/`wslEngine` build its
-   * command) without any change to purposes or the renderer.
-   */
-  private engineAt(location: EngineLocation) {
-    if (location === "vm")
-      throw new Error(
-        "This story's worktree is inside the Blame Runtime VM, where Blame's agent engine does not run yet. Run the story in Direct mode, or with Cloud Preview, for now.",
-      );
-    return { supervisor: this.supervisor, hub: this.hub };
+  /** The engine for a workspace's location, started on first use. */
+  private engineAt(location: EngineLocation): Engine {
+    let engine = this.engines.get(location);
+    if (!engine) {
+      engine = this.startEngine(location);
+      this.engines.set(location, engine);
+    }
+    return engine;
   }
 
   /** The engine of a session: named by the call, its settings, or remembered. */
@@ -743,4 +798,44 @@ function conversationToolSession(
         projectId: settings.settings.projectId,
       };
   }
+}
+
+type Engine = { supervisor: EngineSupervisor; hub: SessionHub };
+
+/** What the desktop tells the host about its runtime VM. */
+export type VmEngineOptions = {
+  /**
+   * Installs the engine in the VM when missing or out of date, then gives
+   * the command that runs `blame-engine serve` there over stdio.
+   */
+  prepare(): Promise<EngineCommand>;
+  /** Folders that live in the VM: a task whose workspace is under one runs there. */
+  workspaceRoots: readonly string[];
+  /**
+   * How the VM reaches this computer (`host.lima.internal`): a credential's
+   * local endpoint (a local model, the Claude Code bridge) is rewritten to
+   * it, since the VM's own localhost is not this computer's.
+   */
+  hostAlias?: string;
+};
+
+const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+/** A credential as the VM's engine can use it: local endpoints point at this computer. */
+export function vmCredential(
+  credential: Credential,
+  vm: Pick<VmEngineOptions, "hostAlias">,
+): Credential {
+  if (!vm.hostAlias || !("base_url" in credential) || !credential.base_url)
+    return credential;
+  let url: URL;
+  try {
+    url = new URL(credential.base_url);
+  } catch {
+    return credential;
+  }
+  if (!loopbackHosts.has(url.hostname) && !url.hostname.endsWith(".localhost"))
+    return credential;
+  url.hostname = vm.hostAlias;
+  return { ...credential, base_url: url.toString().replace(/\/$/, "") };
 }

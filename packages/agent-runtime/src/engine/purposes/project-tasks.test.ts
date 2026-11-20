@@ -13,7 +13,7 @@ import { initializationImpactTask } from "./initialization-impact.js";
 import { newProjectGenerationTask } from "./new-project-generation.js";
 import { projectInitializationRepairTask } from "./project-initialization-repair.js";
 import { projectInitializationTask } from "./project-initialization.js";
-import { VM_WORKSPACE_UNSUPPORTED } from "../tasks/runner.js";
+import { VM_SCAN_UNSUPPORTED } from "../tasks/runner.js";
 import type { ClientTool, ToolCallContext } from "../tool.js";
 
 const model = { providerId: "anthropic", modelId: "claude-sonnet-4-6" };
@@ -152,7 +152,7 @@ test("an initialization of a workspace in the VM fails before it is scanned", as
       model,
       workspace: { root: "/does/not/exist", inVm: true },
     }),
-    new RegExp(VM_WORKSPACE_UNSUPPORTED.slice(0, 40)),
+    new RegExp(VM_SCAN_UNSUPPORTED.slice(0, 40)),
   );
 });
 
