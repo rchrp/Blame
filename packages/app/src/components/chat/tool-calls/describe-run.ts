@@ -170,7 +170,8 @@ export function describeQuestion(source: ToolCallSource): ToolCallView {
 
 export function describeFinish(source: ToolCallSource): ToolCallView {
   const input = record(source.input)
-  const summary = textOf(input.summary)
+  // Accepted, its summary is the turn's reply: shown there, not twice.
+  const summary = source.replyShown ? undefined : textOf(input.summary)
   const harness = harnessResult(source.output)
   return {
     family: "finish",

@@ -4,6 +4,10 @@ import type { Delta, SessionRecord } from "@blame/engine-client"
 import { TranscriptReducer } from "@blame/engine-client/transcript"
 
 import { transcriptConversation } from "./transcript-conversation.ts"
+import {
+  describeToolCall,
+  toolCallSource,
+} from "../tool-calls/describe-tool-call.ts"
 
 const model = { provider: "chatgpt", model: "gpt-5.5" }
 const config = {
@@ -338,4 +342,43 @@ test("the screenshots an accepted finish attached go above the final reply", () 
   ]).runs[0]!
   const final = run.activities?.find((activity) => activity.messageKind === "final")
   assert.deepEqual(final?.images, [{ caption: "Isolated component: empty state", id }])
+})
+
+test("the wrap-up card leaves out the summary only once it is the reply shown", () => {
+  seq = 0
+  const summary = "Renamed the helper and ran the tests."
+  const records = [
+    record({ type: "session_created", config }),
+    record({ type: "user_message", turn: "t", delivery: "turn", input: [{ type: "text", text: "Rename it" }] }),
+    record({ type: "request_started", turn: "t", request: "r", model, attempt: 1, prefix_digest: "d" }),
+    record({
+      type: "assistant_message", turn: "t", request: "r", stop: "tool_use", usage,
+      blocks: [{ type: "tool_call", call: "f", name: "finish_task", input: { summary, verified: true } }],
+    }),
+    record({ type: "tool_call_started", turn: "t", call: "f", name: "finish_task", effect: "read_only" }),
+  ]
+  const finish = record({ type: "tool_call_finished", turn: "t", call: "f", outcome: "completed", content: [{ type: "text", text: summary }] })
+  const end = record({ type: "turn_ended", turn: "t", outcome: { status: "completed" } })
+  const card = (log: SessionRecord[]) => {
+    const run = conversation(log).runs[0]!
+    const activity = run.activities!.find((a) => a.toolName === "finish_task")!
+    const view = describeToolCall(toolCallSource(activity, activity.status === "running"))
+    return {
+      chips: view.chips.map((chip) => chip.label),
+      texts: view.bodies.flatMap((body) => (body.type === "text" ? [body.text] : [])),
+      reply: run.finalResponse,
+    }
+  }
+  // Accepted but the turn not ended yet: no reply, so the card keeps it.
+  assert.deepEqual(card([...records, finish]), { chips: ["Verified"], texts: [summary], reply: null })
+  // Ended (live or reloaded from the records): the reply shows it, once.
+  assert.deepEqual(card([...records, finish, end]), { chips: ["Verified"], texts: [], reply: summary })
+  // Refused: the summary is not the reply, the card keeps it and the refusal.
+  const refused = card([
+    ...records,
+    { ...finish, outcome: "failed", content: [{ type: "text", text: "Run the tests first." }] } as SessionRecord,
+    { ...end, outcome: { status: "contract_unmet", unmet: [] } } as SessionRecord,
+  ])
+  assert.ok(refused.texts.includes(summary))
+  assert.notEqual(refused.reply, summary)
 })

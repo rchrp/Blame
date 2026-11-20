@@ -97,6 +97,7 @@ export function toolCallSource(
     title: activity.title,
     kind: activity.kind,
     detail: activity.detail,
+    replyShown: parsed.replyShown === true,
   }
 }
 

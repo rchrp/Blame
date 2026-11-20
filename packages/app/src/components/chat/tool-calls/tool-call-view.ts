@@ -139,4 +139,6 @@ export type ToolCallSource = {
   title: string
   kind: string
   detail: string
+  // An accepted finish whose summary is the turn's reply, shown under it.
+  replyShown?: boolean
 }

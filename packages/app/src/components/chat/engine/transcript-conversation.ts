@@ -177,6 +177,14 @@ function turnActivities(
   if (transcript.live && transcript.runningTurn === turn.turn)
     activities.push(...liveActivities(transcript))
   if (reply !== undefined) {
+    // The accepted finish's summary is the reply: its card leaves it out.
+    for (const activity of activities)
+      if (activity.kind === "tool" && activity.toolName === "finish_task" && activity.status === "completed") {
+        const detail = JSON.parse(activity.detail) as { input?: { summary?: unknown } }
+        const summary = detail.input?.summary
+        if (typeof summary === "string" && summary.trim() === reply.trim())
+          activity.detail = JSON.stringify({ ...detail, replyShown: true })
+      }
     const lastText = activities.findLastIndex((activity) => activity.kind === "message")
     const message = activities[lastText]
     if (message && message.detail.trim() === reply.trim()) {
