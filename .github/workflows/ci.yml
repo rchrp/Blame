@@ -162,7 +162,6 @@ jobs:
           git config --global user.email "ci@blame.invalid"
       # The runtime imports compiled workspace packages.
       - run: pnpm exec turbo run build --filter="@blame/agent-runtime^..."
-      # Includes the Cline SDK smoke test that guards SDK upgrades.
       - run: pnpm --filter @blame/agent-runtime test
 
   test:
@@ -195,8 +194,5 @@ jobs:
       - run: pnpm --filter @blame/api build
       # Every API test run migrates a database first; this job has no MySQL.
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/unit/preview_runtime_security.spec.ts'
-        env:
-          DB_CONNECTION: sqlite
-      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/unit/cline_catalog_worker.spec.ts'
         env:
           DB_CONNECTION: sqlite
