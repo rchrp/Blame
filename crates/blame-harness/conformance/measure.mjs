@@ -72,7 +72,7 @@ async function measure(name, command, args, session) {
   const send = (tool, input) => new Promise((done) => {
     const id = `m${++sequence}`;
     const sent = process.hrtime.bigint();
-    waiting.set(id, (message) => done({ ms: Number(process.hrtime.bigint() - sent) / 1e6, bytes: JSON.stringify(message.result ?? message.error).length, status: message.result?.status ?? "error" }));
+    waiting.set(id, (message) => done({ ms: Number(process.hrtime.bigint() - sent) / 1e6, bytes: JSON.stringify(message.result ?? message.error).length, status: message.result?.status ?? "error", result: message.result }));
     child.stdin.write(`${JSON.stringify({ id, request: { tool, input, workspaceRoot: root, taskContract: { session_id: session } } })}\n`);
   });
   const rounds = [];
@@ -80,8 +80,10 @@ async function measure(name, command, args, session) {
   for (let round = 0; round <= runs; round += 1) {
     const results = [];
     for (const [, tool, input] of calls) {
-      results.push(await send(tool, input));
-      peak = Math.max(peak, footprint(child.pid) ?? 0);
+      const answer = await send(tool, input);
+      answer.footprint = footprint(child.pid) ?? 0;
+      peak = Math.max(peak, answer.footprint);
+      results.push(answer);
     }
     rounds.push(results);
   }
@@ -111,11 +113,19 @@ for (const file of readdirSync(journals, { withFileTypes: true }))
   }
 
 console.log(`workspace ${root}`);
-console.log("| call | rust first | rust warm (median) | ts first | ts warm (median) | result bytes rust/ts | status rust/ts |");
+// What the model would read, compared on the first round (the diagnostic id
+// is time-based; `links` come from the compiler tier, not ported).
+const comparable = (value, links) => JSON.stringify(value, (key, item) => key === "diagnosticId" ? undefined : key === "links" && !links ? undefined : item);
+const verdict = (index) => {
+  const [rust, ts] = results.map((result) => result.rounds[0][index].result);
+  if (comparable(rust, true) === comparable(ts, true)) return "identical";
+  return comparable(rust, false) === comparable(ts, false) ? "identical but links" : "different";
+};
+console.log("| call | rust first | rust warm (median) | ts first | ts warm (median) | result | footprint after first rust/ts |");
 console.log("| --- | --- | --- | --- | --- | --- | --- |");
 calls.forEach(([label], index) => {
   const [rust, ts] = results.map((result) => ({ first: result.rounds[0][index], warm: median(result.rounds.slice(1).map((round) => round[index].ms)) }));
-  console.log(`| ${label} | ${rust.first.ms.toFixed(1)} ms | ${rust.warm.toFixed(1)} ms | ${ts.first.ms.toFixed(1)} ms | ${ts.warm.toFixed(1)} ms | ${rust.first.bytes}/${ts.first.bytes} | ${rust.first.status}/${ts.first.status} |`);
+  console.log(`| ${label} | ${rust.first.ms.toFixed(1)} ms | ${rust.warm.toFixed(1)} ms | ${ts.first.ms.toFixed(1)} ms | ${ts.warm.toFixed(1)} ms | ${verdict(index)} | ${rust.first.footprint.toFixed(1)}/${ts.first.footprint.toFixed(1)} MB |`);
 });
 for (const result of results)
   console.log(`${result.name}: start-up ${result.startup.toFixed(1)} ms, footprint peak ${result.peak.toFixed(1)} MB, final ${result.final?.toFixed(1)} MB${result.heap ? `, V8 heap used after GC ${(result.heap.heapUsed / 1048576).toFixed(1)} MB` : ""}`);
