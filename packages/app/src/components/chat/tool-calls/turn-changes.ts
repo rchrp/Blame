@@ -1,3 +1,5 @@
+import { componentPreviewFilePattern } from "@blame/agent-runtime/component-preview-request"
+
 import { editChanges } from "./describe-code.ts"
 import {
   describeToolCall,
@@ -41,6 +43,20 @@ export type TurnChanges = {
 
 export type TurnActivity = ToolCallActivity & { status?: string }
 
+// The component preview file (`*.blame-preview.*`) is the agent's scratch,
+// removed when the turn ends: not a change of the turn.
+const previewFile = new RegExp(
+  `^${componentPreviewFilePattern
+    .split("*")
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join("[^/]*")}$`,
+  "u"
+)
+
+function isPreviewFile(path: string) {
+  return previewFile.test(path.split(/[\\/]/).at(-1) ?? path)
+}
+
 export function turnChanges(activities: readonly TurnActivity[]): TurnChanges {
   const files = new Map<string, TurnFileChange>()
   let commands = 0
@@ -56,6 +72,7 @@ export function turnChanges(activities: readonly TurnActivity[]): TurnChanges {
       const change = editChanges(source)
       if (!change.applied) continue
       for (const file of change.files) {
+        if (isPreviewFile(file.path)) continue
         const current = files.get(file.path)
         files.set(file.path, {
           path: file.path,
@@ -78,7 +95,8 @@ export function turnChanges(activities: readonly TurnActivity[]): TurnChanges {
       const data = harnessResult(source.output)?.data
       if (data?.changed === true) {
         for (const path of list(data.paths)) {
-          if (typeof path !== "string" || files.has(path)) continue
+          if (typeof path !== "string" || files.has(path) || isPreviewFile(path))
+            continue
           files.set(path, { path, added: false, byCommand: true })
         }
       }
