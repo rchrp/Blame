@@ -406,3 +406,57 @@ fn serve_in_order(lines: &[Json]) -> Vec<Json> {
     let _ = child.wait();
     answers
 }
+
+/// A run_task command of an isolated session, run by `harness`.
+fn command(harness: &Harness, root: &str, session: &str, text: &str) -> Json {
+    let request = obj! {
+        "tool" => "run_task", "workspaceRoot" => root, "input" => obj! { "kind" => "command", "command" => text },
+        "taskContract" => obj! { "session_id" => session, "environment" => obj! { "isolated" => true, "managedPreview" => false } },
+    };
+    harness.execute(&request, &Signal::default()).unwrap()
+}
+
+/// Whether the session's workspace still knows its first run.
+fn run_known(harness: &Harness, root: &str, session: &str) -> bool {
+    let request = obj! {
+        "tool" => "run_task", "workspaceRoot" => root, "input" => obj! { "kind" => "inspect", "run" => "r1", "until" => "now" },
+        "taskContract" => obj! { "session_id" => session, "environment" => obj! { "isolated" => true, "managedPreview" => false } },
+    };
+    harness
+        .execute(&request, &Signal::default())
+        .unwrap()
+        .get("status")
+        .and_then(Json::as_str)
+        == Some("ok")
+}
+
+#[cfg(unix)]
+#[test]
+fn drops_workspaces_idle_past_the_limit_and_keeps_one_serving_a_request() {
+    let workspace = Workspace::new("idle-cache", &[("a.txt", b"a")]);
+    let root = workspace.root();
+    let harness =
+        Arc::new(Harness::default().with_workspace_cache(8, std::time::Duration::from_millis(300)));
+    command(&harness, &root, "idle", "echo idle");
+    let slow = {
+        let (harness, root) = (harness.clone(), root.clone());
+        std::thread::spawn(move || command(&harness, &root, "busy", "sleep 1; echo busy"))
+    };
+    std::thread::sleep(std::time::Duration::from_millis(700));
+    assert!(!run_known(&harness, &root, "idle"));
+    slow.join().unwrap();
+    assert!(run_known(&harness, &root, "busy"));
+}
+
+#[cfg(unix)]
+#[test]
+fn keeps_the_most_recently_used_workspaces_up_to_the_limit() {
+    let workspace = Workspace::new("lru-cache", &[("a.txt", b"a")]);
+    let root = workspace.root();
+    let harness = Harness::default().with_workspace_cache(2, std::time::Duration::from_secs(3600));
+    for session in ["a", "b", "c"] {
+        command(&harness, &root, session, "echo ok");
+    }
+    assert!(!run_known(&harness, &root, "a"));
+    assert!(run_known(&harness, &root, "c"));
+}

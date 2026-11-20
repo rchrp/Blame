@@ -36,6 +36,9 @@ struct Cached {
 
 pub struct Harness {
     workspaces: Mutex<Vec<Cached>>,
+    /// How many workspaces stay, and how long an idle one does.
+    workspace_limit: usize,
+    workspace_idle: Duration,
     compiler: Arc<dyn CompilerPort>,
     /// The client's answers to what only it knows (`serve --asks`).
     pub asker: crate::ask::Asker,
@@ -64,9 +67,18 @@ impl Harness {
     pub fn new(compiler: Arc<dyn CompilerPort>) -> Harness {
         Harness {
             workspaces: Mutex::new(Vec::new()),
+            workspace_limit: WORKSPACE_LIMIT,
+            workspace_idle: WORKSPACE_IDLE,
             compiler,
             asker: crate::ask::Asker::default(),
         }
+    }
+
+    /// The same harness keeping at most `limit` workspaces, each for `idle`.
+    pub fn with_workspace_cache(mut self, limit: usize, idle: Duration) -> Harness {
+        self.workspace_limit = limit;
+        self.workspace_idle = idle;
+        self
     }
 
     /// `options`: the workspace's own settings (`initialCommandWaitMs`),
@@ -77,23 +89,17 @@ impl Harness {
         task_contract: Option<&Json>,
         options: Option<&Json>,
     ) -> Arc<Mutex<Workspace>> {
-        let mut identity = vec![
-            Json::from(root),
-            task_contract.cloned().unwrap_or(Json::Null),
-        ];
-        if let Some(options) = options.filter(|options| options.is_object()) {
-            identity.push(options.clone());
-        }
-        let key = Json::Arr(identity).stringify();
+        let key = workspace_key(root, task_contract, options);
         let mut workspaces = self
             .workspaces
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());
         let now = Instant::now();
-        // A workspace in use is locked by its request: never dropped then.
-        workspaces.retain(|entry| {
-            entry.key == key || busy(&entry.workspace) || now - entry.last_used < WORKSPACE_IDLE
-        });
+        // A workspace in use is locked by its request, or runs a command:
+        // never dropped then. One idle past the limit is, even the one asked
+        // for, which then starts afresh.
+        workspaces
+            .retain(|entry| busy(&entry.workspace) || now - entry.last_used < self.workspace_idle);
         let entry = match workspaces.iter().position(|entry| entry.key == key) {
             Some(index) => workspaces.remove(index),
             None => {
@@ -128,7 +134,7 @@ impl Harness {
             ..entry
         });
         // Least recently used first.
-        while workspaces.len() > WORKSPACE_LIMIT {
+        while workspaces.len() > self.workspace_limit {
             match workspaces.iter().position(|entry| !busy(&entry.workspace)) {
                 Some(index) => {
                     workspaces.remove(index);
@@ -140,7 +146,34 @@ impl Harness {
     }
 
     /// A `request`: one workspace operation, answered with its raw result.
+    /// The workspace's idle time counts from when the operation ends, so one
+    /// that served a long request is not dropped as it finishes.
     pub fn execute(&self, request: &Json, signal: &Signal) -> Outcome<Json> {
+        let result = self.execute_request(request, signal);
+        let key = workspace_key(
+            request
+                .get("workspaceRoot")
+                .and_then(Json::as_str)
+                .unwrap_or(""),
+            request
+                .get("taskContract")
+                .filter(|contract| !matches!(contract, Json::Null)),
+            request.get("workspaceOptions"),
+        );
+        let now = Instant::now();
+        for entry in self
+            .workspaces
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .iter_mut()
+            .filter(|entry| entry.key == key)
+        {
+            entry.last_used = now;
+        }
+        result
+    }
+
+    fn execute_request(&self, request: &Json, signal: &Signal) -> Outcome<Json> {
         let tool = request.get("tool").and_then(Json::as_str).unwrap_or("");
         let root = request
             .get("workspaceRoot")
@@ -252,6 +285,15 @@ impl Harness {
                 root, contract, &input, &context, signal,
             )),
             "session_journal" => session_journal(root, &context, &input),
+            // The suite's tests that call one of the harness's functions.
+            "unit" => crate::units::call(
+                input.get("function").and_then(Json::as_str).unwrap_or(""),
+                input
+                    .get("args")
+                    .and_then(Json::as_array)
+                    .map(Vec::as_slice)
+                    .unwrap_or(&[]),
+            ),
             other => Err(Failure::new(format!(
                 "{other} is not available in the Rust harness yet."
             ))),
@@ -428,7 +470,14 @@ impl Harness {
                 "workspaceRoot",
                 request.get("workspaceRoot").cloned().unwrap_or(Json::Null),
             )
-            .with_opt("taskContract", contract.cloned());
+            .with_opt("taskContract", contract.cloned())
+            .with_opt(
+                "commandCredentials",
+                request
+                    .get("commandCredentials")
+                    .filter(|value| value.is_object())
+                    .cloned(),
+            );
         match self.execute(&inner, signal) {
             Ok(raw) => {
                 signal.check()?;
@@ -600,6 +649,18 @@ fn normalize_run_task_input(value: &Json) -> Json {
 
 /// A workspace in use by a request, or running a command it started, is
 /// never dropped: its managed runs live in it.
+/// A workspace's identity: its folder, task contract and own settings.
+fn workspace_key(root: &str, task_contract: Option<&Json>, options: Option<&Json>) -> String {
+    let mut identity = vec![
+        Json::from(root),
+        task_contract.cloned().unwrap_or(Json::Null),
+    ];
+    if let Some(options) = options.filter(|options| options.is_object()) {
+        identity.push(options.clone());
+    }
+    Json::Arr(identity).stringify()
+}
+
 fn busy(workspace: &Mutex<Workspace>) -> bool {
     match workspace.try_lock() {
         Ok(workspace) => workspace.tasks().running(),
@@ -616,7 +677,7 @@ fn text_result(ok: bool, message: String) -> Presented {
 }
 
 /// `lightToolContext`: the identities and metadata a workspace call keeps.
-fn light_tool_context(context: &Json) -> Json {
+pub fn light_tool_context(context: &Json) -> Json {
     let present = |key: &str| {
         context
             .get(key)

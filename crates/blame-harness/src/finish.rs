@@ -801,12 +801,39 @@ fn completion_decision(
 }
 
 /// `lightRequiredChecksSchema`: at most 16 checks with unique ids.
-fn validate_required_checks(checks: &[Json]) -> Outcome<()> {
+pub fn validate_required_checks(checks: &[Json]) -> Outcome<()> {
     static ID: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
         regex::Regex::new(r"^[A-Za-z0-9_.:-]{1,120}$").expect("pattern")
     });
     let mut ids: Vec<&str> = Vec::new();
     for check in checks {
+        // `lightRequiredChecksSchema` is strict: id, task and args only.
+        let Some(fields) = check.as_object() else {
+            return Err(Failure::new("Invalid required check."));
+        };
+        if let Some((name, _)) = fields
+            .iter()
+            .find(|(name, _)| !matches!(name.as_str(), "id" | "task" | "args"))
+        {
+            return Err(Failure::new(format!(
+                "Unknown required check field {name}."
+            )));
+        }
+        if let Some(args) = check.get("args") {
+            let valid = args.as_array().is_some_and(|args| {
+                args.len() <= 32
+                    && args.iter().all(|arg| {
+                        arg.as_str().is_some_and(|arg| {
+                            !arg.is_empty()
+                                && crate::text::utf16_len(arg) <= 2_048
+                                && !arg.contains('\0')
+                        })
+                    })
+            });
+            if !valid {
+                return Err(Failure::new("Invalid required check arguments."));
+            }
+        }
         let id = text(check, "id")
             .filter(|id| ID.is_match(id))
             .ok_or_else(|| Failure::new("Invalid required check id."))?;

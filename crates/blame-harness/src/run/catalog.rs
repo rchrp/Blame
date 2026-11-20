@@ -42,7 +42,7 @@ impl Invocation {
             .with_opt("packageManagerVersion", self.package_manager_version.as_deref())
     }
 
-    fn from_json(value: &Json) -> Option<Invocation> {
+    pub fn from_json(value: &Json) -> Option<Invocation> {
         Some(Invocation {
             executable: text(value, "executable")?.to_string(),
             args: value

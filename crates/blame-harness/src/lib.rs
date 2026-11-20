@@ -47,6 +47,7 @@ pub mod syntax;
 pub mod text;
 pub mod tools;
 pub mod turn;
+pub mod units;
 pub mod validate;
 pub mod validation;
 pub mod workspace;
