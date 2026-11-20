@@ -1,0 +1,51 @@
+[package]
+name = "blame-harness"
+description = "Blame's Light Semantic Harness: the code tools a model works with (search_code, read_code, ...), served over JSON lines. Independent of the engine."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+name = "blame_harness"
+path = "src/lib.rs"
+
+[[bin]]
+name = "blame-harness"
+path = "src/main.rs"
+
+[dependencies]
+# Only to read JSON lines: values are converted into the harness's own
+# ordered `Json` (results must keep the key order the model reads).
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+regex = { version = "1", default-features = false, features = ["std", "perf", "unicode"] }
+# NFKC of search terms, as `String.prototype.normalize("NFKC")`.
+unicode-normalization = { version = "0.1", default-features = false, features = ["std"] }
+# The same engine as the ripgrep binary the TypeScript harness spawns.
+grep-searcher = { version = "0.1.17", default-features = false }
+grep-regex = { version = "0.1.14", default-features = false }
+grep-matcher = { version = "0.1.9", default-features = false }
+# Syntax trees: ast-grep's core over the exact grammar versions the
+# TypeScript harness loads (@ast-grep/napi 0.51.0 and @ast-grep/lang-*), so
+# symbols, folds and diagnostics come out of the same trees.
+ast-grep-core = { version = "=0.51.0", default-features = false, features = ["tree-sitter"] }
+tree-sitter = { version = "0.27", default-features = false, features = ["std"] }
+tree-sitter-typescript = "=0.23.2"
+tree-sitter-javascript = "=0.25.0"
+tree-sitter-css = "=0.25.0"
+tree-sitter-html = "=0.23.2"
+tree-sitter-bash = "=0.25.1"
+tree-sitter-c = "=0.24.1"
+tree-sitter-cpp = "=0.23.4"
+tree-sitter-c-sharp = "=0.23.1"
+tree-sitter-go = "=0.25.0"
+tree-sitter-java = "=0.23.5"
+tree-sitter-python = "=0.25.0"
+tree-sitter-rust = "=0.23.2"
+
+[lints]
+workspace = true

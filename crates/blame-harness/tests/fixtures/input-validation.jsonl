@@ -1,0 +1,49 @@
+{"tool":"search_code","input":{},"ok":false,"message":"query: Invalid input: expected string, received undefined"}
+{"tool":"search_code","input":{"query":""},"ok":false,"message":"query: Too small: expected string to have >=1 characters"}
+{"tool":"search_code","input":{"query":"  x  "},"ok":true,"data":{"query":"x"}}
+{"tool":"search_code","input":{"query":5},"ok":false,"message":"query: Invalid input: expected string, received number"}
+{"tool":"search_code","input":{"query":"a","extra":1},"ok":false,"message":"input: Unrecognized key: \"extra\""}
+{"tool":"search_code","input":{"query":"a","extra":1,"more":2},"ok":false,"message":"input: Unrecognized keys: \"extra\", \"more\""}
+{"tool":"search_code","input":{"query":"a","mode":"fuzzy"},"ok":false,"message":"mode: Invalid option: expected one of \"auto\"|\"text\"|\"regex\"|\"symbol\"|\"references\""}
+{"tool":"search_code","input":{"query":"a","limit":0},"ok":false,"message":"limit: Too small: expected number to be >=1"}
+{"tool":"search_code","input":{"query":"a","limit":101},"ok":false,"message":"limit: Too big: expected number to be <=100"}
+{"tool":"search_code","input":{"query":"a","limit":1.5},"ok":false,"message":"limit: Invalid input: expected int, received number"}
+{"tool":"search_code","input":{"query":"a","limit":"20"},"ok":true,"data":{"query":"a","limit":20}}
+{"tool":"search_code","input":{"query":"a","offset":-1},"ok":false,"message":"offset: Too small: expected number to be >=0"}
+{"tool":"search_code","input":{"query":"a","context":31},"ok":false,"message":"context: Too big: expected number to be <=30"}
+{"tool":"search_code","input":{"query":"a","caseSensitive":"true"},"ok":true,"data":{"query":"a","caseSensitive":true}}
+{"tool":"search_code","input":{"query":"a","scope":""},"ok":false,"message":"scope: Too small: expected string to have >=1 characters"}
+{"tool":"search_code","input":{"query":"a","scope":[]},"ok":true,"data":{"query":"a","scope":[]}}
+{"tool":"search_code","input":{"query":"a","scope":["","b"]},"ok":false,"message":"scope.0: Too small: expected string to have >=1 characters"}
+{"tool":"search_code","input":{"query":"a","scope":" src "},"ok":true,"data":{"query":"a","scope":"src"}}
+{"tool":"search_code","input":{"query":"a","scope":5},"ok":false,"message":"scope: Invalid input"}
+{"tool":"search_code","input":{"query":"a","output":"lines"},"ok":false,"message":"output: Invalid option: expected one of \"matches\"|\"files\"|\"count\""}
+{"tool":"search_code","input":{"limit":"x","query":1,"mode":3},"ok":false,"message":"query: Invalid input: expected string, received number; mode: Invalid option: expected one of \"auto\"|\"text\"|\"regex\"|\"symbol\"|\"references\"; limit: Invalid input: expected number, received string"}
+{"tool":"search_code","input":"text","ok":false,"message":"input: Invalid input: expected object, received string"}
+{"tool":"search_code","input":null,"ok":false,"message":"input: Invalid input: expected object, received null"}
+{"tool":"search_code","input":[],"ok":false,"message":"input: Invalid input: expected object, received array"}
+{"tool":"search_code","input":{"query":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"},"ok":false,"message":"query: Too big: expected string to have <=1000 characters"}
+{"tool":"search_code","input":{"query":"a","scope":["a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a","a"]},"ok":false,"message":"scope: Invalid input"}
+{"tool":"search_code","input":{"scope":"b","query":"a","limit":3},"ok":true,"data":{"query":"a","scope":"b","limit":3}}
+{"tool":"search_code","input":{"query":"a","limit":null},"ok":false,"message":"limit: Invalid input: expected number, received null"}
+{"tool":"search_code","input":{"query":"a","context":"2"},"ok":true,"data":{"query":"a","context":2}}
+{"tool":"search_code","input":{"query":"a","offset":"1.5"},"ok":false,"message":"offset: Invalid input: expected int, received number"}
+{"tool":"read_code","input":{},"ok":false,"message":"target: Invalid input: expected string, received undefined"}
+{"tool":"read_code","input":{"target":""},"ok":false,"message":"target: Too small: expected string to have >=1 characters"}
+{"tool":"read_code","input":{"target":" a.ts "},"ok":true,"data":{"target":"a.ts"}}
+{"tool":"read_code","input":{"target":"a","view":"folded"},"ok":false,"message":"view: Invalid option: expected one of \"auto\"|\"raw\"|\"outline\"|\"symbol\"|\"signature\"|\"range\"|\"declaration\""}
+{"tool":"read_code","input":{"target":"a","range":{"startLine":2,"endLine":1}},"ok":false,"message":"range: Invalid input"}
+{"tool":"read_code","input":{"target":"a","range":{"startLine":0,"endLine":1}},"ok":false,"message":"range.startLine: Too small: expected number to be >0"}
+{"tool":"read_code","input":{"target":"a","range":[]},"ok":false,"message":"range: Too small: expected array to have >=1 items"}
+{"tool":"read_code","input":{"target":"a","range":"{\"startLine\":1,\"endLine\":2}"},"ok":true,"data":{"target":"a","range":{"startLine":1,"endLine":2}}}
+{"tool":"read_code","input":{"target":"a","range":"[{\"startLine\":1,\"endLine\":2}]"},"ok":true,"data":{"target":"a","range":[{"startLine":1,"endLine":2}]}}
+{"tool":"read_code","input":{"target":"a","range":{"startLine":1}},"ok":false,"message":"range: Invalid input"}
+{"tool":"read_code","input":{"target":"a","range":{"startLine":1,"endLine":2,"x":1}},"ok":false,"message":"range: Unrecognized key: \"x\""}
+{"tool":"read_code","input":{"target":"a","offset":-1},"ok":false,"message":"offset: Too small: expected number to be >=0"}
+{"tool":"read_code","input":{"target":"a","offset":"5"},"ok":true,"data":{"target":"a","offset":5}}
+{"tool":"read_code","input":{"target":"a","range":[{"startLine":1,"endLine":1},{"startLine":1,"endLine":1},{"startLine":1,"endLine":1},{"startLine":1,"endLine":1},{"startLine":1,"endLine":1},{"startLine":1,"endLine":1},{"startLine":1,"endLine":1},{"startLine":1,"endLine":1},{"startLine":1,"endLine":1}]},"ok":false,"message":"range: Invalid input"}
+{"tool":"read_code","input":{"target":"a","range":[{"startLine":1,"endLine":2},{"startLine":3}]},"ok":false,"message":"range: Invalid input"}
+{"tool":"read_code","input":{"target":1,"view":2},"ok":false,"message":"target: Invalid input: expected string, received number; view: Invalid option: expected one of \"auto\"|\"raw\"|\"outline\"|\"symbol\"|\"signature\"|\"range\"|\"declaration\""}
+{"tool":"read_code","input":{"target":"a","foo":1},"ok":false,"message":"input: Unrecognized key: \"foo\""}
+{"tool":"read_code","input":{"range":{"endLine":2,"startLine":1},"target":"a","view":"range"},"ok":true,"data":{"target":"a","view":"range","range":{"startLine":1,"endLine":2}}}
+{"tool":"read_code","input":{"target":"a","range":{"startLine":"1","endLine":"2"}},"ok":false,"message":"range: Invalid input"}
