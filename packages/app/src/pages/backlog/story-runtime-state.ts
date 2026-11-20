@@ -7,7 +7,6 @@ export function inactiveStoryFields(): UserStoryUpdate {
   return {
     agentStatus: null,
     branch: null,
-    clineSessionId: null,
     previewUrl: null,
     worktree: null,
     workspaceMode: null,

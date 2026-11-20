@@ -19,11 +19,6 @@ import {
 import * as React from "react"
 import { toast } from "sonner"
 
-import { agentErrorText } from "@/components/backlog/data/agent-flow"
-import {
-  agentStreamStore,
-  type AgentStreamIdentity,
-} from "@/components/backlog/data/agent-stream-store"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -918,47 +913,22 @@ function AgentWorkAccordion({
   )
 }
 
+// The run's activities by id. They come folded from the engine's records,
+// live deltas included, so there is no separate stream to merge.
 function useAgentActivityRegistry(
   activities: UserStoryAgentActivity[],
   run: AgentConversationRun
 ) {
-  const identity = React.useMemo(
-    () =>
-      run.status === "running" && run.clineSessionId
-        ? { runId: run.id, sessionId: run.clineSessionId }
-        : undefined,
-    [run.clineSessionId, run.id, run.status]
+  void run
+  return React.useMemo(
+    () => ({
+      activityIds: activities.map((activity) => activity.id),
+      persistedById: new Map(
+        activities.map((activity) => [activity.id, activity])
+      ),
+    }),
+    [activities]
   )
-  React.useEffect(() => {
-    if (!identity) return
-    agentStreamStore.seed(identity, activities, run.lastSequenceNumber ?? 0)
-  }, [activities, identity, run.lastSequenceNumber])
-  const order = useAgentStreamOrder(identity)
-  return {
-    activityIds: mergedActivityIds(activities, order.activityIds),
-    identity,
-    persistedById: new Map(
-      activities.map((activity) => [activity.id, activity])
-    ),
-  }
-}
-
-function useAgentStreamOrder(identity: AgentStreamIdentity | undefined) {
-  const subscribe = React.useCallback(
-    (listener: () => void) =>
-      identity
-        ? agentStreamStore.subscribeOrder(identity, listener)
-        : () => undefined,
-    [identity]
-  )
-  const getSnapshot = React.useCallback(
-    () =>
-      identity
-        ? agentStreamStore.orderSnapshot(identity)
-        : emptyAgentStreamOrder,
-    [identity]
-  )
-  return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
 function AgentActivityTimeline({
@@ -983,7 +953,6 @@ function AgentActivityTimeline({
             alwaysVisible && index === visibleActivityIds.length - 1
           }
           fallback={registry.persistedById.get(activityId)}
-          identity={registry.identity}
           registry={registry}
           key={`${props.run.id}-${activityId}`}
         />
@@ -1050,38 +1019,14 @@ type StreamingAgentActivityItemProps = Omit<
 > & {
   activityId: string
   fallback?: UserStoryAgentActivity
-  identity?: AgentStreamIdentity
   registry?: ReturnType<typeof useAgentActivityRegistry>
 }
 
 function StreamingAgentActivityItem(props: StreamingAgentActivityItemProps) {
-  const activity = useStreamedAgentActivity(props)
+  const activity = props.fallback
   return activity ? (
     <AgentStreamActivity activity={activity} {...props} />
   ) : null
-}
-
-function useStreamedAgentActivity({
-  activityId,
-  fallback,
-  identity,
-}: StreamingAgentActivityItemProps) {
-  const subscribe = React.useCallback(
-    (listener: () => void) =>
-      identity
-        ? agentStreamStore.subscribeActivity(identity, activityId, listener)
-        : () => undefined,
-    [activityId, identity]
-  )
-  const getSnapshot = React.useCallback(
-    () =>
-      identity
-        ? agentStreamStore.activitySnapshot(identity, activityId)
-        : undefined,
-    [activityId, identity]
-  )
-  const live = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-  return live?.activity ?? fallback
 }
 
 function AgentStreamActivity({
@@ -1134,12 +1079,7 @@ function SpecialistConsultation({
 }) {
   const [open, setOpen] = React.useState(false)
   const responseId = specialistResponseActivityId(activity.id)
-  const response = useStreamedAgentActivity({
-    ...props,
-    activityId: responseId,
-    fallback: registry.persistedById.get(responseId),
-    identity: registry.identity,
-  })
+  const response = registry.persistedById.get(responseId)
   const threadIds = activity.toolCallId
     ? specialistThreadActivityIds(registry.activityIds, activity.toolCallId)
     : []
@@ -2011,24 +1951,6 @@ function agentTimelineActivities(run: AgentConversationRun) {
   return hasVisibleResponse ? activities : [...activities, failure]
 }
 
-const emptyAgentStreamOrder = { activityIds: [], revision: 0 }
-
-function mergedActivityIds(
-  persisted: UserStoryAgentActivity[],
-  liveIds: string[]
-) {
-  if (!liveIds.length) return persisted.map((activity) => activity.id)
-  const ids = [...liveIds]
-  const known = new Set(ids)
-  persisted.forEach((activity) => {
-    const activityId = activity.id
-    if (known.has(activityId)) return
-    known.add(activityId)
-    ids.push(activityId)
-  })
-  return ids
-}
-
 function finalResponseActivities(
   run: AgentConversationRun,
   activities: UserStoryAgentActivity[],
@@ -2053,7 +1975,7 @@ function failedRunResponse(
   run: AgentConversationRun
 ): UserStoryAgentActivity | undefined {
   if (run.status !== "failed" && run.status !== "cancelled") return undefined
-  const response = agentErrorText(run.finalResponse ?? "")
+  const response = (run.finalResponse ?? "").trim()
   return {
     createdAt: run.completedAt ?? run.updatedAt ?? run.createdAt,
     detail: response || "Agent session failed.",

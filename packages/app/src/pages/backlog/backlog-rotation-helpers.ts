@@ -1,21 +1,12 @@
 import {
   type UserStory,
-  type UserStoryAgentRun,
-  userStoryDisplayId,
   userStoryReadyForAgent,
 } from "@/components/backlog/data/backlog-data"
 import type { HostDependencyReport, usePlatform } from "@/context/platform"
 import type { useRuntimePreference } from "@/lib/runtime-preference"
-import { showSystemNotification } from "@/lib/system-notifications"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useModelSelection } from "@/components/model/model-selection"
 import { activePreviewStory } from "./preview-recovery-stories.ts"
-
-const agentCompletionRecoveryGraceMs = 60_000
-
-export function activeAgentRun(story: UserStory, run: UserStoryAgentRun) {
-  return story.agentRuns?.find((currentRun) => currentRun.id === run.id)
-}
 
 export function reportAgentPersistenceError(error: unknown) {
   console.error("Failed to persist agent update.", error)
@@ -30,20 +21,6 @@ export type HostDependenciesDialogState = {
   storyTitle: string
 }
 
-export function notifyCommentResponseCompleted(
-  story: UserStory,
-  run: UserStoryAgentRun | undefined,
-  platform: ReturnType<typeof usePlatform>
-) {
-  if (!run?.commentId) return
-  void showSystemNotification(platform, {
-    body: `${userStoryDisplayId(story)} · ${story.title}`,
-    target: { pathname: "/backlog", storyId: story.id },
-    title: "Agent replied to a comment",
-  })
-}
-
-// Agents that may work at the same time, queue starts and resumes alike.
 export const maxConcurrentDevelopmentStories = 3
 
 export function runningStories(stories: UserStory[]) {
@@ -89,7 +66,7 @@ export function rotationBlocker(
   model: ReturnType<typeof useModelSelection>["currentModel"]
 ) {
   if (authStatus !== "authenticated") return "Authentication is required."
-  if (!platform.agent) return "Desktop agent runtime is not available."
+  if (!platform.engine) return "Desktop agent engine is not available."
   if (!platform.workspace?.createWorktree)
     return "Desktop worktree runtime is not available."
   if (!platform.workspace.checkHostDependencies)
@@ -98,50 +75,6 @@ export function rotationBlocker(
     return "Desktop preview preparation is not available."
   if (!model) return "Choose a model before starting queued user stories."
   return undefined
-}
-
-export function recoverableAgentRun(story: UserStory) {
-  return runningAgentRunsForStory(story).findLast(
-    (run) =>
-      !run.finalResponse &&
-      staleAgentRun(run) &&
-      Boolean(run.clineSessionId ?? story.clineSessionId)
-  )
-}
-
-export { runningAgentRunsForStory } from "./agent-run-liveness"
-import { runningAgentRunsForStory } from "./agent-run-liveness"
-
-export function nextAgentRun(story: UserStory, run: UserStoryAgentRun) {
-  return story.agentRuns?.find(
-    (candidate) =>
-      candidate.id !== run.id &&
-      Date.parse(candidate.createdAt) > Date.parse(run.createdAt)
-  )
-}
-
-function staleAgentRun(run: UserStoryAgentRun) {
-  return staleAgentRunAge(run) >= agentCompletionRecoveryGraceMs
-}
-
-export function staleAgentRunAge(run: UserStoryAgentRun) {
-  const updatedAt = run.updatedAt ?? run.createdAt
-  return Math.max(0, Date.now() - new Date(updatedAt).getTime())
-}
-
-export function recoveredMessageCount(value: unknown) {
-  if (Array.isArray(value)) return value.length
-  if (!value || typeof value !== "object") return 0
-  const messages = (value as Record<string, unknown>).messages
-  return Array.isArray(messages) ? messages.length : 0
-}
-
-export function clineLogPath(worktree: string, sessionId: string) {
-  return `${worktree}/.blame/logs/cline-${sessionId}.log`
-}
-
-export function clineLogRelativePath(sessionId: string) {
-  return `.blame/logs/cline-${sessionId}.log`
 }
 
 export function previewRecoveryStateKey(stories: UserStory[]) {

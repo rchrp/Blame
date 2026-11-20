@@ -12,11 +12,7 @@ import type {
   BacklogAction,
   BacklogColumnId,
   UserStory,
-  UserStoryAgentRun,
-  UserStoryAgentRunUpdate,
-  UserStoryCodeSelectionAttachment,
   UserStoryDraft,
-  UserStoryFileAttachment,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import {
@@ -38,9 +34,7 @@ import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { approveMergeOptions } from "@/components/backlog/shared/approve-merge-options"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
-import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { newUserStoryEvent } from "@/components/navigation/command-palette"
-import { nextCheckpointRunCount } from "@/components/chat/agent-run-checkpoints"
 import {
   modelForPreference,
   useModelSelection,
@@ -64,13 +58,11 @@ import {
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { currentPersonalization } from "@/lib/agent-personalization"
 import { showSystemNotification } from "@/lib/system-notifications"
-import { reportAgentPersistenceError } from "@/pages/backlog/backlog-rotation-helpers"
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
 import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
-import { definedUpdate } from "../../components/backlog/data/user-story-agent-updates"
 import {
   queuedUserStoryTitleRequest,
   runQueuedStoryTitleGeneration,
@@ -93,17 +85,14 @@ import { DirectSharedFilesDialog } from "./direct-shared-files-dialog"
 import { useDirectStoryCommit } from "./use-direct-story-commit"
 import { useStoryPullRequest } from "./use-story-pull-request"
 import { useStoryPullRequestSync } from "./use-story-pull-request-sync"
-import { useStoryAgentStream } from "./use-story-agent-stream"
-import { finalizeStoppedRun, pauseAbortRefusal } from "./story-agent-control"
+import { pauseInterruptRefusal } from "./story-agent-control"
 import {
   replaceStoryAfterUndo,
-  restoreStoryCheckpoint,
+  rewindStoryMessage,
 } from "./story-checkpoint-undo"
-import { currentDiffSummary, resumeAgentFeedback } from "./story-resume-feedback"
-import {
-  useQueuedCommentDelivery,
-  useStoryComments,
-} from "./use-story-comments"
+import { storyResumeMessage, storySessionSettings } from "./story-engine"
+import { useStoryAgentOutcomes } from "./use-story-agent-outcomes"
+import { useStoryComments } from "./use-story-comments"
 import { useResumeSlots } from "./use-resume-slots"
 import { useNewUserStoryExcerpts } from "./use-new-story-excerpts"
 import { withStoryTransition } from "./story-transitions"
@@ -270,30 +259,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       unsubscribe()
     }
   }, [])
-  const updateStoryLocal = React.useCallback(
-    (
-      story: UserStory,
-      input: UserStoryUpdate,
-      run?: UserStoryAgentRun,
-      runInput?: UserStoryAgentRunUpdate
-    ) => {
-      const currentStory = activeStory(story, storiesRef.current)
-      const nextStory = { ...currentStory, ...definedUpdate(input) }
-      storiesRef.current = storiesRef.current.map((current) =>
-        current.id === story.id ? nextStory : current
-      )
-      backlog.updateAgentLocal(currentStory, input, run, runInput)
-      React.startTransition(() => {
-        setDrawerTarget((current) =>
-          current?.userStory?.id === story.id
-            ? { ...current, userStory: nextStory }
-            : current
-        )
-      })
-      return nextStory
-    },
-    [backlog]
-  )
   const updateStory = React.useCallback(
     async (
       story: UserStory,
@@ -347,15 +312,8 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     (story: UserStory) => userStoryDiffStats.get(story.id),
     [userStoryDiffStats]
   )
-  const storyStream = useStoryAgentStream({
-    backlog,
-    platform,
-    storiesRef,
-    updateStory,
-    updateStoryLocal,
-  })
-  const { persistAgentEvent, subscribeStoryAgentEvents } = storyStream
-  const rotation = useBacklogRotation(backlog, storyStream)
+  useStoryAgentOutcomes(backlog)
+  const rotation = useBacklogRotation(backlog)
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
       // The comment box opens; sending a comment is what resumes the agent.
@@ -395,7 +353,11 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   )
   const pauseStoryAgent = React.useCallback(
     async (story: UserStory) => {
-      const refusal = await pauseAbortRefusal(story, platform.agent)
+      const refusal = await pauseInterruptRefusal(
+        story,
+        platform.engine,
+        platform.platform
+      )
       if (refusal) {
         toast.error("Couldn't pause the agent", {
           description: errorMessage(refusal.error),
@@ -403,17 +365,12 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         })
         return story
       }
-      const message = "Paused by you."
-      const paused = await finalizeStoppedRun(backlog, story, message)
-      if (paused?.agentStatus === "Paused") return paused
-      return updateStory(paused ?? story, {
-        agentLastError: null,
-        agentLastEvent: message,
-        agentStatus: "Paused",
-        status: "in-progress",
-      })
+      // The turn ends as interrupted, which pauses the story where it was
+      // (useStoryAgentOutcomes); a story with no running turn pauses now.
+      if (story.agentStatus === "Running") return story
+      return updateStory(story, { agentStatus: "Paused", status: "in-progress" })
     },
-    [backlog, platform.agent, updateStory]
+    [platform.engine, platform.platform, updateStory]
   )
   const stopAgent = React.useCallback(
     async (story: UserStory, choice: StopAgentChoice) => {
@@ -438,194 +395,54 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     },
     [pauseStoryAgent, updateStory]
   )
-  const startStoryDevelopmentSession = React.useCallback(
-    async (
-      story: UserStory,
-      input: {
-        feedback?: string
-        feedbackCodeSelectionAttachments?: UserStoryCodeSelectionAttachment[]
-        feedbackFileAttachments?: UserStoryFileAttachment[]
-        resumeSessionId?: string | null
-        worktree: string
-      }
-    ) => {
-      if (auth.status !== "authenticated")
-        throw new Error("Reconnect the selected provider.")
-      const agent = platform.agent
-      if (!agent) throw new Error("Desktop agent runtime is not available.")
-      // The story's own choice (its last model unless the person picked
-      // another for it), else the default.
-      const chosen = modelForPreference(
-        agentSelection.models,
-        storyModelChoice(story)
-      )
-      const model = chosen?.model ?? agentSelection.currentModel
-      const reasoningEffort = chosen
-        ? chosen.variant
-        : agentSelection.currentVariant
-      const providerId = model?.provider.id ?? story.agentProviderId
-      const modelId = model?.id ?? story.agentModelId
-      if (!providerId || !modelId)
-        throw new Error("Select a model before resuming this user story.")
-      const executionId = crypto.randomUUID()
-      const storyId = story.id
-      const session = await agent.sessions.startDevelopment({
-        apiConnection: auth.apiConnection,
-        providerId,
-        modelId,
-        credentialLabel: model?.credentialLabel,
-        reasoningEffort,
-        maxInputTokens: storyMaxInputTokens(
-          story.id,
-          model,
-          agentSelection.allProviders
-        ),
-        autoSendPrompt: false,
-        title: story.title,
-        summary: story.summary,
-        codeSelectionAttachments: story.codeSelectionAttachments ?? [],
-        fileAttachments: story.fileAttachments ?? [],
-        feedback: input.feedback,
-        feedbackCodeSelectionAttachments:
-          input.feedbackCodeSelectionAttachments,
-        feedbackFileAttachments: input.feedbackFileAttachments,
-        resumeSessionId: input.resumeSessionId,
-        cwd: input.worktree,
-        workspaceRoot: input.worktree,
-        workspaceMode:
-          story.workspaceMode ??
-          (story.runMode === "vercel-compose" ? "cloud-mirror" : "local-container"),
-        // Direct stories inspect the project's own app.
-        previewDevtoolsScope:
-          story.workspaceMode === "direct"
-            ? directStoryPreviewScope(
-                projectInitialization?.initialization?.runConfigurations,
-                projects.activeProject?.path
-              )
-            : storyPreviewDevtoolsScope(story.id),
-        codePractices: await projectCodePractices(auth, projects),
-        executionId,
-        personalization: currentPersonalization(story.ambition),
-        projectId: story.projectId,
-        storyId,
-      })
-      return {
-        ...session,
-        executionId,
-        model: { modelId, providerId, reasoningEffort: reasoningEffort ?? null },
-        storyId,
-      }
-    },
-    [
-      auth,
-      agentSelection.allProviders,
-      agentSelection.currentModel,
-      agentSelection.currentVariant,
+  // The settings of a story's next turn: its own model choice (its last
+  // model unless the person picked another for it), else the default.
+  const storyTurnSettings = useLatestCallback(async (story: UserStory) => {
+    if (auth.status !== "authenticated")
+      throw new Error("Reconnect the selected provider.")
+    const chosen = modelForPreference(
       agentSelection.models,
-      platform.agent,
-      projectInitialization?.initialization?.runConfigurations,
-      projects,
-    ]
-  )
+      storyModelChoice(story)
+    )
+    const model = chosen?.model ?? agentSelection.currentModel
+    if (!model) throw new Error("Select a model before resuming this user story.")
+    return storySessionSettings({
+      story,
+      model: {
+        providerId: model.provider.id,
+        modelId: model.id,
+        credentialLabel: model.credentialLabel,
+        reasoning: chosen ? chosen.variant : agentSelection.currentVariant,
+      },
+      maxContextTokens: storyMaxInputTokens(
+        story.id,
+        model,
+        agentSelection.allProviders
+      ),
+      personalization: currentPersonalization(story.ambition),
+      codePractices: await projectCodePractices(auth, projects),
+      // Direct stories inspect the project's own app.
+      previewDevtoolsScope:
+        story.workspaceMode === "direct"
+          ? directStoryPreviewScope(
+              projectInitialization?.initialization?.runConfigurations,
+              projects.activeProject?.path
+            )
+          : storyPreviewDevtoolsScope(story.id),
+      platformName: platform.platform,
+    })
+  })
+  const requestChanges = useStoryComments({
+    backlog,
+    settingsFor: storyTurnSettings,
+  })
+  // A paused agent picks its conversation back up.
   const resumeStoryAgent = React.useCallback(
-    async (story: UserStory) => {
-      const currentStory = await detailedStory(story, backlog)
-      if (!currentStory.worktree) {
-        toast.error("Unable to resume agent", {
-          description: "This user story has no active worktree.",
-          position: "bottom-right",
-        })
-        return currentStory
-      }
-      if (auth.status !== "authenticated" || !agentSelection.currentModel) {
-        toast.error("Unable to resume agent", {
-          description: "Reconnect the provider and select a model.",
-          position: "bottom-right",
-        })
-        return currentStory
-      }
-      const agent = platform.agent
-      if (!agent) {
-        toast.error("Unable to resume agent", {
-          description: "Desktop agent runtime is not available.",
-          position: "bottom-right",
-        })
-        return currentStory
-      }
-      const feedback = resumeAgentFeedback(
-        currentStory,
-        await currentDiffSummary(currentStory, platform)
-      )
-      const session = await startStoryDevelopmentSession(currentStory, {
-        feedback,
-        resumeSessionId: currentStory.clineSessionId,
-        worktree: currentStory.worktree,
-      })
-      if (!session) {
-        toast.error("Unable to resume agent", {
-          description: "Desktop agent runtime is not available.",
-          position: "bottom-right",
-        })
-        return currentStory
-      }
-      const run = await backlog.createAgentRun(currentStory, {
-        checkpointRunCount: nextCheckpointRunCount(
-          currentStory.agentRuns ?? []
-        ),
-        clineSessionId: session.sessionId,
-        executionId: session.executionId,
-        kind: "resume",
-        ...session.model,
-      })
-      const updatedStory = await updateStory(currentStory, {
-        agentLastError: null,
-        agentLastEvent: `Cline debug log: ${clineLogPath(currentStory.worktree, session.sessionId)}`,
-        agentActivities: [],
-        agentFinalResponse: null,
-        agentUsage: null,
-        agentModelId: session.model.modelId,
-        agentProviderId: session.model.providerId,
-        agentStatus: "Running",
-        clineSessionId: session.sessionId,
-        status: "in-progress",
-      })
-      subscribeStoryAgentEvents(
-        updatedStory,
-        run,
-        session.sessionId,
-        session.executionId
-      )
-      void agent.sessions
-        .sendDevelopment({
-          executionId: session.executionId,
-          sessionId: session.sessionId,
-          title: currentStory.title,
-          summary: currentStory.summary,
-          codeSelectionAttachments: currentStory.codeSelectionAttachments ?? [],
-          fileAttachments: currentStory.fileAttachments ?? [],
-          feedback,
-        })
-        .catch((error) =>
-          persistAgentEvent(updatedStory, run, {
-            type: "error",
-            sessionId: session.sessionId,
-            executionId: session.executionId,
-            payload: { message: errorMessage(error) },
-          })
-        )
-        .catch(reportAgentPersistenceError)
-      return updatedStory
-    },
-    [
-      auth,
-      backlog,
-      platform,
-      agentSelection.currentModel,
-      startStoryDevelopmentSession,
-      updateStory,
-      subscribeStoryAgentEvents,
-      persistAgentEvent,
-    ]
+    async (story: UserStory) =>
+      (await requestChanges(await detailedStory(story, backlog), {
+        text: storyResumeMessage,
+      })) ?? story,
+    [backlog, requestChanges]
   )
   // One resume at a time per story; failures say so instead of vanishing.
   const resumeInSlot = useLatestCallback(async (story: UserStory) => {
@@ -644,46 +461,18 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     resume: resumeInSlot,
     stories: backlog.stories,
   })
-  const requestChanges = useStoryComments({
-    backlog,
-    persistAgentEvent,
-    platform,
-    startStoryDevelopmentSession,
-    subscribeStoryAgentEvents,
-    updateStory,
-  })
-  useQueuedCommentDelivery({
-    createComment: backlog.createComment,
-    requestChanges,
-    stories: backlog.stories,
-  })
+  // Undoes a message to the agent and what followed, with its files.
   const undoUserStoryComment = React.useCallback(
-    async (story: UserStory, target: AgentConversationUserMessageUndo) => {
-      const currentStory = await detailedStory(
-        activeStory(story, storiesRef.current),
-        backlog
-      )
-      await backlog.validateCommentUndo(
-        currentStory,
-        target.comment.id,
-        target.run.id
-      )
-      const restored = await restoreStoryCheckpoint(
-        platform,
-        currentStory,
-        target.run.clineSessionId ?? currentStory.clineSessionId,
-        target.checkpointRunCount
-      )
-      const nextStory = await backlog.undoComment(
-        currentStory,
-        target.comment.id,
-        { clineSessionId: restored.sessionId, runId: target.run.id }
-      )
-      replaceStoryAfterUndo(nextStory, storiesRef, setDrawerTarget)
-      toast.success("Message restored to editor.", { position: "bottom-right" })
-      return nextStory
+    async (story: UserStory, rewind: { to: number; workspace: boolean }) => {
+      const currentStory = activeStory(story, storiesRef.current)
+      await rewindStoryMessage(platform, currentStory, rewind)
+      replaceStoryAfterUndo(currentStory, storiesRef, setDrawerTarget)
+      toast.success("Message undone and restored to the editor.", {
+        position: "bottom-right",
+      })
+      return currentStory
     },
-    [backlog, platform]
+    [platform]
   )
 
   const mergeApprovedStory = React.useCallback(
@@ -704,7 +493,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       }
       const runningStory = await updateStory(story, {
         agentLastError: null,
-        agentLastEvent: "Approve & Merge started.",
         agentStatus: "Running",
       })
       return mergeStoryIntoTarget({
@@ -733,7 +521,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           })
         return updateStory(runningStory, {
           agentLastError: message,
-          agentLastEvent: message,
           agentStatus: null,
         })
       })
@@ -1038,7 +825,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         mode: userStory.status === "backlog" ? "edit" : "view",
       })
   })
-  const createDrawerComment = useLatestCallback(backlog.createComment)
   const deleteDrawerStory = deleteStory
   const updateDrawerStory = useLatestCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
@@ -1132,7 +918,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         initialDevelopmentTab={drawerTarget?.initialDevelopmentTab}
         focusComment={drawerTarget?.focusComment}
         onCreateUserStory={createDrawerStory}
-        onCreateUserStoryComment={createDrawerComment}
         onDeleteUserStory={deleteDrawerStory}
         onUpdateUserStory={updateDrawerStory}
         onOpenDrawer={drawerOpenDrawer}
@@ -1254,10 +1039,6 @@ function reportStatusPipRequestError(error: unknown) {
       error instanceof Error ? error.message : "An unexpected error occurred.",
     position: "bottom-right",
   })
-}
-
-function clineLogPath(worktree: string, sessionId: string) {
-  return `${worktree}/.blame/logs/cline-${sessionId}.log`
 }
 
 function errorMessage(error: unknown) {

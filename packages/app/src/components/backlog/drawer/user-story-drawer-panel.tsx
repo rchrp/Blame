@@ -19,7 +19,6 @@ import {
 import type {
   BacklogColumnId,
   UserStory,
-  UserStoryComment,
   UserStoryDraft,
   UserStoryFileAttachment,
   UserStoryUpdate,
@@ -60,7 +59,8 @@ import {
   UserStoryContent,
   UserStoryFixedSection,
 } from "@/components/backlog/drawer/user-story-drawer-sections"
-import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
+import type { StoryMessageInput } from "@/pages/backlog/use-story-comments"
+import type { StoryMessageUndo } from "./user-story-drawer-sections"
 import { UserStoryPreview } from "@/components/backlog/drawer/user-story-preview"
 import {
   fileAttachment,
@@ -97,6 +97,7 @@ import { SlidingTabsList, slidingTabsTrigger, TabReadyIcon } from "@/components/
 import { cn } from "@/lib/utils"
 import { isBoolean, useUiMemory } from "@/lib/ui-memory"
 import { StoryStatsIsland } from "@/components/backlog/drawer/user-story-drawer-sidebar"
+import { useStoryAgentStats } from "@/components/backlog/drawer/story-conversation"
 import { DirectStoryPreview } from "@/components/backlog/drawer/direct-story-preview"
 import { StoryStatusGlow } from "@/components/backlog/drawer/story-status-glow"
 import {
@@ -104,13 +105,8 @@ import {
   useStoryDrawerWidth,
 } from "@/components/backlog/drawer/drawer-resize-handle"
 import { useLatestCallback } from "@/lib/use-latest-callback"
-import {
-  queueComment,
-  requestQueuedDelivery,
-} from "@/pages/backlog/comment-queue"
 import { readStoryRunMode, type StoryRunMode } from "@/lib/runtime-preference"
 import type { Ambition } from "@/lib/personalization"
-import { createUserStoryCommentSubmission } from "./user-story-comment-submission"
 import {
   actionInput,
   createdAtLabel,
@@ -137,7 +133,6 @@ export function UserStoryDrawerPanel({
   onApproveAndMerge,
   onCheckPullRequest,
   onCreateUserStory,
-  onCreateUserStoryComment,
   onDeleteUserStory,
   onOpenDrawer,
   onOpenPullRequest,
@@ -170,13 +165,6 @@ export function UserStoryDrawerPanel({
     input: Omit<UserStoryDraft, "projectId">,
     contextLimit?: number
   ) => Promise<UserStory>
-  onCreateUserStoryComment: (
-    story: UserStory,
-    input: Pick<
-      UserStoryComment,
-      "body" | "codeSelectionAttachments" | "fileAttachments"
-    >
-  ) => Promise<UserStoryComment>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onOpenPullRequest: (story: UserStory) => Promise<UserStory>
@@ -186,16 +174,13 @@ export function UserStoryDrawerPanel({
   }) => Promise<string>
   onRequestChanges: (
     story: UserStory,
-    feedback: string,
-    commentId: string,
-    codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
-    fileAttachments: UserStoryComment["fileAttachments"]
+    input: StoryMessageInput
   ) => Promise<UserStory | undefined>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUndoUserStoryComment: (
     story: UserStory,
-    target: AgentConversationUserMessageUndo
+    rewind: StoryMessageUndo["rewind"]
   ) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
@@ -225,8 +210,9 @@ export function UserStoryDrawerPanel({
   const statsExpandable = Boolean(
     mode !== "create" &&
       status !== "backlog" &&
-      (status === "in-progress" || userStory?.clineSessionId || userStory?.agentUsage)
+      (status === "in-progress" || userStory?.engineSessionId)
   )
+  const agentStats = useStoryAgentStats(userStory)
   // Opening a story on its default tab brings back the tab it was left on.
   const [rememberedTabs] = React.useState(() =>
     mode !== "create" && userStory && initialTab === "user-story" && !focusComment
@@ -320,7 +306,8 @@ export function UserStoryDrawerPanel({
   const [ambition, setAmbition] = React.useState<Ambition | null>(
     userStory?.ambition ?? null
   )
-  const [commentSubmission] = React.useState(createUserStoryCommentSubmission)
+  // A second click does not send the message twice.
+  const sendingComment = React.useRef(false)
   // The stats panel opens in full; it can fold into a small pill.
   const [statsExpanded, setStatsExpanded] = useUiMemory(
     "story-drawer.stats-expanded",
@@ -819,8 +806,9 @@ export function UserStoryDrawerPanel({
             diffStats={diffStats}
             contextLimitKey={contextLimitKey}
             expanded={statsShownExpanded}
+            compaction={agentStats.compaction}
             preparing={!statsExpandable}
-            source={userStory}
+            source={agentStats.source}
             useEditorModel={summaryEditable}
             onExpand={() => setStatsExpanded(true)}
           />
@@ -856,7 +844,7 @@ export function UserStoryDrawerPanel({
   }
 
   async function handleAction(action: DrawerAction) {
-    if (pendingAction || commentSubmission.pending) return
+    if (pendingAction || sendingComment.current) return
     if (action === "Close") return onCancel()
     if (action === "Discard") return discardUserStory()
     if (action === "Request Changes") return submitComment()
@@ -934,7 +922,7 @@ export function UserStoryDrawerPanel({
   }
 
   async function submitComment(sendNow = false) {
-    if (!userStory || pendingAction || commentSubmission.pending) return
+    if (!userStory || pendingAction || sendingComment.current) return
     const hasCommentAttachments =
       commentCodeSelectionAttachments.length > 0 ||
       commentFileAttachments.length > 0
@@ -942,69 +930,35 @@ export function UserStoryDrawerPanel({
     const body =
       currentComment.trim() || (hasCommentAttachments ? "Attached files." : "")
     if (!body && !hasCommentAttachments) return
-    // The agent is working: the comment waits for it (or "Send now").
-    if (status === "in-progress" && userStory.agentStatus === "Running") {
-      const queued = queueComment({
-        body,
+    setPendingAction("Request Changes")
+    sendingComment.current = true
+    // The message shows in the conversation once the engine has it: the
+    // composer empties now and gets the draft back if it was not sent.
+    clearCommentComposer()
+    const restore = () =>
+      restoreCommentComposer(
+        currentComment,
+        commentCodeSelectionAttachments,
+        commentFileAttachments
+      )
+    try {
+      // While the agent works, the message waits for its turn to end, or
+      // with "Send now" joins the running turn.
+      const sent = await onRequestChanges(userStory, {
+        text: body,
         codeSelectionAttachments: commentCodeSelectionAttachments,
         fileAttachments: commentFileAttachments,
-        storyId: userStory.id,
+        steer: sendNow,
       })
-      if (sendNow) requestQueuedDelivery(userStory.id, queued.id)
-      clearCommentComposer()
-      return
-    }
-    setPendingAction("Request Changes")
-    let composerCleared = false
-    // Empty the editor as soon as the comment shows in the conversation, so
-    // the message is not duplicated while the agent starts.
-    const clearComposerOnce = () => {
-      composerCleared = true
-      clearCommentComposer()
-    }
-    try {
-      const submitted = await commentSubmission.submit({
-        story: userStory,
-        input: {
-          body,
-          codeSelectionAttachments: commentCodeSelectionAttachments,
-          fileAttachments: commentFileAttachments,
-        },
-        createComment: (input) => onCreateUserStoryComment(userStory, input),
-        onCommentSaved: clearComposerOnce,
-        requestChanges: (createdComment) =>
-          onRequestChanges(
-            userStory,
-            body,
-            createdComment.id,
-            createdComment.codeSelectionAttachments,
-            createdComment.fileAttachments
-          ),
-      })
-      if (!submitted) {
-        if (composerCleared) {
-          restoreCommentComposer(
-            currentComment,
-            commentCodeSelectionAttachments,
-            commentFileAttachments
-          )
-        }
-        return
-      }
-      if (!composerCleared) clearComposerOnce()
+      if (!sent) restore()
     } catch (error) {
-      if (composerCleared) {
-        restoreCommentComposer(
-          currentComment,
-          commentCodeSelectionAttachments,
-          commentFileAttachments
-        )
-      }
+      restore()
       toast.error("Unable to send comment", {
         description: error instanceof Error ? error.message : String(error),
         position: "bottom-right",
       })
     } finally {
+      sendingComment.current = false
       setPendingAction(undefined)
     }
   }
@@ -1030,14 +984,13 @@ export function UserStoryDrawerPanel({
     setCommentEditorKey((key) => key + 1)
   }
 
-  async function undoCommentMessage(target: AgentConversationUserMessageUndo) {
+  async function undoCommentMessage(target: StoryMessageUndo) {
     if (!userStory) return
-    const comment = target.comment
-    await onUndoUserStoryComment(userStory, target)
-    commentValueRef.current = comment.body
-    setComment(comment.body)
-    setCommentCodeSelectionAttachments(comment.codeSelectionAttachments ?? [])
-    setCommentFileAttachments(comment.fileAttachments ?? [])
+    await onUndoUserStoryComment(userStory, target.rewind)
+    commentValueRef.current = target.body
+    setComment(target.body)
+    setCommentCodeSelectionAttachments([])
+    setCommentFileAttachments([])
     setCommentEditorKey((key) => key + 1)
     setTab("user-story")
     requestAnimationFrame(() => {
@@ -1046,4 +999,5 @@ export function UserStoryDrawerPanel({
         ?.focus()
     })
   }
+
 }

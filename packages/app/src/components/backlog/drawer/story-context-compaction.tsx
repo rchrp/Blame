@@ -1,20 +1,13 @@
 import * as React from "react"
+import type { EngineLocation } from "@blame/agent-runtime/engine-protocol"
 import { FoldVerticalIcon, LoaderCircleIcon } from "lucide-react"
 
-import type { UserStory } from "@/components/backlog/data/backlog-data"
-import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
-import {
-  type StoryModelSource,
-  useStoryModelChoice,
-} from "@/components/backlog/data/story-model-choice"
 import { compactTokens } from "@/components/backlog/drawer/story-context-usage"
-import { useModelSelection } from "@/components/model/model-selection"
 import { Button } from "@/components/ui/button"
-import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 
-// Compacting a story's context on request: Cline's own manual compaction of
-// the agent's session, picked up when the next message resumes it.
+// Compacting a conversation's context on request: the engine summarises
+// older records for the model; they stay in the conversation.
 
 export type StoryContextCompaction =
   | { status: "unavailable" }
@@ -25,80 +18,35 @@ export type StoryContextCompaction =
   | { status: "unchanged" }
   | { compact: () => void; message: string; status: "failed" }
 
-// A story, or a quick chat: both resume the same kind of agent session.
-export type CompactableAgent = StoryModelSource &
-  Pick<UserStory, "agentStatus" | "clineSessionId">
-
-export function useStoryContextCompaction(
-  userStory?: CompactableAgent
-): StoryContextCompaction {
-  const platform = usePlatform()
-  const auth = useCloudAuth()
-  const selection = useModelSelection()
-  const choice = useStoryModelChoice(userStory)
-  const [result, setResult] = React.useState<{
-    sessionId: string
-    value:
-      | Exclude<
-          StoryContextCompaction,
-          { status: "idle" | "busy" | "unavailable" | "failed" }
-        >
-      | { message: string; status: "failed" }
-  }>()
-  // A new run makes the last outcome stale: compacting is offered again.
-  const agentStatus = userStory?.agentStatus
-  const [seenAgentStatus, setSeenAgentStatus] = React.useState(agentStatus)
-  if (seenAgentStatus !== agentStatus) {
-    setSeenAgentStatus(agentStatus)
-    if (agentStatus === "Running" && result?.value.status !== "compacting")
-      setResult(undefined)
-  }
-  const compactSession = platform.agent?.sessions.compact
-  const sessionId = userStory?.clineSessionId ?? undefined
-  if (!compactSession || !sessionId || !userStory || !choice) {
-    return { status: "unavailable" }
-  }
-  if (auth.status !== "authenticated") return { status: "unavailable" }
-  const shown = result?.sessionId === sessionId ? result.value : undefined
+/** Compaction of an engine session: a story's or a quick chat's. */
+export function useEngineCompaction(input: {
+  session?: string | null
+  location?: EngineLocation
+  /** The session has records to compact. */
+  available: boolean
+  running: boolean
+}): StoryContextCompaction {
+  const engine = usePlatform().engine
+  const { session, location, available, running } = input
+  const [result, setResult] = React.useState<
+    { session: string; value: StoryContextCompaction } | undefined
+  >()
+  if (!session || !available || !engine) return { status: "unavailable" }
+  const shown = result?.session === session ? result.value : undefined
   if (shown?.status === "compacting") return shown
-  if (userStory.agentStatus === "Running") {
+  if (running)
     return { status: "busy", reason: "Available once the agent pauses." }
-  }
-
   const compact = () => {
-    const provider = selection.allProviders.find(
-      (item) => item.id === choice.providerId
-    )
-    setResult({ sessionId, value: { status: "compacting" } })
-    void compactSession({
-      apiConnection: auth.apiConnection,
-      credentialLabel: choice.credentialLabel ?? undefined,
-      maxInputTokens: storyMaxInputTokens(
-        userStory.id,
-        provider?.models[choice.modelId],
-        selection.allProviders
-      ),
-      modelId: choice.modelId,
-      providerId: choice.providerId,
-      sessionId,
-    })
-      .then((outcome) =>
-        setResult({
-          sessionId,
-          value: outcome.compacted
-            ? {
-                status: "done",
-                tokensAfter: outcome.tokensAfter,
-                tokensBefore: outcome.tokensBefore,
-              }
-            : { status: "unchanged" },
-        })
-      )
+    setResult({ session, value: { status: "compacting" } })
+    void engine
+      .call("compact", { session, location })
+      .then(() => setResult({ session, value: { status: "done" } }))
       .catch((error: unknown) =>
         setResult({
-          sessionId,
+          session,
           value: {
             status: "failed",
+            compact,
             message:
               error instanceof Error ? error.message : "Compaction failed.",
           },
@@ -106,8 +54,7 @@ export function useStoryContextCompaction(
       )
   }
   if (shown?.status === "failed") return { ...shown, compact }
-  if (shown) return shown
-  return { status: "idle", compact }
+  return shown ?? { status: "idle", compact }
 }
 
 export function CompactContextButton({

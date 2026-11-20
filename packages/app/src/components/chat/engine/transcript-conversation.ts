@@ -33,7 +33,11 @@ export type TranscriptConversation = {
 
 export function transcriptConversation(
   transcript: Transcript,
-  author: string
+  author: string,
+  options: {
+    /** The first turn answers a brief shown elsewhere (a story's request), not a message. */
+    brief?: boolean
+  } = {}
 ): TranscriptConversation {
   const comments: AgentConversationComment[] = []
   const rewindTargets = new Map<string, { to: number; workspace: boolean }>()
@@ -48,6 +52,7 @@ export function transcriptConversation(
   const runs: AgentConversationRun[] = []
   for (const turn of transcript.turns) {
     if (turn.status === "rewound") continue
+    const brief = options.brief && runs.length === 0
     const items = itemsByTurn.get(turn.turn) ?? []
     const opening = items.find(
       (item) => item.kind === "user" && item.delivery === "turn"
@@ -80,7 +85,7 @@ export function transcriptConversation(
       createdAt: iso(turn.startedAtMs),
       finalResponse: final?.detail ?? null,
       id: turn.turn,
-      kind: "change-request",
+      kind: brief ? "initial" : "change-request",
       modelId: modelRef?.model ?? null,
       providerId: modelRef ? appProviderId(modelRef.provider) : null,
       reasoningEffort: transcript.config?.reasoning ?? null,

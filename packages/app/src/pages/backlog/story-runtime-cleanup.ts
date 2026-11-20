@@ -13,6 +13,7 @@ import {
   stopManagedCloudPreview,
 } from "@/components/backlog/drawer/use-user-story-preview-runner"
 import type { Platform, usePlatform } from "@/context/platform"
+import { storyLocation } from "./story-engine"
 import { inactiveStoryFields } from "./story-runtime-state"
 
 export async function deleteUserStoryWithRuntime(
@@ -37,10 +38,17 @@ export async function deleteUserStoryWithRuntime(
   }
 }
 
+// Stops the story's agent if a turn runs. Its records stay with the engine.
 export async function abortStoryAgent(story: UserStory, platform: Platform) {
-  if (!story.clineSessionId) return
-  await platform.agent?.sessions
-    .abort(story.clineSessionId)
+  if (!story.engineSessionId || !platform.engine) return
+  const location = storyLocation(
+    story.workspaceMode ?? "direct",
+    platform.platform
+  )
+  // A VM story's agent cannot run yet, so there is nothing to stop.
+  if (location !== "host") return
+  await platform.engine
+    .call("interrupt", { session: story.engineSessionId, location })
     .catch(() => undefined)
 }
 
