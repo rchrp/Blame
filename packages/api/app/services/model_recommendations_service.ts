@@ -1,11 +1,11 @@
 import type {
   CatalogModel,
   CatalogProvider,
+  ModelRecommendationProfile,
   OpenRouterModel,
 } from '#services/model_catalog_contract'
 import { ModelCatalogMatcher } from '#services/model_catalog_matcher'
 import { buildModelRecommendations } from '#services/model_recommendation_service'
-import ModelUsageProfileService from '#services/model_usage_profile_service'
 import { fetchOpenRouterCatalog } from '#services/openrouter_catalog_client'
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
@@ -25,18 +25,23 @@ const benchmarksTtlMs = 6 * 60 * 60_000
 // After a failure, ask again soon rather than at every picker opening.
 const failedTtlMs = 5 * 60_000
 let benchmarks: { expiresAt: number; models: Promise<OpenRouterModel[]> } | undefined
+// The conversation the recommendations price. No account's own usage is kept
+// in the API: an agent's usage is in the records of its engine sessions.
+const usageProfile: ModelRecommendationProfile = {
+  inputTokens: 50_000,
+  outputTokens: 5_000,
+  cacheReadTokens: 0,
+  sampleCount: 0,
+}
 
 /**
- * Ranks the models a client offers by benchmark and by what the person's
- * own usage would cost. The API keeps no catalog: the engine reads
+ * Ranks the models a client offers by benchmark and by what a typical
+ * conversation would cost. The API keeps no catalog: the engine reads
  * models.dev, and the client sends what it offers.
  */
 export default class ModelRecommendationsService {
-  async recommend(userId: string, input: { connected: string[]; models: OfferedModel[] }) {
-    const [references, profile] = await Promise.all([
-      openRouterModels(),
-      new ModelUsageProfileService().forUser(userId),
-    ])
+  async recommend(input: { connected: string[]; models: OfferedModel[] }) {
+    const references = await openRouterModels()
     const matcher = new ModelCatalogMatcher(references)
     const providers = new Map<string, CatalogProvider>()
     for (const offered of input.models) {
@@ -51,7 +56,7 @@ export default class ModelRecommendationsService {
     return buildModelRecommendations(
       [...providers.values()],
       input.connected,
-      profile,
+      usageProfile,
       new Date().toISOString()
     )
   }

@@ -5,9 +5,10 @@ import type {
 } from "@blame/agent-runtime/engine-protocol"
 
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
-import type { StoryContextCompaction } from "@/components/backlog/drawer/story-context-compaction"
+import { useEngineCompaction } from "@/components/backlog/drawer/story-context-compaction"
 import type { QuickChat } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
+import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import { transcriptConversation } from "@/components/chat/engine/transcript-conversation"
 import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import { useModelSelection } from "@/components/model/model-selection"
@@ -46,9 +47,6 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     () => (transcript ? transcriptConversation(transcript, "You") : undefined),
     [transcript]
   )
-  const [compaction, setCompaction] = React.useState<
-    { session: string; value: StoryContextCompaction } | undefined
-  >()
   const running =
     quickChats.isRunning(chat) ||
     Boolean(transcript?.runningTurn) ||
@@ -61,12 +59,7 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
       settings: {
         workspaceRoot: target.workspace ?? project!.path,
         projectId: target.projectId,
-        model: {
-          providerId: model.provider.id,
-          modelId: model.id,
-          credentialLabel: model.credentialLabel,
-          reasoning: selection.currentVariant,
-        },
+        model: engineModelChoice(selection),
         // The cap picked in the chat's stats panel, like a story's.
         maxContextTokens: storyMaxInputTokens(
           target.id,
@@ -86,7 +79,7 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
       platform,
       projectPath: project?.path,
     })
-    if (error) return error
+    return error
   }
 
   // A new chat gets its row, then its engine session; the title improves
@@ -151,33 +144,11 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     })
   }
 
-  const compactionState: StoryContextCompaction = (() => {
-    if (!session || !transcript?.items.length || !platform.engine)
-      return { status: "unavailable" }
-    const shown = compaction?.session === session ? compaction.value : undefined
-    if (shown?.status === "compacting") return shown
-    if (running)
-      return { status: "busy", reason: "Available once the agent pauses." }
-    const compact = () => {
-      setCompaction({ session, value: { status: "compacting" } })
-      void platform
-        .engine!.call("compact", { session })
-        .then(() => setCompaction({ session, value: { status: "done" } }))
-        .catch((error: unknown) =>
-          setCompaction({
-            session,
-            value: {
-              status: "failed",
-              compact,
-              message:
-                error instanceof Error ? error.message : "Compaction failed.",
-            },
-          })
-        )
-    }
-    if (shown?.status === "failed") return { ...shown, compact }
-    return shown ?? { status: "idle", compact }
-  })()
+  const compactionState = useEngineCompaction({
+    available: Boolean(transcript?.items.length),
+    running,
+    session,
+  })
 
   return {
     compaction: compactionState,

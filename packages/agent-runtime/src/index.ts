@@ -2,10 +2,7 @@ export {
   BlameAgentRuntime,
   createClineBaselineRuntime,
 } from "./cline-runtime.js";
-export {
-  claudeCodeBridgeIdle,
-  closeClaudeCodeSessions,
-} from "./claude-code/claude-code-provider.js";
+export { closeClaudeCodeSessions } from "./claude-code/claude-code-provider.js";
 export type {
   LightWorkspaceExecutionRequest,
   LightWorkspaceExecutor,

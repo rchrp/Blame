@@ -11,6 +11,9 @@ import {
   presentEngineToolCall,
   type EngineDescribeRequest,
 } from "./engine-tools.js";
+import { leaveCompletionMemory } from "./completion-memory.js";
+import type { LightToolResult } from "./light-contracts.js";
+import type { ProjectMemoryCandidate } from "./project-memory.js";
 
 // `--serve` keeps one harness for many requests (one JSON line each, answered
 // by id), so a session's managed runs and caches live between tool calls.
@@ -98,8 +101,9 @@ async function serve() {
       inFlight.set(id, controller);
       started.add(controller);
       void presentEngineToolCall(execute, message.call, controller.signal)
-        .then(({ presented, raw }) => {
+        .then(async ({ presented, raw }) => {
           if (!startedRun(raw)) started.delete(controller);
+          await leaveMemory(message.call!, raw);
           write({ id, presented });
         })
         .catch((error: unknown) => {
@@ -139,4 +143,21 @@ function startedRun(result: unknown) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+// An accepted finish_task may leave a memory for the project; the engine
+// host saves it (completion-memory.ts). A failure to write it loses only
+// the memory, never the finish.
+async function leaveMemory(
+  call: LightWorkspaceExecutionRequest,
+  raw: LightToolResult<unknown> | undefined,
+) {
+  if (call.tool !== "finish_task" || raw?.status !== "ok") return;
+  const data = raw.data as { notification?: { memory?: ProjectMemoryCandidate } };
+  const memory = data?.notification?.memory;
+  const session = call.toolContext?.sessionId;
+  if (!memory || typeof session !== "string") return;
+  await leaveCompletionMemory(call.workspaceRoot, session, memory).catch(
+    () => undefined,
+  );
 }

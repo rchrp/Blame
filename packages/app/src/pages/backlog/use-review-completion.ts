@@ -17,7 +17,6 @@ export function useReviewCompletion(updateStory: UpdateStory) {
       const doneStory = await updateStory(story, {
         ...inactiveStoryFields(),
         agentLastError: null,
-        agentLastEvent: "Marked as done.",
         status: "done",
       })
       toast.success("Story marked as done", { position: "bottom-right" })

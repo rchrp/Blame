@@ -10,8 +10,6 @@ import UserAiPreference from '#models/user_ai_preference'
 import UserMcpConfiguration from '#models/user_mcp_configuration'
 import UserSubscription from '#models/user_subscription'
 import UserStory from '#models/user_story'
-import UserStoryAgentRun from '#models/user_story_agent_run'
-import UserStoryComment from '#models/user_story_comment'
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
 import type { ApiClient } from '@japa/api-client'
@@ -210,17 +208,6 @@ async function createStory(projectId: string) {
     priority: 'Medium',
     owner: 'user',
   })
-  const comment = await UserStoryComment.create({
-    userStoryId: story.id,
-    body: 'Owned comment',
-    author: 'user',
-  })
-  await UserStoryAgentRun.create({
-    userStoryId: story.id,
-    commentId: comment.id,
-    kind: 'change-request',
-    status: 'completed',
-  })
   return story.id
 }
 
@@ -313,8 +300,7 @@ async function assertOwnedRowsDeleted(ids: OwnedDataIds, assert: Assert) {
     db.from('project_code_practices').where('project_id', ids.projectId),
     db.from('project_agent_memories').where('project_id', ids.projectId),
     db.from('user_stories').where('project_id', ids.projectId),
-    db.from('user_story_comments').where('user_story_id', ids.storyId),
-    db.from('user_story_agent_runs').where('user_story_id', ids.storyId),
+    db.from('user_stories').where('id', ids.storyId),
     db.from('quick_chats').where('id', ids.chatId),
   ])
   for (const records of rows) assert.lengthOf(records, 0)

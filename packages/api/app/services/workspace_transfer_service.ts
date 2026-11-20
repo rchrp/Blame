@@ -37,9 +37,6 @@ export const workspaceTables = [
   'project_agent_memories',
   'security_audits',
   'user_stories',
-  'user_story_comments',
-  'user_story_agent_runs',
-  'user_story_agent_run_activities',
   'quick_chats',
 ] as const
 
@@ -68,9 +65,6 @@ const tables: Record<WorkspaceTable, TableSpec> = {
   },
   security_audits: { owner: 'project_id', parent: 'projects' },
   user_stories: { owner: 'project_id', parent: 'projects' },
-  user_story_comments: { owner: 'user_story_id', parent: 'user_stories' },
-  user_story_agent_runs: { owner: 'user_story_id', parent: 'user_stories' },
-  user_story_agent_run_activities: { owner: 'run_id', parent: 'user_story_agent_runs' },
   quick_chats: { owner: 'project_id', parent: 'projects' },
 }
 
@@ -122,7 +116,6 @@ class WorkspaceImporter {
   private projects = new Map<string, string>()
   private present = new Map<WorkspaceTable, Set<string>>()
   private columns = new Map<WorkspaceTable, Map<string, string>>()
-  private activeRuns: { storyId: string; runId: unknown }[] = []
 
   constructor(
     private transaction: TransactionClientContract,
@@ -160,14 +153,8 @@ class WorkspaceImporter {
     return inserted
   }
 
-  /** Points stories at their active runs and moves each project counter past its stories. */
+  /** Moves each project counter past its stories. */
   async finish() {
-    for (const { storyId, runId } of this.activeRuns) {
-      await this.transaction
-        .from('user_stories')
-        .where('id', storyId)
-        .update({ active_agent_run_id: runId })
-    }
     for (const projectId of new Set(this.projects.values())) {
       const highest = await this.transaction
         .from('user_stories')
@@ -205,10 +192,6 @@ class WorkspaceImporter {
   }
 
   private async prepareStory(row: WorkspaceRow) {
-    if (row.active_agent_run_id) {
-      this.activeRuns.push({ storyId: String(row.id), runId: row.active_agent_run_id })
-      row.active_agent_run_id = null
-    }
     const taken = await this.transaction
       .from('user_stories')
       .where('project_id', String(row.project_id))

@@ -64,7 +64,9 @@ target: number,
  */
 block: number, 
 /**
- * Text shown to the model in place of the block.
+ * Text shown to the model in place of the block. Empty removes the
+ * block (a tool result rewritten into fewer parts). A later edit of the
+ * same block replaces an earlier one.
  */
 replacement: string, };
 

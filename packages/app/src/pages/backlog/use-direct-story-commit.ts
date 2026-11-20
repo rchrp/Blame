@@ -105,7 +105,6 @@ export function useDirectStoryCommit({
         const doneStory = await updateStory(story, {
           ...inactiveStoryFields(),
           agentLastError: null,
-          agentLastEvent: `Committed ${result.commit.slice(0, 7)}.`,
           baseCommit: result.baseCommit,
           mergeCommit: result.commit,
           mergedAt: new Date().toISOString(),
@@ -136,7 +135,6 @@ export function useDirectStoryCommit({
           })
         return updateStory(story, {
           agentLastError: message,
-          agentLastEvent: message,
         })
       }
     },

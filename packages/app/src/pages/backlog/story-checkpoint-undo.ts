@@ -3,6 +3,7 @@ import type * as React from "react"
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import type { Platform } from "@/context/platform"
+import { storyLocation } from "./story-engine"
 
 export function replaceStoryAfterUndo(
   story: UserStory,
@@ -21,25 +22,20 @@ export function replaceStoryAfterUndo(
   )
 }
 
-export async function restoreStoryCheckpoint(
+/** Undoes a message to the story's agent and what followed it, files included when they were snapshotted. */
+export async function rewindStoryMessage(
   platform: Platform,
   story: UserStory,
-  sessionId: string | null | undefined,
-  checkpointRunCount: number
+  target: { to: number; workspace: boolean }
 ) {
-  if (!platform.agent)
-    throw new Error("Desktop agent runtime is not available.")
-  if (!sessionId) throw new Error("This message has no Cline session.")
-  if (!story.worktree)
-    throw new Error("This user story has no active worktree.")
-  return platform.agent.sessions.restoreCheckpoint({
-    checkpointRunCount,
-    cwd: story.worktree,
-    restore: {
-      messages: true,
-      omitCheckpointMessageFromSession: true,
-      workspace: true,
-    },
-    sessionId,
+  if (!platform.engine)
+    throw new Error("The desktop agent engine is not available.")
+  if (!story.engineSessionId)
+    throw new Error("This user story has no agent conversation.")
+  return platform.engine.call("rewind", {
+    session: story.engineSessionId,
+    location: storyLocation(story.workspaceMode ?? "direct", platform.platform),
+    to: target.to,
+    restoreWorkspace: target.workspace,
   })
 }

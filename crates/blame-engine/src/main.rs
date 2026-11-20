@@ -14,6 +14,7 @@
 mod auth;
 mod catalog;
 mod connection;
+mod context;
 mod engine;
 mod log;
 mod ports;

@@ -10,8 +10,13 @@ import {
   type EngineLogLine,
   type HostParamsOf,
   type SessionConfig,
+  type Transcript,
   type UserBlock,
 } from "@blame/engine-client";
+import { mkdir } from "node:fs/promises";
+import { listProjectMemories, saveProjectMemory } from "../cloud-api.js";
+import { takeCompletionMemory } from "../harness/completion-memory.js";
+import { selectProjectMemory } from "../harness/project-memory.js";
 import type { ApiConnection } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
@@ -21,11 +26,15 @@ import type {
   EngineHostInput,
   EngineHostMethod,
   EngineHostResult,
+  EngineLocation,
   EngineMessage,
+  EngineSessionRef,
   EngineSessionSettings,
+  EngineSessionStatus,
 } from "./protocol.js";
+import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
+import { purposeClientTools } from "./purposes/tool-sets.js";
 import { EngineProviders } from "./providers.js";
-import { quickChatConfig } from "./purposes/quick-chat.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
 import { ToolSet, type ClientTool } from "./tool.js";
@@ -34,6 +43,8 @@ import {
   McpConnections,
   clientToolGuards,
   clientToolPolicy,
+  previewRuntimeContext,
+  type ConversationToolSession,
 } from "./tools/index.js";
 import { webResearchClientTools } from "./tools/web-research.js";
 
@@ -60,6 +71,10 @@ export type EngineHostOptions = {
   now?: () => Date;
   /** For tests: more client tools beside the app's own. */
   extraTools?: ClientTool<never>[];
+  /** For tests: more client tools, by name, for sessions of a purpose. */
+  extraPurposeTools?: Partial<
+    Record<EngineSessionSettings["purpose"], string[]>
+  >;
 };
 
 type Waiting = {
@@ -79,6 +94,10 @@ export class EngineHost {
   private api: ApiConnection | undefined;
   private readonly known = new Map<string, Known>();
   private readonly current = new Map<string, Current>();
+  /** Where each session's engine is, as the renderer named its workspace. */
+  private readonly locations = new Map<string, EngineLocation>();
+  /** Sessions created here whose first message is not sent yet. */
+  private readonly awaitingFirst = new Map<string, EngineSessionSettings>();
   private readonly approvals = new Map<string, Waiting>();
   private readonly earlyDecisions = new Map<string, "approved" | "denied">();
   private readonly supervisor: EngineSupervisor;
@@ -87,7 +106,10 @@ export class EngineHost {
   private readonly mcp = new McpConnections({
     log: (message, payload) => console.warn(message, payload ?? {}),
   });
-  /** Each conversation's own client tools, for the purpose builders. */
+  /**
+   * Each conversation's own client tools, for the purpose builders. Deleting
+   * a session (`session/delete`, to come) must `release` its tools.
+   */
   readonly conversationTools: ConversationTools;
   private readonly credentials: CredentialResolver;
   private readonly providers: EngineProviders;
@@ -164,7 +186,26 @@ export class EngineHost {
         await options.desktop?.openExternal?.({ url });
       },
     });
-    this.hub = new SessionHub(this.supervisor, options.emit);
+    this.hub = new SessionHub(this.supervisor, (event) => {
+      if (event.type === "activity" && !event.running)
+        void this.saveCompletionMemory(event.session);
+      options.emit(event);
+    });
+  }
+
+  /**
+   * A story's accepted finish_task may have left a memory for its project
+   * (harness/completion-memory.ts): saved to the account when the turn
+   * ends, as the agent runtime did after its own sessions.
+   */
+  private async saveCompletionMemory(session: string) {
+    const config = this.current.get(session)?.config;
+    const projectId = this.known.get(session)?.projectId;
+    const api = this.api;
+    if (config?.purpose !== "development-story" || !projectId || !api) return;
+    const memory = await takeCompletionMemory(config.workspace_root, session);
+    if (memory)
+      await saveProjectMemory(api, projectId, memory).catch(() => undefined);
   }
 
   /** Runs one call of the renderer (through the main process). */
@@ -188,36 +229,52 @@ export class EngineHost {
       return null;
     },
     createSession: async ({ session, ...settings }) => {
+      const workspace = purposeOf(settings).workspace(
+        settings.settings,
+        session,
+      );
+      const engine = this.engineAt(workspace.location);
+      // A scratch workspace (the new-project assistant) exists before its agent.
+      await mkdir(workspace.root, { recursive: true });
       const promptDate = this.now();
-      const config = this.config(session, settings, promptDate);
-      const client = await this.supervisor.client();
+      const config = await this.config(session, settings, promptDate);
+      const client = await engine.supervisor.client();
       const opened = await client.createSession({ session, config });
+      this.locations.set(session, workspace.location);
       this.current.set(session, { config, promptDate });
+      this.awaitingFirst.set(session, settings);
       return { session: opened.session, head: opened.head };
     },
     configure: async ({ session, ...settings }) => {
-      const client = await this.supervisor.client();
+      const client = await this.clientFor({ session, settings });
       return { changed: await this.applySettings(client, session, settings) };
     },
-    send: async ({ session, message, delivery, settings }) => {
-      const client = await this.supervisor.client();
+    send: async ({ session, location, message, delivery, settings }) => {
+      const engine = this.engineFor({ session, location, settings });
+      const client = await engine.supervisor.client();
       if (settings) await this.applySettings(client, session, settings);
-      const input = await this.userInput(client, message);
+      const first = this.awaitingFirst.get(session);
+      const decorate = first && purposeOf(first).firstMessage;
+      const text = decorate
+        ? await decorate(first.settings, message, this.firstMessageServices)
+        : message;
+      const input = await this.userInput(client, text);
       const accepted = await client.sendMessage({ session, input, delivery });
-      this.hub.watch(session);
+      this.awaitingFirst.delete(session);
+      engine.hub.watch(session);
       return { turn: accepted.turn, started: accepted.started };
     },
-    interrupt: async ({ session }) => {
-      await (await this.supervisor.client()).interrupt({ session });
+    interrupt: async (ref) => {
+      await (await this.clientFor(ref)).interrupt({ session: ref.session });
       return null;
     },
-    compact: async ({ session }) => {
-      await (await this.supervisor.client()).compact({ session });
-      this.hub.watch(session);
+    compact: async (ref) => {
+      await (await this.clientFor(ref)).compact({ session: ref.session });
+      this.engineFor(ref).hub.watch(ref.session);
       return null;
     },
-    rewind: async ({ session, to, restoreWorkspace }) => {
-      const client = await this.supervisor.client();
+    rewind: async ({ session, location, to, restoreWorkspace }) => {
+      const client = await this.clientFor({ session, location });
       const rewound = await client.rewind({
         session,
         to,
@@ -227,8 +284,9 @@ export class EngineHost {
       this.current.delete(session);
       return { finished: rewound.finished };
     },
-    undoRewind: async ({ session }) => {
-      await (await this.supervisor.client()).undoRewind({ session });
+    undoRewind: async (ref) => {
+      const session = ref.session;
+      await (await this.clientFor(ref)).undoRewind({ session });
       this.current.delete(session);
       return null;
     },
@@ -244,8 +302,11 @@ export class EngineHost {
       setTimeout(() => this.earlyDecisions.delete(key), 60_000).unref?.();
       return true;
     },
-    follow: async ({ session, subscription }) => {
-      this.hub.subscribe(session, subscription);
+    follow: async ({ session, location, subscription }) => {
+      this.engineFor({ session, location }).hub.subscribe(
+        session,
+        subscription,
+      );
       return null;
     },
     unfollow: async ({ subscription }) => {
@@ -253,6 +314,14 @@ export class EngineHost {
       return null;
     },
     running: async () => this.hub.running(),
+    status: async ({ sessions, location }) => {
+      const engine = this.engineAt(location ?? "host");
+      const client = await engine.supervisor.client();
+      const running = new Set(engine.hub.running());
+      return Promise.all(
+        sessions.map((session) => this.sessionStatus(client, session, running)),
+      );
+    },
     providers: ({ refresh }) => this.providers.list(refresh ?? false),
     saveCredential: (input) => this.providers.saveCredential(input),
     deleteCredential: ({ id }) => this.providers.deleteCredential(id),
@@ -288,7 +357,7 @@ export class EngineHost {
     settings: EngineSessionSettings,
   ): Promise<boolean> {
     const current = await this.currentConfig(client, session);
-    const config = this.config(session, settings, current.promptDate);
+    const config = await this.config(session, settings, current.promptDate);
     if (sameJson(config, current.config)) return false;
     await client.configure({ session, config });
     this.current.set(session, { config, promptDate: current.promptDate });
@@ -322,20 +391,131 @@ export class EngineHost {
     return this.options.now?.() ?? new Date();
   }
 
-  private config(
+  private async config(
     session: string,
     settings: EngineSessionSettings,
     promptDate: Date,
-  ): SessionConfig {
-    const { model, projectId } = settings.settings;
+  ): Promise<SessionConfig> {
+    const { model } = settings.settings;
+    const projectId =
+      "projectId" in settings.settings
+        ? settings.settings.projectId
+        : undefined;
     this.known.set(session, {
       projectId,
       credentialLabel: model.credentialLabel,
     });
-    switch (settings.purpose) {
-      case "quick-chat":
-        return quickChatConfig(settings.settings, this.tools, promptDate);
+    const clientTools = [
+      ...purposeClientTools[settings.purpose],
+      ...(this.options.extraPurposeTools?.[settings.purpose] ?? []),
+    ];
+    // Listed once per conversation and host lifetime, so its config (and the
+    // provider's prompt cache) stays the same from one message to the next.
+    const own = await this.conversationTools.ensure(
+      conversationToolSession(
+        session,
+        settings,
+        purposeOf(settings).workspace(settings.settings, session).root,
+      ),
+    );
+    const config = purposeOf(settings).config(settings.settings, session, {
+      tools: this.tools,
+      clientTools,
+      toolNames: [...clientTools, ...own.specs.map((spec) => spec.name)],
+      promptDate,
+    });
+    return {
+      ...config,
+      client_tools: [...(config.client_tools ?? []), ...own.specs],
+      ...(own.prompt
+        ? { system_prompt: `${config.system_prompt}\n\n${own.prompt}` }
+        : {}),
+    };
+  }
+
+  /**
+   * The engine for a workspace's location. Only this computer's exists: a
+   * workspace in the Blame Runtime VM needs an engine running inside it,
+   * which is one more location here (`limaEngine`/`wslEngine` build its
+   * command) without any change to purposes or the renderer.
+   */
+  private engineAt(location: EngineLocation) {
+    if (location === "vm")
+      throw new Error(
+        "This story's worktree is inside the Blame Runtime VM, where Blame's agent engine does not run yet. Run the story in Direct mode, or with Cloud Preview, for now.",
+      );
+    return { supervisor: this.supervisor, hub: this.hub };
+  }
+
+  /** The engine of a session: named by the call, its settings, or remembered. */
+  private engineFor(
+    ref: EngineSessionRef & { settings?: EngineSessionSettings },
+  ) {
+    const location =
+      ref.location ??
+      (ref.settings
+        ? purposeOf(ref.settings).workspace(ref.settings.settings, ref.session)
+            .location
+        : undefined) ??
+      this.locations.get(ref.session) ??
+      "host";
+    this.locations.set(ref.session, location);
+    return this.engineAt(location);
+  }
+
+  private clientFor(
+    ref: EngineSessionRef & { settings?: EngineSessionSettings },
+  ) {
+    return this.engineFor(ref).supervisor.client();
+  }
+
+  /** What the first message of a conversation may carry beside the person's words. */
+  private readonly firstMessageServices: FirstMessageServices = {
+    projectMemory: async ({ projectId, workspaceRoot, objective }) => {
+      const api = this.api;
+      if (!api) return undefined;
+      const records = await listProjectMemories(api, projectId);
+      const selection = await selectProjectMemory({
+        objective,
+        records,
+        workspaceRoot,
+      });
+      return selection.briefing;
+    },
+  };
+
+  /** Where a session stands, from its records (it is opened if needed). */
+  private async sessionStatus(
+    client: EngineClient,
+    session: string,
+    running: ReadonlySet<string>,
+  ): Promise<EngineSessionStatus> {
+    const reducer = new TranscriptReducer();
+    try {
+      for (;;) {
+        const page = await client.readRecords({
+          session,
+          after: reducer.lastSeq,
+          limit: 1000,
+        });
+        reducer.applyRecords(page.records);
+        if (!page.records.length || reducer.lastSeq >= page.head) break;
+      }
+    } catch {
+      return { session, exists: false, running: false, turns: 0 };
     }
+    const transcript = reducer.snapshot();
+    const ended = transcript.turns.filter((turn) => turn.outcome).at(-1);
+    const last = ended?.outcome;
+    const reply = ended ? lastReply(transcript, ended.turn) : undefined;
+    return {
+      session,
+      exists: true,
+      running: running.has(session) || transcript.runningTurn !== undefined,
+      ...(last ? { lastOutcome: last } : {}),
+      ...(reply ? { lastReply: reply } : {}),
+      turns: transcript.turns.length,
+    };
   }
 
   private async userInput(
@@ -424,4 +604,70 @@ function canonical(value: unknown): string {
       )
       .join(",")}}`;
   return JSON.stringify(value);
+}
+
+/** The summary a turn handed finish_task, or else the last thing it said. */
+function lastReply(transcript: Transcript, turn: string): string | undefined {
+  let text: string | undefined;
+  for (const item of transcript.items) {
+    if (!("turn" in item) || item.turn !== turn) continue;
+    if (item.kind === "text" && item.text.trim()) text = item.text.trim();
+    if (
+      item.kind === "tool_call" &&
+      item.name === "finish_task" &&
+      item.state === "completed"
+    ) {
+      const input = item.input;
+      const summary =
+        input && typeof input === "object" && !Array.isArray(input)
+          ? input.summary
+          : undefined;
+      if (typeof summary === "string" && summary.trim()) return summary.trim();
+    }
+  }
+  return text;
+}
+
+/** What the conversation's own client tools are listed for. */
+function conversationToolSession(
+  session: string,
+  settings: EngineSessionSettings,
+  workspaceRoot: string,
+): ConversationToolSession {
+  switch (settings.purpose) {
+    case "development-story": {
+      const story = settings.settings;
+      return {
+        session,
+        kind: "story",
+        workspaceRoot,
+        projectId: story.projectId,
+        storyId: story.storyId,
+        preview: previewRuntimeContext({
+          projectInitialization: story.projectInitialization,
+          previewDevtoolsScope: story.previewDevtoolsScope,
+          projectId: story.projectId,
+          storyId: story.storyId,
+          workspaceMode: story.workspaceMode,
+          workspaceRoot,
+        }),
+      };
+    }
+    case "plan":
+      return {
+        session,
+        kind: "plan",
+        workspaceRoot,
+        projectId: settings.settings.projectId,
+      };
+    case "new-project":
+      return { session, kind: "new-project", workspaceRoot };
+    case "quick-chat":
+      return {
+        session,
+        kind: "quick-chat",
+        workspaceRoot,
+        projectId: settings.settings.projectId,
+      };
+  }
 }

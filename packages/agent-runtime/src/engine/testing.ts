@@ -13,6 +13,8 @@ type Reply =
   | { kind: "tools"; calls: Array<{ name: string; input: unknown }> }
   /** The beginning of a reply, then silence: a turn that stays in flight. */
   | { kind: "stall"; text: string }
+  /** An HTTP error, as the provider sends one. */
+  | { kind: "error"; status: number; type: string }
   /** An HTTP error with a JSON body, as a provider refuses a request. */
   | { kind: "refuse"; status: number; body: unknown };
 
@@ -24,6 +26,11 @@ export const tools = (
   calls,
 });
 export const stall = (text: string): Reply => ({ kind: "stall", text });
+export const failure = (status: number, type: string): Reply => ({
+  kind: "error",
+  status,
+  type,
+});
 export const refuse = (status: number, body: unknown): Reply => ({
   kind: "refuse",
   status,
@@ -161,6 +168,17 @@ export class MockModel {
           response.writeHead(500).end();
           return;
         }
+        if (reply.kind === "error") {
+          response
+            .writeHead(reply.status, { "content-type": "application/json" })
+            .end(
+              JSON.stringify({
+                type: "error",
+                error: { type: reply.type, message: `Scripted ${reply.type}` },
+              }),
+            );
+          return;
+        }
         if (reply.kind === "refuse") {
           response
             .writeHead(reply.status, { "content-type": "application/json" })
@@ -213,6 +231,8 @@ export class FakeApi {
   readonly logs = new Map<string, unknown[]>();
   readonly blobs = new Map<string, { mediaType: string; bytes: Buffer }>();
   readonly searches: string[] = [];
+  /** Project memories the API answers (`/projects/:id/agent-memories`). */
+  memories: unknown[] = [];
   private readonly server: Server;
   url = "";
   token = "user-token";
@@ -296,6 +316,9 @@ export class FakeApi {
             },
           });
         }
+        const memories = path.match(/^\/projects\/([^/]+)\/agent-memories$/);
+        if (memories && request.method === "GET")
+          return json(200, { data: this.memories });
         if (path === "/web/search") {
           const { query } = JSON.parse(raw.toString()) as { query: string };
           this.searches.push(query);

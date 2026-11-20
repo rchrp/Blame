@@ -45,8 +45,23 @@ export default class extends BaseSchema {
   async up() {
     this.schema.dropTableIfExists('model_catalog_snapshots')
     this.defer(async (db) => {
+      // A later migration (stories on engine sessions) drops the story's
+      // provider columns and its runs: what is gone has nothing to rename.
+      const exists = (table: string, column: string) =>
+        db
+          .from(table)
+          .select(column)
+          .limit(0)
+          .then(
+            () => true,
+            () => false
+          )
+      const present = []
+      for (const choice of choices)
+        if (await exists(choice.table, choice.provider)) present.push(choice)
+      const runs = await exists('user_story_agent_runs', 'provider_id')
       await db.from('provider_credentials').whereNotIn('provider_id', kept).delete()
-      for (const { table, provider, model } of choices) {
+      for (const { table, provider, model } of present) {
         await db
           .from(table)
           .whereNotNull(provider)
@@ -63,7 +78,7 @@ export default class extends BaseSchema {
         .delete()
       for (const [from, to] of Object.entries(renamed)) {
         await db.from('provider_credentials').where('provider_id', from).update({ provider_id: to })
-        for (const { table, provider } of choices) {
+        for (const { table, provider } of present) {
           await db
             .from(table)
             .where(provider, from)
@@ -76,10 +91,11 @@ export default class extends BaseSchema {
             .update({ [`${role}_provider_id`]: to })
         }
         // Past runs keep their history, under the provider's new name.
-        await db
-          .from('user_story_agent_runs')
-          .where('provider_id', from)
-          .update({ provider_id: to })
+        if (runs)
+          await db
+            .from('user_story_agent_runs')
+            .where('provider_id', from)
+            .update({ provider_id: to })
       }
     })
   }

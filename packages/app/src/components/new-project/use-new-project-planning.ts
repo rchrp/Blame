@@ -6,13 +6,15 @@ import {
   projectStackProposalToolName,
   proposedConfiguration,
 } from "@/components/chat/proposals/proposal-tools"
+import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import {
-  useLocalAgentConversation,
-  type LocalAgentMessage,
-} from "@/components/chat/use-local-agent-conversation"
+  useEngineConversation,
+  type EngineConversationMessage,
+} from "@/components/chat/engine/use-engine-conversation"
 import type { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
+import { conversationPersonalization } from "@/lib/agent-personalization"
 
 import {
   parseNewProjectConfiguration,
@@ -28,18 +30,23 @@ export function useNewProjectPlanning(input: {
 }) {
   const platform = usePlatform()
   const auth = useCloudAuth()
-  const unavailableReason = !platform.agent
+  const unavailableReason = !platform.engine
     ? "Project guidance runs in the Blame desktop app."
     : auth.status !== "authenticated"
       ? "Sign in to describe your project to the agent."
       : !input.selection.currentModel
         ? "Choose an AI model below to get started."
         : undefined
-  const chat = useLocalAgentConversation({
-    cwd: input.parentPath,
-    purpose: "new-project",
-    selection: input.selection,
-    title: input.projectName.trim(),
+  // No storage key: each opening of the wizard is a new conversation.
+  const chat = useEngineConversation({
+    settings: () => ({
+      purpose: "new-project",
+      settings: {
+        title: input.projectName.trim(),
+        model: engineModelChoice(input.selection),
+        personalization: conversationPersonalization(),
+      },
+    }),
     unavailableReason,
   })
 
@@ -54,8 +61,9 @@ export function useNewProjectPlanning(input: {
     conversation: chat.conversation,
     proposal: chat.running ? undefined : latestStack(runs),
     pending: chat.running,
+    session: chat.session,
     unavailableReason,
-    send: (message: LocalAgentMessage) => chat.send(message),
+    send: (message: EngineConversationMessage) => chat.send(message),
     stop: chat.stop,
     reset,
   }

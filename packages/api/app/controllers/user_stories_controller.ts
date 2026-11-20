@@ -48,22 +48,10 @@ export default class UserStoriesController {
         await new UserStoriesService().update(
           auth.getUserOrFail().id,
           params.id,
-          await request.validateUsing(updateUserStoryValidator)
+          await request.validateUsing(updateUserStoryValidator, { meta: { storyId: params.id } })
         )
       )
     )
-  }
-
-  async activityDetail({ auth, params, response }: HttpContext) {
-    try {
-      return await new UserStoriesService().activityDetail(
-        auth.getUserOrFail().id,
-        params.id,
-        params.activityId
-      )
-    } catch {
-      return response.notFound({ message: 'Agent activity not found.' })
-    }
   }
 
   async destroy({ auth, params, response }: HttpContext) {

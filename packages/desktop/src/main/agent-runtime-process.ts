@@ -5,7 +5,6 @@ import {
 import {
   authorizeMcpOAuth,
   BlameAgentRuntime,
-  claudeCodeBridgeIdle,
   clearMcpOAuth,
   closeClaudeCodeSessions,
   executeLightWorkspaceRequest,
@@ -205,14 +204,8 @@ function runtimeHandlers(runtime: BlameAgentRuntime) {
     "lightWorkspace.execute": (input: unknown) =>
       executeLightWorkspaceRequest(input as LightWorkspaceExecutionRequest),
     "runtime.prewarm": (input: unknown) => runtime.prewarm(input as never),
-    "runtime.idle": (input: unknown) =>
-      claudeCodeBridgeIdle(
-        (input as { busyElsewhere?: boolean } | undefined)?.busyElsewhere ===
-          true,
-      ),
     "claudeCode.closeSessions": (input: unknown) =>
       closeClaudeCodeSessions(input as string[]),
-    "approvals.resolve": (input) => runtime.approvals.resolve(input as never),
     shutdown: () => runtime.shutdown(),
   } satisfies Record<AgentRuntimeMethod, RuntimeHandler>;
 }
@@ -270,26 +263,6 @@ function mcpAuthorizationUrl(value: string) {
 
 function sessionHandlers(runtime: BlameAgentRuntime) {
   return {
-    "sessions.start": (input: unknown) =>
-      runtime.sessions.start(input as never),
-    "sessions.startDevelopment": (input: unknown) =>
-      runtime.sessions.startDevelopment(input as never),
-    "sessions.send": (input: unknown) => runtime.sessions.send(input as never),
-    "sessions.sendDevelopment": (input: unknown) =>
-      runtime.sessions.sendDevelopment(input as never),
-    "sessions.abort": (input: unknown) =>
-      runtime.sessions.abort(input as string),
-    "sessions.compareCheckpoint": (input: unknown) =>
-      runtime.sessions.compareCheckpoint(input as never),
-    "sessions.list": () => runtime.sessions.list(),
-    "sessions.messages": (input: unknown) =>
-      runtime.sessions.messages(input as string),
-    "sessions.restoreCheckpoint": (input: unknown) =>
-      runtime.sessions.restoreCheckpoint(input as never),
-    "sessions.usage": (input: unknown) =>
-      runtime.sessions.usage(input as string),
-    "sessions.compact": (input: unknown) =>
-      runtime.sessions.compact(input as never),
     "sessions.releaseWorkspace": (input: unknown) =>
       runtime.sessions.releaseWorkspace(input as string),
   };

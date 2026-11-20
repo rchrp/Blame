@@ -1,9 +1,11 @@
 # The agent engine in the desktop app
 
-How the app runs agents on `blame-engine` (`crates/`). Quick chats are the
-first conversations on it; development stories, one-shot agents, the engine
-in the Lima/WSL VM and provider settings follow the same contract. Until
-they move, they still run on the Cline runtime (`cline-runtime.ts`).
+How the app runs agents on `blame-engine` (`crates/`). Quick chats,
+development stories, plan mode and the new-project assistant are
+conversations on it. One-shot agents, the engine in the Lima/WSL VM and
+provider settings follow the same contract; until they move, one-shot agents
+still run on the Cline runtime (`cline-runtime.ts`), as does
+`packages/benchmark-runner`.
 
 ## Processes
 
@@ -46,19 +48,25 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | method | does |
 | --- | --- |
 | `connect({ api })` | The API connection (URL, user token) the host uses for credentials, logs, blobs and web search. Sent at start and on every sign-in or token change. |
-| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`: system prompt, tools, harness options). The renderer never builds a `SessionConfig`. |
+| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`, `development-story`, `plan`, `new-project`: system prompt, tools, harness options, checkpoints). The renderer never builds a `SessionConfig`. |
 | `configure({ session, purpose, settings })` | Rebuilds the config from the settings and sets it only when it differs from the session's current one (`{ changed }`). |
 | `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. |
-| `interrupt`, `compact`, `undoRewind({ session })` | The engine calls of the same name. |
+| `interrupt`, `compact`, `undoRewind({ session, location? })` | The engine calls of the same name. |
 | `rewind({ session, to, restoreWorkspace })` | `session/rewind`: undo a message and, when asked, its files. |
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
+| `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended and what the agent last reported (`lastReply`: its `finish_task` summary, or its last text). |
 | `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
 | `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
 | `signInChatGpt({ label })` | `blame-engine auth chatgpt login`: opens the sign-in in the browser (`openExternal`, served by main) and keeps the tokens in the API. |
 | `claudeCodeStatus()`, `connectClaudeCode({ label })` | Whether Claude Code is installed and signed in here; saves the connection. |
 | `planUsage({ providerId, credentialLabel })` | How much of the ChatGPT or Claude plan is used. |
+
+Every call that names a session also takes `location` (`"host"`, the
+default, or `"vm"`). The host picks the engine from it; today only `"host"`
+exists and a `"vm"` call fails with a clear message (see "Workspace
+locations").
 
 Host → renderer, on `engine:event`:
 
@@ -68,6 +76,58 @@ Host → renderer, on `engine:event`:
   live events: the renderer keeps nothing between loads.
 - `{ type: "activity", session, running, outcome? }`: a turn started or ended,
   for the sidebar, the running count and the "response ready" notification.
+
+## Development stories
+
+A story is a `development-story` session (`engine/purposes/development-story.ts`):
+
+- **Workspace**: the story's worktree, or the project folder in Direct mode.
+  A worktree gets the harness's `isolated` option and, with a preview, its
+  managed preview. Checkpoints are on: every turn snapshots the files.
+- **First message**: the host wraps the person's brief with the story's
+  title, the hint about earlier stories, and the project memory selected for
+  it (`<task_briefing>`).
+- **Completion contract**: `storyCompletionContract` (`finish_task`) is
+  declared in the purpose; the one-shot agents slice enforces it from there.
+- **Tools**: `purposeClientTools` / `purposeHarnessTools`
+  (`engine/purposes/tool-sets.ts`) name the shared tools; the host adds the
+  conversation's own (`conversationTools.ensure`: preview, story history and
+  proposals, GitHub, MCP, attachments, skills) to every purpose's config.
+  A story's preview tools follow the project's saved preview environment.
+- **Project memory**: an accepted `finish_task` leaves its memory next to
+  the harness journal; the host saves it to the account when the turn ends.
+- **Lifecycle**, all from the renderer through `platform.engine`
+  (`pages/backlog/story-engine.ts`, `use-backlog-rotation.ts`,
+  `use-story-comments.ts`): start creates the session and sends the brief;
+  a message while the agent works is queued by the engine (or steered into
+  the turn with Send now); Pause is `interrupt`; undo of a message is
+  `rewind` with its files; Compact is `compact`.
+- **Board state**: the renderer is the one writer of the story's agent
+  fields (`use-story-agent-outcomes.ts`). An `activity` event with
+  `running` sets `agentStatus: "Running"`; the end of a turn sets what its
+  outcome means (completed: In review; failed: Paused with
+  `agentLastError`; interrupted or limit reached: Paused). After a quit
+  mid-turn, stories left Running are settled from `status` when the backlog
+  loads.
+- **Drawer**: `StoryConversationProvider` follows the session once for the
+  timeline, the metrics and the stats island. A turn's changed files open as
+  the diff from its checkpoint snapshot (a git tree) to the next turn's, or
+  to the files now for the last turn (`agent-run-diff-range.ts`).
+- **Direct commit** finds the story's files from the harness journal, which
+  records each write under the engine session id.
+
+Plan mode is a `plan` session per project (its id kept in local storage);
+the new-project assistant is a `new-project` session per opening of the
+wizard, in a scratch folder the host makes.
+
+## Workspace locations
+
+The renderer names a session's workspace as a root and a location
+(`EngineWorkspace`). A local-container worktree lives in the Blame Runtime
+VM on macOS and Windows, so its location is `"vm"` (`storyLocation`). The
+host's `engineAt(location)` is the seam where an engine in the VM plugs in;
+until then such a story fails at start with a message that says to use
+Direct or Cloud Preview. Direct and Cloud Preview worktrees are on the host.
 
 ## What renders a conversation
 
@@ -99,8 +159,12 @@ later day does not rewrite it and the provider's prompt cache holds.
 - **The API** keeps product state only. `quick_chats` holds `title`,
   `workspace`, `engine_session_id`; its list joins `engine_sessions` for the
   last activity. Deleting a chat deletes its engine session log.
-- **The renderer** writes product state (create, rename, delete a chat) and
-  nothing about runs: no run rows, no activities, no outboxes.
+  `user_stories` holds `engine_session_id`, `agent_status`,
+  `agent_last_error` and `agent_models` (the models that worked on it, for
+  the board); runs, activities and story comments are records.
+- **The renderer** writes product state (create, rename, delete a chat or a
+  story, a story's agent fields above) and nothing about runs: no run rows,
+  no activities, no outboxes.
 
 ## Providers and models
 
@@ -238,9 +302,20 @@ and skill service are off, so each tool has one implementation.
 
 `host/approval` waits in the host until `resolveApproval` answers it (a
 decision that arrives first is kept for a minute). The pending call shows in
-the transcript (`pendingApprovals`, a tool call in `awaiting_approval`).
-No quick-chat tool needs approval, so the conversation view has no
-Allow/Deny buttons yet: the first slice whose tools need approval adds them.
+the transcript (`pendingApprovals`, a tool call in `awaiting_approval`), and
+the timeline shows Allow and Deny under it (`engine-approvals.tsx`; each
+surface wraps its timeline in `EngineApprovalProvider`).
+
+## Context shaping
+
+The engine shapes old tool results in the model's context
+(`crates/blame-engine/src/context/`, a `ContextPolicy`): command echoes,
+repeated advice and repair plans, stale or partly repeated reads, completed
+edits and the image budget, as the Cline runtime did. Targets come from the
+stored records only, so the same records give the same request bytes after
+a reopen. Results already sent change only in large batches or after a
+compaction, so the prompt cache holds. Harness tools get the compaction in
+effect as `contextGeneration`.
 
 ## Rules for the next slices
 

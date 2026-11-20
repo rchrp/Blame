@@ -1,6 +1,4 @@
 import type UserStory from '#models/user_story'
-import UserStoryAgentRunTransformer from '#transformers/user_story_agent_run_transformer'
-import UserStoryCommentTransformer from '#transformers/user_story_comment_transformer'
 import { BaseTransformer } from '@adonisjs/core/transformers'
 
 export default class UserStoryTransformer extends BaseTransformer<UserStory> {
@@ -24,16 +22,10 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
       workspaceMode: story.workspaceMode,
       runMode: story.runMode,
       ambition: story.ambition,
+      engineSessionId: story.engineSessionId,
       agentStatus: story.agentStatus,
-      clineSessionId: story.clineSessionId,
-      agentProviderId: story.agentProviderId,
-      agentModelId: story.agentModelId,
-      agentLastEvent: story.agentLastEvent,
       agentLastError: story.agentLastError,
-      activeAgentRunId: story.activeAgentRunId,
-      runningAgentRuns: (story.agentRuns ?? []).map((run) =>
-        UserStoryAgentRunTransformer.summary(run)
-      ),
+      agentModels: story.agentModels,
       mergedAt: story.mergedAt,
       mergeCommit: story.mergeCommit,
       baseCommit: story.baseCommit,
@@ -47,51 +39,12 @@ export default class UserStoryTransformer extends BaseTransformer<UserStory> {
     return UserStoryTransformer.summary(this.resource)
   }
 
+  /** The summary with the story's own attachments, which the board does not need. */
   toObject() {
     return {
-      ...this.pick(this.resource, [
-        'id',
-        'projectId',
-        'storyNumber',
-        'title',
-        'summary',
-        'codeSelectionAttachments',
-        'fileAttachments',
-        'status',
-        'priority',
-        'owner',
-        'branch',
-        'targetBranch',
-        'pullRequestUrl',
-        'previewUrl',
-        'runConfigurationId',
-        'worktree',
-        'workspaceMode',
-        'runMode',
-        'ambition',
-        'agentStatus',
-        'clineSessionId',
-        'agentProviderId',
-        'agentModelId',
-        'agentLastEvent',
-        'agentLastError',
-        'activeAgentRunId',
-        'agentActivities',
-        'agentFinalResponse',
-        'agentUsage',
-        'agentSessionSummary',
-        'mergedAt',
-        'mergeCommit',
-        'baseCommit',
-        'discardedReason',
-        'createdAt',
-        'updatedAt',
-      ]),
-      fileAttachmentUploadPending: Boolean(this.resource.fileAttachmentUploadPending),
-      comments: UserStoryCommentTransformer.transform(this.resource.comments ?? []),
-      agentRuns: (this.resource.agentRuns ?? []).map((run) =>
-        UserStoryAgentRunTransformer.full(run)
-      ),
+      ...UserStoryTransformer.summary(this.resource),
+      codeSelectionAttachments: this.resource.codeSelectionAttachments,
+      fileAttachments: this.resource.fileAttachments,
     }
   }
 }

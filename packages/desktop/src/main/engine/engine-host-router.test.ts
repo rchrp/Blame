@@ -61,3 +61,32 @@ it("tells a restarted host the connection, then every open follow", () => {
     { method: "follow", input: { session: "s", subscription: "a" } },
   ]);
 });
+
+it("knows the folders a running turn writes in, until it ends", () => {
+  const router = new EngineHostRouter();
+  const one = viewer(1);
+  router.observe(one, "send", {
+    session: "s",
+    message: { text: "go" },
+    delivery: "turn",
+    settings: {
+      purpose: "development-story",
+      settings: {
+        workspace: { root: "/worktrees/s", location: "host" },
+        workspaceMode: "direct",
+        projectId: "p",
+        storyId: "story",
+        title: "t",
+        model: { providerId: "anthropic", modelId: "m" },
+      },
+    },
+  });
+  assert.deepEqual(router.activeWorkspaces(), []);
+  router.route({ type: "activity", session: "s", running: true });
+  assert.deepEqual(router.activeWorkspaces(), ["/worktrees/s"]);
+  router.route({ type: "activity", session: "s", running: false });
+  assert.deepEqual(router.activeWorkspaces(), []);
+  router.route({ type: "activity", session: "s", running: true });
+  router.hostStopped();
+  assert.deepEqual(router.activeWorkspaces(), []);
+});

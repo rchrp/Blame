@@ -54,7 +54,7 @@ export function hasDevelopmentTab(status: BacklogColumnId) {
 }
 
 export function hasConversation(userStory: UserStory | undefined) {
-  return Boolean(userStory?.comments?.length || userStory?.agentRuns?.length)
+  return Boolean(userStory?.engineSessionId)
 }
 
 export function isEditable(

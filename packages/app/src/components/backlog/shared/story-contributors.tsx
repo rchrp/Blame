@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils"
 type ModelWork = {
   modelId: string
   reasoningEffort?: string | null
-  turns: number
 }
 
 type ProviderWork = { models: ModelWork[]; providerId: string }
@@ -151,9 +150,6 @@ function ContributorDetails({
               model.reasoningEffort
                 ? getVariantLabel(model.reasoningEffort)
                 : "",
-              model.turns
-                ? `${model.turns} ${model.turns === 1 ? "turn" : "turns"}`
-                : "",
             ]
               .filter(Boolean)
               .join(" · ")
@@ -205,31 +201,20 @@ function ContributorRow({
 }
 
 // Providers in the order they first worked on the story, each with the
-// models it ran, their latest reasoning level and how many turns.
+// models it ran and their latest reasoning level. The story keeps these as
+// it starts turns; the turns themselves live in its engine session.
 export function storyProviders(
-  story: Pick<UserStory, "agentModelId" | "agentProviderId" | "agentRuns">
+  story: Pick<UserStory, "agentModels">
 ): ProviderWork[] {
   const providers = new Map<string, Map<string, ModelWork>>()
-  const runs = [...(story.agentRuns ?? [])].sort((left, right) =>
-    left.createdAt.localeCompare(right.createdAt)
-  )
-  for (const run of runs) {
-    if (!run.providerId || !run.modelId) continue
-    const models = providers.get(run.providerId) ?? new Map<string, ModelWork>()
-    const current = models.get(run.modelId)
-    models.set(run.modelId, {
-      modelId: run.modelId,
-      reasoningEffort: run.reasoningEffort ?? current?.reasoningEffort,
-      turns: (current?.turns ?? 0) + 1,
-    })
-    providers.set(run.providerId, models)
-  }
-  if (story.agentProviderId && story.agentModelId) {
+  for (const model of story.agentModels ?? []) {
     const models =
-      providers.get(story.agentProviderId) ?? new Map<string, ModelWork>()
-    if (!models.has(story.agentModelId))
-      models.set(story.agentModelId, { modelId: story.agentModelId, turns: 0 })
-    providers.set(story.agentProviderId, models)
+      providers.get(model.providerId) ?? new Map<string, ModelWork>()
+    models.set(model.modelId, {
+      modelId: model.modelId,
+      reasoningEffort: model.reasoningEffort ?? undefined,
+    })
+    providers.set(model.providerId, models)
   }
   return [...providers].map(([providerId, models]) => ({
     models: [...models.values()],

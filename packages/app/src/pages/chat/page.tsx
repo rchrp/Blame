@@ -5,6 +5,7 @@ import { pendingFileAttachments } from "@/components/backlog/drawer/user-story-a
 import { projectPreviewConfiguration } from "@/components/backlog/board/project-run-configuration"
 import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
+import { EngineApprovalProvider } from "@/components/chat/engine/engine-approvals"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import { ExcerptTargetProvider } from "@/components/backlog/shared/selection-excerpt-actions"
@@ -147,75 +148,77 @@ function QuickChatProjectPage() {
 
   return (
     <ExcerptTargetProvider attachAsContext={attachExcerptAsContext}>
-      <QuickChatView
-        conversationId={activeChat?.id}
-        emptyConversation={emptyConversation}
-        status={{
-          error: quickChats.error,
-          loading: quickChats.loading || !chat.loaded,
-          projectPath: project?.path,
-        }}
-        timeline={
-          chat.loaded && chat.conversation && runs.length
-            ? {
-                comments: chat.conversation.comments,
-                onChangedFileClick: openPath,
-                onFileLinkClick: openPath,
-                onUserMessageUndo: undoMessage,
-                responseHeader,
-                runs,
-              }
-            : undefined
-        }
-        onSuggestion={project ? applySuggestion : undefined}
-        composer={{
-          speechSessionKey: draftStorageKey,
-          speechTarget: chatSpeechTarget(draftStorageKey),
-          agentRunning: chat.running,
-          cancelingAgent,
-          codeSelectionAttachments: draftCodeAttachments,
-          disabled: !project || !chat.loaded,
-          submitting: sending && !chat.running,
-          queueWhileRunning: true,
-          editorKey: draftEditorKey,
-          editorRef: draftRef,
-          fileAttachments: pendingFileAttachments(draftFileAttachments),
-          mentionDirectory: project?.path,
-          message: draft,
-          onCodeSelectionAttachmentRemove: (id) =>
-            setDraftCodeAttachments((current) =>
-              current.filter((attachment) => attachment.id !== id)
-            ),
-          onFileAttachmentRemove: removeDraftFileAttachment,
-          onFileAttachmentsReplace: replaceDraftFileAttachments,
-          onFileAttachmentsAdd: addDraftFileAttachments,
-          onFileLinkClick: openPath,
-          onMessageChange: setDraft,
-          onMessageSubmit: () => void submitDraft(),
-          onMessageSendNow: () => void submitDraft(true),
-          onAgentCancel: cancelAgent,
-          placeholder: chat.running
-            ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
-            : "Ask for a focused code change",
-          submitLabel: chat.running ? "Queue message" : "Send",
-        }}
-        preview={{
-          configuration: previewConfiguration,
-          devtoolsTarget: true,
-          scope: project?.path,
-        }}
-        stats={
-          activeChat && chat.transcript && !emptyConversation
-            ? {
-                chatId: activeChat.id,
-                compaction: chat.compaction,
-                running: chat.running,
-                runs,
-                transcript: chat.transcript,
-              }
-            : undefined
-        }
-      />
+      <EngineApprovalProvider session={activeChat?.engineSessionId}>
+        <QuickChatView
+          conversationId={activeChat?.id}
+          emptyConversation={emptyConversation}
+          status={{
+            error: quickChats.error,
+            loading: quickChats.loading || !chat.loaded,
+            projectPath: project?.path,
+          }}
+          timeline={
+            chat.loaded && chat.conversation && runs.length
+              ? {
+                  comments: chat.conversation.comments,
+                  onChangedFileClick: openPath,
+                  onFileLinkClick: openPath,
+                  onUserMessageUndo: undoMessage,
+                  responseHeader,
+                  runs,
+                }
+              : undefined
+          }
+          onSuggestion={project ? applySuggestion : undefined}
+          composer={{
+            speechSessionKey: draftStorageKey,
+            speechTarget: chatSpeechTarget(draftStorageKey),
+            agentRunning: chat.running,
+            cancelingAgent,
+            codeSelectionAttachments: draftCodeAttachments,
+            disabled: !project || !chat.loaded,
+            submitting: sending && !chat.running,
+            queueWhileRunning: true,
+            editorKey: draftEditorKey,
+            editorRef: draftRef,
+            fileAttachments: pendingFileAttachments(draftFileAttachments),
+            mentionDirectory: project?.path,
+            message: draft,
+            onCodeSelectionAttachmentRemove: (id) =>
+              setDraftCodeAttachments((current) =>
+                current.filter((attachment) => attachment.id !== id)
+              ),
+            onFileAttachmentRemove: removeDraftFileAttachment,
+            onFileAttachmentsReplace: replaceDraftFileAttachments,
+            onFileAttachmentsAdd: addDraftFileAttachments,
+            onFileLinkClick: openPath,
+            onMessageChange: setDraft,
+            onMessageSubmit: () => void submitDraft(),
+            onMessageSendNow: () => void submitDraft(true),
+            onAgentCancel: cancelAgent,
+            placeholder: chat.running
+              ? "Message the agent: ↵ when it finishes, ⌘↵ right now"
+              : "Ask for a focused code change",
+            submitLabel: chat.running ? "Queue message" : "Send",
+          }}
+          preview={{
+            configuration: previewConfiguration,
+            devtoolsTarget: true,
+            scope: project?.path,
+          }}
+          stats={
+            activeChat && chat.transcript && !emptyConversation
+              ? {
+                  chatId: activeChat.id,
+                  compaction: chat.compaction,
+                  running: chat.running,
+                  runs,
+                  transcript: chat.transcript,
+                }
+              : undefined
+          }
+        />
+      </EngineApprovalProvider>
     </ExcerptTargetProvider>
   )
 }

@@ -33,7 +33,11 @@ export type TranscriptConversation = {
 
 export function transcriptConversation(
   transcript: Transcript,
-  author: string
+  author: string,
+  options: {
+    /** The first turn answers a brief shown elsewhere (a story's request), not a message. */
+    brief?: boolean
+  } = {}
 ): TranscriptConversation {
   const comments: AgentConversationComment[] = []
   const rewindTargets = new Map<string, { to: number; workspace: boolean }>()
@@ -46,8 +50,12 @@ export function transcriptConversation(
   }
   let checkpoints = 0
   const runs: AgentConversationRun[] = []
-  for (const turn of transcript.turns) {
-    if (turn.status === "rewound") continue
+  // A turn changed what lies between its snapshot and the next one's (the
+  // files now, for the last).
+  const snapshots = new Map(transcript.checkpoints.map((checkpoint) => [checkpoint.turn, checkpoint.snapshot]))
+  const kept = transcript.turns.filter((turn) => turn.status !== "rewound")
+  for (const [index, turn] of kept.entries()) {
+    const brief = options.brief && runs.length === 0
     const items = itemsByTurn.get(turn.turn) ?? []
     const opening = items.find(
       (item) => item.kind === "user" && item.delivery === "turn"
@@ -78,9 +86,11 @@ export function transcriptConversation(
       commentId: opening?.key ?? null,
       completedAt: turn.endedAtMs ? iso(turn.endedAtMs) : null,
       createdAt: iso(turn.startedAtMs),
+      diffStartRef: snapshots.get(turn.turn) ?? null,
+      diffEndRef: kept.slice(index + 1).map((next) => snapshots.get(next.turn)).find(Boolean) ?? null,
       finalResponse: final?.detail ?? null,
       id: turn.turn,
-      kind: "change-request",
+      kind: brief ? "initial" : "change-request",
       modelId: modelRef?.model ?? null,
       providerId: modelRef?.provider ?? null,
       // The selector says "none" for what the engine calls "off".
@@ -206,6 +216,10 @@ function errorTitle(kind: ErrorKind) {
 }
 
 function toolActivity(item: ToolCallItem, progress: string | undefined): UserStoryAgentActivity {
+  // Images of the result (screenshots) are engine blobs, by their sha256.
+  const images = (item.result ?? []).flatMap((block) =>
+    block.type === "image" ? [{ caption: item.name, id: block.blob.sha256 }] : []
+  )
   const running =
     item.state === "requested" || item.state === "running" || item.state === "awaiting_approval"
   const failed = !running && item.state !== "completed"
@@ -226,6 +240,7 @@ function toolActivity(item: ToolCallItem, progress: string | undefined): UserSto
     status: running ? "running" : failed ? "failed" : "completed",
     toolCallId: item.call,
     toolName: item.name,
+    ...(images.length ? { images } : {}),
   }
 }
 

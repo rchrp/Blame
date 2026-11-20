@@ -630,12 +630,6 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"]],
     types: placeholder as Registry['projects.user_stories.user_stories.destroy']['types'],
   },
-  'projects.user_stories.user_stories.activity_detail': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/projects/user-stories/:id/agent-activities/:activityId',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"agent-activities"],[1,"activityId"]],
-    types: placeholder as Registry['projects.user_stories.user_stories.activity_detail']['types'],
-  },
   'projects.user_stories.user_stories.store_screenshot': {
     methods: ["PUT"],
     pattern: '/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId',
@@ -647,48 +641,6 @@ const routes = {
     pattern: '/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId',
     tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"agent-screenshots"],[1,"screenshotId"]],
     types: placeholder as Registry['projects.user_stories.user_stories.show_screenshot']['types'],
-  },
-  'projects.user_stories.user_story_agent_runs.store': {
-    methods: ["POST"],
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"agent-runs"]],
-    types: placeholder as Registry['projects.user_stories.user_story_agent_runs.store']['types'],
-  },
-  'projects.user_stories.user_story_agent_runs.update': {
-    methods: ["PATCH"],
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"agent-runs"],[1,"runId"]],
-    types: placeholder as Registry['projects.user_stories.user_story_agent_runs.update']['types'],
-  },
-  'projects.user_stories.user_story_agent_runs.finalize': {
-    methods: ["POST"],
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/finalize',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"agent-runs"],[1,"runId"],[0,"finalize"]],
-    types: placeholder as Registry['projects.user_stories.user_story_agent_runs.finalize']['types'],
-  },
-  'projects.user_stories.user_story_agent_runs.activity_detail': {
-    methods: ["GET","HEAD"],
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"agent-runs"],[1,"runId"],[0,"activities"],[1,"activityId"]],
-    types: placeholder as Registry['projects.user_stories.user_story_agent_runs.activity_detail']['types'],
-  },
-  'projects.user_stories.user_story_comments.store': {
-    methods: ["POST"],
-    pattern: '/api/v1/projects/user-stories/:id/comments',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"comments"]],
-    types: placeholder as Registry['projects.user_stories.user_story_comments.store']['types'],
-  },
-  'projects.user_stories.user_story_comments.undo': {
-    methods: ["POST"],
-    pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"comments"],[1,"commentId"],[0,"undo"]],
-    types: placeholder as Registry['projects.user_stories.user_story_comments.undo']['types'],
-  },
-  'projects.user_stories.user_story_comments.validate_undo': {
-    methods: ["POST"],
-    pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation',
-    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"user-stories"],[1,"id"],[0,"comments"],[1,"commentId"],[0,"undo-validation"]],
-    types: placeholder as Registry['projects.user_stories.user_story_comments.validate_undo']['types'],
   },
   'preview_edge_internal.resolve': {
     methods: ["POST"],

@@ -48,3 +48,42 @@ export function developmentPracticePrompt(
     `practices/unit-tests/${enabled ? "standard" : "disabled"}`,
   );
 }
+
+// Story ids (US-012) named in a request, at most eight, in order.
+export function referencedStories(text: string) {
+  const ids = Array.from(
+    text.matchAll(/\bUS-0*(\d{1,6})\b/giu),
+    (match) => `US-${match[1]!.padStart(3, "0")}`,
+  );
+  return Array.from(new Set(ids)).slice(0, 8);
+}
+
+// Stories this one builds on ("Builds on US-042", from Use Context) are read
+// first; others it merely names are left to the agent's judgement.
+// Stories this one builds on (attached with Use Context, or named as
+// "Builds on US-042" by stories written before) are read first; others it
+// merely names are left to the agent's judgement.
+export function earlierStoriesHint(text: string, contextStories: string[]) {
+  const basis = referencedStories(
+    [
+      ...Array.from(
+        text.matchAll(/\bbuilds on\s+(US-\d+)/giu),
+        (match) => match[1],
+      ),
+      ...contextStories,
+    ].join(" "),
+  );
+  const others = referencedStories(text).filter((id) => !basis.includes(id));
+  return (
+    [
+      basis.length
+        ? `This story builds on ${basis.join(", ")}: start by reading ${basis.length === 1 ? "it" : "them"} with read_user_story (request, outcome and changed files; ask for discussion or activity only if needed).`
+        : undefined,
+      others.length
+        ? `Earlier stories mentioned: ${others.join(", ")}. read_user_story loads what was done in them when that context helps.`
+        : undefined,
+    ]
+      .filter(Boolean)
+      .join("\n") || undefined
+  );
+}

@@ -40,6 +40,20 @@ it("the engine host loads nothing of Cline", () => {
   assert.ok(files.size > 5, "the graph was walked");
 });
 
+it("development stories, plan mode and the new-project assistant run on that host", () => {
+  const { files } = graph(resolve(here, "index.js"));
+  for (const purpose of [
+    "quick-chat",
+    "development-story",
+    "plan",
+    "new-project",
+  ])
+    assert.ok(
+      files.has(resolve(here, "purposes", `${purpose}.js`)),
+      `the ${purpose} purpose is in the host's graph, which loads no Cline`,
+    );
+});
+
 // Every module of the conversations' client tools, each walked on its own.
 const toolModules = [
   "tool.js",

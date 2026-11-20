@@ -358,6 +358,7 @@ export class TranscriptReducer {
           this.push(this.checkpoints, {
             turn: body.turn,
             checkpoint: body.checkpoint,
+            snapshot: body.snapshot,
             userSeq: user.seq,
             to: user.rewind.to,
           });

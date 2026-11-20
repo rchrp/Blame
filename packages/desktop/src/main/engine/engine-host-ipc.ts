@@ -11,6 +11,7 @@ import {
 } from "electron";
 import {
   engineHostMethods,
+  type EngineHostInput,
   isEngineHostMessage,
   type EngineHostMessage,
   type EngineHostMethod,
@@ -27,6 +28,16 @@ export type EngineHostRegistration = {
   isAppWindow(sender: WebContents): boolean;
   /** The services the agents' tools use (engine-desktop-services.ts). */
   desktop: EngineDesktopHandlers;
+  /**
+   * What the desktop prepares before a window's call reaches the host (a
+   * story's development server, its GitHub access); `api` is the
+   * connection the windows gave the host.
+   */
+  beforeCall?(
+    method: EngineHostMethod,
+    input: unknown,
+    api: EngineHostInput<"connect">["api"] | undefined,
+  ): Promise<void>;
 };
 
 const readyTimeoutMs = 15_000;
@@ -186,6 +197,8 @@ class EngineHostProcess {
         new Error(`The engine host stopped (${code}); try again.`),
       );
     this.pending.clear();
+    // Its turns ended with it.
+    this.router.hostStopped();
     if (this.stopping) return;
     // Started again at once if a window follows a session, after a pause
     // that grows with each crash in a row so a crash loop cannot spin.
@@ -208,7 +221,7 @@ export function registerEngineIpcHandlers(
   const engine = new EngineHostProcess(registration);
   host = engine;
   const known = new Set<number>();
-  ipcMain.handle("engine:call", (event, method: unknown, input: unknown) => {
+  ipcMain.handle("engine:call", async (event, method: unknown, input: unknown) => {
     if (!registration.isAppWindow(event.sender))
       throw new Error("Untrusted engine request");
     if (!engineHostMethods.includes(method as EngineHostMethod))
@@ -226,8 +239,18 @@ export function registerEngineIpcHandlers(
           void engine.call("unfollow", { subscription }).catch(() => undefined);
       });
     }
+    await registration.beforeCall?.(
+      method as EngineHostMethod,
+      input,
+      engine.router.api(),
+    );
     return engine.call(method as EngineHostMethod, input);
   });
+}
+
+/** Folders an engine turn is writing in right now. */
+export function engineActiveWorkspaces(): string[] {
+  return host?.router.activeWorkspaces() ?? [];
 }
 
 export async function shutdownEngineHost() {

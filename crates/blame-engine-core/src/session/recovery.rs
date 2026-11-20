@@ -71,6 +71,7 @@ pub(super) async fn recover(inner: &Arc<Inner>) -> Result<(), EngineError> {
                     name: call.name.to_owned(),
                     input: call.input.clone(),
                     workspace_root: config.workspace_root.clone(),
+                    compacted_through: view.compacted_through(),
                 };
                 match inner.ports.tools.interrupted(&invocation).await {
                     InterruptedCall::Applied(output) => Some((output.outcome, output.content)),

@@ -4,11 +4,9 @@ import * as React from "react"
 import type {
   BacklogColumnId,
   UserStory,
-  UserStoryAgentActivity,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
-import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import type { UserStoryDrawerMode } from "@/components/backlog/shared/backlog-types"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
@@ -33,13 +31,11 @@ import {
   AgentConversationTimeline,
   screenshotOwnerFor,
   MarkdownMessageActions,
+  type AgentConversationRun,
   type AgentConversationUserMessageUndo,
 } from "@/components/chat/agent-conversation"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
-import {
-  agentTurnMetricsTarget,
-  useAgentTurnMetrics,
-} from "@/components/chat/agent-turn-metrics"
+import { useAgentTurnMetrics } from "@/components/chat/agent-turn-metrics"
 import { ModelSelector } from "@/components/model/model-selector"
 import { SelectorGroup } from "@/components/ui/selector-group"
 import {
@@ -51,8 +47,7 @@ import { useModelSelection } from "@/components/model/model-selection"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { useLatestCallback } from "@/lib/use-latest-callback"
-import { QueuedComments } from "@/components/backlog/drawer/queued-comments"
-import { commentsWithoutAgentRun } from "./user-story-comment-submission"
+import { useStoryConversation } from "./story-conversation"
 
 const commentComposerBlurMask = {
   maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
@@ -129,7 +124,8 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   // The branch the story starts from and merges into.
   targetBranch?: string | null
   onTargetBranchChange?: (branch: string) => void
-  onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
+  /** Undoes a message to the agent; its text goes back to the composer. */
+  onCommentUndo?: (target: StoryMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
   onSummaryCodeSelectionAttachmentRemove: (id: string) => void
   onSummaryFileAttachmentRemove: (id: string) => void
@@ -151,15 +147,15 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const editable = isEditable(mode, status, userStory)
   const stableLoadChangedFileDiffs = useLatestCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) =>
-      loadChangedFileDiffs?.(sessionId, checkpointRunCount, diffEndRef) ??
-      Promise.resolve([])
+    (from: string, to: string | undefined) =>
+      loadChangedFileDiffs?.(from, to) ?? Promise.resolve([])
   )
   const stableOnCommentUndo = useLatestCallback(
-    async (target: AgentConversationUserMessageUndo) => {
+    async (target: StoryMessageUndo) => {
       await onCommentUndo?.(target)
     }
   )
+  const storyRuns = useStoryConversation().conversation?.runs
   const stableOnFileLinkClick = useLatestCallback((path: string) => {
     onFileLinkClick?.(path)
   })
@@ -221,7 +217,7 @@ export const UserStoryContent = React.memo(function UserStoryContent({
         />
         {summary.trim() ? (
           <MarkdownMessageActions
-            alwaysVisible={summaryActionsAlwaysVisible(userStory)}
+            alwaysVisible={summaryActionsAlwaysVisible(storyRuns)}
             createdAt={userStory?.createdAt}
             markdown={summary}
           />
@@ -310,15 +306,12 @@ function UserStoryCommentComposer({
     status === "in-progress" && userStory?.agentStatus === "Running"
   const project = useProjects().activeProject
   const mentionDirectory = useFileMentionDirectory(status, userStory)
-  const metricsTarget = agentTurnMetricsTarget(
-    userStory?.comments ?? [],
-    userStory?.agentRuns ?? [],
-    (run) => run.commentId
-  )
+  // The latest turn's duration and line counts, from its records.
+  const lastRun = useStoryConversation().conversation?.runs.at(-1)
   const turnMetrics = useAgentTurnMetrics({
     root: userStory?.worktree ?? mentionDirectory,
-    run: metricsTarget?.run,
-    startedAt: metricsTarget?.startedAt,
+    run: lastRun,
+    startedAt: lastRun?.createdAt,
   })
 
   return (
@@ -392,9 +385,7 @@ const StoryCommentModelSelector = React.memo(function StoryCommentModelSelector(
       role="agent"
       scope={scope}
       warnOnModelChange={Boolean(
-        userStory.agentModelId ||
-          userStory.agentRuns?.length ||
-          userStory.clineSessionId
+        userStory.agentModels?.length || userStory.engineSessionId
       )}
     />
   )
@@ -428,15 +419,12 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
   onChangedFileClick,
   userStory,
 }: AgentRunTimelineProps) {
-  const auth = useCloudAuth()
-  const api = React.useMemo(
-    () => createBacklogApi(auth.apiConnection),
-    [auth.apiConnection]
-  )
   const modelSelection = useModelSelection()
+  const { conversation } = useStoryConversation()
+  const lastModel = userStory?.agentModels?.at(-1)
   const responseHeader = agentConversationResponseHeader({
-    modelId: userStory?.agentModelId,
-    providerId: userStory?.agentProviderId,
+    modelId: lastModel?.modelId,
+    providerId: lastModel?.providerId,
     providers: modelSelection.allProviders,
   })
   const providers = modelSelection.allProviders
@@ -451,48 +439,42 @@ const AgentRunTimeline = React.memo(function AgentRunTimeline({
         : undefined,
     [providers]
   )
-  // Follows the story, not its updates: each turn keeps this callback.
-  const storyId = userStory?.id
-  const loadActivityDetail = React.useCallback(
-    async (run: { id: string }, activity: UserStoryAgentActivity) => {
-      if (!storyId) return activity.detail
-      return (await api.agentRunActivityDetail(storyId, run.id, activity.id))
-        .detail
+  const rewindTargets = conversation?.rewindTargets
+  const undo = React.useCallback(
+    async (target: AgentConversationUserMessageUndo) => {
+      const rewind = rewindTargets?.get(target.comment.id)
+      if (rewind) await onCommentUndo?.({ body: target.comment.body, rewind })
     },
-    [api, storyId]
+    [onCommentUndo, rewindTargets]
   )
 
   return (
     <AgentConversationTimeline
-      comments={userStory?.comments ?? []}
-      unsentComments={commentsWithoutAgentRun(userStory ?? {})}
+      comments={conversation?.comments ?? []}
       loadChangedFileDiffs={loadChangedFileDiffs}
       onFileLinkClick={onFileLinkClick}
       onChangedFileClick={onChangedFileClick}
-      onLoadActivityDetail={loadActivityDetail}
-      onUserMessageUndo={onCommentUndo}
+      onUserMessageUndo={onCommentUndo ? undo : undefined}
       responseHeader={responseHeader}
       responseHeaderForRun={responseHeaderForRun}
-      queued={
-        <QueuedComments
-          author={userStory?.comments?.at(-1)?.author ?? "You"}
-          onFileLinkClick={onFileLinkClick}
-          storyId={userStory?.id}
-        />
-      }
-      runs={userStory?.agentRuns ?? []}
+      runs={conversation?.runs ?? []}
       screenshotOwner={screenshotOwnerFor("userStory", userStory?.id)}
       topOffset={connectSummaryActions ? "message-actions" : "default"}
     />
   )
 })
 
+export type StoryMessageUndo = {
+  body: string
+  rewind: { to: number; workspace: boolean }
+}
+
 type AgentRunTimelineProps = {
   connectSummaryActions?: boolean
   loadChangedFileDiffs?: Parameters<
     typeof AgentConversationTimeline
   >[0]["loadChangedFileDiffs"]
-  onCommentUndo?: (target: AgentConversationUserMessageUndo) => Promise<void>
+  onCommentUndo?: (target: StoryMessageUndo) => Promise<void>
   onFileLinkClick?: (path: string) => void
   onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   userStory?: UserStory
@@ -524,9 +506,10 @@ const MarkdownEditorModelSelector = React.memo(
   }
 )
 
-function summaryActionsAlwaysVisible(userStory: UserStory | undefined) {
-  const runs = userStory?.agentRuns ?? []
-  if (!runs.length) return true
+function summaryActionsAlwaysVisible(
+  runs: readonly AgentConversationRun[] | undefined
+) {
+  if (!runs?.length) return true
   return !runs.some(
     (run) =>
       run.kind !== "initial" ||
