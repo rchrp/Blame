@@ -18,8 +18,8 @@ import { LightWorkspace as TypeScriptLightWorkspace } from "./light-workspace.js
 // BLAME_HARNESS_COMPARE=<log.jsonl>: the tests read the TypeScript results,
 // and every search_code/read_code/edit_code also runs in Rust, on a shadow
 // copy of the workspace, and is compared byte for byte (an edit's resulting
-// files too), one log line per call. After a command, which the Rust
-// harness does not run yet, the instance stops comparing.
+// files too), one log line per call. After a command (run once, by
+// TypeScript), the instance stops comparing.
 
 type Options = ConstructorParameters<typeof TypeScriptLightWorkspace>[1];
 type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => void };
@@ -215,6 +215,13 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
     this.shadow = shadows.get(root) ?? mkdtempSync(join(tmpdir(), "rust-shadow-"));
     shadows.set(root, this.shadow);
     this.rust = new RustLightWorkspace(this.shadow, options);
+    // The runner alone (tests call it directly) records checks the shadow's
+    // journal never sees: the sessions differ from then on too.
+    const run = this.tasks.run.bind(this.tasks);
+    this.tasks.run = (...args: Parameters<typeof run>) => {
+      this.diverged = true;
+      return run(...args);
+    };
   }
 
   override async searchCode(input: Parameters<TypeScriptLightWorkspace["searchCode"]>[0], signal?: AbortSignal) {
@@ -239,7 +246,7 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
   }
 
   override async runTask(...args: Parameters<TypeScriptLightWorkspace["runTask"]>) {
-    // run_task is not ported: from here on the two sessions differ.
+    // Commands are not run twice: from here on the two sessions differ.
     this.diverged = true;
     return super.runTask(...args);
   }

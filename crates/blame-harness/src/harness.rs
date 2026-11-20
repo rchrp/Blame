@@ -87,9 +87,7 @@ impl Harness {
         let now = Instant::now();
         // A workspace in use is locked by its request: never dropped then.
         workspaces.retain(|entry| {
-            entry.key == key
-                || entry.workspace.try_lock().is_err()
-                || now - entry.last_used < WORKSPACE_IDLE
+            entry.key == key || busy(&entry.workspace) || now - entry.last_used < WORKSPACE_IDLE
         });
         let entry = match workspaces.iter().position(|entry| entry.key == key) {
             Some(index) => workspaces.remove(index),
@@ -126,10 +124,7 @@ impl Harness {
         });
         // Least recently used first.
         while workspaces.len() > WORKSPACE_LIMIT {
-            match workspaces
-                .iter()
-                .position(|entry| entry.workspace.try_lock().is_ok())
-            {
+            match workspaces.iter().position(|entry| !busy(&entry.workspace)) {
                 Some(index) => {
                     workspaces.remove(index);
                 }
@@ -279,7 +274,9 @@ impl Harness {
             workspace.prepare()?;
             (workspace.tasks(), workspace.root().to_string())
         };
-        if input.get("kind").and_then(Json::as_str) == Some("command")
+        // cmd.exe reads command lines differently: no routing on Windows.
+        if !cfg!(windows)
+            && input.get("kind").and_then(Json::as_str) == Some("command")
             && std::env::var("BLAME_AGENT_SHELL_INSPECTION_ROUTING").as_deref() != Ok("false")
         {
             let command = input.get("command").and_then(Json::as_str).unwrap_or("");
@@ -407,6 +404,15 @@ impl Harness {
             Err(failure) if failure.cancelled => Err(failure),
             Err(failure) => Ok(text_result(false, failure.message)),
         }
+    }
+}
+
+/// A workspace in use by a request, or running a command it started, is
+/// never dropped: its managed runs live in it.
+fn busy(workspace: &Mutex<Workspace>) -> bool {
+    match workspace.try_lock() {
+        Ok(workspace) => workspace.tasks().running(),
+        Err(_) => true,
     }
 }
 
