@@ -216,6 +216,8 @@ until the engine runs in the VM; there is no Cline fallback.
 | --- | --- | --- | --- |
 | `generateTitle` | `title` | `submit_title` (run configuration ids in the schema) | none |
 | `optimizeUserStory` | `user-story-optimization` | `submit_user_story` | none |
+| `discoverSecurityAudit` | `security-discovery` | `submit_security_discovery` | harness, `allowed: search_code, read_code`, `required: read_code` |
+| `validateSecurityAudit` | `security-validation` | `submit_security_validation` (the given candidate ids in the schema) | harness, `allowed: search_code, read_code`, `required: read_code` |
 
 ## Rules for the next slices
 

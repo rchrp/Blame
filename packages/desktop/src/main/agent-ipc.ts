@@ -74,17 +74,9 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   registerSessionDataIpcHandlers(input.beforeWorkspaceWrite);
   registerSessionEventIpcHandlers();
   registerAnalysisWorkflowIpcHandlers(input.beforeWorkspaceWrite);
-  registerSecurityAuditIpcHandlers({
-    resolveInput: (securityInput) => agentWorkspaceInput(securityInput),
-    map: (securityInput) =>
-      agentRuntime().run("securityAudits.map", securityInput),
-    discover: (securityInput) =>
-      agentRuntime().run("securityAudits.discover", securityInput),
-    validate: (securityInput) =>
-      agentRuntime().run("securityAudits.validate", securityInput),
-    cancel: (auditId) => agentRuntime().cancelSecurityAudit(auditId),
-    finish: (auditId) => agentRuntime().finishSecurityAudit(auditId),
-  });
+  registerSecurityAuditIpcHandlers((securityInput) =>
+    agentRuntime().run("securityAudits.map", securityInput),
+  );
   registerDeliveryWorkflowIpcHandlers(input.beforeDelivery);
 }
 

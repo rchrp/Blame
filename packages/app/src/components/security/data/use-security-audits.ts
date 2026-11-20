@@ -1,6 +1,5 @@
 import * as React from "react"
 import type {
-  RunSecurityAuditInput,
   SecurityAudit,
   SecurityFinding,
   SecurityFindingStatus,
@@ -12,6 +11,11 @@ import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
 
 import { persistSecurityAudit } from "./security-audit-persistence"
+import {
+  createSecurityAuditRunner,
+  type SecurityAuditRunner,
+} from "./security-audit-runner"
+import type { SecurityAuditRunInput } from "./security-audit-steps"
 
 const runningStatuses = new Set<SecurityAudit["status"]>([
   "queued",
@@ -21,13 +25,30 @@ const runningStatuses = new Set<SecurityAudit["status"]>([
   "prioritization",
 ])
 
+// One runner per window, shared by the audit views and the recorder.
+const runners = new WeakMap<object, SecurityAuditRunner>()
+
+export function useSecurityAuditRunner() {
+  const { engine, securityAudits } = usePlatform()
+  if (!engine || !securityAudits) return undefined
+  let runner = runners.get(securityAudits)
+  if (!runner) {
+    runner = createSecurityAuditRunner({
+      engine,
+      map: (input) => securityAudits.map(input),
+    })
+    runners.set(securityAudits, runner)
+  }
+  return runner
+}
+
 export function useSecurityAudits() {
   const auth = useCloudAuth()
-  const platform = usePlatform()
+  const engine = usePlatform().engine
   const project = useProjects().activeProject
   const root = project?.path
   const projectId = project?.id
-  const runner = platform.securityAudits
+  const runner = useSecurityAuditRunner()
   const cloud = React.useMemo(
     () => createCloudApi(auth.apiConnection),
     [auth.apiConnection]
@@ -102,11 +123,14 @@ export function useSecurityAudits() {
     try {
       let audits = await cloud.securityAudits(projectId)
       if (runner) {
-        const active = await runner.active({ root })
+        const active = runner.active(root)
         const interrupted = audits.filter(
           (audit) =>
             runningStatuses.has(audit.status) && audit.id !== active?.id
         )
+        // Their agents may still run in the engine: nothing waits for them.
+        for (const session of interrupted.flatMap((audit) => audit.sessionIds))
+          void engine?.call("cancelTask", { session }).catch(() => undefined)
         if (interrupted.length) {
           const replacements = await Promise.all(
             interrupted.map((audit) =>
@@ -132,7 +156,7 @@ export function useSecurityAudits() {
         root,
       })
     }
-  }, [auth.status, cloud, projectId, root, runner])
+  }, [auth.status, cloud, engine, projectId, root, runner])
 
   React.useEffect(() => {
     const timer = window.setTimeout(() => void load(), 0)
@@ -149,22 +173,16 @@ export function useSecurityAudits() {
   }, [applyAudit, root, runner])
 
   const run = React.useCallback(
-    async (
-      input: Omit<
-        RunSecurityAuditInput,
-        "cwd" | "previousFindings" | "workspaceRoot"
-      >
-    ) => {
+    async (input: Omit<SecurityAuditRunInput, "previousFindings" | "root">) => {
       if (!runner || !root || !projectId)
         throw new Error("Open a desktop project before running an audit.")
       setState((current) => ({ ...current, error: undefined }))
       try {
         const audit = await runner.run({
           ...input,
-          cwd: root,
+          root,
           projectId,
           previousFindings: auditFindingHistory(auditsRef.current),
-          workspaceRoot: root,
         })
         return await persist(audit)
       } catch (error) {
@@ -273,7 +291,8 @@ function interruptedAudit(audit: SecurityAudit): SecurityAudit {
   return {
     ...audit,
     status: "failed",
-    error: "The desktop audit process ended before this audit completed.",
+    error:
+      "The audit stopped before it completed: the window that ran it was closed or reloaded.",
     completedAt: timestamp,
     sequence: audit.sequence + 1,
     updatedAt: timestamp,
