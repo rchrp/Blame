@@ -78,6 +78,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   BLAME_WORKSPACE_S3_SECRET_ACCESS_KEY: Env.schema.secret.optional(),
   BLAME_WORKSPACE_S3_FORCE_PATH_STYLE: Env.schema.boolean.optional(),
 
+  // Engine session log: request limits
+  ENGINE_LOG_MAX_PUSH_RECORDS: Env.schema.number.optional(),
+  ENGINE_LOG_MAX_PUSH_BYTES: Env.schema.number.optional(),
+  ENGINE_LOG_MAX_PULL_RECORDS: Env.schema.number.optional(),
+  ENGINE_LOG_MAX_PULL_BYTES: Env.schema.number.optional(),
+  ENGINE_BLOB_MAX_BYTES: Env.schema.number.optional(),
+
   // Managed preview runtime (server-only)
   BLAME_CLOUD_RUNTIME_ENABLED: Env.schema.boolean.optional(),
   BLAME_PREVIEW_MAX_ACTIVE_PER_USER: Env.schema.number.optional(),
