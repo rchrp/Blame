@@ -1081,7 +1081,7 @@ export class BlameAgentRuntime {
           }),
         },
         localRuntime: {
-          ...(configExtensions?.length ? { configExtensions } : {}),
+          ...(configExtensions ? { configExtensions } : {}),
         },
         interactive: !autoSendPrompt,
         source: "blame-desktop",

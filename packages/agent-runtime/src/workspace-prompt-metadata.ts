@@ -14,11 +14,15 @@ const run = promisify(execFile);
 export async function workspacePromptMetadata(cwd: string) {
   const root = resolve(cwd);
   const workspace: Record<string, unknown> = { hint: basename(root) };
-  const git = (args: string[]) =>
-    run("git", args, { cwd: root, timeout: 10_000 }).then(
-      ({ stdout }) => stdout.trim(),
-      () => undefined,
-    );
+  // A folder that is not there yet (a VM workspace) has no Git metadata.
+  const git = async (args: string[]) => {
+    try {
+      const { stdout } = await run("git", args, { cwd: root, timeout: 10_000 });
+      return stdout.trim();
+    } catch {
+      return undefined;
+    }
+  };
   if ((await git(["rev-parse", "--is-inside-work-tree"])) === "true") {
     const [remotes, branch] = await Promise.all([
       git(["remote", "-v"]),

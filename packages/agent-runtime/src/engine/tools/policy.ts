@@ -40,7 +40,8 @@ const rules: Record<string, Rule> = {
 const blameServers: Record<string, Rule> = {
   // GitHub's server is connected with a read-only token.
   github: { effect: "read_only" },
-  // Clicks and navigation change the page the next call sees.
+  // Clicks and navigation change the page the next call sees; a screenshot
+  // or a snapshot says it is read-only.
   preview_devtools: { effect: "command" },
 };
 
@@ -55,10 +56,10 @@ export const clientToolPolicy: ToolPolicy = (tool: ClientTool<never>) => {
 function ruleOf(tool: ClientTool<never>): Rule {
   const source = tool.source;
   if (source?.kind === "mcp") {
-    const server = blameServers[source.server];
-    if (server) return server;
-    // The user's own servers: what they say of their tools, or the worst.
-    return { effect: source.readOnly ? "read_only" : "external" };
+    // What the server says of a tool (`readOnlyHint`), else what Blame knows
+    // of its own servers, else the worst for the user's own.
+    if (source.readOnly) return { effect: "read_only" };
+    return blameServers[source.server] ?? { effect: "external" };
   }
   return (
     rules[tool.name] ?? {

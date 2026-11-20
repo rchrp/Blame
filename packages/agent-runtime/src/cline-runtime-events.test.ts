@@ -562,19 +562,22 @@ test("starts development sessions with native skills and private specialist cons
     assert.equal(capturedStart.localRuntime?.hooks?.beforeModel, undefined);
     assert.equal(capturedStart.config.maxIterations, undefined, "A story run has no turn limit");
     assert.equal(capturedStart.config.enableSpawnAgent, false);
-    assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
-    assert.ok(
-      capturedStart.localRuntime?.configExtensions?.includes("plugins"),
+    // Skills come from the engine's loader, as a client tool: not Cline's.
+    assert.equal(
+      capturedStart.localRuntime?.configExtensions?.includes("skills"),
+      undefined,
     );
     assert.equal(capturedStart.config.pluginPaths, undefined);
     assert.equal("pluginPaths" in (capturedStart.localRuntime ?? {}), false);
-    const skillService = capturedStart.localRuntime?.userInstructionService;
-    assert.ok(skillService);
-    const skillNames = skillService
-      .listRecords("skill")
-      .map((record: { item: { name: string } }) => record.item.name);
-    assert.ok(skillNames.includes("impeccable"));
-    assert.ok(skillNames.includes("workspace-skill"));
+    assert.equal(capturedStart.localRuntime?.userInstructionService, undefined);
+    const skills = capturedStart.config.extraTools?.find(
+      (tool: { name: string }) => tool.name === "skills",
+    );
+    assert.ok(skills);
+    assert.match(skills.description, /Available skills: .*\bworkspace-skill\b/);
+    assert.match(skills.description, /\bimpeccable\b/);
+    const loaded = await skills.execute({ skill: "workspace-skill" }, {} as never);
+    assert.match(String(loaded), /<command-name>workspace-skill<\/command-name>/);
     assert.match(capturedStart.config.systemPrompt ?? "", /## Skill selection/);
     assert.match(capturedStart.config.systemPrompt ?? "", /Workspace-owned regression fixture/);
     assert.match(capturedStart.config.systemPrompt ?? "", /Not for backend-only/);

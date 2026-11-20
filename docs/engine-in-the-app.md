@@ -23,8 +23,8 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   graph), so it stays a small Node process.
 - **Main** spawns the engine host, starts it again after a crash, routes
   renderer calls to it and its events back to the windows that follow a
-  session. It serves the host the few desktop services a tool needs
-  (`renderWebPage`). It imports only types and a tiny protocol module from
+  session. It serves the host the desktop services the tools need
+  (see "Desktop services"). It imports only types and a tiny protocol module from
   `@blame/agent-runtime/engine-protocol`: the main process stays light
   (`scripts/check-main-process-imports.mjs` still passes).
   On quit it asks the host to shut down: the engine ends running turns as
@@ -119,10 +119,94 @@ conversation on the engine.
 
 A client tool is a `ClientTool` (`engine/tool.ts`): name, description, JSON
 Schema, effect, `endsTurn`, `needsApproval`, and `run(input, context)` with
-the call's `signal` and `progress(text)`. A `ToolSet` turns tools into the
-session's `client_tools` specs and serves `host/tool`; progress goes back to
-the engine as `tool/progress` and reaches viewers as `tool_progress` deltas.
-Engine tools (the harness) run inside the engine, next to the files.
+the call's `session`, `turn`, `call`, `signal` and `progress(text)`. A
+`ToolSet` turns tools into the session's `client_tools` specs and serves
+`host/tool`; progress goes back to the engine as `tool/progress` and reaches
+viewers as `tool_progress` deltas. Engine tools (the harness) run inside the
+engine, next to the files.
+
+The host's one tool set does three things for every call, whatever the tool:
+
+- **Policy** (`engine/tools/policy.ts`): one table gives each tool its effect
+  and whether the user approves it. An MCP tool takes `read_only` when its
+  server says so (`readOnlyHint`), else Blame's rule for its own servers
+  (GitHub read-only, preview DevTools `command`), else `external`. The engine
+  runs read-only calls in parallel and lists command and external calls as
+  not undone on a rewind. No conversation tool needs approval today.
+- **Guards** (`engine/tools/guards.ts`): a call whose input names a developer
+  env file (`.env`, `.env.local`, not `.env.example`) is refused; what an MCP
+  server answers (GitHub, preview DevTools, the user's servers) is masked
+  before the model and the transcript see it. Blame's own tools mask their
+  own answers.
+- **Images**: a tool answers `{ type: "image", data, mediaType }` blocks; the
+  set stores each as a blob (`blob/put`) and the record keeps
+  `ToolResultBlock::Image { blob }`. The model receives the image, and a
+  reopened conversation still has it (the engine reads it from its store).
+
+### A conversation's tools
+
+Tools shared by every session (web research) are given to the `ToolSet` at
+construction. A conversation's own tools are bound to its session:
+`host.conversationTools.ensure(session)` (`engine/tools/index.ts`,
+`ConversationTools`) lists them once with `conversationClientTools(services,
+session)`, binds them to the session in the tool set and returns their specs
+and the prompt section they need (the skills' scopes). A purpose builder puts
+those specs in `client_tools` and the prompt in `system_prompt`.
+
+The list stays the same for the whole conversation in this host: the specs
+are part of the session's config and of the provider's prompt cache, and the
+host only rebuilds a config with a message (`applySettings`). An MCP
+server's tools are listed when the conversation's tools are; a tool the
+server dropped later fails with the server's message, a new one shows in new
+conversations, or in this one after the app restarts (one `ConfigChanged`,
+one cache miss).
+
+| tool | needs | story | plan | new project | quick chat (proposed) |
+| --- | --- | --- | --- | --- | --- |
+| `search_web`, `read_web_page` | API connection, `renderWebPage` | yes | yes | yes | yes (today) |
+| `read_attachment` | workspace (an executor for the VM) | yes | yes | yes | no: attachments are message blocks |
+| `get_preview_devtools` | `previewDevtools`, a preview without surface | yes | yes | no | no |
+| `preview_devtools__*` | `previewDevtools`, `previewDevtoolsTools`, `previewDevtoolsCall`, a preview scope | yes | yes | no | no |
+| `preview_terminal`, `preview_display`, `preview_device` | `previewSurfaceInfo`, `previewSurfaceCall` (replace the DevTools tools) | yes | yes | no | no |
+| `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no |
+| `repair_preview_initialization` | `repairPreviewInitialization` (a one-shot agent, session 3) | yes | no | no | no |
+| `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no |
+| `open_component_preview` | `componentPreview`, a Vite-capable workspace | yes | no | no | no |
+| `propose_user_stories` | a project | yes | yes | no | yes |
+| `propose_project_stack` | nothing | no | no | yes | no |
+| `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | no | yes |
+| `github__*` | `githubMcpTools`, `githubMcpCall`: read-only GitHub access for the session id | yes | yes | no | no |
+| `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | no | yes |
+| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.cline/skills`… and Blame's own) | yes | yes | no | yes |
+
+Not yet client tools: `consult_specialist` and spawned agents (engine tasks),
+`finish_task` and the harness (Rust harness), project memory.
+
+### Desktop services
+
+The tools ask the main process for what only it has through typed desktop
+services (`engine/desktop-services.ts`, `DesktopServices`): the preview's
+browser, readiness, logs, variables and screen, the screenshot store, the
+component preview server, the session's GitHub MCP connection (its token
+never leaves main), the project runner, Git and page rendering. The host
+sends `desktop-request { method, input }`; main answers it in
+`packages/desktop/src/main/engine/engine-desktop-services.ts` (the same
+functions the agent runtime host uses, which delegates to it) and an aborted
+call sends `desktop-cancel`, which aborts the work in main.
+
+### The user's MCP servers and skills
+
+MCP servers are read from the MCP settings file Settings → MCP writes
+(`mcp-settings.ts`), connected with `@modelcontextprotocol/sdk` (stdio,
+Streamable HTTP, SSE), one connection per server for the whole host, closed
+when it shuts down. OAuth state stays in that file next to the server
+(`mcp-oauth.ts`); authorizing opens the server's sign-in page and waits for
+the loopback redirect. Skills are `SKILL.md` folders read from the
+workspace (`.clinerules`, `.cline`, `.claude`, `.agents` `/skills`), the
+user's home (`~/.cline/skills`, `~/.agents/skills`) and Blame's own
+(`plugins/blame-native/skills`); the prompt lists their scopes as they were
+when the conversation started and the `skills` tool reads the current files.
+A plugin folder (`BLAME_AGENT_PLUGIN_PATHS`) adds its skills only.
 
 ## Approvals
 
