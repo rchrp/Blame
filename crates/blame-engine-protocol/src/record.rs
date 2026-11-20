@@ -174,9 +174,11 @@ pub enum RecordBody {
         call: ToolCallId,
         /// Where the input does not match the result tool's schema.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[cfg_attr(feature = "ts", ts(as = "Option<Vec<String>>", optional))]
         invalid: Vec<String>,
         /// What the turn still had to do first.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        #[cfg_attr(feature = "ts", ts(as = "Option<Vec<Obligation>>", optional))]
         unmet: Vec<Obligation>,
     },
     /// The model stopped without fulfilling the contract. `text` is sent to

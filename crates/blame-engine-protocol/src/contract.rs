@@ -33,6 +33,7 @@ pub enum SessionKind {
         /// it stays on this machine only, and the engine deletes it a few
         /// days after it ended: long enough to look into a failure.
         #[serde(default)]
+        #[cfg_attr(feature = "ts", ts(as = "Option<bool>", optional))]
         replicate: bool,
     },
 }
@@ -57,6 +58,7 @@ pub struct CompletionContract {
     /// Tools that must have completed in the turn, in a reply before the one
     /// that calls the result tool, for a result to be accepted.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    #[cfg_attr(feature = "ts", ts(as = "Option<Vec<String>>", optional))]
     pub required: Vec<String>,
     /// When set, the only tools the model is offered, besides the result
     /// tool. Absent: every tool of the session.
@@ -66,6 +68,7 @@ pub struct CompletionContract {
     /// contract. The last one also forces the tool choice where the provider
     /// can. Past it the turn fails as `contract_unmet`.
     #[serde(default = "default_corrections")]
+    #[cfg_attr(feature = "ts", ts(as = "Option<u32>", optional))]
     pub max_corrections: u32,
 }
 
