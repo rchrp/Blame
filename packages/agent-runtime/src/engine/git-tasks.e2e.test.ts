@@ -1,5 +1,5 @@
 // The git flows' agents through the engine host, against the real
-// `blame-engine`, the real harness runner and a mock Anthropic server: a
+// `blame-engine`, the real `blame-harness` and a mock Anthropic server: a
 // commit message from its result tool, and merge conflicts resolved in the
 // worktree by an agent the contract makes read code first. Skipped when the
 // binary is not built.
@@ -20,13 +20,11 @@ import { after, before, describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
 import { EngineHost } from "./host.js";
 import { FakeApi, MockModel, testModel, tools } from "./testing.js";
+import { testHarnessCommand, testHarnessEnvironment } from "./testing.js";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const binary =
   process.env.BLAME_ENGINE_BIN ?? join(root, "target/debug/blame-engine");
-const runner = fileURLToPath(
-  new URL("../harness/semantic-harness-runner.js", import.meta.url),
-);
 const model = { providerId: "anthropic", modelId: testModel };
 
 function git(cwd: string, ...args: string[]) {
@@ -73,8 +71,8 @@ describe(
         binary,
         dataDir,
         clientVersion: "test",
-        harnessCommand: [process.execPath, runner, "--serve"],
-        env: { ...process.env, BLAME_ENGINE_LOG: "warn" },
+        harnessCommand: testHarnessCommand(),
+        env: { ...process.env, ...testHarnessEnvironment(), BLAME_ENGINE_LOG: "warn" },
         emit: () => undefined,
       });
       await host.call("connect", { api: api.connection() });
@@ -199,8 +197,8 @@ describe(
         binary,
         dataDir: join(directory, "vm-host-data"),
         clientVersion: "test",
-        harnessCommand: [process.execPath, runner, "--serve"],
-        env: { ...process.env, BLAME_ENGINE_LOG: "warn" },
+        harnessCommand: testHarnessCommand(),
+        env: { ...process.env, ...testHarnessEnvironment(), BLAME_ENGINE_LOG: "warn" },
         emit: () => undefined,
         vm: {
           prepare: async () => {

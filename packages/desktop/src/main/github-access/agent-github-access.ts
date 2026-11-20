@@ -298,6 +298,26 @@ export async function requestCloudGithubToken(
   return { token, expiresAt };
 }
 
+/**
+ * The credentials of a session's next harness command: a cloud session's
+ * token; for a story in the runtime VM, the token granted for writing, or
+ * none at all so that no inherited token reaches it. `null` elsewhere: the
+ * command keeps the harness's environment.
+ */
+export async function harnessCommandCredentials(
+  sessionId: string,
+  location: "host" | "vm",
+): Promise<{ githubToken?: string } | null> {
+  const cloud = cloudSessionTokens.get(sessionId);
+  if (cloud) {
+    const githubToken = await cloud.token();
+    return githubToken ? { githubToken } : {};
+  }
+  if (location !== "vm") return null;
+  const grant = sessionGrants.get(sessionId);
+  return grant?.level === "write" ? { githubToken: grant.token } : {};
+}
+
 /** What the agent process gives a cloud session's next command. */
 export async function sessionCommandCredentials(sessionId: unknown) {
   const source =

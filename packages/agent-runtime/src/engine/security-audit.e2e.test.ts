@@ -1,5 +1,5 @@
 // The security audit's agent steps through the engine host, against the
-// real `blame-engine`, the real harness runner and a mock Anthropic server:
+// real `blame-engine`, the real `blame-harness` and a mock Anthropic server:
 // a result before any code was read is refused, the harness reads the
 // project, the task's records carry what the progress shows, and the
 // validator cannot name a candidate it was not given. Skipped when the
@@ -22,13 +22,11 @@ import { EngineHost } from "./host.js";
 import type { MapSecurityAuditResult } from "../types.js";
 import type { EngineHostEvent } from "./protocol.js";
 import { FakeApi, MockModel, testModel, tools } from "./testing.js";
+import { testHarnessCommand, testHarnessEnvironment } from "./testing.js";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const binary =
   process.env.BLAME_ENGINE_BIN ?? join(root, "target/debug/blame-engine");
-const runner = fileURLToPath(
-  new URL("../harness/semantic-harness-runner.js", import.meta.url),
-);
 const model = { providerId: "anthropic", modelId: testModel };
 const repository: MapSecurityAuditResult = {
   revision: { snapshotDigest: "digest", dirty: false },
@@ -107,9 +105,9 @@ describe(
       host = new EngineHost({
         binary,
         dataDir,
-        harnessCommand: [process.execPath, runner, "--serve"],
+        harnessCommand: testHarnessCommand(),
         clientVersion: "test",
-        env: { ...process.env, BLAME_ENGINE_LOG: "warn" },
+        env: { ...process.env, ...testHarnessEnvironment(), BLAME_ENGINE_LOG: "warn" },
         emit: (event) => events.push(event),
       });
       await host.call("connect", { api: api.connection() });

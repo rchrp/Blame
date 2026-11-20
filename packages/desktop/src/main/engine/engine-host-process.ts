@@ -5,7 +5,8 @@
 import {
   EngineHost,
   desktopServices,
-  harnessRunnerPath,
+  harnessEnvironment,
+  harnessServeArgs,
   isEngineHostMessage,
   type EngineDesktopMethod,
   type EngineHostMessage,
@@ -14,6 +15,8 @@ import {
 
 export type EngineHostProcessConfig = {
   binary: string;
+  /** `blame-harness`, the engine's workspace harness. */
+  harness: string;
   dataDir: string;
   clientVersion: string;
   /** The runtime VM's folders and host alias, where the platform has a VM. */
@@ -58,11 +61,13 @@ const host = new EngineHost({
   binary: config.binary,
   dataDir: config.dataDir,
   clientVersion: config.clientVersion,
-  // Electron runs the harness runner as plain Node.
-  harnessCommand: [process.execPath, harnessRunnerPath(), "--serve"],
+  harnessCommand: [config.harness, ...harnessServeArgs()],
+  // The engine passes its environment to the harness: Electron, run as
+  // plain Node, is the harness's compiler side process.
   env: {
     ...process.env,
     ELECTRON_RUN_AS_NODE: "1",
+    ...harnessEnvironment(process.execPath),
     BLAME_ENGINE_HOST_CONFIG: undefined,
   },
   emit: (event) => post({ kind: "event", event }),

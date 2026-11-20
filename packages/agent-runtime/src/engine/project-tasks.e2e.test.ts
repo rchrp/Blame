@@ -15,13 +15,11 @@ import type { FollowEvent, SessionRecord } from "@blame/engine-client";
 import { EngineHost } from "./host.js";
 import type { EngineHostEvent } from "./protocol.js";
 import { FakeApi, MockModel, testModel, tools } from "./testing.js";
+import { testHarnessCommand, testHarnessEnvironment } from "./testing.js";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const binary =
   process.env.BLAME_ENGINE_BIN ?? join(root, "target/debug/blame-engine");
-const runner = fileURLToPath(
-  new URL("../harness/semantic-harness-runner.js", import.meta.url),
-);
 const model = { providerId: "anthropic", modelId: testModel };
 
 describe(
@@ -61,9 +59,9 @@ describe(
       host = new EngineHost({
         binary,
         dataDir,
-        harnessCommand: [process.execPath, runner, "--serve"],
+        harnessCommand: testHarnessCommand(),
         clientVersion: "test",
-        env: { ...process.env, BLAME_ENGINE_LOG: "warn" },
+        env: { ...process.env, ...testHarnessEnvironment(), BLAME_ENGINE_LOG: "warn" },
         emit: (event) => events.push(event),
       });
       await host.call("connect", { api: api.connection() });

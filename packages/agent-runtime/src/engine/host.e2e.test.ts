@@ -25,13 +25,11 @@ import {
   text,
   tools,
 } from "./testing.js";
+import { testHarnessCommand, testHarnessEnvironment } from "./testing.js";
 
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const binary =
   process.env.BLAME_ENGINE_BIN ?? join(root, "target/debug/blame-engine");
-const runner = fileURLToPath(
-  new URL("../harness/semantic-harness-runner.js", import.meta.url),
-);
 const session = "qc-0193f5d2-7a1b-7c3e-9f00-000000000001";
 // A 1×1 PNG.
 const png =
@@ -54,9 +52,9 @@ describe(
       const host = new EngineHost({
         binary,
         dataDir,
-        harnessCommand: [process.execPath, runner, "--serve"],
+        harnessCommand: testHarnessCommand(),
         clientVersion: "test",
-        env: { ...process.env, BLAME_ENGINE_LOG: "warn" },
+        env: { ...process.env, ...testHarnessEnvironment(), BLAME_ENGINE_LOG: "warn" },
         emit: (event) => {
           events.push(event);
           if (event.type !== "follow") return;

@@ -22,4 +22,9 @@ export type {
   ProjectMemoryRecord,
 } from "../harness/project-memory.js";
 /** The harness runner the engine starts (`--harness-command`). */
-export { harnessRunnerPath } from "../harness/runner-path.js";
+export {
+  harnessCompilerPath,
+  harnessEnvironment,
+  harnessServeArgs,
+  unpackedPath,
+} from "../harness/runner-path.js";

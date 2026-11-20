@@ -1,5 +1,5 @@
 // A development story through the engine host and the real `blame-engine`,
-// with the real harness runner and a scripted model server: its first
+// with the real `blame-harness` and a scripted model server: its first
 // message, a file edit, a tool that needs approval, queueing and steering
 // while a turn runs, an interrupt, a provider failure and its retry,
 // compaction, the app quitting mid-turn then reopening (recovery from the
@@ -36,6 +36,7 @@ import {
   tools,
 } from "./testing.js";
 import { defineTool } from "./tool.js";
+import { testHarnessCommand, testHarnessEnvironment } from "./testing.js";
 
 // A story's turn ends through the harness's `finish_task` (its contract).
 const finish = (summary: string) =>
@@ -44,9 +45,6 @@ const finish = (summary: string) =>
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const binary =
   process.env.BLAME_ENGINE_BIN ?? join(root, "target/debug/blame-engine");
-const runner = fileURLToPath(
-  new URL("../harness/semantic-harness-runner.js", import.meta.url),
-);
 
 describe(
   "a development story on the engine",
@@ -91,9 +89,9 @@ describe(
       const host = new EngineHost({
         binary,
         dataDir,
-        harnessCommand: [process.execPath, runner, "--serve"],
+        harnessCommand: testHarnessCommand(),
         clientVersion: "test",
-        env: { ...process.env, BLAME_ENGINE_LOG: "warn" },
+        env: { ...process.env, ...testHarnessEnvironment(), BLAME_ENGINE_LOG: "warn" },
         extraTools: [deploy, slow],
         extraPurposeTools: {
           "development-story": ["deploy_preview", "wait_for_build"],

@@ -27,6 +27,8 @@ export type EngineHostRegistration = {
   modulePath: string;
   /** When no engine binary was found, every call says why. */
   binary: BinaryLookup;
+  /** The engine's workspace harness (`blame-harness`); missing, every call says why too. */
+  harness: BinaryLookup;
   dataDir: string;
   clientVersion: string;
   isAppWindow(sender: WebContents): boolean;
@@ -114,14 +116,17 @@ class EngineHostProcess {
   }
 
   private fork(): Promise<UtilityProcess> {
-    const { binary, dataDir, clientVersion, modulePath } = this.registration;
+    const { binary, harness, dataDir, clientVersion, modulePath } =
+      this.registration;
     // Every call fails with the reason; nothing is started.
     if ("missing" in binary) return Promise.reject(new Error(binary.missing));
+    if ("missing" in harness) return Promise.reject(new Error(harness.missing));
     const child = utilityProcess.fork(modulePath, [], {
       env: {
         ...this.registration.environment,
         BLAME_ENGINE_HOST_CONFIG: JSON.stringify({
           binary: binary.path,
+          harness: harness.path,
           dataDir,
           clientVersion,
           ...engineHostVmConfig(),

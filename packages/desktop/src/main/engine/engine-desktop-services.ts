@@ -109,7 +109,68 @@ export function engineDesktopServices(
     git: (input) => agentGit(input),
     applyPreviewInitialization: (input) => applyPreviewInitialization(input),
     prepareVmEngine: () => prepareThisVmEngine(),
+    commandCredentials: async (input) => {
+      const { harnessCommandCredentials } =
+        await import("../github-access/agent-github-access.ts");
+      const request = record(input);
+      return harnessCommandCredentials(
+        String(request.sessionId ?? ""),
+        request.location === "vm" ? "vm" : "host",
+      );
+    },
+    refreshPreviewDependencies: (input, signal) =>
+      refreshPreviewDependencies(input, signal, harness, previews),
   };
+}
+
+// A dependency the harness added or removed reaches the story's preview:
+// the local preview runtime installs it (a cloud preview syncs first), the
+// preview's browser reloads, and the state once it is ready is the result.
+async function refreshPreviewDependencies(
+  input: unknown,
+  signal: AbortSignal,
+  harness: PreviewHarnessService,
+  previews: PreviewService,
+) {
+  const request = record(input);
+  const worktree = String(request.worktree ?? "");
+  try {
+    if (request.workspaceMode === "cloud-mirror") {
+      await previews.syncBarrier(worktree);
+    } else {
+      const { refreshProjectPreviewDependencies } =
+        await import("../workspace-ipc.ts");
+      const local = await refreshProjectPreviewDependencies(worktree);
+      if (local.status === "not_running") return local;
+    }
+    const { reloadPreviewBrowserForScope } =
+      await import("../preview-browser-ipc.ts");
+    reloadPreviewBrowserForScope({ scope: String(request.scope ?? "") });
+    const state = await harness.target({
+      ...request,
+      signal,
+      waitFor: "ready",
+    } as never);
+    if (state.status === "failed")
+      return { diagnostic: state.message, status: "failed" as const };
+    if (state.status === "stopped") return { status: "not_running" as const };
+    const ready =
+      state.status === "ready" ||
+      (state.status === "unavailable" &&
+        state.readiness.container_ready &&
+        state.revisions?.dependencies_ready === true);
+    if (!ready) return { diagnostic: state.message, status: "failed" as const };
+    return {
+      readiness: state.readiness,
+      revisions: state.revisions,
+      status: "ready" as const,
+    };
+  } catch (error) {
+    return {
+      diagnostic: error instanceof Error ? error.message : String(error),
+      status: "failed" as const,
+    };
+  }
 }
 
 // The engine in this computer's runtime VM, for the engine host.
