@@ -8,6 +8,10 @@ use serde_json::Value;
 /// One durable fact about a session. Records are appended, never changed or
 /// deleted: undoing something appends a record that says so.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+// `Record` is a TypeScript built-in; shadowing it would break every
+// `Record<K, V>` in the generated file.
+#[cfg_attr(feature = "ts", ts(rename = "SessionRecord"))]
 pub struct Record {
     pub seq: Seq,
     /// Milliseconds since the Unix epoch, stamped by the store.
@@ -20,6 +24,8 @@ pub struct Record {
 /// `ToolCallStarted` is stored), so after a crash the log says exactly how far
 /// each step got.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum RecordBody {
     /// Always the first record of a session.
@@ -158,6 +164,8 @@ pub enum RecordBody {
 /// session can be reopened by another engine, on another machine.
 /// Credentials are never part of it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 pub struct SessionConfig {
     /// What the session is for (`development`, `title`, `merge-conflict`…).
     pub purpose: String,
@@ -184,6 +192,8 @@ pub struct SessionConfig {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 pub struct Limits {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_requests_per_turn: Option<u32>,
@@ -196,6 +206,7 @@ pub struct Limits {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ToolSpec {
     pub name: String,
     pub description: String,
@@ -213,6 +224,7 @@ pub struct ToolSpec {
 /// What a tool can change. It decides whether calls may run side by side and
 /// what recovery does with a call that a crash interrupted.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum ToolEffect {
     /// Changes nothing: safe to run in parallel and to run again.
@@ -226,6 +238,7 @@ pub enum ToolEffect {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum ToolOutcome {
     Completed,
@@ -241,6 +254,7 @@ pub enum ToolOutcome {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum Delivery {
     /// Opens a new turn.
@@ -250,6 +264,7 @@ pub enum Delivery {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum TurnOutcome {
     Completed,
@@ -265,6 +280,7 @@ pub enum TurnOutcome {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum StopReason {
     EndTurn,
@@ -275,6 +291,7 @@ pub enum StopReason {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum ApprovalDecision {
     Approved,
@@ -282,6 +299,7 @@ pub enum ApprovalDecision {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ContextEdit {
     /// Record holding the block.
     pub target: Seq,
@@ -292,6 +310,7 @@ pub struct ContextEdit {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum WorkspaceRestore {
     Restored,
@@ -303,6 +322,7 @@ pub enum WorkspaceRestore {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum NoticeLevel {
     Info,
@@ -310,6 +330,8 @@ pub enum NoticeLevel {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 pub struct ErrorInfo {
     pub kind: ErrorKind,
     pub message: String,
@@ -319,6 +341,7 @@ pub struct ErrorInfo {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorKind {
     RateLimited,
