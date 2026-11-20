@@ -283,14 +283,13 @@ export function UserStoryDrawerPanel({
   const developmentWorkspaceRoot = developmentWorkspace.root
   const platform = usePlatform()
   const loadChangedFileDiffs = React.useCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) => {
+    (from: string, to: string | undefined) => {
       if (!developmentWorkspaceRoot) return Promise.resolve([])
       return loadAgentRunDiffs({
-        checkpointRunCount,
-        diffEndRef,
+        from,
         platform,
         root: developmentWorkspaceRoot,
-        sessionId,
+        to,
       })
     },
     [developmentWorkspaceRoot, platform]

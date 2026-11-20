@@ -12,6 +12,7 @@ import {
   transcriptConversation,
   type TranscriptConversation,
 } from "@/components/chat/engine/transcript-conversation"
+import { EngineApprovalProvider } from "@/components/chat/engine/engine-approvals"
 import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import { usePlatform } from "@/context/platform"
 import { storyLocation } from "@/pages/backlog/story-engine"
@@ -63,7 +64,12 @@ export function StoryConversationProvider({
   )
   return (
     <StoryConversationContext.Provider value={value}>
-      {children}
+      <EngineApprovalProvider
+        location={location}
+        session={story?.engineSessionId}
+      >
+        {children}
+      </EngineApprovalProvider>
     </StoryConversationContext.Provider>
   )
 }

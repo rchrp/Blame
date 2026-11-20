@@ -1,44 +1,37 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { loadAgentRunPatch } from "./agent-run-diff-range.ts"
+import { turnPatch } from "./agent-run-diff-range.ts"
 
-test("loads the final run diff between its checkpoint and captured head", async () => {
-  const comparisons: number[] = []
-  const patch = await loadAgentRunPatch({
-    ...diffFixture(comparisons),
-    from: { checkpointRunCount: 2, sessionId: "session-2" },
-    toRef: "captured-head",
-  })
-
-  assert.deepEqual(comparisons, [2])
-  assert.equal(patch, "between:ref-2:captured-head")
-})
-
-test("does not replace a persisted run diff with the current workspace diff", async () => {
-  await assert.rejects(
-    loadAgentRunPatch({
-      compareCheckpoint: async () => {
-        throw new Error("Checkpoint unavailable")
-      },
-      diffBetween: async () => "between",
-      from: { checkpointRunCount: 1, sessionId: "session-1" },
-      toRef: "captured-head",
-    }),
-    /Checkpoint unavailable/
-  )
-})
-
-function diffFixture(comparisons: number[]) {
+function workspace(calls: string[]) {
   return {
-    compareCheckpoint: async ({
-      checkpointRunCount,
-    }: {
-      checkpointRunCount: number
-    }) => {
-      comparisons.push(checkpointRunCount)
-      return `ref-${checkpointRunCount}`
+    gitSnapshot: async ({ id }: { id: string }) => {
+      calls.push(`snapshot:${id}`)
+      return "tree-now"
     },
-    diffBetween: async (from: string, to: string) => `between:${from}:${to}`,
+    gitDiffBetween: async ({ from, to }: { from: string; to: string }) => {
+      calls.push(`diff:${from}:${to}`)
+      return ""
+    },
   }
 }
+
+test("a turn's diff runs from its snapshot to the next turn's", async () => {
+  const calls: string[] = []
+  await turnPatch(workspace(calls), {
+    from: "tree-1",
+    root: "/project",
+    to: "tree-2",
+  })
+  assert.deepEqual(calls, ["diff:tree-1:tree-2"])
+})
+
+test("the last turn's diff runs to the files as they are now", async () => {
+  const calls: string[] = []
+  await turnPatch(workspace(calls), {
+    from: "tree-2",
+    root: "/project",
+    to: undefined,
+  })
+  assert.deepEqual(calls, ["snapshot:engine-turn-now", "diff:tree-2:tree-now"])
+})

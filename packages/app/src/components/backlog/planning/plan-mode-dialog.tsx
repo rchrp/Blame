@@ -1,4 +1,5 @@
 import * as React from "react"
+import { EngineApprovalProvider } from "@/components/chat/engine/engine-approvals"
 import {
   AlertCircleIcon,
   LayersIcon,
@@ -192,117 +193,121 @@ function PlanModeDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <PlanningConversation
-        open={open}
-        empty={empty}
-        label="Planning conversation"
-        title={
-          <>
-            <LightbulbIcon className="size-4.5 text-muted-foreground" />
-            Plan Mode
-          </>
-        }
-        description="Describe what you need. Your agent proposes user stories you review and add to the backlog."
-        onOpenAutoFocus={(event) => {
-          event.preventDefault()
-          focusComposer()
-        }}
-        actions={
-          !empty ? (
-            <Button
-              className="border bg-background/90 shadow-sm"
-              size="sm"
-              type="button"
-              variant="outline"
-              onClick={plan.reset}
-              title="Start a new plan. Stories already added stay in the backlog."
-            >
-              <RotateCcwIcon />
-              New plan
-            </Button>
-          ) : null
-        }
-        footer={
-          <>
-            {plan.unavailableReason ? (
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <AlertCircleIcon className="size-3.5" />
-                {plan.unavailableReason}
-              </p>
-            ) : null}
-            <AgentConversationComposer
-              agentRunning={plan.running}
-              codeSelectionAttachments={codeAttachments}
-              disabled={Boolean(plan.unavailableReason)}
-              editorKey={editorKey}
-              editorRef={editorRef}
-              fileAttachments={pendingFileAttachments(fileAttachments)}
-              mentionDirectory={plan.projectPath}
-              message={draft}
-              minHeight={empty ? "min-h-28" : "min-h-16"}
-              onAgentCancel={plan.stop}
-              onCodeSelectionAttachmentRemove={(id) =>
-                setCodeAttachments((current) =>
-                  current.filter((attachment) => attachment.id !== id)
-                )
-              }
-              onFileAttachmentRemove={(id) =>
-                setFileAttachments((current) =>
-                  current.filter((attachment) => attachment.id !== id)
-                )
-              }
-              onFileAttachmentsReplace={(replacements) =>
-                setFileAttachments((current) =>
-                  replaceFileAttachments(current, replacements)
-                )
-              }
-              onFileAttachmentsAdd={(attachments) =>
-                setFileAttachments((current) => [...current, ...attachments])
-              }
-              onMessageChange={setDraft}
-              onMessageSubmit={submit}
-              personalizationMenu={
-                <ConversationPersonalizationMenu
-                  ambitionKey={plan.ambitionKey}
-                />
-              }
-              placeholder={
-                empty
-                  ? "What do you want to build or fix? The more context, the better the stories."
-                  : "Answer, refine the stories, or ask for more…"
-              }
-              speechSessionKey="plan-mode"
-              speechTarget={{ draftKey: "plan-mode", label: "your plan" }}
-              submitLabel="Send"
-              toolbarEnd={<ModelSelector role="agent" />}
-            />
-          </>
-        }
-      >
-        {empty ? (
-          <PlanEmptyState
-            onSuggestion={plan.unavailableReason ? undefined : applySuggestion}
-          />
-        ) : (
-          <ExcerptTargetProvider
-            attachAsContext={
-              plan.unavailableReason ? undefined : attachAsContext
-            }
-          >
-            <ProposalHostProvider
-              fileAttachments={conversationFiles}
-              onOpenStory={onOpenStory}
-            >
-              <AgentConversationTimeline
-                comments={comments}
-                onFileLinkClick={openFile}
-                responseHeader={responseHeader}
-                runs={runs}
+      <EngineApprovalProvider session={plan.session}>
+        <PlanningConversation
+          open={open}
+          empty={empty}
+          label="Planning conversation"
+          title={
+            <>
+              <LightbulbIcon className="size-4.5 text-muted-foreground" />
+              Plan Mode
+            </>
+          }
+          description="Describe what you need. Your agent proposes user stories you review and add to the backlog."
+          onOpenAutoFocus={(event) => {
+            event.preventDefault()
+            focusComposer()
+          }}
+          actions={
+            !empty ? (
+              <Button
+                className="border bg-background/90 shadow-sm"
+                size="sm"
+                type="button"
+                variant="outline"
+                onClick={plan.reset}
+                title="Start a new plan. Stories already added stay in the backlog."
+              >
+                <RotateCcwIcon />
+                New plan
+              </Button>
+            ) : null
+          }
+          footer={
+            <>
+              {plan.unavailableReason ? (
+                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <AlertCircleIcon className="size-3.5" />
+                  {plan.unavailableReason}
+                </p>
+              ) : null}
+              <AgentConversationComposer
+                agentRunning={plan.running}
+                codeSelectionAttachments={codeAttachments}
+                disabled={Boolean(plan.unavailableReason)}
+                editorKey={editorKey}
+                editorRef={editorRef}
+                fileAttachments={pendingFileAttachments(fileAttachments)}
+                mentionDirectory={plan.projectPath}
+                message={draft}
+                minHeight={empty ? "min-h-28" : "min-h-16"}
+                onAgentCancel={plan.stop}
+                onCodeSelectionAttachmentRemove={(id) =>
+                  setCodeAttachments((current) =>
+                    current.filter((attachment) => attachment.id !== id)
+                  )
+                }
+                onFileAttachmentRemove={(id) =>
+                  setFileAttachments((current) =>
+                    current.filter((attachment) => attachment.id !== id)
+                  )
+                }
+                onFileAttachmentsReplace={(replacements) =>
+                  setFileAttachments((current) =>
+                    replaceFileAttachments(current, replacements)
+                  )
+                }
+                onFileAttachmentsAdd={(attachments) =>
+                  setFileAttachments((current) => [...current, ...attachments])
+                }
+                onMessageChange={setDraft}
+                onMessageSubmit={submit}
+                personalizationMenu={
+                  <ConversationPersonalizationMenu
+                    ambitionKey={plan.ambitionKey}
+                  />
+                }
+                placeholder={
+                  empty
+                    ? "What do you want to build or fix? The more context, the better the stories."
+                    : "Answer, refine the stories, or ask for more…"
+                }
+                speechSessionKey="plan-mode"
+                speechTarget={{ draftKey: "plan-mode", label: "your plan" }}
+                submitLabel="Send"
+                toolbarEnd={<ModelSelector role="agent" />}
               />
-            </ProposalHostProvider>
-          </ExcerptTargetProvider>
-        )}
-      </PlanningConversation>
+            </>
+          }
+        >
+          {empty ? (
+            <PlanEmptyState
+              onSuggestion={
+                plan.unavailableReason ? undefined : applySuggestion
+              }
+            />
+          ) : (
+            <ExcerptTargetProvider
+              attachAsContext={
+                plan.unavailableReason ? undefined : attachAsContext
+              }
+            >
+              <ProposalHostProvider
+                fileAttachments={conversationFiles}
+                onOpenStory={onOpenStory}
+              >
+                <AgentConversationTimeline
+                  comments={comments}
+                  onFileLinkClick={openFile}
+                  responseHeader={responseHeader}
+                  runs={runs}
+                />
+              </ProposalHostProvider>
+            </ExcerptTargetProvider>
+          )}
+        </PlanningConversation>
+      </EngineApprovalProvider>
     </Dialog>
   )
 }

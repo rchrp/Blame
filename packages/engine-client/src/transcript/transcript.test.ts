@@ -76,7 +76,7 @@ describe("a plain turn", () => {
       ],
     );
     assert.deepEqual(checkpoints, [
-      { turn: "t1", checkpoint: "cp-t1", userSeq: 2, to: 1 },
+      { turn: "t1", checkpoint: "cp-t1", snapshot: "tree-t1", userSeq: 2, to: 1 },
     ]);
   });
 

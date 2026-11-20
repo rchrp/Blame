@@ -147,9 +147,8 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   const mentionDirectory = useFileMentionDirectory(status, userStory)
   const editable = isEditable(mode, status, userStory)
   const stableLoadChangedFileDiffs = useLatestCallback(
-    (sessionId: string, checkpointRunCount: number, diffEndRef: string) =>
-      loadChangedFileDiffs?.(sessionId, checkpointRunCount, diffEndRef) ??
-      Promise.resolve([])
+    (from: string, to: string | undefined) =>
+      loadChangedFileDiffs?.(from, to) ?? Promise.resolve([])
   )
   const stableOnCommentUndo = useLatestCallback(
     async (target: StoryMessageUndo) => {

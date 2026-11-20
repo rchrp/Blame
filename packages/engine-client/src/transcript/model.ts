@@ -221,6 +221,11 @@ export interface TurnView {
 export interface CheckpointView {
   readonly turn: TurnId;
   readonly checkpoint: CheckpointId;
+  /**
+   * The checkpointer's reference to the files as they were (for git, a tree
+   * in the workspace's repository): what a turn's changes are diffed from.
+   */
+  readonly snapshot: string;
   /** The message that opened the turn. */
   readonly userSeq: Seq;
   /** `to` of `session/rewind` to restore the workspace as it was before that message. */

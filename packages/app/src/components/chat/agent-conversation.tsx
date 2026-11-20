@@ -19,6 +19,7 @@ import {
 import * as React from "react"
 import { toast } from "sonner"
 
+import { ApprovalDecision } from "@/components/chat/engine/engine-approvals"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -173,16 +174,17 @@ export type AgentConversationComment = {
 export type AgentConversationRun = {
   activities?: UserStoryAgentActivity[] | null
   checkpointRunCount?: number | null
-  clineSessionId?: string | null
   commentId?: string | null
   completedAt?: string | null
+  // The files before the turn and after it (absent: the files now), as
+  // checkpointer references the workspace's git can diff.
+  diffStartRef?: string | null
   diffEndRef?: string | null
   createdAt: string
   executionId?: string | null
   finalResponse?: string | null
   id: string
   kind: UserStoryAgentRunKind
-  lastSequenceNumber?: number | null
   messageId?: string | null
   // The model that answered this turn, when it was recorded.
   modelId?: string | null
@@ -221,9 +223,8 @@ export function AgentConversationTimeline({
   comments: AgentConversationComment[]
   unsentComments?: AgentConversationComment[]
   loadChangedFileDiffs?: (
-    sessionId: string,
-    checkpointRunCount: number,
-    diffEndRef: string
+    from: string,
+    to: string | undefined
   ) => Promise<VcsFileDiff[]>
   onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   onUserMessageUndo?: (
@@ -357,9 +358,8 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
   highlightFinalResponse: boolean
   onFileLinkClick?: (path: string) => void
   loadChangedFileDiffs?: (
-    sessionId: string,
-    checkpointRunCount: number,
-    diffEndRef: string
+    from: string,
+    to: string | undefined
   ) => Promise<VcsFileDiff[]>
   onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   onLoadActivityDetail: (
@@ -378,23 +378,16 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
   run: AgentConversationRun
 }) {
   const activities = agentTimelineActivities(run)
-  const sessionId = run.clineSessionId
   const turnResponseHeader = responseHeaderForRun?.(run) ?? responseHeader
   const loadActivityDetail = (activity: UserStoryAgentActivity) =>
     onLoadActivityDetail(run, activity)
 
   function openChangedFile(path: string) {
-    if (
-      !onChangedFileClick ||
-      !loadChangedFileDiffs ||
-      !checkpointRunCount ||
-      !sessionId ||
-      !run.diffEndRef
-    ) {
+    if (!onChangedFileClick || !loadChangedFileDiffs || !run.diffStartRef) {
       onFileLinkClick?.(path)
       return
     }
-    void loadChangedFileDiffs(sessionId, checkpointRunCount, run.diffEndRef)
+    void loadChangedFileDiffs(run.diffStartRef, run.diffEndRef ?? undefined)
       .then((diffs) => onChangedFileClick(path, diffs))
       .catch((error) => toast.error(errorMessage(error)))
   }
@@ -1057,6 +1050,14 @@ function AgentStreamActivity({
         {...props}
         registry={props.registry}
       />
+    )
+  }
+  if (activity.kind === "approval" && activity.toolCallId) {
+    return (
+      <div className="grid gap-1">
+        <AgentStreamTool activity={activity} {...props} />
+        <ApprovalDecision call={activity.toolCallId} />
+      </div>
     )
   }
   return <AgentStreamTool activity={activity} {...props} />

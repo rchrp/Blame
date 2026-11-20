@@ -120,7 +120,15 @@ export function useEngineConversation(input: {
     setSession(undefined)
   })
 
-  return { conversation, error: view.error, running, reset, send, stop }
+  return {
+    conversation,
+    error: view.error,
+    running,
+    reset,
+    send,
+    session,
+    stop,
+  }
 }
 
 function readSession(key: string | undefined) {

@@ -50,8 +50,11 @@ export function transcriptConversation(
   }
   let checkpoints = 0
   const runs: AgentConversationRun[] = []
-  for (const turn of transcript.turns) {
-    if (turn.status === "rewound") continue
+  // A turn changed what lies between its snapshot and the next one's (the
+  // files now, for the last).
+  const snapshots = new Map(transcript.checkpoints.map((checkpoint) => [checkpoint.turn, checkpoint.snapshot]))
+  const kept = transcript.turns.filter((turn) => turn.status !== "rewound")
+  for (const [index, turn] of kept.entries()) {
     const brief = options.brief && runs.length === 0
     const items = itemsByTurn.get(turn.turn) ?? []
     const opening = items.find(
@@ -83,6 +86,8 @@ export function transcriptConversation(
       commentId: opening?.key ?? null,
       completedAt: turn.endedAtMs ? iso(turn.endedAtMs) : null,
       createdAt: iso(turn.startedAtMs),
+      diffStartRef: snapshots.get(turn.turn) ?? null,
+      diffEndRef: kept.slice(index + 1).map((next) => snapshots.get(next.turn)).find(Boolean) ?? null,
       finalResponse: final?.detail ?? null,
       id: turn.turn,
       kind: brief ? "initial" : "change-request",

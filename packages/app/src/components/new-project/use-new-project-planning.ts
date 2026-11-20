@@ -64,6 +64,7 @@ export function useNewProjectPlanning(input: {
     conversation: chat.conversation,
     proposal: chat.running ? undefined : latestStack(runs),
     pending: chat.running,
+    session: chat.session,
     unavailableReason,
     send: (message: EngineConversationMessage) => chat.send(message),
     stop: chat.stop,

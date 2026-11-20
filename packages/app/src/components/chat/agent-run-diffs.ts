@@ -1,5 +1,5 @@
 import type { Platform } from "../../context/platform.ts"
-import { loadAgentRunPatch } from "./agent-run-diff-range.ts"
+import { turnPatch } from "./agent-run-diff-range.ts"
 import { createCachedTaskQueue } from "./cached-task-queue.ts"
 import {
   normalizeDiffs,
@@ -7,100 +7,24 @@ import {
   type VcsFileDiff,
 } from "../backlog/development/development-workspace.ts"
 
-export async function captureAgentRunDiffEndRef({
-  id,
-  platform,
-  root,
-}: {
-  id: string
-  platform: Platform
-  root?: string | null
-}) {
-  if (!root || !platform.workspace) return undefined
-  try {
-    return await platform.workspace.gitSnapshot({ id, root })
-  } catch {
-    return undefined
-  }
-}
-
+/** What one turn changed, file by file (see `turnPatch`). */
 export async function loadAgentRunDiffs({
-  checkpointRunCount,
-  diffEndRef,
+  from,
   platform,
   root,
-  sessionId,
+  to,
 }: {
-  checkpointRunCount: number
-  diffEndRef: string
+  from: string
   platform: Platform
   root: string
-  sessionId: string
+  to: string | undefined
 }): Promise<VcsFileDiff[]> {
-  return enqueueAgentRunDiff(
-    agentRunDiffKey({
-      checkpointRunCount,
-      diffEndRef,
-      root,
-      sessionId,
-    }),
-    () =>
-      loadAgentRunDiff({
-        checkpointRunCount,
-        diffEndRef,
-        platform,
-        root,
-        sessionId,
-      })
-  )
-}
-
-function agentRunDiffKey({
-  checkpointRunCount,
-  diffEndRef,
-  root,
-  sessionId,
-}: Pick<
-  Parameters<typeof loadAgentRunDiffs>[0],
-  | "checkpointRunCount"
-  | "diffEndRef"
-  | "root"
-  | "sessionId"
->) {
-  return [
-    root,
-    checkpointRunCount,
-    diffEndRef,
-    sessionId,
-  ].join("\0")
-}
-
-async function loadAgentRunDiff({
-  checkpointRunCount,
-  diffEndRef,
-  platform,
-  root,
-  sessionId,
-}: Parameters<typeof loadAgentRunDiffs>[0]) {
-  const agent = platform.agent
   const workspace = platform.workspace
-  if (!agent || !workspace) return []
-
-  const patch = await loadAgentRunPatch({
-    compareCheckpoint: async (boundary) =>
-      (
-        await agent.sessions.compareCheckpoint({
-          checkpointRunCount: boundary.checkpointRunCount,
-          cwd: root,
-          sessionId: boundary.sessionId,
-        })
-      ).checkpoint.ref,
-    diffBetween: (from, to) => workspace.gitDiffBetween({ from, root, to }),
-    from: { checkpointRunCount, sessionId },
-    toRef: diffEndRef,
-  })
-
-  return normalizeDiffs(parseGitDiff(patch))
+  if (!workspace) return []
+  const load = async () =>
+    normalizeDiffs(parseGitDiff(await turnPatch(workspace, { from, root, to })))
+  // A finished range never changes; the files now do.
+  return to ? enqueueAgentRunDiff([root, from, to].join("\0"), load) : load()
 }
 
 const enqueueAgentRunDiff = createCachedTaskQueue<VcsFileDiff[]>(1, 0)
