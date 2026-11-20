@@ -379,7 +379,7 @@ one cache miss).
 | `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no |
 | `repair_preview_initialization` | the repair task (`runInitializationRepair`), then main's `applyPreviewInitialization` (`tools/preview-repair.ts`) | yes | no | no | no |
 | `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no |
-| `open_component_preview` | `componentPreview`, a Vite-capable workspace | yes | no | no | no |
+| `open_component_preview` | `componentPreview`, and `prepareComponentPreview` saying the workspace holds a project it renders | yes | no | no | yes |
 | `propose_user_stories` | a project | yes | yes | no | yes |
 | `propose_project_stack` | nothing | no | no | yes | no |
 | `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | no | yes |
@@ -389,6 +389,24 @@ one cache miss).
 
 Not yet client tools: `consult_specialist` and spawned agents (engine tasks),
 `finish_task` and the harness (Rust harness), project memory.
+
+### Component previews
+
+When a story's or a quick chat's tools are listed, main's
+`prepareComponentPreview` looks for a project the component preview renders
+(Vite, React, Vue 3, Nuxt 3+, Svelte 5, Angular: `component-preview-location`)
+and, when there is one, hides `*.blame-preview.*` from Git in
+`.git/info/exclude`. It runs with the other tool discovery, once per
+conversation and host lifetime (about 25 ms on a small project). The tool
+renders where the workspace is: the project folder, a managed preview's
+container, a cloud preview's sandbox, or the runtime VM for a VM worktree.
+When a turn ends (main's `onActivity`, running false), main removes the
+preview files the conversation rendered and stops its servers; quitting does
+the same. Screenshots are tool-result images (engine blobs) and land in
+Blame's screenshot store with a `screenshot:<id>` reference in the result's
+text. `finish_task` accepts the references the session's tool results named
+(the engine passes them as `knownScreenshots`); the conversation shows an
+accepted finish's images above the final reply (`turnReplyImages`).
 
 ### Desktop services
 
