@@ -15,7 +15,7 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
 ```
 
 - **Engine host**: one Electron utility process for the whole app
-  (`packages/desktop/src/main/engine-host-process.ts`, logic in
+  (`packages/desktop/src/main/engine/engine-host-process.ts`, logic in
   `packages/agent-runtime/src/engine/`). It is the only owner of an
   `EngineClient`: it starts `blame-engine serve` through `EngineSupervisor`,
   answers every `host/*` request, follows sessions and runs the client tools.
@@ -25,13 +25,14 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   renderer calls to it and its events back to the windows that follow a
   session. It serves the host the few desktop services a tool needs
   (`renderWebPage`). It imports only types and a tiny protocol module from
-  `@blame/agent-runtime/engine-protocol`: the main process stays light.
+  `@blame/agent-runtime/engine-protocol`: the main process stays light
+  (`scripts/check-main-process-imports.mjs` still passes).
   On quit it asks the host to shut down: the engine ends running turns as
   interrupted, flushes its logs to the database, and exits. Agents stop with
   the app; if the host dies the engine's stdin closes and it exits too.
 - **blame-engine** runs on the user's machine with its data directory at
   `<userData>/engine` (`sessions.db`, checkpoints). `engineBinaryPath()` in
-  `packages/desktop/src/main/engine-binary.ts` is the one place that finds the
+  `packages/desktop/src/main/engine/engine-binary.ts` is the one place that finds the
   binary (`target/{release,debug}/blame-engine` in development,
   `BLAME_ENGINE_BIN` to override; packaging is a later slice). The harness
   runs inside the engine (`engine_tools: ["harness"]`, `--harness-command`
@@ -51,7 +52,7 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `interrupt`, `compact`, `undoRewind({ session })` | The engine calls of the same name. |
 | `rewind({ session, to, restoreWorkspace })` | `session/rewind`: undo a message and, when asked, its files. |
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
-| `follow({ session })` → `{ subscription }`, `unfollow({ subscription })` | Records and deltas of one session. |
+| `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
 
 Host → renderer, on `engine:event`:
@@ -111,6 +112,14 @@ the call's `signal` and `progress(text)`. A `ToolSet` turns tools into the
 session's `client_tools` specs and serves `host/tool`; progress goes back to
 the engine as `tool/progress` and reaches viewers as `tool_progress` deltas.
 Engine tools (the harness) run inside the engine, next to the files.
+
+## Approvals
+
+`host/approval` waits in the host until `resolveApproval` answers it (a
+decision that arrives first is kept for a minute). The pending call shows in
+the transcript (`pendingApprovals`, a tool call in `awaiting_approval`).
+No quick-chat tool needs approval, so the conversation view has no
+Allow/Deny buttons yet: the first slice whose tools need approval adds them.
 
 ## Rules for the next slices
 
