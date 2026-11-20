@@ -13,6 +13,8 @@ use blame_engine_checkpoint::{BLAME_WORKSPACE_EXCLUDES, GitCheckpointer};
 use blame_engine_core::ports::{Clock, IdSource, SessionStore, StoreError};
 use blame_engine_core::{EngineError, EngineOptions, NoContextEdits, Ports, Session};
 use blame_engine_protocol::{RecordBody, Seq, SessionConfig, SessionId};
+use blame_engine_providers::Options;
+use blame_engine_providers::catalog::{LiveCatalog, RefreshOptions};
 use blame_engine_store::{Durability, SqliteStore, StoreOptions};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -31,9 +33,12 @@ pub struct Settings {
     pub durability: Durability,
     pub idle_after: Duration,
     pub harness: Option<Arc<Harness>>,
+    /// Where the models.dev catalog is refreshed from.
+    pub catalog: RefreshOptions,
 }
 
 pub struct Engine {
+    catalog: Arc<LiveCatalog>,
     store: SqliteStore,
     remote: bool,
     host: Arc<Host>,
@@ -104,14 +109,25 @@ impl Engine {
                 .await
                 .map_err(|error| format!("opening the store failed: {error}"))?
                 .map_err(|error| format!("opening the store failed: {error}"))?;
+        let catalog = Arc::new(LiveCatalog::open(
+            Some(data_dir.join("catalog")),
+            settings.catalog.clone(),
+        ));
+        let provider_options = Options {
+            catalog: catalog.clone(),
+            ..Options::default()
+        };
         let checkpointer = GitCheckpointer::new(data_dir.join("checkpoints"))
             .with_excludes(BLAME_WORKSPACE_EXCLUDES.iter().copied());
         let store_port: Arc<dyn SessionStore> = Arc::new(store.clone());
+        // Never waited for: a turn uses whatever copy is in place.
+        catalog.refresh_if_stale();
         let engine = Arc::new(Self {
+            catalog,
             remote: remote_log,
             ports: PortsTemplate {
                 store: store_port.clone(),
-                provider: Arc::new(ProviderRouter::new(host.clone(), Default::default())),
+                provider: Arc::new(ProviderRouter::new(host.clone(), provider_options)),
                 checkpointer: Arc::new(checkpointer),
                 approver: Arc::new(ClientApprover { host: host.clone() }),
                 clock,
@@ -139,6 +155,10 @@ impl Engine {
         }
         tokio::spawn(evict_idle(Arc::downgrade(&engine)));
         Ok(engine)
+    }
+
+    pub fn catalog(&self) -> &Arc<LiveCatalog> {
+        &self.catalog
     }
 
     pub fn store(&self) -> &SqliteStore {

@@ -469,6 +469,16 @@ async fn session_call(
             engine.close(&session).await.map_err(open_error)?;
             Ok(Some(Value::Null))
         }
+        ClientRequest::CatalogList { refresh } => {
+            let catalog = engine.catalog();
+            if refresh {
+                // A failure is in the listing's `refresh_error`.
+                let _ = catalog.refresh(false).await;
+            } else {
+                catalog.refresh_if_stale();
+            }
+            reply(catalog.listing())
+        }
         ClientRequest::PutBlob { media_type, data } => {
             let bytes = decode_blob(&media_type, &data)?;
             let blob = engine
