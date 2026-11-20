@@ -17,6 +17,7 @@ blame-engine-protocol.workspace = true
 async-trait.workspace = true
 futures-core.workspace = true
 serde_json.workspace = true
+sha2.workspace = true
 thiserror.workspace = true
 # Sync primitives and task spawning only: all waiting goes through the Clock
 # port, so neither tokio's timer nor its I/O driver is needed.
