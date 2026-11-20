@@ -53,6 +53,13 @@ export type DesktopServices = {
   projectApp?(input: ProjectAppInput): Promise<unknown>;
   // Renders a component preview, or stops the worktree's preview server.
   componentPreview?(input: ComponentPreviewHostInput): Promise<unknown>;
+  // Whether the workspace holds a project the component preview renders
+  // (Vite, React, Vue 3, Nuxt 3+, Svelte 5, Angular); when it does, Git
+  // ignores the temporary preview files from then on.
+  prepareComponentPreview?(input: {
+    worktree: string;
+    signal?: AbortSignal;
+  }): Promise<boolean>;
   githubMcpTools?(input: {
     sessionId: string;
   }): Promise<readonly GithubMcpToolDescriptor[]>;
@@ -115,6 +122,7 @@ export const desktopServiceNames = [
   "previewScreenshotKnown",
   "projectApp",
   "componentPreview",
+  "prepareComponentPreview",
   "githubMcpTools",
   "githubMcpCall",
   "git",

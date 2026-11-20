@@ -315,3 +315,27 @@ test("an accepted finish supplies exactly one final reply in every conversation 
     }
   }
 })
+
+test("the screenshots an accepted finish attached go above the final reply", () => {
+  seq = 0
+  const id = "a".repeat(64)
+  const images = [
+    { ref: `screenshot:${id}`, caption: "Isolated component: empty state" },
+    { ref: `screenshot:${id}`, caption: "the same one again" },
+    { ref: "not-a-screenshot", caption: "dropped" },
+  ]
+  const run = conversation([
+    record({ type: "session_created", config }),
+    record({ type: "user_message", turn: "t", delivery: "turn", input: [{ type: "text", text: "Show it" }] }),
+    record({ type: "request_started", turn: "t", request: "r", model, attempt: 1, prefix_digest: "d" }),
+    record({
+      type: "assistant_message", turn: "t", request: "r", stop: "tool_use", usage,
+      blocks: [{ type: "tool_call", call: "f", name: "finish_task", input: { summary: "Here it is.", images } }],
+    }),
+    record({ type: "tool_call_started", turn: "t", call: "f", name: "finish_task", effect: "read_only" }),
+    record({ type: "tool_call_finished", turn: "t", call: "f", outcome: "completed", content: [{ type: "text", text: "Here it is." }] }),
+    record({ type: "turn_ended", turn: "t", outcome: { status: "completed" } }),
+  ]).runs[0]!
+  const final = run.activities?.find((activity) => activity.messageKind === "final")
+  assert.deepEqual(final?.images, [{ caption: "Isolated component: empty state", id }])
+})
