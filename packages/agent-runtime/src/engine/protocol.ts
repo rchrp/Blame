@@ -173,6 +173,13 @@ export type EngineHostMethods = {
     result: { turn: string; started: boolean };
   };
   interrupt: { input: EngineSessionRef; result: null };
+  /** Takes back a message queued behind the running turn, before it runs. */
+  withdraw: { input: EngineSessionRef & { turn: string }; result: null };
+  /** Sends a queued message into the running turn now (once). */
+  promote: {
+    input: EngineSessionRef & { turn: string };
+    result: { turn: string };
+  };
   compact: { input: EngineSessionRef; result: null };
   rewind: {
     input: EngineSessionRef & { to: Seq; restoreWorkspace: boolean };
@@ -237,6 +244,8 @@ export const engineHostMethods = [
   "configure",
   "send",
   "interrupt",
+  "withdraw",
+  "promote",
   "compact",
   "rewind",
   "undoRewind",

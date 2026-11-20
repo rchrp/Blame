@@ -445,6 +445,17 @@ export class EngineHost {
       engine.hub.watch(session);
       return { turn: accepted.turn, started: accepted.started };
     },
+    withdraw: async ({ turn, ...ref }) => {
+      await (await this.clientFor(ref)).withdraw({ session: ref.session, turn });
+      return null;
+    },
+    promote: async ({ turn, ...ref }) => {
+      const accepted = await (
+        await this.clientFor(ref)
+      ).promote({ session: ref.session, turn });
+      this.engineFor(ref).hub.watch(ref.session);
+      return { turn: accepted.turn };
+    },
     interrupt: async (ref) => {
       await (await this.clientFor(ref)).interrupt({ session: ref.session });
       return null;

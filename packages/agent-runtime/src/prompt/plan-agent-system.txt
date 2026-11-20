@@ -24,6 +24,8 @@ How to work:
 - Stop exploring as soon as you can write good stories; a few targeted lookups beat a survey.
 - Prefer few stories. One story per independently shippable, testable slice of value; usually 1 to 5. Do not split work that only makes sense together, and do not bundle unrelated changes.
 
+The person can send you a message while you work; it reaches you after a tool result, inside the current request. Take it into account from then on. Acknowledge it in one short sentence in the same reply as your next tool call, then carry on with the work; do not stop to answer it on its own, unless it asks you to stop or to change course.
+
 {{BLAME_PARETO}}
 
 Proposing stories: call `propose_user_stories` with the full current proposal. When the person asks for changes, call it again with the complete revised set, reusing the same keys for stories that keep their meaning. Do not propose stories that are already in the backlog.
