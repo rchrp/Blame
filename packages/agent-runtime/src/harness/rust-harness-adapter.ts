@@ -1,6 +1,7 @@
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { appendFileSync } from "node:fs";
 import { createInterface } from "node:readline";
+import { fileURLToPath } from "node:url";
 import type { AgentToolContext } from "@cline/sdk";
 import type { LightTaskContract, LightToolResult } from "./light-contracts.js";
 import { LightWorkspace as TypeScriptLightWorkspace } from "./light-workspace.js";
@@ -30,7 +31,12 @@ class RustHarnessProcess {
 
   private start() {
     if (this.child) return this.child;
-    const child = spawn(binary, ["serve"], { stdio: ["pipe", "pipe", "pipe"] });
+    // The compiler side process next to this file, unless the run checks the
+    // harness without one (BLAME_HARNESS_NO_COMPILER).
+    const compiler = JSON.stringify([process.execPath, fileURLToPath(new URL("./rust-harness-compiler.js", import.meta.url))]);
+    const env = { ...process.env };
+    if (!process.env.BLAME_HARNESS_NO_COMPILER) env.BLAME_HARNESS_COMPILER = compiler;
+    const child = spawn(binary, ["serve"], { stdio: ["pipe", "pipe", "pipe"], env });
     // Neither the process nor its pipes keep a finished test alive; the
     // harness stops when its stdin closes.
     child.unref();
