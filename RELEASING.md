@@ -60,7 +60,7 @@ To test the screen, install a packaged build that already includes it, then upda
 [SignPath Foundation](https://signpath.org) signs the Windows app for free, as an open-source project; the [Code signing policy](CODE_SIGNING_POLICY.md) is the public side of it. Until the `SIGNPATH_API_TOKEN` secret exists, the Windows job builds an unsigned installer and says so in a notice. Once it exists, the Windows job of **Release desktop**:
 
 1. builds the app folder only, with the publisher check on (below);
-2. uploads `Blame.exe` and the engine executables (`resources/engine/win32-x64/blame-engine.exe`, `blame-harness.exe`) and submits them to SignPath with the `windows-app` artifact configuration;
+2. uploads `Blame.exe` and the engine executables (`resources/engine/win32-x64/*.exe`) and submits them to SignPath with the `windows-app` artifact configuration;
 3. waits for the request to be approved and signed, checks the signature, and packages the installer around the signed files (`scripts/windows-signing.mjs installer`);
 4. uploads the installer and submits it with the `windows-installer` configuration;
 5. waits again, checks the signature, and rebuilds `latest.yml` (sha512, size) and the blockmap for the signed installer (`scripts/windows-signing.mjs update-info`). `SHA256SUMS` is computed afterwards from these files, so the in-app updater, Homebrew and winget all see the signed installer.

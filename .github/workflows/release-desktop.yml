@@ -201,8 +201,8 @@ jobs:
         if: steps.signing.outputs.enabled == 'true'
         shell: bash
         run: |
-          for file in Blame.exe resources/engine/win32-x64/blame-engine.exe resources/engine/win32-x64/blame-harness.exe; do
-            pwsh -NoProfile -File scripts/windows-signature-check.ps1 "$RUNNER_TEMP/signed-app/$file"
+          for file in "$RUNNER_TEMP"/signed-app/Blame.exe "$RUNNER_TEMP"/signed-app/resources/engine/win32-x64/*.exe; do
+            pwsh -NoProfile -File scripts/windows-signature-check.ps1 "$file"
           done
           node scripts/windows-signing.mjs installer "$RUNNER_TEMP/signed-app" "$RUNNER_TEMP/win-unpacked"
         env:

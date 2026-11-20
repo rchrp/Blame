@@ -28,10 +28,7 @@ test("a package carries its own target and the VM's Linux one", () => {
   for (const platform of ["darwin", "win32", "linux"])
     for (const target of packagedEngineTargets(platform, "x64"))
       assert.ok(engineTargets[target], target);
-  assert.deepEqual(engineExecutables("win32-x64"), [
-    "blame-engine.exe",
-    "blame-harness.exe",
-  ]);
+  assert.deepEqual(engineExecutables("win32-x64"), ["blame-engine.exe"]);
   assert.deepEqual(engineExecutables("linux-arm64"), [
     "blame-engine",
     "blame-harness",
@@ -61,7 +58,7 @@ test("stages prebuilt binaries as executables and names what is missing", async 
       arch: "x64",
       prebuiltDir,
     });
-    assert.equal(staged.length, 4);
+    assert.equal(staged.length, 3);
     assert.deepEqual((await readdir(resources)).sort(), [
       "linux-x64",
       "win32-x64",

@@ -17,11 +17,19 @@ const cargoTargetDir = resolve(
 );
 export const defaultEngineBinariesDir = join(cargoTargetDir, "engine-binaries");
 
+const both = ["blame-engine", "blame-harness"];
+
 /** Every target, named `<process.platform>-<process.arch>` as the app names them. */
 export const engineTargets = {
   "darwin-arm64": { triple: "aarch64-apple-darwin", builds: ["darwin"] },
   "darwin-x64": { triple: "x86_64-apple-darwin", builds: ["darwin"] },
-  "win32-x64": { triple: "x86_64-pc-windows-msvc", builds: ["win32"] },
+  // blame-harness uses Unix file modes (std::os::unix) and does not build
+  // for Windows yet; the engine does not run it there either.
+  "win32-x64": {
+    triple: "x86_64-pc-windows-msvc",
+    builds: ["win32"],
+    packages: ["blame-engine"],
+  },
   "linux-arm64": {
     triple: "aarch64-unknown-linux-musl",
     builds: ["darwin", "linux"],
@@ -34,11 +42,13 @@ export const engineTargets = {
   },
 };
 
-const packages = ["blame-engine", "blame-harness"];
+function targetPackages(target) {
+  return engineTargets[target]?.packages ?? both;
+}
 
 export function engineExecutables(target) {
   const suffix = target.startsWith("win32-") ? ".exe" : "";
-  return packages.map((name) => `${name}${suffix}`);
+  return targetPackages(target).map((name) => `${name}${suffix}`);
 }
 
 /**
@@ -70,7 +80,7 @@ export async function buildEngineBinaries(
       "--locked",
       "--target",
       spec.triple,
-      ...packages.flatMap((name) => ["-p", name]),
+      ...targetPackages(target).flatMap((name) => ["-p", name]),
     ]);
     const directory = join(outDir, target);
     await mkdir(directory, { recursive: true });

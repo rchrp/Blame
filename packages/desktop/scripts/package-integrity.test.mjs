@@ -19,6 +19,7 @@ import {
   verifyPackagedWorkspaceRuntime,
   verifyStagedWorkspaceRuntime,
 } from "./package-integrity.mjs";
+import { engineExecutables } from "../../../scripts/build-engine-binaries.mjs";
 
 const require = createRequire(import.meta.url);
 const builder = createRequire(require.resolve("electron-builder"));
@@ -60,8 +61,8 @@ function elf(machine, programType) {
 
 async function writeEngineBinaries(resources, targets) {
   for (const [target, bytes] of Object.entries(targets)) {
-    for (const name of ["blame-engine", "blame-harness"]) {
-      const path = join(resources, "engine", target, target.startsWith("win32-") ? `${name}.exe` : name);
+    for (const executable of engineExecutables(target)) {
+      const path = join(resources, "engine", target, executable);
       await mkdir(dirname(path), { recursive: true });
       await writeFile(path, bytes, { mode: 0o755 });
     }
