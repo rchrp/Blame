@@ -14,6 +14,11 @@ import {
 import { workspacePromptMetadata } from "./workspace-prompt-metadata.js";
 
 import { loadPrompt } from "./prompt-loader.js";
+import {
+  developmentPracticePrompts,
+  renderPrompt,
+} from "./development-prompt-parts.js";
+export { developmentPracticePrompt } from "./development-prompt-parts.js";
 import { newProjectStackCatalogPrompt } from "./new-project-planning.js";
 import {
   normalizePersonalization,
@@ -27,8 +32,6 @@ import {
 
 import type {
   ApiConnection,
-  ProjectCodePracticeKey,
-  ProjectCodePracticePreference,
   SendDevelopmentSessionInput,
   StartDevelopmentSessionInput,
   StartNewProjectGenerationInput,
@@ -536,22 +539,6 @@ export async function clineDefaultSystemPrompt(
   });
 }
 
-function developmentPracticePrompts(
-  practices: ProjectCodePracticePreference[],
-) {
-  return [
-    developmentPracticePrompt(practices, "coding_style"),
-    developmentPracticePrompt(practices, "layered_architecture"),
-    developmentPracticePrompt(practices, "unit_tests"),
-  ].join("\n\n");
-}
-
-function renderPrompt(template: string, values: Record<string, string>) {
-  return template.replace(/{{([A-Z_]+)}}/g, (placeholder, key) => {
-    return values[key] ?? placeholder;
-  });
-}
-
 export function newProjectGenerationPrompt(
   input: StartNewProjectGenerationInput,
 ) {
@@ -618,31 +605,6 @@ export function newProjectGenerationMaxIterations() {
   return Number.isFinite(value) && value > 0 ? value : 16;
 }
 
-export function developmentPracticePrompt(
-  practices: ProjectCodePracticePreference[],
-  practice: ProjectCodePracticeKey,
-) {
-  const enabled = practices.find((item) => item.practice === practice)?.enabled;
-  if (practice === "unit_tests" && enabled === undefined) return "";
-  if (practice === "coding_style") {
-    return loadPrompt(
-      `practices/coding-style/${enabled ? "standard" : "match-codebase"}`,
-    );
-  }
-  if (practice === "layered_architecture") {
-    return loadPrompt(
-      `practices/architecture/${enabled ? "standard" : "match-codebase"}`,
-    );
-  }
-  if (practice === "commit_message_convention") {
-    return loadPrompt(
-      `practices/commit-message/${enabled ? "standard" : "match-codebase"}`,
-    );
-  }
-  return loadPrompt(
-    `practices/unit-tests/${enabled ? "standard" : "disabled"}`,
-  );
-}
 
 // Story ids (US-012) named in a request, at most eight, in order.
 export function referencedStories(text: string) {

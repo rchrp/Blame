@@ -1,12 +1,13 @@
 import { randomUUID } from "node:crypto";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 
 import { getProviderCollectionSync, type ModelInfo } from "@cline/llms";
 
 import { saveLocalProviderCredential } from "../cloud-api.js";
 import type { AgentBackendConfig, ConnectClaudeCodeInput } from "../types.js";
-import { ClaudeCodeBridge } from "./claude-code-bridge.js";
+import {
+  ClaudeCodeBridge,
+  claudeCodeStateDirectory,
+} from "./claude-code-bridge.js";
 import type { ClaudeCodeBridgeHandle } from "./claude-code-bridge-client.js";
 import { readClaudeCodeStatus } from "./claude-code-cli.js";
 import { claudeCodeEfforts } from "./claude-code-protocol.js";
@@ -136,20 +137,14 @@ export async function claudeCodeBridgeIdle(busyElsewhere: boolean) {
 export async function closeClaudeCodeSessions(sessionIds: string[]) {
   const active =
     (await bridge?.catch(() => undefined)) ??
-    (await ClaudeCodeBridge.find(stateDirectory()));
+    (await ClaudeCodeBridge.find(claudeCodeStateDirectory()));
   await active?.closeScopes(sessionIds);
 }
 
-function stateDirectory() {
-  return (
-    process.env.BLAME_CLAUDE_CODE_STATE_DIR?.trim() ||
-    join(tmpdir(), "blame-claude-code")
-  );
-}
 
 function claudeCodeBridge() {
   bridge ??= ClaudeCodeBridge.connect({
-    stateDirectory: stateDirectory(),
+    stateDirectory: claudeCodeStateDirectory(),
   }).catch((error) => {
     bridge = undefined;
     throw error;
