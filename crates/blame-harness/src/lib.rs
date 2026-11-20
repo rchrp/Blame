@@ -19,6 +19,7 @@ pub mod diff;
 pub mod edit;
 pub mod failure;
 pub mod files;
+pub mod finish;
 pub mod fold;
 pub mod harness;
 pub mod identity;

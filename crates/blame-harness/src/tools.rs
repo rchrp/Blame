@@ -107,7 +107,7 @@ pub fn tool_definitions(task_contract: Option<&Json>) -> Vec<ToolDefinition> {
             input_schema: SCHEMAS[index].clone(),
             effect,
             ends_turn: *name == "finish_task",
-            available: index < 4,
+            available: index < 5,
         })
         .collect()
 }

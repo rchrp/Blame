@@ -210,7 +210,7 @@ impl Harness {
                         .cloned(),
                     signal: signal.clone(),
                 };
-                Ok(runner.run(&input, &context, &replace))
+                Ok(runner.run(&input, &context, Some(&replace)))
             }
             "edit_service" => {
                 let workspace = self.workspace(root, contract, options);
@@ -247,6 +247,9 @@ impl Harness {
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 workspace.replace_files(&replacements, signal)
             }
+            "finish_task" => Ok(crate::finish::execute_finish(
+                root, contract, &input, &context, signal,
+            )),
             "session_journal" => session_journal(root, &context, &input),
             other => Err(Failure::new(format!(
                 "{other} is not available in the Rust harness yet."
@@ -324,7 +327,7 @@ impl Harness {
             credentials: credentials.filter(|value| value.is_object()).cloned(),
             signal: signal.clone(),
         };
-        let result = runner.run(input, &run_context, &replace);
+        let result = runner.run(input, &run_context, Some(&replace));
         let mut workspace = workspace
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner());

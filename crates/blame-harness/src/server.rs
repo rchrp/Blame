@@ -96,11 +96,12 @@ pub fn serve<R: BufRead, W: Write + Send + 'static>(input: R, output: W, harness
         let write = write.clone();
         let in_flight = in_flight.clone();
         let answered = answered.clone();
-        // A command returns its own result when cancelled (an interrupted
-        // check), never the cancellation in its place.
+        // A command, and a finish that runs final checks, returns its own
+        // result when cancelled (an interrupted check, a refused finish),
+        // never the cancellation in its place.
         let runs_commands = matches!(
             request.get("tool").and_then(Json::as_str),
-            Some("run_task" | "task_runner")
+            Some("run_task" | "task_runner" | "finish_task")
         );
         workers.push(thread::spawn(move || {
             let answer = if call {

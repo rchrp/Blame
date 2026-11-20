@@ -205,7 +205,7 @@ impl TaskRunner {
         self: &Arc<Self>,
         input: &Json,
         context: &RunContext,
-        replace_files: ReplaceFiles<'_>,
+        replace_files: Option<ReplaceFiles<'_>>,
     ) -> Json {
         match text(input, "kind") {
             Some("analyze") => blocked(
@@ -407,10 +407,16 @@ impl TaskRunner {
         self: &Arc<Self>,
         input: &Json,
         context: &RunContext,
-        replace_files: ReplaceFiles<'_>,
+        replace_files: Option<ReplaceFiles<'_>>,
     ) -> Json {
         let command = text(input, "command").unwrap_or("");
         if let Some(request) = formatter::request(command) {
+            let Some(replace_files) = replace_files else {
+                return blocked(
+                    "environment",
+                    "Deterministic formatting is unavailable in this execution context.",
+                );
+            };
             return self.format(&request, text(input, "cwd"), context, replace_files);
         }
         if let Some(recovery) = formatter::recovery(command) {
