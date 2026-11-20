@@ -60,6 +60,9 @@ function transformerValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(transformerValue)
   if (!isRecord(value)) return value
   if ("data" in value) return transformerValue(value.data)
+  // Lucid transformers answer `{ transformerData: [value, …] }`.
+  if (Array.isArray(value.transformerData))
+    return transformerValue(value.transformerData[0])
   return value
 }
 
