@@ -6,10 +6,12 @@
 //
 // Each implementation works on its own copy of a small npm project (a git
 // repository with node --test tests and a build script) and repeats the same
-// calls: a literal command, a project test task (check observation and its
+// calls (raw requests: a command's kind is explicit, as the model schema
+// defaults it): a literal command, a project test task (check observation and its
 // journal entry), a build task, a routed shell inspection, a read-only `ls`,
-// a Prettier-free failing command (failure assessment) and finish_task after
-// an edit (it reruns the build on the final source). The first round
+// a failing command (failure assessment), and finish_task after an
+// edit_code patch (it reruns the session's test and build on the final
+// source). The first round
 // includes start-up and cold caches; the table shows the warm median.
 // Footprint: the harness and its side processes after the rounds.
 
@@ -91,12 +93,12 @@ function server(command, args, env = {}) {
 }
 
 const calls = [
-  ["literal command (node -e)", "run_task", { command: "node -e \"console.log(40 + 2)\"" }],
+  ["literal command (node -e)", "run_task", { kind: "command", command: "node -e \"console.log(40 + 2)\"" }],
   ["project test task (12 node tests)", "run_task", { kind: "project", task: "test" }],
   ["project build task", "run_task", { kind: "project", task: "build" }],
-  ["routed inspection (grep -rn)", "run_task", { command: "grep -rn 'add(' src" }],
-  ["read-only command (ls)", "run_task", { command: "ls -la" }],
-  ["failing command (assessment)", "run_task", { command: "node -e \"process.exit(3)\"" }],
+  ["routed inspection (sed -n, served by read_code)", "run_task", { kind: "command", command: "sed -n 1,2p src/math.js" }],
+  ["read-only command (ls -la, run)", "run_task", { kind: "command", command: "ls -la" }],
+  ["failing command (assessment)", "run_task", { kind: "command", command: "node -e \"process.exit(3)\"" }],
 ];
 
 async function measure(name, command, args, env) {
@@ -114,9 +116,12 @@ async function measure(name, command, args, env) {
       times.push(answer.ms);
       if (round === 0) statuses.push(answer.result?.status ?? answer.error);
     }
-    // finish_task after an edit: the final build runs on the edited source.
-    writeFileSync(join(root, "src/math.js"), `export function add(a, b) {\n  return a + b; // ${round}\n}\n`);
-    const finished = await harness.send("finish_task", { summary: `round ${round}` }, root, `${session}-finish-${round}`);
+    // finish_task after an edit in the session: the checks it requested for
+    // the edited package (test and build) run again on the final source.
+    const previous = round === 0 ? "  return a + b;" : `  return a + b; // ${round - 1}`;
+    await harness.send("edit_code", { operations: [{ kind: "patch", patch: `*** Begin Patch\n*** Update File: src/math.js\n@@\n-${previous}\n+  return a + b; // ${round}\n*** End Patch` }] }, root, session);
+    const finished = await harness.send("finish_task", { summary: `round ${round}` }, root, session);
+    if (round === 0) statuses.push(finished.result?.data?.notification?.completion?.verification ?? finished.result?.message);
     finish.push(finished.ms);
     if (round === 0) statuses.push(finished.result?.status ?? finished.error);
     rounds.push(times);
@@ -134,7 +139,7 @@ const results = [
 ];
 console.log("| call | rust first | rust warm (median) | ts first | ts warm (median) |");
 console.log("| --- | --- | --- | --- | --- |");
-const labels = [...calls.map(([label]) => label), "finish_task after an edit (reruns the build)"];
+const labels = [...calls.map(([label]) => label), "finish_task after an edit (reruns test and build)"];
 labels.forEach((label, index) => {
   const [rust, ts] = results.map((result) => {
     const series = index < calls.length ? result.rounds.map((round) => round[index]) : result.finish;
