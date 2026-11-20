@@ -157,11 +157,16 @@ test("a running agent's reads show on its step, and a stop cancels its task", as
     mode: "standard",
   })
   while (!fake.followers.size) await new Promise((r) => setTimeout(r, 1))
-  const [task, onEvent] = [...fake.followers][0]!
-  // Before the engine created the task's session: followed again.
-  onEvent({ type: "state", state: "stopped", error: new Error("no session") })
-  await new Promise((r) => setTimeout(r, 600))
-  assert.deepEqual(fake.follows, [task, task])
+  const [task] = [...fake.followers][0]!
+  // Followed once, after the call that runs it: the host holds the follow
+  // until the task's session exists.
+  assert.deepEqual(fake.follows, [task])
+  assert.ok(
+    fake.calls.some(
+      (call) => (call.input as { task?: string } | undefined)?.task === task
+    ),
+    "the task was called before it was followed"
+  )
   const record = (seq: number, name: string) =>
     ({ seq, type: "tool_call_started", name }) as never
   fake.followers.get(task)!({

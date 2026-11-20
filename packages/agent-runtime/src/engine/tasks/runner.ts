@@ -88,14 +88,40 @@ export class TaskRunner {
   private readonly running = new Map<string, AbortController>();
   private readonly tools = new Map<string, ToolSet>();
   private readonly client: () => Promise<EngineClient>;
-  private readonly started: (session: string) => void;
+  /**
+   * Task ids whose call reached the host and whose session the engine has
+   * not created yet (a project scan can come first), each with the follows
+   * waiting for it.
+   */
+  private readonly announced = new Map<string, Array<() => void>>();
+  /** Announced tasks cancelled before they ran: they end as interrupted. */
+  private readonly cancelledEarly = new Set<string>();
 
-  constructor(
-    client: () => Promise<EngineClient>,
-    started: (session: string) => void = () => undefined,
-  ) {
+  constructor(client: () => Promise<EngineClient>) {
     this.client = client;
-    this.started = started;
+  }
+
+  /**
+   * A call that runs the task `session` arrived: a follow of it waits for
+   * its session (`whenCreated`) until `settled`.
+   */
+  announce(session: string) {
+    if (!this.announced.has(session)) this.announced.set(session, []);
+  }
+
+  /** The task's session exists, or the call ended without one. */
+  settled(session: string) {
+    const waiting = this.announced.get(session);
+    this.announced.delete(session);
+    if (!this.running.has(session)) this.cancelledEarly.delete(session);
+    for (const resolve of waiting ?? []) resolve();
+  }
+
+  /** Resolves once the engine has the session of an announced task; at once otherwise. */
+  whenCreated(session: string): Promise<void> {
+    const waiting = this.announced.get(session);
+    if (!waiting) return Promise.resolve();
+    return new Promise((resolve) => waiting.push(resolve));
   }
 
   async run<R>(
@@ -107,11 +133,19 @@ export class TaskRunner {
       throw new Error(`The task ${session} is already running.`);
     const controller = new AbortController();
     const forward = () => controller.abort(options.signal?.reason);
-    if (options.signal?.aborted) forward();
+    if (options.signal?.aborted || this.cancelledEarly.delete(session))
+      forward();
     options.signal?.addEventListener("abort", forward, { once: true });
     this.running.set(session, controller);
     if (spec.tools?.length) this.tools.set(session, new ToolSet(spec.tools));
     try {
+      // Stopped before it ran: the engine never hears of it.
+      if (controller.signal.aborted)
+        throw new EngineTaskError(
+          session,
+          { status: "interrupted" },
+          options.what,
+        );
       const client = await this.client();
       const pending = client.runTask(
         {
@@ -121,7 +155,9 @@ export class TaskRunner {
         },
         { signal: controller.signal },
       );
-      this.started(session);
+      // The engine reads no message before the session exists: a follow
+      // sent after this one finds it.
+      this.settled(session);
       let outcome: TaskOutcome;
       try {
         outcome = await pending;
@@ -148,11 +184,18 @@ export class TaskRunner {
     return this.tools.get(params.session)?.handle(params, host);
   }
 
-  /** Stops a running task; false when none runs by that id. */
+  /**
+   * Stops a running task, or one announced and still being prepared (it
+   * then ends as interrupted without running); false when there is none.
+   */
   cancel(session: string): boolean {
     const controller = this.running.get(session);
-    if (!controller) return false;
-    controller.abort();
+    if (controller) {
+      controller.abort();
+      return true;
+    }
+    if (!this.announced.has(session)) return false;
+    this.cancelledEarly.add(session);
     return true;
   }
 

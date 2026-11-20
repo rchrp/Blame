@@ -105,13 +105,14 @@ export function createSecurityAuditRunner(
   ) => {
     assertActive(run)
     run.tasks.add(task)
+    const pending = call()
     const unfollow = followTask(engine, task, (activity) => {
       const current = run.audit.progress?.steps.find(({ id }) => id === step)
       if (current?.status === "running")
         updateStep(run, step, { detail: activityDetail(activity) }, true)
     })
     try {
-      return await call()
+      return await pending
     } finally {
       unfollow()
       run.tasks.delete(task)

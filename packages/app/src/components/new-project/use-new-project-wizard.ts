@@ -335,16 +335,6 @@ export function useNewProjectWizard(input: {
     const engine = platform.engine
     // Each generation is its own task: a failed one is not continued.
     const task = `new-project-${crypto.randomUUID()}`
-    // The generation agent's work, from its task's records.
-    const stopFollowing = engine
-      ? followEngineTask(engine, task, (records) => {
-          for (const record of records) {
-            const log = projectCreationLogFromRecord(record)
-            if (log)
-              setLogs((current) => appendProjectCreationLog(current, log))
-          }
-        })
-      : undefined
 
     try {
       const currentModel = modelSelection.currentModel
@@ -367,13 +357,26 @@ export function useNewProjectWizard(input: {
       setOwnedTargetKey(key)
       if (!attempt.generated) {
         setStatus("generating")
-        await engine.call("generateNewProject", {
+        const generation = engine.call("generateNewProject", {
           task,
           model,
           workspace: { root: path },
           projectName: attempt.target.projectName,
           configuration: normalizedConfiguration,
         })
+        // The generation agent's work, from its task's records.
+        const stopFollowing = followEngineTask(engine, task, (records) => {
+          for (const record of records) {
+            const log = projectCreationLogFromRecord(record)
+            if (log)
+              setLogs((current) => appendProjectCreationLog(current, log))
+          }
+        })
+        try {
+          await generation
+        } finally {
+          stopFollowing()
+        }
         attempt.generated = true
         setLogs((current) =>
           appendProjectCreationLog(current, {
@@ -420,7 +423,6 @@ export function useNewProjectWizard(input: {
       setStatus("error")
     } finally {
       unsubscribe?.()
-      stopFollowing?.()
       setCreating(false)
     }
   }

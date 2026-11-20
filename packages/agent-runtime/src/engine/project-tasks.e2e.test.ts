@@ -125,12 +125,16 @@ describe(
         }),
       );
       const task = "task-init-1";
+      const running = host.call("initializeProject", {
+        task,
+        model,
+        workspace: { root: workspace },
+      });
+      // Followed right away, while the host still scans the project: the
+      // follow waits for the task's session.
+      await host.call("follow", { session: task, subscription: "early" });
       await assert.rejects(
-        host.call("initializeProject", {
-          task,
-          model,
-          workspace: { root: workspace },
-        }),
+        running,
         /Initialization blocked \[missing_secret\]: The app needs a Stripe key/,
       );
       const sent = JSON.stringify(mock.requests.map((r) => r.body.messages));
@@ -164,6 +168,16 @@ describe(
       ]);
       assert.ok(records.some((r) => r.type === "result_rejected"));
       assert.ok(records.some((r) => r.type === "result_accepted"));
+      const early = events.flatMap((event) =>
+        event.type === "follow" &&
+        event.subscription === "early" &&
+        event.event.type === "records"
+          ? event.event.records
+          : [],
+      );
+      assert.equal(early[0]?.type, "session_created", "followed from the start");
+      assert.ok(early.some((r) => r.type === "turn_ended"));
+      await host.call("unfollow", { subscription: "early" });
     });
 
     it("analyzes the code practices from the engine-checked answer", async () => {

@@ -705,35 +705,33 @@ async function runProjectInitializationAgent(
   run.agentStopped = false
   const step = initializationTaskProgress()
   progress({ percent: 4, label: "Reading the repository" })
-  const stopFollowing = followEngineTask(
-    input.engine,
+  const pending = input.engine.call("initializeProject", {
     task,
-    (records) => {
-      for (const record of records) {
-        const update = step(record)
-        if (update) progress(update)
-      }
+    model: {
+      providerId: input.providerId,
+      modelId: input.modelId,
+      credentialLabel: input.credentialLabel,
+      reasoning: input.reasoningEffort,
     },
-    () => {
-      // A cancellation sent while the host scanned the project.
-      if (run.cancelled) void stopAgentRun(run)
+    projectId: input.project.id,
+    workspace: { root: input.project.path },
+    preferences: input.preferences,
+    validationFeedback,
+  })
+  // Its first records come once the host has scanned the project.
+  let started = false
+  const stopFollowing = followEngineTask(input.engine, task, (records) => {
+    if (!started) {
+      started = true
       progress({ percent: 10, label: "Analyzing the project" })
     }
-  )
+    for (const record of records) {
+      const update = step(record)
+      if (update) progress(update)
+    }
+  })
   try {
-    return await input.engine.call("initializeProject", {
-      task,
-      model: {
-        providerId: input.providerId,
-        modelId: input.modelId,
-        credentialLabel: input.credentialLabel,
-        reasoning: input.reasoningEffort,
-      },
-      projectId: input.project.id,
-      workspace: { root: input.project.path },
-      preferences: input.preferences,
-      validationFeedback,
-    })
+    return await pending
   } finally {
     stopFollowing()
   }

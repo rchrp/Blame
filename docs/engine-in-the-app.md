@@ -338,6 +338,12 @@ platform.engine.call("cancelTask", { session }) ──── $/cancel of that ta
 platform.engine.follow(session) ─── records as for a conversation (progress of a long task)
 ```
 
+A long task's caller names it (`task` in the call's input), calls it, then
+follows it at once. The host announces the task when its call arrives and
+holds a follow of it until the engine has created its session, however long
+the host prepares it first (a project scan); `cancelTask` stops it in that
+time too, and it ends as interrupted without running.
+
 ### How a purpose declares its task
 
 A purpose (`engine/purposes/<agent>.ts`) returns a `TaskSpec`: the config

@@ -1,8 +1,9 @@
 // An audit agent's progress, from its engine task's records: the task is a
 // session, followed like a conversation, and its tool calls say how much
 // code the agent has read so far.
-import type { FollowEvent, SessionRecord } from "@blame/engine-client"
+import type { SessionRecord } from "@blame/engine-client"
 import type { EnginePlatformClient } from "@blame/agent-runtime/engine-protocol"
+import { followEngineTask } from "../../../lib/engine-task-follow.ts"
 
 export type TaskActivity = { reads: number; searches: number }
 
@@ -33,40 +34,21 @@ export function activityDetail({ reads, searches }: TaskActivity) {
 }
 
 /**
- * Follows a task until the returned function is called. The task's session
- * exists only once the engine has started it, after the call that runs it
- * was sent: a follow that the engine refuses is tried again.
+ * Follows a task, right after the call that runs it, until the returned
+ * function is called: the host holds the follow until the task's session
+ * exists.
  */
 export function followTask(
   engine: Pick<EnginePlatformClient, "follow">,
   session: string,
-  onActivity: (activity: TaskActivity) => void,
-  retryMs = 500
+  onActivity: (activity: TaskActivity) => void
 ) {
   let activity = { reads: 0, searches: 0, lastSeq: 0 }
-  let ended = false
-  let unfollow: (() => void) | undefined
-  let timer: ReturnType<typeof setTimeout> | undefined
-  const attach = () => {
-    if (ended) return
-    unfollow = engine.follow(session, (event: FollowEvent) => {
-      if (event.type === "records") {
-        const next = withRecords(activity, event.records)
-        const changed =
-          next.reads !== activity.reads || next.searches !== activity.searches
-        activity = next
-        if (changed) onActivity(next)
-      } else if (event.type === "state" && event.state === "stopped") {
-        unfollow?.()
-        unfollow = undefined
-        if (!ended) timer = setTimeout(attach, retryMs)
-      }
-    })
-  }
-  attach()
-  return () => {
-    ended = true
-    clearTimeout(timer)
-    unfollow?.()
-  }
+  return followEngineTask(engine, session, (records) => {
+    const next = withRecords(activity, records)
+    const changed =
+      next.reads !== activity.reads || next.searches !== activity.searches
+    activity = next
+    if (changed) onActivity(next)
+  })
 }

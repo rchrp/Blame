@@ -35,6 +35,7 @@ import type {
   EngineSessionStatus,
 } from "./protocol.js";
 import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
+import { engineTaskMethods } from "./task-protocol.js";
 import { purposeClientTools } from "./purposes/tool-sets.js";
 import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
@@ -125,7 +126,7 @@ export class EngineHost {
   private readonly options: EngineHostOptions;
   // Before `handlers`, which hand it out. A task is not watched like a
   // conversation (no activity events): a window that shows its progress
-  // follows it.
+  // follows it, after the call that runs it.
   private readonly tasks = new TaskRunner(() => this.supervisor.client());
 
   constructor(options: EngineHostOptions) {
@@ -236,7 +237,15 @@ export class EngineHost {
     const handler = this.handlers[method] as (
       input: EngineHostInput<M>,
     ) => Promise<EngineHostResult<M>>;
-    return handler(input);
+    // A task the renderer named: following it waits for its session.
+    const task = announcedTask(method, input);
+    if (!task) return handler(input);
+    this.tasks.announce(task);
+    try {
+      return await handler(input);
+    } finally {
+      this.tasks.settled(task);
+    }
   }
 
   private readonly handlers: {
@@ -323,6 +332,8 @@ export class EngineHost {
       return true;
     },
     follow: async ({ session, location, subscription }) => {
+      // A task called just before is followed once the engine has it.
+      await this.tasks.whenCreated(session);
       this.engineFor({ session, location }).hub.subscribe(
         session,
         subscription,
@@ -675,6 +686,13 @@ function lastReply(transcript: Transcript, turn: string): string | undefined {
 }
 
 /** What the conversation's own client tools are listed for. */
+/** The id of the task a call runs, when the renderer named it to follow it. */
+function announcedTask(method: EngineHostMethod, input: unknown) {
+  if (!(engineTaskMethods as readonly string[]).includes(method)) return;
+  const task = (input as { task?: unknown } | undefined)?.task;
+  return typeof task === "string" && task ? task : undefined;
+}
+
 function conversationToolSession(
   session: string,
   settings: EngineSessionSettings,
