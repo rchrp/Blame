@@ -95,7 +95,8 @@ later day does not rewrite it and the provider's prompt cache holds.
   conversation anywhere.
 - **The API** keeps product state only. `quick_chats` holds `title`,
   `workspace`, `engine_session_id`; its list joins `engine_sessions` for the
-  last activity. Deleting a chat deletes its engine session log.
+  last activity. Deleting a chat deletes its engine session log, and the
+  renderer deletes the engine's local copy (`deleteSession`).
 - **The renderer** writes product state (create, rename, delete a chat) and
   nothing about runs: no run rows, no activities, no outboxes.
 
