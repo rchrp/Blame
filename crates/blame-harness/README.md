@@ -56,8 +56,9 @@ blame-harness serve --compiler-command '["node","packages/agent-runtime/dist/har
 (or `BLAME_HARNESS_COMPILER`). The harness starts it on the first query that
 needs it. Inside it, one compiler worker per workspace root (at most three,
 each stopped after 30 s idle, as in-process); the side process itself exits
-after `BLAME_HARNESS_COMPILER_IDLE_MS` (5 min) without a query and is
-started again when needed. Without a command, or without Node, the compiler
+after `BLAME_HARNESS_COMPILER_IDLE_MS` (60 s) without a query and is
+started again when needed: a stopped worker's memory stays in its process
+until the process exits. Without a command, or without Node, the compiler
 tier is unavailable: references fall back to lexical search with
 `worker_failed`, the declaration view is refused, reads carry no `links`,
 and TypeScript/JSONC/Prisma edits are validated as unsupported.

@@ -21,7 +21,9 @@ import { WorkspaceFiles, type WorkspaceSnapshot } from "./workspace-files.js";
 //   import index per `key` (one Rust workspace);
 // - `validate`: `{ path, content (base64 or null), workspaceRoot, externalValidation? }`;
 // - `cancel`: aborts the message with that id.
-// The process exits once idle for BLAME_HARNESS_COMPILER_IDLE_MS (5 min).
+// The process exits once idle for BLAME_HARNESS_COMPILER_IDLE_MS (60 s): a
+// worker stopped after its 30 s idle leaves its memory in the process
+// (measured: ~550 MB of footprint stay), so only exiting returns it.
 
 type Message = {
   id?: string;
@@ -36,7 +38,7 @@ const services = new CompilerServices();
 const indexes = new Map<string, ImportIndex>();
 const maximumIndexes = 8;
 const inFlight = new Map<string, AbortController>();
-const idleMs = Number(process.env.BLAME_HARNESS_COMPILER_IDLE_MS ?? 5 * 60_000);
+const idleMs = Number(process.env.BLAME_HARNESS_COMPILER_IDLE_MS ?? 60_000);
 let idleTimer: ReturnType<typeof setTimeout> | undefined;
 
 const write = (value: unknown) => stdout.write(`${JSON.stringify(value)}\n`);
