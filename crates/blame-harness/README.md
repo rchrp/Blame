@@ -3,17 +3,18 @@
 Blame's Light Semantic Harness in Rust: the tools a model uses to work on
 code (`search_code`, `read_code`, then `edit_code`, `run_task`,
 `finish_task`). It depends on no `blame-engine-*` crate, has no async
-runtime, and ships as one binary that speaks the JSON-lines protocol of
-`packages/agent-runtime/src/harness/semantic-harness-runner.ts --serve`, so
-the engine (or any other agent) can run it in place of the TypeScript
-harness.
+runtime, and ships as one binary that speaks a JSON-lines protocol; the
+engine runs it as its workspace harness (`blame-harness serve --asks`), and
+any other agent can.
 
-All five tools are ported: the read side, `edit_code`, `run_task`
-(commands, project tasks, managed runs, the dependency operation,
-deterministic Prettier edits, check observation), `finish_task` and the
-opt-in symbolic analysis, with the compiler tier in a Node side process.
-The runner-only `experimentalSearchExpansion` option is not (no production
-caller sets it).
+It is the only implementation: the TypeScript harness it was ported from is
+gone, and the modules below name what each part was ported from. The tools
+are the read side, `edit_code`, `run_task` (commands, project tasks, managed
+runs, the dependency operation, deterministic Prettier edits, check
+observation), `finish_task` and the opt-in symbolic analysis, with the
+compiler tier in a Node side process. The TypeScript runner-only
+`experimentalSearchExpansion` option was not ported (no production caller
+set it).
 
 ## Running it
 
@@ -46,9 +47,10 @@ cargo run --release -p blame-harness -- serve
 - A request may carry `commandCredentials` (`{ githubToken?, githubCli? }`,
   set by the desktop for managed runtimes) and `workspaceOptions`
   (`{ initialCommandWaitMs }`, part of the workspace's identity).
-- Internal requests serve the conformance adapter: `task_runner` (the
-  runner alone), `edit_service` (the edit service alone) and
-  `replace_files` (a formatter commit).
+- Internal requests serve the behavioural suite's test client:
+  `task_runner` (the runner alone), `edit_service` (the edit service
+  alone), `replace_files` (a formatter commit) and `unit` (one of the
+  harness's functions on JSON arguments, `src/units.rs`).
 
 Without `serve`, one request is read from stdin and its result printed.
 
@@ -89,7 +91,7 @@ and TypeScript/JSONC/Prisma edits are validated as unsupported.
 
 ## Layers
 
-| Module | Role | TypeScript source |
+| Module | Role | Ported from (deleted TypeScript) |
 | --- | --- | --- |
 | `files`, `pathx`, `identity` | Path safety, reads, git snapshots and source revisions (directory walk without git) | `workspace-files.ts`, `light-identity.ts` |
 | `journal`, `coverage`, `attention`, `aliases` | Session state, journaled in the same file and format | `session-journal.ts`, `read-coverage.ts`, `light-attention.ts`, `light-aliases.ts` |
@@ -103,7 +105,7 @@ and TypeScript/JSONC/Prisma edits are validated as unsupported.
 | `checks`, `finish` | `@checks`, the validation state after edits, the repair plan; finish_task's completion decision and memory candidate | `light-validation-report.ts`, `light-check-repair.ts`, `light-finish-service.ts`, `light-completion.ts`, `project-memory.ts` |
 | `edit`, `patch`, `cline_patch`, `diff`, `symbol_edit`, `commit`, `validation` | edit_code: planning, Cline patches (its parser ported), jsdiff's line diff, symbol replacements, atomic commit with `pending.json` recovery, final content validation | `light-edit.ts`, `light-patch.ts`, `@cline/core` apply-patch, `diff` 9, `light-symbol-replacement.ts`, `python-body.ts`, `patch-symbol-attribution.ts`, `light-commit.ts`, `content-validation.ts` |
 | `tools`, `validate`, `present` | The model-facing surface: definitions, validation, presentation | `light-tools.ts`, `light-contracts.ts`, `tool-result-envelope.ts`, `security-secret-redaction.ts` |
-| `harness`, `server` | Workspace cache, request and call execution, the protocol | `light-executor.ts`, `engine-tools.ts`, `semantic-harness-runner.ts` |
+| `harness`, `server` | Workspace cache, request and call execution, the protocol | `light-executor.ts`, `engine-tools.ts`, `semantic-harness-runner.ts` (its serve mode) |
 | `compiler` | The compiler tier's port and its Node side process client | `semantic-reference-*.ts`, `import-index*.ts`, `dependency-declaration.ts` |
 
 A standalone tool server (MCP or another agent's plugin format) needs
@@ -126,38 +128,22 @@ byte for byte, including JavaScript's semantics where they show:
 - zod 4.6 validation messages and union rules, checked against
   `tests/fixtures/input-validation.jsonl` (zod's own verdicts).
 
-## Conformance
+## Behavioural suite
 
-The TypeScript behavioural tests drive the binary through an adapter
-(`packages/agent-runtime/src/harness/rust-harness-adapter.ts`, loaded by the
-module hooks of `rust-harness-hooks.ts`):
+`packages/agent-runtime/src/harness/*.test.ts` are the harness's tests. They
+drive the binary through a thin test client
+(`packages/agent-runtime/src/harness/test-client/`): its tools by `call`,
+its workspace operations by `request`, and the few functions some tests call
+directly by the `unit` request. There is no TypeScript implementation behind
+it. The binary is `BLAME_HARNESS_BIN`, else this checkout's debug build.
 
 ```bash
-pnpm --filter @blame/agent-runtime build
+cargo build -p blame-harness
 ```
 
 ```bash
-cargo build --release -p blame-harness
+pnpm --filter @blame/agent-runtime test
 ```
 
-```bash
-node crates/blame-harness/conformance/run.mjs --binary target/release/blame-harness
-```
-
-It runs every harness test file three ways: as is (TypeScript), with the
-workspace and the finish service in Rust, and in compare mode, where the
-tests read TypeScript results while every `search_code`/`read_code`/
-`edit_code` also runs in Rust on a shadow copy of the test's tree (made
-identical to it before each call) and is compared byte for byte, an edit's
-resulting files included; commands are not run twice, so a workspace stops
-comparing after its first `run_task`. `classify.mjs` sorts the remaining
-failures by cause; `measure.mjs`, `measure-edit.mjs` and `measure-task.mjs`
-compare latency and memory.
-
-## Seams for the next part
-
-- Engine wiring: the engine starts `blame-harness serve` (with the compiler
-  command and the three variables above) instead of the TypeScript runner.
-- The preview runtime's dependency refresh after a dependency operation
-  (`refreshPreviewDependencies`) has no Rust counterpart yet: results
-  carry no `preview` field.
+`conformance/run.mjs --binary target/release/blame-harness` runs the same
+files one by one against another build and prints each file's counts.

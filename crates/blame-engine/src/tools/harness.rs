@@ -1,15 +1,15 @@
-//! Blame's semantic harness (TypeScript), run as one long-lived child
-//! process for every session of the engine.
+//! Blame's workspace harness (`blame-harness`, crates/blame-harness), run as
+//! one long-lived child process for every session of the engine.
 //!
-//! The runner (`semantic-harness-runner.js --serve`) speaks JSON lines: it
-//! says `{"ready": true}` once, then answers each `{"id", ...}` message by
-//! id. The engine uses two of its messages: `describe` gives the model-facing
-//! tools, `call` runs one model call through the same wrapper an in-process
-//! session uses and answers with the result as the model reads it, so the
-//! bytes a model sees do not depend on which runtime ran the tool. A
-//! `{"id", "cancel": true}` aborts a call.
+//! The harness (`blame-harness serve --asks`) speaks JSON lines: it says
+//! `{"ready": true}` once, then answers each `{"id", ...}` message by id.
+//! The engine uses two of its messages: `describe` gives the model-facing
+//! tools, `call` runs one model call and answers with the result as the
+//! model reads it. A `{"id", "cancel": true}` aborts a call. What only the
+//! client knows the harness asks (`{"ask": ...}`), and the engine relays the
+//! question to the client as `host/harness` and writes back its answer.
 //!
-//! The runner keeps per-workspace state (indexes, managed runs) between
+//! The harness keeps per-workspace state (indexes, managed runs) between
 //! calls, which is why it stays alive. If it dies it is started again on the
 //! next call; calls it was running end as interrupted.
 

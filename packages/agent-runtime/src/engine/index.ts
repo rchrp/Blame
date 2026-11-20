@@ -1,5 +1,4 @@
-// The engine host (docs/engine-in-the-app.md). Nothing here may import the
-// Cline runtime: `no-cline.test.ts` walks this module's imports.
+// The engine host (docs/engine-in-the-app.md).
 export { EngineHost, attachmentKind } from "./host.js";
 export type { EngineHostOptions } from "./host.js";
 export { ToolSet, defineTool, toolSpec } from "./tool.js";

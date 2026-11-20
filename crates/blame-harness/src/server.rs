@@ -1,4 +1,5 @@
-//! The JSON-lines protocol of `semantic-harness-runner.ts --serve`.
+//! The harness's JSON-lines protocol (that of the TypeScript runner's serve
+//! mode it replaced, which the engine already spoke).
 //!
 //! The harness writes `{"ready":true,"protocol":1}`, then answers each
 //! message by its `id`:

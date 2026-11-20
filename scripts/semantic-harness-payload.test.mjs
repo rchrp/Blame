@@ -29,7 +29,6 @@ test("standalone payload serves blame-harness's compiler tier and commands", asy
     await assert.rejects(access(join(packageRoot, "harness/semantic-harness-runner.js")));
     await assert.rejects(access(join(packageRoot, "harness/light-workspace.js")));
     const manifest = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
-    assert.equal(manifest.dependencies["@cline/sdk"], undefined);
     const result = await executeRunner(packageRoot, workspaceRoot);
     assert.equal(result.status, "ok");
     assert.match(JSON.stringify(result.data), /Symbol read\/edit/u);

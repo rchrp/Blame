@@ -21,8 +21,7 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   `packages/agent-runtime/src/engine/`). It is the only owner of an
   `EngineClient`: it starts `blame-engine serve` through `EngineSupervisor`,
   answers every `host/*` request, follows sessions and runs the client tools.
-  It imports nothing from Cline (`engine/no-cline.test.ts` walks its import
-  graph), so it stays a small Node process.
+  It stays a small Node process.
 - **Main** spawns the engine host, starts it again after a crash, routes
   renderer calls to it and its events back to the windows that follow a
   session. It serves the host the desktop services the tools need

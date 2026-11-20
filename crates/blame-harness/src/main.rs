@@ -1,5 +1,5 @@
-//! `blame-harness serve`: the harness over JSON lines on stdin/stdout, the
-//! protocol of `semantic-harness-runner.ts --serve`. Without `serve`, one
+//! `blame-harness serve`: the harness over JSON lines on stdin/stdout
+//! (`server.rs`, the README). Without `serve`, one
 //! request is read from stdin and its result printed once.
 
 use blame_harness::failure::Signal;

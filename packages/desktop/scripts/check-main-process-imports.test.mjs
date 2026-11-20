@@ -28,7 +28,7 @@ test("the main process may load the runtime's light entries, never its engine", 
     await write(`${runtime}/dist/index.js`, 'export * from "./engine.js";');
     await write(
       `${runtime}/dist/engine.js`,
-      'import { Agent } from "@cline/sdk"; export { Agent };',
+      'import { Client as Agent } from "@modelcontextprotocol/sdk"; export { Agent };',
     );
     await write(
       `${runtime}/dist/light.js`,
@@ -57,7 +57,7 @@ test("the main process may load the runtime's light entries, never its engine", 
     await chunk('export { Agent } from "@blame/agent-runtime/backed";');
     await assert.rejects(
       checkMainProcessImports(output),
-      /engine\.js imports @cline\/sdk, a dependency of the agent engine/,
+      /engine\.js imports @modelcontextprotocol\/sdk, a dependency of the agent engine/,
     );
 
     await chunk("const name = 'x'; await import(name);");
