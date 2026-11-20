@@ -14,6 +14,7 @@ mod step;
 mod stream;
 mod tools;
 
+use crate::contract;
 use crate::error::EngineError;
 use crate::policy::{ContextPolicy, EngineOptions};
 use crate::ports::{
@@ -135,18 +136,80 @@ impl Default for Activity {
 }
 
 impl Session {
-    /// Starts a new session; fails if the store already has one by that id.
+    /// Starts a new conversation; fails if the store already has a session
+    /// by that id. A task starts with [`Session::create_task`].
     pub async fn create(
         ports: Ports,
         options: EngineOptions,
         id: SessionId,
         config: SessionConfig,
     ) -> Result<Self, EngineError> {
+        if config.kind.is_task() {
+            return Err(EngineError::Task("a task is started with its instruction"));
+        }
+        check_contract(&config)?;
         let records = ports
             .store
-            .append(&id, 0, vec![RecordBody::SessionCreated { config }])
+            .append(
+                &id,
+                0,
+                vec![RecordBody::SessionCreated {
+                    config: Box::new(config),
+                }],
+            )
             .await?;
         Ok(Self::from_records(ports, options, id, records))
+    }
+
+    /// Starts a task: its configuration and the instruction that opens its
+    /// only turn are stored together, and the turn starts at once.
+    pub async fn create_task(
+        ports: Ports,
+        options: EngineOptions,
+        id: SessionId,
+        config: SessionConfig,
+        instruction: Vec<UserBlock>,
+    ) -> Result<Self, EngineError> {
+        if !config.kind.is_task() {
+            return Err(EngineError::InvalidContract(
+                "a task's configuration has the kind `task`".into(),
+            ));
+        }
+        if config.contract.is_none() {
+            return Err(EngineError::InvalidContract(
+                "a task needs a completion contract".into(),
+            ));
+        }
+        check_contract(&config)?;
+        let turn = TurnId(ports.ids.next("turn"));
+        let records = ports
+            .store
+            .append(
+                &id,
+                0,
+                vec![
+                    RecordBody::SessionCreated {
+                        config: Box::new(config),
+                    },
+                    RecordBody::UserMessage {
+                        turn,
+                        input: instruction,
+                        delivery: Delivery::Turn,
+                    },
+                ],
+            )
+            .await?;
+        let session = Self::from_records(ports, options, id, records);
+        let mut core = session.inner.core.lock().await;
+        session.inner.ensure_driver(&mut core);
+        drop(core);
+        Ok(session)
+    }
+
+    /// Whether this session is a task.
+    pub async fn is_task(&self) -> bool {
+        let core = self.inner.core.lock().await;
+        is_task(&core.records)
     }
 
     /// Loads a stored session and brings it to a consistent state: whatever
@@ -261,6 +324,9 @@ impl Session {
         let _control = self.inner.control.lock().await;
         let mut core = self.inner.core.lock().await;
         core.usable()?;
+        if is_task(&core.records) {
+            return Err(EngineError::Task("it takes no messages"));
+        }
         let running = View::new(&core.records)
             .open_turns()
             .first()
@@ -337,6 +403,7 @@ impl Session {
     /// workspace back as it was then. A running turn is interrupted first.
     pub async fn rewind(&self, to: Seq, restore_workspace: bool) -> Result<Rewound, EngineError> {
         let _control = self.inner.control.lock().await;
+        self.refuse_task("it cannot be rewound").await?;
         self.inner.stop_driver().await?;
         let result = rewind::rewind(&self.inner, to, restore_workspace).await;
         self.inner.release_driver().await;
@@ -346,6 +413,7 @@ impl Session {
     /// Cancels the rewind that is the latest record, files included.
     pub async fn undo_rewind(&self) -> Result<(), EngineError> {
         let _control = self.inner.control.lock().await;
+        self.refuse_task("it cannot be rewound").await?;
         rewind::undo(&self.inner).await?;
         self.inner.release_driver().await;
         Ok(())
@@ -378,8 +446,17 @@ impl Session {
         let _control = self.inner.control.lock().await;
         let mut core = self.inner.core.lock().await;
         core.usable()?;
+        if is_task(&core.records) || config.kind.is_task() {
+            return Err(EngineError::Task("its configuration is fixed"));
+        }
+        check_contract(&config)?;
         self.inner
-            .append_locked(&mut core, vec![RecordBody::ConfigChanged { config }])
+            .append_locked(
+                &mut core,
+                vec![RecordBody::ConfigChanged {
+                    config: Box::new(config),
+                }],
+            )
             .await?;
         Ok(())
     }
@@ -394,6 +471,9 @@ impl Session {
     ) -> Result<Session, EngineError> {
         let records = {
             let core = self.inner.core.lock().await;
+            if is_task(&core.records) {
+                return Err(EngineError::Task("it cannot be forked"));
+            }
             if at == 0 || at > head(&core.records) {
                 return Err(EngineError::InvalidFork {
                     at,
@@ -428,6 +508,30 @@ impl Session {
             task.abort();
         }
         self.inner.busy.send_replace(false);
+    }
+}
+
+impl Session {
+    async fn refuse_task(&self, why: &'static str) -> Result<(), EngineError> {
+        if is_task(&self.inner.core.lock().await.records) {
+            return Err(EngineError::Task(why));
+        }
+        Ok(())
+    }
+}
+
+/// A task's kind is fixed by its first record.
+fn is_task(records: &[Record]) -> bool {
+    matches!(
+        records.first().map(|record| &record.body),
+        Some(RecordBody::SessionCreated { config }) if config.kind.is_task()
+    )
+}
+
+fn check_contract(config: &SessionConfig) -> Result<(), EngineError> {
+    match &config.contract {
+        Some(contract) => contract::check(contract).map_err(EngineError::InvalidContract),
+        None => Ok(()),
     }
 }
 
@@ -529,7 +633,8 @@ impl Inner {
         {
             return specs.clone();
         }
-        let mut specs = self.ports.tools.specs(config).await;
+        let specs = self.ports.tools.specs(config).await;
+        let mut specs = contract::offered(config.contract.as_ref(), specs);
         specs.sort_by(|a, b| a.name.cmp(&b.name));
         let specs: Arc<[ToolSpec]> = specs.into();
         core.specs = Some((config.clone(), specs.clone()));

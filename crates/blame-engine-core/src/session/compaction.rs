@@ -139,6 +139,7 @@ async fn plan(inner: &Inner, reason: Reason) -> Result<Option<(ModelRequest, u64
         tools: specs.to_vec(),
         reasoning: config.reasoning,
         max_output_tokens: config.max_output_tokens,
+        forced_tool: None,
         blobs: inner.ports.store.clone(),
     };
     Ok(Some((request, through)))

@@ -61,6 +61,19 @@ fn gemini_request(messages: Vec<ModelMessage>) -> blame_engine_core::ports::Mode
 }
 
 #[tokio::test]
+async fn a_forced_tool_asks_for_a_call_of_that_function() {
+    let mock = Mock::start(vec![Reply::sse(&reply())]).await;
+    let mut forced = gemini_request(vec![user("Weather in Tokyo?")]);
+    forced.forced_tool = Some("get_weather".into());
+    let (_, error) = run(&gemini(&mock), forced).await;
+    assert!(error.is_none(), "{error:?}");
+    assert_eq!(
+        mock.only_request().body["toolConfig"],
+        json!({"functionCallingConfig": {"mode": "ANY", "allowed_function_names": ["get_weather"]}})
+    );
+}
+
+#[tokio::test]
 async fn sends_the_request_and_reads_the_reply() {
     let mock = Mock::start(vec![Reply::sse(&reply())]).await;
     let (events, error) = run(

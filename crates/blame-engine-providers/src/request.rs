@@ -15,7 +15,7 @@ use rig_core::completion::{
 };
 use rig_core::message::{
     CallId, Document, DocumentData, DocumentMediaType, DocumentSourceKind, Image, ImageMediaType,
-    Message, MimeType, Text, ToolName, ToolResult, ToolResultContent, UserContent,
+    Message, MimeType, Text, ToolChoice, ToolName, ToolResult, ToolResultContent, UserContent,
 };
 use rig_core::providers::registry::ProviderId;
 use serde_json::json;
@@ -81,6 +81,14 @@ pub(crate) async fn to_rig(
         })
         .collect::<Result<_, ProviderError>>()?;
     rig.max_tokens = request.max_output_tokens.map(u64::from);
+    // The loop asks only where `forces_tool` said yes.
+    if let Some(name) = &request.forced_tool {
+        let name =
+            ToolName::new(name.as_str()).map_err(|_| invalid("the forced tool has no name"))?;
+        rig.tool_choice = Some(ToolChoice::Specific {
+            function_names: vec![name],
+        });
+    }
 
     // An option a model cannot honour is skipped rather than failing the
     // request: the loop asks for what it wants and each provider does what

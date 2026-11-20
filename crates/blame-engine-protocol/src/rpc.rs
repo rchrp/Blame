@@ -168,6 +168,23 @@ pub enum ClientRequest {
     /// Result: `null`.
     #[serde(rename = "session/close")]
     Close { session: SessionId },
+    /// Stops the session and deletes its records from this engine. The copy
+    /// in Blame's database is the client's to delete. Result: `null`.
+    #[serde(rename = "session/delete")]
+    Delete { session: SessionId },
+    /// Runs a task: a session of kind `task` whose only turn opens with
+    /// `instruction` and ends by its contract. The session exists before
+    /// the engine reads the next message of this connection, so a
+    /// `session/subscribe` sent right after sees it from its first record.
+    /// Answered when the task ends; `$/cancel` of this request interrupts
+    /// it. Result: [`TaskOutcome`](crate::TaskOutcome).
+    #[serde(rename = "task/run")]
+    RunTask {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        session: Option<SessionId>,
+        config: SessionConfig,
+        instruction: Vec<UserBlock>,
+    },
     /// Stores bytes the client attaches to a message (an image, a
     /// document) and returns the reference to put in a [`UserBlock`]. The
     /// blob is copied to Blame's database with the record that uses it.
@@ -186,7 +203,9 @@ pub enum ClientRequest {
     /// Stops every session and exits. Result: `null`.
     #[serde(rename = "shutdown")]
     Shutdown {},
-    /// Withdraws a request of this client that is still running.
+    /// Withdraws a request of this client that is still running. Only a
+    /// `task/run` stops for it; every other request runs to its end, so
+    /// what the log says and what the client was told stay the same.
     #[serde(rename = "$/cancel")]
     Cancel { id: u64 },
 }

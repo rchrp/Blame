@@ -12,7 +12,7 @@ use crate::tools::{Harness, SessionTools, ToolShared};
 use blame_engine_checkpoint::{BLAME_WORKSPACE_EXCLUDES, GitCheckpointer};
 use blame_engine_core::ports::{Clock, IdSource, SessionStore, StoreError};
 use blame_engine_core::{EngineError, EngineOptions, NoContextEdits, Ports, Session};
-use blame_engine_protocol::{RecordBody, Seq, SessionConfig, SessionId};
+use blame_engine_protocol::{RecordBody, Seq, SessionConfig, SessionId, UserBlock};
 use blame_engine_store::{Durability, SqliteStore, StoreOptions};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -31,7 +31,13 @@ pub struct Settings {
     pub durability: Durability,
     pub idle_after: Duration,
     pub harness: Option<Arc<Harness>>,
+    /// How long a task kept on this machine only stays after its last
+    /// record, to look into it; then it is deleted.
+    pub task_retention: Duration,
 }
+
+/// Default of [`Settings::task_retention`].
+pub const TASK_RETENTION: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 
 pub struct Engine {
     store: SqliteStore,
@@ -40,6 +46,7 @@ pub struct Engine {
     ports: PortsTemplate,
     options: EngineOptions,
     idle_after: Duration,
+    task_retention: Duration,
     harness: Option<Arc<Harness>>,
     sessions: Mutex<HashMap<SessionId, Live>>,
     /// Opening is serialised: two opens of one session must not build two
@@ -126,6 +133,7 @@ impl Engine {
             host,
             options: EngineOptions::default(),
             idle_after: settings.idle_after,
+            task_retention: settings.task_retention,
             harness: settings.harness,
             sessions: Mutex::new(HashMap::new()),
             opening: tokio::sync::Mutex::new(()),
@@ -138,6 +146,7 @@ impl Engine {
             *engine.replication_slot() = Some((token, task));
         }
         tokio::spawn(evict_idle(Arc::downgrade(&engine)));
+        tokio::spawn(delete_expired_tasks(Arc::downgrade(&engine)));
         Ok(engine)
     }
 
@@ -186,6 +195,42 @@ impl Engine {
             Session::create(self.ports(&id), self.options.clone(), id.clone(), config).await?;
         self.keep(session.clone());
         Ok(session)
+    }
+
+    /// Starts a task (see [`Session::create_task`]).
+    pub async fn create_task(
+        &self,
+        id: Option<SessionId>,
+        config: SessionConfig,
+        instruction: Vec<UserBlock>,
+    ) -> Result<Session, OpenError> {
+        let _opening = self.opening.lock().await;
+        let id = id.unwrap_or_else(|| self.new_session_id());
+        let session = Session::create_task(
+            self.ports(&id),
+            self.options.clone(),
+            id.clone(),
+            config,
+            instruction,
+        )
+        .await?;
+        self.keep(session.clone());
+        Ok(session)
+    }
+
+    /// Stops the session and deletes its records from this machine.
+    pub async fn delete(&self, id: &SessionId) -> Result<(), OpenError> {
+        let _opening = self.opening.lock().await;
+        let live = self.live().remove(id);
+        if let Some(live) = live {
+            for forwarder in live.subscribers.values() {
+                forwarder.abort();
+            }
+            let _ = live.session.interrupt().await;
+            live.session.close().await?;
+        }
+        self.store.delete(id).await?;
+        Ok(())
     }
 
     /// The session, from memory or opened from the log; pulled from Blame's
@@ -304,7 +349,7 @@ impl Engine {
     pub async fn first_config(&self, id: &SessionId) -> Option<SessionConfig> {
         let first = self.store.read(id, 0, Some(1)).await.ok()?;
         match first.into_iter().next()?.body {
-            RecordBody::SessionCreated { config } => Some(config),
+            RecordBody::SessionCreated { config } => Some(*config),
             _ => None,
         }
     }
@@ -357,6 +402,47 @@ impl Engine {
         if let Some(harness) = &self.harness {
             harness.stop().await;
         }
+    }
+}
+
+/// How often kept tasks are looked at.
+const RETENTION_SWEEP: Duration = Duration::from_secs(60 * 60);
+
+/// Deletes the tasks kept on this machine only once they are older than the
+/// retention, at start and then every hour. A task still in memory (running
+/// or watched) is left for a later pass.
+async fn delete_expired_tasks(engine: std::sync::Weak<Engine>) {
+    let every = {
+        let Some(engine) = engine.upgrade() else {
+            return;
+        };
+        RETENTION_SWEEP.min(engine.task_retention.max(Duration::from_secs(1)))
+    };
+    loop {
+        let Some(engine) = engine.upgrade() else {
+            return;
+        };
+        if engine.is_stopping() {
+            return;
+        }
+        let retention = u64::try_from(engine.task_retention.as_millis()).unwrap_or(u64::MAX);
+        let before = engine.ports.clock.now_ms().saturating_sub(retention);
+        match engine.store.local_sessions_before(before).await {
+            Ok(expired) => {
+                for id in expired {
+                    if engine.live().contains_key(&id) {
+                        continue;
+                    }
+                    match engine.store.delete(&id).await {
+                        Ok(_) => log!(Debug, "task {id} deleted after its retention"),
+                        Err(error) => log!(Warn, "task {id} could not be deleted: {error}"),
+                    }
+                }
+            }
+            Err(error) => log!(Warn, "looking for expired tasks failed: {error}"),
+        }
+        drop(engine);
+        tokio::time::sleep(every).await;
     }
 }
 

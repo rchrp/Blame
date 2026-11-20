@@ -1,6 +1,7 @@
 use crate::content::{
     AssistantBlock, ModelRef, ReasoningEffort, ToolResultBlock, Usage, UserBlock,
 };
+use crate::contract::{CompletionContract, Obligation, SessionKind};
 use crate::ids::{CheckpointId, RequestId, Seq, ToolCallId, TurnId};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -28,14 +29,15 @@ pub struct Record {
 #[cfg_attr(feature = "ts", ts(optional_fields))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum RecordBody {
-    /// Always the first record of a session.
+    /// Always the first record of a session. The configuration is boxed:
+    /// it is by far the largest body and the rarest one.
     SessionCreated {
-        config: SessionConfig,
+        config: Box<SessionConfig>,
     },
     /// Replaces the whole configuration from here on (model switch, new
     /// tools). Earlier records keep the meaning they had.
     ConfigChanged {
-        config: SessionConfig,
+        config: Box<SessionConfig>,
     },
 
     /// A message from the user. `Delivery::Turn` opens `turn`; `Steer` is
@@ -158,6 +160,39 @@ pub enum RecordBody {
         code: String,
         text: String,
     },
+
+    /// The call is the turn's result: it met the completion contract. The
+    /// turn ends with it.
+    ResultAccepted {
+        turn: TurnId,
+        call: ToolCallId,
+    },
+    /// A call of the result tool was refused before it took effect; the
+    /// model reads why as the call's error and may try again.
+    ResultRejected {
+        turn: TurnId,
+        call: ToolCallId,
+        /// Where the input does not match the result tool's schema.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        invalid: Vec<String>,
+        /// What the turn still had to do first.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        unmet: Vec<Obligation>,
+    },
+    /// The model stopped without fulfilling the contract. `text` is sent to
+    /// it as the next message of the turn; it is the same for the same
+    /// contract and the same unmet obligations.
+    ContractCorrection {
+        turn: TurnId,
+        /// 1 for the first correction of the turn.
+        attempt: u32,
+        unmet: Vec<Obligation>,
+        text: String,
+        /// The tool the next request forces the model to call, when the
+        /// provider can force a choice.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        forced_tool: Option<String>,
+    },
 }
 
 /// Everything the engine needs to run a session, stored with it so the
@@ -194,6 +229,14 @@ pub struct SessionConfig {
     /// Whether a workspace checkpoint is taken at the start of each turn.
     #[serde(default)]
     pub checkpoints: bool,
+    /// A conversation, or a task (see `task/run`).
+    #[serde(default, skip_serializing_if = "SessionKind::is_conversation")]
+    #[cfg_attr(feature = "ts", ts(as = "Option<SessionKind>", optional))]
+    pub kind: SessionKind,
+    /// How each turn must end, enforced by the engine. A task always has
+    /// one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub contract: Option<CompletionContract>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -208,6 +251,14 @@ pub struct Limits {
     pub max_context_tokens: Option<u64>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_cost_micro_usd: Option<u64>,
+    /// Wall time of one turn, from the message that opened it. A request or
+    /// a tool still running then is stopped.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_turn_ms: Option<u64>,
+    /// Tokens of one turn, every request counted (input, cache reads and
+    /// writes, output). Checked before each request.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_turn_tokens: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -281,6 +332,11 @@ pub enum TurnOutcome {
     },
     Failed {
         error: ErrorInfo,
+    },
+    /// The model kept stopping without fulfilling the completion contract,
+    /// past its corrections.
+    ContractUnmet {
+        unmet: Vec<Obligation>,
     },
 }
 

@@ -240,6 +240,10 @@ impl ProviderRouter {
 
 #[async_trait]
 impl ModelProvider for ProviderRouter {
+    fn forces_tool(&self, model: &blame_engine_protocol::ModelRef) -> bool {
+        blame_engine_providers::forces_tool(model)
+    }
+
     async fn stream(&self, request: ModelRequest) -> Result<ModelStream, ProviderError> {
         let id = request.model.provider.clone();
         // The loop keys the prompt cache by session.

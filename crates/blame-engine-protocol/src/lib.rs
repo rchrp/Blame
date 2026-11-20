@@ -14,6 +14,7 @@
 //! This crate has no I/O and no async: it only describes data.
 
 mod content;
+mod contract;
 mod delta;
 mod ids;
 mod record;
@@ -24,6 +25,9 @@ pub mod typescript;
 pub use content::{
     AssistantBlock, BlobRef, ModelRef, NativeItem, ReasoningEffort, ToolResultBlock, Usage,
     UserBlock,
+};
+pub use contract::{
+    CompletionContract, Obligation, ResultTool, SessionKind, TaskFailure, TaskOutcome,
 };
 pub use delta::{BlockKind, Delta, SessionActivity};
 pub use ids::{CheckpointId, RequestId, Seq, SessionId, ToolCallId, TurnId};

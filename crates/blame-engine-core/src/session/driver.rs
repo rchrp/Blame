@@ -3,8 +3,9 @@
 //! step stores what it did before the next decision is made.
 
 use super::compaction::{self, Reason};
-use super::step::{Step, next_step};
+use super::step::{self, Step, next_step};
 use super::{Core, Inner, NOTICE_CHECKPOINT_FAILED, stream, tools};
+use crate::contract;
 use crate::error::EngineError;
 use crate::ports::{CachePlan, ModelRequest};
 use crate::projection::{View, cache_breakpoints, request_digest};
@@ -20,6 +21,10 @@ use tokio_util::sync::CancellationToken;
 
 /// Result text of a call that never ran because the turn was stopped.
 pub(crate) const NOT_RUN_INTERRUPTED: &str = "Not run: the user interrupted the turn.";
+/// Result text of a call that never ran because the turn hit a limit.
+pub(crate) const NOT_RUN_LIMIT: &str = "Not run: the turn reached a limit of its configuration.";
+/// Error of a request stopped by the turn's time limit.
+pub(crate) const STOPPED_AT_DEADLINE: &str = "Stopped: the turn reached its time limit.";
 
 pub(super) async fn drive(inner: Arc<Inner>) {
     loop {
@@ -78,11 +83,39 @@ async fn iteration(inner: &Arc<Inner>) -> Result<bool, EngineError> {
     if core.checkpoint_failed.as_ref() == Some(&turn) {
         state.checkpoint = true;
     }
-    let step = next_step(&state, &config, &specs, &inner.options.retry);
+    let now_ms = inner.ports.clock.now_ms();
+    let step = next_step(&state, &config, &specs, &inner.options.retry, now_ms);
+    let deadline = step::deadline_ms(&state, &config);
     drop(view);
+    let at = &turn;
     match step {
         Step::End(outcome) => {
             close_turn(inner, &mut core, &turn, outcome).await?;
+        }
+        Step::Correct {
+            attempt,
+            unmet,
+            last,
+        } => {
+            let forced_tool = last
+                .then(|| contract::tool_to_force(&unmet))
+                .flatten()
+                .filter(|tool| specs.iter().any(|spec| spec.name == *tool))
+                .filter(|_| inner.ports.provider.forces_tool(&config.model))
+                .map(str::to_owned);
+            let text = contract::correction_text(&unmet);
+            inner
+                .append_locked(
+                    &mut core,
+                    vec![RecordBody::ContractCorrection {
+                        turn: turn.clone(),
+                        attempt,
+                        unmet,
+                        text,
+                        forced_tool,
+                    }],
+                )
+                .await?;
         }
         Step::Checkpoint => {
             drop(core);
@@ -90,11 +123,18 @@ async fn iteration(inner: &Arc<Inner>) -> Result<bool, EngineError> {
         }
         Step::RunTools => {
             drop(core);
-            tools::run(inner, &turn, &cancel).await?;
+            bounded(inner, &cancel, deadline, |cancel| async move {
+                tools::run(inner, at, &cancel).await
+            })
+            .await?;
         }
         Step::Compact { error } => {
             drop(core);
-            if !compaction::compact(inner, Reason::Overflow, &cancel).await? {
+            let compacted = bounded(inner, &cancel, deadline, |cancel| async move {
+                compaction::compact(inner, Reason::Overflow, &cancel).await
+            })
+            .await?;
+            if !compacted {
                 let mut core = inner.core.lock().await;
                 close_turn(inner, &mut core, &turn, TurnOutcome::Failed { error }).await?;
             }
@@ -105,10 +145,46 @@ async fn iteration(inner: &Arc<Inner>) -> Result<bool, EngineError> {
             wait,
         } => {
             drop(core);
-            send_request(inner, &turn, request, attempt, wait, &cancel).await?;
+            let user = cancel.clone();
+            bounded(inner, &cancel, deadline, |cancel| async move {
+                send_request(inner, at, request, attempt, wait, &cancel, &user).await
+            })
+            .await?;
         }
     }
     Ok(true)
+}
+
+/// Runs a step with a token that the user's interrupt cancels and, when
+/// the turn has a time limit, so does its passing. The step then ends as
+/// an interrupted one would; the next decision sees the deadline.
+async fn bounded<F, T>(
+    inner: &Inner,
+    cancel: &CancellationToken,
+    deadline_ms: Option<u64>,
+    work: impl FnOnce(CancellationToken) -> F,
+) -> T
+where
+    F: std::future::Future<Output = T>,
+{
+    let Some(deadline_ms) = deadline_ms else {
+        return work(cancel.clone()).await;
+    };
+    let token = cancel.child_token();
+    let wait = Duration::from_millis(deadline_ms.saturating_sub(inner.ports.clock.now_ms()));
+    let timer = {
+        let token = token.clone();
+        let clock = inner.ports.clock.clone();
+        async move {
+            clock.sleep(wait).await;
+            token.cancel();
+            std::future::pending::<()>().await;
+        }
+    };
+    match race(work(token), timer).await {
+        Either::Left(output) => output,
+        Either::Right(()) => unreachable!("the timer never ends"),
+    }
 }
 
 /// Unregisters the driver. Done under the lock that `send` also takes, so a
@@ -129,6 +205,10 @@ pub(super) async fn close_turn(
 ) -> Result<(), EngineError> {
     let view = View::new(&core.records);
     let state = view.turn_state(turn);
+    let not_run = match outcome {
+        TurnOutcome::LimitReached { .. } => NOT_RUN_LIMIT,
+        _ => NOT_RUN_INTERRUPTED,
+    };
     let mut bodies: Vec<RecordBody> = state
         .pending_calls()
         .map(|call| RecordBody::ToolCallFinished {
@@ -136,7 +216,7 @@ pub(super) async fn close_turn(
             call: call.call.clone(),
             outcome: ToolOutcome::Cancelled,
             content: vec![ToolResultBlock::Text {
-                text: NOT_RUN_INTERRUPTED.into(),
+                text: not_run.into(),
             }],
         })
         .collect();
@@ -192,6 +272,7 @@ async fn send_request(
     attempt: u32,
     wait: Option<Duration>,
     cancel: &CancellationToken,
+    user: &CancellationToken,
 ) -> Result<(), EngineError> {
     if let Some(wait) = wait {
         inner.set_activity(SessionActivity::Retrying {
@@ -226,7 +307,10 @@ async fn send_request(
         }
         // Built and recorded under one lock: a steer stored now lands after
         // `RequestStarted` and so in the next request, as the log will say.
-        let messages = View::new(&core.records).messages();
+        let view = View::new(&core.records);
+        let messages = view.messages();
+        let forced_tool = view.turn_state(turn).forced_tool.map(str::to_owned);
+        drop(view);
         let prefix_digest = request_digest(
             &config.model,
             &config.system_prompt,
@@ -259,6 +343,7 @@ async fn send_request(
             tools: specs.to_vec(),
             reasoning: config.reasoning,
             max_output_tokens: config.max_output_tokens,
+            forced_tool,
             blobs: inner.ports.store.clone(),
         };
         (model_request, request)
@@ -286,7 +371,11 @@ async fn send_request(
             request,
             error: ErrorInfo {
                 kind: ErrorKind::Cancelled,
-                message: "Interrupted by the user.".into(),
+                message: if user.is_cancelled() {
+                    "Interrupted by the user.".into()
+                } else {
+                    STOPPED_AT_DEADLINE.into()
+                },
                 retry_after_ms: None,
             },
         },

@@ -308,5 +308,7 @@ pub fn config() -> SessionConfig {
         tool_options: Default::default(),
         limits: Default::default(),
         checkpoints: true,
+        kind: Default::default(),
+        contract: None,
     }
 }

@@ -368,6 +368,44 @@ impl Engine {
         }
     }
 
+    /// Sends a request and returns its id and the answer to come, without
+    /// waiting for it (a `task/run`).
+    pub async fn send_request(&self, call: ClientRequest) -> (u64, oneshot::Receiver<Outcome>) {
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let (reply, answer) = oneshot::channel();
+        self.pending.lock().unwrap().insert(id, reply);
+        let message: Message<ClientRequest> = Message::Request {
+            jsonrpc: Version::V2,
+            id,
+            call,
+        };
+        write(&self.stdin, &serde_json::to_string(&message).unwrap()).await;
+        (id, answer)
+    }
+
+    /// The answer of a request sent with [`Self::send_request`].
+    pub async fn answer<T: DeserializeOwned>(
+        answer: oneshot::Receiver<Outcome>,
+    ) -> Result<T, RpcError> {
+        let outcome = tokio::time::timeout(WAIT, answer)
+            .await
+            .expect("the engine answers in time")
+            .expect("the engine answers");
+        match outcome {
+            Outcome::Result(value) => Ok(serde_json::from_value(value).expect("a readable result")),
+            Outcome::Error(error) => Err(error),
+        }
+    }
+
+    /// `$/cancel` of a request of this client.
+    pub async fn cancel(&self, id: u64) {
+        let message: Message<ClientRequest> = Message::Notification {
+            jsonrpc: Version::V2,
+            call: ClientRequest::Cancel { id },
+        };
+        write(&self.stdin, &serde_json::to_string(&message).unwrap()).await;
+    }
+
     pub async fn call<T: DeserializeOwned>(&self, call: ClientRequest) -> T {
         let name = format!("{call:?}");
         self.request(call)
@@ -538,6 +576,9 @@ pub fn kind(body: &RecordBody) -> &'static str {
         RecordBody::RewindFinished { .. } => "rewound",
         RecordBody::RewindUndone { .. } => "undone",
         RecordBody::Notice { .. } => "notice",
+        RecordBody::ResultAccepted { .. } => "accepted",
+        RecordBody::ResultRejected { .. } => "rejected",
+        RecordBody::ContractCorrection { .. } => "correction",
     }
 }
 
@@ -568,6 +609,8 @@ pub fn config(workspace: &Path) -> SessionConfig {
         tool_options: Default::default(),
         limits: Default::default(),
         checkpoints: false,
+        kind: Default::default(),
+        contract: None,
     }
 }
 
