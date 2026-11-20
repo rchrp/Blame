@@ -98,10 +98,11 @@ pub fn declarations() -> String {
         "// Generated from crates/blame-engine-protocol by `pnpm generate`. Do not edit.\n\n",
     );
     out.push_str(&format!(
-        "export const PROTOCOL_VERSION = {PROTOCOL_VERSION}\n\n"
+        "export const PROTOCOL_VERSION = {PROTOCOL_VERSION};\n\n"
     ));
     for (_, declaration) in declarations {
-        out.push_str("export ");
+        // The root `pnpm format` must leave this byte-for-byte as generated.
+        out.push_str("// prettier-ignore\nexport ");
         out.push_str(declaration.trim_end());
         out.push_str("\n\n");
     }

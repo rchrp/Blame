@@ -1,5 +1,5 @@
-import type { Usage } from "../protocol.js"
-import type { UsageTotals } from "./model.js"
+import type { Usage } from "../protocol.js";
+import type { UsageTotals } from "./model.js";
 
 export const NO_USAGE: UsageTotals = {
   inputTokens: 0,
@@ -10,7 +10,7 @@ export const NO_USAGE: UsageTotals = {
   costMicroUsd: 0,
   requests: 0,
   unpricedRequests: 0,
-}
+};
 
 /** Adds one request's usage to a running total, returning a new total. */
 export function addUsage(total: UsageTotals, usage: Usage): UsageTotals {
@@ -22,6 +22,7 @@ export function addUsage(total: UsageTotals, usage: Usage): UsageTotals {
     reasoningTokens: total.reasoningTokens + (usage.reasoning_tokens ?? 0),
     costMicroUsd: total.costMicroUsd + (usage.cost_micro_usd ?? 0),
     requests: total.requests + 1,
-    unpricedRequests: total.unpricedRequests + (usage.cost_micro_usd === undefined ? 1 : 0),
-  }
+    unpricedRequests:
+      total.unpricedRequests + (usage.cost_micro_usd === undefined ? 1 : 0),
+  };
 }
