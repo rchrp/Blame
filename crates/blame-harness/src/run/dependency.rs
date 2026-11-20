@@ -549,10 +549,13 @@ fn stable_node() -> Option<String> {
         candidates.extend(["/usr/bin/node".to_string(), "/bin/node".to_string()]);
     }
     if let Ok(path) = std::env::var("PATH") {
+        // The TypeScript harness fell back on the Node it ran in; this one
+        // is no Node, so on Windows it looks for the file PATH really holds.
+        let node = if cfg!(windows) { "node.exe" } else { "node" };
         candidates.extend(
             path.split(crate::platform::PATH_DELIMITER)
                 .filter(|root| !root.is_empty())
-                .map(|root| format!("{root}/node")),
+                .map(|root| Path::new(root).join(node).to_string_lossy().into_owned()),
         );
     }
     let temporary = std::env::temp_dir().to_string_lossy().into_owned();
