@@ -224,3 +224,23 @@ const appToEngine: Record<string, string> = {
 const engineToApp: Record<string, string> = Object.fromEntries(
   Object.entries(appToEngine).map(([app, engine]) => [engine, app]),
 );
+
+/** Calls a window makes itself; following goes through `follow` below. */
+export type EngineWindowMethod = Exclude<
+  EngineHostMethod,
+  "follow" | "unfollow" | "shutdown"
+>;
+
+export type EngineActivityEvent = Extract<EngineHostEvent, { type: "activity" }>;
+
+/** `platform.engine`: the renderer's only way to the engine. */
+export type EnginePlatformClient = {
+  call<M extends EngineWindowMethod>(
+    method: M,
+    input: EngineHostInput<M>,
+  ): Promise<EngineHostResult<M>>;
+  /** Everything about one session, from its first record; returns the way to stop. */
+  follow(session: SessionId, onEvent: (event: FollowEvent) => void): () => void;
+  /** Turns starting and ending in any session. */
+  onActivity(callback: (event: EngineActivityEvent) => void): () => void;
+};
