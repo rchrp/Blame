@@ -73,6 +73,57 @@ test("a serving harness keeps a session's runs between requests and cancels on r
   }
 });
 
+test("a serving harness describes its model tools and presents a call as the model reads it", {
+  skip: process.platform === "win32", timeout: 20_000,
+}, async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-runner-engine-"));
+  const path = fileURLToPath(new URL("./semantic-harness-runner.js", import.meta.url));
+  const runner = spawn(process.execPath, [path, "--serve"], { cwd: root, stdio: ["pipe", "pipe", "ignore"] });
+  const replies = new Map<string, (value: Record<string, unknown>) => void>();
+  let buffer = "";
+  runner.stdout!.setEncoding("utf8").on("data", (chunk: string) => {
+    buffer += chunk;
+    for (let index = buffer.indexOf("\n"); index >= 0; index = buffer.indexOf("\n")) {
+      const message = JSON.parse(buffer.slice(0, index)) as Record<string, unknown>;
+      buffer = buffer.slice(index + 1);
+      if (!message.ready) replies.get(String(message.id))?.(message);
+    }
+  });
+  const send = (id: string, body: Record<string, unknown>) => new Promise<Record<string, unknown>>((resolve) => {
+    replies.set(id, resolve);
+    runner.stdin!.write(`${JSON.stringify({ id, ...body })}\n`);
+  });
+  const contract = { session_id: "engine-test", environment: { isolated: true, managedPreview: false } };
+  try {
+    await writeFile(join(root, "note.txt"), "first line\nsecond \"line\"\n");
+    const described = await send("d", { describe: { taskContract: contract } });
+    const tools = described.tools as Array<{ name: string; effect: string; endsTurn: boolean; inputSchema: { type?: string } }>;
+    assert.deepEqual(tools.map(({ name, effect, endsTurn }) => [name, effect, endsTurn]), [
+      ["search_code", "read_only", false],
+      ["read_code", "read_only", false],
+      ["edit_code", "workspace_write", false],
+      ["run_task", "command", false],
+      ["finish_task", "command", true],
+    ]);
+    assert.ok(tools.every((tool) => tool.inputSchema.type === "object"), "JSON Schema objects, not zod");
+
+    const call = (id: string, tool: string, input: unknown) =>
+      send(id, { call: { tool, input, workspaceRoot: root, taskContract: contract, toolContext: { sessionId: "engine-test", toolCallId: id } } });
+    const read = (await call("r", "read_code", { target: "note.txt", view: "raw" })).presented as { ok: boolean; content: unknown };
+    assert.equal(read.ok, true);
+    assert.ok(Array.isArray(read.content), "text with quotes is sent as fenced sections");
+    assert.match(JSON.stringify(read.content), /blame_tool_result_v2/u);
+
+    const invalid = (await call("i", "read_code", { nonsense: true })).presented as { ok: boolean; content: unknown };
+    assert.equal(invalid.ok, false);
+    assert.match(JSON.stringify(invalid.content), /\\"status\\":\\"blocked\\"/u);
+  } finally {
+    runner.stdin!.end();
+    if (runner.exitCode === null) runner.kill("SIGKILL");
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 function startRunner(root: string) {
   const path = fileURLToPath(new URL("./semantic-harness-runner.js", import.meta.url));
   const runner = spawn(process.execPath, [path], { cwd: root, stdio: ["pipe", "ignore", "ignore"] });

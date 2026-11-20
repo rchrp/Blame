@@ -6,10 +6,23 @@ import {
   executeLightWorkspaceRequest,
   type LightWorkspaceExecutionRequest,
 } from "./light-executor.js";
+import {
+  describeEngineTools,
+  presentEngineToolCall,
+  type EngineDescribeRequest,
+} from "./engine-tools.js";
 
 // `--serve` keeps one harness for many requests (one JSON line each, answered
 // by id), so a session's managed runs and caches live between tool calls.
 // Without it, one request is read from stdin and answered once.
+//
+// Served messages, each with an `id`:
+// - `request`: runs a workspace operation, answered with its raw `result`;
+// - `call`: runs a model's tool call the way an in-process session does
+//   (repair, validation, encodeToolResult), answered with `presented`;
+// - `describe`: the model-facing tools (name, description, JSON Schema,
+//   effect), answered with `tools`;
+// - `cancel`: aborts the request or call with that id.
 if (process.argv.includes("--serve")) await serve();
 else await runOnce();
 
@@ -38,7 +51,13 @@ async function runOnce() {
   }
 }
 
-type ServeMessage = { id?: unknown; cancel?: boolean; request?: LightWorkspaceExecutionRequest };
+type ServeMessage = {
+  id?: unknown;
+  cancel?: boolean;
+  request?: LightWorkspaceExecutionRequest;
+  call?: LightWorkspaceExecutionRequest;
+  describe?: EngineDescribeRequest;
+};
 
 async function serve() {
   const execute = cachedLightWorkspaceExecutor();
@@ -64,6 +83,30 @@ async function serve() {
     if (!id) continue;
     if (message.cancel) {
       inFlight.get(id)?.abort(new Error("Semantic workspace operation cancelled."));
+      continue;
+    }
+    if (message.describe) {
+      try {
+        write({ id, tools: describeEngineTools(message.describe) });
+      } catch (error) {
+        write({ id, error: errorMessage(error) });
+      }
+      continue;
+    }
+    if (message.call) {
+      const controller = new AbortController();
+      inFlight.set(id, controller);
+      started.add(controller);
+      void presentEngineToolCall(execute, message.call, controller.signal)
+        .then(({ presented, raw }) => {
+          if (!startedRun(raw)) started.delete(controller);
+          write({ id, presented });
+        })
+        .catch((error: unknown) => {
+          started.delete(controller);
+          write({ id, error: errorMessage(error) });
+        })
+        .finally(() => inFlight.delete(id));
       continue;
     }
     if (!message.request) {
