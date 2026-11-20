@@ -351,6 +351,12 @@ describe(
         /Added the note\./,
         "the model has the story so far",
       );
+      const [continued] = await host.call("status", { sessions: [session] });
+      assert.equal(
+        continued!.lastReply,
+        "Continued after the restart.",
+        "a pull request can describe the story with the agent's last reply",
+      );
 
       // Undo the first message: the conversation and the note go back.
       const brief = view("reopened").items.find(

@@ -111,6 +111,12 @@ export type EngineSessionStatus = {
   running: boolean;
   /** How its last turn ended, when one did. */
   lastOutcome?: TurnOutcome;
+  /**
+   * What the agent said its last finished turn did: the summary it handed
+   * finish_task, or else its last text. A pull request describes the story
+   * with it.
+   */
+  lastReply?: string;
   turns: number;
 };
 
@@ -322,7 +328,11 @@ export type EnginePlatformClient = {
     input: EngineHostInput<M>,
   ): Promise<EngineHostResult<M>>;
   /** Everything about one session, from its first record; returns the way to stop. */
-  follow(session: SessionId, onEvent: (event: FollowEvent) => void): () => void;
+  follow(
+    session: SessionId,
+    onEvent: (event: FollowEvent) => void,
+    location?: EngineLocation,
+  ): () => void;
   /** Turns starting and ending in any session. */
   onActivity(callback: (event: EngineActivityEvent) => void): () => void;
 };

@@ -10,6 +10,7 @@ import {
   type EngineLogLine,
   type HostParamsOf,
   type SessionConfig,
+  type Transcript,
   type UserBlock,
 } from "@blame/engine-client";
 import { mkdir } from "node:fs/promises";
@@ -411,13 +412,15 @@ export class EngineHost {
       return { session, exists: false, running: false, turns: 0 };
     }
     const transcript = reducer.snapshot();
-    const ended = transcript.turns.filter((turn) => turn.outcome);
-    const last = ended.at(-1)?.outcome;
+    const ended = transcript.turns.filter((turn) => turn.outcome).at(-1);
+    const last = ended?.outcome;
+    const reply = ended ? lastReply(transcript, ended.turn) : undefined;
     return {
       session,
       exists: true,
       running: running.has(session) || transcript.runningTurn !== undefined,
       ...(last ? { lastOutcome: last } : {}),
+      ...(reply ? { lastReply: reply } : {}),
       turns: transcript.turns.length,
     };
   }
@@ -508,4 +511,26 @@ function canonical(value: unknown): string {
       )
       .join(",")}}`;
   return JSON.stringify(value);
+}
+
+/** The summary a turn handed finish_task, or else the last thing it said. */
+function lastReply(transcript: Transcript, turn: string): string | undefined {
+  let text: string | undefined;
+  for (const item of transcript.items) {
+    if (!("turn" in item) || item.turn !== turn) continue;
+    if (item.kind === "text" && item.text.trim()) text = item.text.trim();
+    if (
+      item.kind === "tool_call" &&
+      item.name === "finish_task" &&
+      item.state === "completed"
+    ) {
+      const input = item.input;
+      const summary =
+        input && typeof input === "object" && !Array.isArray(input)
+          ? input.summary
+          : undefined;
+      if (typeof summary === "string" && summary.trim()) return summary.trim();
+    }
+  }
+  return text;
 }

@@ -603,11 +603,11 @@ const api: BlameDesktopApi = {
   },
   engine: {
     call: (method, input) => ipcRenderer.invoke("engine:call", method, input),
-    follow: (session, onEvent) => {
+    follow: (session, onEvent, location) => {
       const subscription = globalThis.crypto.randomUUID();
       engineFollowers.set(subscription, onEvent);
       void ipcRenderer
-        .invoke("engine:call", "follow", { session, subscription })
+        .invoke("engine:call", "follow", { session, subscription, location })
         .catch((error) => {
           if (!engineFollowers.has(subscription)) return;
           onEvent({ type: "state", state: "stopped", error: preloadErrorMessage(error) });
