@@ -9,6 +9,34 @@ repository.workspace = true
 publish.workspace = true
 
 [dependencies]
+blame-engine-core.workspace = true
+blame-engine-protocol.workspace = true
+async-trait.workspace = true
+futures-core.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["net", "io-util", "time"] }
+
+# Rig is pre-1.0 and breaks its API every few weeks: the exact version is
+# pinned and nothing of it leaves this crate. `derive` (a proc macro for
+# Rig's own tool trait) is off; `reqwest` gives the wires an HTTP transport.
+rig-core = { version = "=0.46.0", default-features = false, features = ["reqwest", "rustls"] }
+# The same reqwest Rig sends with, so the ChatGPT sign-in adds no second
+# HTTP stack; also lets the registry build its own client (timeouts).
+rig-reqwest = { version = "=0.46.0", default-features = false, features = ["rustls"] }
+
+# Already in the tree through rig-core; listed because this crate uses them
+# directly.
+async-stream = "0.3"
+base64 = "0.22"
+futures-util = { version = "0.3", default-features = false, features = ["std"] }
+sha2 = "0.10"
+url = "2"
+uuid = { version = "1", default-features = false, features = ["v4"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "net", "io-util", "time"] }
 
 [lints]
 workspace = true
