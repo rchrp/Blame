@@ -5,21 +5,13 @@ export type OpenRouterMatch = {
   confidence: number
 }
 
+// The engine's providers whose model ids carry no author; OpenRouter's do.
 const providerAuthors: Record<string, string[]> = {
   'anthropic': ['anthropic'],
-  'bedrock': ['anthropic', 'amazon'],
   'claude-code': ['anthropic'],
+  'chatgpt': ['openai'],
   'gemini': ['google'],
-  'google': ['google'],
-  'minimax': ['minimax'],
-  'moonshot': ['moonshotai'],
-  'openai-codex': ['openai'],
-  'openai-native': ['openai'],
   'openai': ['openai'],
-  'qwen': ['qwen', 'alibaba'],
-  'xai': ['x-ai'],
-  'zai': ['z-ai'],
-  'zai-coding-plan': ['z-ai'],
 }
 
 export class ModelCatalogMatcher {

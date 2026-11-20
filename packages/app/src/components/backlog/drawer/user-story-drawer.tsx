@@ -3,7 +3,6 @@ import type { PullRequestAvailability } from "@blame/agent-runtime"
 
 import type {
   UserStory,
-  UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -17,9 +16,11 @@ import type {
   UserStoryDrawerMode,
   UserStoryDrawerTab,
 } from "@/components/backlog/shared/backlog-types"
-import type { AgentConversationUserMessageUndo } from "@/components/chat/agent-conversation"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
+import { StoryConversationProvider } from "@/components/backlog/drawer/story-conversation"
 import { UserStoryDrawerPanel } from "@/components/backlog/drawer/user-story-drawer-panel"
+import type { StoryMessageUndo } from "@/components/backlog/drawer/user-story-drawer-sections"
+import type { StoryMessageInput } from "@/pages/backlog/use-story-comments"
 import { Drawer } from "@/components/ui/drawer"
 
 export type {
@@ -42,13 +43,6 @@ export type UserStoryDrawerProps = {
     input: Omit<UserStoryDraft, "projectId">,
     contextLimit?: number
   ) => Promise<UserStory>
-  onCreateUserStoryComment: (
-    story: UserStory,
-    input: Pick<
-      UserStoryComment,
-      "body" | "codeSelectionAttachments" | "fileAttachments"
-    >
-  ) => Promise<UserStoryComment>
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onApproveAndMerge: (
     story: UserStory,
@@ -65,16 +59,13 @@ export type UserStoryDrawerProps = {
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onRequestChanges: (
     story: UserStory,
-    feedback: string,
-    commentId: string,
-    codeSelectionAttachments: UserStoryComment["codeSelectionAttachments"],
-    fileAttachments: UserStoryComment["fileAttachments"]
+    input: StoryMessageInput
   ) => Promise<UserStory | undefined>
   reviewDiffEmpty?: boolean
   onStopAgent: (story: UserStory, choice: StopAgentChoice) => Promise<UserStory>
   onUndoUserStoryComment: (
     story: UserStory,
-    target: AgentConversationUserMessageUndo
+    rewind: StoryMessageUndo["rewind"]
   ) => Promise<UserStory>
   onUpdateUserStory: (
     story: UserStory,
@@ -95,7 +86,6 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
   initialDevelopmentTab = "files",
   focusComment,
   onCreateUserStory,
-  onCreateUserStoryComment,
   onDeleteUserStory,
   onApproveAndMerge,
   onCheckPullRequest,
@@ -148,35 +138,36 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
       onOpenChange={onOpenChange}
       handleOnly={true}
     >
-      <UserStoryDrawerPanel
-        key={drawerKey}
-        diffStats={view.diffStats}
-        focusComment={view.focusComment}
-        initialDevelopmentTab={view.initialDevelopmentTab}
-        initialDraft={view.initialDraft}
-        initialTab={view.initialTab}
-        mode={view.mode}
-        open={open}
-        onCancel={() => onOpenChange(false)}
-        onApproveAndMerge={onApproveAndMerge}
-        onCheckPullRequest={onCheckPullRequest}
-        onCreateUserStory={onCreateUserStory}
-        onCreateUserStoryComment={onCreateUserStoryComment}
-        onDeleteUserStory={onDeleteUserStory}
-        onOpenDrawer={onOpenDrawer}
-        onOpenPullRequest={onOpenPullRequest}
-        onOptimizeUserStory={onOptimizeUserStory}
-        onRequestChanges={onRequestChanges}
-        onReject={onReject}
-        reviewDiffEmpty={reviewDiffEmpty}
-        onStopAgent={onStopAgent}
-        onUndoUserStoryComment={onUndoUserStoryComment}
-        onUpdateUserStory={onUpdateUserStory}
-        setupInitializing={view.setupInitializing}
-        status={status}
-        titleGenerating={view.titleGenerating}
-        userStory={view.userStory}
-      />
+      <StoryConversationProvider story={view.userStory}>
+        <UserStoryDrawerPanel
+          key={drawerKey}
+          diffStats={view.diffStats}
+          focusComment={view.focusComment}
+          initialDevelopmentTab={view.initialDevelopmentTab}
+          initialDraft={view.initialDraft}
+          initialTab={view.initialTab}
+          mode={view.mode}
+          open={open}
+          onCancel={() => onOpenChange(false)}
+          onApproveAndMerge={onApproveAndMerge}
+          onCheckPullRequest={onCheckPullRequest}
+          onCreateUserStory={onCreateUserStory}
+          onDeleteUserStory={onDeleteUserStory}
+          onOpenDrawer={onOpenDrawer}
+          onOpenPullRequest={onOpenPullRequest}
+          onOptimizeUserStory={onOptimizeUserStory}
+          onRequestChanges={onRequestChanges}
+          onReject={onReject}
+          reviewDiffEmpty={reviewDiffEmpty}
+          onStopAgent={onStopAgent}
+          onUndoUserStoryComment={onUndoUserStoryComment}
+          onUpdateUserStory={onUpdateUserStory}
+          setupInitializing={view.setupInitializing}
+          status={status}
+          titleGenerating={view.titleGenerating}
+          userStory={view.userStory}
+        />
+      </StoryConversationProvider>
     </Drawer>
   )
 })

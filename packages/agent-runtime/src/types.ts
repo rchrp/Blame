@@ -171,11 +171,6 @@ export type SaveLocalProviderCredentialInput = {
   accountId?: string | null;
 };
 
-export type ConnectClaudeCodeInput = {
-  apiConnection: ApiConnection;
-  label?: string;
-};
-
 export type ClaudeCodeStatus = {
   installed: boolean;
   executablePath?: string;
@@ -186,12 +181,6 @@ export type ClaudeCodeStatus = {
   email?: string;
   subscriptionType?: string;
   error?: string;
-};
-
-export type SubscriptionUsageInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  credentialLabel?: string;
 };
 
 /** One limit window of a subscription plan, such as 5 hours or a week. */
@@ -211,13 +200,6 @@ export type SubscriptionUsage = {
   windows: SubscriptionUsageWindow[];
   planType?: string;
   checkedAt: number;
-};
-
-export type LoginOAuthProviderInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  label?: string;
-  baseUrl?: string | null;
 };
 
 export type RequiredProjectCheck =

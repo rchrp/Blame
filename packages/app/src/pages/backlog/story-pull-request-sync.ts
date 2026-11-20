@@ -46,7 +46,6 @@ export async function applyPullRequestState(
       {
         ...inactiveStoryFields(),
         agentLastError: null,
-        agentLastEvent: "Pull request merged on GitHub.",
         mergedAt: state.mergedAt,
         status: "done",
       },
@@ -60,7 +59,6 @@ export async function applyPullRequestState(
       story,
       {
         agentLastError: null,
-        agentLastEvent: "Pull request closed without merging.",
         pullRequestUrl: null,
       },
       { cleanup: false }

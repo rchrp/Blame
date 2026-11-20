@@ -200,6 +200,16 @@ pub enum ClientRequest {
     /// A notification: it has no answer.
     #[serde(rename = "tool/progress")]
     ToolProgress { call: ToolCallId, text: String },
+    /// The providers and models to offer, from models.dev. `refresh` asks
+    /// models.dev first (a conditional request, at most every few seconds)
+    /// and answers once it replied or gave up; without it the answer is
+    /// immediate, and a copy older than its time to live is revalidated in
+    /// the background. Result: [`crate::catalog::ModelCatalog`].
+    #[serde(rename = "catalog/list")]
+    CatalogList {
+        #[serde(default)]
+        refresh: bool,
+    },
     /// Stops every session and exits. Result: `null`.
     #[serde(rename = "shutdown")]
     Shutdown {},

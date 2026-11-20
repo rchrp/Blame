@@ -49,7 +49,7 @@ export function ClaudeCodeConnectContent({
   provider: Provider
   selection: ModelSelection
 }) {
-  const providers = selection.agent?.providers
+  const providers = selection.providers
   const { checking, check, status } = useClaudeCodeStatus(
     providers?.claudeCodeStatus
   )
@@ -66,7 +66,7 @@ export function ClaudeCodeConnectContent({
     setError(undefined)
     setSaving(true)
     void providers
-      .connectClaudeCode({ apiConnection: selection.apiConnection })
+      .connectClaudeCode()
       .then(() => selection.refreshProviders())
       .then(onDone)
       .catch((reason) => setError(errorMessage(reason, "Unable to connect Claude Code")))
@@ -78,7 +78,7 @@ export function ClaudeCodeConnectContent({
     setError(undefined)
     setDeleting(true)
     void providers
-      .deleteCredential(selection.apiConnection, credential.id)
+      .deleteCredential(credential.id)
       .then(() => selection.refreshProviders())
       .then(onDone)
       .catch((reason) => setError(errorMessage(reason, "Unable to disconnect")))

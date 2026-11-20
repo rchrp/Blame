@@ -9,7 +9,6 @@ import FileAttachmentsService from '#services/file_attachments_service'
 import { createLicensedUser as createUser } from '../helpers/create_licensed_user.js'
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
-import type { Assert } from '@japa/assert'
 import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
 import { createHash } from 'node:crypto'
@@ -118,17 +117,6 @@ test.group('file attachments', (group) => {
     storyResponse.assertStatus(200)
     const story = storyResponse.body() as unknown as StoryBody
     assert.notProperty(story.data.fileAttachments[0], 'content')
-    const storedReference = {
-      id,
-      name: 'hello.txt',
-      size: content.byteLength,
-      type: 'text/plain',
-    }
-    const commentResponse = await client
-      .post(`/api/v1/projects/user-stories/${story.data.id}/comments`)
-      .loginAs(user)
-      .json({ body: 'Stored reference', fileAttachments: [storedReference] })
-    commentResponse.assertStatus(200)
 
     const unauthorizedResponse = await client.get(`/api/v1/attachments/${id}`).loginAs(stranger)
     unauthorizedResponse.assertStatus(404)
@@ -146,7 +134,7 @@ test.group('file attachments', (group) => {
       .json({ password: 'password123' })
     exportResponse.assertStatus(200)
     const accountExport = exportResponse.body() as unknown as AccountExportBody
-    assert.equal(accountExport.version, 3)
+    assert.equal(accountExport.version, 4)
     assert.equal(accountExport.workspace.fileAttachments[0].content, 'SGVsbG8=')
 
     await UserSubscription.query().where('userId', user.id).delete()
@@ -370,29 +358,6 @@ test.group('file attachments', (group) => {
     assert.equal(await new FileAttachmentsService().cleanupOrphans(), 1)
     assert.isNull(await FileAttachment.find('abandoned-conversation-file'))
   })
-
-  test('stores comment attachments as objects', async ({ assert, client }) => {
-    const user = await createUser()
-    const project = await createProject(user.id)
-    const storyResponse = await client.post('/api/v1/projects/user-stories').loginAs(user).json({
-      projectId: project.id,
-      summary: 'Attachment owners',
-      title: 'Attachment owners',
-    })
-    storyResponse.assertStatus(200)
-    const story = storyResponse.body() as unknown as StoryBody
-    const commentResponse = await client
-      .post(`/api/v1/projects/user-stories/${story.data.id}/comments`)
-      .loginAs(user)
-      .json({
-        body: 'Comment attachment',
-        fileAttachments: [inlineAttachment('comment-file')],
-      })
-    commentResponse.assertStatus(200)
-    assertStoredReference(commentResponse.body(), 'comment-file', assert)
-
-    assert.equal(await attachmentLinkCount('user_story_comment_file_attachments'), 1)
-  })
 })
 
 type UploadBody = {
@@ -412,28 +377,6 @@ type AccountExportBody = {
   workspace: {
     fileAttachments: { content: string }[]
   }
-}
-
-function inlineAttachment(id: string) {
-  return {
-    content: 'SGVsbG8=',
-    id,
-    name: `${id}.txt`,
-    size: 5,
-    type: 'text/plain',
-  }
-}
-
-function assertStoredReference(value: unknown, id: string, assert: Assert) {
-  const body = value as { data: { fileAttachments: Record<string, unknown>[] } }
-  assert.equal(body.data.fileAttachments[0]?.id, id)
-  assert.match(String(body.data.fileAttachments[0]?.downloadUrl), /^memory:/)
-  assert.notProperty(body.data.fileAttachments[0] ?? {}, 'content')
-}
-
-async function attachmentLinkCount(table: string) {
-  const rows = await db.from(table).count('* as total')
-  return Number(rows[0]?.total ?? 0)
 }
 
 function sha256(value: Uint8Array) {

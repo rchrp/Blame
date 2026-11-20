@@ -39,7 +39,6 @@ for (const arm of ['reference', 'declarations']) {
   const source = join(repo, 'packages/agent-runtime/src');
   await cp(join(source, 'prompt'), join(root, 'prompt'), { recursive: true });
   await mkdir(join(root, 'plugins/blame-native'), { recursive: true });
-  await cp(join(source, 'plugins/blame-native/package.json'), join(root, 'plugins/blame-native/package.json'));
   await cp(join(source, 'plugins/blame-native/skills'), join(root, 'plugins/blame-native/skills'), { recursive: true });
   const mod = await import(pathToFileURL(join(root, 'cline-runtime-prompts.js')).href);
   const text = await mod.buildDevelopmentSystemPrompt({ cwd: join(work, 'declaration-preflight'), workspaceRoot: join(work, 'declaration-preflight') });

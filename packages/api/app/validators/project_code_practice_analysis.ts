@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { engineProviderId } from '#validators/provider_id'
 
 const practice = vine.enum([
   'coding_style',
@@ -8,7 +9,7 @@ const practice = vine.enum([
 ])
 
 export const startProjectCodePracticeAnalysisValidator = vine.create({
-  providerId: vine.string().trim().minLength(1).maxLength(80),
+  providerId: engineProviderId,
   modelId: vine.string().trim().minLength(1).maxLength(255),
 })
 

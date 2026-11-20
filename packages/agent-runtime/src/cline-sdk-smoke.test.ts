@@ -17,34 +17,13 @@ const { appendProductionConfig } = await import("./production.js");
 const { createProviderCompatibleFetch } = await import(
   "./provider-schema-compatibility.js"
 );
-const { listClineProviders } = await import("./provider-catalog.js");
 const { toolPolicies } = await import("./cline-runtime-configuration.js");
-const { attachmentTools } = await import("./attachment-tools.js");
+const { attachmentTool } = await import("./engine/tools/attachments.js");
+const { clineTool } = await import("./cline-client-tools.js");
 const { reasoningConfig } = await import("./reasoning.js");
 const { developmentUserInput, newAttachmentDirectory } = await import("./cline-runtime-prompts.js");
 
 test.after(() => rm(sandbox, { force: true, recursive: true }));
-
-test("Cline exposes the providers Blame relies on, with models", async () => {
-  const providers = await listClineProviders();
-  for (const id of [
-    "anthropic",
-    "gemini",
-    "openai-codex",
-    "openai-compatible",
-    "openai-native",
-    "openrouter",
-  ]) {
-    const provider = providers.find((candidate) => candidate.id === id);
-    assert.ok(provider, `Cline no longer provides ${id}`);
-    if (id !== "openai-compatible") {
-      assert.ok(
-        Object.keys(provider.models).length > 0,
-        `${id} has no bundled models`,
-      );
-    }
-  }
-});
 
 test("a Blame-configured Cline session completes a streamed turn", async () => {
   const requests: Array<{ body: Record<string, unknown>; url?: string }> = [];
@@ -203,7 +182,7 @@ test("an attached PDF reaches the model through the real SDK read tool", async (
         sessionId: "attachment-smoke", providerId: "openai-compatible", modelId: "smoke-model", apiKey: "offline",
         baseUrl: `http://127.0.0.1:${address.port}/v1`, cwd: workspace, workspaceRoot: workspace,
         checkpoint: { enabled: false }, enableAgentTeams: false, enableSpawnAgent: false,
-        enableTools: true, extraTools: attachmentTools(workspace), maxIterations: 3, mode: "act", systemPrompt: "Read the attachment and answer.",
+        enableTools: true, extraTools: [clineTool(attachmentTool(workspace)!)], maxIterations: 3, mode: "act", systemPrompt: "Read the attachment and answer.",
       }),
       interactive: false, source: "attachment-smoke",
     });

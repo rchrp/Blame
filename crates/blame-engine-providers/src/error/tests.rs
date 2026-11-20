@@ -137,8 +137,44 @@ fn http_replies_are_classified_by_status_code_and_wording() {
         (
             404,
             openai("model_not_found", "The model `gpt-9` does not exist."),
-            ErrorKind::InvalidRequest,
+            ErrorKind::ModelUnavailable,
         ),
+        (
+            404,
+            anthropic("not_found_error", "model: claude-next-9"),
+            ErrorKind::ModelUnavailable,
+        ),
+        (
+            404,
+            gemini(
+                404,
+                "NOT_FOUND",
+                "models/gemini-9 is not found for API version v1beta, or is not supported for generateContent.",
+            ),
+            ErrorKind::ModelUnavailable,
+        ),
+        (
+            400,
+            serde_json::json!({"error": {"code": 400, "message": "acme/next is not a valid model ID"}})
+                .to_string(),
+            ErrorKind::ModelUnavailable,
+        ),
+        (
+            403,
+            openai(
+                "model_not_found",
+                "Project `proj_1` does not have access to model `gpt-9`",
+            ),
+            ErrorKind::ModelUnavailable,
+        ),
+        (
+            400,
+            serde_json::json!({"detail": "The 'gpt-9' model is not supported when using Codex with a ChatGPT account."})
+                .to_string(),
+            ErrorKind::ModelUnavailable,
+        ),
+        // A wrong base URL is not a missing model.
+        (404, "404 page not found".to_owned(), ErrorKind::InvalidRequest),
         (408, String::new(), ErrorKind::Transport),
     ];
     for (status, body, expected) in table {

@@ -5,6 +5,8 @@ import {
   type Transcript,
 } from "@blame/engine-client/transcript"
 
+import type { EngineLocation } from "@blame/agent-runtime/engine-protocol"
+
 import { usePlatform } from "@/context/platform"
 
 export type EngineSessionView = {
@@ -21,7 +23,10 @@ export type EngineSessionView = {
  * conversation streaming right now and one reopened after a restart; the
  * renderer keeps nothing between loads.
  */
-export function useEngineSession(session: string | null | undefined): EngineSessionView {
+export function useEngineSession(
+  session: string | null | undefined,
+  location?: EngineLocation
+): EngineSessionView {
   const platform = usePlatform()
   const [view, setView] = React.useState<EngineSessionView & { session?: string }>({
     loaded: false,
@@ -40,7 +45,9 @@ export function useEngineSession(session: string | null | undefined): EngineSess
         setView({ loaded, session, transcript: reducer.snapshot() })
       })
     }
-    const stop = engine.follow(session, (event) => {
+    const stop = engine.follow(
+      session,
+      (event) => {
       applyFollowEvent(reducer, event)
       if (event.type === "state" && event.state === "live") loaded = true
       if (event.type === "state" && event.state === "stopped" && event.error) {
@@ -53,12 +60,14 @@ export function useEngineSession(session: string | null | undefined): EngineSess
         return
       }
       publish()
-    })
+      },
+      location
+    )
     return () => {
       if (frame !== undefined) cancelAnimationFrame(frame)
       stop()
     }
-  }, [platform.engine, session])
+  }, [location, platform.engine, session])
   // A view of another session is not this one's, even for a frame.
   return view.session === session ? view : { loaded: false, transcript: undefined }
 }

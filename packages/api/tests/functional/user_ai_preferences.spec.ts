@@ -49,7 +49,7 @@ test.group('user ai preferences', (group) => {
       .loginAs(user)
       .json({
         alternativeModel: {
-          providerId: 'google',
+          providerId: 'gemini',
           modelId: 'gemini-2.5-flash',
           credentialLabel: null,
           reasoningEffort: 'low',
@@ -64,7 +64,7 @@ test.group('user ai preferences', (group) => {
 
     response.assertStatus(200)
     const body = response.body() as PreferenceBody
-    assert.equal(body.data?.alternativeModel.providerId, 'google')
+    assert.equal(body.data?.alternativeModel.providerId, 'gemini')
     assert.equal(body.data?.agentModel.credentialLabel, 'Work')
 
     const stored = await UserAiPreference.findOrFail(user.id)
@@ -189,7 +189,7 @@ test.group('user ai preferences', (group) => {
       .loginAs(user)
       .json({
         alternativeModel: {
-          providerId: 'google',
+          providerId: 'gemini',
           modelId: 'gemini-2.5-flash',
           reasoningEffort: 'fast',
         },
@@ -210,7 +210,7 @@ function savePreference(client: ApiClient, user: User) {
     .loginAs(user)
     .json({
       alternativeModel: {
-        providerId: 'google',
+        providerId: 'gemini',
         modelId: 'gemini-2.5-flash',
         credentialLabel: null,
         reasoningEffort: 'low',

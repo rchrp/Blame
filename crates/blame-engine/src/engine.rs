@@ -6,13 +6,16 @@
 //! again from the log on demand, which costs a read of its records.
 
 use crate::connection::{ConnectionId, Host};
+use crate::context::HarnessContextPolicy;
 use crate::log::log;
 use crate::ports::{ClientApprover, ClientRemoteLog, ProviderRouter, RandomIds, RealClock};
 use crate::tools::{Harness, SessionTools, ToolShared};
 use blame_engine_checkpoint::{BLAME_WORKSPACE_EXCLUDES, GitCheckpointer};
 use blame_engine_core::ports::{Clock, IdSource, SessionStore, StoreError};
-use blame_engine_core::{EngineError, EngineOptions, NoContextEdits, Ports, Session};
+use blame_engine_core::{EngineError, EngineOptions, Ports, Session};
 use blame_engine_protocol::{RecordBody, Seq, SessionConfig, SessionId, UserBlock};
+use blame_engine_providers::Options;
+use blame_engine_providers::catalog::{LiveCatalog, RefreshOptions};
 use blame_engine_store::{Durability, SqliteStore, StoreOptions};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -34,12 +37,15 @@ pub struct Settings {
     /// How long a task kept on this machine only stays after its last
     /// record, to look into it; then it is deleted.
     pub task_retention: Duration,
+    /// Where the models.dev catalog is refreshed from.
+    pub catalog: RefreshOptions,
 }
 
 /// Default of [`Settings::task_retention`].
 pub const TASK_RETENTION: Duration = Duration::from_secs(3 * 24 * 60 * 60);
 
 pub struct Engine {
+    catalog: Arc<LiveCatalog>,
     store: SqliteStore,
     remote: bool,
     host: Arc<Host>,
@@ -111,14 +117,25 @@ impl Engine {
                 .await
                 .map_err(|error| format!("opening the store failed: {error}"))?
                 .map_err(|error| format!("opening the store failed: {error}"))?;
+        let catalog = Arc::new(LiveCatalog::open(
+            Some(data_dir.join("catalog")),
+            settings.catalog.clone(),
+        ));
+        let provider_options = Options {
+            catalog: catalog.clone(),
+            ..Options::default()
+        };
         let checkpointer = GitCheckpointer::new(data_dir.join("checkpoints"))
             .with_excludes(BLAME_WORKSPACE_EXCLUDES.iter().copied());
         let store_port: Arc<dyn SessionStore> = Arc::new(store.clone());
+        // Never waited for: a turn uses whatever copy is in place.
+        catalog.refresh_if_stale();
         let engine = Arc::new(Self {
+            catalog,
             remote: remote_log,
             ports: PortsTemplate {
                 store: store_port.clone(),
-                provider: Arc::new(ProviderRouter::new(host.clone(), Default::default())),
+                provider: Arc::new(ProviderRouter::new(host.clone(), provider_options)),
                 checkpointer: Arc::new(checkpointer),
                 approver: Arc::new(ClientApprover { host: host.clone() }),
                 clock,
@@ -150,6 +167,10 @@ impl Engine {
         Ok(engine)
     }
 
+    pub fn catalog(&self) -> &Arc<LiveCatalog> {
+        &self.catalog
+    }
+
     pub fn store(&self) -> &SqliteStore {
         &self.store
     }
@@ -176,7 +197,9 @@ impl Engine {
             approver: template.approver,
             clock: template.clock,
             ids: template.ids,
-            context_policy: Arc::new(NoContextEdits),
+            // Reads only harness results, so a session without the harness
+            // gets no edits but its image budget.
+            context_policy: Arc::new(HarnessContextPolicy),
         }
     }
 

@@ -11,7 +11,7 @@ import type {
   UsageTotals,
   UserItem,
 } from "@blame/engine-client/transcript"
-import { appProviderId } from "@blame/agent-runtime/engine-protocol"
+import type { ErrorKind } from "@blame/engine-client"
 
 import type {
   UserStoryAgentActivity,
@@ -33,7 +33,11 @@ export type TranscriptConversation = {
 
 export function transcriptConversation(
   transcript: Transcript,
-  author: string
+  author: string,
+  options: {
+    /** The first turn answers a brief shown elsewhere (a story's request), not a message. */
+    brief?: boolean
+  } = {}
 ): TranscriptConversation {
   const comments: AgentConversationComment[] = []
   const rewindTargets = new Map<string, { to: number; workspace: boolean }>()
@@ -46,8 +50,12 @@ export function transcriptConversation(
   }
   let checkpoints = 0
   const runs: AgentConversationRun[] = []
-  for (const turn of transcript.turns) {
-    if (turn.status === "rewound") continue
+  // A turn changed what lies between its snapshot and the next one's (the
+  // files now, for the last).
+  const snapshots = new Map(transcript.checkpoints.map((checkpoint) => [checkpoint.turn, checkpoint.snapshot]))
+  const kept = transcript.turns.filter((turn) => turn.status !== "rewound")
+  for (const [index, turn] of kept.entries()) {
+    const brief = options.brief && runs.length === 0
     const items = itemsByTurn.get(turn.turn) ?? []
     const opening = items.find(
       (item) => item.kind === "user" && item.delivery === "turn"
@@ -78,12 +86,18 @@ export function transcriptConversation(
       commentId: opening?.key ?? null,
       completedAt: turn.endedAtMs ? iso(turn.endedAtMs) : null,
       createdAt: iso(turn.startedAtMs),
+      diffStartRef: snapshots.get(turn.turn) ?? null,
+      diffEndRef: kept.slice(index + 1).map((next) => snapshots.get(next.turn)).find(Boolean) ?? null,
       finalResponse: final?.detail ?? null,
       id: turn.turn,
-      kind: "change-request",
+      kind: brief ? "initial" : "change-request",
       modelId: modelRef?.model ?? null,
-      providerId: modelRef ? appProviderId(modelRef.provider) : null,
-      reasoningEffort: transcript.config?.reasoning ?? null,
+      providerId: modelRef?.provider ?? null,
+      // The selector says "none" for what the engine calls "off".
+      reasoningEffort:
+        transcript.config?.reasoning === "off"
+          ? "none"
+          : (transcript.config?.reasoning ?? null),
       status: runStatus(turn),
       usage: agentUsage(turn.usage, transcript.usage.spent),
     })
@@ -116,6 +130,10 @@ function turnActivities(
   const activities: UserStoryAgentActivity[] = []
   for (const item of items) {
     const activity = itemActivity(item, transcript, author)
+    // The turn ends on the failure its request just showed: say it once.
+    const previous = activities.at(-1)
+    if (activity?.kind === "error" && previous?.kind === "error" && previous.detail === activity.detail)
+      continue
     if (activity) activities.push(activity)
   }
   if (transcript.live && transcript.runningTurn === turn.turn)
@@ -162,10 +180,10 @@ function itemActivity(
       }
     case "request_failed":
       if (item.retried) return undefined
-      return { ...base, kind: "error", title: "The model request failed", detail: item.error.message, status: "failed" }
+      return { ...base, kind: "error", title: errorTitle(item.error.kind), detail: item.error.message, status: "failed" }
     case "turn_ended":
       if (item.outcome.status === "failed")
-        return { ...base, kind: "error", title: "The agent stopped", detail: item.outcome.error.message, status: "failed" }
+        return { ...base, kind: "error", title: errorTitle(item.outcome.error.kind), detail: item.outcome.error.message, status: "failed" }
       if (item.outcome.status === "limit_reached")
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
       return undefined
@@ -174,7 +192,34 @@ function itemActivity(
   }
 }
 
+/** What went wrong, in a few words; the engine's message says the rest. */
+function errorTitle(kind: ErrorKind) {
+  switch (kind) {
+    case "model_unavailable":
+      return "Model not available"
+    case "authentication":
+      return "Sign-in refused"
+    case "billing":
+      return "Plan or credit limit reached"
+    case "rate_limited":
+      return "Rate limited"
+    case "overloaded":
+      return "Provider unavailable"
+    case "context_overflow":
+      return "Conversation too long for this model"
+    case "transport":
+    case "stalled":
+      return "Connection lost"
+    default:
+      return "The agent stopped"
+  }
+}
+
 function toolActivity(item: ToolCallItem, progress: string | undefined): UserStoryAgentActivity {
+  // Images of the result (screenshots) are engine blobs, by their sha256.
+  const images = (item.result ?? []).flatMap((block) =>
+    block.type === "image" ? [{ caption: item.name, id: block.blob.sha256 }] : []
+  )
   const running =
     item.state === "requested" || item.state === "running" || item.state === "awaiting_approval"
   const failed = !running && item.state !== "completed"
@@ -195,6 +240,7 @@ function toolActivity(item: ToolCallItem, progress: string | undefined): UserSto
     status: running ? "running" : failed ? "failed" : "completed",
     toolCallId: item.call,
     toolName: item.name,
+    ...(images.length ? { images } : {}),
   }
 }
 

@@ -231,9 +231,6 @@ importers:
       '@blame/harness-core':
         specifier: workspace:*
         version: link:../harness-core
-      '@blame/model-catalog':
-        specifier: workspace:*
-        version: link:../model-catalog
       '@blame/preview-contract':
         specifier: workspace:*
         version: link:../preview-contract
@@ -249,6 +246,9 @@ importers:
       '@cline/shared':
         specifier: 0.2.0
         version: 0.2.0
+      '@modelcontextprotocol/sdk':
+        specifier: 1.32.2
+        version: 1.32.2(supports-color@10.2.2)(zod@4.6.7)
       '@mozilla/readability':
         specifier: ^0.6.0
         version: 0.6.0
@@ -309,6 +309,9 @@ importers:
       write-file-atomic:
         specifier: 8.0.0
         version: 8.0.0
+      yaml:
+        specifier: 2.9.1
+        version: 2.9.1
       yarn:
         specifier: 1.22.22
         version: 1.22.22
@@ -376,18 +379,12 @@ importers:
       '@blame/deploy-contract':
         specifier: workspace:*
         version: link:../deploy-contract
-      '@blame/model-catalog':
-        specifier: workspace:*
-        version: link:../model-catalog
       '@blame/preview-contract':
         specifier: workspace:*
         version: link:../preview-contract
       '@blame/preview-runtime':
         specifier: workspace:*
         version: link:../preview-runtime
-      '@cline/llms':
-        specifier: 0.2.0
-        version: 0.2.0(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(@opentelemetry/exporter-trace-otlp-http@0.223.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.12.0(@opentelemetry/api@1.9.1))(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2)
       '@japa/api-client':
         specifier: ^3.2.1
         version: 3.2.1(@japa/assert@4.2.0(@japa/runner@5.4.0))(@japa/runner@5.4.0)(supports-color@10.2.2)
@@ -1018,21 +1015,6 @@ importers:
       three:
         specifier: ^0.186.1
         version: 0.186.1
-      typescript:
-        specifier: npm:@typescript/typescript6@6.0.2
-        version: '@typescript/typescript6@6.0.2'
-
-  packages/model-catalog:
-    devDependencies:
-      '@cline/shared':
-        specifier: 0.2.0
-        version: 0.2.0
-      '@types/node':
-        specifier: ^24.12.0
-        version: 24.12.4
-      '@typescript/native':
-        specifier: npm:typescript@7.0.2
-        version: typescript@7.0.2
       typescript:
         specifier: npm:@typescript/typescript6@6.0.2
         version: '@typescript/typescript6@6.0.2'

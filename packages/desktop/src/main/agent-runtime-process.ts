@@ -5,11 +5,11 @@ import {
 import {
   authorizeMcpOAuth,
   BlameAgentRuntime,
-  claudeCodeBridgeIdle,
   clearMcpOAuth,
   closeClaudeCodeSessions,
   executeLightWorkspaceRequest,
   listMcpOAuthStatuses,
+  mcpSettingsPath,
   type AgentEvent,
   type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
@@ -65,6 +65,7 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
   return new BlameAgentRuntime(
     { emit: (event) => events.push(serializableAgentEvent(event)) },
     {
+      mcpSettingsPath: mcpSettingsPath(),
       git: (cwd, args) => hostClient.request<string>("git", { args, cwd }),
       renderWebPage: (input) => hostRequest<{ url: string; html: string }>(hostClient, 'renderWebPage', input),
       openExternalUrl: (url) => {
@@ -203,37 +204,14 @@ function runtimeHandlers(runtime: BlameAgentRuntime) {
     "lightWorkspace.execute": (input: unknown) =>
       executeLightWorkspaceRequest(input as LightWorkspaceExecutionRequest),
     "runtime.prewarm": (input: unknown) => runtime.prewarm(input as never),
-    "runtime.idle": (input: unknown) =>
-      claudeCodeBridgeIdle(
-        (input as { busyElsewhere?: boolean } | undefined)?.busyElsewhere ===
-          true,
-      ),
     "claudeCode.closeSessions": (input: unknown) =>
       closeClaudeCodeSessions(input as string[]),
-    "approvals.resolve": (input) => runtime.approvals.resolve(input as never),
     shutdown: () => runtime.shutdown(),
   } satisfies Record<AgentRuntimeMethod, RuntimeHandler>;
 }
 
 function providerHandlers(runtime: BlameAgentRuntime) {
   return {
-    "providers.list": (input: unknown) =>
-      runtime.providers.list(input as never),
-    "providers.saveCredential": (input: unknown) => {
-      const [connection, credential] = input as [never, never];
-      return runtime.providers.saveCredential(connection, credential);
-    },
-    "providers.deleteCredential": (input: unknown) => {
-      const [connection, id] = input as [never, string];
-      return runtime.providers.deleteCredential(connection, id);
-    },
-    "providers.loginOAuth": (input: unknown) =>
-      runtime.providers.loginOAuth(input as never),
-    "providers.claudeCodeStatus": () => runtime.providers.claudeCodeStatus(),
-    "providers.connectClaudeCode": (input: unknown) =>
-      runtime.providers.connectClaudeCode(input as never),
-    "providers.subscriptionUsage": (input: unknown) =>
-      runtime.providers.subscriptionUsage(input as never),
   };
 }
 
@@ -285,26 +263,6 @@ function mcpAuthorizationUrl(value: string) {
 
 function sessionHandlers(runtime: BlameAgentRuntime) {
   return {
-    "sessions.start": (input: unknown) =>
-      runtime.sessions.start(input as never),
-    "sessions.startDevelopment": (input: unknown) =>
-      runtime.sessions.startDevelopment(input as never),
-    "sessions.send": (input: unknown) => runtime.sessions.send(input as never),
-    "sessions.sendDevelopment": (input: unknown) =>
-      runtime.sessions.sendDevelopment(input as never),
-    "sessions.abort": (input: unknown) =>
-      runtime.sessions.abort(input as string),
-    "sessions.compareCheckpoint": (input: unknown) =>
-      runtime.sessions.compareCheckpoint(input as never),
-    "sessions.list": () => runtime.sessions.list(),
-    "sessions.messages": (input: unknown) =>
-      runtime.sessions.messages(input as string),
-    "sessions.restoreCheckpoint": (input: unknown) =>
-      runtime.sessions.restoreCheckpoint(input as never),
-    "sessions.usage": (input: unknown) =>
-      runtime.sessions.usage(input as string),
-    "sessions.compact": (input: unknown) =>
-      runtime.sessions.compact(input as never),
     "sessions.releaseWorkspace": (input: unknown) =>
       runtime.sessions.releaseWorkspace(input as string),
   };

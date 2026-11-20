@@ -1,4 +1,5 @@
 import * as React from "react"
+import { EngineApprovalProvider } from "@/components/chat/engine/engine-approvals"
 import { ArrowLeftIcon, LightbulbIcon } from "lucide-react"
 
 import type { UserStoryFileAttachment } from "@/components/backlog/data/backlog-data"
@@ -72,111 +73,113 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
     focusComposer()
   }
   return (
-    <PlanningConversation
-      open
-      empty={empty}
-      label="Project planning conversation"
-      title={
-        <>
-          <LightbulbIcon className="size-4.5 text-muted-foreground" />
-          Plan your project
-        </>
-      }
-      description={`Choose the stack for ${wizard.projectName}.`}
-      onOpenAutoFocus={(event) => {
-        event.preventDefault()
-        focusComposer()
-      }}
-      onInteractOutside={(event) => event.preventDefault()}
-      actions={
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          onClick={wizard.goBack}
-        >
-          <ArrowLeftIcon />
-          Back
-        </Button>
-      }
-      footer={
-        <>
-          {plan.unavailableReason && (
-            <p role="status" className="text-xs text-muted-foreground">
-              {plan.unavailableReason}
-            </p>
-          )}
-          {plan.proposal && (
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                Your stack is ready. Refine it or continue to review.
+    <EngineApprovalProvider session={plan.session}>
+      <PlanningConversation
+        open
+        empty={empty}
+        label="Project planning conversation"
+        title={
+          <>
+            <LightbulbIcon className="size-4.5 text-muted-foreground" />
+            Plan your project
+          </>
+        }
+        description={`Choose the stack for ${wizard.projectName}.`}
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          focusComposer()
+        }}
+        onInteractOutside={(event) => event.preventDefault()}
+        actions={
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={wizard.goBack}
+          >
+            <ArrowLeftIcon />
+            Back
+          </Button>
+        }
+        footer={
+          <>
+            {plan.unavailableReason && (
+              <p role="status" className="text-xs text-muted-foreground">
+                {plan.unavailableReason}
               </p>
-              <Button type="button" size="sm" onClick={wizard.goNext}>
-                Review stack
-              </Button>
+            )}
+            {plan.proposal && (
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Your stack is ready. Refine it or continue to review.
+                </p>
+                <Button type="button" size="sm" onClick={wizard.goNext}>
+                  Review stack
+                </Button>
+              </div>
+            )}
+            <AgentConversationComposer
+              agentRunning={plan.pending}
+              fileAttachments={pendingFileAttachments(files)}
+              onFileAttachmentsReplace={(replacements) =>
+                setFiles((current) =>
+                  replaceFileAttachments(current, replacements)
+                )
+              }
+              onFileAttachmentsAdd={(next) =>
+                setFiles((current) => [...current, ...next])
+              }
+              onFileAttachmentRemove={(id) =>
+                setFiles((current) => current.filter((file) => file.id !== id))
+              }
+              disabled={Boolean(plan.unavailableReason)}
+              editorKey={editorKey}
+              editorRef={editorRef}
+              message={draft}
+              minHeight={empty ? "min-h-28" : "min-h-16"}
+              onAgentCancel={plan.stop}
+              onMessageChange={setDraft}
+              onMessageSubmit={submit}
+              placeholder={
+                empty
+                  ? "What do you want to build, and who is it for?"
+                  : "Answer a question or refine your stack…"
+              }
+              speechSessionKey="new-project-planning"
+              speechTarget={{
+                draftKey: "new-project-planning",
+                label: "your project",
+              }}
+              submitLabel="Send"
+              toolbarEnd={<ModelSelector role="agent" />}
+            />
+          </>
+        }
+      >
+        {empty ? (
+          <div className="grid place-items-center gap-3 pb-8 text-center">
+            <LightbulbIcon className="size-7 text-muted-foreground" />
+            <div className="grid max-w-md gap-2">
+              <h2 className="font-heading text-xl font-semibold">
+                What do you want to build?
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Describe your idea, who will use it, and what it needs to do.
+                Your agent will clarify the details and choose a stack from
+                Blame’s supported options.
+              </p>
             </div>
-          )}
-          <AgentConversationComposer
-            agentRunning={plan.pending}
-            fileAttachments={pendingFileAttachments(files)}
-            onFileAttachmentsReplace={(replacements) =>
-              setFiles((current) =>
-                replaceFileAttachments(current, replacements)
-              )
-            }
-            onFileAttachmentsAdd={(next) =>
-              setFiles((current) => [...current, ...next])
-            }
-            onFileAttachmentRemove={(id) =>
-              setFiles((current) => current.filter((file) => file.id !== id))
-            }
-            disabled={Boolean(plan.unavailableReason)}
-            editorKey={editorKey}
-            editorRef={editorRef}
-            message={draft}
-            minHeight={empty ? "min-h-28" : "min-h-16"}
-            onAgentCancel={plan.stop}
-            onMessageChange={setDraft}
-            onMessageSubmit={submit}
-            placeholder={
-              empty
-                ? "What do you want to build, and who is it for?"
-                : "Answer a question or refine your stack…"
-            }
-            speechSessionKey="new-project-planning"
-            speechTarget={{
-              draftKey: "new-project-planning",
-              label: "your project",
-            }}
-            submitLabel="Send"
-            toolbarEnd={<ModelSelector role="agent" />}
-          />
-        </>
-      }
-    >
-      {empty ? (
-        <div className="grid place-items-center gap-3 pb-8 text-center">
-          <LightbulbIcon className="size-7 text-muted-foreground" />
-          <div className="grid max-w-md gap-2">
-            <h2 className="font-heading text-xl font-semibold">
-              What do you want to build?
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Describe your idea, who will use it, and what it needs to do. Your
-              agent will clarify the details and choose a stack from Blame’s
-              supported options.
-            </p>
           </div>
-        </div>
-      ) : (
-        <ProposalHostProvider cards={stackCards}>
-          <AgentConversationTimeline
-            comments={comments}
-            responseHeader={responseHeader}
-            runs={runs}
-          />
-        </ProposalHostProvider>
-      )}
-    </PlanningConversation>
+        ) : (
+          <ProposalHostProvider cards={stackCards}>
+            <AgentConversationTimeline
+              comments={comments}
+              responseHeader={responseHeader}
+              runs={runs}
+            />
+          </ProposalHostProvider>
+        )}
+      </PlanningConversation>
+    </EngineApprovalProvider>
   )
 }

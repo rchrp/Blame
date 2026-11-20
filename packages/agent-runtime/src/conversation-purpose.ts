@@ -3,8 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import type { AgentTool } from "./cline-initialization.js";
+import { clineTool } from "./cline-client-tools.js";
+import { storyProposalTool } from "./engine/tools/story-proposal.js";
 import { projectStackProposalTool } from "./new-project-planning.js";
-import { storyProposalTool } from "./story-proposal-tool.js";
 import type { StartDevelopmentSessionInput } from "./types.js";
 
 // Plan mode and the new-project assistant are ordinary development sessions:
@@ -58,7 +59,7 @@ export function conversationSessionOptions(
   if (input.purpose === "new-project")
     return {
       checkpointEnabled: false,
-      conversationTools: [projectStackProposalTool()],
+      conversationTools: [clineTool(projectStackProposalTool())],
       toolFilter: (name) => newProjectTools.has(name),
     };
   return {
@@ -68,6 +69,6 @@ export function conversationSessionOptions(
           toolFilter: (name: string) => !planModeExcludedTools.has(name),
         }
       : { checkpointEnabled: input.checkpointEnabled }),
-    conversationTools: input.projectId ? [storyProposalTool()] : [],
+    conversationTools: input.projectId ? [clineTool(storyProposalTool())] : [],
   };
 }

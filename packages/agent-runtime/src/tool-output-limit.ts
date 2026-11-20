@@ -27,6 +27,11 @@ export const toolOutputLimits = {
     characters: 40_000,
     more: "Narrow the call: page lists with perPage and page, or read one file, issue or job.",
   },
+  /** A result of one of the user's own MCP servers. */
+  userMcp: {
+    characters: 40_000,
+    more: "Ask the tool for less, such as one page, item or file.",
+  },
   /** Preview container stdout: the latest lines matter. */
   previewLogStdout: {
     characters: 24_000,

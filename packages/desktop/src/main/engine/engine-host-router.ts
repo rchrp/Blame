@@ -2,6 +2,7 @@ import type {
   EngineHostEvent,
   EngineHostInput,
   EngineHostMethod,
+  EngineSessionSettings,
 } from "@blame/agent-runtime/engine-protocol";
 
 /** A window that talks to the engine (a WebContents, in the app). */
@@ -24,6 +25,11 @@ export class EngineHostRouter {
   >();
   private readonly viewers = new Map<number, EngineViewer>();
   private connection: EngineHostInput<"connect"> | undefined;
+  // Where each session works, from the settings its calls carry, and which
+  // sessions have a turn running: the rest of the app keeps a preview up and
+  // does not merge into a folder an agent is writing.
+  private readonly workspaces = new Map<string, string>();
+  private readonly running = new Set<string>();
 
   /** Notes what a call means for routing; false when the window may not make it. */
   observe<M extends EngineHostMethod>(
@@ -41,10 +47,37 @@ export class EngineHostRouter {
     }
     if (method === "unfollow")
       this.follows.delete((input as EngineHostInput<"unfollow">).subscription);
+    if (method === "createSession" || method === "configure" || method === "send") {
+      const call = input as { session: string; settings?: unknown } & Partial<EngineSessionSettings>;
+      const settings = (method === "send" ? call.settings : call) as EngineSessionSettings | undefined;
+      const root = settings ? sessionWorkspace(settings) : undefined;
+      if (root) this.workspaces.set(call.session, root);
+    }
     return true;
   }
 
+  /** The API connection the windows last gave the host. */
+  api() {
+    return this.connection?.api ?? undefined;
+  }
+
+  hostStopped() {
+    this.running.clear();
+  }
+
+  /** The folders a running engine turn is writing in. */
+  activeWorkspaces(): string[] {
+    return [...this.running].flatMap((session) => {
+      const root = this.workspaces.get(session);
+      return root ? [root] : [];
+    });
+  }
+
   route(event: EngineHostEvent) {
+    if (event.type === "activity") {
+      if (event.running) this.running.add(event.session);
+      else this.running.delete(event.session);
+    }
     if (event.type === "follow") {
       const follow = this.follows.get(event.subscription);
       if (follow && !follow.viewer.isDestroyed())
@@ -83,5 +116,18 @@ export class EngineHostRouter {
         input: { session, subscription },
       })),
     ];
+  }
+}
+
+function sessionWorkspace(settings: EngineSessionSettings) {
+  switch (settings.purpose) {
+    case "quick-chat":
+      return settings.settings.workspaceRoot;
+    case "development-story":
+    case "plan":
+      return settings.settings.workspace.root;
+    default:
+      // The new-project assistant works in a scratch folder of its own.
+      return undefined;
   }
 }

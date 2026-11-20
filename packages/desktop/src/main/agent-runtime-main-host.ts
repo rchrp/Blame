@@ -1,53 +1,23 @@
-import { ensureLocalPreviewAwake } from "./preview-runtime/local/local-preview-hibernation.ts";
-import { hostGitCommand } from "./host-git.ts";
-import { agentSurfaceInfo, agentSurfaceCall } from "./preview-surfaces/surface-agent.ts";
 import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import { shell } from "electron";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
 import type { AgentHostMethod } from "./agent-runtime-process-protocol.ts";
-import {
-  agentPreviewPageState,
-  holdAgentPreviewBrowser,
-  openPreviewDevtoolsEndpoint,
-  reloadPreviewBrowserForScope,
-} from "./preview-browser-ipc.ts";
-import {
-  agentScreenshotStore,
-  storePreviewDevtoolsScreenshots,
-} from "./agent-screenshots/agent-screenshots-service.ts";
-import {
-  previewDevtoolsService,
-  type PreviewDevtoolsService,
-} from "./preview-runtime/preview-devtools-service.ts";
+import { reloadPreviewBrowserForScope } from "./preview-browser-ipc.ts";
 import { PreviewHarnessService } from "./preview-runtime/preview-harness-service.ts";
-import { previewLogService } from "./preview-runtime/preview-log-service.ts";
 import type { PreviewService } from "./preview-runtime/preview-service.ts";
 import { runtimeAgentClient, runtimeAgentSupported } from "./runtime-agent.ts";
 import { lightWorkspaceExecutionTarget } from "./light-workspace-routing.ts";
 import { agentHeavyChecks } from "./agent-heavy-checks.ts";
 import { sessionCommandCredentials, withSessionCommandCredentials } from "./github-access/agent-github-access.ts";
-import { githubMcpService } from "./github-access/github-mcp-service.ts";
 import {
-  ensureRuntimeGitUserIdentity,
-  getRuntimeGitIdentity,
-  run as runRuntime,
-  runtimeManagedPath,
-} from "./workspace-runtime.ts";
-
-const execFileAsync = promisify(execFile);
+  engineDesktopServices,
+  type EngineDesktopHandlers,
+} from "./engine/engine-desktop-services.ts";
 
 export function createAgentHostRequestHandler(previews: PreviewService) {
   const harness = new PreviewHarnessService(previews);
+  const desktop = engineDesktopServices(previews, harness);
   return (method: AgentHostMethod, input: unknown, signal: AbortSignal) =>
-    handleAgentHostRequest(
-      method,
-      input,
-      signal,
-      harness,
-      previewDevtoolsService,
-      previews,
-    );
+    handleAgentHostRequest(method, input, signal, harness, desktop, previews);
 }
 
 async function handleAgentHostRequest(
@@ -55,34 +25,13 @@ async function handleAgentHostRequest(
   input: unknown,
   signal: AbortSignal,
   harness: PreviewHarnessService,
-  devtools: PreviewDevtoolsService,
+  desktop: EngineDesktopHandlers,
   previews: PreviewService,
 ) {
-  await wakeAgentPreview(method, input);
-  if (method === "previewSurfaceInfo") return agentSurfaceInfo(input as never, previews);
-  if (method === "previewSurfaceCall") return agentSurfaceCall(input as never, previews, signal);
-  if (method === 'renderWebPage') {
-    const { renderResearchPage } = await import('./web-research-browser.ts');
-    return renderResearchPage(String(recordInput(input).url ?? ''), signal);
-  }
-  if (method === "git") return agentGit(input);
+  // The services the engine's tools use too (engine-desktop-services.ts).
+  if (method in desktop)
+    return desktop[method as keyof EngineDesktopHandlers](input as never, signal);
   if (method === "openExternalUrl") return openAgentExternalUrl(input);
-  if (method === "previewDevtools") {
-    return previewDevtoolsTarget(input, signal, harness, devtools);
-  }
-  if (method === "previewDevtoolsTools") return devtools.listTools();
-  if (method === "previewDevtoolsCall") {
-    return previewDevtoolsCall(input, signal, harness, devtools);
-  }
-  if (method === "previewScreenshotKnown") return previewScreenshotKnown(input);
-  if (method === "previewContainerLogs") {
-    return previewContainerLogs(input, signal, harness);
-  }
-  if (method === "previewEnvironment") {
-    const { agentPreviewEnvironment } =
-      await import("./preview-environment/agent-environment.ts");
-    return agentPreviewEnvironment(input);
-  }
   if (method === "refreshPreviewDependencies") {
     return refreshPreviewDependencies(input, signal, harness, previews);
   }
@@ -95,28 +44,7 @@ async function handleAgentHostRequest(
   }
   if (method === "commandCredentials")
     return sessionCommandCredentials(recordInput(input).sessionId);
-  if (method === "projectApp") return agentProjectApp(input, signal);
-  if (method === "githubMcpTools")
-    return githubMcpService.listTools(optionalText(recordInput(input).sessionId));
-  if (method === "githubMcpCall") return githubMcpCall(input, signal);
-  if (method === "componentPreview") {
-    const { componentPreviewHostRequest } =
-      await import("./component-preview/component-preview-agent.ts");
-    return componentPreviewHostRequest(input, signal, previews);
-  }
   throw new Error(`Unsupported agent host method: ${method}`);
-}
-
-// A surface or component preview of a hibernated local preview wakes it and
-// waits until it answers; the devtools and log tools wake it through the
-// harness.
-async function wakeAgentPreview(method: AgentHostMethod, input: unknown) {
-  if (method !== "previewSurfaceCall" && method !== "componentPreview") return;
-  const request = recordInput(input);
-  const worktree = optionalText(request.worktree);
-  if (!worktree || request.action === "stop") return;
-  if (request.workspaceMode === "cloud-mirror" || request.workspaceMode === "direct") return;
-  await ensureLocalPreviewAwake(worktree, `the agent's ${method}`);
 }
 
 // The agent process removes a temporary copy itself once its scan is done.
@@ -125,20 +53,6 @@ async function agentProjectScanRoot(input: unknown) {
   const { projectScanRoot } = await import("./runtime-workspace-mirror.ts");
   const { root, temporary } = await projectScanRoot(workspace);
   return { root, temporary };
-}
-
-// A story working in the project folder checks or starts the project's
-// app through the same runner as the user's header controls.
-async function agentProjectApp(input: unknown, signal: AbortSignal) {
-  const request = recordInput(input);
-  const { projectAppForAgent } = await import("./ipc/project-app-ipc.ts");
-  return projectAppForAgent(
-    {
-      action: request.action === "start" ? "start" : "status",
-      projectPath: String(request.worktree ?? ""),
-    },
-    signal,
-  );
 }
 
 async function applyPreviewInitialization(input: unknown) {
@@ -218,99 +132,6 @@ function dependencyPreviewRuntimeReady(
   );
 }
 
-// The agent's browser and its DevTools connection open on the first
-// preview_devtools__* call, not when readiness is inspected.
-async function previewDevtoolsTarget(
-  input: unknown,
-  signal: AbortSignal,
-  harness: PreviewHarnessService,
-  devtools: PreviewDevtoolsService,
-) {
-  const request = recordInput(input);
-  const target = await harness.target({ ...request, signal } as never);
-  if (!target.available) devtools.disposeScope(String(request.scope ?? ""));
-  return target;
-}
-
-async function previewContainerLogs(
-  input: unknown,
-  signal: AbortSignal,
-  harness: PreviewHarnessService,
-) {
-  const request = { ...recordInput(input), signal } as never;
-  const preview = await harness.inspect(request);
-  const logs = await previewLogService.read(request, preview);
-  // The agent reads the logs: the preview's secret values stay out.
-  const { redactForWorktree } =
-    await import("./preview-environment/secret-redaction.ts");
-  const worktree = String(recordInput(input).worktree ?? "");
-  return worktree ? redactForWorktree(worktree, logs) : logs;
-}
-
-async function previewDevtoolsCall(
-  input: unknown,
-  signal: AbortSignal,
-  harness: PreviewHarnessService,
-  devtools: PreviewDevtoolsService,
-) {
-  const request = recordInput(input);
-  const preview = await harness.inspect({ ...request, signal } as never);
-  if (!preview.available || !preview.currentUrl) {
-    devtools.disposeScope(String(request.scope ?? ""));
-    return unavailablePreviewDevtoolsResult(preview);
-  }
-  const scope = String(request.scope ?? "");
-  const sessionId = optionalText(request.sessionId);
-  if (sessionId && scope.trim())
-    holdAgentPreviewBrowser(scope.trim(), sessionId);
-  const result = await devtools.call({
-    arguments: recordInput(request.arguments),
-    currentUrl: preview.currentUrl,
-    openEndpoint: () => openPreviewDevtoolsEndpoint({ scope }),
-    pageIdentity: preview.id,
-    previewOrigin: preview.previewOrigin,
-    scope,
-    signal,
-    toolName: String(request.toolName ?? ""),
-    worktree: String(request.worktree ?? ""),
-  });
-  return storePreviewDevtoolsScreenshots(result, {
-    page: await agentPreviewPageState(scope),
-    runId: optionalText(request.runId),
-    scope,
-    sessionId: optionalText(request.sessionId),
-    toolCallId: optionalText(request.toolCallId),
-  });
-}
-
-// A screenshot belongs to the conversation when it was taken in the same
-// session or for the same preview scope.
-async function previewScreenshotKnown(input: unknown) {
-  const request = recordInput(input);
-  const id = optionalText(request.id);
-  if (!id) return false;
-  const metadata = await agentScreenshotStore().metadata(id);
-  if (!metadata) return false;
-  const sessionId = optionalText(request.sessionId);
-  const scope = optionalText(request.scope);
-  return (
-    (Boolean(sessionId) && metadata.sessionId === sessionId) ||
-    (Boolean(scope) && metadata.scope === scope)
-  );
-}
-
-function unavailablePreviewDevtoolsResult(preview: {
-  message: string;
-  reason: string;
-  status: string;
-}) {
-  return {
-    content: [{ type: "text", text: `${preview.message} (${preview.reason})` }],
-    isError: true,
-    structuredContent: { preview },
-  };
-}
-
 async function agentLightWorkspace(input: unknown, signal: AbortSignal) {
   const request = input as LightWorkspaceExecutionRequest;
   if (
@@ -328,69 +149,6 @@ async function agentLightWorkspace(input: unknown, signal: AbortSignal) {
       signal,
     ),
   );
-}
-// The agent process names the session; the desktop holds its token.
-function githubMcpCall(input: unknown, signal: AbortSignal) {
-  const request = recordInput(input);
-  const toolName = optionalText(request.toolName);
-  if (!toolName) throw new Error("Invalid GitHub MCP request");
-  const argumentsValue = request.arguments;
-  return githubMcpService.call({
-    arguments:
-      argumentsValue && typeof argumentsValue === "object" && !Array.isArray(argumentsValue)
-        ? (argumentsValue as Record<string, unknown>)
-        : undefined,
-    sessionId: optionalText(request.sessionId),
-    signal,
-    toolName,
-  });
-}
-
-export async function agentGit(input: unknown) {
-  const request = recordInput(input);
-  const cwd = request.cwd;
-  const args = request.args;
-  if (typeof cwd !== "string" || !stringArray(args)) {
-    throw new Error("Invalid agent Git request");
-  }
-  if (runtimeManagedPath(cwd)) return runtimeManagedGit(cwd, args);
-  const { stdout } = await execFileAsync(hostGitCommand(), args, {
-    cwd,
-    maxBuffer: 20 * 1024 * 1024,
-  });
-  return stdout;
-}
-
-async function runtimeManagedGit(cwd: string, args: string[]) {
-  await ensureRuntimeGitUserIdentity();
-  const { name, email } = getRuntimeGitIdentity();
-  const { stdout } = await runRuntime("git", args, {
-    cwd,
-    env: runtimeGitEnvironment(name, email),
-  });
-  return stdout;
-}
-
-function runtimeGitEnvironment(name?: string, email?: string) {
-  return {
-    ...process.env,
-    ...gitIdentityEnvironment(name, email),
-    GIT_TERMINAL_PROMPT: "0",
-    GIT_SSH_COMMAND: gitSshCommand(),
-  };
-}
-
-function gitIdentityEnvironment(name?: string, email?: string) {
-  return {
-    ...(name ? { GIT_AUTHOR_NAME: name, GIT_COMMITTER_NAME: name } : {}),
-    ...(email ? { GIT_AUTHOR_EMAIL: email, GIT_COMMITTER_EMAIL: email } : {}),
-  };
-}
-
-function gitSshCommand() {
-  return process.platform === "win32"
-    ? "ssh.exe -o BatchMode=yes -o StrictHostKeyChecking=no"
-    : "ssh -o BatchMode=yes -o StrictHostKeyChecking=no";
 }
 
 function openAgentExternalUrl(input: unknown) {
@@ -411,16 +169,4 @@ function openAgentExternalUrl(input: unknown) {
 function recordInput(input: unknown): Record<string, unknown> {
   if (!input || typeof input !== "object") return {};
   return input as Record<string, unknown>;
-}
-
-function optionalText(value: unknown) {
-  return typeof value === "string" && value && value.length <= 512
-    ? value
-    : undefined;
-}
-
-function stringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) && value.every((item) => typeof item === "string")
-  );
 }

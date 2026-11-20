@@ -35,7 +35,7 @@ export type DirectStoryCommitResult =
     }
 
 export async function commitDirectStory(
-  story: Pick<UserStory, "agentRuns" | "clineSessionId">,
+  story: Pick<UserStory, "engineSessionId">,
   root: string,
   dependencies: DirectStoryCommitDependencies
 ): Promise<DirectStoryCommitResult> {
@@ -101,15 +101,10 @@ export function directCommitMessageRequest(
   }
 }
 
-// Every agent session of the story: its runs, and the one it ends with.
-export function storySessionIds(
-  story: Pick<UserStory, "agentRuns" | "clineSessionId">
-) {
-  const ids = [
-    ...(story.agentRuns ?? []).map((run) => run.clineSessionId),
-    story.clineSessionId,
-  ]
-  return [...new Set(ids.filter((id): id is string => Boolean(id)))]
+// The harness journals each write under the engine session that made it;
+// a story has one session for its whole life, rewinds included.
+export function storySessionIds(story: Pick<UserStory, "engineSessionId">) {
+  return story.engineSessionId ? [story.engineSessionId] : []
 }
 
 async function filesToCommit(

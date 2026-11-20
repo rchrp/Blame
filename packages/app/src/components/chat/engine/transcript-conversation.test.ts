@@ -86,7 +86,7 @@ test("each turn is the person's message and what the agent did for it", () => {
   const [first, second] = result.runs
   assert.equal(first!.status, "completed")
   assert.equal(first!.commentId, result.comments[0]!.id)
-  assert.equal(first!.providerId, "openai-codex", "the app's provider id")
+  assert.equal(first!.providerId, "chatgpt", "the engine's id, the app's too")
   assert.equal(first!.finalResponse, "Found it.")
   const tool = first!.activities!.find((activity) => activity.kind === "tool")!
   assert.equal(tool.toolName, "search_web")
@@ -151,4 +151,22 @@ test("a failed turn ends on its error", () => {
   const error = result.runs[0]!.activities!.at(-1)!
   assert.equal(error.kind, "error")
   assert.equal(error.detail, "Sign in to ChatGPT again.")
+})
+
+test("a model the provider refuses says so once, in the engine's words", () => {
+  seq = 0
+  const message =
+    "Anthropic does not offer the model `claude-brand-new-1`. It answered: \"model: claude-brand-new-1 (HTTP 404)\". Choose another model and send your message again."
+  const error = { kind: "model_unavailable", message }
+  const result = conversation([
+    record({ type: "session_created", config }),
+    record({ type: "user_message", turn: "t1", input: [{ type: "text", text: "go" }], delivery: "turn" }),
+    record({ type: "request_started", turn: "t1", request: "r1", model, attempt: 1, prefix_digest: "d" }),
+    record({ type: "request_failed", turn: "t1", request: "r1", error }),
+    record({ type: "turn_ended", turn: "t1", outcome: { status: "failed", error } }),
+  ])
+  const errors = result.runs[0]!.activities!.filter((activity) => activity.kind === "error")
+  assert.equal(errors.length, 1)
+  assert.equal(errors[0]!.title, "Model not available")
+  assert.equal(errors[0]!.detail, message)
 })

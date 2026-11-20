@@ -10,14 +10,7 @@ import {
   type SharedFilesChoice,
 } from "./direct-story-commit.ts"
 
-const story = {
-  agentRuns: [
-    { clineSessionId: "run-1" },
-    { clineSessionId: "run-2" },
-    { clineSessionId: null },
-  ],
-  clineSessionId: "run-2",
-} as never
+const story = { engineSessionId: "session-1" } as never
 
 function fakes(
   files: { path: string; shared: boolean }[],
@@ -71,7 +64,7 @@ test("commits the story's own files without asking, with a message about them", 
   assert.deepEqual(calls, [
     [
       "directStoryFiles",
-      { root: "/project", sessionIds: ["run-1", "run-2"] },
+      { root: "/project", sessionIds: ["session-1"] },
     ],
     ["generateMessage", ["a.ts", "b.ts"]],
     [
@@ -170,8 +163,8 @@ test("asks for a message that closes the GitHub issues the story handles", () =>
   )
 })
 
-test("collects each session of the story once", () => {
-  assert.deepEqual(storySessionIds(story), ["run-1", "run-2"])
+test("reads the story's writes from its engine session", () => {
+  assert.deepEqual(storySessionIds(story), ["session-1"])
   assert.deepEqual(storySessionIds({} as never), [])
 })
 

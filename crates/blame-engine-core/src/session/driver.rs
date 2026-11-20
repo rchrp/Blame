@@ -296,10 +296,17 @@ async fn send_request(
             .cloned()
             .ok_or_else(|| EngineError::InvalidLog("no configuration".into()))?;
         let specs = inner.specs_locked(&mut core, &config).await;
-        let edits = inner
-            .ports
-            .context_policy
-            .edits(&View::new(&core.records), &specs);
+        // The policy is asked only when the prefix may change anyway: before
+        // a new request, or before the retry that follows a compaction. A
+        // plain retry sends the bytes of the attempt it repeats, so the
+        // provider's cache written by that attempt (if any) still serves it.
+        let view = View::new(&core.records);
+        let edits = if request.is_none() || compacted_since_last_request(&view) {
+            inner.ports.context_policy.edits(&view, &specs)
+        } else {
+            Vec::new()
+        };
+        drop(view);
         if !edits.is_empty() {
             inner
                 .append_locked(&mut core, vec![RecordBody::ContextEdited { edits }])
@@ -382,4 +389,16 @@ async fn send_request(
     };
     inner.append(vec![body]).await?;
     Ok(())
+}
+
+/// A compaction is stored after the last request was sent.
+fn compacted_since_last_request(view: &View<'_>) -> bool {
+    for item in view.items().iter().rev() {
+        match item.record().map(|record| &record.body) {
+            Some(RecordBody::RequestStarted { .. }) => return false,
+            Some(RecordBody::ContextCompacted { .. }) => return true,
+            _ => {}
+        }
+    }
+    false
 }

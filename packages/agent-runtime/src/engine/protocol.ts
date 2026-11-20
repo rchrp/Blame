@@ -14,19 +14,35 @@ import type {
 import type { AgentPersonalization } from "../personalization.js";
 import type {
   ApiConnection,
+  ClaudeCodeStatus,
   ProjectCodePracticePreference,
+  ProviderCredentialSummary,
+  ProviderListResponse,
   ReasoningSelection,
+  SaveProviderCredentialInput,
+  SubscriptionUsage,
 } from "../types.js";
 import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
 
 export type * from "./task-protocol.js";
+import type { DesktopServiceMethods } from "./desktop-services.js";
+import type { PreviewInitialization } from "../preview-selection.js";
 
 /** What a conversation is for; each has its own config builder in the host. */
-export type EnginePurpose = "quick-chat";
+export type EnginePurpose = EngineSessionSettings["purpose"];
 
-/** The model a conversation uses, in the app's ids (the API's provider ids). */
+/**
+ * Where a workspace lives, which decides the engine that works on it: the
+ * one on this computer, or (later) one inside the Blame Runtime VM.
+ */
+export type EngineLocation = "host" | "vm";
+
+/** A workspace as the renderer names it; the host picks the engine for it. */
+export type EngineWorkspace = { root: string; location: EngineLocation };
+
+/** The model a conversation uses. */
 export type EngineModelChoice = {
-  /** The app's provider id, e.g. `openai-codex` (see `engineProviderId`). */
+  /** The engine's provider id, e.g. `chatgpt`: the one the whole app uses. */
   providerId: string;
   modelId: string;
   /** Which of the user's credentials for this provider, when they have several. */
@@ -46,9 +62,77 @@ export type QuickChatSettings = {
   codePractices?: ProjectCodePracticePreference[];
 };
 
-export type EngineSessionSettings = {
-  purpose: "quick-chat";
-  settings: QuickChatSettings;
+/** How a story's worktree is run (`UserStory.workspaceMode`). */
+export type StoryWorkspaceMode = "direct" | "local-container" | "cloud-mirror";
+
+/** What the renderer decides about a development story's agent. */
+export type DevelopmentStorySettings = {
+  workspace: EngineWorkspace;
+  workspaceMode: StoryWorkspaceMode;
+  projectId: string;
+  storyId: string;
+  /** The story's title, shown to the agent with its first message. */
+  title: string;
+  model: EngineModelChoice;
+  maxContextTokens?: number;
+  personalization?: Partial<AgentPersonalization>;
+  codePractices?: ProjectCodePracticePreference[];
+  /** The story's managed preview, when it has one (its devtools scope). */
+  previewDevtoolsScope?: string;
+  /**
+   * The project's saved preview environment, which decides the story's
+   * preview tools (its surface and manifest).
+   */
+  projectInitialization?: PreviewInitialization;
+};
+
+/** Plan mode: an agent that reads the project and proposes stories. */
+export type PlanSettings = {
+  workspace: EngineWorkspace;
+  projectId: string;
+  model: EngineModelChoice;
+  maxContextTokens?: number;
+  personalization?: Partial<AgentPersonalization>;
+};
+
+/**
+ * The new-project assistant: it helps pick a stack, in a scratch folder the
+ * host makes for the conversation (there is no project yet).
+ */
+export type NewProjectSettings = {
+  /** The project's working name. */
+  title: string;
+  model: EngineModelChoice;
+  personalization?: Partial<AgentPersonalization>;
+};
+
+export type EngineSessionSettings =
+  | { purpose: "quick-chat"; settings: QuickChatSettings }
+  | { purpose: "development-story"; settings: DevelopmentStorySettings }
+  | { purpose: "plan"; settings: PlanSettings }
+  | { purpose: "new-project"; settings: NewProjectSettings };
+
+/** Where a session's engine is, for calls that name only the session (default: this computer). */
+export type EngineSessionRef = {
+  session: SessionId;
+  location?: EngineLocation;
+};
+
+/** A session as its records say, without following it. */
+export type EngineSessionStatus = {
+  session: SessionId;
+  /** The engine has the session (on this computer or in Blame's database). */
+  exists: boolean;
+  running: boolean;
+  /** How its last turn ended, when one did. */
+  lastOutcome?: TurnOutcome;
+  /**
+   * What the agent said its last finished turn did: the summary it handed
+   * finish_task, or else its last text. A pull request describes the story
+   * with it.
+   */
+  lastReply?: string;
+  turns: number;
 };
 
 /** One file the person attached to a message, as the renderer read it. */
@@ -76,8 +160,7 @@ export type EngineHostMethods = {
     result: { changed: boolean };
   };
   send: {
-    input: {
-      session: SessionId;
+    input: EngineSessionRef & {
       message: EngineMessage;
       delivery: "turn" | "steer";
       /**
@@ -88,25 +171,56 @@ export type EngineHostMethods = {
     };
     result: { turn: string; started: boolean };
   };
-  interrupt: { input: { session: SessionId }; result: null };
-  compact: { input: { session: SessionId }; result: null };
+  interrupt: { input: EngineSessionRef; result: null };
+  compact: { input: EngineSessionRef; result: null };
   rewind: {
-    input: { session: SessionId; to: Seq; restoreWorkspace: boolean };
+    input: EngineSessionRef & { to: Seq; restoreWorkspace: boolean };
     result: { finished: Seq };
   };
-  undoRewind: { input: { session: SessionId }; result: null };
+  undoRewind: { input: EngineSessionRef; result: null };
   resolveApproval: {
-    input: {
-      session: SessionId;
+    input: EngineSessionRef & {
       call: ToolCallId;
       decision: "approved" | "denied";
     };
     result: boolean;
   };
   /** The caller names the subscription, so it can follow again after a host restart. */
-  follow: { input: { session: SessionId; subscription: string }; result: null };
+  follow: {
+    input: EngineSessionRef & { subscription: string };
+    result: null;
+  };
   unfollow: { input: { subscription: string }; result: null };
   running: { input: undefined; result: SessionId[] };
+  /** Where each session stands, from its records (recovery after a quit). */
+  status: {
+    input: { sessions: SessionId[]; location?: EngineLocation };
+    result: EngineSessionStatus[];
+  };
+  /**
+   * The providers and models to offer (the engine's models.dev catalog) with
+   * the person's credentials; `refresh` asks models.dev first.
+   */
+  providers: { input: { refresh?: boolean }; result: ProviderListResponse };
+  saveCredential: {
+    input: SaveProviderCredentialInput;
+    result: ProviderCredentialSummary;
+  };
+  deleteCredential: { input: { id: string }; result: null };
+  /** The ChatGPT sign-in in the browser, kept in the API. */
+  signInChatGpt: {
+    input: { label?: string };
+    result: ProviderCredentialSummary;
+  };
+  claudeCodeStatus: { input: undefined; result: ClaudeCodeStatus };
+  connectClaudeCode: {
+    input: { label?: string };
+    result: { credential: ProviderCredentialSummary; status: ClaudeCodeStatus };
+  };
+  planUsage: {
+    input: { providerId: string; credentialLabel?: string };
+    result: SubscriptionUsage | null;
+  };
   shutdown: { input: undefined; result: null };
 } & EngineTaskMethods;
 
@@ -129,7 +243,15 @@ export const engineHostMethods = [
   "follow",
   "unfollow",
   "running",
+  "providers",
+  "saveCredential",
+  "deleteCredential",
+  "signInChatGpt",
+  "claudeCodeStatus",
+  "connectClaudeCode",
+  "planUsage",
   "shutdown",
+  "status",
   ...engineTaskMethods,
 ] as const satisfies readonly EngineHostMethod[];
 
@@ -145,14 +267,7 @@ export type EngineHostEvent =
     };
 
 /** What the host asks of the main process: desktop services its tools use. */
-export type EngineDesktopMethods = {
-  renderWebPage: {
-    input: { url: string; timeoutMs?: number };
-    result: { url: string; html: string };
-  };
-  /** One git command of a git flow, run by main on this machine or in the runtime VM. */
-  git: { input: { cwd: string; args: string[] }; result: string };
-};
+export type EngineDesktopMethods = DesktopServiceMethods;
 
 export type EngineDesktopMethod = keyof EngineDesktopMethods;
 
@@ -178,6 +293,8 @@ export type EngineHostMessage =
       result?: unknown;
       error?: { message: string };
     }
+  /** The host no longer waits for this desktop request: stop its work. */
+  | { kind: "desktop-cancel"; id: number }
   | { kind: "ready" };
 
 export function isEngineHostMessage(
@@ -191,51 +308,23 @@ export function isEngineHostMessage(
     kind === "event" ||
     kind === "desktop-request" ||
     kind === "desktop-response" ||
+    kind === "desktop-cancel" ||
     kind === "ready"
   );
 }
 
 /**
- * The engine's provider id for an app provider id, or undefined when the
- * engine has no such provider yet. The app's ids are Cline's, kept in the
- * API's provider credentials; a later slice gives the app the engine's own.
- */
-export function engineProviderId(appProviderId: string): string | undefined {
-  return appToEngine[appProviderId];
-}
-
-/** The app's provider id for an engine provider id. */
-export function appProviderId(engineProvider: string): string {
-  return engineToApp[engineProvider] ?? engineProvider;
-}
-
-/**
- * The engine's reasoning effort for the selector's choice. The engine has
- * no "off": `none` asks for the least, and `enabled` leaves the provider's
- * default.
+ * The engine's reasoning effort for the selector's choice: `none` turns
+ * reasoning off (the engine asks for the least where a model cannot stop),
+ * `enabled` leaves the provider's default.
  */
 export function engineReasoning(
   selection: ReasoningSelection | undefined,
 ): ReasoningEffort | undefined {
   if (!selection || selection === "enabled") return undefined;
-  if (selection === "none") return "minimal";
-  if (selection === "max") return "xhigh";
+  if (selection === "none") return "off";
   return selection;
 }
-
-const appToEngine: Record<string, string> = {
-  anthropic: "anthropic",
-  "openai-native": "openai",
-  "openai-codex": "chatgpt",
-  gemini: "gemini",
-  openrouter: "openrouter",
-  openai: "openai-compatible",
-  "claude-code": "claude-code",
-};
-
-const engineToApp: Record<string, string> = Object.fromEntries(
-  Object.entries(appToEngine).map(([app, engine]) => [engine, app]),
-);
 
 /** Calls a window makes itself; following goes through `follow` below. */
 export type EngineWindowMethod = Exclude<
@@ -255,7 +344,11 @@ export type EnginePlatformClient = {
     input: EngineHostInput<M>,
   ): Promise<EngineHostResult<M>>;
   /** Everything about one session, from its first record; returns the way to stop. */
-  follow(session: SessionId, onEvent: (event: FollowEvent) => void): () => void;
+  follow(
+    session: SessionId,
+    onEvent: (event: FollowEvent) => void,
+    location?: EngineLocation,
+  ): () => void;
   /** Turns starting and ending in any session. */
   onActivity(callback: (event: EngineActivityEvent) => void): () => void;
 };

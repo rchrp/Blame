@@ -2,14 +2,12 @@ import { randomUUID } from "node:crypto";
 
 import { getProviderCollectionSync, type ModelInfo } from "@cline/llms";
 
-import { saveLocalProviderCredential } from "../cloud-api.js";
-import type { AgentBackendConfig, ConnectClaudeCodeInput } from "../types.js";
+import type { AgentBackendConfig } from "../types.js";
 import {
   ClaudeCodeBridge,
   claudeCodeStateDirectory,
 } from "./claude-code-bridge.js";
 import type { ClaudeCodeBridgeHandle } from "./claude-code-bridge-client.js";
-import { readClaudeCodeStatus } from "./claude-code-cli.js";
 import { claudeCodeEfforts } from "./claude-code-protocol.js";
 
 export const claudeCodeProviderId = "claude-code";
@@ -18,27 +16,6 @@ export const claudeCodeProviderId = "claude-code";
 const limaHostAddress = "host.lima.internal";
 
 let bridge: Promise<ClaudeCodeBridgeHandle> | undefined;
-
-export function claudeCodeStatus() {
-  return readClaudeCodeStatus();
-}
-
-/** Saves the connection once Claude Code is installed and signed in here. */
-export async function connectClaudeCode(input: ConnectClaudeCodeInput) {
-  const status = await readClaudeCodeStatus();
-  if (!status.installed)
-    throw new Error("Claude Code is not installed on this computer.");
-  if (!status.loggedIn)
-    throw new Error(
-      "Claude Code is installed but not signed in. Run `claude`, sign in, then try again.",
-    );
-  const credential = await saveLocalProviderCredential(input.apiConnection, {
-    providerId: claudeCodeProviderId,
-    label: input.label?.trim() || undefined,
-    accountId: status.email ?? null,
-  });
-  return { credential, status };
-}
 
 export function isClaudeCodeProvider(providerId: string | undefined) {
   return providerId === claudeCodeProviderId;
@@ -120,17 +97,6 @@ export async function closeClaudeCodeBridge() {
   const current = bridge;
   bridge = undefined;
   await (await current?.catch(() => undefined))?.close();
-}
-
-/**
- * Whether this worker can stop without cutting a Claude Code conversation:
- * it does not host the bridge, or the bridge has no process left and no
- * other worker is working (its sessions may reach the bridge any time).
- */
-export async function claudeCodeBridgeIdle(busyElsewhere: boolean) {
-  const active = await bridge?.catch(() => undefined);
-  if (!active?.hosting) return true;
-  return active.lanes === 0 && !busyElsewhere;
 }
 
 /** Closes the Claude Code processes of sessions that ended for good. */

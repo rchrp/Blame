@@ -1,10 +1,9 @@
-import type { UserStoryAgentActivity } from '#models/user_story'
 import { workspaceArtifactObjectStorage } from '#services/workspace_artifacts/workspace_artifact_object_storage'
 import { createHash } from 'node:crypto'
 
-// Screenshots taken by an agent, referenced from its activities by id (the
-// SHA-256 of the image). They are stored encrypted for the story or chat
-// that owns the activities, and deleted with them.
+// Screenshots taken by an agent, referenced from its tool output by id (the
+// SHA-256 of the image). They are stored encrypted for the story that owns
+// them.
 
 export const maximumScreenshotBytes = 15 * 1024 * 1024
 const idPattern = /^[0-9a-f]{64}$/u
@@ -55,23 +54,7 @@ export async function screenshotArtifact(
   return { content: content.toString('base64'), id, mimeType: metadata.contentType }
 }
 
-export function screenshotKeysFromActivities(
-  ownerId: string,
-  activityGroups: Array<UserStoryAgentActivity[] | null | undefined>
-) {
-  const keys = new Set<string>()
-  for (const activity of activityGroups.flatMap((group) => group ?? [])) {
-    for (const ref of screenshotRefs(activity.detail))
-      keys.add(screenshotObjectKey(ownerId, ref.sessionId, ref.id))
-  }
-  return [...keys]
-}
-
-export function screenshotObjectKey(
-  ownerId: string,
-  sessionId: string | null | undefined,
-  id: string
-) {
+function screenshotObjectKey(ownerId: string, sessionId: string | null | undefined, id: string) {
   assertScreenshotId(id)
   return [
     'agent-screenshots',
@@ -79,32 +62,6 @@ export function screenshotObjectKey(
     safeFilename(sessionId || 'unknown-session'),
     id,
   ].join('/')
-}
-
-function screenshotRefs(detail: string) {
-  if (!detail.includes('screenshot_ref')) return []
-  const refs: Array<{ id: string; sessionId?: string }> = []
-  try {
-    collect(JSON.parse(detail), refs)
-  } catch {}
-  return refs
-}
-
-function collect(value: unknown, refs: Array<{ id: string; sessionId?: string }>) {
-  if (Array.isArray(value)) value.forEach((item) => collect(item, refs))
-  else if (value && typeof value === 'object') {
-    const record = value as Record<string, unknown>
-    if (
-      record.type === 'screenshot_ref' &&
-      typeof record.id === 'string' &&
-      idPattern.test(record.id)
-    ) {
-      refs.push({
-        id: record.id,
-        ...(typeof record.sessionId === 'string' ? { sessionId: record.sessionId } : {}),
-      })
-    } else Object.values(record).forEach((item) => collect(item, refs))
-  }
 }
 
 function assertScreenshotId(id: string) {

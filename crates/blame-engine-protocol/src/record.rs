@@ -368,7 +368,9 @@ pub struct ContextEdit {
     pub target: Seq,
     /// Index of the block within that record's content.
     pub block: u32,
-    /// Text shown to the model in place of the block.
+    /// Text shown to the model in place of the block. Empty removes the
+    /// block (a tool result rewritten into fewer parts). A later edit of the
+    /// same block replaces an earlier one.
     pub replacement: String,
 }
 
@@ -415,6 +417,9 @@ pub enum ErrorKind {
     /// Quota, credit or subscription limits.
     Billing,
     InvalidRequest,
+    /// The provider does not serve the model asked for, or not to this
+    /// account or plan: another model may work.
+    ModelUnavailable,
     /// The connection failed or dropped.
     Transport,
     /// The provider stopped sending without closing the stream.

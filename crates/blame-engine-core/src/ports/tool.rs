@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use blame_engine_protocol::{
-    SessionConfig, SessionId, ToolCallId, ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
+    Seq, SessionConfig, SessionId, ToolCallId, ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
 };
 use serde_json::Value;
 use std::sync::Arc;
@@ -14,6 +14,11 @@ pub struct ToolInvocation {
     pub name: String,
     pub input: Value,
     pub workspace_root: String,
+    /// `through` of the compaction in effect when the call runs; `None` when
+    /// the history was never compacted. A tool that remembers what the model
+    /// has already seen (the harness's read coverage) must forget it when
+    /// this changes: the summary no longer shows what was read before.
+    pub compacted_through: Option<Seq>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

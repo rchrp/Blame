@@ -10,7 +10,10 @@ import { loadPrompt } from "../../prompt-loader.js";
 import { webResearchGuidance } from "../../web-research-calls.js";
 import type { GenerateNewProjectTask } from "../task-protocol.js";
 import { submitTool, taskConfig, type TaskSpec } from "../tasks/runner.js";
-import { quickChatClientTools } from "./quick-chat.js";
+import { purposeClientTools } from "./tool-sets.js";
+
+// The web research tools, as a quick chat has them.
+const webTools = purposeClientTools["quick-chat"];
 import type { ToolSpec } from "@blame/engine-client";
 
 export const NEW_PROJECT_TOOL = "submit_new_project";
@@ -27,7 +30,7 @@ export function newProjectGenerationTask(
         loadPrompt("new-project-generation-system") + webResearchGuidance,
       workspace: input.workspace,
       engineTools: ["harness"],
-      clientTools: clientTools(quickChatClientTools),
+      clientTools: clientTools(webTools),
       toolOptions: {
         harness: {
           taskContract: {
@@ -52,7 +55,7 @@ export function newProjectGenerationTask(
           "read_code",
           "edit_code",
           "run_task",
-          ...quickChatClientTools,
+          ...webTools,
         ],
         max_corrections: 2,
       },

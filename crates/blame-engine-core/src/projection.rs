@@ -363,9 +363,10 @@ impl<'a> View<'a> {
         input
             .iter()
             .enumerate()
-            .map(|(index, block)| match self.edit(seq, index) {
-                Some(text) => UserBlock::Text { text: text.into() },
-                None => block.clone(),
+            .filter_map(|(index, block)| match self.edit(seq, index) {
+                Some("") => None,
+                Some(text) => Some(UserBlock::Text { text: text.into() }),
+                None => Some(block.clone()),
             })
             .collect()
     }
@@ -374,17 +375,18 @@ impl<'a> View<'a> {
         let blocks: Vec<AssistantBlock> = blocks
             .iter()
             .enumerate()
-            .map(|(index, block)| match (self.edit(seq, index), block) {
-                (Some(text), AssistantBlock::Text { .. }) => AssistantBlock::Text {
+            .filter_map(|(index, block)| match (self.edit(seq, index), block) {
+                (Some(""), AssistantBlock::Text { .. } | AssistantBlock::Reasoning { .. }) => None,
+                (Some(text), AssistantBlock::Text { .. }) => Some(AssistantBlock::Text {
                     text: text.into(),
                     native: None,
-                },
-                (Some(text), AssistantBlock::Reasoning { .. }) => AssistantBlock::Reasoning {
+                }),
+                (Some(text), AssistantBlock::Reasoning { .. }) => Some(AssistantBlock::Reasoning {
                     text: text.into(),
                     native: None,
-                },
+                }),
                 // A call's structure is what pairs it with its result.
-                _ => block.clone(),
+                _ => Some(block.clone()),
             })
             .collect();
         let results: Vec<ToolResultMessage> = blocks
@@ -420,9 +422,10 @@ impl<'a> View<'a> {
                 content: content
                     .iter()
                     .enumerate()
-                    .map(|(index, block)| match self.edit(seq, index) {
-                        Some(text) => ToolResultBlock::Text { text: text.into() },
-                        None => block.clone(),
+                    .filter_map(|(index, block)| match self.edit(seq, index) {
+                        Some("") => None,
+                        Some(text) => Some(ToolResultBlock::Text { text: text.into() }),
+                        None => Some(block.clone()),
                     })
                     .collect(),
             },
@@ -437,8 +440,20 @@ impl<'a> View<'a> {
     }
 
     fn edit(&self, seq: Seq, index: usize) -> Option<&'a str> {
-        let index = u32::try_from(index).ok()?;
-        self.edits.get(&(seq, index)).copied()
+        self.edit_of(seq, u32::try_from(index).ok()?)
+    }
+
+    /// The text in effect for block `block` of record `seq`, when an edit
+    /// replaced it (the latest edit wins); empty when an edit removed it.
+    /// A context policy reads it to propose only what changes.
+    pub fn edit_of(&self, seq: Seq, block: u32) -> Option<&'a str> {
+        self.edits.get(&(seq, block)).copied()
+    }
+
+    /// The `ToolCallFinished` that answers `call` in the history in effect:
+    /// the first one stored, as the model is shown.
+    pub fn result_record(&self, call: &ToolCallId) -> Option<&'a Record> {
+        self.results.get(call).copied()
     }
 
     /// Where `turn` stands. Only meaningful for an open turn.

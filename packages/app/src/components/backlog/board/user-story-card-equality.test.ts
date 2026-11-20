@@ -19,29 +19,6 @@ function story(overrides: Partial<UserStory> = {}): UserStory {
   }
 }
 
-test("ignores high-frequency agent fields that cards do not render", () => {
-  const previous = story({
-    agentActivities: [],
-    agentLastEvent: "a",
-    agentRuns: [],
-  })
-  const next = story({
-    agentActivities: [
-      {
-        createdAt: "2026-07-25T00:00:00.000Z",
-        detail: "streamed text",
-        id: "activity",
-        kind: "message",
-        title: "Agent message",
-      },
-    ],
-    agentLastEvent: "b",
-    agentRuns: [],
-  })
-
-  assert.equal(equalUserStoryCardStory(previous, next), true)
-})
-
 test("detects fields that change card content or actions", () => {
   const previous = story()
 

@@ -4,6 +4,7 @@
 
 import {
   EngineHost,
+  desktopServices,
   harnessRunnerPath,
   isEngineHostMessage,
   type EngineDesktopMethod,
@@ -42,7 +43,8 @@ function desktop<Result>(
       reject,
     });
     signal?.addEventListener("abort", () => {
-      desktopPending.delete(id);
+      if (!desktopPending.delete(id)) return;
+      post({ kind: "desktop-cancel", id });
       reject(signal.reason);
     });
     post({ kind: "desktop-request", id, method, input });
@@ -61,9 +63,9 @@ const host = new EngineHost({
     BLAME_ENGINE_HOST_CONFIG: undefined,
   },
   emit: (event) => post({ kind: "event", event }),
-  renderWebPage: ({ url, signal }) => desktop("renderWebPage", { url }, signal),
-  // Main runs git on this machine, or in the runtime VM for its worktrees.
-  git: (cwd, args) => desktop<string>("git", { cwd, args }),
+  desktop: desktopServices(desktop),
+  // A models.dev stand-in, for tests and isolated profiles.
+  catalogUrl: process.env.BLAME_MODELS_DEV_URL || undefined,
   onLog: ({ source, text }) => {
     if (source === "engine-stderr" || /threw|ignored/.test(text))
       console.error(`[engine] ${text}`);

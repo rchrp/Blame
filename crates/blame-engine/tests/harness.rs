@@ -214,6 +214,66 @@ async fn an_interrupt_cancels_the_harness_call() {
     assert!(engine.shutdown().await.success());
 }
 
+#[tokio::test]
+async fn harness_calls_carry_the_context_generation() {
+    let Some(node) = node() else {
+        eprintln!("skipped: node is not on PATH");
+        return;
+    };
+    let dir = temp_dir("harness-generation");
+    let log = dir.join("runner.log");
+    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/fake-runner.mjs");
+    let command = harness_args(&[
+        node.to_str().unwrap(),
+        script.to_str().unwrap(),
+        log.to_str().unwrap(),
+    ]);
+    let mock = mock(vec![
+        tool_reply(&[("read_code", json!({ "target": "a.ts" }))]),
+        text_reply(&["read it"]),
+        text_reply(&["the summary"]),
+        tool_reply(&[("read_code", json!({ "target": "a.ts" }))]),
+        text_reply(&["read it again"]),
+    ])
+    .await;
+    let client = Arc::new(FakeClient::new(&mock.base));
+    let engine = Engine::ready(&dir.join("data"), &["--harness-command", &command], client).await;
+    let session = engine
+        .create(harness_config(&temp_dir("harness-generation-workspace")))
+        .await;
+    engine.subscribe(&session, 0).await;
+    engine.send(&session, "read").await;
+    engine.until_turn_ended().await;
+    let _: Value = engine
+        .call(ClientRequest::Compact {
+            session: session.clone(),
+        })
+        .await;
+    engine.send(&session, "read again").await;
+    engine.until_turn_ended().await;
+
+    let through = engine
+        .records(&session)
+        .await
+        .iter()
+        .find_map(|r| match &r.body {
+            RecordBody::ContextCompacted { through, .. } => Some(*through),
+            _ => None,
+        })
+        .expect("compacted");
+    let generations: Vec<Value> = runner_log(&log)
+        .iter()
+        .filter(|m| m["call"]["tool"] == "read_code")
+        .map(|m| m["call"]["toolContext"]["metadata"]["contextGeneration"].clone())
+        .collect();
+    // A read before the compaction no longer counts as in context after it.
+    assert_eq!(
+        generations,
+        [json!("initial"), json!(format!("compaction:{through}"))]
+    );
+    assert!(engine.shutdown().await.success());
+}
+
 /// The TypeScript runner, built by `pnpm --filter @blame/agent-runtime build`.
 fn real_runner() -> Option<PathBuf> {
     let runner = Path::new(env!("CARGO_MANIFEST_DIR"))

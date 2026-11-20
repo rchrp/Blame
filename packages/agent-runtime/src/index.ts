@@ -2,10 +2,7 @@ export {
   BlameAgentRuntime,
   createClineBaselineRuntime,
 } from "./cline-runtime.js";
-export {
-  claudeCodeBridgeIdle,
-  closeClaudeCodeSessions,
-} from "./claude-code/claude-code-provider.js";
+export { closeClaudeCodeSessions } from "./claude-code/claude-code-provider.js";
 export type {
   LightWorkspaceExecutionRequest,
   LightWorkspaceExecutor,
@@ -29,13 +26,14 @@ export type * from "./preview-environment-types.js";
 export type {
   PreviewEnvironmentToolInput,
   PreviewEnvironmentToolResult,
-} from "./preview-environment-tool.js";
+} from "./engine/tools/preview-types.js";
 export {
   authorizeMcpOAuth,
   clearMcpOAuth,
   listMcpOAuthStatuses,
   type McpOAuthStatus,
-} from "./mcp-oauth.js";
+} from "./engine/tools/mcp-oauth.js";
+export { mcpSettingsPath } from "./engine/tools/mcp-settings.js";
 export type {
   AgentEvent,
   AgentApprovalRequest,
@@ -66,12 +64,9 @@ export type {
   DirectStoryFilesResult,
   GenerateCommitMessageResult,
   ClaudeCodeStatus,
-  ConnectClaudeCodeInput,
-  LoginOAuthProviderInput,
   ProviderAuthMethod,
   SaveLocalProviderCredentialInput,
   SubscriptionUsage,
-  SubscriptionUsageInput,
   SubscriptionUsageWindow,
   ModelBenchmark,
   ModelRecommendation,

@@ -17,11 +17,8 @@ import type {
   ToolResult,
   ToolSpec,
 } from "@blame/engine-client";
-import {
-  engineProviderId,
-  engineReasoning,
-  type EngineModelChoice,
-} from "../protocol.js";
+import type { EngineModelChoice } from "../protocol.js";
+import { engineModel } from "../purposes/purpose.js";
 import type { TaskWorkspace } from "../task-protocol.js";
 import { ToolSet, type ClientTool } from "../tool.js";
 
@@ -183,17 +180,10 @@ export type TaskConfigInput = {
 
 /** The configuration of a task, from what a purpose decides. */
 export function taskConfig(input: TaskConfigInput): SessionConfig {
-  const provider = engineProviderId(input.model.providerId);
-  if (!provider)
-    throw new Error(
-      `${input.model.providerId} models do not run on Blame's agent engine yet. Pick a model from Anthropic, OpenAI, ChatGPT, Gemini, OpenRouter, an OpenAI-compatible provider or Claude Code.`,
-    );
-  const reasoning = engineReasoning(input.model.reasoning);
   return {
     purpose: input.purpose,
     workspace_root: taskRoot(input.workspace, input.engineTools?.length),
-    model: { provider, model: input.model.modelId },
-    ...(reasoning ? { reasoning } : {}),
+    ...engineModel(input.model),
     system_prompt: input.systemPrompt,
     ...(input.maxOutputTokens
       ? { max_output_tokens: input.maxOutputTokens }

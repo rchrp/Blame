@@ -146,6 +146,7 @@ impl Harness {
                 "sessionId": invocation.session,
                 "conversationId": invocation.session,
                 "toolCallId": invocation.call,
+                "metadata": { "contextGeneration": context_generation(invocation) },
             },
         });
         let reply = match self.request(json!({ "call": call }), &cancel).await {
@@ -355,6 +356,17 @@ fn spec(tool: &Value) -> Result<ToolSpec, String> {
         ends_turn: tool.get("endsTurn").and_then(Value::as_bool) == Some(true),
         needs_approval: false,
     })
+}
+
+/// The harness keys what it knows the model has read (and so answers
+/// "already in context") on `toolContext.metadata.contextGeneration`
+/// (`contextGeneration` in `light-read-results.ts`). A compaction replaces
+/// those reads by a summary, so each compaction starts a new generation.
+fn context_generation(invocation: &ToolInvocation) -> String {
+    match invocation.compacted_through {
+        Some(through) => format!("compaction:{through}"),
+        None => "initial".into(),
+    }
 }
 
 /// What a call of the harness tool `name` that a crash cut short did.

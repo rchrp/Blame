@@ -33,7 +33,7 @@ export function usePlanUsage(
   preferredCredentialLabel?: string
 ) {
   const user = useCloudAuth().user
-  const read = selection.agent?.providers.subscriptionUsage
+  const read = selection.providers?.planUsage
   const credentialLabel =
     preferredCredentialLabel ??
     (providerId ? selection.selectedAccountLabel(providerId) : undefined)
@@ -53,7 +53,7 @@ export function usePlanUsage(
   const fetchUsage = React.useMemo(
     () =>
       read && providerId
-        ? () => read({ apiConnection, credentialLabel, providerId })
+        ? () => read({ credentialLabel, providerId })
         : undefined,
     [apiConnection, credentialLabel, providerId, read]
   )

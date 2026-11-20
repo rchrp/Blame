@@ -14,7 +14,9 @@ use crate::obj;
 use crate::present::model_tool_response;
 use crate::read_results::context_generation;
 use crate::tools::{normalize_search_input, tool_definitions};
-use crate::validate::{issues_message, parse_leniently, read_code_schema, search_code_schema};
+use crate::validate::{
+    edit_code_schema, issues_message, parse_leniently, read_code_schema, search_code_schema,
+};
 use crate::workspace::Workspace;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -144,6 +146,13 @@ impl Harness {
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 workspace.read_code(&read_input(&input), &context, signal)
             }
+            "edit_code" => {
+                let workspace = self.workspace(root, contract);
+                let mut workspace = workspace
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                workspace.edit_code(&input, signal)
+            }
             "session_journal" => session_journal(root, &context, &input),
             other => Err(Failure::new(format!(
                 "{other} is not available in the Rust harness yet."
@@ -176,6 +185,7 @@ impl Harness {
         let input = request.get("input").cloned().unwrap_or(Json::Null);
         let (schema, value) = match name {
             "search_code" => (search_code_schema(), normalize_search_input(&input)),
+            "edit_code" => (edit_code_schema(), input),
             _ => (read_code_schema(), input),
         };
         let parsed = match parse_leniently(&schema, &value) {

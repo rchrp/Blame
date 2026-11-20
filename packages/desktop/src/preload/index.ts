@@ -594,11 +594,11 @@ const api: BlameDesktopApi = {
   },
   engine: {
     call: (method, input) => ipcRenderer.invoke("engine:call", method, input),
-    follow: (session, onEvent) => {
+    follow: (session, onEvent, location) => {
       const subscription = globalThis.crypto.randomUUID();
       engineFollowers.set(subscription, onEvent);
       void ipcRenderer
-        .invoke("engine:call", "follow", { session, subscription })
+        .invoke("engine:call", "follow", { session, subscription, location })
         .catch((error) => {
           if (!engineFollowers.has(subscription)) return;
           onEvent({ type: "state", state: "stopped", error: preloadErrorMessage(error) });
@@ -616,48 +616,8 @@ const api: BlameDesktopApi = {
     },
   },
   agent: {
-    providers: {
-      list: (connection) =>
-        ipcRenderer.invoke("agent:providers:list", connection),
-      saveCredential: (connection, input) =>
-        ipcRenderer.invoke(
-          "agent:providers:save-credential",
-          connection,
-          input,
-        ),
-      deleteCredential: (connection, id) =>
-        ipcRenderer.invoke("agent:providers:delete-credential", connection, id),
-      loginOAuth: (input) =>
-        ipcRenderer.invoke("agent:providers:login-oauth", input),
-      claudeCodeStatus: () =>
-        ipcRenderer.invoke("agent:providers:claude-code-status"),
-      connectClaudeCode: (input) =>
-        ipcRenderer.invoke("agent:providers:connect-claude-code", input),
-      subscriptionUsage: (input) =>
-        ipcRenderer.invoke("agent:providers:subscription-usage", input),
-    },
+    // Progress of the one-shot agents; conversations are on platform.engine.
     sessions: {
-      start: (input) => ipcRenderer.invoke("agent:sessions:start", input),
-      startDevelopment: (input) =>
-        ipcRenderer.invoke("agent:sessions:start-development", input),
-      live: (sessionId) => ipcRenderer.invoke("agent:sessions:live", sessionId),
-      send: (input) => ipcRenderer.invoke("agent:sessions:send", input),
-      sendDevelopment: (input) =>
-        ipcRenderer.invoke("agent:sessions:send-development", input),
-      abort: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:abort", sessionId),
-      compareCheckpoint: (input) =>
-        ipcRenderer.invoke("agent:sessions:compare-checkpoint", input),
-      list: () => ipcRenderer.invoke("agent:sessions:list"),
-      messages: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:messages", sessionId),
-      restoreCheckpoint: (input) =>
-        ipcRenderer.invoke("agent:sessions:restore-checkpoint", input),
-      usage: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:usage", sessionId),
-      compact: (input) => ipcRenderer.invoke("agent:sessions:compact", input),
-      eventStreamUrl: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:event-stream-url", sessionId),
       onEvent: (sessionId, callback) => {
         const channel = `agent:sessions:event:${sessionId}`;
         const handler = (_event: unknown, event: AgentEvent) => callback(event);
@@ -669,15 +629,7 @@ const api: BlameDesktopApi = {
         };
       },
     },
-    approvals: {
-      resolve: (input) => ipcRenderer.invoke("agent:approvals:resolve", input),
-      onRequest: (callback) => {
-        const handler = (_event: unknown, event: AgentEvent) => callback(event);
-        ipcRenderer.on("agent:approvals:event", handler);
-        return () =>
-          ipcRenderer.removeListener("agent:approvals:event", handler);
-      },
-    },
+
     pullRequestAvailability: (input) =>
       ipcRenderer.invoke("agent:pull-request-availability", input),
     pullRequestState: (input) =>

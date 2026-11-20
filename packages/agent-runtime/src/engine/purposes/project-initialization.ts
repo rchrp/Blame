@@ -67,7 +67,7 @@ export async function projectInitializationTask(
       workspace: input.workspace,
       engineTools: readOnlyHarness.engineTools,
       toolOptions: readOnlyHarness.toolOptions,
-      clientTools: tools.map(toolSpec),
+      clientTools: tools.map((tool) => toolSpec(tool)),
       contract: {
         result: { source: "tool", name: submitInitializationToolName },
         required: ["read_code"],

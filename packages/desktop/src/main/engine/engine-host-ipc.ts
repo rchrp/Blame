@@ -11,14 +11,12 @@ import {
 } from "electron";
 import {
   engineHostMethods,
+  type EngineHostInput,
   isEngineHostMessage,
-  type EngineDesktopMethods,
   type EngineHostMessage,
   type EngineHostMethod,
 } from "@blame/agent-runtime/engine-protocol";
-
-type EngineDesktopInput<M extends keyof EngineDesktopMethods> =
-  EngineDesktopMethods[M]["input"];
+import type { EngineDesktopHandlers } from "./engine-desktop-services.ts";
 import { EngineHostRouter } from "./engine-host-router.ts";
 
 export type EngineHostRegistration = {
@@ -28,12 +26,18 @@ export type EngineHostRegistration = {
   dataDir: string;
   clientVersion: string;
   isAppWindow(sender: WebContents): boolean;
-  renderWebPage(
-    url: string,
-    signal: AbortSignal,
-  ): Promise<{ url: string; html: string }>;
-  /** A git command of the host's git flows, on this machine or in the runtime VM. */
-  git(cwd: string, args: string[]): Promise<string>;
+  /** The services the agents' tools use (engine-desktop-services.ts). */
+  desktop: EngineDesktopHandlers;
+  /**
+   * What the desktop prepares before a window's call reaches the host (a
+   * story's development server, its GitHub access); `api` is the
+   * connection the windows gave the host.
+   */
+  beforeCall?(
+    method: EngineHostMethod,
+    input: unknown,
+    api: EngineHostInput<"connect">["api"] | undefined,
+  ): Promise<void>;
   /** Adds what only main knows to a window's call (the git flows'), then makes it. */
   prepareCall?(
     method: EngineHostMethod,
@@ -154,6 +158,8 @@ class EngineHostProcess {
     }
     if (message.kind === "desktop-request")
       void this.serveDesktop(child, message);
+    if (message.kind === "desktop-cancel")
+      this.desktopRequests.get(message.id)?.abort();
   }
 
   private async serveDesktop(
@@ -163,7 +169,11 @@ class EngineHostProcess {
     const controller = new AbortController();
     this.desktopRequests.set(message.id, controller);
     try {
-      const result = await this.desktopService(message, controller.signal);
+      const service = this.registration.desktop[message.method] as
+        ((input: unknown, signal: AbortSignal) => Promise<unknown>) | undefined;
+      if (!service)
+        throw new Error(`Unknown desktop service ${String(message.method)}`);
+      const result = await service(message.input, controller.signal);
       child.postMessage({
         kind: "desktop-response",
         id: message.id,
@@ -182,20 +192,6 @@ class EngineHostProcess {
     }
   }
 
-  private desktopService(
-    message: Extract<EngineHostMessage, { kind: "desktop-request" }>,
-    signal: AbortSignal,
-  ) {
-    if (message.method === "git") {
-      const { cwd, args } = message.input as EngineDesktopInput<"git">;
-      if (typeof cwd !== "string" || !Array.isArray(args))
-        throw new Error("Invalid git request");
-      return this.registration.git(cwd, args.map(String));
-    }
-    const { url } = message.input as EngineDesktopInput<"renderWebPage">;
-    return this.registration.renderWebPage(String(url ?? ""), signal);
-  }
-
   private onExit(child: UtilityProcess, code: number) {
     if (this.child !== child) return;
     this.child = undefined;
@@ -207,6 +203,8 @@ class EngineHostProcess {
         new Error(`The engine host stopped (${code}); try again.`),
       );
     this.pending.clear();
+    // Its turns ended with it.
+    this.router.hostStopped();
     if (this.stopping) return;
     // Started again at once if a window follows a session, after a pause
     // that grows with each crash in a row so a crash loop cannot spin.
@@ -229,7 +227,7 @@ export function registerEngineIpcHandlers(
   const engine = new EngineHostProcess(registration);
   host = engine;
   const known = new Set<number>();
-  ipcMain.handle("engine:call", (event, method: unknown, input: unknown) => {
+  ipcMain.handle("engine:call", async (event, method: unknown, input: unknown) => {
     if (!registration.isAppWindow(event.sender))
       throw new Error("Untrusted engine request");
     if (!engineHostMethods.includes(method as EngineHostMethod))
@@ -247,12 +245,22 @@ export function registerEngineIpcHandlers(
           void engine.call("unfollow", { subscription }).catch(() => undefined);
       });
     }
+    await registration.beforeCall?.(
+      method as EngineHostMethod,
+      input,
+      engine.router.api(),
+    );
     const call = (prepared: unknown) =>
       engine.call(method as EngineHostMethod, prepared);
     return registration.prepareCall
       ? registration.prepareCall(method as EngineHostMethod, input, call)
       : call(input);
   });
+}
+
+/** Folders an engine turn is writing in right now. */
+export function engineActiveWorkspaces(): string[] {
+  return host?.router.activeWorkspaces() ?? [];
 }
 
 export async function shutdownEngineHost() {

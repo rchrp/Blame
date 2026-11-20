@@ -81,6 +81,42 @@ impl SessionJournal {
         self.append(&obj! { "type" => "request", "id" => id, "text" => text, "timestamp" => now() })
     }
 
+    /// A committed edit: the input fields, then each path's current state.
+    pub fn record_change(
+        &mut self,
+        files: &crate::files::WorkspaceFiles,
+        input: Json,
+    ) -> Outcome<()> {
+        let mut paths: Vec<String> = Vec::new();
+        for path in input
+            .get("paths")
+            .and_then(Json::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(Json::as_str)
+        {
+            if !paths.iter().any(|known| known == path) {
+                paths.push(path.to_string());
+            }
+        }
+        let states: Vec<Json> = paths
+            .iter()
+            .map(|path| {
+                let hash = files
+                    .read(path)
+                    .map(|file| sha256_hex(&file.content))
+                    .unwrap_or_else(|_| "absent".into());
+                obj! { "path" => path.as_str(), "hash" => hash }
+            })
+            .collect();
+        let mut event = obj! { "type" => "change" };
+        event.extend(input);
+        event.set("files", Json::Arr(states));
+        event.set("timestamp", now());
+        self.changes.push(event.clone());
+        self.append(&event)
+    }
+
     pub fn record_terminal(&mut self, state: &str) -> Outcome<()> {
         if self.terminal_state.is_some() {
             return Ok(());

@@ -110,18 +110,11 @@ function hubConnectionOptions(
   };
 }
 
+// Blame's own skills: its folder holds them in skills/.
 export function blameNativePluginPath() {
-  return fileURLToPath(
-    new URL("./plugins/blame-native/index.js", import.meta.url),
-  );
+  return fileURLToPath(new URL("./plugins/blame-native", import.meta.url));
 }
 
-export function withConfigExtensions(
-  extensions: StartSessionInput["configExtensions"],
-  ...required: NonNullable<StartSessionInput["configExtensions"]>
-) {
-  return Array.from(new Set([...(extensions ?? []), ...required]));
-}
 
 export function extensionContext(input: StartSessionInput) {
   return {

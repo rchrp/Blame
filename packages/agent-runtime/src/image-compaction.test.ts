@@ -22,28 +22,28 @@ async function compact(messages: Message[], config: CoreCompactionConfig, maxInp
 }
 
 function configured() {
-  return imageAwareCompaction({ enabled: true, strategy: "basic" }, "openai-codex", "gpt-5.6-luna");
+  return imageAwareCompaction({ enabled: true, strategy: "basic" }, "chatgpt", "gpt-5.6-luna");
 }
 
 test("documented model families receive the conservative image bound", () => {
   for (const model of ["gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.6-luna-2026-09-01"])
-    assert.equal(imageAwareCompaction({}, "openai-codex", model).imageTokenLimit, 36_000);
+    assert.equal(imageAwareCompaction({}, "chatgpt", model).imageTokenLimit, 36_000);
 });
 
 test("unknown providers and models keep their existing estimator", () => {
   const config = { enabled: true };
   assert.equal(imageAwareCompaction(config, "other", "gpt-5.6-luna"), config);
-  assert.equal(imageAwareCompaction(config, "openai-codex", "gpt-6-astra"), config);
-  assert.equal(imageAwareCompaction(config, "openai-codex", "gpt-5.6-luna-custom"), config);
+  assert.equal(imageAwareCompaction(config, "chatgpt", "gpt-6-astra"), config);
+  assert.equal(imageAwareCompaction(config, "chatgpt", "gpt-5.6-luna-custom"), config);
 });
 
 test("disabled compaction and explicit bounds are preserved", () => {
   for (const config of [{ enabled: false }, { imageTokenLimit: 50_000 }])
-    assert.equal(imageAwareCompaction(config, "openai-codex", "gpt-5.6-luna"), config);
+    assert.equal(imageAwareCompaction(config, "chatgpt", "gpt-5.6-luna"), config);
 });
 
 test("session normalization preserves the serializable image bound", () => {
-  const { config } = splitCoreSessionConfig({ providerId: "openai-codex", modelId: "gpt-5.6-luna", compaction: configured() });
+  const { config } = splitCoreSessionConfig({ providerId: "chatgpt", modelId: "gpt-5.6-luna", compaction: configured() });
   assert.equal(config.compaction?.imageTokenLimit, 36_000);
   assert.equal(JSON.parse(JSON.stringify(config)).compaction.imageTokenLimit, 36_000);
 });

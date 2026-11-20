@@ -14,6 +14,7 @@ import type {
   Initialized,
   LogPushed,
   MessageAccepted,
+  ModelCatalog,
   Records,
   Rewound,
   SessionList,
@@ -79,6 +80,7 @@ export interface ClientResults {
   /** Answered when the task ends; aborting the request cancels the task. */
   "task/run": TaskOutcome;
   "blob/put": BlobRef;
+  "catalog/list": ModelCatalog;
   shutdown: null;
 }
 

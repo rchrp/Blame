@@ -654,6 +654,83 @@ pub fn parse_syntax_diagnostics(parsed: &ParseResult, content: &[u8]) -> Vec<Str
     output
 }
 
+/// `syntaxBoundaryRange`: the smallest node covering `target`, widened to
+/// the outermost node below a syntax container, where an insertion or a
+/// whole-symbol replacement belongs.
+pub fn syntax_boundary_range(path: &str, content: &[u8], target: Interval) -> Interval {
+    let parsed = parse_code(path, content);
+    let mut candidates: Vec<(usize, SgNode<'_>)> = Vec::new();
+    for (index, tree) in parsed.trees.iter().enumerate() {
+        let root = tree.root.root();
+        let mut selected: Option<(SgNode<'_>, usize)> = None;
+        walk(&root, &mut |node| {
+            let range = tree.node_range(node);
+            if range.0 > target.0 || range.1 < target.1 {
+                return;
+            }
+            let length = utf16_len(&node.text());
+            if selected.as_ref().is_none_or(|(_, best)| length < *best) {
+                selected = Some((node.clone(), length));
+            }
+        });
+        if let Some((node, _)) = selected {
+            candidates.push((index, node));
+        }
+    }
+    let size = |(index, node): &(usize, SgNode<'_>)| {
+        let range = parsed.trees[*index].node_range(node);
+        range.1 - range.0
+    };
+    candidates.sort_by_key(size);
+    let Some((index, candidate)) = candidates.into_iter().next() else {
+        return target;
+    };
+    let tree = &parsed.trees[index];
+    let mut node = candidate;
+    while let Some(parent) = node.parent() {
+        if parent.parent().is_none() || is_syntax_container(&parent.kind()) {
+            break;
+        }
+        node = parent;
+    }
+    let mut range = tree.node_range(&node);
+    // TS member separators are siblings of method_signature, not part of it.
+    if parsed.language == "typescript"
+        && node.kind() == "method_signature"
+        && let Some(separator) = node
+            .next()
+            .filter(|next| next.kind() == ";" || next.kind() == ",")
+    {
+        let (start, end) = tree.node_range(&separator);
+        if js_trim(&String::from_utf8_lossy(&content[range.1..start])).is_empty() {
+            range.1 = end;
+        }
+    }
+    range
+}
+
+static SYNTAX_LIST: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new("(?:^|_)(?:body|block|list)$").expect("pattern"));
+
+fn is_syntax_container(kind: &str) -> bool {
+    [
+        "arguments",
+        "array",
+        "document",
+        "formal_parameters",
+        "jsx_element",
+        "module",
+        "object",
+        "object_type",
+        "program",
+        "source_file",
+        "stylesheet",
+    ]
+    .contains(&kind)
+        || kind.starts_with("preproc_")
+        || SYNTAX_LIST.is_match(kind)
+}
+
 /// `symbolEditRange`: the whole symbol, its signature or its body.
 pub fn symbol_edit_range(symbol: &ParsedSymbol, view: &str) -> Interval {
     let range = symbol.range;

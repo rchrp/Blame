@@ -1,10 +1,10 @@
 # The agent engine in the desktop app
 
-How the app runs agents on `blame-engine` (`crates/`). Quick chats are the
-first conversations on it, one-shot agents run as engine tasks (below);
-development stories, the engine in the Lima/WSL VM and provider settings
-follow the same contract. Until
-they move, they still run on the Cline runtime (`cline-runtime.ts`).
+How the app runs agents on `blame-engine` (`crates/`). Quick chats,
+development stories, plan mode and the new-project assistant are
+conversations on it; one-shot agents run on it as tasks (see "Tasks"). The
+engine in the Lima/WSL VM follows the same contract. `packages/benchmark-runner`
+still runs on the Cline runtime (`cline-runtime.ts`).
 
 ## Processes
 
@@ -24,9 +24,8 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   graph), so it stays a small Node process.
 - **Main** spawns the engine host, starts it again after a crash, routes
   renderer calls to it and its events back to the windows that follow a
-  session. It serves the host the few desktop services a tool needs
-  (`renderWebPage`) and the git of the git flows (`git`: on this machine,
-  or in the runtime VM for its worktrees). It imports only types and a tiny protocol module from
+  session. It serves the host the desktop services the tools need
+  (see "Desktop services"). It imports only types and a tiny protocol module from
   `@blame/agent-runtime/engine-protocol`: the main process stays light
   (`scripts/check-main-process-imports.mjs` still passes).
   On quit it asks the host to shut down: the engine ends running turns as
@@ -48,15 +47,26 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | method | does |
 | --- | --- |
 | `connect({ api })` | The API connection (URL, user token) the host uses for credentials, logs, blobs and web search. Sent at start and on every sign-in or token change. |
-| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`: system prompt, tools, harness options). The renderer never builds a `SessionConfig`. |
+| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`, `development-story`, `plan`, `new-project`: system prompt, tools, harness options, checkpoints). The renderer never builds a `SessionConfig`. |
 | `configure({ session, purpose, settings })` | Rebuilds the config from the settings and sets it only when it differs from the session's current one (`{ changed }`). |
 | `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. |
-| `interrupt`, `compact`, `undoRewind({ session })` | The engine calls of the same name. |
+| `interrupt`, `compact`, `undoRewind({ session, location? })` | The engine calls of the same name. |
 | `rewind({ session, to, restoreWorkspace })` | `session/rewind`: undo a message and, when asked, its files. |
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
 | task calls (`generateTitle`…), `cancelTask({ session })`, `deleteSession({ session })` | See [Tasks](#tasks); declared in `engine/task-protocol.ts`. |
+| `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended and what the agent last reported (`lastReply`: its `finish_task` summary, or its last text). |
+| `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
+| `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
+| `signInChatGpt({ label })` | `blame-engine auth chatgpt login`: opens the sign-in in the browser (`openExternal`, served by main) and keeps the tokens in the API. |
+| `claudeCodeStatus()`, `connectClaudeCode({ label })` | Whether Claude Code is installed and signed in here; saves the connection. |
+| `planUsage({ providerId, credentialLabel })` | How much of the ChatGPT or Claude plan is used. |
+
+Every call that names a session also takes `location` (`"host"`, the
+default, or `"vm"`). The host picks the engine from it; today only `"host"`
+exists and a `"vm"` call fails with a clear message (see "Workspace
+locations").
 
 Host → renderer, on `engine:event`:
 
@@ -66,6 +76,58 @@ Host → renderer, on `engine:event`:
   live events: the renderer keeps nothing between loads.
 - `{ type: "activity", session, running, outcome? }`: a turn started or ended,
   for the sidebar, the running count and the "response ready" notification.
+
+## Development stories
+
+A story is a `development-story` session (`engine/purposes/development-story.ts`):
+
+- **Workspace**: the story's worktree, or the project folder in Direct mode.
+  A worktree gets the harness's `isolated` option and, with a preview, its
+  managed preview. Checkpoints are on: every turn snapshots the files.
+- **First message**: the host wraps the person's brief with the story's
+  title, the hint about earlier stories, and the project memory selected for
+  it (`<task_briefing>`).
+- **Completion contract**: `storyCompletionContract` (`finish_task`) is
+  declared in the purpose; the one-shot agents slice enforces it from there.
+- **Tools**: `purposeClientTools` / `purposeHarnessTools`
+  (`engine/purposes/tool-sets.ts`) name the shared tools; the host adds the
+  conversation's own (`conversationTools.ensure`: preview, story history and
+  proposals, GitHub, MCP, attachments, skills) to every purpose's config.
+  A story's preview tools follow the project's saved preview environment.
+- **Project memory**: an accepted `finish_task` leaves its memory next to
+  the harness journal; the host saves it to the account when the turn ends.
+- **Lifecycle**, all from the renderer through `platform.engine`
+  (`pages/backlog/story-engine.ts`, `use-backlog-rotation.ts`,
+  `use-story-comments.ts`): start creates the session and sends the brief;
+  a message while the agent works is queued by the engine (or steered into
+  the turn with Send now); Pause is `interrupt`; undo of a message is
+  `rewind` with its files; Compact is `compact`.
+- **Board state**: the renderer is the one writer of the story's agent
+  fields (`use-story-agent-outcomes.ts`). An `activity` event with
+  `running` sets `agentStatus: "Running"`; the end of a turn sets what its
+  outcome means (completed: In review; failed: Paused with
+  `agentLastError`; interrupted or limit reached: Paused). After a quit
+  mid-turn, stories left Running are settled from `status` when the backlog
+  loads.
+- **Drawer**: `StoryConversationProvider` follows the session once for the
+  timeline, the metrics and the stats island. A turn's changed files open as
+  the diff from its checkpoint snapshot (a git tree) to the next turn's, or
+  to the files now for the last turn (`agent-run-diff-range.ts`).
+- **Direct commit** finds the story's files from the harness journal, which
+  records each write under the engine session id.
+
+Plan mode is a `plan` session per project (its id kept in local storage);
+the new-project assistant is a `new-project` session per opening of the
+wizard, in a scratch folder the host makes.
+
+## Workspace locations
+
+The renderer names a session's workspace as a root and a location
+(`EngineWorkspace`). A local-container worktree lives in the Blame Runtime
+VM on macOS and Windows, so its location is `"vm"` (`storyLocation`). The
+host's `engineAt(location)` is the seam where an engine in the VM plugs in;
+until then such a story fails at start with a message that says to use
+Direct or Cloud Preview. Direct and Cloud Preview worktrees are on the host.
 
 ## What renders a conversation
 
@@ -98,43 +160,163 @@ later day does not rewrite it and the provider's prompt cache holds.
   `workspace`, `engine_session_id`; its list joins `engine_sessions` for the
   last activity. Deleting a chat deletes its engine session log, and the
   renderer deletes the engine's local copy (`deleteSession`).
-- **The renderer** writes product state (create, rename, delete a chat) and
-  nothing about runs: no run rows, no activities, no outboxes.
+  `user_stories` holds `engine_session_id`, `agent_status`,
+  `agent_last_error` and `agent_models` (the models that worked on it, for
+  the board); runs, activities and story comments are records.
+- **The renderer** writes product state (create, rename, delete a chat or a
+  story, a story's agent fields above) and nothing about runs: no run rows,
+  no activities, no outboxes.
+
+## Providers and models
+
+The engine's providers are the product's: the app, the API (credentials,
+preferences, validators) and the engine all say `anthropic`, `claude-code`,
+`openai`, `chatgpt`, `gemini`, `openrouter` and `openai-compatible`
+(`packages/api/app/validators/provider_id.ts`). There is no other provider.
+
+The models come from models.dev, through the engine (`crates/README.md`,
+"The model catalog"): `catalog/list` gives every client the same list, a
+model published there shows in the pickers the next time one opens, and a
+model the provider refuses fails the turn as `model_unavailable` with a
+message that names the model and the provider and quotes the provider. The
+host shapes the list for the pickers (`engine/provider-list.ts`); the API
+keeps no catalog and only ranks what it is sent
+(`POST /providers/recommendations`: OpenRouter's benchmarks and the
+person's usage). Reasoning: the selector's `none` is the engine's `off`,
+`max` is `max`, and a model is offered only the levels models.dev lists for
+it.
 
 ## Credentials
 
 `host/credential { provider, session }` is answered from the user's provider
 credentials in the API (`/providers/credentials/resolve`):
 
-| engine id | app (API) id | answer |
-| --- | --- | --- |
-| `anthropic` | `anthropic` | `api_key` |
-| `openai` | `openai-native` | `api_key` |
-| `chatgpt` | `openai-codex` | `bearer` with the account id; refreshed with `blame-engine auth chatgpt refresh` and saved back to the API |
-| `gemini` | `gemini` | `api_key` |
-| `openrouter` | `openrouter` | `api_key` |
-| `openai-compatible` | `openai` | `api_key` with its base URL |
-| `claude-code` | `claude-code` | the shared Claude Code bridge: a key scoped to the session and the bridge URL |
+| provider | answer |
+| --- | --- |
+| `anthropic`, `openai`, `gemini`, `openrouter` | `api_key` |
+| `chatgpt` | `bearer` with the account id; signed in with `blame-engine auth chatgpt login`, refreshed with `blame-engine auth chatgpt refresh` and saved back to the API |
+| `openai-compatible` | `api_key` with its base URL |
+| `claude-code` | the shared Claude Code bridge: a key scoped to the session and the bridge URL |
 
-Other app providers have no engine provider yet: such a model cannot start a
-conversation on the engine.
+The Cline story path, until it moves to the engine, maps `openai` and
+`chatgpt` to Cline's own ids in one place
+(`agent-runtime/src/supplemental-model-config.ts`).
 
 ## Tools
 
 A client tool is a `ClientTool` (`engine/tool.ts`): name, description, JSON
 Schema, effect, `endsTurn`, `needsApproval`, and `run(input, context)` with
-the call's `signal` and `progress(text)`. A `ToolSet` turns tools into the
-session's `client_tools` specs and serves `host/tool`; progress goes back to
-the engine as `tool/progress` and reaches viewers as `tool_progress` deltas.
-Engine tools (the harness) run inside the engine, next to the files.
+the call's `session`, `turn`, `call`, `signal` and `progress(text)`. A
+`ToolSet` turns tools into the session's `client_tools` specs and serves
+`host/tool`; progress goes back to the engine as `tool/progress` and reaches
+viewers as `tool_progress` deltas. Engine tools (the harness) run inside the
+engine, next to the files.
+
+The host's one tool set does three things for every call, whatever the tool:
+
+- **Policy** (`engine/tools/policy.ts`): one table gives each tool its effect
+  and whether the user approves it. An MCP tool takes `read_only` when its
+  server says so (`readOnlyHint`), else Blame's rule for its own servers
+  (GitHub read-only, preview DevTools `command`), else `external`. The engine
+  runs read-only calls in parallel and lists command and external calls as
+  not undone on a rewind. No conversation tool needs approval today.
+- **Guards** (`engine/tools/guards.ts`): a call whose input names a developer
+  env file (`.env`, `.env.local`, not `.env.example`) is refused; what an MCP
+  server answers (GitHub, preview DevTools, the user's servers) is masked
+  before the model and the transcript see it. Blame's own tools mask their
+  own answers.
+- **Images**: a tool answers `{ type: "image", data, mediaType }` blocks; the
+  set stores each as a blob (`blob/put`) and the record keeps
+  `ToolResultBlock::Image { blob }`. The model receives the image, and a
+  reopened conversation still has it (the engine reads it from its store).
+
+### A conversation's tools
+
+Tools shared by every session (web research) are given to the `ToolSet` at
+construction. A conversation's own tools are bound to its session:
+`host.conversationTools.ensure(session)` (`engine/tools/index.ts`,
+`ConversationTools`) lists them once with `conversationClientTools(services,
+session)`, binds them to the session in the tool set and returns their specs
+and the prompt section they need (the skills' scopes). A purpose builder puts
+those specs in `client_tools` and the prompt in `system_prompt`.
+
+The list stays the same for the whole conversation in this host: the specs
+are part of the session's config and of the provider's prompt cache, and the
+host only rebuilds a config with a message (`applySettings`). An MCP
+server's tools are listed when the conversation's tools are; a tool the
+server dropped later fails with the server's message, a new one shows in new
+conversations, or in this one after the app restarts (one `ConfigChanged`,
+one cache miss).
+
+| tool | needs | story | plan | new project | quick chat (proposed) |
+| --- | --- | --- | --- | --- | --- |
+| `search_web`, `read_web_page` | API connection, `renderWebPage` | yes | yes | yes | yes (today) |
+| `read_attachment` | workspace (an executor for the VM) | yes | yes | yes | no: attachments are message blocks |
+| `get_preview_devtools` | `previewDevtools`, a preview without surface | yes | yes | no | no |
+| `preview_devtools__*` | `previewDevtools`, `previewDevtoolsTools`, `previewDevtoolsCall`, a preview scope | yes | yes | no | no |
+| `preview_terminal`, `preview_display`, `preview_device` | `previewSurfaceInfo`, `previewSurfaceCall` (replace the DevTools tools) | yes | yes | no | no |
+| `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no |
+| `repair_preview_initialization` | `repairPreviewInitialization` (a one-shot agent, session 3) | yes | no | no | no |
+| `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no |
+| `open_component_preview` | `componentPreview`, a Vite-capable workspace | yes | no | no | no |
+| `propose_user_stories` | a project | yes | yes | no | yes |
+| `propose_project_stack` | nothing | no | no | yes | no |
+| `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | no | yes |
+| `github__*` | `githubMcpTools`, `githubMcpCall`: read-only GitHub access for the session id | yes | yes | no | no |
+| `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | no | yes |
+| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.cline/skills`… and Blame's own) | yes | yes | no | yes |
+
+Not yet client tools: `consult_specialist` and spawned agents (engine tasks),
+`finish_task` and the harness (Rust harness), project memory.
+
+### Desktop services
+
+The tools ask the main process for what only it has through typed desktop
+services (`engine/desktop-services.ts`, `DesktopServices`): the preview's
+browser, readiness, logs, variables and screen, the screenshot store, the
+component preview server, the session's GitHub MCP connection (its token
+never leaves main), the project runner, Git and page rendering. The host
+sends `desktop-request { method, input }`; main answers it in
+`packages/desktop/src/main/engine/engine-desktop-services.ts` (the same
+functions the agent runtime host uses, which delegates to it) and an aborted
+call sends `desktop-cancel`, which aborts the work in main.
+
+### The user's MCP servers and skills
+
+MCP servers are read from the MCP settings file Settings → MCP writes
+(`mcp-settings.ts`), connected with `@modelcontextprotocol/sdk` (stdio,
+Streamable HTTP, SSE), one connection per server for the whole host, closed
+when it shuts down. OAuth state stays in that file next to the server
+(`mcp-oauth.ts`); authorizing opens the server's sign-in page and waits for
+the loopback redirect. Skills are `SKILL.md` folders read from the
+workspace (`.clinerules`, `.cline`, `.claude`, `.agents` `/skills`), the
+user's home (`~/.cline/skills`, `~/.agents/skills`) and Blame's own
+(`plugins/blame-native/skills`); the prompt lists their scopes as they were
+when the conversation started and the `skills` tool reads the current files.
+A plugin folder (`BLAME_AGENT_PLUGIN_PATHS`) adds its skills only.
+
+Until stories move to the engine, the conversations on Cline get these same
+tools through one adapter (`cline-client-tools.ts`): Cline's own MCP loading
+and skill service are off, so each tool has one implementation.
 
 ## Approvals
 
 `host/approval` waits in the host until `resolveApproval` answers it (a
 decision that arrives first is kept for a minute). The pending call shows in
-the transcript (`pendingApprovals`, a tool call in `awaiting_approval`).
-No quick-chat tool needs approval, so the conversation view has no
-Allow/Deny buttons yet: the first slice whose tools need approval adds them.
+the transcript (`pendingApprovals`, a tool call in `awaiting_approval`), and
+the timeline shows Allow and Deny under it (`engine-approvals.tsx`; each
+surface wraps its timeline in `EngineApprovalProvider`).
+
+## Context shaping
+
+The engine shapes old tool results in the model's context
+(`crates/blame-engine/src/context/`, a `ContextPolicy`): command echoes,
+repeated advice and repair plans, stale or partly repeated reads, completed
+edits and the image budget, as the Cline runtime did. Targets come from the
+stored records only, so the same records give the same request bytes after
+a reopen. Results already sent change only in large batches or after a
+compaction, so the prompt cache holds. Harness tools get the compaction in
+effect as `contextGeneration`.
 
 ## Tasks
 

@@ -1,40 +1,17 @@
 import type {
   UserStory,
-  UserStoryAgentActivity,
-  UserStoryActivityDetail,
-  UserStoryAgentRun,
-  UserStoryAgentRunDraft,
-  UserStoryAgentRunFinalization,
-  UserStoryAgentRunUpdate,
-  UserStoryComment,
   UserStoryDraft,
   UserStoryFileAttachment,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type { ApiConnection } from "@blame/agent-runtime"
-import type { AgentScreenshotsClient } from "@/context/platform"
-import { uploadActivityScreenshots } from "../../../lib/agent-screenshot-sync.ts"
-import { boundedAgentUpdate } from "./agent-update-limits.ts"
 import {
   isFileAttachmentReference,
   uploadFileAttachments,
 } from "../../../lib/file-attachment-api.ts"
 
-export function createBacklogApi(
-  connection: ApiConnection,
-  screenshots?: AgentScreenshotsClient
-) {
+export function createBacklogApi(connection: ApiConnection) {
   const baseUrl = connection.url.replace(/\/$/, "")
-  const syncScreenshots = (
-    id: string,
-    input: Parameters<typeof payloadActivities>[0]
-  ) =>
-    void uploadActivityScreenshots(
-      connection,
-      { id, kind: "userStory" },
-      payloadActivities(input),
-      screenshots
-    )
 
   return {
     async list(projectId: string) {
@@ -63,7 +40,6 @@ export function createBacklogApi(
       return createUserStory(connection, baseUrl, input)
     },
     async update(id: string, input: UserStoryUpdate) {
-      syncScreenshots(id, input)
       const fileAttachments =
         input.fileAttachments === undefined
           ? undefined
@@ -74,127 +50,14 @@ export function createBacklogApi(
           baseUrl,
           `/projects/user-stories/${id}`,
           {
-            body: JSON.stringify(apiUpdate({ ...input, fileAttachments })),
+            body: JSON.stringify({
+              ...input,
+              ...(input.agentLastError
+                ? { agentLastError: boundedError(input.agentLastError) }
+                : {}),
+              fileAttachments,
+            }),
             method: "PATCH",
-          }
-        )
-      )
-    },
-    async undoComment(
-      id: string,
-      commentId: string,
-      input: { clineSessionId?: string; runId: string }
-    ) {
-      return userStory(
-        await request<unknown>(
-          connection,
-          baseUrl,
-          `/projects/user-stories/${id}/comments/${commentId}/undo`,
-          {
-            body: input ? JSON.stringify(input) : undefined,
-            method: "POST",
-          }
-        )
-      )
-    },
-    async validateCommentUndo(id: string, commentId: string, runId: string) {
-      await request<unknown>(
-        connection,
-        baseUrl,
-        `/projects/user-stories/${id}/comments/${commentId}/undo-validation`,
-        { body: JSON.stringify({ runId }), method: "POST" }
-      )
-    },
-    async activityDetail(id: string, activityId: string) {
-      return activityDetail(
-        await request<unknown>(
-          connection,
-          baseUrl,
-          `/projects/user-stories/${id}/agent-activities/${encodeURIComponent(activityId)}`
-        )
-      )
-    },
-    async createAgentRun(id: string, input: UserStoryAgentRunDraft) {
-      return userStoryAgentRun(
-        await request<unknown>(
-          connection,
-          baseUrl,
-          `/projects/user-stories/${id}/agent-runs`,
-          {
-            body: JSON.stringify(input),
-            method: "POST",
-          }
-        )
-      )
-    },
-    async updateAgentRun(
-      id: string,
-      runId: string,
-      input: UserStoryAgentRunUpdate
-    ) {
-      syncScreenshots(id, input)
-      return userStoryAgentRun(
-        await request<unknown>(
-          connection,
-          baseUrl,
-          `/projects/user-stories/${id}/agent-runs/${runId}`,
-          {
-            body: JSON.stringify(apiAgentRunUpdate(input)),
-            method: "PATCH",
-          }
-        )
-      )
-    },
-    async finalizeAgentRun(
-      id: string,
-      runId: string,
-      input: UserStoryAgentRunFinalization
-    ) {
-      syncScreenshots(id, input)
-      return userStory(
-        await request<unknown>(
-          connection,
-          baseUrl,
-          `/projects/user-stories/${id}/agent-runs/${runId}/finalize`,
-          {
-            body: JSON.stringify(input),
-            method: "POST",
-          }
-        )
-      )
-    },
-    async agentRunActivityDetail(
-      id: string,
-      runId: string,
-      activityId: string
-    ) {
-      return activityDetail(
-        await request<unknown>(
-          connection,
-          baseUrl,
-          `/projects/user-stories/${id}/agent-runs/${runId}/activities/${encodeURIComponent(activityId)}`
-        )
-      )
-    },
-    async createComment(
-      id: string,
-      input: Pick<
-        UserStoryComment,
-        "body" | "codeSelectionAttachments" | "fileAttachments"
-      >
-    ) {
-      const fileAttachments = await uploadFileAttachments(
-        connection,
-        input.fileAttachments
-      )
-      return userStoryComment(
-        await request<unknown>(
-          connection,
-          baseUrl,
-          `/projects/user-stories/${id}/comments`,
-          {
-            body: JSON.stringify({ ...input, fileAttachments }),
-            method: "POST",
           }
         )
       )
@@ -316,73 +179,6 @@ function defer<T>(task: () => Promise<T>) {
   })
 }
 
-function apiUpdate(input: UserStoryUpdate) {
-  const boundedInput = boundedAgentUpdate(input)
-  if (!boundedInput.agentActivity && !boundedInput.agentActivityUpdates)
-    return boundedInput
-  const { agentActivities, ...update } = boundedInput
-  void agentActivities
-  return update
-}
-
-function apiAgentRunUpdate(input: UserStoryAgentRunUpdate) {
-  if (!input.agentActivity && !input.agentActivityUpdates) return input
-  const { activities, ...update } = input
-  void activities
-  return update
-}
-
-function activityDetail(value: unknown) {
-  if (!isRecord(value)) throw new Error("Unable to read agent activity detail.")
-  if (typeof value.detail !== "string")
-    throw new Error("Unable to read agent activity detail.")
-  return value as UserStoryActivityDetail
-}
-
-function userStoryAgentRun(value: unknown) {
-  const run = transformerValue(value)
-  const id = stringId(recordValue(run).id)
-  const userStoryId = stringId(recordValue(run).userStoryId)
-  if (!isRecord(run)) throw new Error("Unable to read user story agent run.")
-  if (id === undefined || userStoryId === undefined)
-    throw new Error("Unable to read user story agent run.")
-  if (typeof run.kind !== "string")
-    throw new Error("Unable to read user story agent run.")
-  if (typeof run.status !== "string")
-    throw new Error("Unable to read user story agent run.")
-  return {
-    ...run,
-    commentId: stringId(recordValue(run).commentId) ?? null,
-    id,
-    userStoryId,
-  } as UserStoryAgentRun
-}
-
-function userStoryComment(value: unknown) {
-  const comment = transformerValue(value)
-  const id = stringId(recordValue(comment).id)
-  const userStoryId = stringId(recordValue(comment).userStoryId)
-  if (!isRecord(comment)) throw new Error("Unable to read user story comment.")
-  if (id === undefined) throw new Error("Unable to read user story comment.")
-  if (typeof comment.body !== "string")
-    throw new Error("Unable to read user story comment.")
-  return {
-    author: typeof comment.author === "string" ? comment.author : "Product",
-    body: comment.body,
-    codeSelectionAttachments: codeSelectionAttachments(
-      recordValue(comment).codeSelectionAttachments
-    ),
-    fileAttachments: fileAttachments(recordValue(comment).fileAttachments),
-    createdAt:
-      typeof comment.createdAt === "string"
-        ? comment.createdAt
-        : new Date().toISOString(),
-    id,
-    updatedAt: typeof comment.updatedAt === "string" ? comment.updatedAt : null,
-    userStoryId: userStoryId ?? "",
-  } satisfies UserStoryComment
-}
-
 function userStoryList(value: unknown, options: UserStoryOptions = {}) {
   if (Array.isArray(value)) return value.map((item) => userStory(item, options))
   if (!isRecord(value)) throw new Error("Unable to read user stories.")
@@ -417,19 +213,6 @@ function userStory(value: unknown, options: UserStoryOptions = {}) {
   }
   if (options.detail !== false || "fileAttachments" in story) {
     output.fileAttachments = fileAttachments(recordValue(story).fileAttachments)
-  }
-  if (Array.isArray(story.agentRuns)) {
-    output.agentRuns = story.agentRuns.map(userStoryAgentRun)
-  } else if (options.detail !== false) {
-    output.agentRuns = []
-  }
-  if (Array.isArray(story.runningAgentRuns)) {
-    output.runningAgentRuns = story.runningAgentRuns.map(userStoryAgentRun)
-  }
-  if (Array.isArray(story.comments)) {
-    output.comments = story.comments.map(userStoryComment)
-  } else if (options.detail !== false) {
-    output.comments = []
   }
   return output
 }
@@ -524,18 +307,12 @@ async function responseMessage(response: Response) {
   return `Request failed with status ${response.status}`
 }
 
-// Activities sent to the account: any screenshot they reference is
-// uploaded alongside, in the background.
-function payloadActivities(input: {
-  activities?: UserStoryAgentActivity[] | null
-  agentActivities?: UserStoryAgentActivity[] | null
-  agentActivity?: UserStoryAgentActivity | null
-  agentActivityUpdates?: UserStoryAgentActivity[]
-}) {
-  return [
-    ...(input.activities ?? []),
-    ...(input.agentActivities ?? []),
-    ...(input.agentActivity ? [input.agentActivity] : []),
-    ...(input.agentActivityUpdates ?? []),
-  ]
+// The API keeps up to this much of the agent's last error; a provider's
+// message can be longer, and the story's state must still be written.
+export const agentLastErrorLimit = 4096
+
+function boundedError(text: string) {
+  return text.length > agentLastErrorLimit
+    ? `${text.slice(0, agentLastErrorLimit - 1)}…`
+    : text
 }

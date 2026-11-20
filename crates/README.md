@@ -39,6 +39,27 @@ also ship as a standalone tool server.
 7. **Light.** A dependency has to earn its place; an idle session costs
    almost nothing because it can be dropped and rebuilt from its log.
 
+## The model catalog
+
+The providers and models the engine offers come from models.dev
+(`https://models.dev/api.json`), fetched by the engine at run time: a model
+published there is offered without a Blame release, to every client through
+`catalog/list` (and `blame-engine catalog`). The details, and which models.dev
+provider feeds which engine provider, are in
+`blame-engine-providers/src/catalog/`.
+
+- The engine keeps the last copy in `<data-dir>/catalog/` and revalidates it
+  with a conditional request on start, when a client lists a copy older than
+  15 minutes, and when a client asks (`refresh: true`, at most every 30 s).
+  A turn never waits for it; a failed refresh keeps the last copy.
+- A snapshot is compiled in for the first start and offline use
+  (`blame-engine-providers/catalog/`). The build never reaches the network;
+  refresh the snapshot with:
+
+```bash
+scripts/refresh-model-catalog.sh
+```
+
 ## Working on it
 
 ```bash

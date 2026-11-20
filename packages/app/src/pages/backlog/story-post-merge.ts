@@ -96,7 +96,6 @@ export async function mergeStoryIntoTarget(input: ApprovedStoryMerge) {
     {
       ...inactiveStoryFields(),
       agentLastError: null,
-      agentLastEvent: `Merged into ${result.targetBranch}.`,
       baseCommit: result.baseCommit,
       mergeCommit: result.mergeCommit,
       mergedAt: new Date().toISOString(),

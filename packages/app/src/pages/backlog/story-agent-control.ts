@@ -1,66 +1,27 @@
-import type {
-  UserStory,
-  UserStoryAgentRun,
-  UserStoryAgentRunFinalization,
-} from "@/components/backlog/data/backlog-data"
-import { agentPersistenceEvent } from "../../components/backlog/data/agent-stream-coordinator.ts"
-import { settleStoryRunStreams } from "../../components/backlog/data/agent-run-streams.ts"
-import { runningAgentRunsForStory } from "./agent-run-liveness.ts"
+import type { EnginePlatformClient } from "@blame/agent-runtime/engine-protocol"
 
-type BacklogRuns = {
-  finalizeAgentRun(
-    story: UserStory,
-    run: UserStoryAgentRun,
-    input: UserStoryAgentRunFinalization
-  ): Promise<UserStory>
-  loadDetail(story: UserStory): Promise<UserStory>
-}
+import type { UserStory } from "@/components/backlog/data/backlog-data"
+import { storyLocation } from "./story-engine.ts"
 
-// Aborts the session a pause stops. Returns the runtime's refusal, if any.
-export function pauseAbortRefusal(
-  story: Pick<UserStory, "agentStatus" | "clineSessionId">,
-  agent?: { sessions: { abort(sessionId: string): Promise<void> } }
+/**
+ * Stops the turn a pause interrupts. The engine ends it as interrupted and
+ * the story is then paused where it was (useStoryAgentOutcomes). Returns
+ * the engine's refusal, if any.
+ */
+export function pauseInterruptRefusal(
+  story: Pick<UserStory, "agentStatus" | "engineSessionId" | "workspaceMode">,
+  engine: Pick<EnginePlatformClient, "call"> | undefined,
+  platformName: string | undefined
 ): Promise<{ error: unknown } | undefined> {
-  if (!story.clineSessionId || story.agentStatus === "Paused")
+  if (!story.engineSessionId || story.agentStatus !== "Running")
     return Promise.resolve(undefined)
-  return Promise.resolve(agent?.sessions.abort(story.clineSessionId)).then(
+  return Promise.resolve(
+    engine?.call("interrupt", {
+      session: story.engineSessionId,
+      location: storyLocation(story.workspaceMode ?? "direct", platformName),
+    })
+  ).then(
     () => undefined,
     (error: unknown) => ({ error })
   )
-}
-
-// Closes the run that was executing when the person paused the agent or
-// interrupted it with a comment. Aborting a session sends no final event,
-// so without this the run stays "running" forever and is later mistaken
-// for a crash or a completed reply.
-export async function finalizeStoppedRun(
-  backlog: BacklogRuns,
-  story: UserStory,
-  message: string
-): Promise<UserStory | undefined> {
-  await settleStoryRunStreams(story.id)
-  const current = await backlog.loadDetail(story)
-  const run =
-    runningAgentRunsForStory(current).find(
-      (item) => item.id === current.activeAgentRunId
-    ) ?? runningAgentRunsForStory(current).at(-1)
-  if (!run) return undefined
-  const completedAt = new Date().toISOString()
-  return backlog.finalizeAgentRun(current, run, {
-    activities: [],
-    agentLastError: null,
-    agentLastEvent: message,
-    completedAt,
-    outcome: "paused",
-    persistenceEvent: agentPersistenceEvent(
-      { createdAt: completedAt, payload: { reason: "aborted" }, type: "done" },
-      {
-        executionId: run.executionId ?? run.id,
-        lastSequenceNumber: run.lastSequenceNumber,
-        runId: run.id,
-        sessionId: run.clineSessionId ?? current.clineSessionId ?? run.id,
-      }
-    ),
-    status: "cancelled",
-  })
 }

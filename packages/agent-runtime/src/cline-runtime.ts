@@ -16,28 +16,12 @@ import {
 } from "./personalization.js";
 
 import type { ExecutionTerminalReason } from "@blame/harness-core";
-import {
-  extractClineFreeModelLimitResetTime,
-  getClinePassSubscriptionUrl,
-  isClineFreeModelLimitError,
-  isClineFreeModelLimitMessage,
-  isClineModelNotFoundMessage,
-  isClineNotSubscribedError,
-  isClineNotSubscribedMessage,
-  isClineOrgIndividualInferenceSubscriptionError,
-  isClineOrgIndividualInferenceSubscriptionMessage,
-  isClinePassLimitError,
-  isClinePassLimitMessage,
-} from "@cline/llms";
 import type {
   ClineCore,
   ClineCoreStartInput,
   CoreSessionEvent,
   ContentBlock,
   Message,
-  OAuthPrompt,
-  OAuthProviderInterface,
-  OAuthServerListeningInfo,
 } from "@cline/sdk";
 
 import type { RepairProjectInitializationTask } from "./engine/task-protocol.js";
@@ -55,7 +39,6 @@ import {
   extensionContext,
   productionLogger,
   toolPolicies,
-  withConfigExtensions,
 } from "./cline-runtime-configuration.js";
 import {
   asRecord,
@@ -117,35 +100,18 @@ import {
 } from "./cline-runtime-tools.js";
 import { writeTools } from "./cline-tool-policy.js";
 import {
-  deleteProviderCredential,
   listProjectMemories,
-  fetchCatalogModel,
-  listProviders,
   resolveProviderCredential,
-  saveOAuthCredential,
   saveProjectMemory,
-  saveProviderCredential,
 } from "./cloud-api.js";
 import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
 import {
-  clineOAuthProvider,
-  forceOAuthRefresh,
-  ocaOAuthProvider,
-  openAICodexOAuthProvider,
-  supportedClineOAuthProvider,
-  toBlameOAuthCredentials,
-} from "./cline-oauth-providers.js";
-import {
   knownModelInfo,
-  loadCatalogModel,
 } from "./supplemental-model-config.js";
 import {
   claudeCodeCredential,
-  claudeCodeStatus,
   closeClaudeCodeBridge,
-  connectClaudeCode,
 } from "./claude-code/claude-code-provider.js";
-import { readClaudeCodeUsage, readCodexUsage } from "./subscription-usage.js";
 import { createContextProjectionExtension } from "./context-projection.js";
 import {
   appendInitialTaskBriefing,
@@ -175,11 +141,16 @@ import {
   type RunTerminalState,
 } from "./harness/run-lifecycle.js";
 import {
+  githubMcpTools,
   previewDevtoolsMcpTools,
+  sessionStoryHistoryTools,
+  userMcpTools,
+} from "./cline-runtime-tools.js";
+import { McpConnections } from "./engine/tools/mcp.js";
+import {
   previewRuntimeContext,
   type PreviewRuntimeContext,
-} from "./preview-harness-tools.js";
-import { githubMcpTools } from "./github-mcp-tools.js";
+} from "./engine/tools/preview-types.js";
 import type { ProductionSessionContext } from "./production.js";
 import {
   appendProductionConfig,
@@ -200,7 +171,6 @@ import { createProviderCompatibleFetch } from "./provider-schema-compatibility.j
 import { reasoningConfig } from "./reasoning.js";
 import { scanSecurityAuditRepository } from "./security-audit-scan.js";
 import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
-import { sessionStoryHistoryTools } from "./story-history-tools.js";
 import type { RuntimeCredentialInput } from "./runtime-credential.js";
 import {
   conversationSessionOptions,
@@ -219,22 +189,18 @@ import type {
   CompareCheckpointInput,
   CompareCheckpointResult,
   DirectStoryFilesInput,
-  ConnectClaudeCodeInput,
-  SubscriptionUsageInput,
-  LoginOAuthProviderInput,
   MapSecurityAuditInput,
   PullRequestAvailabilityInput,
   PullRequestStateInput,
   ResolveApprovalInput,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
-  SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
   StartSessionInput,
 } from "./types.js";
-import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
+import { BlameUserInstructionServices, skillScopeSystemPrompt, skillsClineTool } from "./user-instruction-services.js";
 import { webResearchTools, webResearchGuidance } from './web-research-tools.js';
 import { assertRepositoryPath, setGitRunner } from "./runtime-git.js";
 
@@ -371,6 +337,9 @@ export class BlameAgentRuntime {
   private sessionUsageSignatures = new Map<string, string>();
   private readonly runLifecycles = new RunLifecycleRegistry();
   private readonly userInstructionServices = new BlameUserInstructionServices();
+  // The user's MCP servers, through the engine's MCP client; none unless
+  // the desktop names their settings file.
+  private readonly mcpConnections: McpConnections | undefined;
   private structuredEventSessions = new Set<string>();
   private readonly productionConfig = loadProductionConfig();
   private readonly events?: AgentRuntimeEvents;
@@ -379,32 +348,19 @@ export class BlameAgentRuntime {
   constructor(events?: AgentRuntimeEvents, options: RuntimeOptions = {}) {
     this.events = events;
     this.options = options;
+    const mcpSettingsPath = options.mcpSettingsPath;
+    this.mcpConnections = mcpSettingsPath
+      ? new McpConnections({
+          settingsPath: () => mcpSettingsPath,
+          log: (message, payload) => productionLogger.log(message, payload),
+        })
+      : undefined;
     if (options.git) {
       setGitRunner(options.git);
     }
     applyProductionEnvironment(this.productionConfig);
     void import("@cline/sdk").catch(() => undefined);
   }
-
-  providers = {
-    list: (connection: ApiConnection) => listProviders(connection),
-    saveCredential: (
-      connection: ApiConnection,
-      input: SaveProviderCredentialInput,
-    ) => saveProviderCredential(connection, input),
-    deleteCredential: (connection: ApiConnection, id: string) =>
-      deleteProviderCredential(connection, { id }),
-    loginOAuth: (input: LoginOAuthProviderInput) => this.loginOAuth(input),
-    claudeCodeStatus: () => claudeCodeStatus(),
-    connectClaudeCode: (input: ConnectClaudeCodeInput) =>
-      connectClaudeCode(input),
-    subscriptionUsage: async (input: SubscriptionUsageInput) =>
-      input.providerId === "claude-code"
-        ? readClaudeCodeUsage()
-        : input.providerId === "openai-codex"
-          ? readCodexUsage((await this.runtimeCredential(input)).oauthCredentials)
-          : null,
-  };
 
   prewarm = (input: AgentRuntimePrewarmInput) =>
     this.prewarmRuntimeBackend(input);
@@ -478,6 +434,7 @@ export class BlameAgentRuntime {
     await this.disposeCore();
     await closeClaudeCodeBridge();
     this.userInstructionServices.stopAll();
+    await this.mcpConnections?.close();
   }
 
   private async core(backend?: AgentBackendConfig) {
@@ -573,31 +530,19 @@ export class BlameAgentRuntime {
     const startedAt = Date.now();
     const projectMemoryPromise = this.loadProjectMemory(input);
     try {
-      const [credential] = await Promise.all([
-        resolveProviderCredential(input.apiConnection, {
-          providerId: input.providerId,
-          label: credentialLabel(input),
-        }),
-        loadCatalogModel(
-          () =>
-            fetchCatalogModel(
-              input.apiConnection,
-              input.providerId,
-              input.modelId,
-            ),
-          input.providerId,
-          input.modelId,
-        ),
-      ]);
+      const credential = await resolveProviderCredential(input.apiConnection, {
+        providerId: input.providerId,
+        label: credentialLabel(input),
+      });
       await appendLog(startLogFile, "credential resolved", {
         providerId: credential.providerId,
         authMethod: credential.authMethod,
         hasBaseUrl: !!credential.baseUrl,
       });
+      // The ChatGPT token is refreshed by the engine host, which uses it
+      // for every engine conversation and saves it back to the API.
       const resolvedCredential = await claudeCodeCredential(
-        await this.refreshOAuthCredential(input.apiConnection, credential, {
-          force: forceOAuthRefresh(credential.providerId),
-        }),
+        credential,
         {
           backend: input.backend,
           reasoningEffort: input.reasoningEffort,
@@ -610,15 +555,6 @@ export class BlameAgentRuntime {
         hasBaseUrl: !!resolvedCredential.baseUrl,
         expires: resolvedCredential.oauthCredentials?.expires,
       });
-      await this.syncClineOAuthProviderSettings(resolvedCredential);
-      if (resolvedCredential.authMethod === "oauth") {
-        await appendLog(startLogFile, "cline oauth settings synced", {
-          providerId: resolvedCredential.providerId,
-          accountId: resolvedCredential.oauthCredentials?.accountId,
-          email: resolvedCredential.oauthCredentials?.email,
-          expires: resolvedCredential.oauthCredentials?.expires,
-        });
-      }
       const cline = await this.core(input.backend);
       await appendLog(startLogFile, "cline core ready");
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
@@ -651,12 +587,11 @@ export class BlameAgentRuntime {
             workspaceRoot: input.workspaceRoot,
           })
         : undefined;
-      const requestedConfigExtensions =
+      // Skills come from the engine's loader (skillsClineTool), not Cline's.
+      const configExtensions = (
         input.configExtensions ??
-        runtimeConfigExtensions(this.productionConfig);
-      const configExtensions = input.enableBuiltInSkills
-        ? withConfigExtensions(requestedConfigExtensions, "skills", "plugins")
-        : requestedConfigExtensions;
+        runtimeConfigExtensions(this.productionConfig)
+      )?.filter((extension) => extension !== "skills" && extension !== "plugins");
       const taskObjective = input.taskObjective ?? input.prompt;
       const taskContract = {
         environment: {
@@ -716,6 +651,13 @@ export class BlameAgentRuntime {
       const githubTools = input.clineDefaultTools
         ? []
         : await githubMcpTools(this.options, sessionId, productionLogger);
+      const mcpSettingsDisabled =
+        input.disableMcpSettingsTools ??
+        this.productionConfig.disableMcpSettingsTools;
+      const mcpTools =
+        input.clineDefaultTools || mcpSettingsDisabled || !this.mcpConnections
+          ? []
+          : await userMcpTools(this.mcpConnections);
       const standardTools = input.clineDefaultTools
         ? undefined
         : runtimeTools(
@@ -769,17 +711,18 @@ export class BlameAgentRuntime {
         ...webResearchTools(input.apiConnection, this.options.renderWebPage),
         ...(standardTools ?? []),
         ...githubTools,
+        ...mcpTools,
         ...(specialistTool ? [specialistTool] : []),
         ...sessionStoryHistoryTools(input, this.options.git),
         ...(input.conversationTools ?? []),
       ].filter((tool) => input.toolFilter?.(tool.name) ?? true);
+      const toolNames = extraTools.map((tool) => tool.name);
+      if (!input.clineDefaultTools)
+        extraTools.push(...skillsClineTool(userInstructionService, toolNames));
       const systemPrompt =
         (input.systemPrompt ?? loadPrompt("default-agent-system")) + webResearchGuidance +
         (input.nativeCompletion && !input.clineDefaultTools
-          ? skillScopeSystemPrompt(
-              userInstructionService,
-              extraTools.map((tool) => tool.name),
-            )
+          ? skillScopeSystemPrompt(userInstructionService, toolNames)
           : "");
       const requestedCompaction =
         input.compaction ?? blameCompactionConfig(this.productionConfig);
@@ -846,10 +789,10 @@ export class BlameAgentRuntime {
             },
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations,
-            disableMcpSettingsTools:
-              input.disableMcpSettingsTools ??
-              this.productionConfig.disableMcpSettingsTools,
-            ...(pluginPaths ? { pluginPaths } : {}),
+            // Blame connects the user's MCP servers itself (mcpTools).
+            disableMcpSettingsTools: input.clineDefaultTools
+              ? mcpSettingsDisabled
+              : true,
             ...(contextProjectionExtension
               ? { extensions: [contextProjectionExtension] }
               : {}),
@@ -863,8 +806,6 @@ export class BlameAgentRuntime {
         },
         localRuntime: {
           ...(configExtensions ? { configExtensions } : {}),
-          ...(userInstructionService ? { userInstructionService } : {}),
-          ...(pluginPaths ? { pluginPaths } : {}),
         },
         interactive: !autoSendPrompt,
         source: "blame-desktop",
@@ -1644,15 +1585,10 @@ export class BlameAgentRuntime {
     if (state === "running" || state === "cancelling") {
       throw new Error("Wait for the agent to finish before compacting.");
     }
-    const credential = await this.refreshOAuthCredential(
-      input.apiConnection,
-      await resolveProviderCredential(input.apiConnection, {
-        providerId: input.providerId,
-        label: credentialLabel(input),
-      }),
-      { force: forceOAuthRefresh(input.providerId) },
-    );
-    await this.syncClineOAuthProviderSettings(credential);
+    const credential = await resolveProviderCredential(input.apiConnection, {
+      providerId: input.providerId,
+      label: credentialLabel(input),
+    });
     const cline = this.sessionBackendKeys.has(sessionId)
       ? await this.sessionCore(sessionId)
       : await this.core(input.backend);
@@ -1681,17 +1617,6 @@ export class BlameAgentRuntime {
   private async mapSecurityAudit(input: MapSecurityAuditInput) {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     return scanSecurityAuditRepository(input.workspaceRoot, this.options.git);
-  }
-
-  private async runtimeCredential(input: RuntimeCredentialInput) {
-    const credential = await resolveProviderCredential(input.apiConnection, {
-      providerId: input.providerId,
-      label: credentialLabel(input),
-    });
-    return claudeCodeCredential(
-      await this.refreshOAuthCredential(input.apiConnection, credential),
-      { backend: input.backend, reasoningEffort: input.reasoningEffort },
-    );
   }
 
   private get gh() {
@@ -1972,7 +1897,7 @@ export class BlameAgentRuntime {
       {
         type: "error",
         sessionId,
-        payload: { message, ...clineErrorMetadata(message) },
+        payload: { message },
       },
       executionId,
     );
@@ -2469,126 +2394,6 @@ export class BlameAgentRuntime {
     return true;
   }
 
-  private async loginOAuth(input: LoginOAuthProviderInput) {
-    const provider = await this.oauthProvider(input.providerId);
-    const credentials = await provider.login({
-      onAuth: (info: { url: string; instructions?: string }) => {
-        this.options.openExternalUrl?.(info.url);
-        this.events?.emit({
-          type: "notice",
-          payload: {
-            providerId: input.providerId,
-            message: info.instructions ?? "OAuth login opened.",
-          },
-        });
-      },
-      onPrompt: async (prompt: OAuthPrompt) => prompt.defaultValue ?? "",
-      onProgress: (message: string) => {
-        this.events?.emit({
-          type: "notice",
-          payload: { providerId: input.providerId, message },
-        });
-      },
-      onServerListening: (info: OAuthServerListeningInfo) => {
-        this.events?.emit({
-          type: "notice",
-          payload: {
-            providerId: input.providerId,
-            message: `Waiting for OAuth callback on ${info.callbackUrl}`,
-          },
-        });
-      },
-      onServerClose: () => {
-        this.events?.emit({
-          type: "notice",
-          payload: {
-            providerId: input.providerId,
-            message: "OAuth callback server closed.",
-          },
-        });
-      },
-    });
-
-    return saveOAuthCredential(input.apiConnection, {
-      providerId: input.providerId,
-      label: input.label,
-      apiKey: provider.getApiKey(credentials),
-      oauthCredentials: toBlameOAuthCredentials(credentials),
-      baseUrl: input.baseUrl ?? null,
-    });
-  }
-
-  private async refreshOAuthCredential(
-    connection: ApiConnection,
-    credential: Awaited<ReturnType<typeof resolveProviderCredential>>,
-    options: { force?: boolean } = {},
-  ) {
-    if (credential.authMethod !== "oauth" || !credential.oauthCredentials)
-      return credential;
-    if (
-      !options.force &&
-      credential.oauthCredentials.expires > Date.now() + 60_000
-    )
-      return credential;
-
-    const provider = await this.oauthProvider(credential.providerId);
-    let refreshed: Awaited<ReturnType<typeof provider.refreshToken>>;
-    try {
-      refreshed = await provider.refreshToken(credential.oauthCredentials);
-    } catch (error) {
-      // A failed proactive refresh keeps a token that is still valid.
-      if (credential.oauthCredentials.expires > Date.now() + 60_000)
-        return credential;
-      throw error;
-    }
-    const saved = await saveOAuthCredential(connection, {
-      providerId: credential.providerId,
-      label: credential.label,
-      apiKey: provider.getApiKey(refreshed),
-      oauthCredentials: toBlameOAuthCredentials(refreshed),
-      baseUrl: credential.baseUrl,
-    });
-
-    return {
-      ...credential,
-      apiKey: provider.getApiKey(refreshed),
-      oauthCredentials: toBlameOAuthCredentials(refreshed),
-      authMethod: saved.authMethod,
-    };
-  }
-
-  private async syncClineOAuthProviderSettings(
-    credential: Awaited<ReturnType<typeof resolveProviderCredential>>,
-  ) {
-    if (credential.authMethod !== "oauth" || !credential.oauthCredentials)
-      return;
-    if (!supportedClineOAuthProvider(credential.providerId)) return;
-    const sdk = await import("@cline/sdk");
-    const providerId = sdk.normalizeOAuthProvider(credential.providerId);
-    const manager = new sdk.ProviderSettingsManager();
-    const existing = manager.getProviderSettings(providerId);
-    sdk.saveLocalProviderOAuthCredentials(manager, providerId, existing, {
-      access: credential.oauthCredentials.access,
-      refresh: credential.oauthCredentials.refresh,
-      expires: credential.oauthCredentials.expires,
-      accountId:
-        credential.oauthCredentials.accountId ??
-        credential.oauthCredentials.email,
-    });
-  }
-
-  private async oauthProvider(
-    providerId: string,
-  ): Promise<OAuthProviderInterface> {
-    const sdk = await import("@cline/sdk");
-    if (providerId === "openai-codex") return openAICodexOAuthProvider(sdk);
-    if (providerId === "cline" || providerId === "opencode") {
-      return clineOAuthProvider(sdk, providerId);
-    }
-    if (providerId === "oca") return ocaOAuthProvider(sdk);
-    throw new Error(`OAuth is not supported for provider ${providerId}`);
-  }
-
   private emitSessionNotice(sessionId: string, message: string) {
     void this.logSession(sessionId, "notice", { message });
     this.events?.emit(
@@ -2603,7 +2408,7 @@ export class BlameAgentRuntime {
   private emitSessionError(
     sessionId: string,
     message: string,
-    error: unknown = message,
+    _error: unknown = message,
     executionId?: string,
   ) {
     void this.logSession(sessionId, "error", { message });
@@ -2613,7 +2418,7 @@ export class BlameAgentRuntime {
         {
           type: "error",
           sessionId,
-          payload: { message, ...clineErrorMetadata(error) },
+          payload: { message },
         },
         executionId,
       ),
@@ -2947,7 +2752,7 @@ export class BlameAgentRuntime {
               {
                 type: "error",
                 sessionId,
-                payload: { message: failure, ...clineErrorMetadata(failure) },
+                payload: { message: failure },
               },
               activeExecutionId,
             ),
@@ -3020,7 +2825,7 @@ export class BlameAgentRuntime {
             {
               type: "error",
               sessionId,
-              payload: { message, ...clineErrorMetadata(error) },
+              payload: { message },
             },
             activeExecutionId,
           ),
@@ -3073,44 +2878,6 @@ function terminationWatchdogPause(timeoutMs: number) {
     const timeout = setTimeout(resolve, timeoutMs);
     timeout.unref?.();
   });
-}
-
-export function clineErrorMetadata(error: unknown) {
-  const message = errorMessage(error);
-  if (
-    isClineNotSubscribedError(error) ||
-    isClineNotSubscribedMessage(message)
-  ) {
-    return {
-      code: "cline_not_subscribed",
-      actionUrl: getClinePassSubscriptionUrl(),
-    };
-  }
-  if (
-    isClineOrgIndividualInferenceSubscriptionError(error) ||
-    isClineOrgIndividualInferenceSubscriptionMessage(message)
-  ) {
-    return { code: "cline_org_subscription_unsupported" };
-  }
-  if (isClinePassLimitError(error) || isClinePassLimitMessage(message)) {
-    return {
-      code: "cline_pass_limit",
-      actionUrl: getClinePassSubscriptionUrl(),
-    };
-  }
-  if (
-    isClineFreeModelLimitError(error) ||
-    isClineFreeModelLimitMessage(message)
-  ) {
-    return {
-      code: "cline_free_model_limit",
-      resetAt: extractClineFreeModelLimitResetTime(message),
-    };
-  }
-  if (isClineModelNotFoundMessage(message)) {
-    return { code: "cline_model_not_found" };
-  }
-  return {};
 }
 
 function credentialLabel(input: RuntimeCredentialInput) {

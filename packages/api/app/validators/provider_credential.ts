@@ -1,7 +1,8 @@
 import vine from '@vinejs/vine'
+import { engineProviderId } from '#validators/provider_id'
 
 export const saveProviderCredentialValidator = vine.create({
-  providerId: vine.string().trim().minLength(1).maxLength(80),
+  providerId: engineProviderId,
   label: vine.string().trim().minLength(1).maxLength(80).optional(),
   apiKey: vine.string().trim().minLength(1),
   baseUrl: vine.string().trim().url().nullable().optional(),
@@ -18,6 +19,6 @@ export const saveLocalProviderCredentialValidator = vine.create({
 })
 
 export const resolveProviderCredentialValidator = vine.create({
-  providerId: vine.string().trim().minLength(1).maxLength(80),
+  providerId: engineProviderId,
   label: vine.string().trim().minLength(1).maxLength(80).optional(),
 })

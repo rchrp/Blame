@@ -16,8 +16,9 @@ import type {
 } from "@blame/agent-runtime"
 import { createProviderListCache } from "./provider-list-cache.ts"
 import { planUsages } from "./plan-usage-cache.ts"
+import { engineProviderClient } from "./provider-client.ts"
 
-const storageKey = "blame.app.drawer-model-selection.v1"
+const storageKey = "blame.app.drawer-model-selection.v2"
 
 const providerLists = createProviderListCache<ProviderListResponse>()
 
@@ -36,18 +37,15 @@ export const allProvidersValue = "all"
 const modelStateListeners = new Set<() => void>()
 
 /** Providers that run on the user's own plan rather than API credits. */
-export const subscriptionProviders = ["openai-codex", "claude-code"]
+export const subscriptionProviders = ["chatgpt", "claude-code"]
 
-/** API key providers shown before the long tail; openai-compatible covers most token plans. */
+/** API key providers, in the order shown; openai-compatible covers most token plans. */
 export const recommendedApiKeyProviders = [
-  "openai-native",
+  "openai",
   "anthropic",
   "openrouter",
   "openai-compatible",
   "gemini",
-  "deepseek",
-  "xai",
-  "mistral",
 ]
 
 export const popularProviders = [
@@ -191,6 +189,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
 
   return {
     agent: providerState.agent,
+    providers: providerState.providerClient,
     aiPreferences: providerState.aiPreferences,
     apiConnection: providerState.apiConnection,
     loading: providerState.loading,
@@ -213,6 +212,7 @@ export function useModelSelection(options: ModelSelectionOptions = {}) {
     models: visibleModels,
     recommendations: providerState.providers?.recommendations,
     refreshProviders: providerState.refresh,
+    refreshCatalog: providerState.refreshCatalog,
     serverReady: providerState.serverReady,
     variantOptions: getVariantOptions(currentModel),
     role,
@@ -307,9 +307,14 @@ function useLocalProviderState(enabled = true) {
   const [loading, setLoading] = React.useState(false)
   const [failed, setFailed] = React.useState(false)
   const agent = platform.agent
+  const engine = platform.engine
+  const providerClient = React.useMemo(
+    () => (engine ? engineProviderClient(engine) : undefined),
+    [engine]
+  )
   // One list per account and API: shared by every picker, shown at once.
   const cacheKey =
-    agent && auth.status === "authenticated"
+    providerClient && auth.status === "authenticated"
       ? `${auth.apiConnection.url}|${auth.user?.id ?? ""}`
       : undefined
   const providers = React.useSyncExternalStore(
@@ -319,20 +324,19 @@ function useLocalProviderState(enabled = true) {
   )
 
   const load = React.useCallback(
-    (force: boolean) => {
-      if (!agent || !cacheKey || auth.status !== "authenticated") {
+    (force: boolean, refreshCatalog = false) => {
+      if (!providerClient || !cacheKey || auth.status !== "authenticated") {
         return Promise.resolve()
       }
       // Only a picker with nothing to show waits on the request.
       if (!providerLists.read(cacheKey)) setLoading(true)
       setFailed(false)
-      const connection = auth.apiConnection
       return providerLists
         .load(
           cacheKey,
           async () => {
             const normalized = normalizeProviderList(
-              await agent.providers.list(connection)
+              await providerClient.list(refreshCatalog)
             )
             if (!normalized) throw new Error("Empty provider list")
             return normalized
@@ -348,7 +352,7 @@ function useLocalProviderState(enabled = true) {
           setLoading(false)
         })
     },
-    [agent, auth.apiConnection, auth.status, cacheKey]
+    [providerClient, auth.status, cacheKey]
   )
   React.useEffect(() => rememberModelNames(providers), [providers])
   // After connecting a provider or changing models: always fetch again. A
@@ -358,6 +362,9 @@ function useLocalProviderState(enabled = true) {
     planUsages.reload()
     return load(true)
   }, [load])
+  // A picker opening asks models.dev (through the engine) whether a model
+  // came out: it shows the list it has meanwhile.
+  const refreshCatalog = React.useCallback(() => load(true, true), [load])
 
   React.useEffect(() => {
     if (!enabled) return
@@ -373,13 +380,15 @@ function useLocalProviderState(enabled = true) {
     failed,
     loading,
     providers,
+    providerClient,
     refresh,
+    refreshCatalog,
     aiPreferences:
       auth.status === "authenticated" ? auth.aiPreferences : undefined,
     saveAiPreferences:
       auth.status === "authenticated" ? auth.saveAiPreferences : undefined,
     agent,
-    serverReady: !!agent,
+    serverReady: !!providerClient,
   }
 }
 

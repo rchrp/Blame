@@ -2,7 +2,7 @@ import {
   lightReadToolNames,
   lightWriteToolNames,
 } from "./harness/light-tools.js";
-import { storyHistoryToolNames } from "./story-history-tools.js";
+import { storyHistoryToolNames } from "./engine/tools/story-history.js";
 export { blockedCommandParts } from "./harness/command-policy.js";
 
 export const readTools: string[] = [

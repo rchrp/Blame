@@ -28,12 +28,6 @@ export type BacklogAction =
 
 export type UserStoryPriority = "Low" | "Medium" | "High"
 export type UserStoryAgentStatus = "Running" | "Paused"
-export type UserStoryAgentErrorCode =
-  | "cline_not_subscribed"
-  | "cline_org_subscription_unsupported"
-  | "cline_pass_limit"
-  | "cline_free_model_limit"
-  | "cline_model_not_found"
 export type UserStoryAgentUsage = {
   cacheReadTokens?: number
   cacheWriteTokens?: number
@@ -51,9 +45,6 @@ export type UserStoryAgentActivity = {
   kind: "reasoning" | "message" | "tool" | "approval" | "notice" | "error"
   title: string
   detail: string
-  actionUrl?: string
-  errorCode?: UserStoryAgentErrorCode
-  resetAt?: string
   status?: "running" | "completed" | "failed"
   iteration?: number
   messageKind?: "intermediate" | "final"
@@ -94,6 +85,12 @@ export type UserStoryFileAttachment = {
   type: string
 }
 
+export type UserStoryAgentModel = {
+  providerId: string
+  modelId: string
+  reasoningEffort?: string | null
+}
+
 export type UserStoryAgentRunKind = "initial" | "change-request" | "resume"
 export type UserStoryAgentRunStatus =
   | "pending"
@@ -101,54 +98,6 @@ export type UserStoryAgentRunStatus =
   | "completed"
   | "failed"
   | "cancelled"
-export type AgentPersistenceEvent = {
-  createdAt: string
-  eventId: string
-  eventType: string
-  executionId: string
-  runId: string
-  sequenceNumber: number
-  sessionId: string
-}
-export type UserStoryAgentRunTerminalStatus = Exclude<
-  UserStoryAgentRunStatus,
-  "pending" | "running"
->
-export type UserStoryAgentRun = {
-  id: string
-  userStoryId: string
-  commentId?: string | null
-  kind: UserStoryAgentRunKind
-  clineSessionId?: string | null
-  executionId?: string | null
-  // The model that answered this turn; it can differ between comments.
-  providerId?: string | null
-  modelId?: string | null
-  reasoningEffort?: string | null
-  checkpointRunCount?: number | null
-  diffEndRef?: string | null
-  status: UserStoryAgentRunStatus
-  activities?: UserStoryAgentActivity[] | null
-  finalResponse?: string | null
-  usage?: UserStoryAgentUsage | null
-  sessionSummary?: string | null
-  completedAt?: string | null
-  createdAt: string
-  updatedAt?: string | null
-  lastSequenceNumber?: number | null
-}
-
-export type UserStoryComment = {
-  id: string
-  userStoryId: string
-  body: string
-  codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
-  fileAttachments?: UserStoryFileAttachment[] | null
-  author: string
-  createdAt: string
-  updatedAt?: string | null
-}
-
 export type UserStory = {
   id: string
   projectId: string
@@ -179,24 +128,19 @@ export type UserStory = {
   // How far the agent goes on this story, as chosen from the composer menu.
   // Null follows the ambition set in Settings.
   ambition?: "quick" | "standard" | "ambitious" | null
+  // Running while its agent works, Paused when it stopped mid-work. Written
+  // by the app when a turn starts or ends (useStoryAgentOutcomes).
   agentStatus?: UserStoryAgentStatus | null
-  activeAgentRunId?: string | null
-  clineSessionId?: string | null
-  agentProviderId?: string | null
-  agentModelId?: string | null
-  agentLastEvent?: string | null
+  // Why the agent could not start, shown on the queued card.
   agentLastError?: string | null
-  agentActivities?: UserStoryAgentActivity[] | null
-  agentFinalResponse?: string | null
-  agentUsage?: UserStoryAgentUsage | null
-  agentSessionSummary?: string | null
-  agentRuns?: UserStoryAgentRun[]
-  runningAgentRuns?: UserStoryAgentRun[]
+  // The engine session holding the story's conversation with its agent.
+  engineSessionId?: string | null
+  // The models that worked on the story, for the card's avatars.
+  agentModels?: UserStoryAgentModel[] | null
   mergedAt?: string | null
   mergeCommit?: string | null
   baseCommit?: string | null
   discardedReason?: string | null
-  comments?: UserStoryComment[]
   createdAt: string
   updatedAt?: string | null
 }
@@ -238,73 +182,15 @@ export type UserStoryUpdate = Partial<
     | "runMode"
     | "ambition"
     | "agentStatus"
-    | "clineSessionId"
-    | "agentProviderId"
-    | "agentModelId"
-    | "agentLastEvent"
     | "agentLastError"
-    | "agentActivities"
-    | "agentFinalResponse"
-    | "agentUsage"
-    | "agentSessionSummary"
+    | "engineSessionId"
+    | "agentModels"
     | "mergedAt"
     | "mergeCommit"
     | "baseCommit"
     | "discardedReason"
   >
-> & {
-  agentActivity?: UserStoryAgentActivity | null
-  agentActivityUpdates?: UserStoryAgentActivity[]
-}
-
-export type UserStoryActivityDetail = {
-  detail: string
-}
-
-export type UserStoryAgentRunDraft = {
-  checkpointRunCount?: number | null
-  commentId?: string | null
-  kind: UserStoryAgentRunKind
-  clineSessionId?: string | null
-  executionId?: string | null
-  status?: UserStoryAgentRunStatus
-  providerId?: string | null
-  modelId?: string | null
-  reasoningEffort?: string | null
-}
-
-export type UserStoryAgentRunFinalization = {
-  activities: UserStoryAgentActivity[]
-  agentLastError?: string | null
-  agentLastEvent?: string | null
-  completedAt?: string | null
-  diffEndRef?: string | null
-  finalResponse?: string | null
-  outcome: "review" | "paused"
-  sessionSummary?: string | null
-  status: UserStoryAgentRunTerminalStatus
-  usage?: UserStoryAgentUsage | null
-  persistenceEvent?: AgentPersistenceEvent
-}
-
-export type UserStoryAgentRunUpdate = Partial<
-  Pick<
-    UserStoryAgentRun,
-    | "activities"
-    | "checkpointRunCount"
-    | "clineSessionId"
-    | "completedAt"
-    | "diffEndRef"
-    | "finalResponse"
-    | "sessionSummary"
-    | "status"
-    | "usage"
-  >
-> & {
-  agentActivity?: UserStoryAgentActivity | null
-  agentActivityUpdates?: UserStoryAgentActivity[]
-  persistenceEvent?: AgentPersistenceEvent
-}
+>
 
 export const backlogColumns = [
   {
