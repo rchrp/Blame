@@ -220,3 +220,189 @@ fn a_compiler_that_cannot_start_answers_like_a_failed_worker() {
         Some("worker_failed")
     );
 }
+
+/// `describe` gives what the TypeScript harness described for each response
+/// style, environment, tool filter and the symbolic opt-in
+/// (`tests/fixtures/describe.json`, recorded from `describeEngineTools`).
+#[test]
+fn describes_the_tools_as_the_typescript_harness_did() {
+    let cases = Json::parse(include_str!("fixtures/describe.json").trim()).unwrap();
+    for symbolic in [false, true] {
+        let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_blame-harness"))
+            .arg("serve")
+            .env(
+                "BLAME_AGENT_SYMBOLIC_ANALYSIS",
+                if symbolic { "true" } else { "false" },
+            )
+            .stdin(std::process::Stdio::piped())
+            .stdout(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        let mut stdin = child.stdin.take().unwrap();
+        let selected: Vec<&Json> = cases
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|case| case.get("symbolic") == Some(&Json::Bool(symbolic)))
+            .collect();
+        for (index, case) in selected.iter().enumerate() {
+            let line = obj! { "id" => format!("d{index}"), "describe" => case.get("request").cloned().unwrap() }.stringify();
+            writeln!(stdin, "{line}").unwrap();
+        }
+        drop(stdin);
+        let output = child.wait_with_output().unwrap();
+        let text = String::from_utf8(output.stdout).unwrap();
+        for (index, case) in selected.iter().enumerate() {
+            let answer = text
+                .lines()
+                .filter_map(|line| Json::parse(line).ok())
+                .find(|message| {
+                    message.get("id").and_then(Json::as_str) == Some(&format!("d{index}"))
+                })
+                .unwrap();
+            assert_eq!(
+                answer.get("tools").unwrap().stringify(),
+                case.get("tools").unwrap().stringify(),
+                "describe {}",
+                case.get("request").unwrap().stringify()
+            );
+        }
+    }
+}
+
+/// The engine's finish_task: a verified finish answers with its summary and
+/// leaves the project memory candidate the engine host saves; screenshots
+/// are refused on this path, and an invalid input says what to fix.
+#[test]
+fn an_engine_finish_answers_its_summary_and_leaves_the_memory() {
+    let workspace = Workspace::new(
+        "finish-memory",
+        &[
+            ("index.js", b"export const answer = 42;\n"),
+            (
+                "package.json",
+                br#"{"name":"m","private":true,"scripts":{"build":"node index.js"}}"#,
+            ),
+        ],
+    );
+    let root = workspace.root();
+    let git = |args: &[&str]| {
+        std::process::Command::new("git")
+            .args(args)
+            .current_dir(&workspace.0)
+            .output()
+            .unwrap();
+    };
+    git(&["init", "-q"]);
+    git(&["add", "."]);
+    git(&[
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@example.invalid",
+        "commit",
+        "-qm",
+        "init",
+    ]);
+    let session = "finish-memory";
+    let call = |id: &str, tool: &str, input: Json| {
+        obj! { "id" => id, "call" => obj! {
+            "tool" => tool, "workspaceRoot" => root.as_str(), "input" => input,
+            "taskContract" => obj! { "session_id" => session, "objective" => "Change the answer" },
+            "toolContext" => obj! { "sessionId" => session, "toolCallId" => id },
+        } }
+    };
+    let answers = serve_in_order(&[
+        call(
+            "1",
+            "edit_code",
+            obj! { "operations" => Json::Arr(vec![obj! { "kind" => "patch", "patch" => "*** Begin Patch\n*** Update File: index.js\n@@\n-export const answer = 42;\n+export const answer = 43;\n*** End Patch" }]) },
+        ),
+        call(
+            "2",
+            "run_task",
+            obj! { "kind" => "project", "task" => "build" },
+        ),
+        call(
+            "3",
+            "finish_task",
+            obj! { "summary" => "  Changed the answer.  " },
+        ),
+        call(
+            "4",
+            "finish_task",
+            obj! { "summary" => "x", "images" => Json::Arr(vec![obj! { "ref" => format!("screenshot:{}", "a".repeat(64)), "caption" => "after" }]) },
+        ),
+        call("5", "finish_task", obj! { "summary" => "" }),
+    ]);
+    let presented = |id: &str| {
+        answers
+            .iter()
+            .find(|answer| answer.get("id").and_then(Json::as_str) == Some(id))
+            .and_then(|answer| answer.get("presented"))
+            .cloned()
+            .unwrap()
+    };
+    assert_eq!(
+        presented("3").stringify(),
+        r#"{"ok":true,"content":"Changed the answer."}"#
+    );
+    let memory = workspace.0.join(".blame/harness/light").join(format!(
+        "{}.memory.json",
+        &blame_harness::identity::sha256_hex(session.as_bytes())[..24]
+    ));
+    let memory =
+        Json::parse(&std::fs::read_to_string(memory).expect("the memory candidate")).unwrap();
+    assert_eq!(
+        memory.get("validationTaskId").and_then(Json::as_str),
+        Some("build")
+    );
+    assert_eq!(
+        memory.get("objective").and_then(Json::as_str),
+        Some("Change the answer")
+    );
+    let refused = presented("4");
+    assert_eq!(refused.get("ok"), Some(&Json::Bool(false)));
+    assert!(
+        refused
+            .get("content")
+            .and_then(Json::as_str)
+            .unwrap()
+            .starts_with("finish_task images must be screenshots taken in this conversation.")
+    );
+    assert_eq!(
+        presented("5").get("content").and_then(Json::as_str),
+        Some(
+            "finish_task was not accepted: summary: Too small: expected string to have >=1 characters. Fix this and call finish_task again."
+        )
+    );
+}
+
+/// The binary over its pipes, one message after the other's answer.
+fn serve_in_order(lines: &[Json]) -> Vec<Json> {
+    use std::io::BufRead as _;
+    let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_blame-harness"))
+        .arg("serve")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut stdin = child.stdin.take().unwrap();
+    let mut stdout = BufReader::new(child.stdout.take().unwrap()).lines();
+    let mut answers = vec![Json::parse(&stdout.next().unwrap().unwrap()).unwrap()];
+    for line in lines {
+        writeln!(stdin, "{}", line.stringify()).unwrap();
+        let id = line.get("id").cloned();
+        loop {
+            let answer = Json::parse(&stdout.next().unwrap().unwrap()).unwrap();
+            let done = answer.get("id").cloned() == id;
+            answers.push(answer);
+            if done {
+                break;
+            }
+        }
+    }
+    drop(stdin);
+    let _ = child.wait();
+    answers
+}

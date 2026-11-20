@@ -63,9 +63,12 @@ const KEPT_FINISHED_RUNS: usize = 20;
 /// Commits a formatter's output through the workspace's edit service.
 pub type ReplaceFiles<'a> = &'a (dyn Fn(&Replacements, &Signal) -> Outcome<Json> + Sync);
 
-pub struct RunContext {
+pub struct RunContext<'a> {
     pub credentials: Option<Json>,
     pub signal: Signal,
+    /// After a dependency operation changed files: the session's preview
+    /// takes them, and this is its state (the result's `preview`).
+    pub refresh_preview: Option<&'a (dyn Fn() -> Option<Json> + Sync)>,
 }
 
 /// A run's result, set once.
@@ -213,7 +216,7 @@ impl TaskRunner {
                 "Symbolic analysis requires workspace symbol resolution.",
             ),
             Some("inspect") => self.inspect(input, &context.signal),
-            Some("dependency") => self.dependency(input, &context.signal),
+            Some("dependency") => self.dependency(input, context),
             Some("project") => self.project(input, context),
             _ => self.command(input, context, replace_files),
         }
@@ -525,7 +528,8 @@ impl TaskRunner {
         Ok(true)
     }
 
-    fn dependency(&self, input: &Json, signal: &Signal) -> Json {
+    fn dependency(&self, input: &Json, context: &RunContext<'_>) -> Json {
+        let signal = &context.signal;
         let files = self.files();
         let request = DependencyInput {
             action: text(input, "action").unwrap_or("").to_string(),
@@ -562,9 +566,11 @@ impl TaskRunner {
                             "taskKind" => "build",
                         },
                     )?;
-                    Ok(
-                        obj! { "status" => "ok", "data" => obj! { "changed" => true, "paths" => Json::Arr(changed_paths.iter().map(Json::from).collect()), "output" => bounded_diagnostic(&output, "", 4_000) } },
-                    )
+                    // The session's preview takes the new dependencies.
+                    let preview = context.refresh_preview.and_then(|refresh| refresh());
+                    let data = obj! { "changed" => true, "paths" => Json::Arr(changed_paths.iter().map(Json::from).collect()), "output" => bounded_diagnostic(&output, "", 4_000) }
+                        .with_opt("preview", preview);
+                    Ok(obj! { "status" => "ok", "data" => data })
                 }
             }
         })();

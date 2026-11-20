@@ -23,6 +23,8 @@ use crate::workspace::Workspace;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+/// How long a question to the client may wait for its answer.
+const ASK_WAIT: Duration = Duration::from_secs(10);
 const WORKSPACE_LIMIT: usize = 8;
 const WORKSPACE_IDLE: Duration = Duration::from_secs(60 * 60);
 
@@ -35,6 +37,8 @@ struct Cached {
 pub struct Harness {
     workspaces: Mutex<Vec<Cached>>,
     compiler: Arc<dyn CompilerPort>,
+    /// The client's answers to what only it knows (`serve --asks`).
+    pub asker: crate::ask::Asker,
 }
 
 impl Default for Harness {
@@ -61,6 +65,7 @@ impl Harness {
         Harness {
             workspaces: Mutex::new(Vec::new()),
             compiler,
+            asker: crate::ask::Asker::default(),
         }
     }
 
@@ -199,6 +204,7 @@ impl Harness {
                         .replace_files(replacements, signal)
                 };
                 let context = RunContext {
+                    refresh_preview: None,
                     credentials: request
                         .get("commandCredentials")
                         .filter(|value| value.is_object())
@@ -327,8 +333,38 @@ impl Harness {
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .replace_files(replacements, signal)
         };
+        let session = context
+            .get("sessionId")
+            .and_then(Json::as_str)
+            .or_else(|| {
+                contract
+                    .and_then(|contract| contract.get("session_id"))
+                    .and_then(Json::as_str)
+            })
+            .unwrap_or("")
+            .to_string();
+        let asked = |method: &str| {
+            self.asker.ask(
+                method,
+                obj! { "sessionId" => session.as_str(), "workspaceRoot" => root },
+                ASK_WAIT,
+            )
+        };
+        // Credentials as the app grants them, asked before each command.
+        let kind = input
+            .get("kind")
+            .and_then(Json::as_str)
+            .unwrap_or("command");
+        let asked_credentials = if credentials.is_none() && matches!(kind, "command" | "project") {
+            asked("commandCredentials")
+        } else {
+            None
+        };
+        let credentials = credentials.cloned().or(asked_credentials);
+        let refresh = || asked("refreshPreviewDependencies");
         let run_context = RunContext {
-            credentials: credentials.filter(|value| value.is_object()).cloned(),
+            refresh_preview: Some(&refresh),
+            credentials: credentials.filter(|value| value.is_object()),
             signal: signal.clone(),
         };
         let result = runner.run(input, &run_context, Some(&replace));
@@ -361,11 +397,13 @@ impl Harness {
             ));
         }
         let input = request.get("input").cloned().unwrap_or(Json::Null);
+        if name == "finish_task" {
+            return self.call_finish(request, &input, signal);
+        }
         let (schema, value) = match name {
             "search_code" => (search_code_schema(), normalize_search_input(&input)),
             "edit_code" => (edit_code_schema(), input),
-            "run_task" => (run_task_schema(), input),
-            "finish_task" => (finish_task_schema(), input),
+            "run_task" => (run_task_schema(), normalize_run_task_input(&input)),
             _ => (read_code_schema(), input),
         };
         let parsed = match parse_leniently(&schema, &value) {
@@ -405,6 +443,159 @@ impl Harness {
             Err(failure) => Ok(text_result(false, failure.message)),
         }
     }
+}
+
+impl Harness {
+    /// finish_task as the engine's tool (`createFinishTaskTool` with the
+    /// runner as executor): the input checked as zod checks it, with no
+    /// repair; screenshots refused, since no screenshot of the session is
+    /// known on this path; the accepted summary as the answer, a refusal as
+    /// the failure's text.
+    fn call_finish(&self, request: &Json, input: &Json, signal: &Signal) -> Outcome<Presented> {
+        let (parsed, issues) = finish_task_schema().run(Some(input));
+        if !issues.is_empty() {
+            return Ok(text_result(false, finish_input_error(input, &issues)));
+        }
+        let parsed = parsed.unwrap_or(Json::Null);
+        let images =
+            crate::finish::finish_images(parsed.get("images").unwrap_or(&Json::Arr(Vec::new())));
+        if !images.is_empty() {
+            let unknown: Vec<String> = images
+                .iter()
+                .filter_map(|image| image.get("id").and_then(Json::as_str))
+                .map(|id| format!("screenshot:{id}"))
+                .collect();
+            return Ok(text_result(
+                false,
+                format!(
+                    "finish_task images must be screenshots taken in this conversation. Unknown: {}. Use the exact reference from a preview_devtools__take_screenshot result, take the screenshot again, or remove the image.",
+                    unknown.join(", ")
+                ),
+            ));
+        }
+        let summary = parsed.get("summary").cloned().unwrap_or(Json::Null);
+        let context = request.get("toolContext").cloned().unwrap_or(Json::obj());
+        let inner = obj! { "input" => obj! { "summary" => summary.clone() }, "taskContract" => request.get("taskContract").cloned().unwrap_or(Json::Null), "tool" => "finish_task", "toolContext" => light_tool_context(&context) }
+            .with("workspaceRoot", request.get("workspaceRoot").cloned().unwrap_or(Json::Null));
+        match self.execute(&inner, signal) {
+            Ok(raw) => {
+                signal.check()?;
+                if raw.get("status").and_then(Json::as_str) != Some("ok") {
+                    let message = raw
+                        .get("message")
+                        .and_then(Json::as_str)
+                        .unwrap_or("")
+                        .to_string();
+                    return Ok(Presented {
+                        ok: false,
+                        content: Json::Str(message),
+                        raw: Some(raw),
+                    });
+                }
+                let answer = raw
+                    .get("data")
+                    .and_then(|data| data.get("summary"))
+                    .cloned()
+                    .filter(|summary| summary.as_str().is_some())
+                    .unwrap_or(summary);
+                Ok(Presented {
+                    ok: true,
+                    content: answer,
+                    raw: Some(raw),
+                })
+            }
+            Err(failure) if failure.cancelled => Err(failure),
+            Err(failure) => Ok(text_result(false, failure.message)),
+        }
+    }
+}
+
+/// `finishInputError`: what to fix, with the summary's length when it is too long.
+fn finish_input_error(input: &Json, issues: &[crate::validate::Issue]) -> String {
+    let problems: Vec<String> = issues
+        .iter()
+        .take(5)
+        .map(|issue| {
+            let field = issue
+                .path
+                .iter()
+                .map(|part| match part {
+                    Json::Str(text) => text.clone(),
+                    other => other.stringify(),
+                })
+                .collect::<Vec<_>>()
+                .join(".");
+            let field = if field.is_empty() {
+                "input".to_string()
+            } else {
+                field
+            };
+            if field == "summary"
+                && issue.message.starts_with("Too big:")
+                && let Some(summary) = input.get("summary").and_then(Json::as_str)
+            {
+                return format!(
+                    "summary is {} characters, the limit is 100000; shorten it",
+                    crate::text::utf16_len(crate::text::js_trim(summary))
+                );
+            }
+            format!("{field}: {}", issue.message)
+        })
+        .collect();
+    format!(
+        "finish_task was not accepted: {}. Fix this and call finish_task again.",
+        problems.join("; ")
+    )
+}
+
+/// `runTaskInput`: known model misreadings repaired before validation (a
+/// task sent as `kind: "task"` or without a kind, a bare run number, a
+/// command sent as an inspect).
+fn normalize_run_task_input(value: &Json) -> Json {
+    let Json::Obj(_) = value else {
+        return value.clone();
+    };
+    let mut input = value.clone();
+    let kind = input.get("kind").and_then(Json::as_str).map(str::to_string);
+    if input.get("task").and_then(Json::as_str).is_some()
+        && (kind.as_deref() == Some("task")
+            || (input.get("kind").is_none() && input.get("command").is_none()))
+    {
+        input.set("kind", "project");
+        return input;
+    }
+    if kind.as_deref() != Some("inspect") {
+        return value.clone();
+    }
+    let run = input
+        .get("run")
+        .and_then(Json::as_str)
+        .map(|run| crate::text::js_trim(run).to_string());
+    static RUN: std::sync::LazyLock<regex::Regex> =
+        std::sync::LazyLock::new(|| regex::Regex::new(r"^[rR]?[1-9]\d*$").expect("pattern"));
+    if let Some(run) = run.as_deref().filter(|run| RUN.is_match(run)) {
+        input.set("run", format!("r{}", run.trim_start_matches(['r', 'R'])));
+        return input;
+    }
+    let command = input
+        .get("command")
+        .and_then(Json::as_str)
+        .map(str::to_string)
+        .or_else(|| {
+            run.clone()
+                .filter(|run| run.chars().any(crate::text::is_js_space))
+        });
+    let Some(command) = command else {
+        return value.clone();
+    };
+    if input.get("run").is_some() && Some(command.as_str()) != run.as_deref() {
+        return value.clone();
+    }
+    input.remove("cursor");
+    input.remove("run");
+    input.set("kind", "command");
+    input.set("command", command);
+    input
 }
 
 /// A workspace in use by a request, or running a command it started, is

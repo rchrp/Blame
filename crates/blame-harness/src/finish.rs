@@ -632,6 +632,7 @@ impl FinishService {
             obj! { "input" => input.clone(), "phase" => "started", "toolCallId" => id.as_str() },
         );
         let context = RunContext {
+            refresh_preview: None,
             credentials: None,
             signal: signal.clone(),
         };

@@ -32,7 +32,10 @@ fn main() -> ExitCode {
         .iter()
         .any(|argument| argument == "serve" || argument == "--serve")
     {
-        blame_harness::server::serve(BufReader::new(io::stdin()), io::stdout(), harness);
+        // `--asks`: the client answers the harness's questions (credentials
+        // of a command, a preview's dependency refresh).
+        let asks = arguments.iter().any(|argument| argument == "--asks");
+        blame_harness::server::serve_with(BufReader::new(io::stdin()), io::stdout(), harness, asks);
         return ExitCode::SUCCESS;
     }
     let mut text = String::new();

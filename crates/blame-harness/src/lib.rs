@@ -11,6 +11,7 @@
 //! `harness`/`server` (execution).
 
 pub mod aliases;
+pub mod ask;
 pub mod attention;
 pub mod base64;
 pub mod checks;
