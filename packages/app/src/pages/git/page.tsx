@@ -22,6 +22,7 @@ import {
   gitFileSelection,
 } from "@/components/git/git-types"
 import { Button } from "@/components/ui/button"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import {
   gitCommitTotal,
@@ -106,12 +107,9 @@ export function GitPage() {
     try {
       const codePractices = await projectCodePractices(auth, projects)
       const result = await generateCommitMessageDraft(repositoryRoot, () =>
-        platform.agent!.generateCommitMessage({
-          apiConnection: auth.apiConnection,
-          providerId: alternativeSelection.currentModel!.provider.id,
-          modelId: alternativeSelection.currentModel!.id,
-          credentialLabel: alternativeSelection.currentModel!.credentialLabel,
-          reasoningEffort: alternativeSelection.currentVariant,
+        platform.engine!.call("generateCommitMessage", {
+          model: engineModelChoice(alternativeSelection)!,
+          projectId: projects.activeProject?.id,
           repositoryRoot: root!,
           worktree: root!,
           selectedPaths,
@@ -171,12 +169,9 @@ export function GitPage() {
     })
     try {
       const codePractices = await projectCodePractices(auth, projects)
-      const result = await platform.agent!.resolveMergeConflicts({
-        apiConnection: auth.apiConnection,
-        providerId: alternativeSelection.currentModel!.provider.id,
-        modelId: alternativeSelection.currentModel!.id,
-        credentialLabel: alternativeSelection.currentModel!.credentialLabel,
-        reasoningEffort: alternativeSelection.currentVariant,
+      const result = await platform.engine!.call("resolveMergeConflicts", {
+        model: engineModelChoice(alternativeSelection)!,
+        projectId: projects.activeProject?.id,
         repositoryRoot: root!,
         worktree: root!,
         targetBranch: git.status?.branch.current,
@@ -561,8 +556,7 @@ function resolveMergeConflictsValidationError(
   if (auth.status !== "authenticated")
     return "Reconnect the provider before resolving conflicts."
   if (!model) return "Select a model before resolving conflicts."
-  if (!platform.agent?.resolveMergeConflicts)
-    return "Desktop agent runtime is not available."
+  if (!platform.engine) return "Blame's agent engine is not available."
 }
 
 function generateCommitMessageValidationError(
@@ -581,8 +575,7 @@ function generateCommitMessageValidationError(
   if (auth.status !== "authenticated")
     return "Reconnect the provider before generating a commit message."
   if (!model) return "Select a model before generating a commit message."
-  if (!platform.agent?.generateCommitMessage)
-    return "Desktop agent runtime is not available."
+  if (!platform.engine) return "Blame's agent engine is not available."
 }
 
 function selectedGitFilePaths(

@@ -18,7 +18,6 @@ import {
   developmentPracticePrompts,
   renderPrompt,
 } from "./development-prompt-parts.js";
-export { developmentPracticePrompt } from "./development-prompt-parts.js";
 import { newProjectStackCatalogPrompt } from "./new-project-planning.js";
 import {
   normalizePersonalization,

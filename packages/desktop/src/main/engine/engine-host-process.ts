@@ -62,6 +62,8 @@ const host = new EngineHost({
   },
   emit: (event) => post({ kind: "event", event }),
   renderWebPage: ({ url, signal }) => desktop("renderWebPage", { url }, signal),
+  // Main runs git on this machine, or in the runtime VM for its worktrees.
+  git: (cwd, args) => desktop<string>("git", { cwd, args }),
   onLog: ({ source, text }) => {
     if (source === "engine-stderr" || /threw|ignored/.test(text))
       console.error(`[engine] ${text}`);

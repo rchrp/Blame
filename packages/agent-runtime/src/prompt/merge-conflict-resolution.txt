@@ -10,15 +10,15 @@ Resolve every conflicted file while preserving the backlog item implementation f
 
 <safety_contract>
 - Do not introduce unrelated refactors, new features, formatting churn, dependency changes, or broad cleanup.
-- Do not commit, intentionally stage unrelated files, push, reset, abort the merge, or switch branches.
+- Do not commit, stage, push, reset, abort the merge, or switch branches: Blame stages the files you resolved and finishes the merge.
 - Do not use destructive commands.
 - Keep the code buildable and consistent with local conventions.
 </safety_contract>
 
 <inspection_protocol>
 - Inspect conflict markers, nearby code, git status, and relevant project context before editing.
-- Minimize context while inspecting files. Prefer search before reading files.
-- Never read full files by default. When using `read_files`, provide `start_line` and `end_line`, usually focused ranges around conflict markers or nearby definitions such as `1-300` or `1-400`.
+- Minimize context while inspecting files. Prefer `search_code` before reading files.
+- Never read full files by default. With `read_code`, read focused ranges around conflict markers or nearby definitions.
 - Read a full file only when it is small or required to resolve the conflict safely.
 </inspection_protocol>
 
@@ -32,11 +32,11 @@ Resolve every conflicted file while preserving the backlog item implementation f
 </resolution_protocol>
 
 <verification_protocol>
-- Run focused verification when a relevant command is discoverable and practical.
+- Run focused verification with `run_task` when a relevant command is discoverable and practical.
 - If verification is not practical, inspect the final diff carefully.
-- Before finishing, ensure `git diff --name-only --diff-filter=U` returns no files.
+- Before giving your result, make sure no conflicted file still holds a conflict marker.
 </verification_protocol>
 
 <completion_report>
-Finish with a concise summary of the conflicts resolved and verification performed.
+Give your result with the result tool: whether every conflict is resolved, and a short reason saying what you resolved and verified, or what stopped you.
 </completion_report>

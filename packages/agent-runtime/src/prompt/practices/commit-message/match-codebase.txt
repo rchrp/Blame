@@ -1,7 +1,7 @@
 ## Commit Message: Match Codebase
 
 <output_contract>
-Output exactly one Git commit message. No explanation, markdown, quotes, prefix labels, or alternatives.
+Give exactly one Git commit message with the result tool. No explanation, markdown, quotes, prefix labels, or alternatives in it.
 </output_contract>
 
 ### Infer The Local Convention

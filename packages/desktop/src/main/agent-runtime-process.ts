@@ -334,19 +334,11 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.securityAudits.finish(input as string),
     "newProjects.generate": (input: unknown) =>
       runtime.newProjects.generate(input as never),
-    approveAndMerge: (input: unknown) =>
-      runtime.approveAndMerge(input as never),
-    openPullRequest: (input: unknown) =>
-      runtime.openPullRequest(input as never),
     pullRequestAvailability: (input: unknown) =>
       runtime.pullRequestAvailability(input as never),
     pullRequestState: (input: unknown) =>
       runtime.pullRequestState(input as never),
-    generateCommitMessage: (input: unknown) =>
-      runtime.generateCommitMessage(input as never),
     directStoryFiles: (input: unknown) =>
       runtime.directStoryFiles(input as never),
-    resolveMergeConflicts: (input: unknown) =>
-      runtime.resolveMergeConflicts(input as never),
   };
 }

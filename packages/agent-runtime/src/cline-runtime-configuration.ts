@@ -17,7 +17,6 @@ import { workspacePromptMetadata } from "./workspace-prompt-metadata.js";
 import { type AgentTool } from "./cline-initialization.js";
 
 import {
-  developmentPracticePrompt,
   newProjectGenerationMaxIterations,
 } from "./cline-runtime-prompts.js";
 
@@ -41,24 +40,13 @@ import { reasoningConfig } from "./reasoning.js";
 
 import type {
   AgentBackendConfig,
-  ApproveAndMergeInput,
   AssessProjectInitializationImpactInput,
-  GenerateCommitMessageInput,
   RepairProjectInitializationInput,
-  ResolveMergeConflictsInput,
   StartNewProjectGenerationInput,
   StartSessionInput,
 } from "./types.js";
 
 export const productionLogger = createProductionLogger();
-
-export type MergeConflictRuntimeInput =
-  | ApproveAndMergeInput
-  | ResolveMergeConflictsInput;
-
-export type CommitMessageRuntimeInput =
-  | ApproveAndMergeInput
-  | GenerateCommitMessageInput;
 
 export function toolPolicies(
   autoApproveWriteTools: boolean,
@@ -103,25 +91,6 @@ export function newProjectGenerationToolPolicies() {
     ["skills", { enabled: false, autoApprove: false }],
     ["ask_question", { enabled: false, autoApprove: false }],
   ]);
-}
-
-export function mergeConflictToolPolicies() {
-  return {
-    ...Object.fromEntries(
-      [...readTools, ...writeTools].map((name) => [
-        name,
-        { enabled: false, autoApprove: false },
-      ]),
-    ),
-    ...Object.fromEntries(
-      legacyDirectWorkspaceTools.map((name) => [
-        name,
-        { enabled: true, autoApprove: true },
-      ]),
-    ),
-    ask_question: { enabled: false, autoApprove: false },
-    skills: { enabled: false, autoApprove: false },
-  };
 }
 
 export function backendKey(backend?: AgentBackendConfig) {
@@ -221,49 +190,6 @@ export function initializationImpactConfig(
     enableSpawnAgent: false,
     enableAgentTeams: false,
     maxIterations: 4,
-  });
-}
-
-export function commitMessageConfig(
-  input: CommitMessageRuntimeInput,
-  credential: { apiKey: string; baseUrl: string | null },
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: developmentPracticePrompt(
-      input.codePractices ?? [],
-      "commit_message_convention",
-    ),
-    cwd: input.worktree,
-    workspaceRoot: input.worktree,
-    enableTools: false,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    maxIterations: 4,
-  });
-}
-
-export function mergeConflictConfig(
-  input: MergeConflictRuntimeInput,
-  credential: { apiKey: string; baseUrl: string | null },
-) {
-  return appendProductionConfig({
-    providerId: input.providerId,
-    modelId: input.modelId,
-    apiKey: credential.apiKey,
-    baseUrl: credential.baseUrl ?? undefined,
-    ...reasoningConfig(input.reasoningEffort),
-    systemPrompt: loadPrompt("merge-conflict-resolution"),
-    cwd: input.worktree,
-    workspaceRoot: input.worktree,
-    enableTools: true,
-    enableSpawnAgent: false,
-    enableAgentTeams: false,
-    maxIterations: 16,
   });
 }
 

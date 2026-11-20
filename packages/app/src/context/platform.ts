@@ -13,16 +13,12 @@ import type {
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
-  ApproveAndMergeInput,
-  ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
-  GenerateCommitMessageInput,
-  GenerateCommitMessageResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -31,8 +27,6 @@ import type {
   SubscriptionUsage,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
-  OpenPullRequestInput,
-  OpenPullRequestResult,
   ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
@@ -45,8 +39,6 @@ import type {
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
   ResolveApprovalInput,
-  ResolveMergeConflictsInput,
-  ResolveMergeConflictsResult,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
   RunSecurityAuditInput,
@@ -507,24 +499,15 @@ export type AgentClient = {
     ): Promise<AnalyzeProjectCodePracticesResult>
   }
   newProjects: NewProjectsClient
-  approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
-  // Open PR: commit, push the story branch, then gh pr create on the host.
-  openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>
   pullRequestAvailability(
     input: PullRequestAvailabilityInput
   ): Promise<PullRequestAvailability>
   // What GitHub says about the story's pull request: gh pr view on the host.
   pullRequestState(input: PullRequestStateInput): Promise<PullRequestState>
-  generateCommitMessage(
-    input: GenerateCommitMessageInput
-  ): Promise<GenerateCommitMessageResult>
   // The files a Direct story wrote in the project folder that can be committed.
   directStoryFiles(
     input: DirectStoryFilesInput
   ): Promise<DirectStoryFilesResult>
-  resolveMergeConflicts(
-    input: ResolveMergeConflictsInput
-  ): Promise<ResolveMergeConflictsResult>
 }
 
 export type SecurityAuditClient = {

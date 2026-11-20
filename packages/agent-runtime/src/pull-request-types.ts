@@ -1,15 +1,3 @@
-import type { ApproveAndMergeInput } from "./types.js";
-
-// Commits the remaining story work, pushes the story branch to origin and
-// opens (or finds) its GitHub pull request into the target branch.
-export type OpenPullRequestInput = Omit<
-  ApproveAndMergeInput,
-  "activeWorktrees" | "push"
-> & {
-  // The agent's final summary of the story, quoted in the pull request body.
-  agentSummary?: string;
-};
-
 export type OpenPullRequestResult = {
   url: string;
   // False when an open pull request already existed for the story branch.

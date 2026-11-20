@@ -333,30 +333,6 @@ export type StartDevelopmentSessionInput = {
   storyId?: string;
 };
 
-export type ApproveAndMergeInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  storyBranch: string;
-  // The branch the story started from and merges into; without it, the
-  // branch checked out in the project folder.
-  targetBranch?: string;
-  // Worktrees where an agent is running, filled in by the desktop host: the
-  // target branch is not advanced inside one of them.
-  activeWorktrees?: string[];
-  // Only true also pushes the target branch to its upstream; otherwise the
-  // merge stays on the local target branch.
-  push?: boolean;
-  title: string;
-  summary: string;
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
-};
-
 export type ApproveAndMergeResult = {
   baseCommit: string;
   mergeCommit: string;
@@ -372,31 +348,12 @@ export type ApproveAndMergePush =
   | { status: "skipped" };
 
 export type {
-  OpenPullRequestInput,
   OpenPullRequestResult,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
 } from "./pull-request-types.js";
-
-export type GenerateCommitMessageInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  title?: string;
-  summary?: string;
-  // A story's commit (Direct mode): the message closes the GitHub issues of
-  // origin the title or summary says it handles, as Approve & Merge does.
-  closeLinkedIssues?: boolean;
-  selectedPaths?: string[];
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
-};
 
 export type GenerateCommitMessageResult = {
   message: string;
@@ -419,21 +376,6 @@ export type DirectStoryFile = {
 export type DirectStoryFilesResult = {
   // Files the story wrote that still differ from HEAD and can be committed.
   files: DirectStoryFile[];
-};
-
-export type ResolveMergeConflictsInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  title?: string;
-  summary?: string;
-  targetBranch?: string;
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
 };
 
 export type ResolveMergeConflictsResult = {
