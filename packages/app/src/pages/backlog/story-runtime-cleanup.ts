@@ -38,7 +38,10 @@ export async function deleteUserStoryWithRuntime(
   }
 }
 
-// Stops the story's agent if a turn runs. Its records stay with the engine.
+// Stops the story's agent if a turn runs. Its records stay with the engine
+// for now: deleting a story is where its session will be deleted too, once
+// the host has `session/delete` (the one-shot agents slice adds it), which
+// also releases the session's tools (`conversationTools.release`).
 export async function abortStoryAgent(story: UserStory, platform: Platform) {
   if (!story.engineSessionId || !platform.engine) return
   const location = storyLocation(

@@ -42,6 +42,8 @@ import {
   McpConnections,
   clientToolGuards,
   clientToolPolicy,
+  previewRuntimeContext,
+  type ConversationToolSession,
 } from "./tools/index.js";
 import { webResearchClientTools } from "./tools/web-research.js";
 
@@ -103,7 +105,10 @@ export class EngineHost {
   private readonly mcp = new McpConnections({
     log: (message, payload) => console.warn(message, payload ?? {}),
   });
-  /** Each conversation's own client tools, for the purpose builders. */
+  /**
+   * Each conversation's own client tools, for the purpose builders. Deleting
+   * a session (`session/delete`, to come) must `release` its tools.
+   */
   readonly conversationTools: ConversationTools;
   private readonly credentials: CredentialResolver;
   private readonly providers: EngineProviders;
@@ -212,7 +217,7 @@ export class EngineHost {
       // A scratch workspace (the new-project assistant) exists before its agent.
       await mkdir(workspace.root, { recursive: true });
       const promptDate = this.now();
-      const config = this.config(session, settings, promptDate);
+      const config = await this.config(session, settings, promptDate);
       const client = await engine.supervisor.client();
       const opened = await client.createSession({ session, config });
       this.locations.set(session, workspace.location);
@@ -332,7 +337,7 @@ export class EngineHost {
     settings: EngineSessionSettings,
   ): Promise<boolean> {
     const current = await this.currentConfig(client, session);
-    const config = this.config(session, settings, current.promptDate);
+    const config = await this.config(session, settings, current.promptDate);
     if (sameJson(config, current.config)) return false;
     await client.configure({ session, config });
     this.current.set(session, { config, promptDate: current.promptDate });
@@ -366,11 +371,11 @@ export class EngineHost {
     return this.options.now?.() ?? new Date();
   }
 
-  private config(
+  private async config(
     session: string,
     settings: EngineSessionSettings,
     promptDate: Date,
-  ): SessionConfig {
+  ): Promise<SessionConfig> {
     const { model } = settings.settings;
     const projectId =
       "projectId" in settings.settings
@@ -380,14 +385,32 @@ export class EngineHost {
       projectId,
       credentialLabel: model.credentialLabel,
     });
-    return purposeOf(settings).config(settings.settings, session, {
+    const clientTools = [
+      ...purposeClientTools[settings.purpose],
+      ...(this.options.extraPurposeTools?.[settings.purpose] ?? []),
+    ];
+    // Listed once per conversation and host lifetime, so its config (and the
+    // provider's prompt cache) stays the same from one message to the next.
+    const own = await this.conversationTools.ensure(
+      conversationToolSession(
+        session,
+        settings,
+        purposeOf(settings).workspace(settings.settings, session).root,
+      ),
+    );
+    const config = purposeOf(settings).config(settings.settings, session, {
       tools: this.tools,
-      clientTools: [
-        ...purposeClientTools[settings.purpose],
-        ...(this.options.extraPurposeTools?.[settings.purpose] ?? []),
-      ],
+      clientTools,
+      toolNames: [...clientTools, ...own.specs.map((spec) => spec.name)],
       promptDate,
     });
+    return {
+      ...config,
+      client_tools: [...(config.client_tools ?? []), ...own.specs],
+      ...(own.prompt
+        ? { system_prompt: `${config.system_prompt}\n\n${own.prompt}` }
+        : {}),
+    };
   }
 
   /**
@@ -583,4 +606,48 @@ function lastReply(transcript: Transcript, turn: string): string | undefined {
     }
   }
   return text;
+}
+
+/** What the conversation's own client tools are listed for. */
+function conversationToolSession(
+  session: string,
+  settings: EngineSessionSettings,
+  workspaceRoot: string,
+): ConversationToolSession {
+  switch (settings.purpose) {
+    case "development-story": {
+      const story = settings.settings;
+      return {
+        session,
+        kind: "story",
+        workspaceRoot,
+        projectId: story.projectId,
+        storyId: story.storyId,
+        preview: previewRuntimeContext({
+          projectInitialization: story.projectInitialization,
+          previewDevtoolsScope: story.previewDevtoolsScope,
+          projectId: story.projectId,
+          storyId: story.storyId,
+          workspaceMode: story.workspaceMode,
+          workspaceRoot,
+        }),
+      };
+    }
+    case "plan":
+      return {
+        session,
+        kind: "plan",
+        workspaceRoot,
+        projectId: settings.settings.projectId,
+      };
+    case "new-project":
+      return { session, kind: "new-project", workspaceRoot };
+    case "quick-chat":
+      return {
+        session,
+        kind: "quick-chat",
+        workspaceRoot,
+        projectId: settings.settings.projectId,
+      };
+  }
 }

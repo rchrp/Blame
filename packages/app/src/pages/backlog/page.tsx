@@ -429,6 +429,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
               projects.activeProject?.path
             )
           : storyPreviewDevtoolsScope(story.id),
+      initialization: projectInitialization?.initialization,
       platformName: platform.platform,
     })
   })

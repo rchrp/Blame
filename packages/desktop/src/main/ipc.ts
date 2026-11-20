@@ -13,6 +13,7 @@ import { installApplicationMenu } from "./application-menu";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
 import { engineBinaryPath } from "./engine/engine-binary";
 import { engineDesktopServices } from "./engine/engine-desktop-services";
+import type { EngineSessionSettings } from "@blame/agent-runtime/engine-protocol";
 import { registerEngineIpcHandlers } from "./engine/engine-host-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
@@ -21,7 +22,10 @@ import {
   requestDevelopmentServing,
   useServingAgentCheck,
 } from "./preview-runtime/local/local-preview-serving";
-import { registerAgentGithubAccessIpcHandlers } from "./ipc/agent-github-access-ipc";
+import {
+  prepareSessionGithubAccess,
+  registerAgentGithubAccessIpcHandlers,
+} from "./ipc/agent-github-access-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
@@ -146,6 +150,22 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
     clientVersion: app.getVersion(),
     isAppWindow: options.isAppWindow,
     desktop: engineDesktopServices(previews),
+    beforeCall: async (method, input, api) => {
+      const story = storyCall(method, input);
+      if (!story) return;
+      // A story that changes again needs its development server back.
+      void requestDevelopmentServing(story.root).catch(() => undefined);
+      await previews.syncBarrier(story.root);
+      // The story's tools reach GitHub under its engine session id.
+      if (method === "createSession")
+        await prepareSessionGithubAccess({
+          sessionId: story.session,
+          projectId: story.projectId,
+          workspaceMode: story.workspaceMode,
+          workspaceRoot: story.root,
+          apiConnection: api,
+        });
+    },
   });
   useServingAgentCheck(localAgentOwnsWorkspace);
   registerPreviewServingIpcHandlers({ isAppWindow: options.isAppWindow });
@@ -203,4 +223,25 @@ function openMicrophoneSettings() {
   if (process.platform === "win32") {
     return shell.openExternal("ms-settings:privacy-microphone");
   }
+}
+
+/** The development story an engine call starts or continues, if any. */
+function storyCall(method: string, input: unknown) {
+  if (method !== "createSession" && method !== "send") return undefined;
+  const call = input as {
+    session: string;
+    purpose?: string;
+    settings?: unknown;
+  };
+  const withSettings = (
+    method === "send" ? call.settings : call
+  ) as EngineSessionSettings | undefined;
+  if (withSettings?.purpose !== "development-story") return undefined;
+  const story = withSettings.settings;
+  return {
+    session: call.session,
+    projectId: story.projectId,
+    root: story.workspace.root,
+    workspaceMode: story.workspaceMode,
+  };
 }

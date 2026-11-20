@@ -19,6 +19,7 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import { ApprovalDecision } from "@/components/chat/engine/engine-approvals"
+import { EngineToolImages } from "@/components/chat/engine/engine-blob-image"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -1048,6 +1049,14 @@ function AgentStreamActivity({
         {...props}
         registry={props.registry}
       />
+    )
+  }
+  if (activity.kind === "tool" && activity.images?.length) {
+    return (
+      <div className="grid gap-1">
+        <AgentStreamTool activity={activity} {...props} />
+        <EngineToolImages images={activity.images} />
+      </div>
     )
   }
   if (activity.kind === "approval" && activity.toolCallId) {

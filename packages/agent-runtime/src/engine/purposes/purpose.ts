@@ -13,8 +13,14 @@ import type { ToolSet } from "../tool.js";
 
 export type PurposeContext = {
   tools: ToolSet;
-  /** The client tools this session gets, by name (tool-sets.ts, and any the host adds). */
+  /** The shared client tools this session gets, by name (tool-sets.ts, and any the host adds). */
   clientTools: readonly string[];
+  /**
+   * Every client tool name the session offers: the shared ones and the
+   * conversation's own (`ConversationTools`), whose specs and prompt
+   * section the host adds to the config.
+   */
+  toolNames: readonly string[];
   /** The day the conversation started (its first record). */
   promptDate: Date;
 };

@@ -234,6 +234,7 @@ export function useBacklogRotation(backlog: ReturnType<typeof useBacklogStore>) 
             projects.activeProject.path
           )
         : storyPreviewDevtoolsScope(detailedStory.id),
+      initialization,
       platformName: platform.platform,
     })
     // A story keeps one conversation: a requeued story continues it.

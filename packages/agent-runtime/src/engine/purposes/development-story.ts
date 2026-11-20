@@ -38,9 +38,9 @@ const proposalsGuidance =
 
 export const developmentStoryPurpose: Purpose<DevelopmentStorySettings> = {
   workspace: (settings) => settings.workspace,
-  config(settings, _session, { tools, clientTools, promptDate }) {
+  config(settings, _session, { tools, clientTools, toolNames, promptDate }) {
     const names = sessionToolNames(
-      clientTools,
+      toolNames,
       purposeHarnessTools["development-story"],
     );
     const direct = settings.workspaceMode === "direct";

@@ -216,6 +216,10 @@ function errorTitle(kind: ErrorKind) {
 }
 
 function toolActivity(item: ToolCallItem, progress: string | undefined): UserStoryAgentActivity {
+  // Images of the result (screenshots) are engine blobs, by their sha256.
+  const images = (item.result ?? []).flatMap((block) =>
+    block.type === "image" ? [{ caption: item.name, id: block.blob.sha256 }] : []
+  )
   const running =
     item.state === "requested" || item.state === "running" || item.state === "awaiting_approval"
   const failed = !running && item.state !== "completed"
@@ -236,6 +240,7 @@ function toolActivity(item: ToolCallItem, progress: string | undefined): UserSto
     status: running ? "running" : failed ? "failed" : "completed",
     toolCallId: item.call,
     toolName: item.name,
+    ...(images.length ? { images } : {}),
   }
 }
 

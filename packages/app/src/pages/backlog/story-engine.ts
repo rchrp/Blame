@@ -40,12 +40,18 @@ export type StorySettingsInput = {
   story: Pick<
     UserStory,
     "id" | "projectId" | "title" | "worktree" | "workspaceMode"
-  >
+  > &
+    Partial<Pick<UserStory, "runConfigurationId">>
   model: DevelopmentStorySettings["model"]
   maxContextTokens?: number
   personalization?: DevelopmentStorySettings["personalization"]
   codePractices?: DevelopmentStorySettings["codePractices"]
   previewDevtoolsScope?: string
+  /** The project's saved preview environment: it decides the preview tools. */
+  initialization?: {
+    previewManifest: unknown
+    runConfigurations: unknown[]
+  } | null
   platformName?: string
 }
 
@@ -76,6 +82,17 @@ export function storySessionSettings(
       ...(input.codePractices ? { codePractices: input.codePractices } : {}),
       ...(input.previewDevtoolsScope
         ? { previewDevtoolsScope: input.previewDevtoolsScope }
+        : {}),
+      ...(input.initialization
+        ? {
+            projectInitialization: {
+              previewManifest: input.initialization.previewManifest,
+              runConfigurations: input.initialization.runConfigurations,
+              ...(story.runConfigurationId
+                ? { runConfigurationId: story.runConfigurationId }
+                : {}),
+            } as NonNullable<DevelopmentStorySettings["projectInitialization"]>,
+          }
         : {}),
     },
   }

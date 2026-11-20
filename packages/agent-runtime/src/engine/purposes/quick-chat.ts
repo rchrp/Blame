@@ -9,7 +9,7 @@ import { purposeHarnessTools } from "./tool-sets.js";
 
 export const quickChatPurpose: Purpose<QuickChatSettings> = {
   workspace: (settings) => ({ root: settings.workspaceRoot, location: "host" }),
-  config(settings, _session, { tools, clientTools, promptDate }) {
+  config(settings, _session, { tools, clientTools, toolNames, promptDate }) {
     return {
       purpose: "quick-chat",
       workspace_root: settings.workspaceRoot,
@@ -21,7 +21,7 @@ export const quickChatPurpose: Purpose<QuickChatSettings> = {
         personalization: settings.personalization,
         practices: settings.codePractices,
         promptDate,
-        tools: sessionToolNames(clientTools, purposeHarnessTools["quick-chat"]),
+        tools: sessionToolNames(toolNames, purposeHarnessTools["quick-chat"]),
       }),
       engine_tools: ["harness"],
       client_tools: tools.specs(clientTools),

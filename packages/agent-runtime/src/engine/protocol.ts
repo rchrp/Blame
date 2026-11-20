@@ -23,6 +23,7 @@ import type {
   SubscriptionUsage,
 } from "../types.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
+import type { PreviewInitialization } from "../preview-selection.js";
 
 /** What a conversation is for; each has its own config builder in the host. */
 export type EnginePurpose = EngineSessionSettings["purpose"];
@@ -75,6 +76,11 @@ export type DevelopmentStorySettings = {
   codePractices?: ProjectCodePracticePreference[];
   /** The story's managed preview, when it has one (its devtools scope). */
   previewDevtoolsScope?: string;
+  /**
+   * The project's saved preview environment, which decides the story's
+   * preview tools (its surface and manifest).
+   */
+  projectInitialization?: PreviewInitialization;
 };
 
 /** Plan mode: an agent that reads the project and proposes stories. */

@@ -212,6 +212,14 @@ describe(
         /current process permissions/,
         "a worktree story's environment",
       );
+      const offered = (
+        model.requests[0]!.body as { tools?: Array<{ name: string }> }
+      ).tools?.map((tool) => tool.name);
+      for (const name of ["propose_user_stories", "search_user_stories"])
+        assert.ok(
+          offered?.includes(name),
+          `the story offers its conversation tool ${name}`,
+        );
 
       // A tool that needs the person's approval: it waits, then runs once allowed.
       model.script(

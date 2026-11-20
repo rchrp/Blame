@@ -9,7 +9,7 @@ import { purposeHarnessTools } from "./tool-sets.js";
 
 export const planPurpose: Purpose<PlanSettings> = {
   workspace: (settings) => settings.workspace,
-  config(settings, _session, { tools, clientTools, promptDate }) {
+  config(settings, _session, { tools, clientTools, toolNames, promptDate }) {
     const harnessTools = purposeHarnessTools.plan;
     return {
       purpose: "plan",
@@ -21,7 +21,7 @@ export const planPurpose: Purpose<PlanSettings> = {
         environment: directFolderEnvironment,
         personalization: settings.personalization,
         promptDate,
-        tools: sessionToolNames(clientTools, harnessTools),
+        tools: sessionToolNames(toolNames, harnessTools),
       }),
       engine_tools: ["harness"],
       client_tools: tools.specs(clientTools),

@@ -56,6 +56,11 @@ export class EngineHostRouter {
     return true;
   }
 
+  /** The API connection the windows last gave the host. */
+  api() {
+    return this.connection?.api ?? undefined;
+  }
+
   hostStopped() {
     this.running.clear();
   }
