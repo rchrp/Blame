@@ -22,7 +22,6 @@ export type RuntimeState =
 
 export type RuntimeDependencyName =
   | "blame-runtime"
-  | "cline-sdk"
   | "docker"
   | "docker-compose"
   | "git";
@@ -516,7 +515,6 @@ function managedRuntimeStatusIssueFromOutput(output: string) {
 const updateChecks = new Set<ManagedRuntimeCheckName>([
   "agent-version",
   "runtime-version",
-  "cline-sdk",
   "semantic-harness",
   "package-managers",
   "gh",
@@ -570,8 +568,7 @@ function runtimeDependencyName(
   if (
     name === "docker" ||
     name === "docker-compose" ||
-    name === "git" ||
-    name === "cline-sdk"
+    name === "git"
   ) {
     return name;
   }

@@ -7,11 +7,10 @@ import { promisify } from "node:util";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
 import { buildSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
-import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
 
 const execute = promisify(execFile);
 
-test("fresh npm installation starts the distributed harness and verifies its SDK", { timeout: 300000 }, async () => {
+test("fresh npm installation starts the distributed harness", { timeout: 300000 }, async () => {
   const directory = await mkdtemp(join(tmpdir(), "runtime-npm-smoke-"));
   try {
     const archive = join(directory, "runtime.tgz");
@@ -19,7 +18,6 @@ test("fresh npm installation starts the distributed harness and verifies its SDK
     await execute(process.platform === "win32" ? "npm.cmd" : "npm", ["install", "--global", "--prefix", directory, "--no-audit", "--no-fund", archive],
       { shell: process.platform === "win32", timeout: 240000, maxBuffer: 1024 * 1024 });
     const packageRoot = join(directory, process.platform === "win32" ? "node_modules" : "lib/node_modules", "@blame/semantic-harness-runtime");
-    await execute(process.execPath, [join(packageRoot, "runtime-sdk-check.mjs"), await runtimeClineSdkVersion()]);
     const workspace = join(directory, "workspace");
     await mkdir(workspace);
     await writeFile(join(workspace, "package.json"), '{"scripts":{}}');

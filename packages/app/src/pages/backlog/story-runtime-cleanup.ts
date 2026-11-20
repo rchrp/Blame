@@ -51,15 +51,13 @@ export async function abortStoryAgent(
     story.workspaceMode ?? "direct",
     platform.platform
   )
-  // A VM story's agent cannot run yet, so there is nothing to stop.
-  if (location !== "host") return
   const session = story.engineSessionId
   await platform.engine
     .call("interrupt", { session, location })
     .catch(() => undefined)
   if (options.remove)
     await platform.engine
-      .call("deleteSession", { session })
+      .call("deleteSession", { session, location })
       .catch(() => undefined)
 }
 

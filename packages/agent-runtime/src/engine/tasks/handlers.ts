@@ -6,6 +6,7 @@ import { runHostGh, type GhRunner } from "../../pull-request.js";
 import type { EngineClient, ToolSpec } from "@blame/engine-client";
 import { titleTask } from "../purposes/title.js";
 import { userStoryTask } from "../purposes/user-story.js";
+import type { EngineLocation } from "../protocol.js";
 import type { EngineTaskMethods, TaskCall } from "../task-protocol.js";
 import { gitTaskHandlers } from "./git.js";
 import { projectTaskHandlers } from "./project.js";
@@ -17,7 +18,8 @@ export type TaskHost = {
   runner: TaskRunner;
   /** Specs of the app's own client tools (web research), by name. */
   clientTools(names: readonly string[]): ToolSpec[];
-  client(): Promise<EngineClient>;
+  /** The engine of a location (this computer's by default). */
+  client(location?: EngineLocation): Promise<EngineClient>;
   /** What the credential and log handlers need to know of a session. */
   register(
     session: string,
@@ -68,8 +70,8 @@ export function taskHandlers(host: TaskHost): TaskHandlers {
     ...securityAuditTaskHandlers(run),
     ...projectTaskHandlers(host),
     cancelTask: async ({ session }) => host.runner.cancel(session),
-    deleteSession: async ({ session }) => {
-      await (await host.client()).deleteSession({ session });
+    deleteSession: async ({ session, location }) => {
+      await (await host.client(location)).deleteSession({ session });
       host.forget(session);
       return null;
     },

@@ -28,7 +28,7 @@ import type {
   ProjectPreviewSetup,
 } from "../task-protocol.js";
 import { defineTool, toolSpec, type ClientTool } from "../tool.js";
-import { taskConfig, type TaskSpec } from "../tasks/runner.js";
+import { assertHostScan, taskConfig, type TaskSpec } from "../tasks/runner.js";
 
 /** The harness tools of an analysis that only reads the project. */
 export const readOnlyHarness = {
@@ -58,7 +58,8 @@ export async function projectInitializationTask(
   input: InitializeProjectTask,
 ): Promise<TaskSpec<ProjectInitialization>> {
   const root = input.workspace.root;
-  // Built first: a workspace in the VM fails here, before it is scanned.
+  // The scan reads the folder on this computer: never one in the VM.
+  assertHostScan(input.workspace);
   const config = (tools: ClientTool<never>[]) =>
     taskConfig({
       purpose: "project-initialization",
@@ -76,7 +77,6 @@ export async function projectInitializationTask(
       },
       limits: initializationLimits(input.model.reasoning),
     });
-  config([]);
   const scan = await scanProjectForInitialization(root);
   const session = new InitializationSession((submitted, options) => {
     const missing = setupKeys.filter((key) => !(key in asRecord(submitted)));

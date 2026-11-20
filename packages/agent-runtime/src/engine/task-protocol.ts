@@ -33,7 +33,7 @@ import type {
   ProjectInitializationPreferences,
   ProjectInitializationRepairClassification,
 } from "../types.js";
-import type { EngineModelChoice } from "./protocol.js";
+import type { EngineLocation, EngineModelChoice } from "./protocol.js";
 import type { McpOAuthStatus } from "./tools/mcp-oauth.js";
 
 /** The folder a task works in, as the app knows it. */
@@ -261,7 +261,10 @@ export type EngineTaskMethods = {
   /** Stops a running task; false when none runs by that id. */
   cancelTask: { input: { session: SessionId }; result: boolean };
   /** Deletes a session from the engine (a deleted quick chat or story). */
-  deleteSession: { input: { session: SessionId }; result: null };
+  deleteSession: {
+    input: { session: SessionId; location?: EngineLocation };
+    result: null;
+  };
 
   // Work of the host with no agent in it, for the app.
   /** Whether Open PR can run for a repository (gh, a GitHub origin). */

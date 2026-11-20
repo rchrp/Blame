@@ -189,22 +189,42 @@ describe(
       );
     });
 
-    it("refuses to resolve conflicts of a worktree in the runtime VM", async () => {
+    it("sends the conflicts of a worktree in the runtime VM to the VM's engine", async () => {
       const vm = join(directory, "vm");
       mkdirSync(vm);
       const { project, story } = conflictingProject(vm);
       assert.throws(() => git(story, "merge", "main"));
-      const asked = mock.requests.length;
-      await assert.rejects(
-        host.call("resolveMergeConflicts", {
-          model,
-          repositoryRoot: project,
-          worktree: story,
-          inVm: true,
-        }),
-        /does not run inside the VM yet/,
-      );
-      assert.equal(mock.requests.length, asked, "no model was asked");
+      // A host whose VM is down: the task goes there, never to this computer's engine.
+      const vmHost = new EngineHost({
+        binary,
+        dataDir: join(directory, "vm-host-data"),
+        clientVersion: "test",
+        harnessCommand: [process.execPath, runner, "--serve"],
+        env: { ...process.env, BLAME_ENGINE_LOG: "warn" },
+        emit: () => undefined,
+        vm: {
+          prepare: async () => {
+            throw new Error("The test VM is down.");
+          },
+          workspaceRoots: [vm],
+        },
+      });
+      try {
+        await vmHost.call("connect", { api: api.connection() });
+        const asked = mock.requests.length;
+        await assert.rejects(
+          vmHost.call("resolveMergeConflicts", {
+            model,
+            repositoryRoot: project,
+            worktree: story,
+            inVm: true,
+          }),
+          /The test VM is down/,
+        );
+        assert.equal(mock.requests.length, asked, "no model was asked here");
+      } finally {
+        await vmHost.shutdown();
+      }
     });
   },
 );

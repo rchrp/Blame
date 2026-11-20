@@ -15,7 +15,6 @@ const minimumNodeMajorVersion = 22;
 export type HostDependencyName =
   | "git"
   | "blame-runtime"
-  | "cline-sdk"
   | "docker"
   | "docker-compose"
   | "node"
@@ -291,8 +290,6 @@ function hostDependencyMessage(
   status: HostDependencyStatus,
 ) {
   if (name === "blame-runtime") return "Blame Runtime is not available.";
-  if (name === "cline-sdk")
-    return "Cline SDK is not installed in Blame Runtime.";
   if (name === "docker") return "Docker Engine is not available.";
   if (name === "docker-compose") return "Docker Compose is not available.";
   if (name === "node" && status === "unsupported")
@@ -316,8 +313,6 @@ function macHostDependencyAction(
 ) {
   if (name === "git")
     return "Install Xcode Command Line Tools or run brew install git.";
-  if (name === "cline-sdk")
-    return "Repair Blame Lima Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
     return "Repair Blame Lima Runtime from Blame runtime setup to restore Docker Engine and Docker Compose.";
   if (name === "corepack")
@@ -343,8 +338,6 @@ function windowsHostDependencyAction(
 ) {
   if (name === "git")
     return "Install Git for Windows or run winget install Git.Git.";
-  if (name === "cline-sdk")
-    return "Repair Blame WSL2 Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
     return "Repair Blame WSL2 Runtime from Blame runtime setup to restore Docker Engine and Docker Compose.";
   if (name === "corepack")
@@ -369,8 +362,6 @@ function linuxHostDependencyAction(
   status: HostDependencyStatus,
 ) {
   if (name === "git") return "Install git with your system package manager.";
-  if (name === "cline-sdk")
-    return "Repair Blame Native Runtime from Blame runtime setup.";
   if (containerRuntimeDependency(name))
     return "Install Docker Engine with the Docker Compose plugin, start it, then recheck.";
   if (name === "corepack")
@@ -393,7 +384,6 @@ function linuxHostDependencyAction(
 function hostDependencyLabel(name: HostDependencyName) {
   const labels: Record<HostDependencyName, string> = {
     "blame-runtime": "Blame Runtime",
-    "cline-sdk": "Cline SDK",
     corepack: "Corepack",
     docker: "Docker Engine",
     "docker-compose": "Docker Compose",

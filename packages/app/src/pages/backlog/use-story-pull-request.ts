@@ -159,12 +159,12 @@ async function storyAgentSummary(
   platform: ReturnType<typeof usePlatform>
 ) {
   if (!story.engineSessionId || !platform.engine) return undefined
-  if (
-    storyLocation(story.workspaceMode ?? "direct", platform.platform) !== "host"
+  const location = storyLocation(
+    story.workspaceMode ?? "direct",
+    platform.platform
   )
-    return undefined
   const [status] = await platform.engine
-    .call("status", { sessions: [story.engineSessionId] })
+    .call("status", { sessions: [story.engineSessionId], location })
     .catch(() => [])
   return status?.lastReply
 }

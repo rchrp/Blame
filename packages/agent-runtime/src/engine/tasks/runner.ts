@@ -17,7 +17,7 @@ import type {
   ToolResult,
   ToolSpec,
 } from "@blame/engine-client";
-import type { EngineModelChoice } from "../protocol.js";
+import type { EngineLocation, EngineModelChoice } from "../protocol.js";
 import { engineModel } from "../purposes/purpose.js";
 import type { TaskWorkspace } from "../task-protocol.js";
 import { ToolSet, type ClientTool } from "../tool.js";
@@ -35,6 +35,8 @@ export type TaskSpec<R> = {
    * Their specs go in the config's `client_tools` (`toolSpec`).
    */
   tools?: ClientTool<never>[];
+  /** Where its engine is: the VM's for a task on a VM workspace with tools. */
+  location?: EngineLocation;
 };
 
 type Failure = Exclude<TaskOutcome, { status: "completed" }>;
@@ -87,7 +89,7 @@ export type TaskRunOptions = {
 export class TaskRunner {
   private readonly running = new Map<string, AbortController>();
   private readonly tools = new Map<string, ToolSet>();
-  private readonly client: () => Promise<EngineClient>;
+  private readonly client: (location: EngineLocation) => Promise<EngineClient>;
   /**
    * Task ids whose call reached the host and whose session the engine has
    * not created yet (a project scan can come first), each with the follows
@@ -97,8 +99,15 @@ export class TaskRunner {
   /** Announced tasks cancelled before they ran: they end as interrupted. */
   private readonly cancelledEarly = new Set<string>();
 
-  constructor(client: () => Promise<EngineClient>) {
+  /** Where a task working in a folder runs: the VM's engine for a VM folder. */
+  private readonly locate: (workspaceRoot: string) => EngineLocation;
+
+  constructor(
+    client: (location: EngineLocation) => Promise<EngineClient>,
+    locate: (workspaceRoot: string) => EngineLocation = () => "host",
+  ) {
     this.client = client;
+    this.locate = locate;
   }
 
   /**
@@ -146,7 +155,10 @@ export class TaskRunner {
           { status: "interrupted" },
           options.what,
         );
-      const client = await this.client();
+      // A task that works on files in the runtime VM runs on the VM's engine.
+      const client = await this.client(
+        spec.location ?? this.locate(spec.config.workspace_root),
+      );
       const pending = client.runTask(
         {
           session,
@@ -241,18 +253,23 @@ export function taskConfig(input: TaskConfigInput): SessionConfig {
   };
 }
 
-/** Said when a task needs files that live in the runtime VM. */
-export const VM_WORKSPACE_UNSUPPORTED =
-  "This project runs in the Blame Runtime VM, and Blame's agent engine does not run inside the VM yet: this agent cannot work on its files until it does.";
+/** Said when a task must scan a folder on this computer that lives in the VM. */
+export const VM_SCAN_UNSUPPORTED =
+  "This task scans the project folder on this computer, and this folder lives in the Blame Runtime VM.";
+
+/** Refuses a workspace in the VM for a task that scans its files here first. */
+export function assertHostScan(workspace: TaskWorkspace) {
+  if (workspace.inVm) throw new Error(VM_SCAN_UNSUPPORTED);
+}
 
 /**
- * The folder the engine works in. A task that reads files needs the
- * workspace on this machine; one that reads none works in the temporary
- * folder when the project lives in the VM.
+ * The folder the engine works in. A task that reads files works in its
+ * workspace, on the VM's engine when the workspace lives in the VM (the
+ * runner locates it); one that reads none works in this computer's
+ * temporary folder, which spares starting the VM's engine.
  */
 function taskRoot(workspace: TaskWorkspace | undefined, tools = 0): string {
-  if (workspace && !workspace.inVm) return workspace.root;
-  if (workspace?.inVm && tools > 0) throw new Error(VM_WORKSPACE_UNSUPPORTED);
+  if (workspace && (!workspace.inVm || tools > 0)) return workspace.root;
   return tmpdir();
 }
 

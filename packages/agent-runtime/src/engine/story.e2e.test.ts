@@ -403,7 +403,7 @@ describe(
       assert.equal(existsSync(join(worktree, "note.txt")), false);
     });
 
-    it("refuses a worktree inside the VM with a clear message", async () => {
+    it("refuses a VM worktree on a computer without a runtime VM", async () => {
       const host = startHost();
       const vm = settings("story-vm");
       vm.settings.workspace = {
@@ -412,7 +412,7 @@ describe(
       };
       await assert.rejects(
         host.call("createSession", { session: "story-vm", ...vm }),
-        /inside the Blame Runtime VM/,
+        /Blame Runtime VM, which this computer does not use/,
       );
     });
   },

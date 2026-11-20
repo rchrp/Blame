@@ -31,9 +31,6 @@ async function fixture() {
     await mkdir(join(root, path, ".."), { recursive: true })
     await writeFile(join(root, path), `version=0.0.82 other=10.0.821\n`)
   }
-  const runtime = { runtimeVersion: "9", clineSdkVersion: "0.0.82" }
-  await write("packages/desktop/resources/runtime/macos/manifest.json", runtime)
-  await write("packages/desktop/resources/runtime/windows/manifest.json", runtime)
   return root
 }
 
@@ -45,12 +42,11 @@ test("versions compare numerically", () => {
   assert.equal(compareVersions("1.2.3", "1.2.3"), 0)
 })
 
-test("apply pins every Cline package and bumps the runtime once", async () => {
+test("apply pins every Cline package", async () => {
   const root = await fixture()
   try {
     assert.equal(await installedVersion(root), "0.0.82")
     assert.deepEqual(await applyVersion("0.0.95", root), {
-      runtimeVersion: "10",
       stalePatches: [{ dependency: "@cline/core@0.0.82", patch: "patches/@cline__core@0.0.82.patch" }],
     })
     const workspace = await readFile(join(root, "pnpm-workspace.yaml"), "utf8")
@@ -61,9 +57,6 @@ test("apply pins every Cline package and bumps the runtime once", async () => {
     assert.deepEqual((await read(root, "packages/app/package.json")).dependencies, { react: "^19" })
     for (const path of pinnedVersionFiles) {
       assert.equal(await readFile(join(root, path), "utf8"), "version=0.0.95 other=10.0.821\n", path)
-    }
-    for (const platform of ["macos", "windows"]) {
-      assert.deepEqual(await read(root, `packages/desktop/resources/runtime/${platform}/manifest.json`), { runtimeVersion: "10", clineSdkVersion: "0.0.95" })
     }
   } finally {
     await rm(root, { force: true, recursive: true })
@@ -101,11 +94,7 @@ test("every runtime file pinning the installed SDK version is updated by apply",
     cwd: repository,
     encoding: "utf8",
   }).split("\n").filter(Boolean)
-  const covered = new Set([
-    ...pinnedVersionFiles,
-    "packages/desktop/resources/runtime/macos/manifest.json",
-    "packages/desktop/resources/runtime/windows/manifest.json",
-  ])
+  const covered = new Set(pinnedVersionFiles)
   const uncovered = []
   for (const path of tracked) {
     if (covered.has(path) || path.endsWith("package.json") || /\.(md|test\.ts)$/.test(path)) continue

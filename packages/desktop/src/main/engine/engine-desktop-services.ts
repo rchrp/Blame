@@ -9,6 +9,8 @@ import type {
   EngineDesktopMethod,
   EngineDesktopMethods,
 } from "@blame/agent-runtime/engine-protocol";
+import { vmEngineBinaries } from "./engine-binary.ts";
+import { prepareVmEngine, vmEngineTarget } from "./vm-engine.ts";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -106,7 +108,24 @@ export function engineDesktopServices(
     githubMcpCall: (input, signal) => githubMcpCall(input, signal),
     git: (input) => agentGit(input),
     applyPreviewInitialization: (input) => applyPreviewInitialization(input),
+    prepareVmEngine: () => prepareThisVmEngine(),
   };
+}
+
+// The engine in this computer's runtime VM, for the engine host.
+async function prepareThisVmEngine() {
+  const target = vmEngineTarget();
+  if ("missing" in target) throw new Error(target.missing);
+  const { app } = await import("electron");
+  const binaries = vmEngineBinaries({
+    applicationPath: app.getAppPath(),
+    resourcesPath: process.resourcesPath,
+    packaged: app.isPackaged,
+    // The VM has this computer's architecture (Lima vz, WSL).
+    arch: process.arch === "arm64" ? "arm64" : "x64",
+  });
+  if ("missing" in binaries) throw new Error(binaries.missing);
+  return prepareVmEngine({ engine: binaries.engine, target });
 }
 
 // An MCP server's sign-in: https, or http on this computer, with no

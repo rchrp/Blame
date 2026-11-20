@@ -62,9 +62,8 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `planUsage({ providerId, credentialLabel })` | How much of the ChatGPT or Claude plan is used. |
 
 Every call that names a session also takes `location` (`"host"`, the
-default, or `"vm"`). The host picks the engine from it; today only `"host"`
-exists and a `"vm"` call fails with a clear message (see "Workspace
-locations").
+default, or `"vm"`). The host picks the engine from it (see "Engine in the
+VM").
 
 Host → renderer, on `engine:event`:
 
@@ -120,14 +119,44 @@ Plan mode is a `plan` session per project (its id kept in local storage);
 the new-project assistant is a `new-project` session per opening of the
 wizard, in a scratch folder the host makes.
 
-## Workspace locations
+## Engine in the VM
 
 The renderer names a session's workspace as a root and a location
 (`EngineWorkspace`). A local-container worktree lives in the Blame Runtime
-VM on macOS and Windows, so its location is `"vm"` (`storyLocation`). The
-host's `engineAt(location)` is the seam where an engine in the VM plugs in;
-until then such a story fails at start with a message that says to use
-Direct or Cloud Preview. Direct and Cloud Preview worktrees are on the host.
+VM on macOS and Windows, so its location is `"vm"` (`storyLocation`);
+Direct and Cloud Preview worktrees, and every worktree on Linux, are on the
+host.
+
+- **Two engines, one host.** The host keeps this computer's engine and, on
+  the first call for a VM workspace, starts a second `blame-engine serve`
+  inside the VM (`engineAt`, `VmEngineOptions`). It speaks the same JSON-RPC
+  over the stdio of `limactl shell BlameRuntime sudo -u blame` (through
+  `blame-lima-runtime`) or `wsl.exe -d <distro> -u blame --exec`. Both
+  answer to the host: credentials, client tools, approvals and replication
+  to the API go through it, so nothing about a VM session is written to the
+  VM's disk except its records. A credential's local endpoint (a local
+  model, the Claude Code bridge) is rewritten to `host.lima.internal`.
+- **Install** (`packages/desktop/src/main/engine/vm-engine.ts`): the static
+  musl `blame-engine` for the VM's architecture is copied in through stdin,
+  checked against its SHA-256 and made executable, into
+  `/usr/local/lib/blame/engine/<hash>/`, only when that build is not there.
+  Older builds are removed.
+- **Harness**: the VM's engine starts `<install>/harness`, a launcher that
+  runs the runtime's TypeScript runner (`blame-semantic-harness --serve`).
+  The Rust `blame-harness` replaces it there, and only there
+  (`vmHarnessLauncher`).
+- **Data**: `/home/blame/.local/share/blame/engine` on the VM's disk, owned
+  by `blame`: a conversation resumes after a quit; checkpoints are git trees
+  in the worktree's repository, as natively.
+- **Stop**: the host's shutdown stops both engines. If the host dies, the
+  engine's stdin closes through `limactl shell`/`wsl.exe` and it exits with
+  its harness and their commands (checked with `kill -9` of the host).
+- **Tasks**: a task whose workspace is under a VM folder
+  (`workspaceRoots`) and uses the harness runs on the VM's engine; one that
+  reads no file runs on this computer's, in its temporary folder.
+- **Cost**: about 2.7 ms per JSON-RPC round trip through `limactl shell`
+  (0.06 ms natively); the first call of a session pays the engine's start
+  (about 0.2 s, 0.4 s more when it is installed).
 
 ## Engine binaries
 
@@ -448,10 +477,12 @@ the API's copy is the app's to delete, as for a deleted quick chat.
 
 ### Where a task runs
 
-On the host's engine. A task that reads no file runs there even for a
-project in the runtime VM (its folder is the temporary one). A task that
-works on files of a project in the VM fails with `VM_WORKSPACE_UNSUPPORTED`
-until the engine runs in the VM; there is no Cline fallback.
+On the host's engine, or on the VM's for a task that works on files of a
+project in the runtime VM (see "Engine in the VM"). A task that reads no
+file runs on the host's even for a project in the VM (its folder is the
+temporary one). Project initialization and code practices scan the folder
+on this computer first, so they refuse one in the VM (`VM_SCAN_UNSUPPORTED`);
+project folders are on this computer.
 
 ### Git flows
 
@@ -477,7 +508,7 @@ what is still conflicted, as before.
 | `optimizeUserStory` | `user-story-optimization` | `submit_user_story` | none |
 | `generateCommitMessage`, and in `approveAndMerge`, `openPullRequest` | `commit-message` | `submit_commit_message` (its first line is the subject) | none: the changes are in the instruction |
 | `openPullRequest` | `pull-request-text` | `submit_pull_request` (`agentSummary` required when the story has one) | none |
-| `resolveMergeConflicts`, and in `approveAndMerge` | `merge-conflict-resolution` | `submit_merge_resolution` (`resolved`, `reason`) | harness: `search_code`, `read_code`, `edit_code`, `run_task`; `required: ["read_code"]`; `VM_WORKSPACE_UNSUPPORTED` in the VM |
+| `resolveMergeConflicts`, and in `approveAndMerge` | `merge-conflict-resolution` | `submit_merge_resolution` (`resolved`, `reason`) | harness: `search_code`, `read_code`, `edit_code`, `run_task`; `required: ["read_code"]`; on the VM's engine in the VM |
 | `discoverSecurityAudit` | `security-discovery` | `submit_security_discovery` | harness, `allowed: search_code, read_code`, `required: read_code` |
 | `validateSecurityAudit` | `security-validation` | `submit_security_validation` (the given candidate ids in the schema) | harness, `allowed: search_code, read_code`, `required: read_code` |
 | `initializeProject` | `project-initialization` | `submit_project_initialization`, a host client tool that checks each setup (or takes only `blocked`) | harness `read_code` (required), `search_code` |

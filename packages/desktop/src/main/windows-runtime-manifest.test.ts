@@ -29,7 +29,6 @@ type RootfsSpec = {
 };
 
 type WindowsRuntimeManifest = {
-  clineSdkVersion?: string;
   rootfs?: Record<string, RootfsSpec>;
   runtimeAgentVersion?: string;
 };
@@ -77,23 +76,6 @@ test("pipes multiline Windows runtime probes through WSL standard input", async 
   assert.doesNotMatch(source, /\$result = Invoke-Distro \$command/);
 });
 
-test("keeps managed runtime Cline SDK versions aligned with agent runtime", async () => {
-  const packageJson = JSON.parse(
-    await readFile(agentRuntimePackagePath, "utf8"),
-  );
-  const expectedVersion = normalizePackageVersion(
-    packageJson.dependencies?.["@cline/sdk"],
-  );
-
-  assert.ok(expectedVersion);
-  for (const path of managedManifestPaths) {
-    const manifest = JSON.parse(
-      await readFile(path, "utf8"),
-    ) as WindowsRuntimeManifest;
-    assert.equal(manifest.clineSdkVersion, expectedVersion);
-  }
-});
-
 test("keeps the cloud runner Cline SDK version aligned with agent runtime", async () => {
   const packageJson = JSON.parse(
     await readFile(agentRuntimePackagePath, "utf8"),
@@ -121,7 +103,7 @@ test("keeps managed runtime agent revisions aligned", async () => {
     const manifest = JSON.parse(
       await readFile(manifestFile, "utf8"),
     ) as WindowsRuntimeManifest;
-    assert.equal(manifest.runtimeAgentVersion, "15");
+    assert.equal(manifest.runtimeAgentVersion, "16");
     // The agent that provisioning installs must report the manifest's
     // revision, or every runtime stays "repairable" after a repair.
     const provisioning = await readFile(
@@ -439,7 +421,7 @@ case "$1" in
     content=$(cat)
     case "$content" in
       *'host_mount="$1"'*)
-        for name in host-home agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers gh; do
+        for name in host-home agent agent-version runtime-version docker docker-compose git semantic-harness package-managers gh; do
           status=available
           if [ "$name" = "semantic-harness" ] && [ ! -f "$state/provisioned" ]; then status=missing; fi
           printf '%s\\t%s\\n' "$name" "$status"

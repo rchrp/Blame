@@ -106,10 +106,11 @@ export type ToolGuard = {
 export type ToolSetOptions = {
   policy?: ToolPolicy;
   guards?: ToolGuard[];
-  /** Stores an image of a tool's answer (`blob/put`). */
+  /** Stores an image of a tool's answer (`blob/put`) for the session that called it. */
   putBlob?(
     params: { media_type: string; data: string },
     signal: AbortSignal,
+    session: string,
   ): Promise<BlobRef>;
 };
 
@@ -225,7 +226,7 @@ export class ToolSet {
       );
       for (const guard of this.options.guards ?? [])
         if (guard.after) output = guard.after(call, output);
-      return await this.result(output, signal);
+      return await this.result(output, signal, params.session);
     } catch (error) {
       if (host.signal.aborted)
         return { outcome: "cancelled", content: [text("Cancelled.")] };
@@ -238,6 +239,7 @@ export class ToolSet {
   private async result(
     output: ToolOutput,
     signal: AbortSignal,
+    session: string,
   ): Promise<ToolResult> {
     if (typeof output === "string")
       return { outcome: "completed", content: [text(output)] };
@@ -256,6 +258,7 @@ export class ToolSet {
           blob: await this.options.putBlob(
             { media_type: block.mediaType, data: block.data },
             signal,
+            session,
           ),
         });
     }

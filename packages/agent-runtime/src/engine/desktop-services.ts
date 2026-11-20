@@ -6,6 +6,7 @@
 // Each service takes one JSON input and the call's signal: an aborted call
 // sends `desktop-cancel`, and the main process aborts its work.
 
+import type { EngineCommand } from "@blame/engine-client";
 import type { ApplyPreviewInitializationInput } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import type {
@@ -70,6 +71,10 @@ export type DesktopServices = {
       workspaceMode?: PreviewRuntimeContext["workspaceMode"];
     },
   ): Promise<{ status: "applied" | "unavailable" }>;
+  // Starts the runtime VM if needed and installs the engine there when it
+  // is missing or not this app's; gives the command that serves it over
+  // stdio (`limactl shell`, `wsl.exe`).
+  prepareVmEngine?(input: Record<string, never>): Promise<EngineCommand>;
 };
 
 export type DesktopServiceName = keyof DesktopServices;
@@ -101,6 +106,7 @@ export const desktopServiceNames = [
   "git",
   "openExternal",
   "applyPreviewInitialization",
+  "prepareVmEngine",
 ] as const satisfies readonly DesktopServiceName[];
 
 export type DesktopRequest = (

@@ -17,7 +17,7 @@ import { promisify } from "node:util";
 import { setGitRunner } from "../../runtime-git.js";
 import { mergeConflictTools } from "../purposes/merge-conflicts.js";
 import type { ApproveAndMergeTask } from "../task-protocol.js";
-import { VM_WORKSPACE_UNSUPPORTED, type TaskSpec } from "../tasks/runner.js";
+import type { TaskSpec } from "../tasks/runner.js";
 import type { GitAgent } from "./agent.js";
 import { approveAndMerge } from "./story-merge.js";
 
@@ -460,19 +460,18 @@ test("a failed resolver restores a usable story and can be retried", async () =>
   }
 });
 
-test("stops a VM story's conflicting merge before its agent, and keeps the story usable", async () => {
+test("resolves a VM story's conflicts in its worktree there", async () => {
   const fixture = await conflictingStoryFixture();
-  const runtime = mergeTestRuntime(async () => {
-    throw new Error("the agent must not run");
+  const runtime = mergeTestRuntime(async (spec) => {
+    // The runner sends a task under a VM folder to the VM's engine.
+    assert.equal(spec.config.workspace_root, fixture.input.worktree);
+    await writeFile(fixture.file, "story and target\n");
   });
   try {
-    await assert.rejects(
-      runtime.approveAndMerge({ ...fixture.input, inVm: true }),
-      (error: Error) => error.message === VM_WORKSPACE_UNSUPPORTED,
-    );
-    assert.equal(await readFile(fixture.file, "utf8"), "story\n");
-    await assert.rejects(
-      git(fixture.input.worktree, ["rev-parse", "--verify", "MERGE_HEAD"]),
+    await runtime.approveAndMerge({ ...fixture.input, inVm: true });
+    assert.equal(
+      await readFile(join(fixture.input.repositoryRoot, "shared.txt"), "utf8"),
+      "story and target\n",
     );
   } finally {
     await runtime.shutdown();

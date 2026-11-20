@@ -7,7 +7,6 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnvFiles, requiredEnv, text } from "./env-files.mjs";
 import { runtimeRootfsFileName } from "./windows-runtime-manifest.mjs";
-import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
 import { prepareSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -48,7 +47,6 @@ async function buildRootfs() {
 
 async function buildArchitecture(architecture) {
   const runtimeVersion = requiredRuntimeVersion();
-  const clineSdkVersion = await runtimeClineSdkVersion();
   const buildId = `${runtimeVersion}-${architecture}-${process.pid}`;
   const image = `blame-runtime-wsl-build:${buildId}`;
   const container = `blame-runtime-wsl-export-${buildId}`;
@@ -60,12 +58,7 @@ async function buildArchitecture(architecture) {
   const compressedPath = `${outputPath}.building-${process.pid}`;
 
   try {
-    await buildDockerImage(
-      image,
-      architecture,
-      runtimeVersion,
-      clineSdkVersion,
-    );
+    await buildDockerImage(image, architecture, runtimeVersion);
     await verifyGitHubEgress(image);
     await run("docker", ["create", "--name", container, image]);
     await run("docker", ["export", "--output", tarPath, container]);
@@ -107,16 +100,11 @@ async function replaceArtifact(source, destination) {
   await rename(source, destination);
 }
 
-async function buildDockerImage(
-  image,
-  architecture,
-  runtimeVersion,
-  clineSdkVersion,
-) {
+async function buildDockerImage(image, architecture, runtimeVersion) {
   try {
     await run(
       "docker",
-      dockerBuildArgs(image, architecture, runtimeVersion, clineSdkVersion),
+      dockerBuildArgs(image, architecture, runtimeVersion),
     );
   } catch (error) {
     if (architecture === hostArchitecture()) throw error;
@@ -127,7 +115,7 @@ async function buildDockerImage(
   }
 }
 
-function dockerBuildArgs(image, architecture, runtimeVersion, sdkVersion) {
+function dockerBuildArgs(image, architecture, runtimeVersion) {
   return [
     "build",
     "--platform",
@@ -138,8 +126,6 @@ function dockerBuildArgs(image, architecture, runtimeVersion, sdkVersion) {
     image,
     "--build-arg",
     `BLAME_RUNTIME_VERSION=${runtimeVersion}`,
-    "--build-arg",
-    `BLAME_CLINE_SDK_VERSION=${sdkVersion}`,
     ...dockerVersionAssignments().flatMap((value) => ["--build-arg", value]),
     "--build-arg",
     `BLAME_NODE_VERSION=${requiredNodeVersion()}`,
