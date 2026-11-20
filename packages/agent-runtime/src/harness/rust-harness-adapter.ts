@@ -206,7 +206,6 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
   private readonly rust: RustLightWorkspace;
   private readonly root: string;
   private readonly shadow: string;
-  private diverged = false;
 
   constructor(root: string, options: Options) {
     super(root, options);
@@ -219,7 +218,7 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
     // journal never sees: the sessions differ from then on too.
     const run = this.tasks.run.bind(this.tasks);
     this.tasks.run = (...args: Parameters<typeof run>) => {
-      this.diverged = true;
+      diverged.add(this.root);
       return run(...args);
     };
   }
@@ -247,7 +246,7 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
 
   override async runTask(...args: Parameters<TypeScriptLightWorkspace["runTask"]>) {
     // Commands are not run twice: from here on the two sessions differ.
-    this.diverged = true;
+    diverged.add(this.root);
     return super.runTask(...args);
   }
 
@@ -274,7 +273,7 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
   }
 
   private async compare(tool: string, input: unknown, expected: unknown, actual: () => Promise<unknown>, files = false) {
-    if (this.diverged) {
+    if (diverged.has(this.root)) {
       log({ tool, input, outcome: "skipped_after_edit" });
       return;
     }
@@ -302,6 +301,9 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
 }
 
 const shadows = new Map<string, string>();
+// Folders whose sessions differ: a command ran there (in TypeScript only),
+// and the journal any later workspace on the folder reads holds its checks.
+const diverged = new Set<string>();
 process.on("exit", () => { for (const shadow of shadows.values()) rmSync(shadow, { recursive: true, force: true }); });
 
 function entries(root: string, relative = ""): Map<string, Dirent> {
