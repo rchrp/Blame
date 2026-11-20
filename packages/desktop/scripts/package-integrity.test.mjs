@@ -285,7 +285,7 @@ test("requires the engine binaries for the app and its VM, of the right platform
     await writeEngineBinaries(resources, { "darwin-arm64": executables["darwin-arm64"]() });
     await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /found: darwin-arm64$/);
     await writeEngineBinaries(resources, { "linux-arm64": executables["linux-x64"]() });
-    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /ELF for arm64 at .*linux-arm64\/blame-engine, found ELF/);
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /ELF for arm64 at .*linux-arm64[\\/]blame-engine, found ELF/);
     await writeEngineBinaries(resources, { "linux-arm64": executables["linux-arm64"](3) });
     await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /dynamically linked/);
     await writeEngineBinaries(resources, { "linux-arm64": executables["linux-arm64"]() });
