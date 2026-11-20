@@ -4,7 +4,9 @@
 
 use crate::aliases::{Alias, AliasRegistry, ResolvedSymbol};
 use crate::attention::LightAttention;
-use crate::compiler::{CompilerPort, CompilerReply, DeclarationTarget};
+use crate::compiler::{
+    CompilerPort, CompilerReply, DeclarationTarget, LinksRequest, footprint_is_current,
+};
 use crate::coverage::{Interval, ReadCoverage, Registered};
 use crate::failure::{Failure, Outcome, Signal};
 use crate::files::{WorkspaceFiles, WorkspaceSnapshot, assert_mutable_workspace_path};
@@ -86,7 +88,11 @@ pub struct Workspace {
     focus: Vec<String>,
     latest_snapshot: Option<WorkspaceSnapshot>,
     ready: bool,
+    /// Names this workspace to the compiler side process (its import index).
+    instance: String,
 }
+
+static INSTANCES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 impl Workspace {
     pub fn new(
@@ -111,6 +117,10 @@ impl Workspace {
             focus: Vec::new(),
             latest_snapshot: None,
             ready: false,
+            instance: format!(
+                "w{}",
+                INSTANCES.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1
+            ),
         }
     }
 
@@ -212,7 +222,7 @@ impl Workspace {
     ) -> Outcome<Json> {
         signal.check()?;
         if input.view.as_deref() == Some("declaration") {
-            return self.read_dependency_declaration(input);
+            return self.read_dependency_declaration(input, signal);
         }
         if input.offset.is_some() {
             return Err(Failure::new(
@@ -436,7 +446,7 @@ impl Workspace {
             return self.read_line_range(&path, &content, input, revision, context);
         }
         let whole = self.read_whole_path(input, &view, &path, &content, revision, context)?;
-        self.with_links(&path, &content, context, whole)
+        self.with_links(&path, &content, context, whole, signal)
     }
 
     fn read_whole_path(
@@ -485,6 +495,7 @@ impl Workspace {
         content: &[u8],
         context: &Json,
         mut result: Json,
+        signal: &Signal,
     ) -> Outcome<Json> {
         if !is_ok(&result) {
             return Ok(result);
@@ -503,9 +514,15 @@ impl Workspace {
         let Some(snapshot) = self.latest_snapshot.as_ref() else {
             return Ok(result);
         };
-        if let Some(links) =
-            self.compiler
-                .brief_links(&self.files.root, path, content, &self.focus, snapshot)
+        let request = LinksRequest {
+            workspace: &self.instance,
+            root: &self.files.root,
+            path,
+            content,
+            focus: &self.focus,
+            snapshot,
+        };
+        if let Some(links) = self.compiler.brief_links(&request, signal)?
             && let Some(data) = result.get_mut("data")
         {
             data.set("links", links);
@@ -1101,7 +1118,7 @@ impl Workspace {
         }
     }
 
-    fn read_dependency_declaration(&self, input: &ReadInput) -> Outcome<Json> {
+    fn read_dependency_declaration(&self, input: &ReadInput, signal: &Signal) -> Outcome<Json> {
         let split = input.target.rfind('#').filter(|index| *index >= 1);
         let Some(split) = split.filter(|_| input.ranges.is_empty()) else {
             return Err(Failure::new(
@@ -1130,19 +1147,44 @@ impl Workspace {
             ));
         }
         let hash = sha256_hex(&file.content);
-        let reply = self.compiler.declaration(&DeclarationTarget {
-            root: &self.files.root,
-            path: &path,
-            name,
-            hash: &hash,
-            offset: input.offset,
-        });
-        match reply {
-            CompilerReply::Unavailable(reason) => Err(Failure::new(format!(
-                "Dependency declaration unavailable: {reason}. Inspect the local import/configuration or use run_task for runtime source investigation."
-            ))),
-            CompilerReply::Ok(result) => Ok(result),
+        let reply = self.compiler.declaration(
+            &DeclarationTarget {
+                root: &self.files.root,
+                path: &path,
+                name,
+                hash: &hash,
+                offset: input.offset,
+            },
+            signal,
+        )?;
+        let reply = match reply {
+            CompilerReply::Unavailable(reason) => {
+                return Err(Failure::new(format!(
+                    "Dependency declaration unavailable: {reason}. Inspect the local import/configuration or use run_task for runtime source investigation."
+                )));
+            }
+            CompilerReply::Ok(reply) => reply,
+        };
+        if !footprint_is_current(reply.get("footprint").unwrap_or(&Json::Null), signal)? {
+            return Err(Failure::new(
+                "Dependency declaration inputs changed during resolution; repeat the read.",
+            ));
         }
+        let mut declaration = reply.get("declaration").cloned().unwrap_or(Json::obj());
+        let next_offset = declaration.remove("nextOffset");
+        let mut data = obj! {
+            "target" => input.target.as_str(),
+            "view" => "declaration",
+            "engine" => "typescript_language_service",
+            "project" => reply.get("project").cloned().unwrap_or(Json::Null),
+        };
+        data.extend(declaration);
+        data.set("truncated", next_offset.is_some());
+        if let Some(offset) = next_offset {
+            data.set("nextRead", obj! { "target" => input.target.as_str(), "view" => "declaration", "offset" => offset });
+        }
+        data.set("guidance", "Read-only installed type declarations. No edit coverage or validation admission is granted; declarations do not establish runtime behavior. For a namespace, append an exported member to the local import binding.");
+        Ok(obj! { "status" => "ok", "data" => data })
     }
 
     fn read_isolated_environment_image(

@@ -3,7 +3,7 @@
 //! `light-reference-candidates.ts`).
 
 use crate::aliases::{Alias, AliasRegistry};
-use crate::compiler::{CompilerPort, CompilerReply, ReferenceTarget};
+use crate::compiler::{CompilerPort, CompilerReply, ReferenceTarget, footprint_is_current};
 use crate::failure::{Outcome, Signal};
 use crate::files::WorkspaceFiles;
 use crate::identity::sha256_hex;
@@ -64,7 +64,7 @@ impl CodeSearch<'_> {
             return self.file_search(request, &candidates);
         }
         let semantic = if request.mode() == Some("references") {
-            Some(self.references(request, &snapshot.files)?)
+            Some(self.references(request, &snapshot.files, &candidates)?)
         } else {
             None
         };
@@ -443,7 +443,12 @@ impl CodeSearch<'_> {
         Ok((false, results))
     }
 
-    fn references(&mut self, input: &SearchInput, paths: &[String]) -> Outcome<Semantic> {
+    fn references(
+        &mut self,
+        input: &SearchInput,
+        paths: &[String],
+        candidates: &[String],
+    ) -> Outcome<Semantic> {
         let query = input.query();
         let is_symbol = matches!(self.aliases.get(query), Some(Alias::Symbol { .. }));
         if !is_symbol && !qualified_target(query) {
@@ -467,23 +472,181 @@ impl CodeSearch<'_> {
             });
         }
         let hash = sha256_hex(&resolved.content);
-        let reply = self.compiler.references(&ReferenceTarget {
-            root: &self.files.root,
-            path: &resolved.path,
-            name: &resolved.symbol.qualified_name,
-            start: resolved.symbol.range.0,
-            end: resolved.symbol.range.1,
-            hash: &hash,
-        });
-        match reply {
-            CompilerReply::Unavailable(reason) => Ok(Semantic::Fallback {
-                fallback: reason,
-                lexical_query,
-            }),
-            // The compiler side process presents its own locations; until it
-            // exists no reply is ever ok.
-            CompilerReply::Ok(result) => Ok(Semantic::Result(result)),
+        let reply = self.compiler.references(
+            &ReferenceTarget {
+                root: &self.files.root,
+                path: &resolved.path,
+                name: &resolved.symbol.qualified_name,
+                start: resolved.symbol.range.0,
+                end: resolved.symbol.range.1,
+                hash: &hash,
+                rename_to: None,
+            },
+            self.signal,
+        )?;
+        let reply = match reply {
+            CompilerReply::Unavailable(reason) => {
+                return Ok(Semantic::Fallback {
+                    fallback: reason,
+                    lexical_query,
+                });
+            }
+            CompilerReply::Ok(reply) => reply,
+        };
+        let source_changed = || {
+            Ok(Semantic::Fallback {
+                fallback: "source_changed".into(),
+                lexical_query: lexical_query.clone(),
+            })
+        };
+        let footprint = reply.get("footprint").cloned().unwrap_or(Json::Null);
+        if !footprint_is_current(&footprint, self.signal)?
+            || self
+                .files
+                .snapshot(self.signal)?
+                .revision
+                .source_revision_id
+                != self.revision
+        {
+            return source_changed();
         }
+        let locations = reply
+            .get("locations")
+            .and_then(Json::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let scoped: Vec<&Json> = locations
+            .iter()
+            .filter(|location| {
+                location
+                    .get("path")
+                    .and_then(Json::as_str)
+                    .is_some_and(|path| candidates.iter().any(|known| known == path))
+            })
+            .collect();
+        // `Map.set`: a repeated location keeps its first place and its last value.
+        let mut unique: Vec<(String, &Json)> = Vec::new();
+        for location in &scoped {
+            let lines = location
+                .get("lines")
+                .and_then(Json::as_array)
+                .map(|lines| {
+                    lines
+                        .iter()
+                        .map(Json::stringify)
+                        .collect::<Vec<_>>()
+                        .join(":")
+                })
+                .unwrap_or_default();
+            let key = format!(
+                "{}:{lines}",
+                location.get("path").and_then(Json::as_str).unwrap_or("")
+            );
+            match unique.iter_mut().find(|(known, _)| *known == key) {
+                Some(entry) => entry.1 = location,
+                None => unique.push((key, location)),
+            }
+        }
+        let reads = footprint
+            .get("reads")
+            .and_then(Json::as_array)
+            .cloned()
+            .unwrap_or_default();
+        let mut sources: Vec<(String, Arc<Vec<u8>>)> = Vec::new();
+        let mut results = Vec::new();
+        for (_, location) in unique.iter().take(8) {
+            self.signal.check()?;
+            let path = location
+                .get("path")
+                .and_then(Json::as_str)
+                .unwrap_or("")
+                .to_string();
+            let content = match sources.iter().find(|(known, _)| *known == path) {
+                Some((_, content)) => content.clone(),
+                None => {
+                    let content = Arc::new(self.files.read(&path)?.content);
+                    let absolute = self.files.resolve_for_write(&path)?;
+                    let observed = reads.iter().find(|read| {
+                        read.get("path").and_then(Json::as_str) == Some(absolute.as_str())
+                    });
+                    if observed
+                        .and_then(|read| read.get("hash"))
+                        .and_then(Json::as_str)
+                        != Some(sha256_hex(&content).as_str())
+                    {
+                        return source_changed();
+                    }
+                    sources.push((path.clone(), content.clone()));
+                    content
+                }
+            };
+            let range = crate::coverage::intervals_from_json(Some(&Json::Arr(vec![
+                location.get("range").cloned().unwrap_or(Json::Null),
+            ])))
+            .first()
+            .copied()
+            .unwrap_or((0, 0));
+            let lines = location.get("lines").cloned().unwrap_or(Json::Null);
+            let parsed = parse_code(&path, &content);
+            let target = match enclosing_symbol(&parsed.symbols, range) {
+                Some(index) => {
+                    let alias =
+                        self.aliases
+                            .register_symbol(&path, &content, &parsed.symbols[index]);
+                    search_symbol_result(
+                        &alias,
+                        &path,
+                        &parsed.symbols[index],
+                        "semantic_reference",
+                    )
+                }
+                None => obj! {
+                    "alias" => self.aliases.register_range(&path, &content, range),
+                    "kind" => "text",
+                    "path" => path.as_str(),
+                    "lines" => lines.clone(),
+                    "reason" => "semantic_reference",
+                },
+            };
+            results.push(target.with(
+                "reference",
+                obj! {
+                    "lines" => lines,
+                    "snippet" => location.get("snippet").cloned().unwrap_or(Json::Null),
+                    "isWrite" => location.get("isWrite").cloned().unwrap_or(Json::Null),
+                },
+            ));
+        }
+        let project = reply.get("project").cloned().unwrap_or(Json::Null);
+        let partial = project
+            .get("warnings")
+            .and_then(Json::as_array)
+            .is_some_and(|warnings| !warnings.is_empty());
+        let limited = unique.len() > 8;
+        Ok(Semantic::Result(obj! {
+            "status" => "ok",
+            "data" => obj! {
+                "mode" => "references",
+                "engine" => "typescript_language_service",
+                "target" => format!("{}#{}", resolved.path, resolved.symbol.qualified_name),
+                "sourceRevision" => self.revision.as_str(),
+                "navigationOnly" => true,
+                "targetDefinitionExcluded" => true,
+                "project" => project,
+                "completeness" => if partial { "partial_project" } else { "configured_project" },
+                "resultScope" => "Eligible source files in the requested scope; dependency internals and ignored files excluded.",
+                "candidateCount" => candidates.len(),
+                "referenceCount" => unique.len(),
+                "locationCount" => scoped.len(),
+                "results" => Json::Arr(results),
+                "limited" => limited,
+                "guidance" => if limited {
+                    "Result limit reached; narrow scope to see other references. No edit coverage is granted."
+                } else {
+                    "References are limited to this configured compiler project, not runtime/dynamic callers. Read before editing."
+                },
+            },
+        }))
     }
 
     fn recovery(
