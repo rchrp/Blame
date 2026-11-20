@@ -11,6 +11,9 @@
 use crate::json::{Json, quote};
 use crate::text::utf16_len;
 
+/// A refinement and the message it reports.
+pub type Refinement = (fn(&Json) -> bool, &'static str);
+
 pub enum Schema {
     Str {
         min: usize,
@@ -24,7 +27,8 @@ pub enum Schema {
     Enum(&'static [&'static str]),
     Object {
         fields: Vec<(&'static str, Schema, bool)>,
-        refine: Option<fn(&Json) -> bool>,
+        /// A refinement and its message (zod's default is "Invalid input").
+        refine: Option<Refinement>,
     },
     Array {
         item: Box<Schema>,
@@ -32,6 +36,21 @@ pub enum Schema {
         max: usize,
     },
     Union(Vec<Schema>),
+    Literal(&'static str),
+    /// An untrimmed string of at most `max` characters (edit content).
+    Text {
+        max: usize,
+    },
+    /// An untrimmed string with a minimum length (a patch).
+    TextMin {
+        min: usize,
+        max: usize,
+    },
+    /// `z.discriminatedUnion(key, options)`, each option keyed by its literal.
+    Discriminated {
+        key: &'static str,
+        options: Vec<(&'static str, Schema)>,
+    },
 }
 
 #[derive(Clone, Debug)]
@@ -114,6 +133,30 @@ fn origin(value: Option<&Json>) -> (&'static str, &'static str) {
 }
 
 impl Schema {
+    fn untrimmed(value: Option<&Json>, min: usize, max: usize) -> (Option<Json>, Vec<Issue>) {
+        let mut issues = Vec::new();
+        if !matches!(value, Some(Json::Str(_))) {
+            issues.push(invalid_type("string", value, None));
+        }
+        if !explicitly_aborted(&issues) {
+            if length_of(value, None).is_some_and(|length| length < min) {
+                let (kind, unit) = origin(value);
+                issues.push(Issue::new(
+                    format!("Too small: expected {kind} to have >={min} {unit}"),
+                    Some(true),
+                ));
+            }
+            if length_of(value, Some(max)).is_some_and(|length| length > max) {
+                let (kind, unit) = origin(value);
+                issues.push(Issue::new(
+                    format!("Too big: expected {kind} to have <={max} {unit}"),
+                    Some(true),
+                ));
+            }
+        }
+        (value.cloned(), issues)
+    }
+
     /// Parses `value` (`None` when absent), returning zod's output and issues.
     pub fn run(&self, value: Option<&Json>) -> (Option<Json>, Vec<Issue>) {
         match self {
@@ -245,11 +288,11 @@ impl Schema {
                         Some(true),
                     ));
                 }
-                if let Some(refine) = refine
+                if let Some((refine, message)) = refine
                     && !aborted(&issues)
                     && !refine(&output)
                 {
-                    issues.push(Issue::new("Invalid input".into(), Some(true)));
+                    issues.push(Issue::new((*message).into(), Some(true)));
                 }
                 (Some(output), issues)
             }
@@ -287,6 +330,46 @@ impl Schema {
                     ));
                 }
                 (Some(Json::Arr(output)), issues)
+            }
+            Schema::Text { max } => Schema::untrimmed(value, 0, *max),
+            Schema::TextMin { min, max } => Schema::untrimmed(value, *min, *max),
+            Schema::Literal(expected) => match value {
+                Some(Json::Str(text)) if text == expected => (value.cloned(), Vec::new()),
+                _ => (
+                    value.cloned(),
+                    vec![Issue::new(
+                        format!("Invalid input: expected {}", quote(expected)),
+                        None,
+                    )],
+                ),
+            },
+            Schema::Discriminated { key, options } => {
+                let Some(Json::Obj(_)) = value else {
+                    return (value.cloned(), vec![invalid_type("object", value, None)]);
+                };
+                let discriminator = value
+                    .and_then(|value| value.get(key))
+                    .and_then(Json::as_str);
+                match options
+                    .iter()
+                    .find(|(name, _)| Some(*name) == discriminator)
+                {
+                    Some((_, schema)) => schema.run(value),
+                    None => {
+                        let expected = options
+                            .iter()
+                            .map(|(name, _)| format!("'{name}'"))
+                            .collect::<Vec<_>>()
+                            .join(" | ");
+                        let mut issue = Issue::new(
+                            format!("Invalid discriminator value. Expected {expected}"),
+                            None,
+                        );
+                        issue.path.push(Json::from(*key));
+                        issue.expected = Some("object or array");
+                        (value.cloned(), vec![issue])
+                    }
+                }
             }
             Schema::Union(options) => {
                 let results: Vec<(Option<Json>, Vec<Issue>)> =
@@ -492,10 +575,73 @@ fn line_range() -> Schema {
                 false,
             ),
         ],
-        refine: Some(|value| {
-            let line = |key: &str| value.get(key).and_then(Json::as_f64).unwrap_or(0.0);
-            line("endLine") >= line("startLine")
-        }),
+        refine: Some((
+            |value| {
+                let line = |key: &str| value.get(key).and_then(Json::as_f64).unwrap_or(0.0);
+                line("endLine") >= line("startLine")
+            },
+            "Invalid input",
+        )),
+    }
+}
+
+pub fn edit_code_schema() -> Schema {
+    let symbol = Schema::Object {
+        fields: vec![
+            ("kind", Schema::Literal("symbol"), false),
+            ("target", Schema::Str { min: 1, max: 4_096 }, false),
+            (
+                "action",
+                Schema::Enum(&[
+                    "replace",
+                    "replace_body",
+                    "rename",
+                    "insert_before",
+                    "insert_after",
+                    "delete",
+                ]),
+                false,
+            ),
+            ("content", Schema::Text { max: 2_097_152 }, true),
+        ],
+        refine: Some((
+            |value| {
+                value.get("action").and_then(Json::as_str) == Some("delete")
+                    || value.get("content").is_some()
+            },
+            "content is required",
+        )),
+    };
+    let patch = Schema::Object {
+        fields: vec![
+            ("kind", Schema::Literal("patch"), false),
+            ("target", Schema::Str { min: 1, max: 4_096 }, true),
+            ("path", Schema::Str { min: 1, max: 4_096 }, true),
+            (
+                "patch",
+                Schema::TextMin {
+                    min: 1,
+                    max: 2_097_152,
+                },
+                false,
+            ),
+        ],
+        refine: None,
+    };
+    Schema::Object {
+        fields: vec![(
+            "operations",
+            Schema::Array {
+                item: Box::new(Schema::Discriminated {
+                    key: "kind",
+                    options: vec![("symbol", symbol), ("patch", patch)],
+                }),
+                min: Some(1),
+                max: 50,
+            },
+            false,
+        )],
+        refine: None,
     }
 }
 

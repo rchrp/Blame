@@ -41,6 +41,11 @@ const calls = [
 const probe = join(tmpdir(), "blame-harness-heap-probe.mjs");
 writeFileSync(probe, `process.on("SIGUSR2", () => { globalThis.gc?.(); process.stderr.write("HEAP " + JSON.stringify(process.memoryUsage()) + "\\n"); });\n`);
 
+function descendants(pid) {
+  try { return execFileSync("pgrep", ["-P", String(pid)], { encoding: "utf8" }).trim().split("\n").filter(Boolean).map(Number); }
+  catch { return []; }
+}
+
 function footprint(pid) {
   try {
     const output = execFileSync("footprint", [String(pid)], { encoding: "utf8" });
@@ -81,7 +86,8 @@ async function measure(name, command, args, session) {
     const results = [];
     for (const [, tool, input] of calls) {
       const answer = await send(tool, input);
-      answer.footprint = footprint(child.pid) ?? 0;
+      // The harness and its compiler side process, if it started one.
+      answer.footprint = (footprint(child.pid) ?? 0) + descendants(child.pid).reduce((sum, pid) => sum + (footprint(pid) ?? 0), 0);
       peak = Math.max(peak, answer.footprint);
       results.push(answer);
     }
@@ -99,7 +105,7 @@ async function measure(name, command, args, session) {
 
 const median = (values) => [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)];
 const results = [
-  await measure("rust", binary, ["serve"], `measure-rust-${process.pid}`),
+  await measure("rust", binary, ["serve", "--compiler-command", JSON.stringify([process.execPath, join(repository, "packages/agent-runtime/dist/harness/rust-harness-compiler.js")])], `measure-rust-${process.pid}`),
   await measure("ts", process.execPath, ["--expose-gc", `--import=${probe}`, runner, "--serve"], `measure-ts-${process.pid}`),
 ];
 // The journals the two sessions wrote.

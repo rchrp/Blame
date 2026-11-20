@@ -303,10 +303,64 @@ impl AliasRegistry {
         target: &str,
         files: &WorkspaceFiles,
     ) -> Outcome<ResolvedSymbol> {
+        self.resolve(target, files, false)
+    }
+
+    /// For an edit: a changed symbol must have been read again, and a
+    /// `path#name` target gets its alias.
+    pub fn resolve_for_edit(
+        &mut self,
+        target: &str,
+        files: &WorkspaceFiles,
+    ) -> Outcome<ResolvedSymbol> {
+        self.resolve(target, files, true)
+    }
+
+    fn resolve(
+        &mut self,
+        target: &str,
+        files: &WorkspaceFiles,
+        for_edit: bool,
+    ) -> Outcome<ResolvedSymbol> {
         if let Some(entry) = self.target_alias(target, files)?.cloned() {
-            return self.resolve_alias(&entry, files);
+            return self.resolve_alias(&entry, files, for_edit);
         }
-        self.resolve_qualified_target(target, files)
+        let mut resolved = self.resolve_qualified_target(target, files)?;
+        if for_edit {
+            resolved.alias =
+                Some(self.register_symbol(&resolved.path, &resolved.content, &resolved.symbol));
+        }
+        Ok(resolved)
+    }
+
+    /// `assertObserved`: `range`, relative to the symbol, was read.
+    pub fn assert_observed(&self, alias: Option<&str>, range: (usize, usize)) -> Outcome<()> {
+        let entry = alias.and_then(|alias| self.get(alias));
+        let Some(Alias::Symbol { observed, .. }) = entry else {
+            return Err(Failure::symbol(
+                "Read the target before replacing it.",
+                Vec::new(),
+            ));
+        };
+        let mut intervals = observed.clone().unwrap_or_default();
+        intervals.sort_by_key(|interval| interval.0);
+        let mut cursor = range.0;
+        for (start, end) in intervals {
+            if start > cursor {
+                break;
+            }
+            cursor = cursor.max(end);
+        }
+        if cursor < range.1 {
+            return Err(Failure::symbol(
+                format!(
+                    "Read {} before replacing unobserved source.",
+                    alias.unwrap_or("undefined")
+                ),
+                Vec::new(),
+            ));
+        }
+        Ok(())
     }
 
     fn target_alias(&self, target: &str, files: &WorkspaceFiles) -> Outcome<Option<&Alias>> {
@@ -335,7 +389,12 @@ impl AliasRegistry {
         })
     }
 
-    fn resolve_alias(&mut self, entry: &Alias, files: &WorkspaceFiles) -> Outcome<ResolvedSymbol> {
+    fn resolve_alias(
+        &mut self,
+        entry: &Alias,
+        files: &WorkspaceFiles,
+        for_edit: bool,
+    ) -> Outcome<ResolvedSymbol> {
         let Alias::Symbol {
             alias,
             file_hash,
@@ -371,7 +430,33 @@ impl AliasRegistry {
             return Err(resolution_conflict(qualified_name, &candidates));
         }
         let symbol = candidates[0].clone();
-        self.update_symbol(alias, path, &content, &symbol);
+        if for_edit && !exact {
+            let Alias::Symbol {
+                content_hash,
+                alias: name,
+                qualified_name,
+                ..
+            } = entry
+            else {
+                unreachable!("a symbol alias")
+            };
+            if content_hash.as_deref()
+                != Some(sha256_hex(&content[symbol.range.0..symbol.range.1]).as_str())
+            {
+                let current =
+                    String::from_utf8_lossy(&content[symbol.range.0..symbol.range.1]).into_owned();
+                return Err(Failure::symbol(
+                    format!(
+                        "Symbol {qualified_name} changed since it was observed. Read {name} to refresh before editing. Current target:\n{}",
+                        crate::text::utf16_prefix(&current, 4_000)
+                    ),
+                    Vec::new(),
+                ));
+            }
+        }
+        if !for_edit {
+            self.update_symbol(alias, path, &content, &symbol);
+        }
         Ok(ResolvedSymbol {
             alias: Some(alias.clone()),
             content,

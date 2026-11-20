@@ -18,7 +18,16 @@ fn main() -> ExitCode {
         println!("blame-harness {}", env!("CARGO_PKG_VERSION"));
         return ExitCode::SUCCESS;
     }
-    let harness = Arc::new(Harness::default());
+    // The compiler side process: `--compiler-command '["node", ".../rust-harness-compiler.js"]'`
+    // or BLAME_HARNESS_COMPILER; without it the compiler tier is unavailable.
+    let flag = arguments
+        .iter()
+        .position(|argument| argument == "--compiler-command")
+        .and_then(|index| arguments.get(index + 1).cloned());
+    let command = flag.or_else(|| std::env::var("BLAME_HARNESS_COMPILER").ok());
+    let harness = Arc::new(Harness::new(blame_harness::compiler::configured(
+        command.as_deref(),
+    )));
     if arguments
         .iter()
         .any(|argument| argument == "serve" || argument == "--serve")

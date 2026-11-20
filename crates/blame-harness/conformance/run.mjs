@@ -40,7 +40,6 @@ function environment(mode, file) {
   const env = { ...process.env };
   delete env.NODE_OPTIONS;
   if (mode === "ts") return env;
-  env.NODE_OPTIONS = `--import=${register}`;
   env.BLAME_HARNESS_RUST_BINARY = binary;
   if (mode === "rust") env.BLAME_HARNESS_RUST = binary;
   else env.BLAME_HARNESS_COMPARE = join(scratch, `${file}.compare.jsonl`);
@@ -49,7 +48,11 @@ function environment(mode, file) {
 
 function runFile(mode, file) {
   return new Promise((done) => {
-    const child = spawn(process.execPath, ["--test", "--test-reporter=tap", `dist/harness/${file}.test.js`], {
+    // The hooks go on the test runner's command line, which it passes to each
+    // test file's process: through NODE_OPTIONS they also reached the pnpm and
+    // Prettier processes the tests start, which cannot resolve them.
+    const hooks = mode === "ts" ? [] : [`--import=${register}`];
+    const child = spawn(process.execPath, [...hooks, "--test", "--test-reporter=tap", `dist/harness/${file}.test.js`], {
       cwd: runtime, env: environment(mode, file), stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "";
@@ -97,11 +100,11 @@ await Promise.all(Array.from({ length: jobs }, async () => {
 const output = argument("json");
 if (output) writeFileSync(output, `${JSON.stringify(results, null, 1)}\n`);
 const cell = (result) => result ? `${result.pass}/${result.pass + result.fail}` : "";
-console.log("| file | ts | rust | compared calls | equal | links only | different | rust error | after edit |");
-console.log("| --- | --- | --- | --- | --- | --- | --- | --- | --- |");
+console.log("| file | ts | rust | compare | compared calls | equal | links only | different | rust error | after edit |");
+console.log("| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |");
 for (const file of files) {
-  const { ts, rust, comparison: c } = results[file];
-  console.log(`| ${file} | ${cell(ts)} | ${cell(rust)} | ${c?.calls ?? ""} | ${c?.equal ?? ""} | ${c?.links_only ?? ""} | ${c?.different ?? ""} | ${c?.rust_error ?? ""} | ${c?.skipped_after_edit ?? ""} |`);
+  const { ts, rust, compare, comparison: c } = results[file];
+  console.log(`| ${file} | ${cell(ts)} | ${cell(rust)} | ${cell(compare)} | ${c?.calls ?? ""} | ${c?.equal ?? ""} | ${c?.links_only ?? ""} | ${c?.different ?? ""} | ${c?.rust_error ?? ""} | ${c?.skipped_after_edit ?? ""} |`);
 }
 if (!process.argv.includes("--keep")) rmSync(scratch, { recursive: true, force: true });
 else console.error(`compare logs kept in ${scratch}`);
