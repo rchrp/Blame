@@ -76,11 +76,10 @@ export class EngineHost {
   private readonly tools: ToolSet;
   private readonly credentials: CredentialResolver;
   private readonly options: EngineHostOptions;
-  // Before `handlers`, which hand it out.
-  private readonly tasks = new TaskRunner(
-    () => this.supervisor.client(),
-    (session) => this.hub.watch(session),
-  );
+  // Before `handlers`, which hand it out. A task is not watched like a
+  // conversation (no activity events): a window that shows its progress
+  // follows it.
+  private readonly tasks = new TaskRunner(() => this.supervisor.client());
 
   constructor(options: EngineHostOptions) {
     this.options = options;
