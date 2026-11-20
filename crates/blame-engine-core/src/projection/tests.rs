@@ -16,6 +16,7 @@ fn config() -> SessionConfig {
         max_output_tokens: None,
         engine_tools: Vec::new(),
         client_tools: Vec::new(),
+        tool_options: Default::default(),
         limits: Default::default(),
         checkpoints: false,
     }

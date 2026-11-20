@@ -305,6 +305,7 @@ pub fn config() -> SessionConfig {
         max_output_tokens: Some(1000),
         engine_tools: vec!["harness".into()],
         client_tools: Vec::new(),
+        tool_options: Default::default(),
         limits: Default::default(),
         checkpoints: true,
     }

@@ -176,6 +176,11 @@ pub struct SessionConfig {
     /// needs the desktop). Unavailable while no client is attached.
     #[serde(default)]
     pub client_tools: Vec<ToolSpec>,
+    /// Settings of each engine tool set, by its name in `engine_tools`
+    /// (the harness takes its task contract here). Opaque to the loop: only
+    /// the tool host reads them.
+    #[serde(default, skip_serializing_if = "serde_json::Map::is_empty")]
+    pub tool_options: serde_json::Map<String, Value>,
     #[serde(default)]
     pub limits: Limits,
     /// Whether a workspace checkpoint is taken at the start of each turn.
