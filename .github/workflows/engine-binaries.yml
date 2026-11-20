@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       save-cache:
-        description: Save the Cargo cache (main only: tags cannot share theirs).
+        description: "Save the Cargo cache (main only: tags cannot share theirs)."
         type: boolean
         default: false
 
