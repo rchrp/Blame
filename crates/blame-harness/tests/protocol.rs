@@ -408,6 +408,7 @@ fn serve_in_order(lines: &[Json]) -> Vec<Json> {
 }
 
 /// A run_task command of an isolated session, run by `harness`.
+#[cfg(unix)]
 fn command(harness: &Harness, root: &str, session: &str, text: &str) -> Json {
     let request = obj! {
         "tool" => "run_task", "workspaceRoot" => root, "input" => obj! { "kind" => "command", "command" => text },
@@ -417,6 +418,7 @@ fn command(harness: &Harness, root: &str, session: &str, text: &str) -> Json {
 }
 
 /// Whether the session's workspace still knows its first run.
+#[cfg(unix)]
 fn run_known(harness: &Harness, root: &str, session: &str) -> bool {
     let request = obj! {
         "tool" => "run_task", "workspaceRoot" => root, "input" => obj! { "kind" => "inspect", "run" => "r1", "until" => "now" },

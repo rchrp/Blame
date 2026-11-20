@@ -714,19 +714,16 @@ test("candidate anchors respect trimmed matching and cannot select a previous oc
 });
 
 test("an unprefixed empty hunk line cannot hang patch computation", async () => {
-  await fixture({ "data.txt": "old\n" }, async (root) => {
-    const module = new URL("./light-patch.js", import.meta.url).href;
-    const invalid = envelope("data.txt", "@@\n\n-old\n+new");
-    const args = [root, "data.txt", "old\n", invalid]
-      .map((value) => JSON.stringify(value))
-      .join(",");
-    const script = `import { planLightPatch } from ${JSON.stringify(module)}; try { await planLightPatch(${args}); } catch (error) { console.log(error.message); }`;
-    const result = await execute(
-      process.execPath,
-      ["--input-type=module", "-e", script],
-      { timeout: 3_000 },
-    );
-    assert.match(result.stdout, /Patch context does not match/u);
+  await fixture({ "data.txt": "old\n" }, async (root, workspace) => {
+    // The harness plans the patch (a TypeScript child process ran
+    // planLightPatch with a timeout): it must answer, refused, in time.
+    const answered = patch(workspace, "data.txt", "@@\n\n-old\n+new");
+    const result = await Promise.race([
+      answered,
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error("patch computation hung")), 3_000).unref()),
+    ]);
+    assert.notEqual(result.status, "ok");
+    assert.match(JSON.stringify(result), /Patch context does not match/u);
     assert.equal(await readFile(join(root, "data.txt"), "utf8"), "old\n");
   });
 });
