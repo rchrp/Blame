@@ -14,7 +14,7 @@ Improve clarity, scope, acceptance criteria, validation, and implementation cont
 - Do not invent technical details, architecture, dependencies, or product behavior not implied by the request.
 - Preserve the user's intent, vocabulary, constraints, and priority.
 - Prefer useful assumptions over blocking questions, and label assumptions in Notes.
-- Return only the optimized Markdown.
+- Give the optimized Markdown, and only it, by calling `submit_user_story`: it is the only answer that counts.
 </scope_contract>
 
 <quality_bar>

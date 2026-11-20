@@ -1,0 +1,224 @@
+// Runs engine tasks (docs/engine-in-the-app.md, "Tasks"): an agent run with
+// no user in it, whose end the engine enforces through a completion contract.
+// A purpose (engine/purposes/) builds the task; this module runs it, turns
+// its outcome into a typed result or a typed error, and lets the renderer
+// cancel it. Nothing here imports Cline.
+
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import type {
+  CompletionContract,
+  EngineClient,
+  Limits,
+  SessionConfig,
+  TaskOutcome,
+  ToolSpec,
+} from "@blame/engine-client";
+import {
+  engineProviderId,
+  engineReasoning,
+  type EngineModelChoice,
+} from "../protocol.js";
+import type { TaskWorkspace } from "../task-protocol.js";
+
+/** A task as a purpose describes it. */
+export type TaskSpec<R> = {
+  config: SessionConfig;
+  /** The message that opens the task's only turn. */
+  instruction: string;
+  /** The typed result, from the input the engine validated against the result schema. */
+  result(value: unknown): R;
+};
+
+type Failure = Exclude<TaskOutcome, { status: "completed" }>;
+
+/** A task that did not complete: what the engine said, typed. */
+export class EngineTaskError extends Error {
+  readonly outcome: Failure;
+  readonly session: string;
+
+  constructor(session: string, outcome: Failure, what: string) {
+    super(`${what} ${failureText(outcome)}`);
+    this.name = "EngineTaskError";
+    this.session = session;
+    this.outcome = outcome;
+  }
+}
+
+/** Why a task did not complete, in words. */
+export function failureText(outcome: Failure): string {
+  if (outcome.status === "interrupted") return "was stopped.";
+  const { failure } = outcome;
+  switch (failure.kind) {
+    case "contract_unmet":
+      return `did not finish: the agent never ${failure.unmet
+        .map((obligation) =>
+          obligation.kind === "call"
+            ? `called \`${obligation.tool}\``
+            : `gave its result with \`${obligation.tool}\``,
+        )
+        .join(" and ")}.`;
+    case "limit_reached":
+      return `stopped at its limit (${failure.limit}).`;
+    case "provider_error":
+      return `failed: ${failure.error.message}`;
+  }
+}
+
+export type TaskRunOptions = {
+  /** The task's session id, when the caller wants to follow or cancel it. */
+  session?: string;
+  signal?: AbortSignal;
+  /** What the failure message starts with ("The title generator"). */
+  what: string;
+};
+
+/**
+ * Runs tasks on the engine. Each running task can be cancelled by its
+ * session id; a cancelled or failed task rejects with `EngineTaskError`.
+ */
+export class TaskRunner {
+  private readonly running = new Map<string, AbortController>();
+  private readonly client: () => Promise<EngineClient>;
+  private readonly started: (session: string) => void;
+
+  constructor(
+    client: () => Promise<EngineClient>,
+    started: (session: string) => void = () => undefined,
+  ) {
+    this.client = client;
+    this.started = started;
+  }
+
+  async run<R>(
+    spec: TaskSpec<R>,
+    options: TaskRunOptions,
+  ): Promise<{ session: string; result: R }> {
+    const session = options.session ?? `task-${randomUUID()}`;
+    if (this.running.has(session))
+      throw new Error(`The task ${session} is already running.`);
+    const controller = new AbortController();
+    const forward = () => controller.abort(options.signal?.reason);
+    if (options.signal?.aborted) forward();
+    options.signal?.addEventListener("abort", forward, { once: true });
+    this.running.set(session, controller);
+    try {
+      const client = await this.client();
+      const pending = client.runTask(
+        {
+          session,
+          config: spec.config,
+          instruction: [{ type: "text", text: spec.instruction }],
+        },
+        { signal: controller.signal },
+      );
+      this.started(session);
+      let outcome: TaskOutcome;
+      try {
+        outcome = await pending;
+      } catch (error) {
+        // Aborting rejects at once; the engine ends the task as interrupted.
+        if (controller.signal.aborted) outcome = { status: "interrupted" };
+        else throw error;
+      }
+      if (outcome.status !== "completed")
+        throw new EngineTaskError(session, outcome, options.what);
+      return { session, result: spec.result(outcome.result) };
+    } finally {
+      options.signal?.removeEventListener("abort", forward);
+      this.running.delete(session);
+    }
+  }
+
+  /** Stops a running task; false when none runs by that id. */
+  cancel(session: string): boolean {
+    const controller = this.running.get(session);
+    if (!controller) return false;
+    controller.abort();
+    return true;
+  }
+
+  /** Every running task stops (the app quits). */
+  cancelAll() {
+    for (const controller of this.running.values()) controller.abort();
+  }
+}
+
+export type TaskConfigInput = {
+  purpose: string;
+  model: EngineModelChoice;
+  systemPrompt: string;
+  contract: CompletionContract;
+  /** Where the task works; absent for a task that reads no file. */
+  workspace?: TaskWorkspace;
+  engineTools?: string[];
+  clientTools?: ToolSpec[];
+  toolOptions?: SessionConfig["tool_options"];
+  limits?: Limits;
+  maxOutputTokens?: number;
+  /** Copy the log to Blame's database (a long task the person may look back at). */
+  replicate?: boolean;
+};
+
+/** The configuration of a task, from what a purpose decides. */
+export function taskConfig(input: TaskConfigInput): SessionConfig {
+  const provider = engineProviderId(input.model.providerId);
+  if (!provider)
+    throw new Error(
+      `${input.model.providerId} models do not run on Blame's agent engine yet. Pick a model from Anthropic, OpenAI, ChatGPT, Gemini, OpenRouter, an OpenAI-compatible provider or Claude Code.`,
+    );
+  const reasoning = engineReasoning(input.model.reasoning);
+  return {
+    purpose: input.purpose,
+    workspace_root: taskRoot(input.workspace, input.engineTools?.length),
+    model: { provider, model: input.model.modelId },
+    ...(reasoning ? { reasoning } : {}),
+    system_prompt: input.systemPrompt,
+    ...(input.maxOutputTokens
+      ? { max_output_tokens: input.maxOutputTokens }
+      : {}),
+    engine_tools: input.engineTools ?? [],
+    client_tools: input.clientTools ?? [],
+    tool_options: input.toolOptions ?? {},
+    limits: input.limits ?? {},
+    checkpoints: false,
+    kind: { kind: "task", replicate: input.replicate ?? false },
+    contract: input.contract,
+  };
+}
+
+/** Said when a task needs files that live in the runtime VM. */
+export const VM_WORKSPACE_UNSUPPORTED =
+  "This project runs in the Blame Runtime VM, and Blame's agent engine does not run inside the VM yet: this agent cannot work on its files until it does.";
+
+/**
+ * The folder the engine works in. A task that reads files needs the
+ * workspace on this machine; one that reads none works in the temporary
+ * folder when the project lives in the VM.
+ */
+function taskRoot(workspace: TaskWorkspace | undefined, tools = 0): string {
+  if (workspace && !workspace.inVm) return workspace.root;
+  if (workspace?.inVm && tools > 0) throw new Error(VM_WORKSPACE_UNSUPPORTED);
+  return tmpdir();
+}
+
+/** A result tool the engine defines and answers itself. */
+export function submitTool(
+  name: string,
+  description: string,
+  inputSchema: Record<string, unknown>,
+): CompletionContract["result"] {
+  return {
+    source: "submit",
+    name,
+    description,
+    input_schema: inputSchema as SessionConfig["tool_options"],
+  };
+}
+
+/** The object at `value`, or an error naming what was expected. */
+export function resultObject(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("The engine accepted a result that is not an object.");
+  return value as Record<string, unknown>;
+}

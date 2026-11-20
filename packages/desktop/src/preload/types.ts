@@ -18,8 +18,6 @@ import type {
   DirectStoryFilesResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
-  GenerateTitleInput,
-  GenerateTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ProjectInitializationDiagnostics,
@@ -30,8 +28,6 @@ import type {
   LoginOAuthProviderInput,
   OpenPullRequestInput,
   OpenPullRequestResult,
-  OptimizeUserStoryPromptInput,
-  OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
@@ -699,12 +695,6 @@ export type BlameDesktopApi = {
       ): Promise<AnalyzeProjectCodePracticesResult>;
     };
     newProjects: NewProjectsClient;
-    promptOptimizer: {
-      optimizeUserStory(
-        input: OptimizeUserStoryPromptInput,
-      ): Promise<OptimizeUserStoryPromptResult>;
-      generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>;
-    };
     approveAndMerge(
       input: ApproveAndMergeInput,
     ): Promise<ApproveAndMergeResult>;

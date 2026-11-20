@@ -26,6 +26,8 @@ import type {
 import { quickChatConfig } from "./purposes/quick-chat.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
+import { taskHandlers } from "./tasks/handlers.js";
+import { TaskRunner } from "./tasks/runner.js";
 import { ToolSet, type ClientTool } from "./tool.js";
 import { webResearchClientTools } from "./tools/web-research.js";
 
@@ -74,6 +76,11 @@ export class EngineHost {
   private readonly tools: ToolSet;
   private readonly credentials: CredentialResolver;
   private readonly options: EngineHostOptions;
+  // Before `handlers`, which hand it out.
+  private readonly tasks = new TaskRunner(
+    () => this.supervisor.client(),
+    (session) => this.hub.watch(session),
+  );
 
   constructor(options: EngineHostOptions) {
     this.options = options;
@@ -215,10 +222,20 @@ export class EngineHost {
       await this.shutdown();
       return null;
     },
+    ...taskHandlers({
+      runner: this.tasks,
+      client: () => this.supervisor.client(),
+      register: (session, known) => this.known.set(session, known),
+      forget: (session) => {
+        this.known.delete(session);
+        this.current.delete(session);
+      },
+    }),
   };
 
   /** Stops following, ends running turns as interrupted and stops the engine. */
   async shutdown() {
+    this.tasks.cancelAll();
     await this.hub.stop();
     for (const waiting of this.approvals.values()) waiting.resolve("denied");
     this.approvals.clear();

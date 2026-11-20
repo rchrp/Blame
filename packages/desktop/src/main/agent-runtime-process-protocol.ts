@@ -35,8 +35,6 @@ export const agentRuntimeMethods = [
   "securityAudits.cancel",
   "securityAudits.finish",
   "newProjects.generate",
-  "promptOptimizer.optimizeUserStory",
-  "promptOptimizer.generateTitle",
   "approveAndMerge",
   "openPullRequest",
   "pullRequestAvailability",

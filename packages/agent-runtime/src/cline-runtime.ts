@@ -283,7 +283,6 @@ import {
   scanProjectWorkspace,
 } from "./project-initialization.js";
 import { loadPrompt } from "./prompt-loader.js";
-import { optimizeUserStoryPrompt } from "./prompt-optimization.js";
 import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
 import { reasoningConfig } from "./reasoning.js";
 import {
@@ -292,7 +291,6 @@ import {
 } from "./security-audit-runtime.js";
 import { scanSecurityAuditRepository } from "./security-audit-scan.js";
 import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
-import { generateTitle } from "./title-generation.js";
 import { sessionStoryHistoryTools } from "./story-history-tools.js";
 import type { RuntimeCredentialInput } from "./runtime-credential.js";
 import {
@@ -322,8 +320,6 @@ import type {
   DirectStoryFilesInput,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
-  GenerateTitleInput,
-  GenerateTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
   ConnectClaudeCodeInput,
@@ -333,8 +329,6 @@ import type {
   NewProjectGenerationResult,
   OpenPullRequestInput,
   OpenPullRequestResult,
-  OptimizeUserStoryPromptInput,
-  OptimizeUserStoryPromptResult,
   PullRequestAvailabilityInput,
   PullRequestStateInput,
   RepairProjectInitializationInput,
@@ -638,12 +632,6 @@ export class BlameAgentRuntime {
   newProjects = {
     generate: (input: StartNewProjectGenerationInput) =>
       this.generateNewProject(input),
-  };
-
-  promptOptimizer = {
-    optimizeUserStory: (input: OptimizeUserStoryPromptInput) =>
-      this.optimizeUserStoryPrompt(input),
-    generateTitle: (input: GenerateTitleInput) => this.generateTitle(input),
   };
 
   approveAndMerge = (input: ApproveAndMergeInput) =>
@@ -2295,29 +2283,6 @@ export class BlameAgentRuntime {
       // Nothing continues a generation: its Claude Code process can go.
       await closeClaudeCodeSessions([sessionId]).catch(() => undefined);
     }
-  }
-
-  private async optimizeUserStoryPrompt(
-    input: OptimizeUserStoryPromptInput,
-  ): Promise<OptimizeUserStoryPromptResult> {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    const prompt = input.prompt.trim();
-    if (!prompt)
-      throw new Error("Prompt optimizer requires a user story prompt.");
-    const credential = await this.runtimeCredential(input);
-    const cline = await this.core(input.backend);
-    return optimizeUserStoryPrompt({ ...input, prompt }, cline, credential);
-  }
-
-  private async generateTitle(
-    input: GenerateTitleInput,
-  ): Promise<GenerateTitleResult> {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    const prompt = input.prompt.trim();
-    if (!prompt) throw new Error("Title generator requires a prompt.");
-    const credential = await this.runtimeCredential(input);
-    const cline = await this.core(input.backend);
-    return generateTitle({ ...input, prompt }, cline, credential);
   }
 
   private async initializationCredential(input: RuntimeCredentialInput) {

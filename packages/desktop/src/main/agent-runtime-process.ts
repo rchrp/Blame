@@ -334,10 +334,6 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.securityAudits.finish(input as string),
     "newProjects.generate": (input: unknown) =>
       runtime.newProjects.generate(input as never),
-    "promptOptimizer.optimizeUserStory": (input: unknown) =>
-      runtime.promptOptimizer.optimizeUserStory(input as never),
-    "promptOptimizer.generateTitle": (input: unknown) =>
-      runtime.promptOptimizer.generateTitle(input as never),
     approveAndMerge: (input: unknown) =>
       runtime.approveAndMerge(input as never),
     openPullRequest: (input: unknown) =>

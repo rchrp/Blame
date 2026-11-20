@@ -177,12 +177,12 @@ test("sends one-off requests to an existing worker", async () => {
   const harness = poolHarness(2);
   await harness.pool.startSession("sessions.start", {});
 
-  await harness.pool.run("promptOptimizer.generateTitle", {});
+  await harness.pool.run("pullRequestState", {});
 
   assert.equal(harness.processes.length, 1);
   assert.equal(
     harness.processes[0].calls.at(-1)?.method,
-    "promptOptimizer.generateTitle",
+    "pullRequestState",
   );
 });
 

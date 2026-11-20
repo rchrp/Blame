@@ -421,26 +421,6 @@ export type DirectStoryFilesResult = {
   files: DirectStoryFile[];
 };
 
-export type GenerateTitleInput = {
-  apiConnection: ApiConnection;
-  context: "quick-chat" | "user-story";
-  providerId: string;
-  modelId: string;
-  prompt: string;
-  cwd: string;
-  workspaceRoot: string;
-  reasoningEffort?: ReasoningSelection;
-  credentialLabel?: string;
-  backend?: AgentBackendConfig;
-  runConfigurations?: ProjectRunConfiguration[];
-};
-
-export type GenerateTitleResult = {
-  sessionId: string;
-  title: string;
-  runConfigurationId?: string | null;
-};
-
 export type ResolveMergeConflictsInput = {
   apiConnection: ApiConnection;
   providerId: string;
@@ -753,24 +733,6 @@ export type {
   NewProjectGenerationResult,
   NewProjectsClient,
 } from "./new-project-types.js";
-
-export type OptimizeUserStoryPromptInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  prompt: string;
-  cwd: string;
-  workspaceRoot: string;
-  reasoningEffort?: ReasoningSelection;
-  credentialLabel?: string;
-  title?: string;
-  backend?: AgentBackendConfig;
-};
-
-export type OptimizeUserStoryPromptResult = {
-  sessionId: string;
-  markdown: string;
-};
 
 export type StoryPlanPriority = "Low" | "Medium" | "High";
 

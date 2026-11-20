@@ -12,7 +12,10 @@ import {
 import type { useModelSelection } from "@/components/model/model-selection"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { Platform } from "@/context/platform"
-import { generateAgentTitle } from "@/lib/agent-title-generation"
+import {
+  engineModelChoice,
+  generateAgentTitle,
+} from "@/lib/agent-title-generation"
 
 export function quickChatSendValidationError(input: {
   auth: ReturnType<typeof useCloudAuth>
@@ -81,27 +84,25 @@ export async function generatedQuickChatTitle(
   message: string,
   input: {
     auth: ReturnType<typeof useCloudAuth>
-    generateTitle?: Parameters<typeof generateAgentTitle>[0]
+    engine?: Parameters<typeof generateAgentTitle>[0]
+    projectId?: string
     projectPath?: string
     selection: ReturnType<typeof useModelSelection>
   }
 ) {
-  const model = input.selection.currentModel
+  const model = engineModelChoice(input.selection)
   if (
-    !input.generateTitle ||
+    !input.engine ||
     !model ||
     !input.projectPath ||
     input.auth.status !== "authenticated"
   )
     return undefined
   try {
-    return await generateAgentTitle(input.generateTitle, {
-      apiConnection: input.auth.apiConnection,
+    return await generateAgentTitle(input.engine, {
       context: "quick-chat",
-      providerId: model.provider.id,
-      modelId: model.id,
-      credentialLabel: model.credentialLabel,
-      reasoningEffort: input.selection.currentVariant,
+      model,
+      projectId: input.projectId,
       prompt: message,
       workspace: input.projectPath,
     })

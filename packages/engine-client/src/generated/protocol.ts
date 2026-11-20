@@ -57,7 +57,7 @@ result: ResultTool,
  * Tools that must have completed in the turn, in a reply before the one
  * that calls the result tool, for a result to be accepted.
  */
-required: Array<string>, 
+required?: Array<string>, 
 /**
  * When set, the only tools the model is offered, besides the result
  * tool. Absent: every tool of the session.
@@ -68,7 +68,7 @@ allowed?: Array<string>,
  * contract. The last one also forces the tool choice where the provider
  * can. Past it the turn fails as `contract_unmet`.
  */
-max_corrections: number, };
+max_corrections?: number, };
 
 // prettier-ignore
 export type ContextEdit = { 
@@ -221,11 +221,11 @@ code: string, text: string, } | { "type": "result_accepted", turn: TurnId, call:
 /**
  * Where the input does not match the result tool's schema.
  */
-invalid: Array<string>, 
+invalid?: Array<string>, 
 /**
  * What the turn still had to do first.
  */
-unmet: Array<Obligation>, } | { "type": "contract_correction", turn: TurnId, 
+unmet?: Array<Obligation>, } | { "type": "contract_correction", turn: TurnId, 
 /**
  * 1 for the first correction of the turn.
  */
@@ -314,7 +314,7 @@ export type SessionKind = { "kind": "conversation" } | { "kind": "task",
  * it stays on this machine only, and the engine deletes it a few
  * days after it ended: long enough to look into a failure.
  */
-replicate: boolean, };
+replicate?: boolean, };
 
 // prettier-ignore
 export type SessionList = { sessions: Array<SessionSummary>, };
@@ -370,11 +370,11 @@ code: string, text: string, } | { "type": "result_accepted", turn: TurnId, call:
 /**
  * Where the input does not match the result tool's schema.
  */
-invalid: Array<string>, 
+invalid?: Array<string>, 
 /**
  * What the turn still had to do first.
  */
-unmet: Array<Obligation>, } | { "type": "contract_correction", turn: TurnId, 
+unmet?: Array<Obligation>, } | { "type": "contract_correction", turn: TurnId, 
 /**
  * 1 for the first correction of the turn.
  */

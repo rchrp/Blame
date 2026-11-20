@@ -336,18 +336,6 @@ function registerDeliveryWorkflowIpcHandlers(
   ipcMain.handle("agent:new-projects:generate", (_event, input) =>
     agentRuntime().run("newProjects.generate", input),
   );
-  ipcMain.handle(
-    "agent:prompt-optimizer:optimize-user-story",
-    (_event, input) =>
-      agentWorkspaceInput(input).then((resolved) =>
-        agentRuntime().run("promptOptimizer.optimizeUserStory", resolved),
-      ),
-  );
-  ipcMain.handle("agent:prompt-optimizer:generate-title", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("promptOptimizer.generateTitle", resolved),
-    ),
-  );
   ipcMain.handle("agent:approve-and-merge", async (_event, input) => {
     const resolved = {
       ...(await agentWorkspaceInput(input)),

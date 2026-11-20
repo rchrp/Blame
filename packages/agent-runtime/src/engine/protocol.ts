@@ -17,6 +17,9 @@ import type {
   ProjectCodePracticePreference,
   ReasoningSelection,
 } from "../types.js";
+import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
+
+export type * from "./task-protocol.js";
 
 /** What a conversation is for; each has its own config builder in the host. */
 export type EnginePurpose = "quick-chat";
@@ -105,7 +108,7 @@ export type EngineHostMethods = {
   unfollow: { input: { subscription: string }; result: null };
   running: { input: undefined; result: SessionId[] };
   shutdown: { input: undefined; result: null };
-};
+} & EngineTaskMethods;
 
 export type EngineHostMethod = keyof EngineHostMethods;
 export type EngineHostInput<M extends EngineHostMethod> =
@@ -127,6 +130,7 @@ export const engineHostMethods = [
   "unfollow",
   "running",
   "shutdown",
+  ...engineTaskMethods,
 ] as const satisfies readonly EngineHostMethod[];
 
 /** What the host tells the renderers. */
