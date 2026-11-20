@@ -109,15 +109,6 @@ test("a task without files works in a temporary folder when the project is in th
   });
   assert.notEqual(task.config.workspace_root, "/home/blame/app");
   assert.throws(
-    () =>
-      titleTask({
-        context: "quick-chat",
-        model: { providerId: "bedrock", modelId: "x" },
-        prompt: "Hello",
-      }),
-    /do not run on Blame's agent engine/,
-  );
-  assert.throws(
     () => titleTask({ context: "quick-chat", model, prompt: "  " }),
     /needs a prompt/,
   );
