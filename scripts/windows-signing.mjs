@@ -1,5 +1,6 @@
 // Release steps around SignPath, which signs the Windows app in two requests:
-// Blame.exe first, then the installer built around the signed Blame.exe.
+// Blame.exe and the engine executables first, then the installer built
+// around them.
 // Signing changes the installer's bytes, so its update metadata (latest.yml and
 // the blockmap) is rebuilt afterwards. The release's SHA256SUMS is computed
 // later, from the uploaded files, by `desktop-release.mjs collect`.
@@ -26,7 +27,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       [
         "Usage:",
         "  node scripts/windows-signing.mjs version <semver>                  Four-part version Windows stores in Blame.exe",
-        "  node scripts/windows-signing.mjs installer <signed exe> <app dir>  Build the installer around the signed Blame.exe",
+        "  node scripts/windows-signing.mjs installer <signed dir> <app dir>  Build the installer around the signed Blame.exe and engine",
         "  node scripts/windows-signing.mjs update-info <signed installer>    Replace the installer and rebuild latest.yml and its blockmap",
       ].join("\n"),
     );
@@ -42,14 +43,15 @@ export function windowsProductVersion(version) {
   return `${match[1]}.${match[2]}.${match[3]}.0`;
 }
 
-// Puts the signed Blame.exe into the unpacked app, moves the app out of dist,
-// and packages it again as an NSIS installer without rebuilding it.
-async function buildInstaller(signedExe, appDir) {
-  if (!signedExe || !appDir) {
-    throw new Error("Usage: installer <signed Blame.exe> <app directory>");
+// Puts the signed files (Blame.exe, resources/engine/win32-x64/*.exe, at the
+// paths they have in the app) into the unpacked app, moves the app out of
+// dist, and packages it again as an NSIS installer without rebuilding it.
+async function buildInstaller(signedDir, appDir) {
+  if (!signedDir || !appDir) {
+    throw new Error("Usage: installer <signed directory> <app directory>");
   }
   const unpacked = join(desktopDir, "dist/win-unpacked");
-  await cp(resolve(signedExe), join(unpacked, "Blame.exe"));
+  await cp(resolve(signedDir), unpacked, { recursive: true });
   await rm(resolve(appDir), { force: true, recursive: true });
   await rename(unpacked, resolve(appDir)).catch(async (error) => {
     if (error.code !== "EXDEV") throw error;
