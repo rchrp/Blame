@@ -6,7 +6,9 @@
 //! - `call`: a model's tool call, validated and presented as the in-process
 //!   tools present it, answered with `presented`;
 //! - `describe`: the model-facing tools, answered with `tools`;
-//! - `cancel`: aborts the request or call with that id.
+//! - `cancel`: aborts the request or call with that id, and what it started:
+//!   a command that became a managed run is still stopped by its call's
+//!   cancel after the call answered, as an aborted signal stops it in process.
 //!
 //! Requests run on their own threads, so a slow search never delays a read;
 //! one workspace's operations take turns behind its lock.
@@ -35,6 +37,9 @@ pub fn serve<R: BufRead, W: Write + Send + 'static>(input: R, output: W, harness
     };
     write(obj! { "ready" => true, "protocol" => 1 });
     let in_flight: Arc<Mutex<HashMap<String, Signal>>> = Arc::new(Mutex::new(HashMap::new()));
+    // Signals of answered requests, newest last: a managed run keeps its call's.
+    let answered: Arc<Mutex<std::collections::VecDeque<(String, Signal)>>> =
+        Arc::new(Mutex::new(std::collections::VecDeque::new()));
     let mut workers = Vec::new();
     for line in input.lines() {
         let Ok(line) = line else { break };
@@ -54,6 +59,14 @@ pub fn serve<R: BufRead, W: Write + Send + 'static>(input: R, output: W, harness
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .get(&id)
+            {
+                signal.abort();
+            }
+            if let Some((_, signal)) = answered
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .iter()
+                .find(|(known, _)| *known == id)
             {
                 signal.abort();
             }
@@ -82,6 +95,14 @@ pub fn serve<R: BufRead, W: Write + Send + 'static>(input: R, output: W, harness
         let harness = harness.clone();
         let write = write.clone();
         let in_flight = in_flight.clone();
+        let answered = answered.clone();
+        // A command, and a finish that runs final checks, returns its own
+        // result when cancelled (an interrupted check, a refused finish),
+        // never the cancellation in its place.
+        let runs_commands = matches!(
+            request.get("tool").and_then(Json::as_str),
+            Some("run_task" | "task_runner" | "finish_task")
+        );
         workers.push(thread::spawn(move || {
             let answer = if call {
                 match harness.call(&request, &signal) {
@@ -91,10 +112,13 @@ pub fn serve<R: BufRead, W: Write + Send + 'static>(input: R, output: W, harness
                     Err(failure) => obj! { "id" => id.as_str(), "error" => failure.message },
                 }
             } else {
-                match harness
-                    .execute(&request, &signal)
-                    .and_then(|result| signal.check().map(|()| result))
-                {
+                match harness.execute(&request, &signal).and_then(|result| {
+                    if runs_commands {
+                        Ok(result)
+                    } else {
+                        signal.check().map(|()| result)
+                    }
+                }) {
                     Ok(result) => obj! { "id" => id.as_str(), "result" => result },
                     Err(failure) => obj! { "id" => id.as_str(), "error" => failure.message },
                 }
@@ -103,6 +127,15 @@ pub fn serve<R: BufRead, W: Write + Send + 'static>(input: R, output: W, harness
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .remove(&id);
+            if runs_commands {
+                let mut answered = answered
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                answered.push_back((id.clone(), signal.clone()));
+                while answered.len() > 1_024 {
+                    answered.pop_front();
+                }
+            }
             write(answer);
         }));
         workers.retain(|worker| !worker.is_finished());

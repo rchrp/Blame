@@ -121,6 +121,50 @@ impl EditService {
         }
     }
 
+    /// A deterministic formatter's output, committed as one atomic edit
+    /// (`replaceFiles`): each file wholly replaced, its preimage checked.
+    pub fn replace_files(
+        &mut self,
+        replacements: &[(String, Vec<u8>, Vec<u8>)],
+        context: &mut EditContext<'_>,
+    ) -> Outcome<Json> {
+        let outcome = (|| {
+            if replacements.is_empty() || replacements.len() > 50 {
+                return Err(Failure::new(
+                    "Formatter batch must contain between 1 and 50 files.",
+                ));
+            }
+            let snapshot = context.files.snapshot(context.signal)?;
+            let mut plans: Vec<PlannedFile> = Vec::new();
+            for (path, before, content) in replacements {
+                let path = context.files.normalize_path(path)?;
+                let mut single = Vec::new();
+                let plan = file_plan(&mut single, &path, None, context.files)?;
+                let Some(initial) = plan.initial.clone() else {
+                    return Err(Failure::new(format!("{path} does not exist.")));
+                };
+                if initial.as_slice() != before.as_slice() {
+                    return Err(Failure::conflict(format!(
+                        "File changed before commit: {path}."
+                    )));
+                }
+                plan.replacements.push(SourcedReplacement {
+                    start: 0,
+                    end: initial.len(),
+                    replacement: String::from_utf8_lossy(content).into_owned(),
+                    source: format!("formatter {path}"),
+                });
+                plans.extend(single);
+            }
+            self.apply_plans(plans, &snapshot, context)
+        })();
+        match outcome {
+            Err(failure) if failure.cancelled => Err(failure),
+            Err(failure) => Ok(edit_failure(&failure)),
+            Ok(result) => Ok(result),
+        }
+    }
+
     fn apply_plans(
         &mut self,
         plans: Vec<PlannedFile>,
@@ -1177,7 +1221,7 @@ fn edit_failure(failure: &Failure) -> Json {
         .with("diagnosticId", id)
 }
 
-fn commit_failure(failure: &Failure) -> Json {
+pub fn commit_failure(failure: &Failure) -> Json {
     if failure.conflict {
         return obj! { "status" => "blocked", "category" => "input", "message" => failure.message.as_str(), "diagnosticId" => diagnostic_id() };
     }

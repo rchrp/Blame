@@ -8,10 +8,12 @@ runtime, and ships as one binary that speaks the JSON-lines protocol of
 the engine (or any other agent) can run it in place of the TypeScript
 harness.
 
-Ported so far: the foundations, the read side, `edit_code` and the compiler
-tier (through a Node side process). `run_task`, completion and symbolic
-analysis answer that they are not available yet; their seams are described
-below.
+All five tools are ported: the read side, `edit_code`, `run_task`
+(commands, project tasks, managed runs, the dependency operation,
+deterministic Prettier edits, check observation), `finish_task` and the
+opt-in symbolic analysis, with the compiler tier in a Node side process.
+The runner-only `experimentalSearchExpansion` option is not (no production
+caller sets it).
 
 ## Running it
 
@@ -36,16 +38,38 @@ cargo run --release -p blame-harness -- serve
   and the `blame_tool_result_v2` envelope.
 - `describe` lists the five tools with the exact descriptions and JSON
   Schemas of the TypeScript harness (`schemas/*.json`).
-- `cancel` aborts the request or call with that id. Closing stdin aborts
+- `cancel` aborts the request or call with that id. A command that became a
+  managed run is still stopped by its call's cancel after the call
+  answered; a cancelled `run_task` or `finish_task` answers with its own
+  result (an interrupted check, a refused finish). Closing stdin aborts
   everything in flight.
+- A request may carry `commandCredentials` (`{ githubToken?, githubCli? }`,
+  set by the desktop for managed runtimes) and `workspaceOptions`
+  (`{ initialCommandWaitMs }`, part of the workspace's identity).
+- Internal requests serve the conformance adapter: `task_runner` (the
+  runner alone), `edit_service` (the edit service alone) and
+  `replace_files` (a formatter commit).
 
 Without `serve`, one request is read from stdin and its result printed.
+
+### What run_task takes from the TypeScript package
+
+- `BLAME_HARNESS_NODE_ASSETS`: the directory of `node-event-reporter.js`
+  and `invocation-test-preload.js` (`packages/agent-runtime/dist/harness`),
+  the Node test reporter and the Vitest preload hook added to owned test
+  invocations; without it those invocations run without them.
+- `BLAME_HARNESS_NODE_MODULES`: the node_modules holding the bundled
+  package managers (`npm`, `pnpm`, `yarn`, `npm-legacy`, `pnpm-legacy`),
+  after the provisioned roots and before PATH, as in TypeScript.
+- `BLAME_HARNESS_RIPGREP_DIRECTORY`: the bundled `rg`, appended to the
+  commands' PATH.
 
 ### The compiler side process
 
 What must stay on the TypeScript compiler (references and renames,
 dependency declarations, the import index behind `links`, TypeScript, JSONC
-and Prisma content validation) is answered by
+and Prisma content validation, the symbolic analysis's hints and its Z3
+program) is answered by
 `packages/agent-runtime/src/harness/rust-harness-compiler.ts`, a small Node
 entry next to the modules it reuses unchanged. Give the harness its command:
 
@@ -73,7 +97,10 @@ and TypeScript/JSONC/Prisma edits are validated as unsupported.
 | `syntax`, `languages` | Symbols, bodies, structural levels, syntax diagnostics, Vue/Svelte units, Python bodies | `code-intelligence.ts`, `component-symbols.ts`, `language-capabilities.ts`, `light-capabilities.ts` |
 | `fold`, `navigation`, `read_results` | Folded views and their economics, edit targets, read result shapes | `light-fold-view.ts`, `light-fold-economics.ts`, `light-navigation.ts`, `light-read-results.ts` |
 | `lexical`, `search_results`, `search` | ripgrep's engine in process, ranking, pages, scopes, symbol/reference/declaration discovery | `lexical-search.ts`, `light-search-results.ts`, `light-code-search.ts`, `light-reference-search.ts`, `light-reference-candidates.ts` |
-| `workspace` | One session on one workspace: `read_code` routing, `search_code`, `edit_code` | `light-workspace.ts`, `light-path-recovery.ts`, `light-images.ts` |
+| `workspace` | One session on one workspace: `read_code` routing, `search_code`, `edit_code`, what run_task adds (coverage, failure snippets, validation state, repair plan), `analyze` | `light-workspace.ts`, `light-path-recovery.ts`, `light-images.ts`, `light-symbolic-analysis.ts` |
+| `turn` | One session's operations take turns; a managed run refuses edits and lets reads through | `light-commit.ts` (SessionTurn) |
+| `run::*` | run_task: shell words and policy, task catalog, process and environment, command changes, failure assessment, check observation and test reports, managed reports, formatter, dependency operation, shell inspection, the runner | `light-task-runner.ts` and the modules it imports |
+| `checks`, `finish` | `@checks`, the validation state after edits, the repair plan; finish_task's completion decision and memory candidate | `light-validation-report.ts`, `light-check-repair.ts`, `light-finish-service.ts`, `light-completion.ts`, `project-memory.ts` |
 | `edit`, `patch`, `cline_patch`, `diff`, `symbol_edit`, `commit`, `validation` | edit_code: planning, Cline patches (its parser ported), jsdiff's line diff, symbol replacements, atomic commit with `pending.json` recovery, final content validation | `light-edit.ts`, `light-patch.ts`, `@cline/core` apply-patch, `diff` 9, `light-symbol-replacement.ts`, `python-body.ts`, `patch-symbol-attribution.ts`, `light-commit.ts`, `content-validation.ts` |
 | `tools`, `validate`, `present` | The model-facing surface: definitions, validation, presentation | `light-tools.ts`, `light-contracts.ts`, `tool-result-envelope.ts`, `security-secret-redaction.ts` |
 | `harness`, `server` | Workspace cache, request and call execution, the protocol | `light-executor.ts`, `engine-tools.ts`, `semantic-harness-runner.ts` |
@@ -118,22 +145,19 @@ node crates/blame-harness/conformance/run.mjs --binary target/release/blame-harn
 ```
 
 It runs every harness test file three ways: as is (TypeScript), with the
-workspace in Rust, and in compare mode, where the tests read TypeScript
-results while every `search_code`/`read_code`/`edit_code` also runs in Rust
-on a shadow copy of the test's tree (made identical to it before each call)
-and is compared byte for byte, an edit's resulting files included.
-`classify.mjs` sorts the remaining failures by cause, `measure.mjs` and
-`measure-edit.mjs` compare latency and memory.
+workspace and the finish service in Rust, and in compare mode, where the
+tests read TypeScript results while every `search_code`/`read_code`/
+`edit_code` also runs in Rust on a shadow copy of the test's tree (made
+identical to it before each call) and is compared byte for byte, an edit's
+resulting files included; commands are not run twice, so a workspace stops
+comparing after its first `run_task`. `classify.mjs` sorts the remaining
+failures by cause; `measure.mjs`, `measure-edit.mjs` and `measure-task.mjs`
+compare latency and memory.
 
-## Seams for the next parts
+## Seams for the next part
 
-- `run_task`, `finish_task`: `tools::ToolDefinition::available` is false and
-  `Harness::execute` answers that they are not available. The journal
-  already replays `validation` and `terminal` events. The deterministic
-  formatter (`run_task`'s Prettier edits) will commit through the edit
-  service, as `replaceFiles` does in TypeScript.
-- `@checks`, and on edits the validation state and repair plan: they come
-  from checks `run_task` records; without them (the only case so far) the
-  TypeScript workspace adds none either.
-- Symbolic analysis (`BLAME_AGENT_SYMBOLIC_ANALYSIS`): not ported; reads
-  carry no `symbolicAnalysis` hints.
+- Engine wiring: the engine starts `blame-harness serve` (with the compiler
+  command and the three variables above) instead of the TypeScript runner.
+- The preview runtime's dependency refresh after a dependency operation
+  (`refreshPreviewDependencies`) has no Rust counterpart yet: results
+  carry no `preview` field.

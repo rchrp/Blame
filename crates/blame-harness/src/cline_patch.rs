@@ -116,12 +116,12 @@ fn paths_with(lines: &[String], prefixes: &[&str]) -> Vec<String> {
 }
 
 fn resolve_path(root: &str, path: &str) -> Outcome<String> {
-    if path.starts_with('/') {
+    if pathx::is_absolute(path) {
         return Ok(pathx::resolve("/", path));
     }
     let resolved = pathx::resolve(root, path);
     let local = pathx::relative(root, &resolved);
-    if local.starts_with("..") || local.starts_with('/') {
+    if local.starts_with("..") || pathx::is_absolute(&local) {
         return Err(diff_error(format!("Path must stay within cwd: {path}")));
     }
     Ok(resolved)

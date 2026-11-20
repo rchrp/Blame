@@ -85,6 +85,13 @@ pub trait CompilerPort: Send + Sync {
         external: Option<&str>,
         signal: &Signal,
     ) -> Outcome<Option<Json>>;
+
+    /// The opt-in symbolic analysis on the TypeScript AST: `symbolicHints`
+    /// (read hints, an array) or `symbolicAnalysis` (run_task kind
+    /// analyze); `None` when it is unavailable.
+    fn symbolic(&self, _kind: &str, _body: Json, _signal: &Signal) -> Outcome<Option<Json>> {
+        Ok(None)
+    }
 }
 
 /// The reason a TypeScript harness gives when its compiler worker fails.
@@ -386,6 +393,14 @@ impl CompilerPort for NodeCompiler {
             Sent::Reply(reply @ Json::Obj(_)) => Some(reply),
             Sent::Error(error) => return Err(Failure::new(error)),
             _ => None,
+        })
+    }
+
+    fn symbolic(&self, kind: &str, body: Json, signal: &Signal) -> Outcome<Option<Json>> {
+        Ok(match self.send(kind, body, signal)? {
+            Sent::Reply(reply) => Some(reply),
+            Sent::Error(error) => return Err(Failure::new(error)),
+            Sent::Gone => None,
         })
     }
 }

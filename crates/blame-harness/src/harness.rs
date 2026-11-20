@@ -13,9 +13,11 @@ use crate::navigation::ReadInput;
 use crate::obj;
 use crate::present::model_tool_response;
 use crate::read_results::context_generation;
+use crate::run::runner::RunContext;
 use crate::tools::{normalize_search_input, tool_definitions};
 use crate::validate::{
-    edit_code_schema, issues_message, parse_leniently, read_code_schema, search_code_schema,
+    edit_code_schema, finish_task_schema, issues_message, parse_leniently, read_code_schema,
+    run_task_schema, search_code_schema,
 };
 use crate::workspace::Workspace;
 use std::sync::{Arc, Mutex};
@@ -62,12 +64,22 @@ impl Harness {
         }
     }
 
-    fn workspace(&self, root: &str, task_contract: Option<&Json>) -> Arc<Mutex<Workspace>> {
-        let key = Json::Arr(vec![
+    /// `options`: the workspace's own settings (`initialCommandWaitMs`),
+    /// part of its identity like the task contract.
+    fn workspace(
+        &self,
+        root: &str,
+        task_contract: Option<&Json>,
+        options: Option<&Json>,
+    ) -> Arc<Mutex<Workspace>> {
+        let mut identity = vec![
             Json::from(root),
             task_contract.cloned().unwrap_or(Json::Null),
-        ])
-        .stringify();
+        ];
+        if let Some(options) = options.filter(|options| options.is_object()) {
+            identity.push(options.clone());
+        }
+        let key = Json::Arr(identity).stringify();
         let mut workspaces = self
             .workspaces
             .lock()
@@ -75,9 +87,7 @@ impl Harness {
         let now = Instant::now();
         // A workspace in use is locked by its request: never dropped then.
         workspaces.retain(|entry| {
-            entry.key == key
-                || entry.workspace.try_lock().is_err()
-                || now - entry.last_used < WORKSPACE_IDLE
+            entry.key == key || busy(&entry.workspace) || now - entry.last_used < WORKSPACE_IDLE
         });
         let entry = match workspaces.iter().position(|entry| entry.key == key) {
             Some(index) => workspaces.remove(index),
@@ -86,12 +96,20 @@ impl Harness {
                     .and_then(|contract| contract.get("session_id"))
                     .and_then(Json::as_str)
                     .unwrap_or("unscoped-session");
-                let workspace = Workspace::new(
+                let mut workspace = Workspace::new(
                     root,
                     session,
                     task_contract.cloned().unwrap_or(Json::Null),
                     self.compiler.clone(),
                 );
+                if let Some(wait) = options
+                    .and_then(|options| options.get("initialCommandWaitMs"))
+                    .and_then(Json::as_f64)
+                {
+                    workspace.set_initial_command_wait(std::time::Duration::from_millis(
+                        wait.max(0.0) as u64,
+                    ));
+                }
                 Cached {
                     key,
                     workspace: Arc::new(Mutex::new(workspace)),
@@ -106,10 +124,7 @@ impl Harness {
         });
         // Least recently used first.
         while workspaces.len() > WORKSPACE_LIMIT {
-            match workspaces
-                .iter()
-                .position(|entry| entry.workspace.try_lock().is_ok())
-            {
+            match workspaces.iter().position(|entry| !busy(&entry.workspace)) {
                 Some(index) => {
                     workspaces.remove(index);
                 }
@@ -131,33 +146,196 @@ impl Harness {
         let contract = request
             .get("taskContract")
             .filter(|contract| !matches!(contract, Json::Null));
+        let options = request.get("workspaceOptions");
         match tool {
             "search_code" => {
-                let workspace = self.workspace(root, contract);
+                let workspace = self.workspace(root, contract, options);
                 let mut workspace = workspace
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 workspace.search_code(&input, signal)
             }
             "read_code" => {
-                let workspace = self.workspace(root, contract);
+                let workspace = self.workspace(root, contract, options);
                 let mut workspace = workspace
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 workspace.read_code(&read_input(&input), &context, signal)
             }
             "edit_code" => {
-                let workspace = self.workspace(root, contract);
+                let workspace = self.workspace(root, contract, options);
                 let mut workspace = workspace
                     .lock()
                     .unwrap_or_else(|poisoned| poisoned.into_inner());
                 workspace.edit_code(&input, signal)
             }
+            "run_task" => self.run_task(
+                root,
+                contract,
+                options,
+                &input,
+                &context,
+                request.get("commandCredentials"),
+                signal,
+            ),
+            // The conformance adapter's view of the workspace's internals,
+            // which the TypeScript tests call directly: the runner alone
+            // (`tasks.run`), the edit service alone (`edits.edit`) and a
+            // formatter commit (`edits.replaceFiles`).
+            "task_runner" => {
+                let workspace = self.workspace(root, contract, options);
+                let runner = {
+                    let mut workspace = workspace
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner());
+                    workspace.prepare()?;
+                    workspace.tasks()
+                };
+                let replace = |replacements: &crate::run::formatter::Replacements,
+                               signal: &Signal| {
+                    workspace
+                        .lock()
+                        .unwrap_or_else(|poisoned| poisoned.into_inner())
+                        .replace_files(replacements, signal)
+                };
+                let context = RunContext {
+                    credentials: request
+                        .get("commandCredentials")
+                        .filter(|value| value.is_object())
+                        .cloned(),
+                    signal: signal.clone(),
+                };
+                Ok(runner.run(&input, &context, Some(&replace)))
+            }
+            "edit_service" => {
+                let workspace = self.workspace(root, contract, options);
+                let mut workspace = workspace
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                workspace.edit_service(&input, signal)
+            }
+            "replace_files" => {
+                let replacements: crate::run::formatter::Replacements = input
+                    .get("replacements")
+                    .and_then(Json::as_array)
+                    .into_iter()
+                    .flatten()
+                    .map(|item| {
+                        let bytes = |key: &str| {
+                            crate::base64::decode(
+                                item.get(key).and_then(Json::as_str).unwrap_or(""),
+                            )
+                        };
+                        (
+                            item.get("path")
+                                .and_then(Json::as_str)
+                                .unwrap_or("")
+                                .to_string(),
+                            bytes("before"),
+                            bytes("content"),
+                        )
+                    })
+                    .collect();
+                let workspace = self.workspace(root, contract, options);
+                let mut workspace = workspace
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                workspace.replace_files(&replacements, signal)
+            }
+            "finish_task" => Ok(crate::finish::execute_finish(
+                root, contract, &input, &context, signal,
+            )),
             "session_journal" => session_journal(root, &context, &input),
             other => Err(Failure::new(format!(
                 "{other} is not available in the Rust harness yet."
             ))),
         }
+    }
+
+    /// run_task: a routed shell inspection, or the runner without the
+    /// workspace lock (reads go on while a command runs), then what the
+    /// workspace adds to its result.
+    #[allow(clippy::too_many_arguments)]
+    fn run_task(
+        &self,
+        root: &str,
+        contract: Option<&Json>,
+        options: Option<&Json>,
+        input: &Json,
+        context: &Json,
+        credentials: Option<&Json>,
+        signal: &Signal,
+    ) -> Outcome<Json> {
+        let workspace = self.workspace(root, contract, options);
+        let (runner, files_root) = {
+            let mut workspace = workspace
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            workspace.prepare()?;
+            (workspace.tasks(), workspace.root().to_string())
+        };
+        // cmd.exe reads command lines differently: no routing on Windows.
+        if !cfg!(windows)
+            && input.get("kind").and_then(Json::as_str) == Some("command")
+            && std::env::var("BLAME_AGENT_SHELL_INSPECTION_ROUTING").as_deref() != Ok("false")
+        {
+            let command = input.get("command").and_then(Json::as_str).unwrap_or("");
+            let cwd = input.get("cwd").and_then(Json::as_str);
+            if let Some(routes) =
+                crate::run::inspection::shell_inspection_routes(command, cwd, &files_root)
+            {
+                let files = crate::files::WorkspaceFiles::new(&files_root);
+                let answered = crate::run::inspection::answer(
+                    command,
+                    &routes,
+                    |request| {
+                        workspace
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner())
+                            .search_code(request, signal)
+                    },
+                    |read| {
+                        workspace
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner())
+                            .read_code(&read_input(read), context, signal)
+                    },
+                    |path| {
+                        let text = String::from_utf8_lossy(&files.read(path)?.content).into_owned();
+                        Ok(if text.is_empty() {
+                            1
+                        } else {
+                            text.matches('\n').count() + usize::from(!text.ends_with('\n'))
+                        })
+                    },
+                )?;
+                if let Some(answer) = answered {
+                    return Ok(answer);
+                }
+            }
+        }
+        if input.get("kind").and_then(Json::as_str) == Some("analyze") {
+            let mut workspace = workspace
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let result = workspace.analyze(input, signal)?;
+            return workspace.after_run_task(input, result, context, signal);
+        }
+        let replace = |replacements: &crate::run::formatter::Replacements, signal: &Signal| {
+            workspace
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .replace_files(replacements, signal)
+        };
+        let run_context = RunContext {
+            credentials: credentials.filter(|value| value.is_object()).cloned(),
+            signal: signal.clone(),
+        };
+        let result = runner.run(input, &run_context, Some(&replace));
+        let mut workspace = workspace
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        workspace.after_run_task(input, result, context, signal)
     }
 
     /// A `call`: a model's tool call, validated and presented as the
@@ -186,6 +364,8 @@ impl Harness {
         let (schema, value) = match name {
             "search_code" => (search_code_schema(), normalize_search_input(&input)),
             "edit_code" => (edit_code_schema(), input),
+            "run_task" => (run_task_schema(), input),
+            "finish_task" => (finish_task_schema(), input),
             _ => (read_code_schema(), input),
         };
         let parsed = match parse_leniently(&schema, &value) {
@@ -224,6 +404,15 @@ impl Harness {
             Err(failure) if failure.cancelled => Err(failure),
             Err(failure) => Ok(text_result(false, failure.message)),
         }
+    }
+}
+
+/// A workspace in use by a request, or running a command it started, is
+/// never dropped: its managed runs live in it.
+fn busy(workspace: &Mutex<Workspace>) -> bool {
+    match workspace.try_lock() {
+        Ok(workspace) => workspace.tasks().running(),
+        Err(_) => true,
     }
 }
 
