@@ -401,6 +401,45 @@ describe(
       assert.equal(existsSync(join(worktree, "note.txt")), false);
     });
 
+    it("replies with the accepted finish summary, else the turn's last text", async () => {
+      const host = startHost();
+      const session = "story-reply";
+      await open(host, session);
+      const finishCalls = () =>
+        view(session).items.filter(
+          (item) => item.kind === "tool_call" && item.name === "finish_task",
+        );
+
+      // Accepted: the summary is the turn's reply.
+      model.script(finish("The accepted summary."));
+      await turn(host, session, "Finish at once.");
+      const accepted = finishCalls().at(-1);
+      assert.ok(accepted?.kind === "tool_call" && accepted.state === "completed", JSON.stringify(accepted));
+      let [status] = await host.call("status", { sessions: [session] });
+      assert.equal(status!.lastReply, "The accepted summary.");
+
+      // Refused (the harness knows no such screenshot): the turn's last
+      // text is the reply, once the contract's corrections run out.
+      model.script(
+        tools({
+          name: "finish_task",
+          input: {
+            summary: "A refused summary.",
+            images: [{ ref: `screenshot:${"a".repeat(64)}`, caption: "Not taken" }],
+          },
+        }),
+        text("First words."),
+        text("Second words."),
+        text("The last words."),
+      );
+      await turn(host, session, "Finish with a screenshot.");
+      const refused = finishCalls().at(-1);
+      assert.ok(refused?.kind === "tool_call" && refused.state !== "completed", JSON.stringify(refused));
+      [status] = await host.call("status", { sessions: [session] });
+      assert.equal(status!.lastReply, "The last words.");
+      await host.shutdown();
+    });
+
     it("refuses a VM worktree on a computer without a runtime VM", async () => {
       const host = startHost();
       const vm = settings("story-vm");
