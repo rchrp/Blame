@@ -3,7 +3,7 @@ import { mkdtemp, mkdir, readFile, rm, symlink, writeFile } from "node:fs/promis
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { sha256 } from "./light-identity.js";
 import { CompilerServices, queryDependencyDeclaration, referenceFootprintIsCurrent } from "./semantic-reference-client.js";
 import type { DependencyDeclarationReply } from "./semantic-reference-types.js";

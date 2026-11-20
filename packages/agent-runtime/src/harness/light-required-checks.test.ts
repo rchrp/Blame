@@ -3,17 +3,13 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
-import type { LightCompletionNotification } from "./light-completion.js";
-import { lightRequiredChecksSchema, type RequiredProjectCheck } from "./light-contracts.js";
-import { createInitialTaskBriefing } from "./initial-task-briefing.js";
-import { executeLocalFinishTask } from "./light-finish-service.js";
-import { completionAwareTerminalState } from "./run-lifecycle.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
+import { type RequiredProjectCheck } from "./light-contracts.js";
+import { lightRequiredChecksSchema } from "./test-client/contracts.js";
+import { executeLocalFinishTask, LightFinishService } from "./test-client/light-finish-service.js";
 
-const { LightFinishService } = await import(
-  process.env.BLAME_REQUIRED_CHECKS_MODULE ?? "./light-finish-service.js"
-) as typeof import("./light-finish-service.js");
 const alpha = ["--test-name-pattern=alpha", "suite.test.cjs"];
 const beta = ["--test-name-pattern=beta", "suite.test.cjs"];
 const suite = `const {test}=require('node:test'); const assert=require('node:assert/strict');
@@ -248,8 +244,6 @@ test("a check that keeps rewriting the source finishes unverified instead of fai
     assert.deepEqual(completion?.missing_obligations, ["check:source-writer"]);
     assert.ok(completion?.reservations.some(({ code, message }) =>
       code === "VALIDATION_UNAVAILABLE" && /changed while the final checks ran/u.test(message)));
-    // The run then ends as succeeded, so the agent's reply is shown.
-    assert.equal(completionAwareTerminalState("succeeded", completion), "succeeded");
   }, { "suite.test.cjs": "require('node:test').test('writer',()=>{require('node:fs').writeFileSync('value.cjs','exports.value = '+Math.random()+';\\n')});\n" });
 });
 
@@ -301,12 +295,12 @@ test("absent contract preserves build-only compatibility", async () => {
   });
 });
 
-test("local briefing exposes exact required argv and managed finish preserves obligations", async () => {
+// The local briefing half of this test is gone with initial-task-briefing.ts,
+// which no runtime called any more.
+test("managed finish preserves required obligations", async () => {
   await fixture(async (root, workspace) => {
     await edit(workspace); await build(workspace);
     const taskContract = { session_id: "required", required_checks: [{ id: "alpha", task: "test", args: alpha }] };
-    const briefing = await createInitialTaskBriefing({ workspaceRoot: root, taskContract });
-    assert.ok(briefing?.includes(JSON.stringify(taskContract.required_checks)));
     const result = await executeLocalFinishTask({ workspaceRoot: root, taskContract, input: { summary: "done" }, context: {} as never });
     assert.equal(result.status, "ok");
     if (result.status === "ok") {

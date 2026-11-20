@@ -3,9 +3,8 @@ import test from "node:test";
 import { mkdtemp, writeFile, readFile, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { invocationTestReport } from "./invocation-test-report.js";
-import { WorkspaceFiles } from "./workspace-files.js";
-import { LightTaskRunner } from "./light-task-runner.js";
+import { invocationTestReport } from "./test-client/units.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
 
 const jsonReport = (failed = false) => JSON.stringify({ numTotalTests: 1, numPassedTests: failed ? 0 : 1,
@@ -17,20 +16,20 @@ async function fixture(run: (root: string) => Promise<void>) {
 }
 for (const variant of ["passed", "missing_end", "mismatch", "malformed", "wrong_version", "outside", "failed", "zero"])
   test(`invocation-owned Vitest evidence: ${variant}`, async () => fixture(async root => {
-    const managed = await invocationTestReport(root), directory = managed.environment.HARNESS_VITEST_REPORT_DIRECTORY;
-    const files = new WorkspaceFiles(root), before = await files.snapshot();
+    // The hook's files, written into its directory between the snapshots.
+    const written: Record<string, string> = {};
     const id = "1234-abcd", start = { format: "blame-vitest-invocation-v1", id,
       runner: { name: "vitest", version: variant === "wrong_version" ? "4.0.0" : "3.2.4" },
       entry: "/node_modules/vitest/vitest.mjs", executable: process.execPath, cwd: root, args: ["run"] };
-    await writeFile(join(directory, `${id}.start.json`), JSON.stringify(start));
-    if (variant !== "missing_end") await writeFile(join(directory, `${id}.end.json`),
+    written[`${id}.start.json`] = JSON.stringify(start);
+    if (variant !== "missing_end") written[`${id}.end.json`] = (
       JSON.stringify({ ...start, ...(variant === "mismatch" ? { cwd: "/elsewhere" } : {}), exitCode: variant === "failed" ? 1 : 0 }));
     const report = JSON.parse(jsonReport(variant === "failed"));
     report.testResults = [{ name: join(root, "case.test.ts"), assertionResults: [{status: variant === "failed" ? "failed" : "passed"}] }];
     if (variant === "outside") report.testResults = [{ name: "/outside.test.ts", assertionResults: [{}] }];
     if (variant === "zero") Object.assign(report, { numTotalTests: 0, numPassedTests: 0, testResults: [] });
-    await writeFile(join(directory, `${id}.report.json`), variant === "malformed" ? "{" : JSON.stringify(report));
-    const observed = await managed.read(before, await files.snapshot());
+    written[`${id}.report.json`] = variant === "malformed" ? "{" : JSON.stringify(report);
+    const result = invocationTestReport(root, written), observed = result.report ? result : undefined;
     assert.equal(Boolean(observed), ["passed", "failed", "zero"].includes(variant));
     if (observed) {
       assert.equal(observed.report.counts.executed, variant === "zero" ? 0 : 1);
@@ -47,8 +46,8 @@ for (const maskedFailure of [false, true, "empty", "bin", "setup"]) test(`real V
     await writeFile(join(root, "package.json"), JSON.stringify({ type: "module", scripts: { "test:wrapped": maskedFailure === "bin" ? "vitest run case.test.ts --maxWorkers=1 --fileParallelism=false" : "node wrapper.mjs" } }));
     await writeFile(join(root, "case.test.ts"), `${maskedFailure === 'setup' ? "import './missing.ts';" : ''}import {test,expect} from 'vitest'; test('actual',()=>expect(1).toBe(${maskedFailure === true ? 2 : 1}));\n`);
     await writeFile(join(root, "wrapper.mjs"), `import {spawnSync} from 'node:child_process'; spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run',${JSON.stringify(maskedFailure === 'empty' ? 'absent.test.ts' : 'case.test.ts')},'--maxWorkers=1','--fileParallelism=false'],{stdio:'inherit'}); process.exitCode=0;\n`);
-    const files = new WorkspaceFiles(root), journal = new SessionJournal(root, "owned-vitest");
-    const tasks = new LightTaskRunner({ files, journal });
+    const journal = new SessionJournal(root, "owned-vitest");
+    const tasks = new LightWorkspace(root, { sessionId: "owned-vitest" }).tasks;
     const result = await tasks.run({ kind: "project", task: "test:wrapped" }, {});
     assert.equal(result.status, "ok", JSON.stringify(result));
     const check = (await journal.completionSnapshot()).validations.at(-1)!;

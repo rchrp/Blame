@@ -73,9 +73,50 @@ static SCHEMAS: LazyLock<Vec<Json>> = LazyLock::new(|| {
     .collect()
 });
 
+/// The response style's block of the personalization prompts, which
+/// finish_task's description ends with (`responseStyleBlock`).
+fn response_style_block(style: &str) -> &'static str {
+    match style {
+        "concise" => include_str!(
+            "../../../packages/agent-runtime/src/prompt/personalization/response-style-concise.txt"
+        )
+        .trim(),
+        "detailed" => include_str!(
+            "../../../packages/agent-runtime/src/prompt/personalization/response-style-detailed.txt"
+        )
+        .trim(),
+        _ => "",
+    }
+}
+
+/// `lightCompletionDescription(responseStyle)`: balanced by default.
+fn finish_task_description(response_style: Option<&str>) -> String {
+    let style = response_style.unwrap_or("balanced");
+    let base = if style == "balanced" {
+        FINISH_TASK_DESCRIPTION.to_string()
+    } else {
+        FINISH_TASK_DESCRIPTION.replacen(
+            "give a concise factual summary",
+            "give a factual summary",
+            1,
+        )
+    };
+    match response_style_block(style) {
+        "" => base,
+        block => format!("{base} {block}"),
+    }
+}
+
 /// The tools offered to a model; `run_task`'s text depends on whether the
-/// session has a managed preview.
+/// session has a managed preview, finish_task's on the response style.
 pub fn tool_definitions(task_contract: Option<&Json>) -> Vec<ToolDefinition> {
+    tool_definitions_for(task_contract, None)
+}
+
+pub fn tool_definitions_for(
+    task_contract: Option<&Json>,
+    response_style: Option<&str>,
+) -> Vec<ToolDefinition> {
     let managed_preview = task_contract
         .and_then(|contract| contract.get("environment"))
         .and_then(|environment| environment.get("managedPreview"));
@@ -95,7 +136,7 @@ pub fn tool_definitions(task_contract: Option<&Json>) -> Vec<ToolDefinition> {
         READ_CODE_DESCRIPTION.to_string(),
         EDIT_CODE_DESCRIPTION.to_string(),
         run_task,
-        FINISH_TASK_DESCRIPTION.to_string(),
+        finish_task_description(response_style),
     ];
     let effects = [
         Effect::ReadOnly,
@@ -125,20 +166,34 @@ pub fn tool_definitions(task_contract: Option<&Json>) -> Vec<ToolDefinition> {
 }
 
 /// The `describe` answer: `[{name, description, inputSchema, effect, endsTurn}]`.
+/// `tools`, when given, keeps only those (plan mode reads and runs but
+/// does not edit).
 pub fn describe(request: &Json) -> Json {
+    let wanted: Option<Vec<&str>> = request
+        .get("tools")
+        .and_then(Json::as_array)
+        .map(|tools| tools.iter().filter_map(Json::as_str).collect());
     Json::Arr(
-        tool_definitions(request.get("taskContract"))
-            .into_iter()
-            .map(|tool| {
-                obj! {
-                    "name" => tool.name,
-                    "description" => tool.description,
-                    "inputSchema" => tool.input_schema,
-                    "effect" => tool.effect.as_str(),
-                    "endsTurn" => tool.ends_turn,
-                }
-            })
-            .collect(),
+        tool_definitions_for(
+            request.get("taskContract"),
+            request.get("responseStyle").and_then(Json::as_str),
+        )
+        .into_iter()
+        .filter(|tool| {
+            wanted
+                .as_ref()
+                .is_none_or(|wanted| wanted.contains(&tool.name))
+        })
+        .map(|tool| {
+            obj! {
+                "name" => tool.name,
+                "description" => tool.description,
+                "inputSchema" => tool.input_schema,
+                "effect" => tool.effect.as_str(),
+                "endsTurn" => tool.ends_turn,
+            }
+        })
+        .collect(),
     )
 }
 

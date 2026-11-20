@@ -3,12 +3,13 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { observeCheck } from "./check-observation.js";
-import { LightWorkspace } from "./light-workspace.js";
-import { LightFinishService } from "./light-finish-service.js";
+import { observeCheck } from "./test-client/units.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
 import { SessionJournal } from "./session-journal.js";
-import type { LightCompletionNotification } from "./light-completion.js";
-import type { WorkspaceCommandResult } from "./workspace-command-process.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
+// A command result as the runner observes it.
+type WorkspaceCommandResult = { all: string; failed: boolean; exitCode?: number; interruption?: string };
 
 const missing = " RUN  v3.2.4 /project/pkg\n\nNo test files found, exiting with code 1\nfilter: pkg/absent.test.ts\ninclude: **/*.test.ts\n";
 const failed = { all: missing, failed: true, exitCode: 1 };

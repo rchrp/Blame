@@ -101,6 +101,7 @@ export interface HostResults {
   "host/tool": ToolResult;
   "host/approval": Approval;
   "host/credential": Credential;
+  "host/harness": unknown;
   "host/log/push": LogPushed;
   "host/log/pull": Records;
   "host/blob/push": null;

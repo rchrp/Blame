@@ -4,7 +4,6 @@
 // once per conversation and puts their specs in its `client_tools`.
 
 import type { ToolSpec } from "@blame/engine-client";
-import type { LightWorkspaceExecutor } from "../../harness/light-executor.js";
 import { projectStackProposalTool } from "../../new-project-planning.js";
 import type { ApiConnection } from "../../types.js";
 import type { DesktopServices } from "../desktop-services.js";
@@ -52,8 +51,6 @@ export type ConversationToolServices = PreviewToolServices &
     mcp?: McpConnections;
     /** Plugin folders whose `skills` folder adds skills (BLAME_AGENT_PLUGIN_PATHS). */
     pluginPaths?: readonly string[];
-    /** Reads attachments where the workspace is, for a managed runtime. */
-    attachmentExecutor?: LightWorkspaceExecutor;
   };
 
 export type ConversationToolSession = {
@@ -94,7 +91,7 @@ export async function conversationClientTools(
     return {
       tools: [
         projectStackProposalTool(),
-        attachmentTool(session.workspaceRoot, services.attachmentExecutor),
+        attachmentTool(session.workspaceRoot),
       ].filter(present),
       prompt: "",
     };
@@ -110,7 +107,7 @@ export async function conversationClientTools(
   ]);
   const api = services.connection();
   const tools = [
-    attachmentTool(session.workspaceRoot, services.attachmentExecutor),
+    attachmentTool(session.workspaceRoot),
     ...previewTools,
     componentPreviewTool(services, preview),
     ...(api

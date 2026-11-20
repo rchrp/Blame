@@ -14,7 +14,7 @@ use crate::json::Json;
 use crate::obj;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
-use std::process::{Child, ChildStdin, Command, Stdio};
+use std::process::{ChildStdin, Command, Stdio};
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::mpsc::{RecvTimeoutError, Sender, channel};
 use std::sync::{Arc, Mutex};
@@ -140,10 +140,20 @@ impl CompilerPort for NoCompiler {
 type Pending = Arc<Mutex<HashMap<String, Sender<Result<Json, String>>>>>;
 
 struct Running {
-    child: Child,
     stdin: ChildStdin,
     pending: Pending,
     alive: Arc<AtomicBool>,
+    /// Reads the answers, then reaps the process once its stdout closes: a
+    /// side process that stops itself when idle leaves no zombie behind.
+    reader: thread::JoinHandle<()>,
+}
+
+impl Running {
+    /// Closes its stdin, which stops the process, and waits until it is reaped.
+    fn stop(self) {
+        drop(self.stdin);
+        let _ = self.reader.join();
+    }
 }
 
 /// The Node side process, started on the first query and again after it
@@ -185,7 +195,7 @@ impl NodeCompiler {
         let pending: Pending = Arc::new(Mutex::new(HashMap::new()));
         let alive = Arc::new(AtomicBool::new(true));
         let (reader_pending, reader_alive) = (pending.clone(), alive.clone());
-        thread::spawn(move || {
+        let reader = thread::spawn(move || {
             for line in BufReader::new(stdout).lines() {
                 let Ok(line) = line else { break };
                 let Ok(message) = Json::parse(&line) else {
@@ -206,6 +216,7 @@ impl NodeCompiler {
                     let _ = waiting.send(answer);
                 }
             }
+            let _ = child.wait();
             reader_alive.store(false, Ordering::SeqCst);
             // Dropping the senders tells every waiting query the process is gone.
             reader_pending
@@ -214,10 +225,10 @@ impl NodeCompiler {
                 .clear();
         });
         Some(Running {
-            child,
             stdin,
             pending,
             alive,
+            reader,
         })
     }
 
@@ -233,8 +244,8 @@ impl NodeCompiler {
                 .as_ref()
                 .is_none_or(|process| !process.alive.load(Ordering::SeqCst))
             {
-                if let Some(mut stale) = running.take() {
-                    let _ = stale.child.wait();
+                if let Some(stale) = running.take() {
+                    stale.stop();
                 }
                 *running = self.start();
             }
@@ -322,14 +333,13 @@ impl NodeCompiler {
 impl Drop for NodeCompiler {
     fn drop(&mut self) {
         // Closing its stdin stops the side process and its workers.
-        if let Some(mut process) = self
+        if let Some(process) = self
             .running
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
             .take()
         {
-            drop(process.stdin);
-            let _ = process.child.wait();
+            process.stop();
         }
     }
 }

@@ -5,6 +5,22 @@
 
 import { createServer, type IncomingMessage, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { harnessEnvironment, harnessServeArgs } from "../harness/runner-path.js";
+
+/** The workspace harness the engine starts in tests: this checkout's debug build. */
+export function testHarnessCommand() {
+  const root = fileURLToPath(new URL("../../../../", import.meta.url));
+  const binary =
+    process.env.BLAME_HARNESS_BIN ?? join(root, "target/debug/blame-harness");
+  return [binary, ...harnessServeArgs()];
+}
+
+/** What the harness needs from this package (its compiler side process, run by this Node). */
+export function testHarnessEnvironment() {
+  return harnessEnvironment(process.execPath);
+}
 
 export const testModel = "claude-sonnet-4-6";
 

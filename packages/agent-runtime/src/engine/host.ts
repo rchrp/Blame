@@ -15,7 +15,7 @@ import {
   type Limits,
   type SessionConfig,
   type TaskOutcome,
-  type Transcript,
+  turnReply,
   type UserBlock,
 } from "@blame/engine-client";
 import { runHostGh, type GhRunner } from "../pull-request.js";
@@ -61,6 +61,7 @@ import {
   clientToolPolicy,
   previewRuntimeContext,
   type ConversationToolSession,
+  type PreviewRuntimeContext,
 } from "./tools/index.js";
 import { webResearchClientTools } from "./tools/web-research.js";
 
@@ -123,6 +124,8 @@ export class EngineHost {
   private readonly current = new Map<string, Current>();
   /** Where each session's engine is, as the renderer named its workspace. */
   private readonly locations = new Map<string, EngineLocation>();
+  /** Each conversation's preview, for the harness's dependency refresh. */
+  private readonly previews = new Map<string, PreviewRuntimeContext>();
   /** Sessions created here whose first message is not sent yet. */
   private readonly awaitingFirst = new Map<string, EngineSessionSettings>();
   private readonly approvals = new Map<string, Waiting>();
@@ -258,6 +261,8 @@ export class EngineHost {
               : credential;
           },
           approval: (params, { signal }) => this.approval(params, signal),
+          harness: (params, { signal }) =>
+            this.harnessQuestion(params, location, signal),
           ...logs,
         },
       }),
@@ -269,6 +274,32 @@ export class EngineHost {
       options.emit(event);
     });
     return { supervisor, hub };
+  }
+
+  /**
+   * What the workspace harness asks while it runs a call (`host/harness`):
+   * the credentials of a command, or a dependency change for the preview.
+   * Without the desktop (tests, the benchmark runner) there is no answer.
+   */
+  private async harnessQuestion(
+    params: { session: string; method: string },
+    location: EngineLocation,
+    signal: AbortSignal,
+  ): Promise<unknown> {
+    const desktop = this.options.desktop;
+    if (params.method === "commandCredentials")
+      return (
+        (await desktop?.commandCredentials?.({
+          sessionId: params.session,
+          location,
+        })) ?? null
+      );
+    if (params.method === "refreshPreviewDependencies") {
+      const preview = this.previews.get(params.session);
+      if (!preview || !desktop?.refreshPreviewDependencies) return null;
+      return desktop.refreshPreviewDependencies({ ...preview, signal } as never);
+    }
+    return null;
   }
 
   /**
@@ -598,13 +629,14 @@ export class EngineHost {
     ];
     // Listed once per conversation and host lifetime, so its config (and the
     // provider's prompt cache) stays the same from one message to the next.
-    const own = await this.conversationTools.ensure(
-      conversationToolSession(
-        session,
-        settings,
-        purposeOf(settings).workspace(settings.settings, session).root,
-      ),
+    const toolSession = conversationToolSession(
+      session,
+      settings,
+      purposeOf(settings).workspace(settings.settings, session).root,
     );
+    if (toolSession.preview) this.previews.set(session, toolSession.preview);
+    else this.previews.delete(session);
+    const own = await this.conversationTools.ensure(toolSession);
     const config = purposeOf(settings).config(settings.settings, session, {
       tools: this.tools,
       clientTools,
@@ -692,7 +724,7 @@ export class EngineHost {
     const transcript = reducer.snapshot();
     const ended = transcript.turns.filter((turn) => turn.outcome).at(-1);
     const last = ended?.outcome;
-    const reply = ended ? lastReply(transcript, ended.turn) : undefined;
+    const reply = ended ? turnReply(ended, transcript.items)?.trim() : undefined;
     return {
       session,
       exists: true,
@@ -789,28 +821,6 @@ function canonical(value: unknown): string {
       )
       .join(",")}}`;
   return JSON.stringify(value);
-}
-
-/** The summary a turn handed finish_task, or else the last thing it said. */
-function lastReply(transcript: Transcript, turn: string): string | undefined {
-  let text: string | undefined;
-  for (const item of transcript.items) {
-    if (!("turn" in item) || item.turn !== turn) continue;
-    if (item.kind === "text" && item.text.trim()) text = item.text.trim();
-    if (
-      item.kind === "tool_call" &&
-      item.name === "finish_task" &&
-      item.state === "completed"
-    ) {
-      const input = item.input;
-      const summary =
-        input && typeof input === "object" && !Array.isArray(input)
-          ? input.summary
-          : undefined;
-      if (typeof summary === "string" && summary.trim()) return summary.trim();
-    }
-  }
-  return text;
 }
 
 /** What the conversation's own client tools are listed for. */

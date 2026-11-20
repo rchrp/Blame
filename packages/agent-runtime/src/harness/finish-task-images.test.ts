@@ -1,15 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createFinishTaskTool } from "./finish-task.js";
-import {
-  finishImages,
-  finishInputError,
-  type LightCompletionNotification,
-} from "./light-completion.js";
-import {
-  finishSummaryLimit,
-  finishTaskInputSchema,
-} from "./light-contracts.js";
+import { HarnessProcess } from "./test-client/harness.js";
+import { finishImages } from "./test-client/units.js";
+import { finishSummaryLimit, finishTaskInputSchema } from "./test-client/contracts.js";
 import {
   recordSessionScreenshots,
   sessionScreenshotIds,
@@ -17,7 +10,15 @@ import {
 
 const first = "1".repeat(64);
 const second = "2".repeat(64);
-const context = { sessionId: "session-1", toolCallId: "finish-1" } as never;
+const harness = new HarnessProcess();
+
+/** finish_task as the engine calls it: what the model reads back. */
+function finishCall(input: unknown) {
+  return harness.send("call", {
+    tool: "finish_task", input, workspaceRoot: "/nonexistent-workspace",
+    taskContract: { session_id: "session-1" }, toolContext: { sessionId: "session-1", toolCallId: "finish-1" },
+  }) as Promise<{ ok: boolean; content: unknown }>;
+}
 
 test("finish_task accepts up to eight captioned screenshot references", () => {
   assert.equal(
@@ -81,91 +82,25 @@ test("the session remembers the screenshots it took", () => {
   assert.equal(sessionScreenshotIds("another-session").size, 0);
 });
 
-function remoteFinish(
-  known: string[],
-  completions: LightCompletionNotification[],
-  executed: unknown[],
-) {
-  return createFinishTaskTool({
-    conversationId: "session-1",
-    executor: async (request) => {
-      executed.push(request.input);
-      return {
-        status: "ok",
-        data: {
-          notification: {
-            completion: { status: "verified" },
-            submission_outcome: "accepted",
-            summary: "Done.",
-            verified: true,
-          },
-          summary: "Done.",
-        },
-      } as never;
-    },
-    onComplete: (notification) => {
-      completions.push(notification);
-    },
-    screenshots: {
-      unknown: async (ids) => ids.filter((id) => !known.includes(id)),
-    },
-    workspaceRoot: "/workspace",
-  });
-}
-
-test("images reach the completion in the agent's order", async () => {
-  const completions: LightCompletionNotification[] = [];
-  const executed: unknown[] = [];
-  const tool = remoteFinish([first, second], completions, executed);
-  await tool.execute(
-    {
-      summary: "Done.",
-      images: [
-        { ref: `screenshot:${second}`, caption: "Dark" },
-        { ref: `screenshot:${first}`, caption: "Light" },
-        { ref: `screenshot:${second}`, caption: "Dark again" },
-      ],
-    },
-    context,
-  );
-  assert.deepEqual(completions[0].images, [
-    { caption: "Dark", id: second },
-    { caption: "Light", id: first },
-  ]);
-  assert.deepEqual((executed[0] as { images: unknown[] }).images.length, 2);
-});
+// "images reach the completion in the agent's order" and "a finish without
+// images is unchanged" drove the Cline runtime's finish tool with its
+// session screenshot registry. On the engine the harness knows no
+// screenshot of the session and refuses any image, as below; the order and
+// de-duplication are the unit above.
 
 test("an unknown screenshot fails the call with a clear message", async () => {
-  const completions: LightCompletionNotification[] = [];
-  const executed: unknown[] = [];
-  const tool = remoteFinish([first], completions, executed);
-  await assert.rejects(
-    Promise.resolve(
-      tool.execute(
-        {
-          summary: "Done.",
-          images: [
-            { ref: `screenshot:${first}`, caption: "Light" },
-            { ref: `screenshot:${second}`, caption: "Taken elsewhere" },
-          ],
-        },
-        context,
-      ),
-    ),
-    new RegExp(`Unknown: screenshot:${second}`),
-  );
-  assert.deepEqual(completions, []);
-  assert.deepEqual(executed, []);
+  const result = await finishCall({
+    summary: "Done.",
+    images: [
+      { ref: `screenshot:${first}`, caption: "Light" },
+      { ref: `screenshot:${second}`, caption: "Taken elsewhere" },
+    ],
+  });
+  assert.equal(result.ok, false);
+  assert.match(String(result.content), new RegExp(`Unknown: screenshot:${first}, screenshot:${second}`));
 });
 
-test("a finish without images is unchanged", async () => {
-  const completions: LightCompletionNotification[] = [];
-  const tool = remoteFinish([], completions, []);
-  await tool.execute({ summary: "Done." }, context);
-  assert.equal("images" in completions[0], false);
-});
-
-test("a summary over the limit is refused with its length so the agent can shorten it", () => {
+test("a summary over the limit is refused with its length so the agent can shorten it", async () => {
   assert.equal(
     finishTaskInputSchema.safeParse({ summary: "a".repeat(20_000) }).success,
     true,
@@ -173,8 +108,10 @@ test("a summary over the limit is refused with its length so the agent can short
   const input = { summary: "a".repeat(finishSummaryLimit + 1) };
   const parsed = finishTaskInputSchema.safeParse(input);
   assert.equal(parsed.success, false);
+  const refused = await finishCall(input);
+  assert.equal(refused.ok, false);
   assert.equal(
-    finishInputError(input, parsed.error!),
+    refused.content,
     `finish_task was not accepted: summary is ${finishSummaryLimit + 1} characters, the limit is ${finishSummaryLimit}; shorten it. Fix this and call finish_task again.`,
   );
 });

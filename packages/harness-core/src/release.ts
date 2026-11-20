@@ -13,6 +13,8 @@ export type BaselineManifest = {
   parameters: Record<string, unknown>;
   budgets: { tokens: number; duration_ms: number; iterations: number };
   versions: {
+    // The Cline SDK version the archived baselines were measured with (their
+    // schema; the engine records its own in `runtime`).
     cline: string;
     runtime: string;
     adapters: Record<string, string>;

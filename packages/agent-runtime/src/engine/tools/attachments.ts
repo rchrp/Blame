@@ -7,7 +7,6 @@ import {
   attachmentReadSchema,
   readAttachment,
 } from "../../attachment-reader.js";
-import type { LightWorkspaceExecutor } from "../../harness/light-executor.js";
 import { defineTool, type ClientTool } from "../tool.js";
 
 export const attachmentToolName = "read_attachment";
@@ -18,13 +17,9 @@ const jsonSchema = z.toJSONSchema(attachmentReadSchema) as Record<
 >;
 delete jsonSchema.$schema;
 
-/**
- * The tool for a workspace. With an executor, the read runs where the
- * workspace is (the runtime VM of a managed preview).
- */
+/** The tool for a workspace, read on this computer. */
 export function attachmentTool(
   workspaceRoot: string | undefined,
-  executor?: LightWorkspaceExecutor,
 ): ClientTool<never> | undefined {
   if (!workspaceRoot) return undefined;
   return defineTool<Record<string, unknown>>({
@@ -38,20 +33,7 @@ export function attachmentTool(
       if (!parsed.success)
         return { json: { status: "blocked", message: parsed.error.message } };
       return {
-        json: executor
-          ? await executor(
-              {
-                tool: attachmentToolName,
-                workspaceRoot,
-                input: parsed.data,
-                toolContext: {
-                  sessionId: context.session,
-                  toolCallId: context.call,
-                },
-              },
-              context.signal,
-            )
-          : await readAttachment(workspaceRoot, parsed.data, context.signal),
+        json: await readAttachment(workspaceRoot, parsed.data, context.signal),
       };
     },
   });

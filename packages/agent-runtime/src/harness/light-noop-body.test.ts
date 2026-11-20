@@ -3,7 +3,7 @@ import test from "node:test";
 import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 test("a repeated unchanged body edit gives a bounded route to changing the signature, without changing it", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-noop-body-"));
   const source = "export function value(_input: number) { return 1; }\n";

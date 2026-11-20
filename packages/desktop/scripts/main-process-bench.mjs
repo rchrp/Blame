@@ -306,7 +306,7 @@ async function runInElectron() {
       result.engineLoaded = [...modules].some(
         (url) =>
           url.endsWith("/packages/agent-runtime/dist/index.js") ||
-          url.includes("/@cline/sdk/"),
+          url.includes("/@modelcontextprotocol/sdk/"),
       );
     }
     console.log(`${resultPrefix}${JSON.stringify(result)}`);

@@ -3,14 +3,11 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
-import type { LightCompletionNotification } from "./light-completion.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
 
-// An immutable baseline module can replay these same controls without changing production.
-const { LightFinishService } = await import(
-  process.env.BLAME_FINISH_TEST_MODULE ?? "./light-finish-service.js"
-) as typeof import("./light-finish-service.js");
+import { LightFinishService } from "./test-client/light-finish-service.js";
 const suite = `const {test}=require('node:test'); const assert=require('node:assert/strict');
 const {value}=require('./value.cjs');
 test('alpha',()=>assert.ok(value===2||value===3));

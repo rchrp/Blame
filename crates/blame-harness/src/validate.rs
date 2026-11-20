@@ -806,8 +806,13 @@ fn analyze_task_schema() -> Schema {
 /// run_task's input schema: `lightRunTaskInputSchema` when symbolic
 /// analysis is enabled, else `lightDefaultRunTaskInputSchema`.
 pub fn run_task_schema() -> Schema {
+    run_task_schema_for(std::env::var("BLAME_AGENT_SYMBOLIC_ANALYSIS").as_deref() == Ok("true"))
+}
+
+/// run_task's input schema with or without the analyze kind.
+pub fn run_task_schema_for(symbolic: bool) -> Schema {
     let schema = default_run_task_schema();
-    if std::env::var("BLAME_AGENT_SYMBOLIC_ANALYSIS").as_deref() != Ok("true") {
+    if !symbolic {
         return schema;
     }
     match schema {

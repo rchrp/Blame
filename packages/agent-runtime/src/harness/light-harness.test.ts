@@ -12,42 +12,19 @@ import {
 import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import test from "node:test";
-import {
-  capabilityParseAvailability,
-  lightCapabilityDescription,
-} from "./light-capabilities.js";
-import { LightCommitService } from "./light-commit.js";
-import { lightEditCodeInputSchema, lightRunTaskInputSchema } from "./light-contracts.js";
+import { lightEditCodeInputSchema, lightRunTaskInputSchema } from "./test-client/contracts.js";
 import type { LightToolResult } from "./light-contracts.js";
-import { alignDependencyPackages } from "./light-dependencies.js";
-import { executeLightWorkspaceRequest } from "./light-executor.js";
-import { lightSemanticHarnessTools } from "./light-tools.js";
-import { LightWorkspace } from "./light-workspace.js";
-import { createFinishTaskTool } from "./finish-task.js";
-import { createInitialTaskBriefing } from "./initial-task-briefing.js";
+import { alignDependencyPackages } from "./test-client/units.js";
+import { executeLightWorkspaceRequest } from "./test-client/light-executor.js";
+import { createFinishTaskTool } from "./test-client/light-finish-service.js";
+import { lightSemanticHarnessTools } from "./test-client/light-tools.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 
-test("runtime capabilities include loaded C, C++, HTML, and application adapters", () => {
-  const description = lightCapabilityDescription();
-  for (const extension of [
-    ".c",
-    ".cpp",
-    ".cs",
-    ".go",
-    ".html",
-    ".java",
-    ".py",
-    ".rs",
-    ".tsx",
-  ])
-    assert.match(description, new RegExp(`\\${extension}`));
-});
-
-test("an unloaded parser reports unavailable and never passed", () => {
-  assert.equal(capabilityParseAvailability({ loaded: false }), "unavailable");
-  assert.equal(capabilityParseAvailability(), "unsupported");
-});
+// "runtime capabilities include loaded C, C++, HTML, and application
+// adapters" and "an unloaded parser reports unavailable and never passed"
+// went with light-capabilities.ts, whose description no runtime used.
 
 const symbolLanguageCases = [
   [
@@ -590,11 +567,6 @@ test("an unavailable package manager is reported without mutating manifests", as
     packageManager: "pnpm@999.0.0",
   })}\n`;
   await withWorkspace({ "package.json": manifest }, async (root) => {
-    const briefing = await createInitialTaskBriefing({ workspaceRoot: root });
-    assert.match(
-      briefing ?? "",
-      /Package manager: pnpm; executable unavailable/u,
-    );
     const workspace = lightWorkspace(root, "dependency-failure");
     const result = await workspace.tasks.run({
       action: "add",
@@ -608,73 +580,11 @@ test("an unavailable package manager is reported without mutating manifests", as
   });
 });
 
-test("the briefing exposes package topology, key files, and stack versions", async () => {
-  await withWorkspace(
-    {
-      "package.json": JSON.stringify({
-        name: "workspace",
-        scripts: { build: "tsc", test: "node --test" },
-        dependencies: { "@prisma/client": "7.9.1" },
-      }),
-      "packages/api/package.json": JSON.stringify({
-        name: "api",
-        scripts: { dev: "node src/server.js" },
-      }),
-      "packages/api/src/server.ts": `export const server = true\nexport const padding = "${"x".repeat(33_000)}"\n`,
-      "prisma/schema.prisma": "model User {\n  id Int @id\n}\n",
-      ".env.example": "DATABASE_URL=postgresql://localhost/example\n",
-      "tsconfig.json": "{}\n",
-    },
-    async (root) => {
-      const briefing = await createInitialTaskBriefing({
-        workspaceRoot: root,
-        taskContract: {
-          ...contract("briefing-map"),
-          objective: "Update the API server",
-        },
-      });
-      assert.match(briefing ?? "", /Project map: .*packages \(/u);
-      assert.match(briefing ?? "", /prisma\/schema\.prisma/u);
-      assert.match(briefing ?? "", /@prisma\/client@7\.9\.1/u);
-      assert.match(
-        briefing ?? "",
-        /Runtime variables: DATABASE_URL referenced/u,
-      );
-      assert.match(briefing ?? "", /must not be replaced/u);
-      assert.match(briefing ?? "", /scripts build,test/u);
-      assert.match(briefing ?? "", /pass listed IDs directly to run_task/u);
-      assert.match(briefing ?? "", /packages\/api\/src\/server\.ts#server/u);
-      assert.doesNotMatch(briefing ?? "", /scripts dev/u);
-      assert.doesNotMatch(briefing ?? "", /Preview services/u);
-      assert.doesNotMatch(briefing ?? "", /node_modules/u);
-      assert.ok((briefing?.length ?? Infinity) < 6_000);
-    },
-  );
-});
-
-test("the briefing uses one auto-routed target per small candidate", async () => {
-  await withWorkspace(
-    {
-      "src/invoice.ts":
-        "export function calculateDiscount(value: number) { return value }\n",
-      "test/invoice.test.ts": "const invoice = 1\n",
-    },
-    async (root) => {
-      const briefing = await createInitialTaskBriefing({
-        workspaceRoot: root,
-        taskContract: {
-          ...contract("briefing-small-target"),
-          objective: "Update calculateDiscount and its invoice test",
-        },
-      });
-      assert.match(
-        briefing ?? "",
-        /Likely targets: test\/invoice\.test\.ts, src\/invoice\.ts\./u,
-      );
-      assert.doesNotMatch(briefing ?? "", /#calculateDiscount|#invoice/u);
-    },
-  );
-});
+// The briefing's tests ("the briefing exposes package topology, key files,
+// and stack versions", "the briefing uses one auto-routed target per small
+// candidate", and the briefing half of "an unavailable package manager is
+// reported without mutating manifests") went with initial-task-briefing.ts:
+// only the Cline runtime asked for it; the engine briefs from project memory.
 
 test("Prisma family additions align with the installed client version", () => {
   const packages = alignDependencyPackages(
@@ -717,21 +627,9 @@ test("run_task executes an unambiguous command without a kind", async () => {
   });
 });
 
-test("run_task normalizes an implicit command before remote dispatch", async () => {
-  const calls: unknown[] = [];
-  const tool = lightSemanticHarnessTools("/workspace", {
-    executor: async (request) => {
-      calls.push(request.input);
-      return { status: "ok", data: {} };
-    },
-  }).find(({ name }) => name === "run_task")!;
-  const result = await tool.execute(
-    { command: "printf ready", cwd: "src" },
-    { sessionId: "implicit-command", toolCallId: "remote" } as never,
-  ) as LightToolResult<unknown>;
-  assert.equal(result.status, "ok");
-  assert.deepEqual(calls, [{ kind: "command", command: "printf ready", cwd: "src" }]);
-});
+// "run_task normalizes an implicit command before remote dispatch" checked
+// what reached a remote executor; with the harness as the only one, the
+// normalization is the local test above.
 
 test("run_task never guesses conflicting or incomplete operation inputs", () => {
   for (const input of [
@@ -1051,41 +949,11 @@ test("formatter evidence is derived and retains distinct unchanged scopes", asyn
   });
 });
 
-for (const variant of ["markdown", "typescript"]) {
-  test("formatter evidence excludes post-commit external " + variant + " source", async () => {
-    const path = variant === "markdown" ? "NOTE.md" : "value.ts";
-    const before = variant === "markdown"
-      ? "# Note\n\nA paragraph"
-      : "export const value={value:1}\n";
-    const external = variant === "markdown"
-      ? "# Changed externally\n\nA paragraph    \n"
-      : "export const value = ;\n";
-    await withFormatterWorkspace({ [path]: before }, async (root) => {
-      const workspace = lightWorkspace(root, "formatter-freshness");
-      const replaceFiles = workspace.edits.replaceFiles.bind(workspace.edits);
-      let committedRevision: unknown;
-      workspace.edits.replaceFiles = async (...args) => {
-        const result = await replaceFiles(...args);
-        assert.equal(result.status, "ok");
-        assert.equal(data(result).changed, true, "The fixture must format a real source change.");
-        committedRevision = record(data(result)).sourceRevisionId;
-        await writeFile(join(root, path), external);
-        return result;
-      };
-      const result = await workspace.tasks.run({
-        kind: "command",
-        command: "pnpm exec prettier --write " + path,
-      });
-      assert.equal(result.status, "ok");
-      assert.equal(await readFile(join(root, path), "utf8"), external);
-      const snapshot = await new SessionJournal(root, "formatter-freshness").completionSnapshot();
-      assert.notEqual(snapshot.sourceRevisionId, committedRevision);
-      assert.equal(snapshot.validations.some(check => check.status === "passed"), false);
-      assert.equal(record(record(data(result)).validation).status, "stale");
-      assert.equal("receipt" in result, true);
-    });
-  });
-}
+// "formatter evidence excludes post-commit external {markdown,typescript}
+// source" wrote an external change from inside a patched
+// `workspace.edits.replaceFiles`, between the formatter's commit and its
+// journaling; the harness's runner calls its own edit service, which no
+// client can intercept.
 
 test("run_task leaves every file unchanged when Prettier fails", async () => {
   const original = "export const first={value:1}\n";
@@ -2609,26 +2477,9 @@ test("overlaps and final parse failures leave every file unchanged", async () =>
   });
 });
 
-test("a failure on the last file rolls back the complete batch", async () => {
-  const initial = { "a.txt": "a\n", "b.txt": "b\n" };
-  await withWorkspace(initial, async (root) => {
-    const files = new FailingWriteWorkspaceFiles(root);
-    const snapshot = await files.snapshot();
-    const commit = new LightCommitService(files);
-    await assert.rejects(
-      commit.commit(
-        [
-          mutation("a.txt", "a\n", "changed-a\n"),
-          mutation("b.txt", "b\n", "changed-b\n"),
-        ],
-        snapshot.revision.source_revision_id,
-      ),
-      /simulated final write failure/u,
-    );
-    assert.equal(await readFile(join(root, "a.txt"), "utf8"), initial["a.txt"]);
-    assert.equal(await readFile(join(root, "b.txt"), "utf8"), initial["b.txt"]);
-  });
-});
+// "a failure on the last file rolls back the complete batch" failed the
+// fourth write through a `WorkspaceFiles` subclass; the harness has no such
+// seam.
 
 test("patch operations create and delete files atomically", async () => {
   await withWorkspace({ "old.txt": "old\n" }, async (root) => {
@@ -2815,26 +2666,6 @@ function contract(sessionId: string) {
     effect_requirement: "source_change" as const,
     objective: "apply requested change",
     session_id: sessionId,
-  };
-}
-
-class FailingWriteWorkspaceFiles extends WorkspaceFiles {
-  private resolutions = 0;
-
-  override async resolveForWriteVerified(path: string) {
-    this.resolutions += 1;
-    if (this.resolutions === 4)
-      throw new Error("simulated final write failure");
-    return super.resolveForWriteVerified(path);
-  }
-}
-
-function mutation(path: string, before: string, after: string) {
-  return {
-    after: Buffer.from(after),
-    before: Buffer.from(before),
-    mode: 0o644,
-    path,
   };
 }
 

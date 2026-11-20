@@ -21,8 +21,7 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   `packages/agent-runtime/src/engine/`). It is the only owner of an
   `EngineClient`: it starts `blame-engine serve` through `EngineSupervisor`,
   answers every `host/*` request, follows sessions and runs the client tools.
-  It imports nothing from Cline (`engine/no-cline.test.ts` walks its import
-  graph), so it stays a small Node process.
+  It stays a small Node process.
 - **Main** spawns the engine host, starts it again after a crash, routes
   renderer calls to it and its events back to the windows that follow a
   session. It serves the host the desktop services the tools need
@@ -36,7 +35,7 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   `<userData>/engine` (`sessions.db`, checkpoints). The app ships it; see
   "Engine binaries" for where it is found. The harness
   runs inside the engine (`engine_tools: ["harness"]`, `--harness-command`
-  pointing at `semantic-harness-runner.js --serve`, run by Electron as Node).
+  `blame-harness serve --asks`); see "Workspace harness".
 
 ## IPC surface
 
@@ -142,10 +141,15 @@ host.
   checked against its SHA-256 and made executable, into
   `/usr/local/lib/blame/engine/<hash>/`, only when that build is not there.
   Older builds are removed.
-- **Harness**: the VM's engine starts `<install>/harness`, a launcher that
-  runs the runtime's TypeScript runner (`blame-semantic-harness --serve`).
-  The Rust `blame-harness` replaces it there, and only there
-  (`vmHarnessLauncher`).
+- **Harness**: the static `blame-harness` is installed beside the engine
+  (both streamed in one after the other and sha-checked) and the VM's engine
+  starts `<install>/harness`, a launcher (`vmHarnessLauncher`) that runs it
+  with the runtime's payload: `@blame/semantic-harness-runtime`, installed by
+  provisioning with `npm install -g`, whose command
+  (`blame-semantic-harness`) is the compiler side process; the launcher
+  takes the test reporter, the Vitest preload hook, the bundled package
+  managers and ripgrep from that package. Without the payload the harness
+  runs without its compiler tier.
 - **Data**: `/home/blame/.local/share/blame/engine` on the VM's disk, owned
   by `blame`: a conversation resumes after a quit; checkpoints are git trees
   in the worktree's repository, as natively.
@@ -162,14 +166,13 @@ host.
 ## Engine binaries
 
 The app ships two Rust binaries: `blame-engine`, and `blame-harness` (the
-code harness, which the engine does not call yet).
+workspace harness the engine runs, see "Workspace harness").
 
 - **Where they live.** A package carries `resources/engine/<platform>-<arch>/`
   for itself and `resources/engine/linux-<arch>/`, of the same architecture,
   for the runtime VM (Lima, WSL) to copy in; on Linux both are one directory.
-  On macOS that is `Blame.app/Contents/Resources/engine/`. Windows carries
-  `blame-engine.exe` only: `blame-harness` does not build for Windows yet (it
-  uses Unix file modes).
+  On macOS that is `Blame.app/Contents/Resources/engine/`; on Windows both
+  are `.exe`.
 - **Finding them.** `packages/desktop/src/main/engine/engine-binary.ts` is the
   one place. `engineBinary()` and `harnessBinary()` take `BLAME_ENGINE_BIN`
   and `BLAME_HARNESS_BIN` first, then the packaged resources, then the newest
@@ -189,8 +192,9 @@ code harness, which the engine does not call yet).
   The release workflow builds each target in its own job
   (`.github/workflows/engine-binaries.yml`, Cargo cache kept warm on main by
   Release cache) and hands them over that way.
-  `pnpm --filter @blame/desktop dev` runs `cargo build -p blame-engine` first,
-  so a fresh checkout answers; a failed build keeps the last one.
+  `pnpm --filter @blame/desktop dev` runs `cargo build -p blame-engine -p
+  blame-harness` first, so a fresh checkout answers; a failed build keeps the
+  last one.
 - **Signing.** macOS: `afterPack` signs them with the hardened runtime and no
   entitlement, like the Lima executables, and they are notarized with the app;
   the Linux ones are plain sealed resources. Windows: SignPath signs
@@ -211,7 +215,44 @@ code harness, which the engine does not call yet).
 | darwin-x64 | 13.7 MB | 20.4 MB |
 | linux-arm64 (musl, static) | 11.9 MB | 20.2 MB |
 | linux-x64 (musl, static) | 13.9 MB | 20.6 MB |
-| win32-x64 (GNU build; releases use MSVC) | 12.4 MB | does not build |
+| win32-x64 (GNU build; releases use MSVC) | 12.4 MB | 21.7 MB |
+
+## Workspace harness
+
+`blame-harness` (`crates/blame-harness`, see its README) is the harness of
+every engine: `search_code`, `read_code`, `edit_code`, `run_task`,
+`finish_task`. The engine starts it once (`--harness-command`) and talks to
+it over JSON lines: `describe` (the tools for a task contract, response
+style and tool filter), `call` (a model's call, answered as the model reads
+it), `cancel`.
+
+- **Command.** `[harnessBinary(), "serve", "--asks"]`, natively from the
+  engine host (`engine-host-process.ts`); `harnessEnvironment()` in
+  `@blame/agent-runtime/harness-runner-path` gives what it takes from the
+  agent-runtime package, through the engine's environment:
+  `BLAME_HARNESS_COMPILER` (Electron, run as Node, on
+  `harness/rust-harness-compiler.js`), `BLAME_HARNESS_NODE_ASSETS` (the
+  test reporter and Vitest preload, unpacked from `app.asar`),
+  `BLAME_HARNESS_NODE_MODULES` (the bundled package managers, unpacked) and
+  `BLAME_HARNESS_RIPGREP_DIRECTORY`. In the VM, `vmHarnessLauncher`.
+- **Compiler side process.** References and renames, dependency
+  declarations, the import index behind `links`, TypeScript/JSONC/Prisma
+  validation and the opt-in symbolic analysis stay on the TypeScript
+  compiler, in a Node process the harness starts on demand and that exits
+  after 60 s without a query. It is the only TypeScript left of the harness:
+  `rust-harness-compiler.ts` and the modules it imports.
+- **Questions** (`--asks`). While a call runs the harness asks its engine,
+  which asks the host (`host/harness`): `commandCredentials` before a
+  command or project task (a cloud session's GitHub token; for a story in
+  the runtime VM, the token granted for writing, or none so that no
+  inherited token reaches it; elsewhere the environment stays) and
+  `refreshPreviewDependencies` after a dependency operation changed files
+  (the preview installs them; its state is the result's `preview`). Both
+  are desktop services (`commandCredentials`, `refreshPreviewDependencies`);
+  without the desktop there is no answer.
+- **Memory.** An accepted `finish_task` leaves the project memory candidate
+  at `.blame/harness/light/<sha256(session)[:24]>.memory.json`; the host
+  saves it to the account when the turn ends.
 
 ## What renders a conversation
 
@@ -527,9 +568,9 @@ story's config and brief, then runs it as a task with no person in it.
   criteria (added to the harness contract), the project memory file.
 - **Outputs**: `result.json` and `events.jsonl` keep their shape. The events
   come from the session's records once it ended; a tool's output is the
-  harness's own result, from the trace the harness runner writes when
+  harness's own result, from the trace `blame-harness` writes when
   `BLAME_HARNESS_TRACE_FILE` is set (`harness-trace.jsonl`, beside the
-  events). Usage and cost are the records' (`cost_micro_usd`); request counts
+  events: `{at, toolCallId, tool, input, raw, presented}` per call). Usage and cost are the records' (`cost_micro_usd`); request counts
   are exact (`requestObservations.coverage: "engine_records"`).
 - **Engine binary**: `BLAME_ENGINE_BIN`, else the payload's
   `engine/<platform>-<arch>/blame-engine` (`scripts/headless-benchmark-payload.mjs`

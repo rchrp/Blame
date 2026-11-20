@@ -4,17 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
-import { observeCheck } from "./check-observation.js";
-import { LightWorkspace } from "./light-workspace.js";
-import type { LightCompletionNotification } from "./light-completion.js";
+import { observeCheck } from "./test-client/units.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { LightFinishService, type LightCompletionNotification } from "./test-client/light-finish-service.js";
 import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
 
-const { observeCheck: observe } = await import(
-  process.env.BLAME_NODE_OBSERVATION_MODULE ?? "./check-observation.js"
-) as { observeCheck: typeof observeCheck };
-const { LightFinishService } = await import(
-  process.env.BLAME_NODE_FINISH_MODULE ?? "./light-finish-service.js"
-) as typeof import("./light-finish-service.js");
+const observe = observeCheck;
 
 async function fixture(run: (root: string) => Promise<void>) {
   const root = await mkdtemp(join(tmpdir(), "blame-node-observation-"));

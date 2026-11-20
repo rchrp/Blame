@@ -12,6 +12,7 @@ const root = fileURLToPath(new URL(".", import.meta.url))
 const theme = fileURLToPath(new URL("./public/oc-theme-preload.js", import.meta.url))
 const reactRuntime = {
   react: require.resolve("react"),
+  "react/compiler-runtime": require.resolve("react/compiler-runtime"),
   "react/jsx-runtime": require.resolve("react/jsx-runtime"),
   "react/jsx-dev-runtime": require.resolve("react/jsx-dev-runtime"),
   "react-dom": require.resolve("react-dom"),
@@ -29,6 +30,7 @@ export default [
           alias: [
             { find: /^react-dom\/client$/, replacement: reactRuntime["react-dom/client"] },
             { find: /^react-dom$/, replacement: reactRuntime["react-dom"] },
+            { find: /^react\/compiler-runtime$/, replacement: reactRuntime["react/compiler-runtime"] },
             { find: /^react\/jsx-dev-runtime$/, replacement: reactRuntime["react/jsx-dev-runtime"] },
             { find: /^react\/jsx-runtime$/, replacement: reactRuntime["react/jsx-runtime"] },
             { find: /^react$/, replacement: reactRuntime.react },

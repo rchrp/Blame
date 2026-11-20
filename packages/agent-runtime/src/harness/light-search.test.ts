@@ -3,9 +3,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import type { LightToolResult } from "./light-contracts.js";
-import { WorkspaceFiles } from "./workspace-files.js";
 
 const searches = [
   { query: "std::vector", decoy: "std::string", path: "std.txt" },
@@ -16,7 +15,10 @@ const searches = [
   { query: "failure|retry", decoy: "failure pending", path: "failure.txt" },
 ];
 
-for (const engine of ["ripgrep", "node"])
+// The "node" engine was the TypeScript harness's fallback when no rg binary
+// ran (BLAME_RIPGREP_COMMAND); blame-harness searches with ripgrep's library
+// in process, so ripgrep is its only engine.
+for (const engine of ["ripgrep"])
   for (const search of searches)
     test(`${engine} preserves literal ${search.query} beyond prefix decoys`, async () => {
       await searchFixture(engine, search, async (workspace) => {
@@ -31,7 +33,7 @@ for (const engine of ["ripgrep", "node"])
       });
     });
 
-for (const engine of ["ripgrep", "node"])
+for (const engine of ["ripgrep"])
   test(`${engine} keeps punctuation in whitespace-separated terms`, async () => {
     await searchFixture(engine, searches[0]!, async (workspace) => {
       const result = data(await workspace.searchCode({ query: "std::vector unavailable", mode: "text" }));
@@ -68,24 +70,15 @@ test("repeated hits in one symbol do not hide later symbols", async () => {
   await searchFixture("ripgrep", searches[0]!, async (workspace, root) => {
     await writeFile(join(root, "functions.ts"),
       `function first() { ${"needle(); ".repeat(12)} }\nfunction second() { needle(); }\nfunction third() { needle(); }\n`);
-    const original = WorkspaceFiles.prototype.read;
-    let reads = 0;
-    WorkspaceFiles.prototype.read = function (path) {
-      if (path === "functions.ts") reads += 1;
-      return original.call(this, path);
-    };
-    try {
-      const result = data(await workspace.searchCode({ query: "needle()" }));
-      const names = (result.results as Array<{ qualifiedName: string }>).map(item => item.qualifiedName);
-      assert.deepEqual(names, ["first", "second", "third"]);
-      assert.equal(reads, 1);
-    } finally {
-      WorkspaceFiles.prototype.read = original;
-    }
+    // The TypeScript test also counted reads of the file through a patched
+    // `WorkspaceFiles.prototype.read`, which the harness's process does not use.
+    const result = data(await workspace.searchCode({ query: "needle()" }));
+    const names = (result.results as Array<{ qualifiedName: string }>).map(item => item.qualifiedName);
+    assert.deepEqual(names, ["first", "second", "third"]);
   });
 });
 
-for (const engine of ["ripgrep", "node"])
+for (const engine of ["ripgrep"])
   test(`${engine} reports its result limit and actual engine`, async () => {
     await searchFixture(engine, searches[0]!, async (workspace, root) => {
       for (let index = 0; index < 12; index += 1)
@@ -98,7 +91,7 @@ for (const engine of ["ripgrep", "node"])
     });
   });
 
-for (const engine of ["ripgrep", "node"])
+for (const engine of ["ripgrep"])
   test(`${engine} excludes oversized files consistently`, async () => {
     await searchFixture(engine, searches[0]!, async (workspace, root) => {
       await writeFile(join(root, "a-large.txt"), "needle" + " ".repeat(2 * 1024 * 1024));

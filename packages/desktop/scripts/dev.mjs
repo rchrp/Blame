@@ -29,12 +29,13 @@ const child = spawn("pnpm", ["exec", "electron-vite", "dev"], {
   stdio: "inherit",
 })
 
-// The app runs agents on the checkout's Cargo build of blame-engine
-// (src/main/engine/engine-binary.ts): build it, so a fresh checkout works and
-// the engine always matches the sources. A failed build keeps the last one.
+// The app runs agents on the checkout's Cargo builds of blame-engine and its
+// workspace harness, blame-harness (src/main/engine/engine-binary.ts): build
+// them, so a fresh checkout works and they always match the sources. A
+// failed build keeps the last one.
 function buildEngine() {
   if (process.env.BLAME_ENGINE_BIN?.trim()) return
-  const result = spawnSync("cargo", ["build", "-p", "blame-engine"], {
+  const result = spawnSync("cargo", ["build", "-p", "blame-engine", "-p", "blame-harness"], {
     cwd: join(desktopDir, "..", ".."),
     shell: process.platform === "win32",
     stdio: "inherit",
@@ -43,7 +44,7 @@ function buildEngine() {
     console.warn(
       result.error
         ? "cargo is not installed: install Rust (rustup.rs) for Blame's agent engine, or set BLAME_ENGINE_BIN."
-        : "blame-engine did not build: the app keeps the last build, if any.",
+        : "blame-engine or blame-harness did not build: the app keeps the last build, if any.",
     )
 }
 

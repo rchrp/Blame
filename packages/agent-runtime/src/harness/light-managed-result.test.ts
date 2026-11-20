@@ -5,12 +5,10 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { SessionJournal } from "./session-journal.js";
-import { WorkspaceFiles } from "./workspace-files.js";
 import type { LightToolResult } from "./light-contracts.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
-const { LightTaskRunner } = await import(
-  process.env.BLAME_MANAGED_RESULT_RUNTIME ?? "./light-task-runner.js"
-) as typeof import("./light-task-runner.js");
+type Runner = LightWorkspace["tasks"];
 
 type Snapshot = {
   run: string;
@@ -73,20 +71,18 @@ test("a still-running inspection does not wait for process or journal completion
 async function fixture(
   outcome: "success" | "failure" | "cancelled" | "unknown-test",
   run: (value: {
-    root: string; runner: InstanceType<typeof LightTaskRunner>; initial: Snapshot;
+    root: string; runner: Runner; initial: Snapshot;
     ready: Promise<void>; release: () => void; controller: AbortController; journal: SessionJournal;
   }) => Promise<void>,
 ) {
   const root = await mkdtemp(join(tmpdir(), "blame-managed-result-"));
-  const controller = new AbortController(), recording = deferred(), release = deferred();
+  // The TypeScript test also held the journal's validation write after the
+  // child exited, which only an in-process journal allowed; the harness's
+  // runner records the outcome before the run reads as exited, so the first
+  // terminal inspection is checked as the harness serves it.
+  const controller = new AbortController(), release = deferred();
   const journal = new SessionJournal(root, "managed-result");
-  const record = journal.recordValidation.bind(journal);
-  journal.recordValidation = async input => {
-    recording.resolve();
-    await release.promise;
-    return record(input);
-  };
-  const runner = new LightTaskRunner({ files: new WorkspaceFiles(root), journal, initialCommandWaitMs: 0 });
+  const runner = new LightWorkspace(root, { sessionId: "managed-result", initialCommandWaitMs: 0 }).tasks;
   let initial: Snapshot | undefined;
   try {
     await mkdir(join(root, ".blame"));
@@ -101,7 +97,7 @@ const tick=setInterval(()=>{if(fs.existsSync('.blame/release')){
       : { kind: "command", command: "node check.cjs" }, { signal: controller.signal }));
     assert.equal(initial.process, "running");
     await waitFor(join(root, ".blame/launches"));
-    await run({ root, runner, initial, ready: recording.promise, release: release.resolve, controller, journal });
+    await run({ root, runner, initial, ready: Promise.resolve(), release: release.resolve, controller, journal });
   } finally {
     release.resolve();
     controller.abort();

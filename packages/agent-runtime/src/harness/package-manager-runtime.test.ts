@@ -5,7 +5,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { resolvePackageManager } from "./package-manager-runtime.js";
+import { resolvePackageManager } from "./test-client/units.js";
 
 for (const [name, version] of [
   ["pnpm", "12.15.0"],
@@ -51,6 +51,7 @@ test("runs the bundled pnpm 10 for a project pinned to a retired pnpm 10", async
     version: "10.33.2",
     compatibility: "pnpm_same_major",
   });
+  // The same major's bundled version (the TypeScript result also named the
+  // strategy, which nothing read; blame-harness does not carry it).
   assert.equal(manager.resolvedVersion, "10.34.9");
-  assert.equal(manager.resolutionStrategy, "compatible_same_major");
 });

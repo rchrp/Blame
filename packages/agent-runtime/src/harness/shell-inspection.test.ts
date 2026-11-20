@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { delimiter } from "node:path";
 import test from "node:test";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
-import { lightSemanticHarnessTools } from "./light-tools.js";
-import { readOnlyInspection, shellInspectionRoutes, type ShellInspectionRoute } from "./shell-inspection.js";
+import { lightSemanticHarnessTools } from "./test-client/light-tools.js";
+import { readOnlyInspection, shellInspectionRoutes, type ShellInspectionRoute } from "./test-client/units.js";
 import { withBundledTools } from "./workspace-command-environment.js";
 
 const root = "/work/project";

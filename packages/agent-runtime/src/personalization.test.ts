@@ -5,8 +5,8 @@ import {
   projectPrompt,
   worktreeEnvironment,
 } from "./engine/purposes/prompt.js";
-import { lightCompletionDescription } from "./harness/light-completion.js";
-import { finishSummaryLimit } from "./harness/light-contracts.js";
+import { finishSummaryLimit } from "./harness/test-client/contracts.js";
+import { lightCompletionDescription } from "./harness/test-client/light-tools.js";
 import {
   defaultPersonalization,
   normalizePersonalization,

@@ -128,7 +128,14 @@ async fn the_harness_runs_as_a_child_restarts_and_ends_the_turn() {
     assert_eq!(requests.len(), 4);
     assert_eq!(
         tool_names(&requests[0].body),
-        ["crash", "edit_code", "finish_task", "read_code", "slow"],
+        [
+            "ask_client",
+            "crash",
+            "edit_code",
+            "finish_task",
+            "read_code",
+            "slow"
+        ],
         "described by the harness, in a stable order"
     );
     let described = requests[0].body["tools"].to_string();
@@ -274,22 +281,76 @@ async fn harness_calls_carry_the_context_generation() {
     assert!(engine.shutdown().await.success());
 }
 
-/// The TypeScript runner, built by `pnpm --filter @blame/agent-runtime build`.
-fn real_runner() -> Option<PathBuf> {
-    let runner = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../packages/agent-runtime/dist/harness/semantic-harness-runner.js");
-    runner.is_file().then_some(runner)
+/// `blame-harness`, built next to this test (`cargo build -p blame-harness`).
+fn real_harness() -> Option<PathBuf> {
+    let deps = std::env::current_exe().ok()?.parent()?.to_path_buf();
+    let name = if cfg!(windows) {
+        "blame-harness.exe"
+    } else {
+        "blame-harness"
+    };
+    let binary = deps.parent()?.join(name);
+    binary.is_file().then_some(binary)
+}
+
+#[tokio::test]
+async fn harness_questions_reach_the_client_and_back() {
+    let Some(node) = node() else {
+        eprintln!("skipped: node is not on PATH");
+        return;
+    };
+    let dir = temp_dir("harness-asks");
+    let log = dir.join("runner.log");
+    let script = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/fake-runner.mjs");
+    let command = harness_args(&[
+        node.to_str().unwrap(),
+        script.to_str().unwrap(),
+        log.to_str().unwrap(),
+    ]);
+    let mock = mock(vec![
+        tool_reply(&[("ask_client", json!({}))]),
+        tool_reply(&[("finish_task", json!({ "summary": "asked" }))]),
+    ])
+    .await;
+    let client = Arc::new(FakeClient::new(&mock.base));
+    let engine = Engine::ready(
+        &dir.join("data"),
+        &["--harness-command", &command],
+        client.clone(),
+    )
+    .await;
+    let workspace = temp_dir("harness-asks-workspace");
+    let session = engine.create(harness_config(&workspace)).await;
+    engine.subscribe(&session, 0).await;
+    engine.send(&session, "ask").await;
+    let records = records_of(&engine.until_turn_ended().await);
+    let results = results(&records);
+    let text = match &results[0].1[..] {
+        [ToolResultBlock::Text { text }] => text.clone(),
+        other => panic!("{other:?}"),
+    };
+    assert!(text.contains("granted-by-the-client"), "{text}");
+    let asks = client.harness_asks.lock().unwrap().clone();
+    assert_eq!(asks.len(), 1);
+    assert_eq!(asks[0].0, session);
+    assert_eq!(asks[0].1, "commandCredentials");
+    assert!(engine.shutdown().await.success());
 }
 
 #[tokio::test]
 async fn the_real_harness_describes_its_tools_and_reads_code() {
-    let (Some(node), Some(runner)) = (node(), real_runner()) else {
-        eprintln!("skipped: node or the built agent-runtime is missing");
+    let Some(harness) = real_harness() else {
+        eprintln!("skipped: blame-harness is not built");
         return;
     };
-    let command = harness_args(&[node.to_str().unwrap(), runner.to_str().unwrap(), "--serve"]);
+    let command = harness_args(&[harness.to_str().unwrap(), "serve", "--asks"]);
     let mock = mock(vec![
         tool_reply(&[("read_code", json!({ "target": "note.txt", "view": "raw" }))]),
+        // A command gets the GitHub token the client grants.
+        tool_reply(&[(
+            "run_task",
+            json!({ "kind": "command", "command": "printf 'token=%s' \"$GH_TOKEN\"" }),
+        )]),
         text_reply(&["It says hello."]),
     ])
     .await;
@@ -337,5 +398,12 @@ async fn the_real_harness_describes_its_tools_and_reads_code() {
     assert!(text.contains("blame_tool_result_v2"), "{text}");
     assert!(text.contains("hello from \"the\" file"), "{text}");
     assert!(requests[1].body.to_string().contains("hello from"));
+    assert!(
+        requests[2]
+            .body
+            .to_string()
+            .contains("token=granted-by-the-client"),
+        "the command ran with the client's credentials"
+    );
     assert!(engine.shutdown().await.success());
 }

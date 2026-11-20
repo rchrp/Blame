@@ -14,6 +14,7 @@ import type {
   GithubMcpCallInput,
   GithubMcpToolDescriptor,
   PreviewContainerLogsInput,
+  PreviewDependencyRefreshResult,
   PreviewDevtoolsCallInput,
   PreviewDevtoolsProviderInput,
   PreviewDevtoolsTarget,
@@ -71,6 +72,19 @@ export type DesktopServices = {
       workspaceMode?: PreviewRuntimeContext["workspaceMode"];
     },
   ): Promise<{ status: "applied" | "unavailable" }>;
+  // The GitHub credentials of a session's next harness command: a cloud
+  // session's token, or for a story in the runtime VM the token granted for
+  // writing (empty, so no inherited token reaches it); `null` keeps the
+  // harness's environment.
+  commandCredentials?(input: {
+    sessionId: string;
+    location: "host" | "vm";
+  }): Promise<{ githubToken?: string } | null>;
+  // A dependency change reaches the session's preview: the preview runtime
+  // installs it (a cloud preview syncs first), then its state.
+  refreshPreviewDependencies?(
+    input: PreviewRuntimeContext,
+  ): Promise<PreviewDependencyRefreshResult>;
   // Starts the runtime VM if needed and installs the engine there when it
   // is missing or not this app's; gives the command that serves it over
   // stdio (`limactl shell`, `wsl.exe`).
@@ -107,6 +121,8 @@ export const desktopServiceNames = [
   "openExternal",
   "applyPreviewInitialization",
   "prepareVmEngine",
+  "commandCredentials",
+  "refreshPreviewDependencies",
 ] as const satisfies readonly DesktopServiceName[];
 
 export type DesktopRequest = (

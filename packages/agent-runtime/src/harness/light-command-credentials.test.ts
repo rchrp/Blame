@@ -8,8 +8,8 @@ import test from "node:test";
 import {
   cachedLightWorkspaceExecutor,
   type LightWorkspaceExecutionRequest,
-} from "./light-executor.js";
-import { lightSemanticHarnessTools } from "./light-tools.js";
+} from "./test-client/light-executor.js";
+import { lightSemanticHarnessTools } from "./test-client/light-tools.js";
 import { withCommandCredentials } from "./workspace-command-environment.js";
 
 const grantedToken = "gho_GrantedTokenValue0123456789abcdefABCD";

@@ -189,26 +189,10 @@ process.exit(manifest.version === process.argv[2] ? 0 : 1);
     semantic_harness_smoke_test
 }
 
+# The payload is the Node side of the engine's blame-harness: its command,
+# the compiler side process, says it is ready and exits when its input closes.
 semantic_harness_smoke_test() {
-  workspace="$(mktemp -d)"
-  printf '%s\n' '{"scripts":{}}' >"$workspace/package.json"
-  if printf '{"input":{"target":"@capabilities"},"taskContract":{"session_id":"provision-smoke"},"tool":"read_code","workspaceRoot":"%s"}' "$workspace" |
-    blame-semantic-harness |
-    node -e '
-let value = "";
-process.stdin.on("data", (chunk) => value += chunk);
-process.stdin.on("end", () => {
-  const result = JSON.parse(value);
-  const valid = result.status === "ok" && typeof result.data?.description === "string";
-  process.exit(valid ? 0 : 1);
-});
-'; then
-    status=0
-  else
-    status=$?
-  fi
-  rm -rf "$workspace"
-  return "$status"
+  blame-semantic-harness </dev/null | head -n 1 | grep -q '"ready":true'
 }
 
 ensure_semantic_harness() {

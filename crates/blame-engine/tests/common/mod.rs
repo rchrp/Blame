@@ -60,6 +60,8 @@ pub struct FakeClient {
     pub progress: Mutex<Vec<String>>,
     /// (provider, session) of each `host/credential`.
     pub credential_asks: Mutex<Vec<(String, SessionId)>>,
+    /// (session, method, params) of each `host/harness`.
+    pub harness_asks: Mutex<Vec<(SessionId, String, Value)>>,
 }
 
 impl FakeClient {
@@ -80,6 +82,7 @@ impl FakeClient {
             hold_tools: None,
             progress: Mutex::new(Vec::new()),
             credential_asks: Mutex::new(Vec::new()),
+            harness_asks: Mutex::new(Vec::new()),
         }
     }
 
@@ -115,6 +118,23 @@ impl FakeClient {
                 Ok(serde_json::to_value((self.tool)(&name, &input)).unwrap())
             }
             EngineRequest::Approval { .. } => Ok(json!({ "decision": "approved" })),
+            // A command's credentials, as the app grants them.
+            EngineRequest::Harness {
+                session,
+                method,
+                params,
+            } => {
+                let answer = if method == "commandCredentials" {
+                    json!({ "githubToken": "granted-by-the-client" })
+                } else {
+                    Value::Null
+                };
+                self.harness_asks
+                    .lock()
+                    .unwrap()
+                    .push((session, method, params));
+                Ok(answer)
+            }
             EngineRequest::LogPush { session, records } => {
                 let remote = self.remote.as_ref().ok_or_else(|| rpc("no remote"))?;
                 remote

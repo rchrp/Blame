@@ -6,8 +6,8 @@ import { join } from "node:path";
 import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
-import { LightWorkspace } from "./light-workspace.js";
-import { lightDefaultRunTaskInputSchema, lightRunTaskInputSchema } from "./light-contracts.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { lightDefaultRunTaskInputSchema, lightRunTaskInputSchema } from "./test-client/contracts.js";
 
 const solver = process.env.BLAME_Z3_PATH ?? "z3";
 const available = spawnSync(solver, ["-version"], { timeout: 1_000 }).status === 0;

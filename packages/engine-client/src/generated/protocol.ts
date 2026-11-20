@@ -118,7 +118,7 @@ session: SessionId, } } | { "method": "host/log/push", "params": { session: Sess
 /**
  * The bytes, base64-encoded.
  */
-data: string, } } | { "method": "host/blob/pull", "params": { sha256: string, } } | { "method": "$/cancel", "params": { id: number, } };
+data: string, } } | { "method": "host/blob/pull", "params": { sha256: string, } } | { "method": "host/harness", "params": { session: SessionId, method: string, params: JsonValue, } } | { "method": "$/cancel", "params": { id: number, } };
 
 // prettier-ignore
 export type ErrorInfo = { kind: ErrorKind, message: string, 

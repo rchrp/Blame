@@ -1,5 +1,4 @@
-// The engine host (docs/engine-in-the-app.md). Nothing here may import the
-// Cline runtime: `no-cline.test.ts` walks this module's imports.
+// The engine host (docs/engine-in-the-app.md).
 export { EngineHost, attachmentKind } from "./host.js";
 export type { EngineHostOptions } from "./host.js";
 export { ToolSet, defineTool, toolSpec } from "./tool.js";
@@ -22,4 +21,9 @@ export type {
   ProjectMemoryRecord,
 } from "../harness/project-memory.js";
 /** The harness runner the engine starts (`--harness-command`). */
-export { harnessRunnerPath } from "../harness/runner-path.js";
+export {
+  harnessCompilerPath,
+  harnessEnvironment,
+  harnessServeArgs,
+  unpackedPath,
+} from "../harness/runner-path.js";

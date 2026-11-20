@@ -1,6 +1,6 @@
 // The engine a benchmark runs on: Blame's engine host in this process, with
 // its own `blame-engine` (data in a scratch folder, kept on this machine)
-// and the harness runner that the desktop app starts too.
+// and the workspace harness, `blame-harness`, that the desktop app starts too.
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,7 +8,8 @@ import { fileURLToPath } from "node:url";
 import type { FollowEvent, SessionRecord } from "@blame/engine-client";
 import {
   EngineHost,
-  harnessRunnerPath,
+  harnessEnvironment,
+  harnessServeArgs,
   type EngineHostEvent,
 } from "@blame/agent-runtime/engine";
 import type { BenchmarkConfig, BenchmarkEngine } from "./contracts.js";
@@ -21,10 +22,11 @@ export function benchmarkEngine(config: BenchmarkConfig): BenchmarkEngine {
   const host = new EngineHost({
     binary: engineBinary(),
     dataDir,
-    harnessCommand: [process.execPath, harnessRunnerPath(), "--serve"],
+    harnessCommand: [harnessBinary(), ...harnessServeArgs()],
     clientVersion: "benchmark",
     env: {
       ...process.env,
+      ...harnessEnvironment(process.execPath),
       BLAME_ENGINE_LOG: process.env.BLAME_ENGINE_LOG ?? "warn",
       BLAME_HARNESS_TRACE_FILE: config.harnessTracePath,
     },
@@ -91,9 +93,17 @@ export function benchmarkEngine(config: BenchmarkConfig): BenchmarkEngine {
  * (`engine/<platform>-<arch>/`), else this checkout's debug build.
  */
 export function engineBinary() {
-  const configured = process.env.BLAME_ENGINE_BIN?.trim();
+  return binary("blame-engine", "BLAME_ENGINE_BIN");
+}
+
+export function harnessBinary() {
+  return binary("blame-harness", "BLAME_HARNESS_BIN");
+}
+
+function binary(name: string, variable: string) {
+  const configured = process.env[variable]?.trim();
   if (configured) return configured;
-  const executable = process.platform === "win32" ? "blame-engine.exe" : "blame-engine";
+  const executable = process.platform === "win32" ? `${name}.exe` : name;
   const candidates = [
     fileURLToPath(
       new URL(`../engine/${process.platform}-${process.arch}/${executable}`, import.meta.url),
@@ -103,7 +113,7 @@ export function engineBinary() {
   const found = candidates.find((path) => existsSync(path));
   if (!found)
     throw new Error(
-      "No blame-engine binary: set BLAME_ENGINE_BIN, ship one in the payload, or run `cargo build -p blame-engine`.",
+      `No ${name} binary: set ${variable}, ship one in the payload, or run \`cargo build -p ${name}\`.`,
     );
   return found;
 }

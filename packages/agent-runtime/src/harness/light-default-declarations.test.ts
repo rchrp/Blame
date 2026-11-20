@@ -3,7 +3,7 @@ import test from "node:test";
 import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
-import { declarationQuery } from "./light-reference-candidates.js";
+import { declarationQuery } from "./test-client/units.js";
 
 const source = "export function needle(n: number) { return n + 1; }\n";
 const files = Object.fromEntries([

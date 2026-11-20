@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
-import type { LightCompletionNotification } from "./light-completion.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
 import { data, fixture, LightFinishService, localLightWorkspaceExecutor, observeCheck } from "./light-agent-guidance-fixture.js";
 
 test("Mocha reports pending separately and leaves unreported skipped unknown", () => {

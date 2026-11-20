@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { claudeCodeArguments, parseAuthStatus } from "./claude-code-cli.js";
 
-import { lightCompletionDescription } from "../harness/light-completion.js";
+import { lightCompletionDescription } from "../harness/test-client/light-tools.js";
 import {
   classifyClaudeCodeError,
   clientStreamEvent,
