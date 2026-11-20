@@ -9,6 +9,7 @@ import type {
   SessionRecord,
   ToolCallId,
   TurnId,
+  TurnOutcome,
 } from "../protocol.js";
 import { LiveState } from "./live.js";
 import type {
@@ -793,10 +794,9 @@ function isVisible(block: AssistantBlock): boolean {
   return block.type !== "opaque";
 }
 
-function statusOf(
-  status: "completed" | "interrupted" | "limit_reached" | "failed",
-): TurnStatus {
-  return status;
+function statusOf(status: TurnOutcome["status"]): TurnStatus {
+  // A turn that ran out of contract corrections did not do what it had to.
+  return status === "contract_unmet" ? "failed" : status;
 }
 
 /** A tool call's state follows from what the log has said about it. */
