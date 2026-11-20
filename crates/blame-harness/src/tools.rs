@@ -38,6 +38,8 @@ impl Effect {
     }
 }
 
+const RUN_TASK_ANALYZE: &str = " Optional kind analyze uses a local Z3 executable (BLAME_Z3_PATH or z3) to search for counterexamples in a pure typed TypeScript scalar function: target is sN or path#functionName, inputs maps each parameter to {min,max} safe-integer bounds or {type:\"boolean\"}, assertion is a boolean expression over inputs and result. Unsupported constructs or unavailable solver return unknown. Example: {\"kind\":\"analyze\",\"target\":\"src/math.ts#difference\",\"inputs\":{\"a\":{\"min\":0,\"max\":100},\"b\":{\"min\":0,\"max\":100}},\"assertion\":\"result === a - b\"}. Bounded absence of counterexamples is not project verification; reproduce witnesses with real tests.";
+
 pub struct ToolDefinition {
     pub name: &'static str,
     pub description: String,
@@ -64,6 +66,7 @@ static SCHEMAS: LazyLock<Vec<Json>> = LazyLock::new(|| {
         include_str!("../schemas/edit_code.json"),
         include_str!("../schemas/run_task.json"),
         include_str!("../schemas/finish_task.json"),
+        include_str!("../schemas/run_task_analyze.json"),
     ]
     .iter()
     .map(|text| Json::parse(text.trim()).expect("embedded tool schema"))
@@ -81,7 +84,12 @@ pub fn tool_definitions(task_contract: Option<&Json>) -> Vec<ToolDefinition> {
     } else {
         RUN_TASK_MANAGED
     };
-    let run_task = format!("{RUN_TASK_DESCRIPTION_HEAD}{services}{RUN_TASK_DESCRIPTION_TAIL}");
+    // Symbolic analysis (opt-in) adds the analyze kind to run_task.
+    let reasoning = std::env::var("BLAME_AGENT_SYMBOLIC_ANALYSIS").as_deref() == Ok("true");
+    let run_task = format!(
+        "{RUN_TASK_DESCRIPTION_HEAD}{services}{RUN_TASK_DESCRIPTION_TAIL}{}",
+        if reasoning { RUN_TASK_ANALYZE } else { "" }
+    );
     let descriptions = [
         SEARCH_CODE_DESCRIPTION.to_string(),
         READ_CODE_DESCRIPTION.to_string(),
@@ -104,10 +112,14 @@ pub fn tool_definitions(task_contract: Option<&Json>) -> Vec<ToolDefinition> {
         .map(|(index, ((name, description), effect))| ToolDefinition {
             name,
             description,
-            input_schema: SCHEMAS[index].clone(),
+            input_schema: if index == 3 && reasoning {
+                SCHEMAS[5].clone()
+            } else {
+                SCHEMAS[index].clone()
+            },
             effect,
             ends_turn: *name == "finish_task",
-            available: index < 3,
+            available: index < 5,
         })
         .collect()
 }

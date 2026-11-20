@@ -46,6 +46,24 @@ pub enum Schema {
         min: usize,
         max: usize,
     },
+    /// `z.string().regex(pattern)`, untrimmed; `display` is the pattern as
+    /// JavaScript prints the RegExp.
+    Pattern {
+        pattern: &'static str,
+        display: &'static str,
+    },
+    /// `.optional().default(value)`: an absent value becomes the default.
+    Defaulted(Box<Schema>, &'static str),
+    /// An untrimmed argv word: `z.string().min(1).max(max).refine(no NUL)`.
+    Argument {
+        max: usize,
+    },
+    /// `z.record(z.string().regex(key), value)` with a refinement on the whole record.
+    Record {
+        key: &'static str,
+        value: Box<Schema>,
+        refine: Option<Refinement>,
+    },
     /// `z.discriminatedUnion(key, options)`, each option keyed by its literal.
     Discriminated {
         key: &'static str,
@@ -332,6 +350,72 @@ impl Schema {
                 (Some(Json::Arr(output)), issues)
             }
             Schema::Text { max } => Schema::untrimmed(value, 0, *max),
+            Schema::Pattern { pattern, display } => {
+                let Some(Json::Str(text)) = value else {
+                    return (value.cloned(), vec![invalid_type("string", value, None)]);
+                };
+                let matches =
+                    regex::Regex::new(pattern).is_ok_and(|expression| expression.is_match(text));
+                if matches {
+                    (value.cloned(), Vec::new())
+                } else {
+                    (
+                        value.cloned(),
+                        vec![Issue::new(
+                            format!("Invalid string: must match pattern {display}"),
+                            Some(true),
+                        )],
+                    )
+                }
+            }
+            Schema::Record {
+                key,
+                value: item,
+                refine,
+            } => {
+                let Some(Json::Obj(entries)) = value else {
+                    return (value.cloned(), vec![invalid_type("record", value, None)]);
+                };
+                let pattern = regex::Regex::new(key).expect("record key pattern");
+                let mut issues = Vec::new();
+                let mut output = Json::obj();
+                for (name, element) in entries {
+                    if !pattern.is_match(name) {
+                        let mut issue = Issue::new("Invalid key in record".into(), Some(true));
+                        issue.path.push(Json::from(name.as_str()));
+                        issues.push(issue);
+                        continue;
+                    }
+                    let (parsed, element_issues) = item.run(Some(element));
+                    issues.extend(element_issues.into_iter().map(|mut issue| {
+                        issue.path.insert(0, Json::from(name.as_str()));
+                        issue
+                    }));
+                    if let Some(parsed) = parsed {
+                        output.set(name, parsed);
+                    }
+                }
+                if let Some((refine, message)) = refine
+                    && !aborted(&issues)
+                    && !refine(&output)
+                {
+                    issues.push(Issue::new((*message).into(), Some(true)));
+                }
+                (Some(output), issues)
+            }
+            Schema::Defaulted(schema, default) => match value {
+                None => (Some(Json::from(*default)), Vec::new()),
+                Some(value) => schema.run(Some(value)),
+            },
+            Schema::Argument { max } => {
+                let (output, mut issues) = Schema::untrimmed(value, 1, *max);
+                if !aborted(&issues)
+                    && matches!(value, Some(Json::Str(text)) if text.contains('\0'))
+                {
+                    issues.push(Issue::new("Invalid input".into(), Some(true)));
+                }
+                (output, issues)
+            }
             Schema::TextMin { min, max } => Schema::untrimmed(value, *min, *max),
             Schema::Literal(expected) => match value {
                 Some(Json::Str(text)) if text == expected => (value.cloned(), Vec::new()),
@@ -347,18 +431,29 @@ impl Schema {
                 let Some(Json::Obj(_)) = value else {
                     return (value.cloned(), vec![invalid_type("object", value, None)]);
                 };
-                let discriminator = value
-                    .and_then(|value| value.get(key))
-                    .and_then(Json::as_str);
-                match options
-                    .iter()
-                    .find(|(name, _)| Some(*name) == discriminator)
-                {
+                let present = value.and_then(|value| value.get(key));
+                let discriminator = present.and_then(Json::as_str);
+                // An option whose discriminator has a default also takes an absent one.
+                let defaults = |schema: &Schema| match schema {
+                    Schema::Object { fields, .. } => fields.iter().any(|(name, field, _)| {
+                        name == key && matches!(field, Schema::Defaulted(..))
+                    }),
+                    _ => false,
+                };
+                match options.iter().find(|(name, schema)| {
+                    Some(*name) == discriminator || (present.is_none() && defaults(schema))
+                }) {
                     Some((_, schema)) => schema.run(value),
                     None => {
                         let expected = options
                             .iter()
-                            .map(|(name, _)| format!("'{name}'"))
+                            .flat_map(|(name, schema)| {
+                                let mut names = vec![format!("'{name}'")];
+                                if defaults(schema) {
+                                    names.push("'undefined'".into());
+                                }
+                                names
+                            })
                             .collect::<Vec<_>>()
                             .join(" | ");
                         let mut issue = Issue::new(
@@ -641,6 +736,207 @@ pub fn edit_code_schema() -> Schema {
             },
             false,
         )],
+        refine: None,
+    }
+}
+
+/// `lightRunTaskInputSchema`'s analyze option (symbolic analysis enabled).
+fn analyze_task_schema() -> Schema {
+    let bounds = Schema::Object {
+        fields: vec![
+            (
+                "min",
+                Schema::Int {
+                    min: None,
+                    max: None,
+                },
+                false,
+            ),
+            (
+                "max",
+                Schema::Int {
+                    min: None,
+                    max: None,
+                },
+                false,
+            ),
+        ],
+        refine: Some((
+            |value| {
+                value.get("min").and_then(Json::as_f64).unwrap_or(0.0)
+                    <= value.get("max").and_then(Json::as_f64).unwrap_or(0.0)
+            },
+            "min must not exceed max",
+        )),
+    };
+    let boolean = Schema::Object {
+        fields: vec![("type", Schema::Literal("boolean"), false)],
+        refine: None,
+    };
+    Schema::Object {
+        fields: vec![
+            ("kind", Schema::Literal("analyze"), false),
+            ("target", Schema::Str { min: 1, max: 4_096 }, false),
+            (
+                "inputs",
+                Schema::Record {
+                    key: r"^[A-Za-z_$][A-Za-z0-9_$]*$",
+                    value: Box::new(Schema::Union(vec![bounds, boolean])),
+                    refine: Some((
+                        |value| value.as_object().is_some_and(|entries| entries.len() <= 8),
+                        "At most eight inputs",
+                    )),
+                },
+                false,
+            ),
+            ("assertion", Schema::Str { min: 1, max: 2_000 }, false),
+            (
+                "timeoutMs",
+                Schema::Int {
+                    min: Some((100, true)),
+                    max: Some(10_000),
+                },
+                true,
+            ),
+        ],
+        refine: None,
+    }
+}
+
+/// run_task's input schema: `lightRunTaskInputSchema` when symbolic
+/// analysis is enabled, else `lightDefaultRunTaskInputSchema`.
+pub fn run_task_schema() -> Schema {
+    let schema = default_run_task_schema();
+    if std::env::var("BLAME_AGENT_SYMBOLIC_ANALYSIS").as_deref() != Ok("true") {
+        return schema;
+    }
+    match schema {
+        Schema::Discriminated { key, mut options } => {
+            options.insert(0, ("analyze", analyze_task_schema()));
+            Schema::Discriminated { key, options }
+        }
+        other => other,
+    }
+}
+
+/// `lightDefaultRunTaskInputSchema`: run_task without symbolic analysis.
+fn default_run_task_schema() -> Schema {
+    let inspect = Schema::Object {
+        fields: vec![
+            ("kind", Schema::Literal("inspect"), false),
+            (
+                "run",
+                Schema::Pattern {
+                    pattern: r"^r[1-9]\d*$",
+                    display: r"/^r[1-9]\d*$/u",
+                },
+                false,
+            ),
+            (
+                "cursor",
+                Schema::Pattern {
+                    pattern: r"^\d+$",
+                    display: r"/^\d+$/u",
+                },
+                true,
+            ),
+            ("until", Schema::Enum(&["exit", "output", "now"]), true),
+        ],
+        refine: None,
+    };
+    let project = Schema::Object {
+        fields: vec![
+            ("kind", Schema::Literal("project"), false),
+            ("task", Schema::Str { min: 1, max: 300 }, false),
+            ("packagePath", RELATIVE_PATH(), true),
+            (
+                "args",
+                Schema::Array {
+                    item: Box::new(Schema::Argument { max: 2_048 }),
+                    min: None,
+                    max: 32,
+                },
+                true,
+            ),
+        ],
+        refine: None,
+    };
+    let command = Schema::Object {
+        fields: vec![
+            (
+                "kind",
+                Schema::Defaulted(Box::new(Schema::Literal("command")), "command"),
+                false,
+            ),
+            ("command", Schema::Str { min: 1, max: 8_000 }, false),
+            ("cwd", RELATIVE_PATH(), true),
+        ],
+        refine: None,
+    };
+    let dependency = Schema::Object {
+        fields: vec![
+            ("kind", Schema::Literal("dependency"), false),
+            ("action", Schema::Enum(&["add", "remove"]), false),
+            (
+                "packages",
+                Schema::Array {
+                    item: Box::new(Schema::Str { min: 1, max: 300 }),
+                    min: Some(1),
+                    max: 50,
+                },
+                false,
+            ),
+            ("packagePath", RELATIVE_PATH(), true),
+        ],
+        refine: None,
+    };
+    Schema::Discriminated {
+        key: "kind",
+        options: vec![
+            ("inspect", inspect),
+            ("project", project),
+            ("command", command),
+            ("dependency", dependency),
+        ],
+    }
+}
+
+/// `finishTaskInputSchema`.
+pub fn finish_task_schema() -> Schema {
+    let image = Schema::Object {
+        fields: vec![
+            (
+                "ref",
+                Schema::Pattern {
+                    pattern: r"^screenshot:[0-9a-f]{64}$",
+                    display: r"/^screenshot:[0-9a-f]{64}$/u",
+                },
+                false,
+            ),
+            ("caption", Schema::Str { min: 1, max: 160 }, false),
+        ],
+        refine: None,
+    };
+    Schema::Object {
+        fields: vec![
+            (
+                "summary",
+                Schema::Str {
+                    min: 1,
+                    max: 100_000,
+                },
+                false,
+            ),
+            (
+                "images",
+                Schema::Array {
+                    item: Box::new(image),
+                    min: None,
+                    max: 8,
+                },
+                true,
+            ),
+        ],
         refine: None,
     }
 }

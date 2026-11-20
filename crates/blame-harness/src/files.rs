@@ -8,7 +8,6 @@ use crate::pathx;
 use std::collections::HashSet;
 use std::fs;
 use std::io::Read;
-use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -188,20 +187,20 @@ impl WorkspaceFiles {
         Ok(ReadFile {
             absolute,
             content,
-            mode: metadata.permissions().mode() & 0o777,
+            mode: crate::platform::file_mode(&metadata),
             path: self.normalize_path(path)?,
         })
     }
 
     pub fn file_size(&self, path: &str) -> Outcome<u64> {
-        Ok(self.resolve_existing(path)?.1.size())
+        Ok(self.resolve_existing(path)?.1.len())
     }
 
     pub fn path_profile(&self, path: &str) -> Outcome<PathProfile> {
         let (_, metadata) = self.resolve_existing_path(path)?;
         Ok(PathProfile {
             directory: metadata.is_dir(),
-            size: metadata.size(),
+            size: metadata.len(),
         })
     }
 
@@ -323,7 +322,7 @@ impl WorkspaceFiles {
         };
         let mut content = Sha256::new();
         let mut state = Sha256::new();
-        state.update(format!("{}\0", info.permissions().mode() & 0o777).as_bytes());
+        state.update(format!("{}\0", crate::platform::file_mode(&info)).as_bytes());
         let mut buffer = vec![0u8; 64 * 1024];
         loop {
             let read = file
@@ -422,6 +421,68 @@ impl WorkspaceFiles {
             )));
         }
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
+    }
+
+    /// A file as committed at `revision`: its content and mode, or none
+    /// when the revision has no such file.
+    pub fn baseline(&self, path: &str, revision: &str) -> Outcome<Option<(Vec<u8>, u32)>> {
+        let normalized = self.normalize_path(path)?;
+        let Some(entry) = self.git_optional(&["ls-tree", revision, "--", &normalized]) else {
+            return Ok(None);
+        };
+        let mode = entry
+            .split_whitespace()
+            .next()
+            .and_then(|mode| u32::from_str_radix(mode, 8).ok())
+            .unwrap_or(0)
+            & 0o777;
+        let output = Command::new("git")
+            .args(["show", &format!("{revision}:{normalized}")])
+            .current_dir(&self.root)
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()
+            .map_err(|error| Failure::new(format!("git show: {error}")))?;
+        if !output.status.success() {
+            return Err(Failure::new(format!(
+                "Command failed: git show {revision}:{normalized}"
+            )));
+        }
+        Ok(Some((output.stdout, mode)))
+    }
+
+    /// Harness source paths changed between two commits (all of one when the
+    /// other is absent).
+    pub fn committed_changes(
+        &self,
+        previous: Option<&str>,
+        current: Option<&str>,
+    ) -> Outcome<Vec<String>> {
+        if previous == current {
+            return Ok(Vec::new());
+        }
+        let output = match (previous, current) {
+            (Some(previous), Some(current)) => self.git(&[
+                "diff",
+                "--no-renames",
+                "--name-only",
+                "-z",
+                previous,
+                current,
+                "--",
+            ])?,
+            (one, other) => self.git(&[
+                "ls-tree",
+                "-r",
+                "--name-only",
+                "-z",
+                one.or(other).unwrap_or_default(),
+            ])?,
+        };
+        Ok(nul_list(&output)
+            .into_iter()
+            .filter(|path| is_harness_source_path(path))
+            .collect())
     }
 
     pub fn git_optional(&self, args: &[&str]) -> Option<String> {

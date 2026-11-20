@@ -18,13 +18,60 @@ const MAXIMUM_CONTEXT_LINE_CHARACTERS: usize = 240;
 // limit values continue on the next page instead.
 const MAXIMUM_PAGE_CHARACTERS: usize = 40_000;
 
-/// The search input as the caller sent it: `nextSearch` echoes it.
+/// The search input as the caller sent it (`nextSearch` echoes it), and the
+/// grep translations of a routed shell inspection that the model-facing
+/// schema does not expose (`CodeSearchRequest`).
 #[derive(Clone, Debug)]
 pub struct SearchInput {
     pub raw: Json,
+    pub context_before: Option<usize>,
+    pub context_after: Option<usize>,
+    /// Drops presented lines, like `| grep -v` applied to grep's
+    /// `path:line:text` output: any of these patterns.
+    pub exclude: Vec<regex::Regex>,
 }
 
 impl SearchInput {
+    /// Takes `contextBefore`, `contextAfter` and `excludeLines`
+    /// (`[{ "source", "ignoreCase" }]`) out of the input.
+    pub fn new(input: &Json) -> SearchInput {
+        let mut raw = input.clone();
+        let count = |value: Option<Json>| {
+            value
+                .and_then(|value| value.as_f64())
+                .map(|value| value as usize)
+        };
+        let context_before = count(raw.remove("contextBefore"));
+        let context_after = count(raw.remove("contextAfter"));
+        let exclude = raw
+            .remove("excludeLines")
+            .and_then(|value| value.as_array().cloned())
+            .unwrap_or_default()
+            .iter()
+            .filter_map(|pattern| {
+                let source = pattern.get("source").and_then(Json::as_str)?;
+                let ignore_case = pattern
+                    .get("ignoreCase")
+                    .and_then(Json::as_bool)
+                    .unwrap_or(false);
+                regex::RegexBuilder::new(source)
+                    .case_insensitive(ignore_case)
+                    .build()
+                    .ok()
+            })
+            .collect();
+        SearchInput {
+            raw,
+            context_before,
+            context_after,
+            exclude,
+        }
+    }
+
+    pub fn excluded(&self, line: &str) -> bool {
+        self.exclude.iter().any(|pattern| pattern.is_match(line))
+    }
+
     pub fn query(&self) -> &str {
         self.raw.get("query").and_then(Json::as_str).unwrap_or("")
     }
@@ -54,7 +101,10 @@ impl SearchInput {
     pub fn with_query(&self, query: &str) -> SearchInput {
         let mut raw = self.raw.clone();
         raw.set("query", query);
-        SearchInput { raw }
+        SearchInput {
+            raw,
+            ..self.clone()
+        }
     }
 }
 
