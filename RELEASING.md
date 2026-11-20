@@ -143,17 +143,16 @@ Never delete a runtime release that a published desktop version still references
 
 ## Cline SDK updates
 
-Blame pins every `@cline/*` package to one exact version. The SDK is also baked into the runtime images. Every Monday, the **Update Cline SDK** workflow compares that version with npm's latest release. When a newer one exists, it opens a pull request (or refreshes the open one) that:
+Blame pins every `@cline/*` package to one exact version. The runtime images do not carry it: the VM runs Blame's own engine. Every Monday, the **Update Cline SDK** workflow compares that version with npm's latest release. When a newer one exists, it opens a pull request (or refreshes the open one) that:
 
 - pins every `@cline/*` dependency to the new version and updates `pnpm-lock.yaml`,
-- writes the new `clineSdkVersion` into both runtime manifests and bumps `runtimeVersion`,
-- updates the version pinned by the sandbox runner image and the runtime provisioning script fallbacks,
+- updates the version pinned by the sandbox runner image,
 - regenerates Blame's `@cline/core` patch with `scripts/patch-cline-core.mjs` (see `patches/README.md`),
 - lists the releases and SDK commits since the current version.
 
 When the patch cannot be regenerated, the pull request opens as a draft that names it. Once a maintainer has pushed commits to the pull request, the workflow no longer overwrites it and comments when a newer Cline release appears.
 
-The pull request is never merged automatically. CI runs the **Agent runtime tests**, which include a smoke test that drives a real Cline session through Blame's configuration. After merging, release the runtime and then the desktop app, as the pull request describes.
+The pull request is never merged automatically. CI runs the **Agent runtime tests**, which include a smoke test that drives a real Cline session through Blame's configuration. After merging, release the desktop app, as the pull request describes.
 
 To check by hand: `pnpm update:cline-sdk check`.
 

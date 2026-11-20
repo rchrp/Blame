@@ -39,7 +39,7 @@ test("release preflight distinguishes unavailable manifests, wrong versions and 
 test("macOS verification stops after a failed intermediate check", async () => {
   const source = await readFile(new URL("./macos-runtime-image.mjs", import.meta.url), "utf8");
   const expression = source.match(/const checks = (\[[\s\S]*?\]\.join\("\\n"\));/)[1];
-  const script = new Function("runtimeVersion", "clineSdkVersion", "nodeVersion", `return ${expression}`)("9", "0.0.81", "22");
+  const script = new Function("runtimeVersion", "nodeVersion", `return ${expression}`)("9", "22");
   const result = spawnSync("sh", ["-c", `grep() { return 42; }\n${script}`], { encoding: "utf8" });
   assert.equal(result.status, 42);
 });

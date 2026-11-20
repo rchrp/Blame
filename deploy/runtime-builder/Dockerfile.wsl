@@ -2,7 +2,6 @@ ARG UBUNTU_IMAGE=ubuntu:24.04@sha256:4fbb8e6a8395de5a7550b33509421a2bafbc0aab6c0
 FROM ${UBUNTU_IMAGE}
 
 ARG BLAME_RUNTIME_VERSION
-ARG BLAME_CLINE_SDK_VERSION
 ARG BLAME_DOCKER_VERSION=29.9.1
 ARG BLAME_COMPOSE_VERSION=5.6.0
 ARG BLAME_BUILDX_VERSION=0.38.0
@@ -17,11 +16,10 @@ RUN BLAME_RUNTIME_BAKE=1 \
     BLAME_COMPOSE_VERSION="${BLAME_COMPOSE_VERSION}" \
     BLAME_BUILDX_VERSION="${BLAME_BUILDX_VERSION}" \
     BLAME_NODE_VERSION="${BLAME_NODE_VERSION}" \
-    sh /tmp/provision-blame-runtime.sh "${BLAME_RUNTIME_VERSION}" "${BLAME_CLINE_SDK_VERSION}" \
+    sh /tmp/provision-blame-runtime.sh "${BLAME_RUNTIME_VERSION}" \
     && grep -qx "${BLAME_RUNTIME_VERSION}" /etc/blame-runtime-version \
     && blame-runtime-agent version | grep -qx "${BLAME_RUNTIME_VERSION}" \
     && node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' "${BLAME_NODE_VERSION}" \
-    && node "$(npm root -g)/@blame/semantic-harness-runtime/runtime-sdk-check.mjs" "${BLAME_CLINE_SDK_VERSION}" \
     && command -v blame-semantic-harness >/dev/null \
     && test -s /etc/blame-semantic-harness-sha256 \
     && test -z "$(find "$(npm root -g)" -type d \( -path "*/node_modules/@openai/codex-linux-*" -o -path "*/node_modules/@anthropic-ai/claude-agent-sdk-linux-*" \) -print -quit)" \

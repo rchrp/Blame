@@ -15,13 +15,6 @@ $RuntimeAgentVersion = if ($Manifest.PSObject.Properties["runtimeAgentVersion"])
 } else {
   "1"
 }
-$ClineSdkVersion = if ($env:BLAME_CLINE_SDK_VERSION) {
-  [string]$env:BLAME_CLINE_SDK_VERSION
-} elseif ($Manifest.PSObject.Properties["clineSdkVersion"]) {
-  [string]$Manifest.clineSdkVersion
-} else {
-  "0.2.0"
-}
 $SemanticHarnessPayload = Join-Path $RuntimeHome "payloads\blame-semantic-harness.tgz"
 $SemanticHarnessSha256 = if (Test-Path -LiteralPath $SemanticHarnessPayload) {
   (Get-FileHash -Algorithm SHA256 -LiteralPath $SemanticHarnessPayload).Hash.ToLowerInvariant()
@@ -282,39 +275,16 @@ check() {
     printf '%s\tmissing\n' "$name"
   fi
 }
-node_major_ok() {
-  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
-}
-valid_cline_sdk_install() {
-  node_major_ok || return 1
-  command -v npm >/dev/null 2>&1 || return 1
-  global_node_root="$(npm root -g)"
-  node - "$global_node_root" "__CLINE_SDK_VERSION__" <<'NODE'
-const fs = require("fs");
-const path = require("path");
-const root = path.join(process.argv[2], "@blame/semantic-harness-runtime/node_modules");
-const version = process.argv[3];
-const sdkPackage = path.join(root, "@cline/sdk/package.json");
-const coreRoot = path.join(root, "../vendor/cline-core");
-if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
-const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
-const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
-const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json")) ? 0 : 1);
-NODE
-}
 check agent test -x /usr/local/bin/blame-runtime-agent
 check agent-version sh -lc 'test "$(blame-runtime-agent agent-version 2>/dev/null)" = "__RUNTIME_AGENT_VERSION__"'
 check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null)" = "__RUNTIME_VERSION__"'
 check docker sh -lc 'command -v dockerd >/dev/null 2>&1 && command -v docker >/dev/null 2>&1'
 check docker-compose sh -lc 'docker compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
-check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__"'
 check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
 check gh sh -lc '/usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "'
 '@
-  $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
   $command = $command -replace "__SEMANTIC_HARNESS_SHA256__", $SemanticHarnessSha256
@@ -327,7 +297,7 @@ check gh sh -lc '/usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "
     }
   }
   # Missing/truncated probe output must never turn a broken distro into ready.
-  foreach ($name in @("agent", "agent-version", "runtime-version", "docker", "docker-compose", "git", "cline-sdk", "semantic-harness", "package-managers", "gh")) {
+  foreach ($name in @("agent", "agent-version", "runtime-version", "docker", "docker-compose", "git", "semantic-harness", "package-managers", "gh")) {
     if ($reported[$name] -eq "available") {
       $Checks.Add((New-Check $name "available"))
     } else {
@@ -536,7 +506,7 @@ function Invoke-Provisioner {
     throw $copy.Output
   }
   $content = Get-Content -LiteralPath $script -Raw -Encoding UTF8
-  $result = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--exec", "sh", "-s", "--", $RuntimeVersion, $ClineSdkVersion) -InputContent $content -InheritOutput
+  $result = Invoke-WslHost -WslArgs @("-d", $DistroName, "-u", "root", "--exec", "sh", "-s", "--", $RuntimeVersion) -InputContent $content -InheritOutput
   if ($result.Code -ne 0) {
     throw "BlameRuntime provisioning failed."
   }
@@ -553,24 +523,6 @@ agent_version_ok() {
 node_major_ok() {
   node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
 }
-valid_cline_sdk_install() {
-  node_major_ok || return 1
-  command -v npm >/dev/null 2>&1 || return 1
-  global_node_root="$(npm root -g)"
-  node - "$global_node_root" "__CLINE_SDK_VERSION__" <<'NODE'
-const fs = require("fs");
-const path = require("path");
-const root = path.join(process.argv[2], "@blame/semantic-harness-runtime/node_modules");
-const version = process.argv[3];
-const sdkPackage = path.join(root, "@cline/sdk/package.json");
-const coreRoot = path.join(root, "../vendor/cline-core");
-const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
-const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
-const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json")) ? 0 : 1);
-NODE
-}
 version_ok &&
   agent_version_ok &&
   id blame >/dev/null 2>&1 &&
@@ -580,7 +532,6 @@ version_ok &&
   command -v dockerd >/dev/null 2>&1 &&
   docker compose version >/dev/null 2>&1 &&
   test -x /usr/local/bin/blame-runtime-agent &&
-  valid_cline_sdk_install &&
   command -v blame-semantic-harness >/dev/null 2>&1 &&
   test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__" &&
   test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" &&
@@ -588,7 +539,6 @@ version_ok &&
   test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22" &&
   /usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "
 '@
-  $command = $command -replace "__CLINE_SDK_VERSION__", $ClineSdkVersion
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
   $command = $command -replace "__RUNTIME_VERSION__", $RuntimeVersion
   $command = $command -replace "__SEMANTIC_HARNESS_SHA256__", $SemanticHarnessSha256

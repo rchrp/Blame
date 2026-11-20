@@ -1,6 +1,6 @@
 // Keeps the Cline SDK packages current. Used by .github/workflows/cline-sdk-update.yml:
 //   check                 compare the installed version with npm's latest release
-//   apply <version>       pin every @cline/* dependency, sync runtime manifests, bump the runtime
+//   apply <version>       pin every @cline/* dependency
 //   patch <version>       regenerate the removed patches that have a generator script
 //   notes <from> <to>     pull request body with release dates, commits and follow-up steps
 // pnpm patches of @cline/* packages target exact versions and cannot follow an
@@ -14,20 +14,11 @@ import { fileURLToPath } from "node:url"
 
 const rootDir = resolve(fileURLToPath(new URL("..", import.meta.url)))
 const referencePackage = "packages/agent-runtime/package.json"
-const runtimeManifests = [
-  "packages/desktop/resources/runtime/macos/manifest.json",
-  "packages/desktop/resources/runtime/windows/manifest.json",
-]
-// Files that pin the SDK version outside package.json: the sandbox runner image
-// and the fallbacks of the runtime provisioning scripts.
+// Files that pin the SDK version outside package.json: the sandbox runner image.
+// The desktop runtime VM runs Blame's own engine and ships no Cline SDK.
 export const pinnedVersionFiles = [
   "packages/sandbox-runner/Dockerfile",
   "packages/sandbox-runner/src/runner-application.ts",
-  "packages/desktop/resources/runtime/macos/scripts/blame-lima-runtime.sh",
-  "packages/desktop/resources/runtime/macos/scripts/provision-blame-runtime.sh",
-  "packages/desktop/resources/runtime/windows/scripts/blame-wsl2-runtime.ps1",
-  "packages/desktop/resources/runtime/windows/scripts/build-blame-wsl-rootfs.ps1",
-  "packages/desktop/resources/runtime/windows/scripts/provision-blame-runtime.sh",
 ]
 const workspaceFile = "pnpm-workspace.yaml"
 // Scripts that rebuild a Blame patch on a pristine package directory.
@@ -84,22 +75,9 @@ export async function applyVersion(version, root = rootDir) {
     }
     await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, "utf8")
   }
-  // The SDK is baked into the runtime images, so a new SDK needs a new runtime.
-  const runtimeVersions = new Set()
-  for (const relativePath of runtimeManifests) {
-    const path = join(root, relativePath)
-    const manifest = JSON.parse(await readFile(path, "utf8"))
-    manifest.clineSdkVersion = version
-    manifest.runtimeVersion = String(Number(manifest.runtimeVersion) + 1)
-    runtimeVersions.add(manifest.runtimeVersion)
-    await writeFile(path, `${JSON.stringify(manifest, null, 2)}\n`, "utf8")
-  }
-  if (runtimeVersions.size !== 1) {
-    throw new Error("Runtime manifests disagree on runtimeVersion")
-  }
   await updatePinnedVersions(previous, version, root)
   const stalePatches = await removeClinePatches(root)
-  return { runtimeVersion: [...runtimeVersions][0], stalePatches }
+  return { stalePatches }
 }
 
 async function updatePinnedVersions(previous, version, root) {
@@ -166,7 +144,6 @@ async function notes(from, to) {
     .filter((version) => compareVersions(version, from) > 0 && compareVersions(version, to) <= 0)
     .sort(compareVersions)
   const commits = await sdkCommits(time[from], time[to])
-  const { runtimeVersion } = JSON.parse(await readFile(join(rootDir, runtimeManifests[0]), "utf8"))
   const stalePatches = (process.env.STALE_PATCHES ?? "").split(",").filter(Boolean)
   const lines = [
     ...(stalePatches.length
@@ -176,7 +153,7 @@ async function notes(from, to) {
           "",
         ]
       : []),
-    `Updates every \`@cline/*\` dependency from **${from}** to **${to}** and bumps the desktop runtime to **v${runtimeVersion}**, because the SDK is baked into the runtime images.`,
+    `Updates every \`@cline/*\` dependency from **${from}** to **${to}** .`,
     "",
     "## Releases",
     "",
@@ -196,9 +173,8 @@ async function notes(from, to) {
     "",
     "## After merging",
     "",
-    `1. Publish the runtime: \`git tag runtime-v${runtimeVersion} && git push origin runtime-v${runtimeVersion}\``,
-    "2. Once it is published, release the desktop app (see RELEASING.md)",
-    "3. Publish the cloud preview sandbox runner image: `pnpm release:sandbox-runner`",
+    "1. Release the desktop app (see RELEASING.md)",
+    "2. Publish the cloud preview sandbox runner image: `pnpm release:sandbox-runner`",
     "",
     "The API picks up the new model catalog on its next deployment.",
   )
@@ -264,11 +240,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [command, ...args] = process.argv.slice(2)
   if (command === "check") await check()
   else if (command === "apply" && args[0]) {
-    const { runtimeVersion, stalePatches } = await applyVersion(args[0])
-    console.log(`Pinned @cline/* to ${args[0]}; runtime v${runtimeVersion}`)
+    const { stalePatches } = await applyVersion(args[0])
+    console.log(`Pinned @cline/* to ${args[0]}`)
     for (const { dependency } of stalePatches) console.log(`Removed the stale ${dependency} patch`)
     await output({
-      runtime_version: runtimeVersion,
       stale_patches: stalePatches.map(({ patch }) => patch).join(","),
     })
   } else if (command === "patch" && args[0]) {

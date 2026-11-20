@@ -15,7 +15,6 @@ import { hostCanChroot, provisionImageInChroot } from "./lima-image-chroot.mjs";
 import { resolveLimaBundle } from "./lima-runtime-bundle.mjs";
 import { sha256File } from "./file-sha256.mjs";
 import { runtimeLimaImageFileName } from "./runtime-manifest.mjs";
-import { runtimeClineSdkVersion } from "./runtime-sdk-version.mjs";
 import { prepareSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -89,7 +88,7 @@ async function buildImage(architecture) {
         workDirectory: chrootDirectory,
         outputImage: temporaryOutputPath,
         provisioner: await readFile(provisionerPath, "utf8"),
-        provisionerArgs: [runtimeVersion, await runtimeClineSdkVersion()],
+        provisionerArgs: [runtimeVersion],
         environment: bakeEnvironment(),
         files: [
           {
@@ -205,7 +204,6 @@ async function printBootLog(instanceDirectory) {
 
 async function verifyRuntime(bundle, instanceName, environment) {
   const runtimeVersion = requiredRuntimeVersion();
-  const clineSdkVersion = await runtimeClineSdkVersion();
   const nodeVersion = requiredNodeVersion();
   const checks = [
     "set -eu",
@@ -213,7 +211,6 @@ async function verifyRuntime(bundle, instanceName, environment) {
     "test -x /usr/local/bin/blame-runtime-agent",
     `blame-runtime-agent version | grep -qx ${JSON.stringify(runtimeVersion)}`,
     `node -e 'process.exit(process.versions.node === process.argv[1] ? 0 : 1)' ${JSON.stringify(nodeVersion)}`,
-    `node "$(npm root -g)/@blame/semantic-harness-runtime/runtime-sdk-check.mjs" ${JSON.stringify(clineSdkVersion)}`,
     "command -v blame-semantic-harness",
     "test -s /etc/blame-semantic-harness-sha256",
     "test \"$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version)\" = \"12.15.0\"",
@@ -310,7 +307,6 @@ async function verificationTemplate(image, architecture) {
 
 async function provisionImage(bundle, instanceName, environment) {
   const runtimeVersion = requiredRuntimeVersion();
-  const clineSdkVersion = await runtimeClineSdkVersion();
   const provisioner = await readFile(provisionerPath, "utf8");
   await runLimactl(
     bundle,
@@ -334,7 +330,6 @@ async function provisionImage(bundle, instanceName, environment) {
       "-s",
       "--",
       runtimeVersion,
-      clineSdkVersion,
     ],
     environment,
     provisioner,

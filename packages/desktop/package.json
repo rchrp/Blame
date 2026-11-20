@@ -7,7 +7,7 @@
   "main": "./out/main/index.js",
   "scripts": {
     "postinstall": "node scripts/prepare-node-pty.mjs",
-    "build:workspace-dependencies": "node ../../scripts/runtime-sdk-version.mjs && node scripts/build-workspace-dependencies.mjs",
+    "build:workspace-dependencies": "node scripts/build-workspace-dependencies.mjs",
     "build:semantic-harness-payload": "node ../../scripts/semantic-harness-payload.mjs --runtime-root resources/runtime",
     "predev": "pnpm run build:workspace-dependencies && pnpm run build:semantic-harness-payload",
     "dev": "node scripts/dev.mjs",

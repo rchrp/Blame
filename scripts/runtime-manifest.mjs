@@ -4,10 +4,6 @@ import { fileURLToPath } from "node:url";
 import { loadEnvFiles, text } from "./env-files.mjs";
 import { copyLimaBundle } from "./lima-runtime-bundle.mjs";
 import { sha256File } from "./file-sha256.mjs";
-import {
-  runtimeClineSdkVersion,
-  syncRuntimeSdkVersions,
-} from "./runtime-sdk-version.mjs";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const desktopDir = join(rootDir, "packages/desktop");
@@ -21,7 +17,6 @@ export async function prepareRuntimeManifests(
   targetRuntimeRoot = runtimeRoot,
   options = {},
 ) {
-  await syncRuntimeSdkVersions(targetRuntimeRoot);
   const versionSource = JSON.parse(
     await readFile(join(targetRuntimeRoot, windowsManifestPath), "utf8"),
   );
@@ -52,7 +47,6 @@ export async function prepareWindowsRuntimeManifest(
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   const runtimeVersion = runtimeVersionFor(manifest);
   manifest.runtimeVersion = runtimeVersion;
-  manifest.clineSdkVersion = await runtimeClineSdkVersion();
   manifest.rootfs = await windowsRootfsSpecs(manifest, runtimeVersion, options);
   assertRequiredWindowsRootfs(
     manifest.rootfs,
@@ -70,7 +64,6 @@ export async function prepareMacosRuntimeManifest(
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   const runtimeVersion = runtimeVersionFor(manifest);
   manifest.runtimeVersion = runtimeVersion;
-  manifest.clineSdkVersion = await runtimeClineSdkVersion();
   manifest.images = await macosImageSpecs(manifest, runtimeVersion, options);
   assertRequiredMacosImage(
     manifest.images,

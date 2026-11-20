@@ -6,7 +6,6 @@ import {
   mkdtemp,
   readFile,
   readdir,
-  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -59,9 +58,7 @@ export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion 
   const staging = await mkdtemp(join(tmpdir(), "blame-semantic-harness-"));
   try {
     const runtimeFiles = await copyRuntimeModules(staging);
-    await cp(join(rootDir, "scripts/runtime-sdk-check.mjs"), join(staging, "runtime-sdk-check.mjs"));
-    const coreManifest = await copyRuntimeSdk(staging);
-    await writePayloadManifest(staging, runtimeFiles, coreManifest, runtimeVersion);
+    await writePayloadManifest(staging, runtimeFiles, runtimeVersion);
     const archive = await packArchive(staging, join(staging, "packed"));
     for (const outputPath of outputPaths) {
       await mkdir(dirname(outputPath), { recursive: true });
@@ -73,30 +70,7 @@ export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion 
   }
 }
 
-async function copyRuntimeSdk(staging) {
-  const coreRoot = await runtimeCorePackagePath();
-  await access(join(coreRoot, "dist/blame-patch.json"));
-  // pnpm's generated .bin launchers embed absolute build-machine paths.
-  // Dependencies are installed from the payload manifest, so shipping this
-  // local node_modules tree only makes otherwise identical payloads differ.
-  await cp(coreRoot, join(staging, "vendor/cline-core"), {
-    recursive: true,
-    filter: (source) => source !== join(coreRoot, "node_modules"),
-  });
-  return JSON.parse(await readFile(join(coreRoot, "package.json"), "utf8"));
-}
-
-export async function runtimeCorePackagePath() {
-  const sdkRoot = await realpath(join(agentRuntimeDir, "node_modules/@cline/sdk"));
-  const locations = createRequire(join(sdkRoot, "package.json")).resolve.paths("@cline/core") ?? [];
-  for (const location of locations) {
-    try { return dirname(await realpath(join(location, "@cline/core/package.json"))); }
-    catch (error) { if (error.code !== "ENOENT") throw error; }
-  }
-  throw new Error("Cline SDK core dependency is missing");
-}
-
-async function writePayloadManifest(staging, runtimeFiles, coreManifest, runtimeVersion) {
+async function writePayloadManifest(staging, runtimeFiles, runtimeVersion) {
   const agentPackage = JSON.parse(await readFile(join(agentRuntimeDir, "package.json"), "utf8"));
   const dependencies = Object.fromEntries(dependencyNames.map((name) => [name, agentPackage.dependencies[name]]));
   const manifest = {
@@ -106,8 +80,8 @@ async function writePayloadManifest(staging, runtimeFiles, coreManifest, runtime
     type: "module",
     bin: { "blame-semantic-harness": "harness/semantic-harness-runner.js" },
     engines: { node: ">=24.15.0" },
-    files: [...runtimeFiles, "vendor/cline-core", "runtime-sdk-check.mjs"],
-    dependencies: { ...coreManifest.dependencies, ...dependencies },
+    files: runtimeFiles,
+    dependencies,
   };
   await writeFile(join(staging, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
