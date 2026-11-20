@@ -15,7 +15,7 @@ import {
   type Limits,
   type SessionConfig,
   type TaskOutcome,
-  type Transcript,
+  turnReply,
   type UserBlock,
 } from "@blame/engine-client";
 import { runHostGh, type GhRunner } from "../pull-request.js";
@@ -724,7 +724,7 @@ export class EngineHost {
     const transcript = reducer.snapshot();
     const ended = transcript.turns.filter((turn) => turn.outcome).at(-1);
     const last = ended?.outcome;
-    const reply = ended ? lastReply(transcript, ended.turn) : undefined;
+    const reply = ended ? turnReply(ended, transcript.items)?.trim() : undefined;
     return {
       session,
       exists: true,
@@ -821,28 +821,6 @@ function canonical(value: unknown): string {
       )
       .join(",")}}`;
   return JSON.stringify(value);
-}
-
-/** The summary a turn handed finish_task, or else the last thing it said. */
-function lastReply(transcript: Transcript, turn: string): string | undefined {
-  let text: string | undefined;
-  for (const item of transcript.items) {
-    if (!("turn" in item) || item.turn !== turn) continue;
-    if (item.kind === "text" && item.text.trim()) text = item.text.trim();
-    if (
-      item.kind === "tool_call" &&
-      item.name === "finish_task" &&
-      item.state === "completed"
-    ) {
-      const input = item.input;
-      const summary =
-        input && typeof input === "object" && !Array.isArray(input)
-          ? input.summary
-          : undefined;
-      if (typeof summary === "string" && summary.trim()) return summary.trim();
-    }
-  }
-  return text;
 }
 
 /** What the conversation's own client tools are listed for. */

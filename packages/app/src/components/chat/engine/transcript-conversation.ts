@@ -2,6 +2,7 @@
 // transcript (TranscriptReducer of @blame/engine-client), in the runs and
 // activities the timeline components take.
 
+import { turnReply } from "@blame/engine-client/transcript"
 import type {
   ToolCallItem,
   Transcript,
@@ -69,15 +70,13 @@ export function transcriptConversation(
       })
       if (opening.rewind) rewindTargets.set(opening.key, opening.rewind)
     }
-    const activities = turnActivities(transcript, turn, items, author)
+    const reply = turnReply(turn, items)
+    const activities = turnActivities(transcript, turn, items, author, reply)
     const model = items.find(
       (item) => (item.kind === "text" || item.kind === "tool_call") && item.message?.model
     )
     const modelRef =
       model && "message" in model ? model.message?.model : transcript.config?.model
-    const final = activities.findLast(
-      (activity) => activity.kind === "message" && activity.messageKind === "final"
-    )
     runs.push({
       activities,
       // Turns that can be undone count as checkpoints for the timeline.
@@ -87,7 +86,7 @@ export function transcriptConversation(
       createdAt: iso(turn.startedAtMs),
       diffStartRef: snapshots.get(turn.turn) ?? null,
       diffEndRef: kept.slice(index + 1).map((next) => snapshots.get(next.turn)).find(Boolean) ?? null,
-      finalResponse: final?.detail ?? null,
+      finalResponse: reply ?? null,
       id: turn.turn,
       kind: brief ? "initial" : "change-request",
       modelId: modelRef?.model ?? null,
@@ -124,7 +123,8 @@ function turnActivities(
   transcript: Transcript,
   turn: TurnView,
   items: TranscriptItem[],
-  author: string
+  author: string,
+  reply: string | undefined
 ): UserStoryAgentActivity[] {
   const activities: UserStoryAgentActivity[] = []
   for (const item of items) {
@@ -137,10 +137,27 @@ function turnActivities(
   }
   if (transcript.live && transcript.runningTurn === turn.turn)
     activities.push(...liveActivities(transcript))
-  // The turn's last text answers the message once the turn is over.
-  if (turn.status !== "running" && turn.status !== "queued") {
-    const last = activities.findLastIndex((activity) => activity.kind === "message")
-    if (last >= 0) activities[last] = { ...activities[last]!, messageKind: "final" }
+  if (reply !== undefined) {
+    const lastText = activities.findLastIndex((activity) => activity.kind === "message")
+    const message = activities[lastText]
+    if (message && message.detail.trim() === reply.trim()) {
+      message.messageKind = "final"
+      message.detail = reply
+      if (turn.status === "completed" && lastText !== activities.length - 1) {
+        activities.splice(lastText, 1)
+        activities.push(message)
+      }
+    } else {
+      activities.push({
+        id: `${turn.turn}-final-response`,
+        createdAt: iso(turn.endedAtMs ?? turn.startedAtMs),
+        kind: "message",
+        title: "Response",
+        detail: reply,
+        messageKind: "final",
+        status: "completed",
+      })
+    }
   }
   return activities
 }

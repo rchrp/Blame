@@ -170,3 +170,43 @@ test("a model the provider refuses says so once, in the engine's words", () => {
   assert.equal(errors[0]!.title, "Model not available")
   assert.equal(errors[0]!.detail, message)
 })
+
+test("an accepted finish supplies exactly one final reply in every conversation mode", () => {
+  const summary = "The harness uses JSON-lines."
+  for (const purpose of ["quick-chat", "development-story", "plan", "new-project"]) {
+    for (const progress of [undefined, "I’ll check the harness.", summary]) {
+      seq = 0
+      const records = [
+        record({ type: "session_created", config: { ...config, purpose } }),
+        record({ type: "user_message", turn: "t", delivery: "turn", input: [{ type: "text", text: "Inspect it" }] }),
+        record({ type: "request_started", turn: "t", request: "r", model, attempt: 1, prefix_digest: "d" }),
+        record({
+          type: "assistant_message", turn: "t", request: "r", stop: "tool_use", usage,
+          blocks: [
+            ...(progress ? [{ type: "text", text: progress }] : []),
+            { type: "tool_call", call: "f", name: "finish_task", input: { summary } },
+          ],
+        }),
+        record({ type: "tool_call_started", turn: "t", call: "f", name: "finish_task", effect: "read_only" }),
+      ]
+      const finish = record({ type: "tool_call_finished", turn: "t", call: "f", outcome: "completed", content: [{ type: "text", text: summary }] })
+      const end = record({ type: "turn_ended", turn: "t", outcome: { status: "completed" } })
+      const live = new TranscriptReducer()
+      live.applyRecords([...records, finish])
+      assert.equal(transcriptConversation(live.snapshot(), "You").runs[0]!.finalResponse, null)
+      live.applyRecord(end)
+      const run = transcriptConversation(live.snapshot(), "You", { brief: purpose === "development-story" }).runs[0]!
+      assert.equal(run.finalResponse, summary)
+      assert.deepEqual(run.activities?.filter(a => a.kind === "message").map(a => [a.messageKind, a.detail]), [
+        ...(progress && progress !== summary ? [["intermediate", progress]] : []),
+        ["final", summary],
+      ])
+      assert.ok(run.activities?.some(a => a.toolName === "finish_task"))
+      const replay = conversation([...records, finish, end]).runs[0]!
+      assert.deepEqual(replay.activities, run.activities)
+      const refused = conversation([...records, { ...finish, outcome: "failed" } as SessionRecord,
+        { ...end, outcome: { status: "contract_unmet" } } as SessionRecord]).runs[0]!
+      assert.equal(refused.finalResponse, progress ?? null)
+    }
+  }
+})
