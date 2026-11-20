@@ -558,6 +558,48 @@ pub fn project_test_command(
     (candidates.len() == 1).then(|| (catalog::task_id(candidates[0]).to_string(), args))
 }
 
+/// `checkReporting`: recorded evidence as reported, never inferred counters.
+pub fn check_reporting(check: &Json, include_guidance: bool) -> Json {
+    let field = |key: &str| check.get(key).cloned();
+    let count = |key: &str| {
+        check
+            .get("counts")
+            .and_then(|counts| counts.get(key))
+            .filter(|value| !matches!(value, Json::Null))
+            .cloned()
+    };
+    let reported = |key: &str| {
+        check
+            .get("reportedCounts")
+            .and_then(|counts| counts.get(key))
+            .filter(|value| !matches!(value, Json::Null))
+            .cloned()
+    };
+    obj! {
+        "process" => field("process").unwrap_or(Json::Null),
+        "exitCode" => field("exitCode").unwrap_or(Json::Null),
+        "execution" => field("execution").unwrap_or(Json::Null),
+        "outcome" => field("outcome").unwrap_or(Json::Null),
+        "counts" => obj! {
+            "executed" => count("executed").unwrap_or(Json::Null),
+            "passed" => count("passed").or_else(|| reported("passed")).unwrap_or(Json::Null),
+            "failed" => count("failed").or_else(|| reported("failed")).unwrap_or(Json::Null),
+            "skipped" => count("skipped").or_else(|| reported("skipped")).unwrap_or(Json::Null),
+            "pending" => reported("pending").unwrap_or(Json::Null),
+        },
+        "evidenceOrigin" => field("evidenceOrigin").unwrap_or(Json::Null),
+        "selection" => field("selection").unwrap_or(Json::Null),
+    }
+    .with_opt("selectionFailure", field("selectionFailure"))
+    .with_opt("typechecking", field("typechecking"))
+    .with("freshness", field("freshness").unwrap_or(Json::Null))
+    .with("admission", "unverified")
+    .with_opt(
+        "guidance",
+        include_guidance.then_some("Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims."),
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

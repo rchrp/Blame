@@ -222,7 +222,13 @@ impl CodeSearch<'_> {
         } else {
             "text"
         };
-        let searched = self.lexical(request, mode, candidates)?;
+        let mut searched = self.lexical(request, mode, candidates)?;
+        // File listings filter paths, as `grep -l … | grep -v` filters grep's path lines.
+        if !request.exclude.is_empty() {
+            searched
+                .items
+                .retain(|found| !request.excluded(&found.path));
+        }
         let files = ranked_files(
             &searched.items,
             &search_terms(request.query()),
@@ -405,6 +411,12 @@ impl CodeSearch<'_> {
         for found in ordered {
             if results.len() >= wanted {
                 return Ok((true, results));
+            }
+            if request.excluded(&format!(
+                "{}:{}:{}",
+                found.path, found.line_range.0, found.excerpt
+            )) {
+                continue;
             }
             if !sources.iter().any(|(path, _)| *path == found.path) {
                 let content = Arc::new(self.files.read(&found.path)?.content);
@@ -916,20 +928,8 @@ fn text_match(
     request: &SearchInput,
 ) -> Json {
     let line = found.line_range.0;
-    let before = request
-        .raw
-        .get("contextBefore")
-        .and_then(Json::as_f64)
-        .map(|value| value as usize)
-        .or(request.context())
-        .unwrap_or(0);
-    let after = request
-        .raw
-        .get("contextAfter")
-        .and_then(Json::as_f64)
-        .map(|value| value as usize)
-        .or(request.context())
-        .unwrap_or(0);
+    let before = request.context_before.or(request.context()).unwrap_or(0);
+    let after = request.context_after.or(request.context()).unwrap_or(0);
     let context =
         (before > 0 || after > 0).then(|| context_excerpt(&source.text, line, before, after));
     if let Some(index) = enclosing_symbol(&source.symbols, found.range) {

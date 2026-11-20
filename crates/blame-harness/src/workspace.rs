@@ -30,7 +30,7 @@ use crate::search_results::SearchInput;
 use crate::syntax::{ParseResult, parse_code, symbol_edit_range};
 use crate::text::{js_trim, utf16_len};
 use regex::Regex;
-use std::sync::{Arc, LazyLock};
+use std::sync::{Arc, LazyLock, Mutex, MutexGuard};
 
 const MAXIMUM_RAW_CHARACTERS: usize = 64_000;
 const MAXIMUM_DIRECTORY_ENTRIES: usize = 64;
@@ -76,7 +76,7 @@ pub struct Workspace {
     aliases: AliasRegistry,
     attention: LightAttention,
     coverage: ReadCoverage,
-    journal: SessionJournal,
+    journal: Arc<Mutex<SessionJournal>>,
     /// Files each consumer last saw folded, by content: a raw re-read then returns only what the fold hid.
     folded_views: Remembered,
     /// Marker lines shown in folded views, refused when an edit copies one into source.
@@ -90,6 +90,10 @@ pub struct Workspace {
     /// Names this workspace to the compiler side process (its import index).
     instance: String,
     edits: crate::edit::EditService,
+    tasks: Arc<crate::run::runner::TaskRunner>,
+    session: String,
+    /// The repair plan last attached to a result.
+    shown_repair: Option<String>,
 }
 
 static INSTANCES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -102,7 +106,13 @@ impl Workspace {
         compiler: Arc<dyn CompilerPort>,
     ) -> Workspace {
         let files = WorkspaceFiles::new(root);
-        let journal = SessionJournal::new(&files.root, session_id);
+        let journal = Arc::new(Mutex::new(SessionJournal::new(&files.root, session_id)));
+        let tasks = Arc::new(crate::run::runner::TaskRunner::new(
+            &files.root,
+            session_id,
+            &task_contract,
+            journal.clone(),
+        ));
         Workspace {
             files,
             task_contract,
@@ -111,6 +121,9 @@ impl Workspace {
             attention: LightAttention::default(),
             coverage: ReadCoverage::default(),
             journal,
+            tasks,
+            session: session_id.to_string(),
+            shown_repair: None,
             folded_views: Remembered::new(2_000),
             shown_markers: Remembered::new(MAXIMUM_REMEMBERED_MARKERS),
             linked_reads: Remembered::new(2_000),
@@ -125,6 +138,370 @@ impl Workspace {
         }
     }
 
+    /// A deterministic formatter's files, committed as one edit
+    /// (`edits.replaceFiles`).
+    pub fn replace_files(
+        &mut self,
+        replacements: &crate::run::formatter::Replacements,
+        signal: &Signal,
+    ) -> Outcome<Json> {
+        self.ensure_ready()?;
+        let _turn = match crate::turn::acquire(
+            &self.files.root,
+            &self.session,
+            crate::turn::Holder {
+                label: "an edit or a read".into(),
+                run: None,
+            },
+        ) {
+            Ok(turn) => turn,
+            Err(failure) => return Ok(crate::edit::commit_failure(&failure)),
+        };
+        let mut journal = lock(&self.journal);
+        let mut context = crate::edit::EditContext {
+            files: &self.files,
+            aliases: &mut self.aliases,
+            journal: &mut journal,
+            compiler: &*self.compiler,
+            signal,
+        };
+        self.edits.replace_files(replacements, &mut context)
+    }
+
+    /// The edit service alone (`edits.edit`): no copied-marker refusal, no
+    /// coverage or validation state.
+    pub fn edit_service(&mut self, input: &Json, signal: &Signal) -> Outcome<Json> {
+        self.ensure_ready()?;
+        let operations: Vec<crate::edit::Operation> = input
+            .get("operations")
+            .and_then(Json::as_array)
+            .into_iter()
+            .flatten()
+            .map(crate::edit::Operation::from_json)
+            .collect();
+        let _turn = match crate::turn::acquire(
+            &self.files.root,
+            &self.session,
+            crate::turn::Holder {
+                label: "an edit or a read".into(),
+                run: None,
+            },
+        ) {
+            Ok(turn) => turn,
+            Err(failure) => return Ok(crate::edit::commit_failure(&failure)),
+        };
+        let mut journal = lock(&self.journal);
+        let mut context = crate::edit::EditContext {
+            files: &self.files,
+            aliases: &mut self.aliases,
+            journal: &mut journal,
+            compiler: &*self.compiler,
+            signal,
+        };
+        self.edits.edit(&operations, &mut context)
+    }
+
+    /// How long run_task waits for a command before it becomes a managed run.
+    pub fn set_initial_command_wait(&mut self, wait: std::time::Duration) {
+        self.tasks = Arc::new(
+            crate::run::runner::TaskRunner::new(
+                &self.files.root,
+                &self.session,
+                &self.task_contract,
+                self.journal.clone(),
+            )
+            .with_initial_wait(wait),
+        );
+    }
+
+    pub fn tasks(&self) -> Arc<crate::run::runner::TaskRunner> {
+        self.tasks.clone()
+    }
+
+    pub fn session(&self) -> &str {
+        &self.session
+    }
+
+    /// Replays the journal and its state before a run_task.
+    pub fn prepare(&mut self) -> Outcome<()> {
+        self.ensure_ready()
+    }
+
+    /// What run_task adds to the runner's result in the workspace
+    /// (`runTaskWithDiagnostics`, the validation state, the repair plan):
+    /// changed files lose their read coverage, a failed check points at
+    /// the source lines it reports.
+    pub fn after_run_task(
+        &mut self,
+        input: &Json,
+        mut result: Json,
+        context: &Json,
+        signal: &Signal,
+    ) -> Outcome<Json> {
+        if is_ok(&result) {
+            let data = result.get("data").cloned().unwrap_or(Json::obj());
+            let mut paths: Vec<String> = Vec::new();
+            for list in [
+                data.get("paths"),
+                data.get("completed")
+                    .and_then(|completed| completed.get("data"))
+                    .and_then(|data| data.get("paths")),
+            ] {
+                paths.extend(
+                    list.and_then(Json::as_array)
+                        .into_iter()
+                        .flatten()
+                        .filter_map(Json::as_str)
+                        .map(str::to_string),
+                );
+            }
+            for path in &paths {
+                self.coverage.invalidate_path(path);
+                self.attention.changed(path);
+            }
+            if !paths.is_empty() {
+                lock(&self.journal).record_coverage(self.coverage.snapshot())?;
+            }
+            if data
+                .get("check")
+                .and_then(|check| check.get("outcome"))
+                .and_then(Json::as_str)
+                == Some("failed")
+            {
+                let snippets = self.failed_check_snippets(&data, context, signal)?;
+                let hits: Vec<(String, usize)> = snippets
+                    .iter()
+                    .flat_map(|snippet| {
+                        let path = snippet
+                            .get("path")
+                            .and_then(Json::as_str)
+                            .unwrap_or("")
+                            .to_string();
+                        let lines = snippet
+                            .get("lines")
+                            .and_then(Json::as_array)
+                            .cloned()
+                            .unwrap_or_default();
+                        let (start, end) = (
+                            lines.first().and_then(Json::as_f64).unwrap_or(0.0) as usize,
+                            lines.get(1).and_then(Json::as_f64).unwrap_or(0.0) as usize,
+                        );
+                        if path.is_empty() || start == 0 || end < start {
+                            return Vec::new();
+                        }
+                        (start..=end)
+                            .take(16)
+                            .map(|line| (path.clone(), line))
+                            .collect()
+                    })
+                    .collect();
+                self.point_at(hits)?;
+                if !snippets.is_empty()
+                    && let Some(data) = result.get_mut("data")
+                {
+                    data.set("diagnostics", Json::Arr(snippets));
+                }
+            }
+        }
+        let result = self.with_validation_state(result, None);
+        let relevant = check_or_failure(&result, input);
+        Ok(self.with_check_repair(result, relevant))
+    }
+
+    /// Source excerpts around the first locations a failed check reports.
+    fn failed_check_snippets(
+        &mut self,
+        data: &Json,
+        context: &Json,
+        signal: &Signal,
+    ) -> Outcome<Vec<Json>> {
+        static LOCATION: LazyLock<regex::Regex> = LazyLock::new(|| {
+            regex::Regex::new(
+                r"(?m)(?:^|\s|\()([^\s():]+\.(?:[cm]?[jt]sx?|py|java|cs)):(\d+)(?::\d+)?",
+            )
+            .expect("pattern")
+        });
+        let output = data.get("output").and_then(Json::as_str).unwrap_or("");
+        let mut locations: Vec<(String, f64)> = data
+            .get("check")
+            .and_then(|check| check.get("diagnostics"))
+            .and_then(Json::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(|diagnostic| {
+                Some((
+                    diagnostic.get("path")?.as_str()?.to_string(),
+                    diagnostic.get("line")?.as_f64()?,
+                ))
+            })
+            .collect();
+        locations.extend(LOCATION.captures_iter(output).filter_map(|captures| {
+            Some((captures[1].to_string(), captures[2].parse::<f64>().ok()?))
+        }));
+        let mut snippets = Vec::new();
+        let mut remaining: i64 = 4 * 1024;
+        let mut seen: Vec<String> = Vec::new();
+        for (path, line) in locations {
+            let Ok(path) = self.files.normalize_path(&path) else {
+                continue;
+            };
+            if snippets.len() >= 2 {
+                break;
+            }
+            if seen.contains(&path) {
+                continue;
+            }
+            seen.push(path.clone());
+            if line.fract() != 0.0 || line < 1.0 || line > 9_007_199_254_740_991.0 {
+                continue;
+            }
+            let line = line as usize;
+            let (start, end) = (line.saturating_sub(2).max(1), line + 2);
+            let Ok(file) = self.files.read(&path) else {
+                continue;
+            };
+            let Ok(interval) = crate::read_results::line_byte_range(&file.content, start, end)
+            else {
+                continue;
+            };
+            if (interval.1 as i64 - interval.0 as i64) > remaining - 512 {
+                continue;
+            }
+            let input = ReadInput {
+                target: path.clone(),
+                view: Some("range".into()),
+                offset: None,
+                ranges: vec![(start, end)],
+            };
+            let snippet = self.read_code(&input, context, signal)?;
+            if !is_ok(&snippet) {
+                continue;
+            }
+            let data = snippet.get("data").cloned().unwrap_or(Json::obj());
+            let bytes = data.stringify().len() as i64;
+            if bytes > remaining {
+                continue;
+            }
+            remaining -= bytes;
+            let mut entry = data.clone();
+            entry.set(
+                "source",
+                "current workspace; diagnostic revision not certified",
+            );
+            snippets.push(entry);
+        }
+        Ok(snippets)
+    }
+
+    /// An operation that changed files says which recorded invocations no
+    /// longer apply; never during the session's managed run.
+    fn with_validation_state(
+        &mut self,
+        mut result: Json,
+        expected_revision: Option<String>,
+    ) -> Json {
+        if !is_ok(&result) {
+            return result;
+        }
+        let data = result.get("data").cloned().unwrap_or(Json::obj());
+        let completed = data
+            .get("completed")
+            .filter(|completed| completed.is_object());
+        let source = match completed {
+            Some(completed) if completed.get("status").and_then(Json::as_str) == Some("ok") => {
+                completed.get("data").cloned().unwrap_or(Json::obj())
+            }
+            Some(_) => Json::obj(),
+            None => data.clone(),
+        };
+        if source.get("changed") != Some(&Json::Bool(true)) {
+            return result;
+        }
+        let history = lock(&self.journal).current_validations();
+        if history.is_empty() || crate::turn::running(&self.files.root, &self.session).is_some() {
+            return result;
+        }
+        let state = (|| -> Outcome<Option<Json>> {
+            let _lock = crate::commit::locked(&self.files)?;
+            let mut journal = lock(&self.journal);
+            let state = journal.completion_snapshot(&self.files, &Signal::default())?;
+            let history = journal.current_validations();
+            let expected = expected_revision.or_else(|| {
+                state
+                    .get("sourceRevisionId")
+                    .and_then(Json::as_str)
+                    .map(str::to_string)
+            });
+            Ok(crate::checks::validation_state_after_edit(
+                &state,
+                &history,
+                expected.as_deref(),
+            ))
+        })();
+        if let (Ok(Some(state)), Some(data)) = (state, result.get_mut("data")) {
+            data.set("validationState", state);
+        }
+        result
+    }
+
+    /// The advisory repair plan after failed checks: on every result about
+    /// a check, a failure or `@checks`; otherwise only when it changed.
+    fn with_check_repair(&mut self, mut result: Json, relevant: bool) -> Json {
+        let data = result.get("data");
+        if is_ok(&result)
+            && data
+                .and_then(|data| data.get("run"))
+                .and_then(Json::as_str)
+                .is_some()
+            && data.and_then(|data| data.get("completed")).is_none()
+        {
+            return result;
+        }
+        // Advisory discovery never turns a committed edit or a completed
+        // command into a missing receipt.
+        let repair = (|| -> Outcome<Option<Json>> {
+            let mut journal = lock(&self.journal);
+            let validations = journal.current_validations();
+            if crate::checks::latest_failed_invocations(&validations).is_empty() {
+                return Ok(None);
+            }
+            let state = journal.completion_snapshot(&self.files, &Signal::default())?;
+            drop(journal);
+            crate::checks::check_repair_plan(&self.files, &validations, &state, &self.task_contract)
+        })()
+        .ok()
+        .flatten();
+        let key = repair.as_ref().map(Json::stringify);
+        let previous = std::mem::replace(&mut self.shown_repair, key.clone());
+        let Some(repair) = repair else { return result };
+        // A failing check's plan rode on every later command, an `ls`
+        // included (46 results in one story): repeat it only when relevant.
+        if key == previous && !relevant {
+            return result;
+        }
+        match result.get("status").and_then(Json::as_str) {
+            Some("ok") => {
+                if let Some(data) = result.get_mut("data") {
+                    data.set("validationRepair", repair);
+                }
+            }
+            Some("blocked") => {
+                let recovery = result
+                    .get("recovery")
+                    .and_then(Json::as_str)
+                    .unwrap_or("")
+                    .to_string();
+                let joined = format!(
+                    "{recovery}\n{}",
+                    obj! { "validationRepair" => repair }.stringify()
+                );
+                result.set("recovery", crate::text::js_trim(&joined).to_string());
+            }
+            _ => {}
+        }
+        result
+    }
+
     pub fn root(&self) -> &str {
         &self.files.root
     }
@@ -136,11 +513,13 @@ impl Workspace {
         }
         {
             let _lock = crate::commit::locked(&self.files)?;
-            self.journal.hydrate();
+            lock(&self.journal).hydrate();
         }
-        self.aliases.hydrate(self.journal.current_aliases());
-        self.coverage.hydrate(self.journal.current_coverage());
-        self.attention.hydrate(self.journal.current_attention());
+        self.aliases.hydrate(lock(&self.journal).current_aliases());
+        self.coverage
+            .hydrate(lock(&self.journal).current_coverage());
+        self.attention
+            .hydrate(lock(&self.journal).current_attention());
         for entry in self.coverage.entries().to_vec() {
             self.aliases
                 .remember_observation(&entry.path, &entry.hash, &entry.intervals);
@@ -153,7 +532,7 @@ impl Workspace {
             .map(str::to_string);
         if let Some(objective) = objective.filter(|objective| !objective.is_empty()) {
             self.add_focus(&objective);
-            self.journal.ingest_user_request("initial", &objective)?;
+            lock(&self.journal).ingest_user_request("initial", &objective)?;
         }
         Ok(())
     }
@@ -168,8 +547,9 @@ impl Workspace {
 
     fn search_code_inner(&mut self, input: &Json, signal: &Signal) -> Outcome<Json> {
         self.ensure_ready()?;
-        let request = SearchInput { raw: input.clone() };
+        let request = SearchInput::new(input);
         let result = {
+            let _turn = crate::turn::acquire_for_read(&self.files.root, &self.session)?;
             let _lock = crate::commit::locked(&self.files)?;
             let mut search = CodeSearch {
                 files: &self.files,
@@ -206,14 +586,31 @@ impl Workspace {
                 "message" => format!("This edit copies the folded-view line \"{marker}\", which stands for hidden source lines. Read them (the sN alias or the line range it names) and write the actual code."),
             });
         }
+        // The session's turn before the journal: a command holding the turn
+        // records into the journal. During a managed run the edit fails as
+        // its commit does in TypeScript.
+        let _turn = match crate::turn::acquire(
+            &self.files.root,
+            &self.session,
+            crate::turn::Holder {
+                label: "an edit or a read".into(),
+                run: None,
+            },
+        ) {
+            Ok(turn) => turn,
+            Err(failure) => return Ok(crate::edit::commit_failure(&failure)),
+        };
+        let mut journal = lock(&self.journal);
         let mut context = crate::edit::EditContext {
             files: &self.files,
             aliases: &mut self.aliases,
-            journal: &mut self.journal,
+            journal: &mut journal,
             compiler: &*self.compiler,
             signal,
         };
-        let result = self.edits.edit(&operations, &mut context)?;
+        let result = self.edits.edit(&operations, &mut context);
+        drop(journal);
+        let result = result?;
         if is_ok(&result) {
             let changes = result
                 .get("data")
@@ -237,12 +634,20 @@ impl Workspace {
                 self.attention.edit(path, &symbols);
             }
         }
-        self.journal.record_coverage(self.coverage.snapshot())?;
-        self.journal.record_attention(self.attention.snapshot())?;
-        // The validation state and repair plan of an edit come from checks
-        // run_task recorded; without them (the only case until run_task is
-        // ported) the TypeScript workspace adds neither.
-        Ok(result)
+        lock(&self.journal).record_coverage(self.coverage.snapshot())?;
+        lock(&self.journal).record_attention(self.attention.snapshot())?;
+        let changed =
+            result.get("data").and_then(|data| data.get("changed")) == Some(&Json::Bool(true));
+        if !is_ok(&result) || !changed {
+            return Ok(result);
+        }
+        let revision = result
+            .get("data")
+            .and_then(|data| data.get("sourceRevisionId"))
+            .and_then(Json::as_str)
+            .map(str::to_string);
+        let result = self.with_validation_state(result, revision);
+        Ok(self.with_check_repair(result, false))
     }
 
     /// A folded-view marker line copied into new source.
@@ -281,6 +686,7 @@ impl Workspace {
     ) -> Outcome<Json> {
         let outcome = self.ensure_ready().and_then(|()| {
             let result = {
+                let _turn = crate::turn::acquire_for_read(&self.files.root, &self.session)?;
                 let _lock = crate::commit::locked(&self.files)?;
                 self.read_current_workspace(input, context, signal)?
             };
@@ -409,16 +815,20 @@ impl Workspace {
         Ok(blocked)
     }
 
-    fn special_read_result(&self, target: &str) -> Option<Outcome<Json>> {
+    fn special_read_result(&mut self, target: &str) -> Option<Outcome<Json>> {
         match target {
-            // The validation report and its repair plan belong to the
-            // run_task and completion parts, not ported yet.
-            "@checks" => Some(Err(Failure::new(
-                "@checks is not available in this harness yet: check observations are recorded by run_task.",
-            ))),
+            "@checks" => Some((|| {
+                let (state, history) = {
+                    let mut journal = lock(&self.journal);
+                    let state = journal.completion_snapshot(&self.files, &Signal::default())?;
+                    (state, journal.current_validations())
+                };
+                let report = crate::checks::current_validation_report(&state, &history);
+                Ok(self.with_check_repair(obj! { "status" => "ok", "data" => report }, true))
+            })()),
             "@capabilities" => Some(Ok(capabilities_result())),
             "@changes" => Some(Ok(
-                obj! { "status" => "ok", "data" => obj! { "changes" => Json::Arr(self.journal.current_changes()) } },
+                obj! { "status" => "ok", "data" => obj! { "changes" => Json::Arr(lock(&self.journal).current_changes()) } },
             )),
             _ => None,
         }
@@ -1124,13 +1534,13 @@ impl Workspace {
             path,
             intervals,
         );
-        self.journal.record_coverage(self.coverage.snapshot())?;
+        lock(&self.journal).record_coverage(self.coverage.snapshot())?;
         Ok(result)
     }
 
     fn persist_aliases(&mut self) -> Outcome<()> {
         let entries = self.aliases.entries();
-        self.journal.record_aliases(entries)
+        lock(&self.journal).record_aliases(entries)
     }
 
     fn record_observation_audit(
@@ -1161,7 +1571,7 @@ impl Workspace {
             .and_then(Json::string_value)
             .unwrap_or("unknown")
             .to_string();
-        self.journal.record_observation_audit(ObservationAudit {
+        lock(&self.journal).record_observation_audit(ObservationAudit {
             tool,
             requested_view,
             rendered_view: &rendered,
@@ -1187,7 +1597,7 @@ impl Workspace {
         for (path, lines) in by_path {
             self.attention.point(&path, &lines);
         }
-        self.journal.record_attention(self.attention.snapshot())
+        lock(&self.journal).record_attention(self.attention.snapshot())
     }
 
     fn add_focus(&mut self, text: &str) {
@@ -1446,6 +1856,31 @@ fn matches_image_signature(content: &[u8], media_type: &str) -> bool {
         "image/gif" => content.starts_with(b"GIF87a") || content.starts_with(b"GIF89a"),
         _ => content.starts_with(b"RIFF") && content.get(8..12) == Some(b"WEBP"),
     }
+}
+
+/// Whether the repair plan is about this run_task result: a check, a
+/// failure, or a project task.
+fn check_or_failure(result: &Json, input: &Json) -> bool {
+    if !is_ok(result) || input.get("kind").and_then(Json::as_str) != Some("command") {
+        return true;
+    }
+    let data = result.get("data").cloned().unwrap_or(Json::obj());
+    let completed = data
+        .get("completed")
+        .and_then(|completed| completed.get("data"))
+        .cloned()
+        .unwrap_or(Json::obj());
+    ["validation", "reporting", "testValidationScope", "check"]
+        .iter()
+        .any(|key| data.get(key).is_some() || completed.get(key).is_some())
+}
+
+/// A mutex's guard, a poisoned one included: the journal stays usable after
+/// a panicked request.
+pub fn lock<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
+    mutex
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 pub fn base64(bytes: &[u8]) -> String {

@@ -10,6 +10,7 @@
 pub mod aliases;
 pub mod attention;
 pub mod base64;
+pub mod checks;
 pub mod cline_patch;
 pub mod commit;
 pub mod compiler;
@@ -39,6 +40,7 @@ pub mod symbol_edit;
 pub mod syntax;
 pub mod text;
 pub mod tools;
+pub mod turn;
 pub mod validate;
 pub mod validation;
 pub mod workspace;
