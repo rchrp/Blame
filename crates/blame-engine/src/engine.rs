@@ -128,6 +128,9 @@ impl Engine {
         let checkpointer = GitCheckpointer::new(data_dir.join("checkpoints"))
             .with_excludes(BLAME_WORKSPACE_EXCLUDES.iter().copied());
         let store_port: Arc<dyn SessionStore> = Arc::new(store.clone());
+        if let Some(harness) = &settings.harness {
+            harness.attach_host(host.clone());
+        }
         // Never waited for: a turn uses whatever copy is in place.
         catalog.refresh_if_stale();
         let engine = Arc::new(Self {

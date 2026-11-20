@@ -276,6 +276,19 @@ pub enum EngineRequest {
     /// Result: [`BlobPulled`].
     #[serde(rename = "host/blob/pull")]
     BlobPull { sha256: String },
+    /// A question of the harness while it runs a session's call, which only
+    /// the client can answer: `commandCredentials` (the GitHub credentials
+    /// of the session's next command, or `null` to keep the harness's
+    /// environment) or `refreshPreviewDependencies` (the session's preview
+    /// takes a dependency change; the answer is its state, `null` for none).
+    /// `params` are the harness's (`sessionId`, `workspaceRoot`). Result:
+    /// any JSON value; an error or no handler counts as no answer.
+    #[serde(rename = "host/harness")]
+    Harness {
+        session: SessionId,
+        method: String,
+        params: Value,
+    },
     /// Withdraws a request of the engine that is still running.
     #[serde(rename = "$/cancel")]
     Cancel { id: u64 },
