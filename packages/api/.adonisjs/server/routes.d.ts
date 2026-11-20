@@ -93,6 +93,12 @@ export type ScannedRoutes = {
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'attachments.file_attachments.upload_content': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_sessions.index': { paramsTuple?: []; params?: {} }
+    'engine.engine_sessions.pull': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_sessions.push': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_sessions.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_blobs.show': { paramsTuple: [ParamValue]; params: {'sha256': ParamValue} }
+    'engine.engine_blobs.store': { paramsTuple: [ParamValue]; params: {'sha256': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -159,6 +165,9 @@ export type ScannedRoutes = {
     'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_sessions.index': { paramsTuple?: []; params?: {} }
+    'engine.engine_sessions.pull': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_blobs.show': { paramsTuple: [ParamValue]; params: {'sha256': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
@@ -203,6 +212,9 @@ export type ScannedRoutes = {
     'providers.model_catalog.model': { paramsTuple?: []; params?: {} }
     'providers.provider_credentials.index': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_sessions.index': { paramsTuple?: []; params?: {} }
+    'engine.engine_sessions.pull': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_blobs.show': { paramsTuple: [ParamValue]; params: {'sha256': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
@@ -260,6 +272,7 @@ export type ScannedRoutes = {
     'attachments.file_attachments.create_upload': { paramsTuple?: []; params?: {} }
     'attachments.file_attachments.complete': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'attachments.file_attachments.upload_content': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_sessions.push': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chat_messages.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chat_messages.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'messageId': ParamValue} }
@@ -280,6 +293,7 @@ export type ScannedRoutes = {
     'project_github.project_github.unlink_repository': { paramsTuple: [ParamValue]; params: {'projectId': ParamValue} }
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'engine.engine_sessions.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
@@ -292,6 +306,7 @@ export type ScannedRoutes = {
     'profile.user_ai_preferences.update': { paramsTuple?: []; params?: {} }
     'profile.user_mcp_configurations.update': { paramsTuple?: []; params?: {} }
     'projects.security_audits.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'auditId': ParamValue} }
+    'engine.engine_blobs.store': { paramsTuple: [ParamValue]; params: {'sha256': ParamValue} }
     'projects.quick_chats.quick_chats.store_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
     'projects.user_stories.user_stories.store_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
   }

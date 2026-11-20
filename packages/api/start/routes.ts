@@ -144,6 +144,20 @@ router
       .as('attachments')
       .use(middleware.auth())
 
+    // The agent engine's session logs and blobs, kept for the user across machines.
+    router
+      .group(() => {
+        router.get('/sessions', [controllers.EngineSessions, 'index'])
+        router.get('/sessions/:id/records', [controllers.EngineSessions, 'pull'])
+        router.post('/sessions/:id/records', [controllers.EngineSessions, 'push'])
+        router.delete('/sessions/:id', [controllers.EngineSessions, 'destroy'])
+        router.get('/blobs/:sha256', [controllers.EngineBlobs, 'show'])
+        router.put('/blobs/:sha256', [controllers.EngineBlobs, 'store'])
+      })
+      .prefix('engine')
+      .as('engine')
+      .use(middleware.auth())
+
     router
       .group(() => {
         router.get('/', [QuickChatsController, 'index'])
