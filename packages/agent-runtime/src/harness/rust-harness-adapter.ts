@@ -6,6 +6,7 @@ import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import type { AgentToolContext } from "@cline/sdk";
 import type { LightTaskContract, LightToolResult } from "./light-contracts.js";
+import { bundledRipgrepDirectory } from "./lexical-search.js";
 import { LightWorkspace as TypeScriptLightWorkspace } from "./light-workspace.js";
 
 // Conformance adapter: a LightWorkspace whose operations run in the Rust
@@ -38,6 +39,12 @@ class RustHarnessProcess {
     const compiler = JSON.stringify([process.execPath, fileURLToPath(new URL("./rust-harness-compiler.js", import.meta.url))]);
     const env = { ...process.env };
     if (!process.env.BLAME_HARNESS_NO_COMPILER) env.BLAME_HARNESS_COMPILER = compiler;
+    // What run_task takes from the TypeScript package: its Node reporter and
+    // Vitest preload hook, the bundled package managers, the bundled rg.
+    env.BLAME_HARNESS_NODE_ASSETS = fileURLToPath(new URL(".", import.meta.url));
+    env.BLAME_HARNESS_NODE_MODULES = fileURLToPath(new URL("../../node_modules", import.meta.url));
+    const ripgrep = bundledRipgrepDirectory();
+    if (ripgrep) env.BLAME_HARNESS_RIPGREP_DIRECTORY = ripgrep;
     const child = spawn(binary, ["serve"], { stdio: ["pipe", "pipe", "pipe"], env });
     // Neither the process nor its pipes keep a finished test alive; the
     // harness stops when its stdin closes.
@@ -89,6 +96,7 @@ function toolContext(context: Partial<AgentToolContext> | undefined) {
   if (!context) return {};
   const copy: Record<string, unknown> = { ...context };
   delete copy.signal;
+  delete copy.commandCredentials;
   return JSON.parse(JSON.stringify(copy)) as Record<string, unknown>;
 }
 
@@ -97,21 +105,44 @@ function cancelled(signal: AbortSignal): LightToolResult<unknown> {
   return { status: "blocked", category: "input", message: reason, diagnosticId: `read-${Date.now().toString(36)}` };
 }
 
+type CommandContext = Partial<AgentToolContext> & { commandCredentials?: unknown };
+type Replacement = { path: string; before: Uint8Array; content: Uint8Array };
+
 /** The Rust harness behind the TypeScript workspace's interface. */
 class RustLightWorkspace {
   private readonly process = new RustHarnessProcess();
   private readonly root: string;
   private readonly taskContract: LightTaskContract;
+  private readonly options: Options;
+  private readonly workspaceOptions?: { initialCommandWaitMs: number };
 
   constructor(root: string, options: Options) {
     this.root = root;
+    this.options = options;
     this.taskContract = { ...options.taskContract, session_id: options.sessionId };
+    if (options.initialCommandWaitMs !== undefined) this.workspaceOptions = { initialCommandWaitMs: options.initialCommandWaitMs };
   }
 
-  /** The tests look at a workspace's managed runs; the Rust harness has none yet. */
-  readonly tasks = { running: false };
+  /**
+   * The workspace's internals some tests call directly: the runner alone and
+   * the edit service alone, served by internal requests of the harness.
+   */
+  readonly tasks = {
+    running: false,
+    run: (input: unknown, context: CommandContext = {}) =>
+      this.request("task_runner", input, context, context.signal, context.commandCredentials ? { commandCredentials: context.commandCredentials } : {}),
+  };
 
-  private async request(tool: string, input: unknown, context: Partial<AgentToolContext> | undefined, signal?: AbortSignal) {
+  readonly edits = {
+    edit: (input: unknown, context: Partial<AgentToolContext> = {}) => this.request("edit_service", input, context, context.signal),
+    replaceFiles: (replacements: Replacement[], context: Partial<AgentToolContext> = {}) => this.request("replace_files", {
+      replacements: replacements.map(({ path, before, content }) => ({
+        path, before: Buffer.from(before).toString("base64"), content: Buffer.from(content).toString("base64"),
+      })),
+    }, context, context.signal),
+  };
+
+  private async request(tool: string, input: unknown, context: Partial<AgentToolContext> | undefined, signal?: AbortSignal, extra: Record<string, unknown> = {}) {
     // In process, a cancelled operation comes back blocked with the abort
     // reason; over the protocol a cancel carries no reason, so the adapter
     // restores it. An already aborted call is not sent at all.
@@ -119,6 +150,7 @@ class RustLightWorkspace {
     try {
       return await this.process.send("request", {
         tool, input, workspaceRoot: this.root, taskContract: this.taskContract, toolContext: toolContext(context),
+        ...(this.workspaceOptions ? { workspaceOptions: this.workspaceOptions } : {}), ...extra,
       }, signal) as LightToolResult<unknown>;
     } catch (error) {
       if (signal?.aborted) return cancelled(signal);
@@ -138,8 +170,11 @@ class RustLightWorkspace {
     return this.request("edit_code", input, context, context.signal);
   }
 
-  runTask(input: unknown, context: Partial<AgentToolContext> = {}) {
-    return this.request("run_task", input, context, context.signal);
+  /** Credentials as the workspace asks them: the call's own, else the session's, before each command. */
+  async runTask(input: unknown, context: CommandContext = {}) {
+    const asked = this.options.commandCredentials;
+    const credentials = context.commandCredentials ?? (asked ? await asked().catch(() => ({})) : undefined);
+    return this.request("run_task", input, context, context.signal, credentials ? { commandCredentials: credentials } : {});
   }
 }
 
