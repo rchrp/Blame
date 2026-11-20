@@ -23,4 +23,4 @@ mod stream;
 pub mod testing;
 mod wire;
 
-pub use registry::{Options, Provider, ProviderKind, connect};
+pub use registry::{Options, Provider, ProviderKind, connect, forces_tool};

@@ -4,8 +4,6 @@ import { desktopResourcePaths } from "./desktop-resource-paths.ts";
 
 test("resolves packaged resources independently from the main process chunk", () => {
   assert.deepEqual(desktopResourcePaths("/opt/Blame/resources/app.asar"), {
-    agentRuntime:
-      "/opt/Blame/resources/app.asar/out/main/agent-runtime-process.js",
     engineHost: "/opt/Blame/resources/app.asar/out/main/engine-host-process.js",
     linuxWindowIcon: "/opt/Blame/resources/app.asar/icons/prod/icon.png",
     preload: "/opt/Blame/resources/app.asar/out/preload/index.js",

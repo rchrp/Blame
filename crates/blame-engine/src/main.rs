@@ -4,6 +4,7 @@
 //! ```text
 //! blame-engine serve --data-dir DIR [--harness-command CMD]
 //!                    [--idle-timeout SECONDS] [--durability full|os-crash|relaxed]
+//!                    [--task-retention SECONDS]
 //!                    [--catalog-url URL]
 //! blame-engine auth chatgpt login [--device] [--auth-base URL]
 //! blame-engine auth chatgpt refresh [--auth-base URL]   (refresh token on stdin)
@@ -34,7 +35,8 @@ use std::time::Duration;
 
 const USAGE: &str = "usage:
   blame-engine serve --data-dir DIR [--harness-command CMD] [--idle-timeout SECONDS]
-                     [--durability full|os-crash|relaxed] [--catalog-url URL]
+                     [--durability full|os-crash|relaxed] [--task-retention SECONDS]
+                     [--catalog-url URL]
   blame-engine auth chatgpt login [--device] [--auth-base URL]
   blame-engine auth chatgpt refresh [--auth-base URL]    (refresh token on stdin)
   blame-engine catalog [--cache-dir DIR] [--refresh] [--catalog-url URL]
@@ -128,6 +130,7 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
     let mut harness = None;
     let mut idle_after = Duration::from_secs(10 * 60);
     let mut durability = Durability::Full;
+    let mut task_retention = engine::TASK_RETENTION;
     let mut catalog = RefreshOptions::default();
     for (name, value) in options(
         args,
@@ -136,6 +139,7 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
             "--harness-command",
             "--idle-timeout",
             "--durability",
+            "--task-retention",
             "--catalog-url",
         ],
         &[],
@@ -149,6 +153,13 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
                     value
                         .parse()
                         .map_err(|_| format!("--idle-timeout takes seconds, not {value}"))?,
+                );
+            }
+            "--task-retention" => {
+                task_retention = Duration::from_secs(
+                    value
+                        .parse()
+                        .map_err(|_| format!("--task-retention takes seconds, not {value}"))?,
                 );
             }
             "--durability" => {
@@ -168,6 +179,7 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
         durability,
         idle_after,
         harness: harness.map(|command| Arc::new(Harness::new(command))),
+        task_retention,
         catalog,
     })
 }

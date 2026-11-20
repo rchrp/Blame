@@ -14,7 +14,6 @@ export const startProjectCodePracticeAnalysisValidator = vine.create({
 })
 
 export const completeProjectCodePracticeAnalysisValidator = vine.create({
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   practices: vine
     .array(
       vine.object({
@@ -28,6 +27,5 @@ export const completeProjectCodePracticeAnalysisValidator = vine.create({
 })
 
 export const failProjectCodePracticeAnalysisValidator = vine.create({
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   error: vine.string().trim().minLength(1).maxLength(4096),
 })

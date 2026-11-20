@@ -45,6 +45,11 @@ it("refuses shutdown from a window and forgets a closed window's follows", () =>
   const router = new EngineHostRouter();
   const one = viewer(1);
   assert.equal(router.observe(one, "shutdown", undefined), false);
+  assert.equal(
+    router.observe(one, "mcpOAuthClear", { filePath: "/x", serverName: "s" }),
+    false,
+    "the MCP sign-ins are main's calls",
+  );
   router.observe(one, "follow", { session: "s", subscription: "a" });
   router.observe(one, "follow", { session: "t", subscription: "b" });
   assert.deepEqual(router.forget(1).sort(), ["a", "b"]);

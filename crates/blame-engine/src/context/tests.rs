@@ -26,7 +26,7 @@ impl Log {
             requests: 0,
         };
         log.push(RecordBody::SessionCreated {
-            config: testing::config(),
+            config: Box::new(testing::config()),
         });
         log.push(RecordBody::UserMessage {
             turn: TurnId::from("t1"),

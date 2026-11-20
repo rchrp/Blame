@@ -315,30 +315,6 @@ export type StartDevelopmentSessionInput = {
   storyId?: string;
 };
 
-export type ApproveAndMergeInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  storyBranch: string;
-  // The branch the story started from and merges into; without it, the
-  // branch checked out in the project folder.
-  targetBranch?: string;
-  // Worktrees where an agent is running, filled in by the desktop host: the
-  // target branch is not advanced inside one of them.
-  activeWorktrees?: string[];
-  // Only true also pushes the target branch to its upstream; otherwise the
-  // merge stays on the local target branch.
-  push?: boolean;
-  title: string;
-  summary: string;
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
-};
-
 export type ApproveAndMergeResult = {
   baseCommit: string;
   mergeCommit: string;
@@ -354,31 +330,12 @@ export type ApproveAndMergePush =
   | { status: "skipped" };
 
 export type {
-  OpenPullRequestInput,
   OpenPullRequestResult,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
 } from "./pull-request-types.js";
-
-export type GenerateCommitMessageInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  title?: string;
-  summary?: string;
-  // A story's commit (Direct mode): the message closes the GitHub issues of
-  // origin the title or summary says it handles, as Approve & Merge does.
-  closeLinkedIssues?: boolean;
-  selectedPaths?: string[];
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
-};
 
 export type GenerateCommitMessageResult = {
   message: string;
@@ -401,41 +358,6 @@ export type DirectStoryFile = {
 export type DirectStoryFilesResult = {
   // Files the story wrote that still differ from HEAD and can be committed.
   files: DirectStoryFile[];
-};
-
-export type GenerateTitleInput = {
-  apiConnection: ApiConnection;
-  context: "quick-chat" | "user-story";
-  providerId: string;
-  modelId: string;
-  prompt: string;
-  cwd: string;
-  workspaceRoot: string;
-  reasoningEffort?: ReasoningSelection;
-  credentialLabel?: string;
-  backend?: AgentBackendConfig;
-  runConfigurations?: ProjectRunConfiguration[];
-};
-
-export type GenerateTitleResult = {
-  sessionId: string;
-  title: string;
-  runConfigurationId?: string | null;
-};
-
-export type ResolveMergeConflictsInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  title?: string;
-  summary?: string;
-  targetBranch?: string;
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
 };
 
 export type ResolveMergeConflictsResult = {
@@ -581,45 +503,9 @@ export type ProjectInitializationPreferences = {
   };
 };
 
-export type InitializeProjectInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  preferences?: ProjectInitializationPreferences;
-  validationFeedback?: {
-    validationError: string;
-    previousResult: string;
-  };
-  backend?: AgentBackendConfig;
-  /** Channel of `initialization_progress` notices, see initialization-progress.ts. */
-  progressId?: string;
-};
-
-export type InitializeProjectResult = {
-  sessionId: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-};
-
-export type AnalyzeProjectCodePracticesInput = Omit<
-  InitializeProjectInput,
-  "preferences"
->;
-
-export type AnalyzeProjectCodePracticesResult = {
-  sessionId: string;
-  practices: ProjectCodePracticeResult[];
-};
-
 export type {
-  DiscoverSecurityAuditInput,
   MapSecurityAuditInput,
   MapSecurityAuditResult,
-  RunSecurityAuditInput,
   SecurityAttackPathStep,
   SecurityAudit,
   SecurityAuditDiscoveryResult,
@@ -630,6 +516,7 @@ export type {
   SecurityAuditProgressStep,
   SecurityAuditProgressStepStatus,
   SecurityAuditStatus,
+  SecurityAuditWorkspaceMap,
   SecurityCandidate,
   SecurityConfidence,
   SecurityCoverage,
@@ -645,7 +532,6 @@ export type {
   SecuritySourceLocation,
   SecuritySurfaceMap,
   SecurityThreatModel,
-  ValidateSecurityAuditInput,
   ValidateSecurityAuditResult,
 } from "./security-audit-types.js";
 
@@ -679,79 +565,6 @@ export type ProjectInitializationImpactDiagnostics = {
   currentRunConfigurations: ProjectRunConfiguration[];
   strategicFilesBefore: Record<string, string>;
   strategicFilesAfter: Record<string, string>;
-};
-
-export type AssessProjectInitializationImpactInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  baseCommit: string;
-  mergeCommit: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-  backend?: AgentBackendConfig;
-};
-
-export type AssessProjectInitializationImpactResult = {
-  sessionId?: string;
-  classification: ProjectInitializationImpactClassification;
-  reason: string;
-  repairInstruction?: string;
-  diagnostics?: ProjectInitializationImpactDiagnostics;
-};
-
-export type RepairProjectInitializationInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-  preferences?: ProjectInitializationPreferences;
-  diagnostics:
-    | ProjectInitializationDiagnostics
-    | ProjectInitializationImpactDiagnostics;
-  backend?: AgentBackendConfig;
-};
-
-export type RepairProjectInitializationResult = {
-  sessionId: string;
-  classification: ProjectInitializationRepairClassification;
-  reason: string;
-  previewManifest?: PreviewManifest;
-  runConfigurations?: ProjectRunConfiguration[];
-};
-
-export type {
-  NewProjectGenerationConfiguration,
-  StartNewProjectGenerationInput,
-  NewProjectGenerationResult,
-  NewProjectsClient,
-} from "./new-project-types.js";
-
-export type OptimizeUserStoryPromptInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  prompt: string;
-  cwd: string;
-  workspaceRoot: string;
-  reasoningEffort?: ReasoningSelection;
-  credentialLabel?: string;
-  title?: string;
-  backend?: AgentBackendConfig;
-};
-
-export type OptimizeUserStoryPromptResult = {
-  sessionId: string;
-  markdown: string;
 };
 
 export type StoryPlanPriority = "Low" | "Medium" | "High";

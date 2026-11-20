@@ -15,12 +15,5 @@ export { desktopServices, desktopServiceNames } from "./desktop-services.js";
 export type { DesktopServices, DesktopServiceName } from "./desktop-services.js";
 export * from "./tools/index.js";
 export * from "./protocol.js";
-
-import { fileURLToPath } from "node:url";
-
-/** The harness runner the engine starts (`--harness-command`), next to this module. */
-export function harnessRunnerPath() {
-  return fileURLToPath(
-    new URL("../harness/semantic-harness-runner.js", import.meta.url),
-  );
-}
+/** The harness runner the engine starts (`--harness-command`). */
+export { harnessRunnerPath } from "../harness/runner-path.js";

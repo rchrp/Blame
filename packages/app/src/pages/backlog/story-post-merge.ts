@@ -12,6 +12,7 @@ import { inviteToStarAfter } from "@/components/star-invite/star-invite"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
 import type { useProjects } from "@/context/projects"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 import { celebrateStory } from "@/lib/celebrate"
 import { measurePerformanceOperation } from "@/lib/performance-diagnostics"
 import { projectCodePractices } from "@/lib/project-code-practices"
@@ -42,8 +43,7 @@ export function approveAndMergeValidationError(
   if (auth.status !== "authenticated")
     return "Reconnect the provider before approving the merge."
   if (!model) return "Select a model before approving the merge."
-  if (!platform.agent?.approveAndMerge)
-    return "Desktop agent runtime is not available."
+  if (!platform.engine) return "Blame's agent engine is not available."
 }
 
 type ApprovedStoryMerge = {
@@ -72,12 +72,12 @@ export async function mergeStoryIntoTarget(input: ApprovedStoryMerge) {
   const result = await measurePerformanceOperation(
     "agent.transition.approve_merge",
     () =>
-      platform.agent!.approveAndMerge({
-        apiConnection: auth.apiConnection,
-        providerId: model.provider.id,
-        modelId: model.id,
-        credentialLabel: model.credentialLabel,
-        reasoningEffort: input.reasoningEffort,
+      platform.engine!.call("approveAndMerge", {
+        model: engineModelChoice({
+          currentModel: model,
+          currentVariant: input.reasoningEffort,
+        })!,
+        projectId: projects.activeProject!.id,
         repositoryRoot,
         worktree: story.worktree!,
         storyBranch: story.branch!,
@@ -193,7 +193,7 @@ export async function cleanupMergedStory(
   try {
     const [, projectSetupStopped] = await Promise.all([
       measurePerformanceOperation("agent.transition.cleanup.agent_abort", () =>
-        abortStoryAgent(story, platform)
+        abortStoryAgent(story, platform, { remove: true })
       ),
       measurePerformanceOperation("agent.transition.cleanup.runtime_stop", () =>
         stopStoryProjectSetup(story, platform)

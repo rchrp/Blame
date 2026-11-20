@@ -13,6 +13,8 @@ import {
   type Transcript,
   type UserBlock,
 } from "@blame/engine-client";
+import { runHostGh, type GhRunner } from "../pull-request.js";
+import { setGitRunner } from "../runtime-git.js";
 import { mkdir } from "node:fs/promises";
 import { listProjectMemories, saveProjectMemory } from "../cloud-api.js";
 import { takeCompletionMemory } from "../harness/completion-memory.js";
@@ -33,10 +35,14 @@ import type {
   EngineSessionStatus,
 } from "./protocol.js";
 import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
+import { engineTaskMethods } from "./task-protocol.js";
 import { purposeClientTools } from "./purposes/tool-sets.js";
 import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
+import { taskHandlers, type TaskHost } from "./tasks/handlers.js";
+import { runInitializationRepair } from "./tasks/project.js";
+import { TaskRunner } from "./tasks/runner.js";
 import { ToolSet, type ClientTool } from "./tool.js";
 import {
   ConversationTools,
@@ -59,6 +65,10 @@ export type EngineHostOptions = {
   emit(event: EngineHostEvent): void;
   /** Desktop services, served by the main process. */
   renderWebPage?: RenderWebPage;
+  /** For tests: how the git flows run git (main's `desktop.git` by default). */
+  git?: DesktopServices["git"];
+  /** For tests: gh for Open PR (the person's own by default). */
+  gh?: GhRunner;
   /** The desktop services the conversations' tools use (`desktop-services.ts`). */
   desktop?: DesktopServices;
   /** Where the engine refreshes the models.dev catalog, when not models.dev. */
@@ -108,15 +118,21 @@ export class EngineHost {
   });
   /**
    * Each conversation's own client tools, for the purpose builders. Deleting
-   * a session (`session/delete`, to come) must `release` its tools.
+   * a session (`deleteSession`) releases its tools.
    */
   readonly conversationTools: ConversationTools;
   private readonly credentials: CredentialResolver;
   private readonly providers: EngineProviders;
   private readonly options: EngineHostOptions;
+  // Before `handlers`, which hand it out. A task is not watched like a
+  // conversation (no activity events): a window that shows its progress
+  // follows it, after the call that runs it.
+  private readonly tasks = new TaskRunner(() => this.supervisor.client());
 
   constructor(options: EngineHostOptions) {
     this.options = options;
+    const git = options.git ?? options.desktop?.git;
+    if (git) setGitRunner((cwd, args) => git({ cwd, args }));
     this.tools = new ToolSet(
       [
         ...webResearchClientTools({
@@ -136,6 +152,9 @@ export class EngineHost {
       ...options.desktop,
       connection: () => this.api,
       mcp: this.mcp,
+      // A story's repair_preview_initialization runs the repair task.
+      repairInitialization: (input) =>
+        runInitializationRepair(this.taskHost(), input),
     });
     this.credentials = new CredentialResolver(
       {
@@ -167,7 +186,9 @@ export class EngineHost {
           clientVersion: options.clientVersion,
           onLog: options.onLog,
           handlers: {
-            tool: (params, context) => this.tools.handle(params, context),
+            tool: (params, context) =>
+              this.tasks.handleTool(params, context) ??
+              this.tools.handle(params, context),
             credential: (params) => this.credentials.resolve(params),
             approval: (params, { signal }) => this.approval(params, signal),
             ...logs,
@@ -216,7 +237,15 @@ export class EngineHost {
     const handler = this.handlers[method] as (
       input: EngineHostInput<M>,
     ) => Promise<EngineHostResult<M>>;
-    return handler(input);
+    // A task the renderer named: following it waits for its session.
+    const task = announcedTask(method, input);
+    if (!task) return handler(input);
+    this.tasks.announce(task);
+    try {
+      return await handler(input);
+    } finally {
+      this.tasks.settled(task);
+    }
   }
 
   private readonly handlers: {
@@ -303,6 +332,8 @@ export class EngineHost {
       return true;
     },
     follow: async ({ session, location, subscription }) => {
+      // A task called just before is followed once the engine has it.
+      await this.tasks.whenCreated(session);
       this.engineFor({ session, location }).hub.subscribe(
         session,
         subscription,
@@ -333,10 +364,36 @@ export class EngineHost {
       await this.shutdown();
       return null;
     },
+    ...taskHandlers(this.taskHost()),
   };
+
+  /** What the task handlers use of the host. */
+  private taskHost(): TaskHost {
+    return {
+      runner: this.tasks,
+      clientTools: (names) => this.tools.specs(names),
+      client: () => this.supervisor.client(),
+      register: (session, known) => this.known.set(session, known),
+      forget: (session) => {
+        this.known.delete(session);
+        this.current.delete(session);
+        this.locations.delete(session);
+        this.awaitingFirst.delete(session);
+        this.conversationTools.release(session);
+      },
+      gh: (cwd, args) => (this.options.gh ?? runHostGh)(cwd, args),
+      openAuthorization: async (url) => {
+        await this.options.desktop?.openExternal?.({
+          url,
+          mcpAuthorization: true,
+        });
+      },
+    };
+  }
 
   /** Stops following, ends running turns as interrupted and stops the engine. */
   async shutdown() {
+    this.tasks.cancelAll();
     await this.hub.stop();
     for (const waiting of this.approvals.values()) waiting.resolve("denied");
     this.approvals.clear();
@@ -629,6 +686,13 @@ function lastReply(transcript: Transcript, turn: string): string | undefined {
 }
 
 /** What the conversation's own client tools are listed for. */
+/** The id of the task a call runs, when the renderer named it to follow it. */
+function announcedTask(method: EngineHostMethod, input: unknown) {
+  if (!(engineTaskMethods as readonly string[]).includes(method)) return;
+  const task = (input as { task?: unknown } | undefined)?.task;
+  return typeof task === "string" && task ? task : undefined;
+}
+
 function conversationToolSession(
   session: string,
   settings: EngineSessionSettings,
@@ -651,6 +715,15 @@ function conversationToolSession(
           workspaceMode: story.workspaceMode,
           workspaceRoot,
         }),
+        ...(story.projectInitialization
+          ? {
+              previewRepair: {
+                model: story.model,
+                projectId: story.projectId,
+                initialization: story.projectInitialization,
+              },
+            }
+          : {}),
       };
     }
     case "plan":

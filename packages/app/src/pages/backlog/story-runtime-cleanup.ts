@@ -25,7 +25,7 @@ export async function deleteUserStoryWithRuntime(
   await beginUserStoryPreviewDeletion(story.id)
   try {
     await platform.previewDevices?.stop({ storyId: story.id, destroy: true })
-    await abortStoryAgent(story, platform)
+    await abortStoryAgent(story, platform, { remove: true })
     const setupStopped = await stopStoryProjectSetup(story, platform)
     if (story.worktree) {
       await removeStoryWorktree(story, platform, repositoryRoot, setupStopped)
@@ -38,11 +38,14 @@ export async function deleteUserStoryWithRuntime(
   }
 }
 
-// Stops the story's agent if a turn runs. Its records stay with the engine
-// for now: deleting a story is where its session will be deleted too, once
-// the host has `session/delete` (the one-shot agents slice adds it), which
-// also releases the session's tools (`conversationTools.release`).
-export async function abortStoryAgent(story: UserStory, platform: Platform) {
+// Stops the story's agent if a turn runs. A story that is deleted or merged
+// is done with its agent: its session leaves the engine too (its tools are
+// released; the account keeps its copy of the conversation).
+export async function abortStoryAgent(
+  story: UserStory,
+  platform: Platform,
+  options: { remove?: boolean } = {}
+) {
   if (!story.engineSessionId || !platform.engine) return
   const location = storyLocation(
     story.workspaceMode ?? "direct",
@@ -50,9 +53,14 @@ export async function abortStoryAgent(story: UserStory, platform: Platform) {
   )
   // A VM story's agent cannot run yet, so there is nothing to stop.
   if (location !== "host") return
+  const session = story.engineSessionId
   await platform.engine
-    .call("interrupt", { session: story.engineSessionId, location })
+    .call("interrupt", { session, location })
     .catch(() => undefined)
+  if (options.remove)
+    await platform.engine
+      .call("deleteSession", { session })
+      .catch(() => undefined)
 }
 
 export async function stopStoryProjectSetup(

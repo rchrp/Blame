@@ -28,11 +28,9 @@ const commit = vine
 export const startProjectInitializationValidator = vine.create({
   providerId: engineProviderId,
   modelId: vine.string().trim().minLength(1).maxLength(255),
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
 })
 
 export const completeProjectInitializationValidator = vine.create({
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   previewManifest: vine.any(),
   runConfigurations: vine.array(runConfiguration).maxLength(20),
   databaseMode: vine.enum(['existing', 'compose']).nullable().optional(),
@@ -40,16 +38,10 @@ export const completeProjectInitializationValidator = vine.create({
 })
 
 export const failProjectInitializationValidator = vine.create({
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   error: vine.string().trim().minLength(1).maxLength(4096),
 })
 
-export const cancelProjectInitializationValidator = vine.create({
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
-})
-
 export const repairProjectInitializationValidator = vine.create({
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
   previewManifest: vine.any(),
   runConfigurations: vine.array(runConfiguration).maxLength(20),
   reason: vine.string().trim().minLength(1).maxLength(4096),

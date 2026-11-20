@@ -94,7 +94,6 @@ export type CloudProjectInitialization = {
   projectId: string
   status: CloudProjectInitializationStatus
   step: string
-  clineSessionId: string | null
   agentProviderId: string | null
   agentModelId: string | null
   previewManifest: PreviewManifest | null
@@ -125,7 +124,6 @@ export type CloudProjectCodePractice = {
 export type CloudProjectCodePracticeAnalysis = {
   projectId: string
   status: CloudProjectCodePracticeAnalysisStatus
-  clineSessionId: string | null
   agentProviderId: string | null
   agentModelId: string | null
   error: string | null

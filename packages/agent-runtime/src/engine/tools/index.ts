@@ -17,6 +17,11 @@ import {
 import { githubClientTools } from "./github.js";
 import type { McpConnections } from "./mcp.js";
 import { previewClientTools, type PreviewToolServices } from "./preview.js";
+import {
+  storyPreviewRepair,
+  type PreviewRepairServices,
+  type StoryPreviewRepair,
+} from "./preview-repair.js";
 import type { PreviewRuntimeContext } from "./preview-types.js";
 import { conversationSkills } from "./skills.js";
 import { sessionStoryHistoryTools } from "./story-history.js";
@@ -37,18 +42,19 @@ export type { PreviewRuntimeContext } from "./preview-types.js";
 export type ConversationKind = "story" | "plan" | "new-project" | "quick-chat";
 
 /** What the tools need from the app; a missing service leaves its tools out. */
-export type ConversationToolServices = PreviewToolServices & {
-  /** Git where the worktree is (story history lists a merged story's files). */
-  git?: DesktopServices["git"];
-  /** The user's API connection now (story history goes through it). */
-  connection(): ApiConnection | undefined;
-  /** The user's own MCP servers; none without it. */
-  mcp?: McpConnections;
-  /** Plugin folders whose `skills` folder adds skills (BLAME_AGENT_PLUGIN_PATHS). */
-  pluginPaths?: readonly string[];
-  /** Reads attachments where the workspace is, for a managed runtime. */
-  attachmentExecutor?: LightWorkspaceExecutor;
-};
+export type ConversationToolServices = PreviewToolServices &
+  PreviewRepairServices & {
+    /** Git where the worktree is (story history lists a merged story's files). */
+    git?: DesktopServices["git"];
+    /** The user's API connection now (story history goes through it). */
+    connection(): ApiConnection | undefined;
+    /** The user's own MCP servers; none without it. */
+    mcp?: McpConnections;
+    /** Plugin folders whose `skills` folder adds skills (BLAME_AGENT_PLUGIN_PATHS). */
+    pluginPaths?: readonly string[];
+    /** Reads attachments where the workspace is, for a managed runtime. */
+    attachmentExecutor?: LightWorkspaceExecutor;
+  };
 
 export type ConversationToolSession = {
   /** The engine session id: tools address the desktop with it. */
@@ -60,6 +66,8 @@ export type ConversationToolSession = {
   storyId?: string;
   /** The conversation's preview (`previewRuntimeContext`), when it has one. */
   preview?: PreviewRuntimeContext;
+  /** A story's saved preview setup, which its repair tool starts from. */
+  previewRepair?: StoryPreviewRepair;
   /** Blame's own skills and the user's skill folders; on by default. */
   skills?: boolean;
 };
@@ -91,8 +99,12 @@ export async function conversationClientTools(
       prompt: "",
     };
   const preview = session.preview ? { ...session.preview } : undefined;
+  const repair = storyPreviewRepair(services, session.previewRepair);
   const [previewTools, github, mcp] = await Promise.all([
-    previewClientTools(services, preview),
+    previewClientTools(
+      repair ? { ...services, repairPreviewInitialization: repair } : services,
+      preview,
+    ),
     githubClientTools(services, session.session),
     services.mcp?.clientTools() ?? [],
   ]);

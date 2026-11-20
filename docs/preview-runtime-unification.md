@@ -439,7 +439,7 @@ or after a 160k-token turn.
   package's main entry pulls the whole engine and the Cline SDK; the main
   process takes the light utilities it needs from targeted entries
   (`@blame/agent-runtime/preview-manifest`, `/project-run-configurations`,
-  …) and asks a worker for MCP OAuth, which needs the SDK. In the built
+  …) and asks the engine host for MCP OAuth, which needs the SDK. In the built
   app on a project's backlog (`scripts/main-process-bench.mjs`, 5
   interleaved launches): main process 262 → 90 MB of footprint and
   3,045 → 773 modules loaded, first window 1.06 → 0.50 s, backlog
@@ -447,13 +447,9 @@ or after a 160k-token turn.
   backlog starts (222–224 MB, ready in ~0.8 s, first answer after
   ~2.55 s), are unchanged. `check-main-process-imports.mjs` fails the
   desktop build when the main process can load the engine again.
-- The pool (`agent-runtime-pool.ts`) starts up to `min(3, cores - 1)`
-  workers for concurrent sessions. One-off requests (titles, commit
-  messages, merges) go to an existing worker instead of starting one. A
-  worker beyond the first with no work for 5 minutes retires, unless it
-  hosts the Claude Code bridge while lanes are open or other workers are
-  busy. The pool keeps only running sessions and drops an ended session's
-  approvals.
+- The agent workers and their pool are gone (2026-11-20): every agent,
+  one-shot work included, runs in the engine host
+  (`docs/engine-in-the-app.md`), which also signs in to MCP servers.
 - One Claude Code bridge for the app: the first worker to need it hosts
   it, the others reach it through its saved port and secret
   (`claude-code-bridge-client.ts`), so its caps (12 processes, 6 per

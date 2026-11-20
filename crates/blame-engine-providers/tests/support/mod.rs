@@ -65,6 +65,7 @@ pub fn request(model: ModelRef, messages: Vec<ModelMessage>) -> ModelRequest {
         tools: vec![tool("get_weather"), tool("read_file")],
         reasoning: Some(ReasoningEffort::High),
         max_output_tokens: Some(1000),
+        forced_tool: None,
         cache: CachePlan {
             key: "session-1".to_owned(),
             breakpoints: vec![0],

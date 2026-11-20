@@ -11,6 +11,7 @@ import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useGitIdentity } from "@/context/git-identity"
 import type { usePlatform } from "@/context/platform"
 import type { useProjects } from "@/context/projects"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 import { measurePerformanceOperation } from "@/lib/performance-diagnostics"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import { storyLocation } from "./story-engine"
@@ -66,13 +67,9 @@ export function useStoryPullRequest({
         const result = await measurePerformanceOperation(
           "agent.transition.open_pull_request",
           () =>
-            platform.agent!.openPullRequest({
-              apiConnection: auth.apiConnection,
-              providerId: alternativeSelection.currentModel!.provider.id,
-              modelId: alternativeSelection.currentModel!.id,
-              credentialLabel:
-                alternativeSelection.currentModel!.credentialLabel,
-              reasoningEffort: alternativeSelection.currentVariant,
+            platform.engine!.call("openPullRequest", {
+              model: engineModelChoice(alternativeSelection)!,
+              projectId: projects.activeProject!.id,
               repositoryRoot: projects.activeProject!.path,
               worktree: currentStory.worktree!,
               storyBranch: currentStory.branch!,

@@ -5,28 +5,10 @@ import type {
 } from "./platform-runtime-power"
 import * as React from "react"
 import type {
-  AgentEvent,
-  NewProjectsClient,
-  AnalyzeProjectCodePracticesInput,
-  AnalyzeProjectCodePracticesResult,
   ApiConnection,
-  ApproveAndMergeInput,
-  ApproveAndMergeResult,
-  AssessProjectInitializationImpactInput,
-  AssessProjectInitializationImpactResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
-  GenerateCommitMessageInput,
-  GenerateCommitMessageResult,
-  GenerateTitleInput,
-  GenerateTitleResult,
-  InitializeProjectInput,
-  InitializeProjectResult,
   ProjectInitializationDiagnostics,
-  OpenPullRequestInput,
-  OpenPullRequestResult,
-  OptimizeUserStoryPromptInput,
-  OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
@@ -35,13 +17,8 @@ import type {
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
-  RepairProjectInitializationInput,
-  RepairProjectInitializationResult,
-  ResolveMergeConflictsInput,
-  ResolveMergeConflictsResult,
-  RunSecurityAuditInput,
   SecurityAudit,
-  ReasoningSelection,
+  SecurityAuditWorkspaceMap,
 } from "@blame/agent-runtime"
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 import type { UserStory } from "../components/backlog/data/backlog-data"
@@ -428,67 +405,26 @@ export type DesktopUpdatesClient = {
   setChannel(channel: DesktopUpdateChannel): Promise<DesktopUpdateStatus>
 }
 
+// What the app asks besides agents (they are all on `engine`).
 export type AgentClient = {
-  // Progress of the one-shot agents; conversations are on `engine`.
-  sessions: {
-    onEvent(
-      sessionId: string,
-      callback: (event: AgentEvent) => void
-    ): () => void
-  }
-  initializations: {
-    run(input: InitializeProjectInput): Promise<InitializeProjectResult>
-    /** Stops the run started with this progress id; false once it ended. */
-    cancel(progressId: string): Promise<boolean>
-    repair(
-      input: RepairProjectInitializationInput
-    ): Promise<RepairProjectInitializationResult>
-    assessImpact(
-      input: AssessProjectInitializationImpactInput
-    ): Promise<AssessProjectInitializationImpactResult>
-  }
-  codePractices: {
-    run(
-      input: AnalyzeProjectCodePracticesInput
-    ): Promise<AnalyzeProjectCodePracticesResult>
-  }
-  newProjects: NewProjectsClient
-  promptOptimizer: {
-    optimizeUserStory(
-      input: OptimizeUserStoryPromptInput
-    ): Promise<OptimizeUserStoryPromptResult>
-    generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>
-  }
-  approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
-  // Open PR: commit, push the story branch, then gh pr create on the host.
-  openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>
   pullRequestAvailability(
     input: PullRequestAvailabilityInput
   ): Promise<PullRequestAvailability>
   // What GitHub says about the story's pull request: gh pr view on the host.
   pullRequestState(input: PullRequestStateInput): Promise<PullRequestState>
-  generateCommitMessage(
-    input: GenerateCommitMessageInput
-  ): Promise<GenerateCommitMessageResult>
   // The files a Direct story wrote in the project folder that can be committed.
   directStoryFiles(
     input: DirectStoryFilesInput
   ): Promise<DirectStoryFilesResult>
-  resolveMergeConflicts(
-    input: ResolveMergeConflictsInput
-  ): Promise<ResolveMergeConflictsResult>
 }
 
+// What the desktop does for an audit besides its agents (engine tasks, through
+// `engine`): the repository map, and the folder the agents work in.
 export type SecurityAuditClient = {
-  active(input: { root: string }): Promise<SecurityAudit | undefined>
-  run(input: RunSecurityAuditInput): Promise<SecurityAudit>
-  cancel(input: {
+  map(input: {
     root: string
-    auditId: string
-  }): Promise<SecurityAudit | undefined>
-  onChanged(
-    callback: (event: { root: string; audit: SecurityAudit }) => void
-  ): () => void
+    scope?: SecurityAudit["scope"]
+  }): Promise<SecurityAuditWorkspaceMap>
 }
 
 export type WorkspaceEntry = {
@@ -778,19 +714,18 @@ export type WorkspaceClient = {
   }): Promise<string>
   gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
   ensureGitRepository(input: { root: string }): Promise<boolean>
-  createProject(input: {
-    apiConnection: ApiConnection
-    configuration: NewProjectConfiguration
-    credentialLabel?: string
-    modelId: string
+  /** The new project's empty folder, before the agent generates it. */
+  prepareNewProject(input: {
     parentPath: string
     projectName: string
-    providerId: string
-    reasoningEffort?: ReasoningSelection
     runId: string
-  }): Promise<{
+  }): Promise<{ path: string; projectName: string }>
+  /** Installs the generated project and makes it a Git repository. */
+  finishNewProject(input: {
     path: string
-  }>
+    configuration: NewProjectConfiguration
+    runId: string
+  }): Promise<{ path: string }>
   createWorktree(input: {
     branch?: string | null // recorded by the story on an earlier run
     // Run in the project folder instead of a new worktree.

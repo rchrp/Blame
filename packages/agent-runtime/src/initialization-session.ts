@@ -1,28 +1,23 @@
-import type { AgentTool } from "./cline-initialization.js";
-import { errorMessage } from "./cline-runtime-events.js";
-import {
-  type ProjectInitializationParseOptions,
-  projectInitializationResultSchema,
-} from "./project-initialization.js";
+import type { ProjectInitializationParseOptions } from "./project-initialization.js";
 import {
   PreviewSetupError,
   type PreviewSetupIssue,
 } from "./project-preview-validation.js";
 
-// One initialization agent session, checked as it goes. Each submission is
+// One initialization analysis, checked as it goes. Each submission is
 // validated inside the tool call: a rejected one comes back to the agent as
-// a tool error listing every problem, so it fixes them in the same session
+// a tool error listing every problem, so it fixes them in the same turn
 // with everything it already read. The agent can also stop and report what
-// blocks it when the cause is outside the repository and the setup.
+// blocks it when the cause is outside the repository and the setup. The
+// engine task (engine/purposes/project-initialization.ts) serves both as
+// its one result tool.
 
-/** Submissions one session may make before Blame stops it. */
+/** Submissions one analysis may make before Blame stops it. */
 export const maxInitializationSubmissions = 10;
-/** The same rejection this many times in a row ends the session. */
+/** The same rejection this many times in a row ends the analysis. */
 const repeatedRejectionLimit = 3;
 
 export const submitInitializationToolName = "submit_project_initialization";
-export const blockedInitializationToolName =
-  "report_project_initialization_blocked";
 
 export const initializationBlockedCategories = {
   missing_secret:
@@ -118,10 +113,6 @@ export class InitializationSession<T> {
     return Math.max(0, this.max - this.submissions);
   }
 
-  tools(): AgentTool[] {
-    return [this.submitTool(), this.blockedTool()];
-  }
-
   outcome(): InitializationSessionOutcome<T> {
     if (this.accepted)
       return {
@@ -168,7 +159,7 @@ export class InitializationSession<T> {
           "Your last submission was rejected for a problem in the setup itself, which you can fix:",
           rejectionProblems(this.lastRejection.error).join("\n"),
           "Fix it and submit again. Report a block only when the cause is outside the repository and the setup you write.",
-          "If you are sure it is, call report_project_initialization_blocked again.",
+          `If you are sure it is, call ${submitInitializationToolName} with only \`blocked\` again.`,
         ].join("\n"),
       );
     }
@@ -207,32 +198,13 @@ export class InitializationSession<T> {
       return false;
     }
   }
-
-  private submitTool(): AgentTool {
-    return {
-      name: submitInitializationToolName,
-      description:
-        "Submit the complete Blame project initialization result. Blame checks it immediately: a rejected result comes back as an error listing every problem to fix before submitting again.",
-      inputSchema: projectInitializationResultSchema,
-      lifecycle: { completesRun: true },
-      execute: (input: unknown) => this.submit(input),
-    } as AgentTool;
-  }
-
-  private blockedTool(): AgentTool {
-    return {
-      name: blockedInitializationToolName,
-      description:
-        "Stop the analysis because something outside the repository and the setup you write blocks it, and tell the user what to do. Never use it for a validation error you can fix.",
-      inputSchema: blockedSchema,
-      lifecycle: { completesRun: true },
-      execute: (input: unknown) => this.reportBlocked(input),
-    } as AgentTool;
-  }
 }
 
-const blockedSchema = {
+/** What blocks the analysis, as the agent reports it. */
+export const initializationBlockedSchema = {
   type: "object",
+  description:
+    "Only when something outside the repository and the setup you write blocks the analysis: what it is and what the user can do. Never for a validation error you can fix.",
   additionalProperties: false,
   required: ["category", "summary", "userAction"],
   properties: {
@@ -306,8 +278,12 @@ export function rejectionFeedback(
     ...problems,
     "Fix every problem above, then call submit_project_initialization again with the complete corrected result, not a partial one.",
     "Problems marked [warning] come from heuristics. If one does not apply to this project, submit the same result again unchanged: it is saved and the warning is shown to the user.",
-    "If something outside the repository and the setup blocks you, call report_project_initialization_blocked instead.",
+    "If something outside the repository and the setup blocks you, call submit_project_initialization with only `blocked` instead.",
   ].join("\n");
+}
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function rejectionProblems(error: unknown) {

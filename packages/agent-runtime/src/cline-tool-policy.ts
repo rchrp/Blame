@@ -30,8 +30,3 @@ export const legacyDirectWorkspaceTools = [
   "editor",
   "apply_patch",
 ];
-
-export const initializationFallbackReadTools = new Set([
-  "read_files",
-  "search_codebase",
-]);

@@ -1,7 +1,4 @@
-import type {
-  AgentBackendConfig,
-  AnalyzeProjectCodePracticesInput,
-} from "./types.js";
+import type { TaskWorkspace } from "./engine/task-protocol.js";
 
 export type SecurityAuditMode = "standard" | "deep";
 export type SecurityAuditStatus =
@@ -206,7 +203,6 @@ export type MapSecurityAuditInput = {
   cwd: string;
   workspaceRoot: string;
   scope?: { type: "repository" | "paths"; paths?: string[] };
-  backend?: AgentBackendConfig;
 };
 
 export type MapSecurityAuditResult = {
@@ -221,15 +217,13 @@ export type SecurityAuditPerspective =
   | "backward_sensitive_operations"
   | "business_logic";
 
-export type DiscoverSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
-  auditId: string;
-  mode: SecurityAuditMode;
-  perspective: SecurityAuditPerspective;
+/** What an audit works on: its folder, as the agents see it, and its map. */
+export type SecurityAuditWorkspaceMap = {
+  workspace: TaskWorkspace;
   repository: MapSecurityAuditResult;
 };
 
 export type SecurityAuditDiscoveryResult = {
-  sessionId: string;
   threatModel: SecurityThreatModel;
   candidates: SecurityCandidate[];
   inspectedPaths: string[];
@@ -251,27 +245,12 @@ export type SecurityDeterministicScanResult = {
   scanners: SecurityScannerCoverage[];
 };
 
-export type ValidateSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
-  auditId: string;
-  mode: SecurityAuditMode;
-  repository: MapSecurityAuditResult;
-  discoveries: SecurityAuditDiscoveryResult[];
-};
-
 export type ValidateSecurityAuditResult = {
-  sessionId: string;
   threatModel: SecurityThreatModel;
   findings: SecurityFinding[];
   candidateCount: number;
   rejectedCandidateCount: number;
   coverage: SecurityCoverage;
-};
-
-export type RunSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
-  projectId?: string;
-  mode: SecurityAuditMode;
-  scope?: { type: "repository" | "paths"; paths?: string[] };
-  previousFindings?: SecurityAuditFindingHistory[];
 };
 
 export type SecurityAuditFindingHistory = Pick<

@@ -1,7 +1,7 @@
 ## Commit Message: Conventional Commit
 
 <output_contract>
-Output exactly one Conventional Commit message. No explanation, markdown, quotes, prefix labels, or alternatives.
+Give exactly one Conventional Commit message with the result tool. No explanation, markdown, quotes, prefix labels, or alternatives in it.
 </output_contract>
 
 ### Format

@@ -12,6 +12,7 @@
 //! - [`Session`] runs one session: commands in, records and deltas out.
 //! - [`testing`] (feature `testing`) has a fake of every port.
 
+pub mod contract;
 mod digest;
 mod error;
 pub mod policy;

@@ -21,6 +21,7 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import { codeSelectionLineLabel } from "../../components/backlog/shared/comment-attachment-events.ts"
+import { unfinishedTurnText } from "../../components/chat/engine/transcript-conversation.ts"
 
 /**
  * Where a story's worktree is. A local-container worktree lives in the
@@ -165,6 +166,9 @@ export function storyOutcomeUpdate(
     // the person, with the reason, and resumes from its records.
     case "failed":
       return { agentStatus: "Paused", agentLastError: outcome.error.message }
+    // The agent stopped without a finish the checks accepted.
+    case "contract_unmet":
+      return { agentStatus: "Paused", agentLastError: unfinishedTurnText }
     default:
       return { agentStatus: "Paused" }
   }

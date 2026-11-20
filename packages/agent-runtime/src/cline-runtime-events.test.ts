@@ -34,9 +34,7 @@ import {
   coreBackendOptions,
   developmentUserInput,
   duplicateEventSignature,
-  initializationToolPolicies,
   nextSpawnAgentActiveCount,
-  newProjectGenerationToolPolicies,
   normalizeClineAgentPayload,
   retryableModelTransportFailure,
   resultFailureMessage,
@@ -822,73 +820,6 @@ test("disabled compaction does not install a projection extension", async () => 
   }
 });
 
-test("gives project generation direct write tools without global skills", () => {
-  const policies = newProjectGenerationToolPolicies();
-
-  for (const name of ["run_commands", "editor", "apply_patch"]) {
-    assert.deepEqual(policies[name], { enabled: true, autoApprove: true });
-  }
-  assert.deepEqual(policies.skills, { enabled: false, autoApprove: false });
-  assert.deepEqual(policies.ask_question, {
-    enabled: false,
-    autoApprove: false,
-  });
-});
-
-test("rejects a successful project generation session that created no project", async () => {
-  const workspace = await mkdtemp(join(tmpdir(), "blame-new-project-runtime-"));
-  const fixture = newProjectGenerationFixture();
-
-  try {
-    await assert.rejects(
-      fixture.runtime.newProjects.generate(
-        newProjectGenerationInput(workspace),
-      ),
-      /completed without creating a package\.json/,
-    );
-    assert.deepEqual(fixture.start()?.localRuntime?.configExtensions, [
-      "rules",
-    ]);
-    assert.equal(fixture.start()?.toolPolicies?.skills?.enabled, false);
-    assert.equal(fixture.start()?.toolPolicies?.run_commands?.enabled, true);
-    assert.match(String(fixture.start()?.prompt), /Blame installs dependencies/);
-    assert.doesNotMatch(String(fixture.start()?.prompt), /Install dependencies once/);
-  } finally {
-    await fixture.restore();
-    await rm(workspace, { force: true, recursive: true });
-  }
-});
-
-function newProjectGenerationFixture() {
-  const originalFetch = globalThis.fetch;
-  let capturedStart: ClineCoreStartInput | undefined;
-  const core = {
-    async dispose() {},
-    async list() {
-      return [];
-    },
-    async start(input: ClineCoreStartInput) {
-      capturedStart = input;
-      return { result: { status: "done" }, sessionId: input.config.sessionId! };
-    },
-    async subscribe() {
-      return () => undefined;
-    },
-  };
-  globalThis.fetch = async () => providerCredentialResponse();
-  const runtime = new BlameAgentRuntime(undefined, {
-    createCore: async () => core as never,
-  });
-  return {
-    runtime,
-    start: () => capturedStart,
-    async restore() {
-      globalThis.fetch = originalFetch;
-      await runtime.shutdown();
-    },
-  };
-}
-
 function providerCredentialResponse(providerId = "provider") {
   return new Response(
     JSON.stringify({
@@ -1139,31 +1070,6 @@ function compactionFixtureResult(
   };
 }
 
-function newProjectGenerationInput(
-  workspace: string,
-): import("./types.js").StartNewProjectGenerationInput {
-  return {
-    apiConnection: { url: "https://api.example" },
-    configuration: {
-      advancedOptions: [],
-      backend: "next-api",
-      codeQuality: "eslint",
-      database: "none",
-      frontend: "next",
-      orm: "none",
-      packageManager: "pnpm",
-      platform: "web",
-      styling: "tailwind",
-      uiLibrary: "none",
-    },
-    cwd: workspace,
-    modelId: "model",
-    projectName: "portfolio",
-    providerId: "provider",
-    sessionId: "new-project-session",
-    workspaceRoot: workspace,
-  };
-}
 
 test("finds only sessions writing inside a workspace", () => {
   const workspace = join(tmpdir(), "story-42");
@@ -1218,25 +1124,6 @@ test("does not write high-frequency streaming events to the session log", async 
   } finally {
     await rm(workspace, { force: true, recursive: true });
   }
-});
-
-test("limits initialization fallback tools to project reads and search", () => {
-  const policies = initializationToolPolicies();
-
-  assert.deepEqual(policies.read_files, { enabled: true, autoApprove: true });
-  assert.deepEqual(policies.search_codebase, {
-    enabled: true,
-    autoApprove: true,
-  });
-  assert.deepEqual(policies.submit_project_initialization_repair, {
-    autoApprove: true,
-  });
-  assert.deepEqual(policies.fetch_web_content, disabledToolPolicy());
-  assert.deepEqual(policies.get_preview_devtools, disabledToolPolicy());
-  assert.deepEqual(policies.get_preview_container_logs, disabledToolPolicy());
-  assert.deepEqual(policies.run_commands, disabledToolPolicy());
-  assert.deepEqual(policies.editor, disabledToolPolicy());
-  assert.deepEqual(policies.apply_patch, disabledToolPolicy());
 });
 
 test("hides teammate agent content events", () => {

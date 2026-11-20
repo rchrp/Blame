@@ -152,6 +152,35 @@ fn native(provider: &str, item: Value) -> blame_engine_protocol::NativeItem {
 }
 
 #[tokio::test]
+async fn a_forced_tool_reaches_the_wire_as_the_tool_choice() {
+    let mock = Mock::start(vec![Reply::sse(&reply(MODEL))]).await;
+    let mut forced = request(model("openai", MODEL), vec![user("Weather in Paris?")]);
+    forced.forced_tool = Some("read_file".into());
+    let (_, error) = run(&openai(&mock), forced).await;
+    assert!(error.is_none(), "{error:?}");
+    assert_eq!(
+        mock.only_request().body["tool_choice"],
+        json!({"type": "function", "name": "read_file"})
+    );
+}
+
+#[test]
+fn only_providers_that_honour_a_forced_choice_are_asked_to_force_one() {
+    let forces = |provider: &str| blame_engine_providers::forces_tool(&model(provider, MODEL));
+    assert!(forces("openai"));
+    assert!(forces("gemini"));
+    for provider in [
+        "anthropic",
+        "claude-code",
+        "chatgpt",
+        "openrouter",
+        "openai-compatible",
+    ] {
+        assert!(!forces(provider), "{provider}");
+    }
+}
+
+#[tokio::test]
 async fn sends_a_stateless_request_and_reads_the_reply() {
     let mock = Mock::start(vec![Reply::sse(&reply(MODEL))]).await;
     let (events, error) = run(

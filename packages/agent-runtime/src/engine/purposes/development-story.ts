@@ -4,6 +4,7 @@
 
 import { earlierStoriesHint } from "../../development-prompt-parts.js";
 import { normalizePersonalization } from "../../personalization.js";
+import type { CompletionContract } from "@blame/engine-client";
 import type { DevelopmentStorySettings, EngineMessage } from "../protocol.js";
 import { engineModel, sessionToolNames, type Purpose } from "./purpose.js";
 import {
@@ -14,11 +15,15 @@ import {
 import { purposeClientTools, purposeHarnessTools } from "./tool-sets.js";
 
 /**
- * How a story's turn is complete: through an accepted `finish_task`, which
- * runs the story's checks. Declared here; the engine enforces it once the
- * completion contract of conversation turns lands (it is not yet).
+ * How a story's turn is complete: through a `finish_task` the harness
+ * accepted, which ran the story's checks. The engine enforces it: a reply
+ * that stops without one is corrected, and the turn fails as
+ * `contract_unmet` when the agent still does not finish.
  */
-export const storyCompletionContract = { tool: "finish_task" } as const;
+export const storyCompletionContract: CompletionContract = {
+  result: { source: "tool", name: "finish_task" },
+  max_corrections: 2,
+};
 
 // The placeholder the app saves until the generated title arrives.
 const untitledStory = "Untitled user story";
@@ -92,6 +97,7 @@ export const developmentStoryPurpose: Purpose<DevelopmentStorySettings> = {
         : {},
       // Each message can be undone with its files.
       checkpoints: true,
+      contract: storyCompletionContract,
     };
   },
   async firstMessage(settings, message, services) {

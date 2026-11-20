@@ -59,18 +59,10 @@ test("merges equivalent candidates from independent discovery passes", () => {
 test("builds stable validated findings and honest coverage", () => {
   const discovered = discovery("baseline", "a", 42);
   const input = validation(42);
-  const result = parseSecurityValidation(
-    input,
-    "validation-session",
-    repository,
-    [discovered],
-  );
-  const moved = parseSecurityValidation(
-    validation(140),
-    "validation-session-2",
-    repository,
-    [discovered],
-  );
+  const result = parseSecurityValidation(input, repository, [discovered]);
+  const moved = parseSecurityValidation(validation(140), repository, [
+    discovered,
+  ]);
 
   assert.equal(result.findings.length, 1);
   assert.equal(result.findings[0].fingerprint, moved.findings[0].fingerprint);
@@ -114,12 +106,9 @@ test("keeps low-confidence candidates out of the reportable findings", () => {
   const lowConfidence = validation(42);
   lowConfidence.findings[0]!.confidence = "low";
 
-  const result = parseSecurityValidation(
-    lowConfidence,
-    "validation-session",
-    repository,
-    [candidate],
-  );
+  const result = parseSecurityValidation(lowConfidence, repository, [
+    candidate,
+  ]);
 
   assert.equal(result.findings.length, 0);
   assert.equal(result.rejectedCandidateCount, 1);
@@ -193,7 +182,6 @@ function discovery(source: string, id: string, line: number) {
       inspectedPaths: ["src/server.ts"],
       limitations: [],
     },
-    `${source}-session`,
     source,
   );
 }

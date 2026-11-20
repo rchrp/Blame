@@ -1,33 +1,48 @@
-import type { GenerateTitleInput } from "@blame/agent-runtime"
+import type {
+  EngineModelChoice,
+  EnginePlatformClient,
+  GenerateTitleTask,
+} from "@blame/agent-runtime/engine-protocol"
 
-import type { Platform } from "@/context/platform"
+import type { useModelSelection } from "@/components/model/model-selection"
 
-type TitleGenerator = NonNullable<
-  Platform["agent"]
->["promptOptimizer"]["generateTitle"]
-
-export type AgentTitleGenerationInput = Omit<
-  GenerateTitleInput,
-  "cwd" | "workspaceRoot"
-> & {
+export type AgentTitleGenerationInput = Omit<GenerateTitleTask, "workspace"> & {
   workspace: string
 }
 
-export async function generateAgentTitle(
-  generateTitle: TitleGenerator,
-  input: AgentTitleGenerationInput
-) {
-  return (await generateAgentTitleSelection(generateTitle, input)).title
+/** The model of the selector, as engine tasks take it. */
+export function engineModelChoice(
+  selection: Pick<
+    ReturnType<typeof useModelSelection>,
+    "currentModel" | "currentVariant"
+  >
+): EngineModelChoice | undefined {
+  const model = selection.currentModel
+  if (!model) return undefined
+  return {
+    providerId: model.provider.id,
+    modelId: model.id,
+    credentialLabel: model.credentialLabel,
+    reasoning: selection.currentVariant,
+  }
 }
 
-export async function generateAgentTitleSelection(
-  generateTitle: TitleGenerator,
+export async function generateAgentTitle(
+  engine: Pick<EnginePlatformClient, "call">,
   input: AgentTitleGenerationInput
 ) {
-  const result = await generateTitle({
+  return (await generateAgentTitleSelection(engine, input)).title
+}
+
+// The engine task's result, cleaned once more for the places a title is
+// shown: the caller keeps its draft when nothing usable came back.
+export async function generateAgentTitleSelection(
+  engine: Pick<EnginePlatformClient, "call">,
+  input: AgentTitleGenerationInput
+) {
+  const result = await engine.call("generateTitle", {
     ...input,
-    cwd: input.workspace,
-    workspaceRoot: input.workspace,
+    workspace: { root: input.workspace },
   })
   const title = normalizedAgentTitle(result.title)
   if (!title) throw new Error("Title generator agent did not return a title.")

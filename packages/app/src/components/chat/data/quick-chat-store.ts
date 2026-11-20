@@ -182,8 +182,13 @@ function useQuickChatStoreValue() {
   const remove = React.useCallback(
     async (chat: QuickChat) => {
       await stopAgent(chat)
-      // The API deletes the conversation's log with the chat.
+      // The API deletes the conversation's log with the chat; the engine
+      // drops its own copy.
       await api.delete(chat.id)
+      if (chat.engineSessionId)
+        await platform.engine
+          ?.call("deleteSession", { session: chat.engineSessionId })
+          .catch(() => undefined)
       setState((current) => ({
         ...current,
         activeId:
@@ -193,7 +198,7 @@ function useQuickChatStoreValue() {
         chats: current.chats.filter((item) => item.id !== chat.id),
       }))
     },
-    [api, stopAgent]
+    [api, platform.engine, stopAgent]
   )
 
   const setActiveId = React.useCallback((activeId: string | undefined) => {

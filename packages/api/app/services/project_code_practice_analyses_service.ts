@@ -28,7 +28,6 @@ export default class ProjectCodePracticeAnalysesService {
       status: 'running',
       agentProviderId: input.providerId,
       agentModelId: input.modelId,
-      clineSessionId: null,
       error: null,
       viewedAt: null,
     })
@@ -43,7 +42,6 @@ export default class ProjectCodePracticeAnalysesService {
     const analysis = await this.analysis(projectId)
     analysis.merge({
       status: 'done',
-      clineSessionId: input.clineSessionId ?? analysis.clineSessionId,
       error: null,
       viewedAt: null,
     })
@@ -56,7 +54,6 @@ export default class ProjectCodePracticeAnalysesService {
     const analysis = await this.analysis(projectId)
     analysis.merge({
       status: 'error',
-      clineSessionId: input.clineSessionId ?? analysis.clineSessionId,
       error: input.error,
     })
     await analysis.save()

@@ -103,7 +103,8 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     quickChats.setActiveId(created.id)
     void generatedQuickChatTitle(message, {
       auth,
-      generateTitle: platform.agent?.promptOptimizer.generateTitle,
+      engine: platform.engine,
+      projectId: created.projectId,
       projectPath: project?.path,
       selection,
     }).then((title) =>

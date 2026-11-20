@@ -19,6 +19,9 @@ pub struct ModelRequest {
     pub tools: Vec<ToolSpec>,
     pub reasoning: Option<ReasoningEffort>,
     pub max_output_tokens: Option<u32>,
+    /// The model must call this tool in its reply. Only set when
+    /// [`ModelProvider::forces_tool`] said the model can be made to.
+    pub forced_tool: Option<String>,
     pub cache: CachePlan,
     /// Where the bytes of the request's images and documents are read from.
     pub blobs: Arc<dyn BlobSource>,
@@ -124,4 +127,11 @@ impl From<ProviderError> for ErrorInfo {
 pub trait ModelProvider: Send + Sync {
     /// Starts the request. Dropping the stream cancels it.
     async fn stream(&self, request: ModelRequest) -> Result<ModelStream, ProviderError>;
+
+    /// Whether a request to `model` can force the tool the model calls
+    /// (`ModelRequest::forced_tool`). The loop only corrects a model in
+    /// words where it cannot.
+    fn forces_tool(&self, _model: &ModelRef) -> bool {
+        false
+    }
 }

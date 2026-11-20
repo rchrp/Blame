@@ -1,11 +1,14 @@
 import type {
-  AssessProjectInitializationImpactResult,
   PreviewManifest,
   ProjectInitializationDatabaseMode,
   ProjectRunConfiguration,
   ReasoningSelection,
-  RepairProjectInitializationResult,
 } from "@blame/agent-runtime"
+import type {
+  AssessProjectInitializationImpactResult,
+  EngineModelChoice,
+  RepairProjectInitializationResult,
+} from "@blame/agent-runtime/engine-protocol"
 
 import type {
   CloudProjectInitialization,
@@ -90,7 +93,7 @@ function candidateRepairResult(
   candidate: ProjectPreviewRepairCandidate
 ): RepairProjectInitializationResult {
   return {
-    sessionId: candidate.repairSessionId,
+    session: candidate.repairSessionId,
     classification: "repairable_initialization",
     reason: candidate.reason,
     previewManifest: candidate.previewManifest,
@@ -98,17 +101,24 @@ function candidateRepairResult(
   }
 }
 
-async function assessProjectInitializationImpact(input: ImpactInput) {
-  const agent = input.platform.agent
-  if (!agent) throw new Error("Initialization impact runtime is unavailable.")
-  return agent.initializations.assessImpact({
-    apiConnection: input.apiConnection,
+// The project checkout is on this machine, even for a project whose
+// stories run in the Blame Runtime VM.
+function taskModel(input: ImpactInput): EngineModelChoice {
+  return {
     providerId: input.providerId,
     modelId: input.modelId,
     credentialLabel: input.credentialLabel,
-    reasoningEffort: input.reasoningEffort,
-    cwd: input.repositoryRoot,
-    workspaceRoot: input.repositoryRoot,
+    reasoning: input.reasoningEffort,
+  }
+}
+
+async function assessProjectInitializationImpact(input: ImpactInput) {
+  const engine = input.platform.engine
+  if (!engine) throw new Error("Blame's agent engine is not available.")
+  return engine.call("assessInitializationImpact", {
+    model: taskModel(input),
+    projectId: input.projectId,
+    workspace: { root: input.repositoryRoot },
     baseCommit: input.baseCommit,
     mergeCommit: input.headCommit,
     previewManifest: input.initialization.previewManifest,
@@ -121,25 +131,16 @@ async function repairProjectInitializationImpact(
   assessment: AssessProjectInitializationImpactResult
 ) {
   const initialization = input.initialization
-  const agent = input.platform.agent
-  if (!agent) throw new Error("Initialization repair runtime is unavailable.")
-  if (!assessment.diagnostics) {
-    throw new Error(
-      "Initialization impact assessment did not include diagnostics."
-    )
-  }
+  const engine = input.platform.engine
+  if (!engine) throw new Error("Blame's agent engine is not available.")
   const databaseMode = databaseModeForInitializationRepair(
     initialization,
     assessment.diagnostics
   )
-  return agent.initializations.repair({
-    apiConnection: input.apiConnection,
-    providerId: input.providerId,
-    modelId: input.modelId,
-    credentialLabel: input.credentialLabel,
-    reasoningEffort: input.reasoningEffort,
-    cwd: input.repositoryRoot,
-    workspaceRoot: input.repositoryRoot,
+  return engine.call("repairProjectInitialization", {
+    model: taskModel(input),
+    projectId: input.projectId,
+    workspace: { root: input.repositoryRoot },
     previewManifest: initialization.previewManifest,
     runConfigurations: initialization.runConfigurations,
     preferences: databaseMode
@@ -163,7 +164,6 @@ async function persistProjectInitializationRepair(
   const snapshot = await createCloudApi(
     input.apiConnection
   ).repairProjectInitialization(input.projectId, {
-    clineSessionId: result.sessionId,
     previewManifest: result.previewManifest,
     runConfigurations: result.runConfigurations,
     databaseMode: databaseMode ?? null,

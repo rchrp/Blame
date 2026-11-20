@@ -9,7 +9,6 @@ import type { Project } from "@/lib/projects"
 export type GeneratedProjectInitialization = {
   previewManifest: PreviewManifest
   runConfigurations: ProjectRunConfiguration[]
-  clineSessionId?: string
 }
 
 export type ProjectContextValue = {

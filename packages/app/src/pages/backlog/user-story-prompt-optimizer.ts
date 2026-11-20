@@ -3,6 +3,7 @@ import { toast } from "sonner"
 import type { useModelSelection } from "@/components/model/model-selection"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { usePlatform } from "@/context/platform"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 
 function optimizeUserStoryValidationError(
   summary: string,
@@ -16,8 +17,7 @@ function optimizeUserStoryValidationError(
   if (auth.status !== "authenticated")
     return "Reconnect the provider before optimizing the user story."
   if (!model) return "Select a model before optimizing the user story."
-  if (!platform.agent?.promptOptimizer)
-    return "Desktop agent runtime is not available."
+  if (!platform.engine) return "Blame's agent engine is not available."
 }
 
 type OptimizeUserStoryPromptRequest = {
@@ -74,18 +74,15 @@ function optimizationValidationError(message: string) {
 }
 
 async function runPromptOptimizer(request: OptimizeUserStoryPromptRequest) {
-  const result =
-    await request.platform.agent!.promptOptimizer.optimizeUserStory({
-      apiConnection: request.auth.apiConnection,
-      providerId: request.model!.provider.id,
-      modelId: request.model!.id,
-      credentialLabel: request.model!.credentialLabel,
-      reasoningEffort: request.reasoningEffort,
-      prompt: request.input.summary,
-      title: request.input.title,
-      cwd: request.projectPath!,
-      workspaceRoot: request.projectPath!,
-    })
+  const result = await request.platform.engine!.call("optimizeUserStory", {
+    model: engineModelChoice({
+      currentModel: request.model,
+      currentVariant: request.reasoningEffort,
+    })!,
+    prompt: request.input.summary,
+    title: request.input.title,
+    workspace: { root: request.projectPath! },
+  })
   return result.markdown
 }
 

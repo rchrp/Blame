@@ -12,6 +12,7 @@ import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useGitIdentity } from "@/context/git-identity"
 import type { usePlatform } from "@/context/platform"
 import type { useProjects } from "@/context/projects"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 import { celebrateStory } from "@/lib/celebrate"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import type { DirectSharedFilesDialogProps } from "./direct-shared-files-dialog"
@@ -71,6 +72,7 @@ export function useDirectStoryCommit({
         story,
         auth.status,
         platform.agent,
+        platform.engine,
         platform.workspace,
         model
       )
@@ -89,12 +91,9 @@ export function useDirectStoryCommit({
           confirmSharedFiles,
           generateMessage: async (paths) =>
             (
-              await platform.agent!.generateCommitMessage({
-                apiConnection: auth.apiConnection,
-                providerId: model!.provider.id,
-                modelId: model!.id,
-                credentialLabel: model!.credentialLabel,
-                reasoningEffort: alternativeSelection.currentVariant,
+              await platform.engine!.call("generateCommitMessage", {
+                model: engineModelChoice(alternativeSelection)!,
+                projectId: projects.activeProject?.id,
                 ...directCommitMessageRequest(story, root, paths),
                 codePractices,
               })

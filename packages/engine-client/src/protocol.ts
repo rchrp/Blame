@@ -20,6 +20,7 @@ import type {
   SessionList,
   SessionOpened,
   Subscribed,
+  TaskOutcome,
   ToolResult,
 } from "./generated/protocol.js";
 
@@ -75,6 +76,9 @@ export interface ClientResults {
   "session/compact": null;
   "session/configure": null;
   "session/close": null;
+  "session/delete": null;
+  /** Answered when the task ends; aborting the request cancels the task. */
+  "task/run": TaskOutcome;
   "blob/put": BlobRef;
   "catalog/list": ModelCatalog;
   shutdown: null;

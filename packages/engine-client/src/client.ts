@@ -295,6 +295,20 @@ export class EngineClient {
     return this.request("session/close", params, options);
   }
 
+  /** Stops the session and deletes its records from the engine (not from Blame's database). */
+  deleteSession(params: ParamsOf<"session/delete">, options?: RequestOptions) {
+    return this.request("session/delete", params, options);
+  }
+
+  /**
+   * Runs a task to its end and resolves with its outcome. Aborting the
+   * signal cancels the task (`$/cancel`); the session can be followed from
+   * its first record as soon as this is sent.
+   */
+  runTask(params: ParamsOf<"task/run">, options?: RequestOptions) {
+    return this.request("task/run", params, options);
+  }
+
   /** Stores the bytes of an attachment (base64) and returns the reference a message carries. */
   putBlob(params: ParamsOf<"blob/put">, options?: RequestOptions) {
     return this.request("blob/put", params, options);

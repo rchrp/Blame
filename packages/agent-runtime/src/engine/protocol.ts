@@ -22,6 +22,10 @@ import type {
   SaveProviderCredentialInput,
   SubscriptionUsage,
 } from "../types.js";
+import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
+
+export type * from "./task-protocol.js";
+export { engineMainOnlyMethods } from "./task-protocol.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
 import type { PreviewInitialization } from "../preview-selection.js";
 
@@ -219,7 +223,7 @@ export type EngineHostMethods = {
     result: SubscriptionUsage | null;
   };
   shutdown: { input: undefined; result: null };
-};
+} & EngineTaskMethods;
 
 export type EngineHostMethod = keyof EngineHostMethods;
 export type EngineHostInput<M extends EngineHostMethod> =
@@ -249,6 +253,7 @@ export const engineHostMethods = [
   "planUsage",
   "shutdown",
   "status",
+  ...engineTaskMethods,
 ] as const satisfies readonly EngineHostMethod[];
 
 /** What the host tells the renderers. */

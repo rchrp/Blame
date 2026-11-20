@@ -6,8 +6,8 @@ use crate::wire::Wire;
 use crate::{request, stream};
 use async_trait::async_trait;
 use blame_engine_core::ports::{ModelProvider, ModelRequest, ModelStream, ProviderError};
-use blame_engine_protocol::ErrorKind;
 use blame_engine_protocol::rpc::Credential;
+use blame_engine_protocol::{ErrorKind, ModelRef};
 use rig_core::providers::anthropic::completion::CacheTtl;
 use rig_core::providers::anthropic::wire::{ANTHROPIC, AnthropicConfig, Auth as AnthropicAuth};
 use rig_core::providers::gemini::GeminiConfig;
@@ -293,8 +293,29 @@ impl Provider {
     }
 }
 
+/// Whether a request to `model` can force the tool the model calls.
+///
+/// The OpenAI Responses API (`tool_choice: {"type": "function"}`) and Gemini
+/// (`functionCallingConfig` mode `ANY` with the allowed name) take it from
+/// every model that calls tools. Claude refuses a forced choice while it
+/// thinks, which it always does on the models Blame offers; the ChatGPT
+/// subscription backend, OpenRouter and OpenAI-compatible servers may or
+/// may not honour it, depending on the model behind them. Those get the
+/// corrective message only: a refused request would fail the turn, where a
+/// message never does.
+pub fn forces_tool(model: &ModelRef) -> bool {
+    matches!(
+        ProviderKind::from_id(&model.provider),
+        Some(ProviderKind::OpenAi | ProviderKind::Gemini)
+    )
+}
+
 #[async_trait]
 impl ModelProvider for Provider {
+    fn forces_tool(&self, model: &ModelRef) -> bool {
+        forces_tool(model)
+    }
+
     async fn stream(&self, request: ModelRequest) -> Result<ModelStream, ProviderError> {
         if request.model.provider != self.kind.id() {
             return Err(ProviderError::new(

@@ -134,6 +134,16 @@ export type RuntimeOptions = PreviewToolRuntimeOptions & {
     workspaceMode?: "local-container" | "cloud-mirror" | "direct";
     worktree: string;
   }): Promise<{ status: "applied" | "unavailable" }>;
+  /**
+   * The preview setup repair, an engine task (`runInitializationRepair` in
+   * engine/tasks/project.ts) the caller supplies; without it a story is not
+   * offered repair_preview_initialization.
+   */
+  repairProjectInitialization?(
+    input: import("./engine/task-protocol.js").RepairProjectInitializationTask,
+  ): Promise<
+    import("./engine/task-protocol.js").RepairProjectInitializationResult
+  >;
   createCore?(backend?: AgentBackendConfig): Promise<ClineCore>;
   developmentHarness?: "blame" | "cline";
   openExternalUrl?(url: string): void;

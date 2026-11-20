@@ -1,7 +1,6 @@
 import { createPreviewTerminalClient } from "./preview-terminal-client";
 import { opaqueWindowArgument } from "../main/window-blur";
 import { contextBridge, ipcRenderer } from "electron";
-import type { AgentEvent } from "@blame/agent-runtime";
 import type { EngineHostEvent } from "@blame/agent-runtime/engine-protocol";
 import type { RuntimeProgress } from "@blame/app";
 import type { BlameDesktopApi } from "./types";
@@ -205,18 +204,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("backlog-status-pip:set-mode", input),
   },
   securityAudits: {
-    active: (input) => ipcRenderer.invoke("security-audits:active", input),
-    run: (input) => ipcRenderer.invoke("security-audits:run", input),
-    cancel: (input) => ipcRenderer.invoke("security-audits:cancel", input),
-    onChanged: (callback) => {
-      const handler = (
-        _event: unknown,
-        auditEvent: Parameters<typeof callback>[0],
-      ) => callback(auditEvent);
-      ipcRenderer.on("security-audits:changed", handler);
-      return () =>
-        ipcRenderer.removeListener("security-audits:changed", handler);
-    },
+    map: (input) => ipcRenderer.invoke("security-audits:map", input),
   },
   platform: process.platform,
   opaqueWindow: process.argv.includes(opaqueWindowArgument),
@@ -483,8 +471,10 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:git-repository-fingerprint", input),
     ensureGitRepository: (input) =>
       ipcRenderer.invoke("workspace:ensure-git-repository", input),
-    createProject: (input) =>
-      ipcRenderer.invoke("workspace:create-project", input),
+    prepareNewProject: (input) =>
+      ipcRenderer.invoke("workspace:prepare-new-project", input),
+    finishNewProject: (input) =>
+      ipcRenderer.invoke("workspace:finish-new-project", input),
     createWorktree: (input) =>
       ipcRenderer.invoke("workspace:create-worktree", input),
     checkHostDependencies: (input) =>
@@ -624,56 +614,14 @@ const api: BlameDesktopApi = {
       return () => engineActivityListeners.delete(callback);
     },
   },
+  // What the app asks besides agents (they are all on platform.engine).
   agent: {
-    // Progress of the one-shot agents; conversations are on platform.engine.
-    sessions: {
-      onEvent: (sessionId, callback) => {
-        const channel = `agent:sessions:event:${sessionId}`;
-        const handler = (_event: unknown, event: AgentEvent) => callback(event);
-        ipcRenderer.on(channel, handler);
-        ipcRenderer.send("agent:sessions:listen", sessionId);
-        return () => {
-          ipcRenderer.removeListener(channel, handler);
-          ipcRenderer.send("agent:sessions:unlisten", sessionId);
-        };
-      },
-    },
-    initializations: {
-      run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
-      cancel: (progressId) =>
-        ipcRenderer.invoke("agent:initializations:cancel", progressId),
-      repair: (input) =>
-        ipcRenderer.invoke("agent:initializations:repair", input),
-      assessImpact: (input) =>
-        ipcRenderer.invoke("agent:initializations:assess-impact", input),
-    },
-    codePractices: {
-      run: (input) => ipcRenderer.invoke("agent:code-practices:run", input),
-    },
-    newProjects: {
-      generate: (input) =>
-        ipcRenderer.invoke("agent:new-projects:generate", input),
-    },
-    promptOptimizer: {
-      optimizeUserStory: (input) =>
-        ipcRenderer.invoke("agent:prompt-optimizer:optimize-user-story", input),
-      generateTitle: (input) =>
-        ipcRenderer.invoke("agent:prompt-optimizer:generate-title", input),
-    },
-    approveAndMerge: (input) =>
-      ipcRenderer.invoke("agent:approve-and-merge", input),
-    openPullRequest: (input) =>
-      ipcRenderer.invoke("agent:open-pull-request", input),
     pullRequestAvailability: (input) =>
       ipcRenderer.invoke("agent:pull-request-availability", input),
     pullRequestState: (input) =>
       ipcRenderer.invoke("agent:pull-request-state", input),
-    generateCommitMessage: (input) =>
-      ipcRenderer.invoke("agent:generate-commit-message", input),
     directStoryFiles: (input) =>
       ipcRenderer.invoke("agent:direct-story-files", input),
-    resolveMergeConflicts: (input) =>
-      ipcRenderer.invoke("agent:resolve-merge-conflicts", input),
   },
 };
 

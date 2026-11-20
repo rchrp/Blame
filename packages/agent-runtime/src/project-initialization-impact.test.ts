@@ -10,8 +10,8 @@ import {
   collectProjectInitializationImpactDiagnostics,
   deterministicInitializationImpact,
   parseProjectInitializationImpactResult,
+  type AssessProjectInitializationImpactInput,
 } from "./project-initialization-impact.js";
-import type { AssessProjectInitializationImpactInput } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -127,13 +127,11 @@ test("collects env template changes as relevant initialization diffs", async () 
 });
 
 test("parses update-required impact result", () => {
-  const result = parseProjectInitializationImpactResult(
-    JSON.stringify({
-      classification: "initialization_update_required",
-      reason: "The API service was added.",
-      repairInstruction: "Regenerate compose with the API service.",
-    }),
-  );
+  const result = parseProjectInitializationImpactResult({
+    classification: "initialization_update_required",
+    reason: "The API service was added.",
+    repairInstruction: "Regenerate compose with the API service.",
+  });
   assert.equal(result.classification, "initialization_update_required");
   assert.equal(
     result.repairInstruction,
@@ -142,16 +140,13 @@ test("parses update-required impact result", () => {
 });
 
 test("parses unknown without repair instruction", () => {
-  const result = parseProjectInitializationImpactResult(
-    JSON.stringify({
-      classification: "unknown",
-      reason: "The diff is inconclusive.",
-    }),
-  );
+  const result = parseProjectInitializationImpactResult({
+    classification: "unknown",
+    reason: "The diff is inconclusive.",
+  });
   assert.deepEqual(result, {
     classification: "unknown",
     reason: "The diff is inconclusive.",
-    repairInstruction: undefined,
   });
 });
 
@@ -187,11 +182,7 @@ function input(
   mergeCommit: string,
 ): AssessProjectInitializationImpactInput {
   return {
-    apiConnection: { url: "http://localhost", token: "token" },
-    providerId: "provider",
-    modelId: "model",
     cwd: repository,
-    workspaceRoot: repository,
     baseCommit,
     mergeCommit,
     previewManifest: {

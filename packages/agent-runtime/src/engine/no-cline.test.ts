@@ -3,7 +3,7 @@
 // (static imports and dynamic ones) from the built output.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { it } from "node:test";
 import { fileURLToPath } from "node:url";
@@ -40,6 +40,24 @@ it("the engine host loads nothing of Cline", () => {
   assert.ok(files.size > 5, "the graph was walked");
 });
 
+it("every task purpose and runner is part of that graph", () => {
+  // The one-shot agents that moved to the engine: none of them may reach
+  // Cline, whichever module they live in.
+  const { files } = graph(resolve(here, "index.js"));
+  const modules = ["purposes", "tasks"].flatMap((folder) =>
+    readdirSync(resolve(here, folder))
+      .filter((name) => name.endsWith(".js") && !name.endsWith(".test.js"))
+      .map((name) => resolve(here, folder, name)),
+  );
+  assert.ok(modules.length > 3);
+  const outside = modules.filter((file) => !files.has(file));
+  assert.deepEqual(
+    outside,
+    [],
+    "a purpose the host does not load is unchecked",
+  );
+});
+
 it("development stories, plan mode and the new-project assistant run on that host", () => {
   const { files } = graph(resolve(here, "index.js"));
   for (const purpose of [
@@ -70,6 +88,7 @@ const toolModules = [
   "tools/policy.js",
   "tools/preview.js",
   "tools/preview-types.js",
+  "tools/preview-repair.js",
   "tools/skills.js",
   "tools/story-history.js",
   "tools/story-proposal.js",
@@ -91,8 +110,11 @@ it("the engine host's graph holds every client tool module", () => {
     assert.ok(files.has(resolve(here, module)), `${module} is not exported`);
 });
 
-it("the protocol module the main process loads imports no code at all", () => {
+it("the protocol modules the main process loads import no code at all", () => {
   const { files, packages } = graph(resolve(here, "protocol.js"));
   assert.deepEqual([...packages], []);
-  assert.equal(files.size, 1);
+  assert.deepEqual(
+    [...files].map((file) => file.slice(here.length + 1)).sort(),
+    ["protocol.js", "task-protocol.js"],
+  );
 });

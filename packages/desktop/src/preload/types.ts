@@ -1,27 +1,9 @@
 import type { EnginePlatformClient } from "@blame/agent-runtime/engine-protocol";
 import type {
-  AgentEvent,
-  NewProjectsClient,
-  AnalyzeProjectCodePracticesInput,
-  AnalyzeProjectCodePracticesResult,
   ApiConnection,
-  ApproveAndMergeInput,
-  ApproveAndMergeResult,
-  AssessProjectInitializationImpactInput,
-  AssessProjectInitializationImpactResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
-  GenerateCommitMessageInput,
-  GenerateCommitMessageResult,
-  GenerateTitleInput,
-  GenerateTitleResult,
-  InitializeProjectInput,
-  InitializeProjectResult,
   ProjectInitializationDiagnostics,
-  OpenPullRequestInput,
-  OpenPullRequestResult,
-  OptimizeUserStoryPromptInput,
-  OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
@@ -30,10 +12,6 @@ import type {
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
-  RepairProjectInitializationInput,
-  RepairProjectInitializationResult,
-  ResolveMergeConflictsInput,
-  ResolveMergeConflictsResult,
 } from "@blame/agent-runtime";
 import type {
   BacklogStatusPipRequest,
@@ -59,7 +37,10 @@ import type {
 } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { RuntimeStatusReport } from "../main/runtime-manager";
-import type { CreateProjectInput } from "../main/project-creation";
+import type {
+  FinishNewProjectInput,
+  PrepareNewProjectInput,
+} from "../main/project-creation";
 import type { ReleaseNotes } from "../main/whats-new";
 import type {
   PreviewLogEvent,
@@ -501,9 +482,10 @@ export type BlameDesktopApi = {
     }): Promise<string>;
     gitRepositoryFingerprint(input: { root: string }): Promise<string | null>;
     ensureGitRepository(input: { root: string }): Promise<boolean>;
-    createProject(input: CreateProjectInput): Promise<{
-      path: string;
-    }>;
+    prepareNewProject(
+      input: PrepareNewProjectInput,
+    ): Promise<{ path: string; projectName: string }>;
+    finishNewProject(input: FinishNewProjectInput): Promise<{ path: string }>;
     createWorktree(input: {
       // The branch the story recorded on an earlier run, if any.
       branch?: string | null;
@@ -618,53 +600,14 @@ export type BlameDesktopApi = {
     onEvent(id: string, callback: (event: TerminalEvent) => void): () => void;
   };
   engine: EnginePlatformClient;
+  // What the app asks besides agents (they are all on `engine`).
   agent: {
-    // Progress of the one-shot agents; conversations are on `engine`.
-    sessions: {
-      onEvent(
-        sessionId: string,
-        callback: (event: AgentEvent) => void,
-      ): () => void;
-    };
-    initializations: {
-      run(input: InitializeProjectInput): Promise<InitializeProjectResult>;
-      /** Stops the run started with this progress id; false once it ended. */
-      cancel(progressId: string): Promise<boolean>;
-      repair(
-        input: RepairProjectInitializationInput,
-      ): Promise<RepairProjectInitializationResult>;
-      assessImpact(
-        input: AssessProjectInitializationImpactInput,
-      ): Promise<AssessProjectInitializationImpactResult>;
-    };
-    codePractices: {
-      run(
-        input: AnalyzeProjectCodePracticesInput,
-      ): Promise<AnalyzeProjectCodePracticesResult>;
-    };
-    newProjects: NewProjectsClient;
-    promptOptimizer: {
-      optimizeUserStory(
-        input: OptimizeUserStoryPromptInput,
-      ): Promise<OptimizeUserStoryPromptResult>;
-      generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>;
-    };
-    approveAndMerge(
-      input: ApproveAndMergeInput,
-    ): Promise<ApproveAndMergeResult>;
-    openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>;
     pullRequestAvailability(
       input: PullRequestAvailabilityInput,
     ): Promise<PullRequestAvailability>;
     pullRequestState(input: PullRequestStateInput): Promise<PullRequestState>;
-    generateCommitMessage(
-      input: GenerateCommitMessageInput,
-    ): Promise<GenerateCommitMessageResult>;
     directStoryFiles(
       input: DirectStoryFilesInput,
     ): Promise<DirectStoryFilesResult>;
-    resolveMergeConflicts(
-      input: ResolveMergeConflictsInput,
-    ): Promise<ResolveMergeConflictsResult>;
   };
 };

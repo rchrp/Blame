@@ -115,3 +115,15 @@ test("a message carries quoted code, earlier stories and attached files", async 
     { data: "aGk=", mediaType: "image/png", name: "shot.png" },
   ])
 })
+
+test("a turn the agent did not finish pauses the story with why", () => {
+  const outcome = {
+    status: "contract_unmet",
+    unmet: [{ kind: "result", tool: "finish_task" }],
+  }
+  assert.deepEqual(storyOutcomeUpdate(inProgress, outcome as never), {
+    agentLastError:
+      "The agent stopped without finishing: its work was not checked with finish_task.",
+    agentStatus: "Paused",
+  })
+})

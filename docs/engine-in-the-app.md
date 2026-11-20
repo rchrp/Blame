@@ -2,10 +2,9 @@
 
 How the app runs agents on `blame-engine` (`crates/`). Quick chats,
 development stories, plan mode and the new-project assistant are
-conversations on it. One-shot agents, the engine in the Lima/WSL VM and
-provider settings follow the same contract; until they move, one-shot agents
-still run on the Cline runtime (`cline-runtime.ts`), as does
-`packages/benchmark-runner`.
+conversations on it; one-shot agents run on it as tasks (see "Tasks"). The
+engine in the Lima/WSL VM follows the same contract. `packages/benchmark-runner`
+still runs on the Cline runtime (`cline-runtime.ts`).
 
 ## Processes
 
@@ -54,6 +53,7 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
+| task calls (`generateTitle`…), `cancelTask({ session })`, `deleteSession({ session })` | See [Tasks](#tasks); declared in `engine/task-protocol.ts`. |
 | `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended and what the agent last reported (`lastReply`: its `finish_task` summary, or its last text). |
 | `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
 | `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
@@ -85,8 +85,10 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
 - **First message**: the host wraps the person's brief with the story's
   title, the hint about earlier stories, and the project memory selected for
   it (`<task_briefing>`).
-- **Completion contract**: `storyCompletionContract` (`finish_task`) is
-  declared in the purpose; the one-shot agents slice enforces it from there.
+- **Completion contract**: `storyCompletionContract` makes `finish_task`
+  the engine-checked end of a turn (see "Tasks"): a reply that stops
+  without one is corrected, and a turn the agent still does not finish ends
+  as `contract_unmet`, which pauses the story with that reason.
 - **Tools**: `purposeClientTools` / `purposeHarnessTools`
   (`engine/purposes/tool-sets.ts`) name the shared tools; the host adds the
   conversation's own (`conversationTools.ensure`: preview, story history and
@@ -210,7 +212,8 @@ later day does not rewrite it and the provider's prompt cache holds.
   conversation anywhere.
 - **The API** keeps product state only. `quick_chats` holds `title`,
   `workspace`, `engine_session_id`; its list joins `engine_sessions` for the
-  last activity. Deleting a chat deletes its engine session log.
+  last activity. Deleting a chat deletes its engine session log, and the
+  renderer deletes the engine's local copy (`deleteSession`).
   `user_stories` holds `engine_session_id`, `agent_status`,
   `agent_last_error` and `agent_models` (the models that worked on it, for
   the board); runs, activities and story comments are records.
@@ -307,7 +310,7 @@ one cache miss).
 | `preview_devtools__*` | `previewDevtools`, `previewDevtoolsTools`, `previewDevtoolsCall`, a preview scope | yes | yes | no | no |
 | `preview_terminal`, `preview_display`, `preview_device` | `previewSurfaceInfo`, `previewSurfaceCall` (replace the DevTools tools) | yes | yes | no | no |
 | `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no |
-| `repair_preview_initialization` | `repairPreviewInitialization` (a one-shot agent, session 3) | yes | no | no | no |
+| `repair_preview_initialization` | the repair task (`runInitializationRepair`), then main's `applyPreviewInitialization` (`tools/preview-repair.ts`) | yes | no | no | no |
 | `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no |
 | `open_component_preview` | `componentPreview`, a Vite-capable workspace | yes | no | no | no |
 | `propose_user_stories` | a project | yes | yes | no | yes |
@@ -368,6 +371,120 @@ stored records only, so the same records give the same request bytes after
 a reopen. Results already sent change only in large batches or after a
 compaction, so the prompt cache holds. Harness tools get the compaction in
 effect as `contextGeneration`.
+
+## Tasks
+
+A task is an agent run with no user in it: a title, a commit message, a
+project initialization. It is a session of kind `task` (`SessionConfig.kind`)
+made of the same records as a conversation, so recovery, replay and the
+follow subscription work alike, but nothing can be sent to it, it cannot be
+rewound or reconfigured, and it ends by itself.
+
+```
+renderer                         engine host                                   blame-engine
+platform.engine.call(            tasks/handlers.ts → purposes/<agent>.ts
+  "generateTitle", input) ─────▶ TaskRunner.run(spec) ── task/run ───────────▶ creates the session, runs its turn
+                                                       ◀─ TaskOutcome ─────── when the turn ends
+                         ◀────── typed result, or EngineTaskError
+platform.engine.call("cancelTask", { session }) ──── $/cancel of that task/run ─▶ the task ends as interrupted
+platform.engine.follow(session) ─── records as for a conversation (progress of a long task)
+```
+
+A long task's caller names it (`task` in the call's input), calls it, then
+follows it at once. The host announces the task when its call arrives and
+holds a follow of it until the engine has created its session, however long
+the host prepares it first (a project scan); `cancelTask` stops it in that
+time too, and it ends as interrupted without running.
+
+### How a purpose declares its task
+
+A purpose (`engine/purposes/<agent>.ts`) returns a `TaskSpec`: the config
+(`taskConfig()` in `tasks/runner.ts`), the instruction that opens the turn,
+and `result(value)` that turns the validated result into the caller's type.
+Its **completion contract** (`SessionConfig.contract`) is what the engine
+enforces, not the prompt:
+
+| field | meaning |
+| --- | --- |
+| `result` | `{ source: "submit", name, description, input_schema }`: a tool the engine offers and answers itself; a call is accepted when its input matches the schema (`submitTool()`). `{ source: "tool", name }`: one of the session's tools, such as the harness's `finish_task`; its input is checked against the tool's schema, then the tool runs, and its completion is the result. |
+| `required` | Tools that must have completed in the turn, in a reply before the one calling the result tool: "inspect the code before answering" is `required: ["read_code"]`, not a sentence in the prompt. |
+| `allowed` | The only tools offered besides the result tool (`[]`: none). Absent: every tool of the session. |
+| `max_corrections` | How many times a model that stops without an accepted result is told so (default 2). |
+
+What the engine does, each step stored as a record:
+
+- A refused result call (`ResultRejected`, with the schema errors and the
+  unmet obligations) goes back to the model as the call's error; it fixes it
+  and calls again.
+- A model that stops in text gets a `ContractCorrection` whose text is a
+  pure function of what is unmet. The last one also forces the tool choice
+  where the provider can: OpenAI and Gemini. Claude refuses a forced choice
+  while it thinks, and the ChatGPT backend, OpenRouter and compatible
+  servers may not honour one, so they get the message only.
+- Past the corrections the turn ends as `contract_unmet`, naming what is
+  missing. Only an accepted result (`ResultAccepted`) ends the turn: under a
+  contract, a tool marked `ends_turn` does not.
+- `limits` bound a task: `max_requests_per_turn`, `max_turn_tokens` (checked
+  before each request) and `max_turn_ms` (a request or tool still running at
+  the deadline is stopped).
+
+`task/run` answers with a `TaskOutcome`: `completed` with the result,
+`failed` with `contract_unmet`, `limit_reached` or `provider_error`, or
+`interrupted`. The runner throws `EngineTaskError` for anything but
+`completed`, with the outcome and a sentence saying what went wrong.
+
+A conversation carries a contract the same way: a development story's
+purpose sets `contract: { result: { source: "tool", name: "finish_task" },
+... }` so a turn only ends through an accepted `finish_task`.
+
+### What a task leaves behind
+
+A task's log stays on the machine that ran it: the store never copies it to
+Blame's database, and the engine deletes it three days after its last record
+(`--task-retention`), long enough to look into a failure. A purpose that
+must be readable elsewhere sets `kind: { kind: "task", replicate: true }`.
+`deleteSession` (engine `session/delete`) removes a session from the engine;
+the API's copy is the app's to delete, as for a deleted quick chat.
+
+### Where a task runs
+
+On the host's engine. A task that reads no file runs there even for a
+project in the runtime VM (its folder is the temporary one). A task that
+works on files of a project in the VM fails with `VM_WORKSPACE_UNSUPPORTED`
+until the engine runs in the VM; there is no Cline fallback.
+
+### Git flows
+
+Approve & Merge, Open PR, the Git page's commit message and conflict
+resolution run in the engine host (`engine/git/`), not in a renderer or the
+Cline runtime: a flow is git work with agent steps in it, and each step is
+an engine task (`GitAgent`). Main adds what only it knows to these calls
+(`engineGitFlowCall` in `agent-ipc.ts`): whether the worktree is in the
+runtime VM (`inVm`), the worktrees where an agent runs (`activeWorktrees`,
+so a target branch never moves under one), the preview sync before a
+delivery, and the worktree counted as written while the flow runs. Git runs
+through main (`git` desktop service); gh runs in the host with the person's
+own sign-in. A failed commit message agent leaves Blame's own message.
+The conflict agent cannot run git mutations (its workspace is not isolated):
+the host stages each conflicted file it left without markers, then Git says
+what is still conflicted, as before.
+
+### The tasks
+
+| renderer call | purpose | result tool | tools |
+| --- | --- | --- | --- |
+| `generateTitle` | `title` | `submit_title` (run configuration ids in the schema) | none |
+| `optimizeUserStory` | `user-story-optimization` | `submit_user_story` | none |
+| `generateCommitMessage`, and in `approveAndMerge`, `openPullRequest` | `commit-message` | `submit_commit_message` (its first line is the subject) | none: the changes are in the instruction |
+| `openPullRequest` | `pull-request-text` | `submit_pull_request` (`agentSummary` required when the story has one) | none |
+| `resolveMergeConflicts`, and in `approveAndMerge` | `merge-conflict-resolution` | `submit_merge_resolution` (`resolved`, `reason`) | harness: `search_code`, `read_code`, `edit_code`, `run_task`; `required: ["read_code"]`; `VM_WORKSPACE_UNSUPPORTED` in the VM |
+| `discoverSecurityAudit` | `security-discovery` | `submit_security_discovery` | harness, `allowed: search_code, read_code`, `required: read_code` |
+| `validateSecurityAudit` | `security-validation` | `submit_security_validation` (the given candidate ids in the schema) | harness, `allowed: search_code, read_code`, `required: read_code` |
+| `initializeProject` | `project-initialization` | `submit_project_initialization`, a host client tool that checks each setup (or takes only `blocked`) | harness `read_code` (required), `search_code` |
+| `repairProjectInitialization` | `project-initialization-repair` | `submit_project_initialization_repair`, a host client tool that checks a repaired setup | harness `read_code`, `search_code` |
+| `assessInitializationImpact` | `initialization-impact` | `submit_initialization_impact` (the host reads the diff; a diff touching nothing the setup needs ends without an agent) | none |
+| `analyzeCodePractices` | `code-practices` | `submit_project_code_practices` (each practice once; a starter's defaults in the schema) | harness `read_code` (required), `search_code` |
+| `generateNewProject` | `new-project-generation` | `submit_new_project` | harness `search_code`, `read_code`, `edit_code`, `run_task`; `search_web`, `read_web_page` |
 
 ## Rules for the next slices
 

@@ -1,54 +1,15 @@
 import { basename } from "node:path";
 
-import type {
-  CommitMessageRuntimeInput,
-  MergeConflictRuntimeInput,
-} from "./cline-runtime-configuration.js";
-import {
-  commitMessagePaths,
-  fallbackCommitMessageFromStatus,
-} from "./commit-message.js";
-import { withLinkedIssueTrailers } from "./linked-issues.js";
-import { currentGitBranch, git, originRemoteUrl } from "./runtime-git.js";
+import { git } from "./runtime-git.js";
 
 // Git on a story worktree: Blame's runtime artifacts and the project's
 // runtime .env files never reach a commit, a status or an agent prompt.
-export const maxMergeConflictResolutionAttempts = 3;
 const runtimeArtifactPaths = [".blame", ".blame-preview", ".pnpm-store"];
 const runtimeArtifactPathspecs = runtimeArtifactPaths.map(
   (path) => `:!${path}`,
 );
 
-export async function commitMessagePrompt(input: CommitMessageRuntimeInput) {
-  const paths = commitMessagePaths(input);
-  const [status, changedFiles, diffStat, log] = await Promise.all([
-    storyStatus(input.worktree, "--porcelain", paths),
-    storyChangedFiles(input.worktree, paths),
-    storyDiffStat(input.worktree, paths),
-    git(input.worktree, ["log", "-12", "--pretty=%s"]),
-  ]);
-  const title = input.title || "Git changes";
-  const summary =
-    input.summary ||
-    "Generate a concise commit message for the selected changes.";
-  return [
-    `Backlog item: ${title}`,
-    "",
-    summary,
-    "",
-    `Git status:\n${truncateText(status, 8_000)}`,
-    "",
-    `Selected paths:\n${truncateText(paths.join("\n"), 8_000)}`,
-    "",
-    `Changed files:\n${truncateText(changedFiles, 12_000)}`,
-    "",
-    `Diff stat:\n${truncateText(diffStat, 12_000)}`,
-    "",
-    `Recent commits:\n${truncateText(log, 8_000)}`,
-  ].join("\n");
-}
-
-async function storyChangedFiles(cwd: string, paths = ["."]) {
+export async function storyChangedFiles(cwd: string, paths = ["."]) {
   return git(cwd, [
     "diff",
     "--no-ext-diff",
@@ -60,7 +21,7 @@ async function storyChangedFiles(cwd: string, paths = ["."]) {
   ]);
 }
 
-async function storyDiffStat(cwd: string, paths = ["."]) {
+export async function storyDiffStat(cwd: string, paths = ["."]) {
   return git(cwd, [
     "diff",
     "--no-ext-diff",
@@ -70,54 +31,6 @@ async function storyDiffStat(cwd: string, paths = ["."]) {
     ...paths,
     ...runtimeArtifactPathspecs,
   ]);
-}
-
-export async function fallbackCommitMessage(input: CommitMessageRuntimeInput) {
-  const paths = commitMessagePaths(input);
-  const [status, log] = await Promise.all([
-    storyStatus(input.worktree, "--porcelain", paths),
-    git(input.worktree, ["log", "-12", "--pretty=%s"]),
-  ]);
-  return fallbackCommitMessageFromStatus(input, status, log);
-}
-
-// A story's commit closes the issues of origin the story says it handles.
-export async function withStoryIssueTrailers(
-  message: string,
-  input: CommitMessageRuntimeInput,
-) {
-  const origin = await originRemoteUrl(input.repositoryRoot);
-  return withLinkedIssueTrailers(message, input, origin);
-}
-
-export async function mergeConflictPrompt(
-  input: MergeConflictRuntimeInput,
-  targetBranch: string,
-  attempt: number,
-) {
-  const [status, files] = await Promise.all([
-    storyStatus(input.worktree, "--short"),
-    git(input.worktree, ["diff", "--name-only", "--diff-filter=U"]),
-  ]);
-  const title = input.title || "Current Git merge conflict";
-  const summary = input.summary || "Resolve the active merge conflicts.";
-  const storyBranch =
-    "storyBranch" in input && input.storyBranch
-      ? input.storyBranch
-      : await currentGitBranch(input.worktree);
-  return [
-    `Backlog item: ${title}`,
-    "",
-    summary,
-    "",
-    `Story branch: ${storyBranch || "HEAD"}`,
-    `Target branch: ${targetBranch}`,
-    `Resolution attempt: ${attempt} of ${maxMergeConflictResolutionAttempts}`,
-    "",
-    `Conflicted files:\n${files}`,
-    "",
-    `Git status:\n${truncateText(status, 8_000)}`,
-  ].join("\n");
 }
 
 export async function storyStatus(
@@ -217,7 +130,7 @@ function splitLines(value: string) {
   return value.split("\n").filter(Boolean);
 }
 
-function truncateText(value: string, limit: number) {
+export function truncateText(value: string, limit: number) {
   if (value.length <= limit) return value;
   return `${value.slice(0, limit)}\n[truncated]`;
 }

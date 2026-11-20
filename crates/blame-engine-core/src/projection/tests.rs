@@ -19,20 +19,24 @@ fn config() -> SessionConfig {
         tool_options: Default::default(),
         limits: Default::default(),
         checkpoints: false,
+        kind: Default::default(),
+        contract: None,
     }
 }
 
 /// A log from bodies, numbered from 1.
 fn log(bodies: Vec<RecordBody>) -> Vec<Record> {
-    std::iter::once(RecordBody::SessionCreated { config: config() })
-        .chain(bodies)
-        .enumerate()
-        .map(|(index, body)| Record {
-            seq: index as u64 + 1,
-            at_ms: 0,
-            body,
-        })
-        .collect()
+    std::iter::once(RecordBody::SessionCreated {
+        config: Box::new(config()),
+    })
+    .chain(bodies)
+    .enumerate()
+    .map(|(index, body)| Record {
+        seq: index as u64 + 1,
+        at_ms: 0,
+        body,
+    })
+    .collect()
 }
 
 fn t(id: &str) -> TurnId {
@@ -532,7 +536,9 @@ fn an_empty_edit_removes_a_block_and_the_latest_edit_wins() {
 fn the_configuration_follows_changes_and_rewinds() {
     let mut changed = config();
     changed.system_prompt = "other".into();
-    let mut bodies = vec![RecordBody::ConfigChanged { config: changed }];
+    let mut bodies = vec![RecordBody::ConfigChanged {
+        config: Box::new(changed),
+    }];
     let records = log(bodies.clone());
     assert_eq!(View::new(&records).config().unwrap().system_prompt, "other");
     bodies.extend(rewind_records(1, 3));

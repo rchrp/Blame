@@ -471,3 +471,116 @@ async fn without_a_remote_there_is_nothing_to_replicate() {
         Err(StoreError::Io(_))
     ));
 }
+
+fn created(kind: blame_engine_protocol::SessionKind) -> RecordBody {
+    let mut config: blame_engine_protocol::SessionConfig =
+        serde_json::from_value(serde_json::json!({
+            "purpose": "title",
+            "workspace_root": "/w",
+            "model": { "provider": "p", "model": "m" },
+            "system_prompt": "s",
+        }))
+        .unwrap();
+    config.kind = kind;
+    RecordBody::SessionCreated {
+        config: Box::new(config),
+    }
+}
+
+#[tokio::test]
+async fn a_task_stays_local_unless_it_asks_to_be_copied_and_can_be_deleted() {
+    use blame_engine_protocol::SessionKind;
+    let dir = TempDir::new("rep-tasks");
+    let remote = FakeRemote::new();
+    let store = open(&dir, &remote);
+    let (local, copied, chat) = (session("local"), session("copied"), session("chat"));
+    store
+        .append(
+            &local,
+            0,
+            vec![created(SessionKind::Task { replicate: false }), notice("t")],
+        )
+        .await
+        .unwrap();
+    store
+        .append(
+            &copied,
+            0,
+            vec![created(SessionKind::Task { replicate: true })],
+        )
+        .await
+        .unwrap();
+    store
+        .append(&chat, 0, vec![created(SessionKind::Conversation)])
+        .await
+        .unwrap();
+    store.append(&local, 2, vec![notice("more")]).await.unwrap();
+    let running = start(&store);
+    flushed(&store).await;
+    running.stop().await;
+    assert!(
+        remote.log(&local).is_empty(),
+        "a local task is never pushed"
+    );
+    assert_eq!(remote.log(&copied).len(), 1);
+    assert_eq!(remote.log(&chat).len(), 1);
+
+    let now = blame_engine_core::ports::Clock::now_ms(&RealClock);
+    assert_eq!(
+        store.local_sessions_before(now + 1).await.unwrap(),
+        std::slice::from_ref(&local)
+    );
+    assert!(
+        store
+            .local_sessions_before(now - 60_000)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    assert!(store.delete(&local).await.unwrap());
+    assert!(!store.delete(&local).await.unwrap());
+    assert!(matches!(
+        store.read(&local, 0, None).await,
+        Err(StoreError::UnknownSession(_))
+    ));
+    assert_eq!(store.sessions().await.unwrap().len(), 2);
+    assert!(
+        store.append(&local, 0, vec![notice("again")]).await.is_ok(),
+        "the id is free again"
+    );
+}
+
+#[tokio::test]
+async fn one_session_can_be_waited_for_while_another_lags() {
+    let dir = TempDir::new("rep-one");
+    let remote = FakeRemote::new();
+    remote.with(|s| s.down = true);
+    let store = open(&dir, &remote);
+    let running = start(&store);
+    let (a, b) = (session("a"), session("b"));
+    store.append(&a, 0, vec![notice("a")]).await.unwrap();
+    assert!(
+        !store
+            .wait_session_flushed(&a, Duration::from_millis(50))
+            .await
+            .unwrap()
+    );
+    remote.with(|s| s.down = false);
+    assert!(
+        store
+            .wait_session_flushed(&a, Duration::from_secs(10))
+            .await
+            .unwrap()
+    );
+    remote.with(|s| s.down = true);
+    store.append(&b, 0, vec![notice("b")]).await.unwrap();
+    assert!(
+        store
+            .wait_session_flushed(&a, Duration::from_millis(50))
+            .await
+            .unwrap(),
+        "another session's lag does not count"
+    );
+    assert!(!store.wait_flushed(Duration::from_millis(50)).await.unwrap());
+    running.stop().await;
+}

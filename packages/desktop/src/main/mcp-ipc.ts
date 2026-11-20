@@ -12,7 +12,7 @@ import {
   mergeCloudServers,
   type McpSettings,
 } from "./mcp-cloud-sync";
-import { runOnAgentRuntime } from "./agent-ipc";
+import { callEngineHost } from "./engine/engine-host-ipc";
 
 let settingsOperation: Promise<unknown> = Promise.resolve();
 let authorizationRunning = false;
@@ -117,7 +117,7 @@ export function registerMcpIpcHandlers() {
         throw new Error("Complete this MCP server setup before authorizing it");
       authorizationRunning = true;
       try {
-        await runOnAgentRuntime("mcpOAuth.authorize", {
+        await callEngineHost("mcpOAuthAuthorize", {
           filePath: settingsPath(),
           serverName: name,
         });
@@ -130,7 +130,7 @@ export function registerMcpIpcHandlers() {
   );
   ipcMain.handle("mcp:disconnect-oauth", (_event, input) =>
     runSettingsOperation(async () => {
-      await runOnAgentRuntime("mcpOAuth.clear", {
+      await callEngineHost("mcpOAuthClear", {
         filePath: settingsPath(),
         serverName: validateName(input),
       });
@@ -196,7 +196,7 @@ async function listServers(settings?: McpSettings): Promise<McpServerConfig[]> {
 }
 
 function safeOAuthStatuses() {
-  return runOnAgentRuntime<McpOAuthStatus[]>("mcpOAuth.statuses", {
+  return callEngineHost("mcpOAuthStatuses", {
     filePath: settingsPath(),
   }).catch((): McpOAuthStatus[] => []);
 }

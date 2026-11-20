@@ -37,6 +37,10 @@ import {
 } from "./testing.js";
 import { defineTool } from "./tool.js";
 
+// A story's turn ends through the harness's `finish_task` (its contract).
+const finish = (summary: string) =>
+  tools({ name: "finish_task", input: { summary } });
+
 const root = fileURLToPath(new URL("../../../../", import.meta.url));
 const binary =
   process.env.BLAME_ENGINE_BIN ?? join(root, "target/debug/blame-engine");
@@ -197,7 +201,7 @@ describe(
             operations: [{ kind: "patch", path: "note.txt", patch: "hello\n" }],
           },
         }),
-        text("Added the note."),
+        finish("Added the note."),
       );
       await turn(host, session, "Write hello into note.txt.");
       assert.equal(readFileSync(join(worktree, "note.txt"), "utf8"), "hello\n");
@@ -224,7 +228,7 @@ describe(
       // A tool that needs the person's approval: it waits, then runs once allowed.
       model.script(
         tools({ name: "deploy_preview", input: { target: "staging" } }),
-        text("Deployed."),
+        finish("Deployed."),
       );
       const beforeApproval = ended(session);
       await host.call("send", {
@@ -249,8 +253,8 @@ describe(
       // While a turn runs: a steer joins it, a second message waits its turn.
       model.script(
         tools({ name: "wait_for_build", input: {} }),
-        text("Built, and noted."),
-        text("Next one done."),
+        finish("Built, and noted."),
+        finish("Next one done."),
       );
       const beforeQueue = ended(session);
       await host.call("send", {
@@ -287,7 +291,7 @@ describe(
       assert.match(model.sent().at(-1)!, /Then tidy up\./);
 
       // A provider failure is retried; the turn still completes.
-      model.script(failure(529, "overloaded_error"), text("Worked on retry."));
+      model.script(failure(529, "overloaded_error"), finish("Worked on retry."));
       await turn(host, session, "Once more.");
       const retried = view(session).items.find(
         (item) => item.kind === "request_failed",
@@ -295,8 +299,25 @@ describe(
       assert.ok(retried?.kind === "request_failed" && retried.retried);
       assert.ok(
         view(session).items.some(
-          (item) => item.kind === "text" && item.text === "Worked on retry.",
+          (item) =>
+            item.kind === "tool_call" &&
+            JSON.stringify(item).includes("Worked on retry."),
         ),
+      );
+
+      // A reply that stops without finishing is corrected by the engine:
+      // the story's turn ends only through an accepted finish_task.
+      model.script(text("I think that is it."), finish("Finished for real."));
+      await turn(host, session, "Wrap up.");
+      assert.match(
+        model.sent().at(-1)!,
+        /`finish_task`/,
+        "the engine asked the agent to finish",
+      );
+      assert.equal(view(session).turns.at(-1)?.status, "completed");
+      assert.ok(
+        view(session).items.some((item) => item.kind === "notice"),
+        "the correction shows in the transcript",
       );
 
       // An interrupt ends the running turn as interrupted.
@@ -345,7 +366,7 @@ describe(
       });
       assert.equal(missing!.exists, false);
       await host.call("follow", { session, subscription: "reopened" });
-      model.script(text("Continued after the restart."));
+      model.script(finish("Continued after the restart."));
       const beforeContinue = ended(session);
       await host.call("send", {
         session,

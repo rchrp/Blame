@@ -11,7 +11,9 @@ import {
 } from "electron";
 import {
   engineHostMethods,
+  type EngineHostEvent,
   type EngineHostInput,
+  type EngineHostResult,
   isEngineHostMessage,
   type EngineHostMessage,
   type EngineHostMethod,
@@ -27,6 +29,8 @@ export type EngineHostRegistration = {
   dataDir: string;
   clientVersion: string;
   isAppWindow(sender: WebContents): boolean;
+  /** What the host and its agents' commands run with (PATH and Blame's folders). */
+  environment: NodeJS.ProcessEnv;
   /** The services the agents' tools use (engine-desktop-services.ts). */
   desktop: EngineDesktopHandlers;
   /**
@@ -39,6 +43,14 @@ export type EngineHostRegistration = {
     input: unknown,
     api: EngineHostInput<"connect">["api"] | undefined,
   ): Promise<void>;
+  /** A session's turn started or its turns all ended. */
+  onActivity?(event: Extract<EngineHostEvent, { type: "activity" }>): void;
+  /** Adds what only main knows to a window's call (the git flows'), then makes it. */
+  prepareCall?(
+    method: EngineHostMethod,
+    input: unknown,
+    call: (input: unknown) => Promise<unknown>,
+  ): Promise<unknown>;
 };
 
 const readyTimeoutMs = 15_000;
@@ -106,7 +118,7 @@ class EngineHostProcess {
     if ("missing" in binary) return Promise.reject(new Error(binary.missing));
     const child = utilityProcess.fork(modulePath, [], {
       env: {
-        ...process.env,
+        ...this.registration.environment,
         BLAME_ENGINE_HOST_CONFIG: JSON.stringify({
           binary: binary.path,
           dataDir,
@@ -141,7 +153,11 @@ class EngineHostProcess {
   }
 
   private onMessage(child: UtilityProcess, message: EngineHostMessage) {
-    if (message.kind === "event") return this.router.route(message.event);
+    if (message.kind === "event") {
+      if (message.event.type === "activity")
+        this.registration.onActivity?.(message.event);
+      return this.router.route(message.event);
+    }
     if (message.kind === "response") {
       const pending = this.pending.get(message.id);
       this.pending.delete(message.id);
@@ -243,8 +259,21 @@ export function registerEngineIpcHandlers(
       input,
       engine.router.api(),
     );
-    return engine.call(method as EngineHostMethod, input);
+    const call = (prepared: unknown) =>
+      engine.call(method as EngineHostMethod, prepared);
+    return registration.prepareCall
+      ? registration.prepareCall(method as EngineHostMethod, input, call)
+      : call(input);
   });
+}
+
+/** A call of the main process itself (an MCP sign-in, a Direct story's files). */
+export function callEngineHost<M extends EngineHostMethod>(
+  method: M,
+  input: EngineHostInput<M>,
+): Promise<EngineHostResult<M>> {
+  if (!host) return Promise.reject(new Error("The engine host is not set up."));
+  return host.call(method, input) as Promise<EngineHostResult<M>>;
 }
 
 /** Folders an engine turn is writing in right now. */
