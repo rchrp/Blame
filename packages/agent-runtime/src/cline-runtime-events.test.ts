@@ -15,7 +15,6 @@ import { previewInitializationRepairTool } from "./preview-harness-tools.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
-import { ClineFreeModelLimitError, ClineNotSubscribedError } from "@cline/llms";
 import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
 import { SessionJournal } from "./harness/session-journal.js";
 import { executeLightWorkspaceRequest } from "./harness/light-executor.js";
@@ -33,7 +32,6 @@ import {
   BlameAgentRuntime,
   backendKey,
   clineDefaultToolPolicies,
-  clineErrorMetadata,
   coreBackendOptions,
   developmentUserInput,
   duplicateEventSignature,
@@ -48,22 +46,6 @@ import {
   workspaceSessionIds,
 } from "./cline-runtime.js";
 import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
-
-test("exposes actionable metadata for typed Cline account errors", () => {
-  assert.deepEqual(clineErrorMetadata(new ClineNotSubscribedError("cline")), {
-    actionUrl: "https://app.cline.bot/dashboard/subscription?personal=true",
-    code: "cline_not_subscribed",
-  });
-  assert.deepEqual(
-    clineErrorMetadata(
-      new ClineFreeModelLimitError("Free model limit reached", "cline"),
-    ),
-    {
-      code: "cline_free_model_limit",
-      resetAt: undefined,
-    },
-  );
-});
 
 test("uses the local backend when no workspace backend is provided", () => {
   assert.equal(backendKey(), "local");
@@ -1178,28 +1160,6 @@ function newProjectGenerationInput(
     workspaceRoot: workspace,
   };
 }
-
-test("synchronizes provider OAuth settings for initialization credentials", async () => {
-  const calls: string[] = [];
-  const credential = { providerId: "openai-codex" };
-  const runtime = new BlameAgentRuntime();
-  const internals = runtime as unknown as {
-    initializationCredential(input: unknown): Promise<typeof credential>;
-    runtimeCredential(input: unknown): Promise<typeof credential>;
-    syncClineOAuthProviderSettings(input: typeof credential): Promise<void>;
-  };
-  internals.runtimeCredential = async () => {
-    calls.push("resolve");
-    return credential;
-  };
-  internals.syncClineOAuthProviderSettings = async (input) => {
-    assert.equal(input, credential);
-    calls.push("sync");
-  };
-
-  assert.equal(await internals.initializationCredential({}), credential);
-  assert.deepEqual(calls, ["resolve", "sync"]);
-});
 
 test("finds only sessions writing inside a workspace", () => {
   const workspace = join(tmpdir(), "story-42");
@@ -2802,11 +2762,11 @@ test("development instructions describe only caller-declared isolation", async (
 for (const harness of ["blame", "cline"] as const) {
   test(`${harness} receives only its configured image compaction behavior`, async () => {
     const workspace = await mkdtemp(join(tmpdir(), "image-compaction-runtime-"));
-    const fixture = developmentCompactionFixture("true", harness, "openai-native");
+    const fixture = developmentCompactionFixture("true", harness, "openai");
     try {
       await fixture.runtime.sessions.startDevelopment({
         apiConnection: { url: "https://api.example" }, autoSendPrompt: false, cwd: workspace,
-        modelId: "gpt-5.6-luna", providerId: "openai-native", summary: "Inspect an image.",
+        modelId: "gpt-5.6-luna", providerId: "openai", summary: "Inspect an image.",
         title: "Image input", workspaceRoot: workspace,
       });
       assert.equal(fixture.start()?.config.compaction?.imageTokenLimit, harness === "blame" ? 36_000 : undefined);
@@ -2889,35 +2849,6 @@ test("gives the model a reason for every refused tool call", async () => {
   const result = await stopped;
   assert.equal(result.approved, false);
   assert.match(result.reason ?? "", /session stopped before the user answered/);
-});
-
-test("keeps a still-valid OAuth token when a forced refresh fails", async () => {
-  const runtime = new BlameAgentRuntime();
-  const credential = (expires: number) => ({
-    authMethod: "oauth",
-    providerId: "openai-codex",
-    oauthCredentials: { access: "access", refresh: "refresh", expires },
-  });
-  const internals = runtime as unknown as {
-    oauthProvider(providerId: string): Promise<unknown>;
-    refreshOAuthCredential(
-      connection: unknown,
-      input: ReturnType<typeof credential>,
-      options: { force: boolean },
-    ): Promise<unknown>;
-  };
-  internals.oauthProvider = async () => ({
-    refreshToken: async () => {
-      throw new Error("refresh endpoint unavailable");
-    },
-  });
-
-  const valid = credential(Date.now() + 3_600_000);
-  assert.equal(await internals.refreshOAuthCredential({}, valid, { force: true }), valid);
-  await assert.rejects(
-    internals.refreshOAuthCredential({}, credential(Date.now() - 1), { force: true }),
-    /refresh endpoint unavailable/,
-  );
 });
 
 test("fails a run that ends without a reply when finish refuses it", async () => {

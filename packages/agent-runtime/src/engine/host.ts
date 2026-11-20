@@ -23,6 +23,7 @@ import type {
   EngineMessage,
   EngineSessionSettings,
 } from "./protocol.js";
+import { EngineProviders } from "./providers.js";
 import { quickChatConfig } from "./purposes/quick-chat.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
@@ -40,6 +41,9 @@ export type EngineHostOptions = {
   emit(event: EngineHostEvent): void;
   /** Desktop services, served by the main process. */
   renderWebPage?: RenderWebPage;
+  openExternal?(url: string): Promise<void>;
+  /** Where the engine refreshes the models.dev catalog, when not models.dev. */
+  catalogUrl?: string;
   env?: NodeJS.ProcessEnv;
   onLog?(line: EngineLogLine): void;
   /** For tests: replaces parts of how credentials are found. */
@@ -73,6 +77,7 @@ export class EngineHost {
   private readonly hub: SessionHub;
   private readonly tools: ToolSet;
   private readonly credentials: CredentialResolver;
+  private readonly providers: EngineProviders;
   private readonly options: EngineHostOptions;
 
   constructor(options: EngineHostOptions) {
@@ -105,6 +110,7 @@ export class EngineHost {
             ...(options.harnessCommand
               ? { harnessCommand: JSON.stringify(options.harnessCommand) }
               : {}),
+            ...(options.catalogUrl ? { catalogUrl: options.catalogUrl } : {}),
           },
           options.env,
         ),
@@ -122,6 +128,14 @@ export class EngineHost {
       ),
     );
     this.supervisor.onStarted(() => this.credentials.engineRestarted());
+    this.providers = new EngineProviders({
+      connection: () => this.api,
+      catalog: async (refresh) =>
+        (await this.supervisor.client()).request("catalog/list", { refresh }),
+      credentials: this.credentials,
+      engineBinary: options.binary,
+      openExternal: options.openExternal,
+    });
     this.hub = new SessionHub(this.supervisor, options.emit);
   }
 
@@ -211,6 +225,13 @@ export class EngineHost {
       return null;
     },
     running: async () => this.hub.running(),
+    providers: ({ refresh }) => this.providers.list(refresh ?? false),
+    saveCredential: (input) => this.providers.saveCredential(input),
+    deleteCredential: ({ id }) => this.providers.deleteCredential(id),
+    signInChatGpt: ({ label }) => this.providers.signInChatGpt(label),
+    claudeCodeStatus: () => this.providers.claudeCodeStatus(),
+    connectClaudeCode: ({ label }) => this.providers.connectClaudeCode(label),
+    planUsage: (input) => this.providers.planUsage(input),
     shutdown: async () => {
       await this.shutdown();
       return null;

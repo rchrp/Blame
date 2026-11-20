@@ -2,35 +2,60 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  fetchModelRecommendations,
   listProjectMemories,
-  listProviders,
+  listProviderCredentials,
   saveProjectMemory,
 } from "./cloud-api.js";
 
-test("loads the provider catalog and recommendations only from the protected API", async () => {
+test("credentials and the ranking of the engine's models come from the protected API", async () => {
   const originalFetch = globalThis.fetch;
-  const requests: string[] = [];
-  globalThis.fetch = async (input) => {
+  const requests: Array<{ body?: string; method?: string; url: string }> = [];
+  globalThis.fetch = async (input, init) => {
     const url = input.toString();
-    requests.push(url);
-    return url.endsWith("/providers/catalog?view=selector")
-      ? jsonResponse(catalog)
+    requests.push({
+      body: typeof init?.body === "string" ? init.body : undefined,
+      method: init?.method,
+      url,
+    });
+    return url.endsWith("/providers/recommendations")
+      ? jsonResponse(recommendations)
       : jsonResponse({ data: credentials });
   };
 
   try {
-    const providers = await listProviders({
+    const connection = {
       url: "https://api.blame.test/api/v1",
       token: "license-token",
+    };
+    const listed = await listProviderCredentials(connection);
+    assert.equal(listed.length, 2);
+    const ranked = await fetchModelRecommendations(connection, {
+      connected: ["anthropic"],
+      models: [
+        {
+          providerId: "anthropic",
+          modelId: "claude-test",
+          name: "Claude Test",
+          cost: { input: 1, output: 5 },
+        },
+      ],
     });
-
-    assert.deepEqual(requests, [
-      "https://api.blame.test/api/v1/providers/catalog?view=selector",
-      "https://api.blame.test/api/v1/providers/credentials",
-    ]);
-    assert.deepEqual(providers.connected, ["anthropic"]);
-    assert.equal(providers.recommendations.all[0]?.modelId, "claude-test");
-    assert.equal(providers.credentials.length, 2);
+    assert.equal(ranked.all[0]?.modelId, "claude-test");
+    assert.deepEqual(
+      requests.map(({ method, url }) => ({ method, url })),
+      [
+        {
+          method: undefined,
+          url: "https://api.blame.test/api/v1/providers/credentials",
+        },
+        {
+          method: "POST",
+          url: "https://api.blame.test/api/v1/providers/recommendations",
+        },
+      ],
+    );
+    assert.match(requests[1]?.body ?? "", /claude-test/u);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -74,40 +99,24 @@ test("loads and stores project memory through the scoped API", async () => {
   }
 });
 
-const catalog = {
+const recommendations = {
+  generatedAt: "2026-07-30T00:00:00.000Z",
+  benchmarkBoundary: 0.74,
   all: [
     {
-      id: "anthropic",
-      name: "Anthropic",
-      models: {
-        "claude-test": {
-          id: "claude-test",
-          name: "Claude Test",
-          cost: { input: 1, output: 5 },
-        },
-      },
+      providerId: "anthropic",
+      modelId: "claude-test",
+      position: 0.5,
+      segment: "benchmarked",
+      estimatedCost: 0.1,
     },
   ],
-  default: { anthropic: "claude-test" },
-  recommendations: {
-    generatedAt: "2026-07-30T00:00:00.000Z",
-    benchmarkBoundary: 0.74,
-    all: [
-      {
-        providerId: "anthropic",
-        modelId: "claude-test",
-        position: 0.5,
-        segment: "benchmarked",
-        estimatedCost: 0.1,
-      },
-    ],
-    byProvider: { anthropic: [] },
-    profile: {
-      inputTokens: 50_000,
-      outputTokens: 5_000,
-      cacheReadTokens: 0,
-      sampleCount: 0,
-    },
+  byProvider: { anthropic: [] },
+  profile: {
+    inputTokens: 50_000,
+    outputTokens: 5_000,
+    cacheReadTokens: 0,
+    sampleCount: 0,
   },
 };
 

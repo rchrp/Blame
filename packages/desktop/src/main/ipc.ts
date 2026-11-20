@@ -148,6 +148,12 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
       const { renderResearchPage } = await import("./web-research-browser.ts");
       return renderResearchPage(url, signal);
     },
+    // The ChatGPT sign-in page; nothing else asks.
+    openExternal: async (url) => {
+      if (!/^https:\/\/auth\.openai\.com\//.test(url))
+        throw new Error("Only the ChatGPT sign-in opens from the engine host.");
+      await shell.openExternal(url);
+    },
   });
   useServingAgentCheck(localAgentOwnsWorkspace);
   registerPreviewServingIpcHandlers({ isAppWindow: options.isAppWindow });

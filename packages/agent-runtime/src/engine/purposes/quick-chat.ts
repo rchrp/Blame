@@ -13,11 +13,7 @@ import {
 } from "../../personalization.js";
 import { loadPrompt } from "../../prompt-loader.js";
 import { webResearchGuidance } from "../../web-research-calls.js";
-import {
-  engineProviderId,
-  engineReasoning,
-  type QuickChatSettings,
-} from "../protocol.js";
+import { engineReasoning, type QuickChatSettings } from "../protocol.js";
 import type { ToolSet } from "../tool.js";
 
 export const quickChatClientTools = ["search_web", "read_web_page"] as const;
@@ -30,11 +26,7 @@ export function quickChatConfig(
   tools: ToolSet,
   now = new Date(),
 ): SessionConfig {
-  const provider = engineProviderId(settings.model.providerId);
-  if (!provider)
-    throw new Error(
-      `${settings.model.providerId} models do not run on Blame's agent engine yet. Pick a model from Anthropic, OpenAI, ChatGPT, Gemini, OpenRouter, an OpenAI-compatible provider or Claude Code.`,
-    );
+  const provider = settings.model.providerId;
   const personalization = normalizePersonalization(settings.personalization);
   const reasoning = engineReasoning(settings.model.reasoning);
   return {

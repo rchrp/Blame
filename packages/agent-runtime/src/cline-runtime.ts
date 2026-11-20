@@ -18,28 +18,12 @@ import {
 } from "./personalization.js";
 
 import type { ExecutionTerminalReason } from "@blame/harness-core";
-import {
-  extractClineFreeModelLimitResetTime,
-  getClinePassSubscriptionUrl,
-  isClineFreeModelLimitError,
-  isClineFreeModelLimitMessage,
-  isClineModelNotFoundMessage,
-  isClineNotSubscribedError,
-  isClineNotSubscribedMessage,
-  isClineOrgIndividualInferenceSubscriptionError,
-  isClineOrgIndividualInferenceSubscriptionMessage,
-  isClinePassLimitError,
-  isClinePassLimitMessage,
-} from "@cline/llms";
 import type {
   ClineCore,
   ClineCoreStartInput,
   CoreSessionEvent,
   ContentBlock,
   Message,
-  OAuthPrompt,
-  OAuthProviderInterface,
-  OAuthServerListeningInfo,
 } from "@cline/sdk";
 
 import { assertTargetChangesRestorable, stashTargetChanges, type TargetChangesStash } from "./approve-merge-git.js";
@@ -174,25 +158,12 @@ import {
 } from "./cline-runtime-tools.js";
 import { writeTools } from "./cline-tool-policy.js";
 import {
-  deleteProviderCredential,
   listProjectMemories,
-  fetchCatalogModel,
-  listProviders,
   resolveProviderCredential,
-  saveOAuthCredential,
   saveProjectMemory,
-  saveProviderCredential,
 } from "./cloud-api.js";
 import { USER_REJECTED_TOOL_REASON } from "@cline/shared";
 import { commitMessagePaths } from "./commit-message.js";
-import {
-  clineOAuthProvider,
-  forceOAuthRefresh,
-  ocaOAuthProvider,
-  openAICodexOAuthProvider,
-  supportedClineOAuthProvider,
-  toBlameOAuthCredentials,
-} from "./cline-oauth-providers.js";
 import {
   addStoryChanges,
   commitMessagePrompt,
@@ -204,18 +175,12 @@ import {
   withStoryIssueTrailers,
 } from "./story-worktree-git.js";
 import { linkedIssueNumbers } from "./linked-issues.js";
-import {
-  knownModelInfo,
-  loadCatalogModel,
-} from "./supplemental-model-config.js";
+import { knownModelInfo } from "./supplemental-model-config.js";
 import {
   claudeCodeCredential,
-  claudeCodeStatus,
   closeClaudeCodeBridge,
   closeClaudeCodeSessions,
-  connectClaudeCode,
 } from "./claude-code/claude-code-provider.js";
-import { readClaudeCodeUsage, readCodexUsage } from "./subscription-usage.js";
 import { createContextProjectionExtension } from "./context-projection.js";
 import {
   appendInitialTaskBriefing,
@@ -326,9 +291,6 @@ import type {
   GenerateTitleResult,
   InitializeProjectInput,
   InitializeProjectResult,
-  ConnectClaudeCodeInput,
-  SubscriptionUsageInput,
-  LoginOAuthProviderInput,
   MapSecurityAuditInput,
   NewProjectGenerationResult,
   OpenPullRequestInput,
@@ -344,7 +306,6 @@ import type {
   ResolveMergeConflictsResult,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
-  SaveProviderCredentialInput,
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
@@ -561,26 +522,6 @@ export class BlameAgentRuntime {
     void import("@cline/sdk").catch(() => undefined);
   }
 
-  providers = {
-    list: (connection: ApiConnection) => listProviders(connection),
-    saveCredential: (
-      connection: ApiConnection,
-      input: SaveProviderCredentialInput,
-    ) => saveProviderCredential(connection, input),
-    deleteCredential: (connection: ApiConnection, id: string) =>
-      deleteProviderCredential(connection, { id }),
-    loginOAuth: (input: LoginOAuthProviderInput) => this.loginOAuth(input),
-    claudeCodeStatus: () => claudeCodeStatus(),
-    connectClaudeCode: (input: ConnectClaudeCodeInput) =>
-      connectClaudeCode(input),
-    subscriptionUsage: async (input: SubscriptionUsageInput) =>
-      input.providerId === "claude-code"
-        ? readClaudeCodeUsage()
-        : input.providerId === "openai-codex"
-          ? readCodexUsage((await this.runtimeCredential(input)).oauthCredentials)
-          : null,
-  };
-
   prewarm = (input: AgentRuntimePrewarmInput) =>
     this.prewarmRuntimeBackend(input);
 
@@ -793,31 +734,19 @@ export class BlameAgentRuntime {
     const startedAt = Date.now();
     const projectMemoryPromise = this.loadProjectMemory(input);
     try {
-      const [credential] = await Promise.all([
-        resolveProviderCredential(input.apiConnection, {
-          providerId: input.providerId,
-          label: credentialLabel(input),
-        }),
-        loadCatalogModel(
-          () =>
-            fetchCatalogModel(
-              input.apiConnection,
-              input.providerId,
-              input.modelId,
-            ),
-          input.providerId,
-          input.modelId,
-        ),
-      ]);
+      const credential = await resolveProviderCredential(input.apiConnection, {
+        providerId: input.providerId,
+        label: credentialLabel(input),
+      });
       await appendLog(startLogFile, "credential resolved", {
         providerId: credential.providerId,
         authMethod: credential.authMethod,
         hasBaseUrl: !!credential.baseUrl,
       });
+      // The ChatGPT token is refreshed by the engine host, which uses it
+      // for every engine conversation and saves it back to the API.
       const resolvedCredential = await claudeCodeCredential(
-        await this.refreshOAuthCredential(input.apiConnection, credential, {
-          force: forceOAuthRefresh(credential.providerId),
-        }),
+        credential,
         {
           backend: input.backend,
           reasoningEffort: input.reasoningEffort,
@@ -830,15 +759,6 @@ export class BlameAgentRuntime {
         hasBaseUrl: !!resolvedCredential.baseUrl,
         expires: resolvedCredential.oauthCredentials?.expires,
       });
-      await this.syncClineOAuthProviderSettings(resolvedCredential);
-      if (resolvedCredential.authMethod === "oauth") {
-        await appendLog(startLogFile, "cline oauth settings synced", {
-          providerId: resolvedCredential.providerId,
-          accountId: resolvedCredential.oauthCredentials?.accountId,
-          email: resolvedCredential.oauthCredentials?.email,
-          expires: resolvedCredential.oauthCredentials?.expires,
-        });
-      }
       const cline = await this.core(input.backend);
       await appendLog(startLogFile, "cline core ready");
       const sessionLogFile = sessionLogPath(input.cwd, sessionId);
@@ -1864,15 +1784,10 @@ export class BlameAgentRuntime {
     if (state === "running" || state === "cancelling") {
       throw new Error("Wait for the agent to finish before compacting.");
     }
-    const credential = await this.refreshOAuthCredential(
-      input.apiConnection,
-      await resolveProviderCredential(input.apiConnection, {
-        providerId: input.providerId,
-        label: credentialLabel(input),
-      }),
-      { force: forceOAuthRefresh(input.providerId) },
-    );
-    await this.syncClineOAuthProviderSettings(credential);
+    const credential = await resolveProviderCredential(input.apiConnection, {
+      providerId: input.providerId,
+      label: credentialLabel(input),
+    });
     const cline = this.sessionBackendKeys.has(sessionId)
       ? await this.sessionCore(sessionId)
       : await this.core(input.backend);
@@ -2321,9 +2236,7 @@ export class BlameAgentRuntime {
   }
 
   private async initializationCredential(input: RuntimeCredentialInput) {
-    const credential = await this.runtimeCredential(input);
-    await this.syncClineOAuthProviderSettings(credential);
-    return credential;
+    return this.runtimeCredential(input);
   }
 
   private async runtimeCredential(input: RuntimeCredentialInput) {
@@ -2331,10 +2244,10 @@ export class BlameAgentRuntime {
       providerId: input.providerId,
       label: credentialLabel(input),
     });
-    return claudeCodeCredential(
-      await this.refreshOAuthCredential(input.apiConnection, credential),
-      { backend: input.backend, reasoningEffort: input.reasoningEffort },
-    );
+    return claudeCodeCredential(credential, {
+      backend: input.backend,
+      reasoningEffort: input.reasoningEffort,
+    });
   }
 
   private async approveAndMergeStory(
@@ -3137,7 +3050,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
       {
         type: "error",
         sessionId,
-        payload: { message, ...clineErrorMetadata(message) },
+        payload: { message },
       },
       executionId,
     );
@@ -3634,126 +3547,6 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
     return true;
   }
 
-  private async loginOAuth(input: LoginOAuthProviderInput) {
-    const provider = await this.oauthProvider(input.providerId);
-    const credentials = await provider.login({
-      onAuth: (info: { url: string; instructions?: string }) => {
-        this.options.openExternalUrl?.(info.url);
-        this.events?.emit({
-          type: "notice",
-          payload: {
-            providerId: input.providerId,
-            message: info.instructions ?? "OAuth login opened.",
-          },
-        });
-      },
-      onPrompt: async (prompt: OAuthPrompt) => prompt.defaultValue ?? "",
-      onProgress: (message: string) => {
-        this.events?.emit({
-          type: "notice",
-          payload: { providerId: input.providerId, message },
-        });
-      },
-      onServerListening: (info: OAuthServerListeningInfo) => {
-        this.events?.emit({
-          type: "notice",
-          payload: {
-            providerId: input.providerId,
-            message: `Waiting for OAuth callback on ${info.callbackUrl}`,
-          },
-        });
-      },
-      onServerClose: () => {
-        this.events?.emit({
-          type: "notice",
-          payload: {
-            providerId: input.providerId,
-            message: "OAuth callback server closed.",
-          },
-        });
-      },
-    });
-
-    return saveOAuthCredential(input.apiConnection, {
-      providerId: input.providerId,
-      label: input.label,
-      apiKey: provider.getApiKey(credentials),
-      oauthCredentials: toBlameOAuthCredentials(credentials),
-      baseUrl: input.baseUrl ?? null,
-    });
-  }
-
-  private async refreshOAuthCredential(
-    connection: ApiConnection,
-    credential: Awaited<ReturnType<typeof resolveProviderCredential>>,
-    options: { force?: boolean } = {},
-  ) {
-    if (credential.authMethod !== "oauth" || !credential.oauthCredentials)
-      return credential;
-    if (
-      !options.force &&
-      credential.oauthCredentials.expires > Date.now() + 60_000
-    )
-      return credential;
-
-    const provider = await this.oauthProvider(credential.providerId);
-    let refreshed: Awaited<ReturnType<typeof provider.refreshToken>>;
-    try {
-      refreshed = await provider.refreshToken(credential.oauthCredentials);
-    } catch (error) {
-      // A failed proactive refresh keeps a token that is still valid.
-      if (credential.oauthCredentials.expires > Date.now() + 60_000)
-        return credential;
-      throw error;
-    }
-    const saved = await saveOAuthCredential(connection, {
-      providerId: credential.providerId,
-      label: credential.label,
-      apiKey: provider.getApiKey(refreshed),
-      oauthCredentials: toBlameOAuthCredentials(refreshed),
-      baseUrl: credential.baseUrl,
-    });
-
-    return {
-      ...credential,
-      apiKey: provider.getApiKey(refreshed),
-      oauthCredentials: toBlameOAuthCredentials(refreshed),
-      authMethod: saved.authMethod,
-    };
-  }
-
-  private async syncClineOAuthProviderSettings(
-    credential: Awaited<ReturnType<typeof resolveProviderCredential>>,
-  ) {
-    if (credential.authMethod !== "oauth" || !credential.oauthCredentials)
-      return;
-    if (!supportedClineOAuthProvider(credential.providerId)) return;
-    const sdk = await import("@cline/sdk");
-    const providerId = sdk.normalizeOAuthProvider(credential.providerId);
-    const manager = new sdk.ProviderSettingsManager();
-    const existing = manager.getProviderSettings(providerId);
-    sdk.saveLocalProviderOAuthCredentials(manager, providerId, existing, {
-      access: credential.oauthCredentials.access,
-      refresh: credential.oauthCredentials.refresh,
-      expires: credential.oauthCredentials.expires,
-      accountId:
-        credential.oauthCredentials.accountId ??
-        credential.oauthCredentials.email,
-    });
-  }
-
-  private async oauthProvider(
-    providerId: string,
-  ): Promise<OAuthProviderInterface> {
-    const sdk = await import("@cline/sdk");
-    if (providerId === "openai-codex") return openAICodexOAuthProvider(sdk);
-    if (providerId === "cline" || providerId === "opencode") {
-      return clineOAuthProvider(sdk, providerId);
-    }
-    if (providerId === "oca") return ocaOAuthProvider(sdk);
-    throw new Error(`OAuth is not supported for provider ${providerId}`);
-  }
-
   private emitSessionNotice(sessionId: string, message: string) {
     void this.logSession(sessionId, "notice", { message });
     this.events?.emit(
@@ -3768,7 +3561,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
   private emitSessionError(
     sessionId: string,
     message: string,
-    error: unknown = message,
+    _error: unknown = message,
     executionId?: string,
   ) {
     void this.logSession(sessionId, "error", { message });
@@ -3778,7 +3571,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
         {
           type: "error",
           sessionId,
-          payload: { message, ...clineErrorMetadata(error) },
+          payload: { message },
         },
         executionId,
       ),
@@ -4111,7 +3904,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
               {
                 type: "error",
                 sessionId,
-                payload: { message: failure, ...clineErrorMetadata(failure) },
+                payload: { message: failure },
               },
               activeExecutionId,
             ),
@@ -4184,7 +3977,7 @@ private async commitStoryWork(input: ApproveAndMergeInput) {
             {
               type: "error",
               sessionId,
-              payload: { message, ...clineErrorMetadata(error) },
+              payload: { message },
             },
             activeExecutionId,
           ),
@@ -4348,44 +4141,6 @@ function terminationWatchdogPause(timeoutMs: number) {
     const timeout = setTimeout(resolve, timeoutMs);
     timeout.unref?.();
   });
-}
-
-export function clineErrorMetadata(error: unknown) {
-  const message = errorMessage(error);
-  if (
-    isClineNotSubscribedError(error) ||
-    isClineNotSubscribedMessage(message)
-  ) {
-    return {
-      code: "cline_not_subscribed",
-      actionUrl: getClinePassSubscriptionUrl(),
-    };
-  }
-  if (
-    isClineOrgIndividualInferenceSubscriptionError(error) ||
-    isClineOrgIndividualInferenceSubscriptionMessage(message)
-  ) {
-    return { code: "cline_org_subscription_unsupported" };
-  }
-  if (isClinePassLimitError(error) || isClinePassLimitMessage(message)) {
-    return {
-      code: "cline_pass_limit",
-      actionUrl: getClinePassSubscriptionUrl(),
-    };
-  }
-  if (
-    isClineFreeModelLimitError(error) ||
-    isClineFreeModelLimitMessage(message)
-  ) {
-    return {
-      code: "cline_free_model_limit",
-      resetAt: extractClineFreeModelLimitResetTime(message),
-    };
-  }
-  if (isClineModelNotFoundMessage(message)) {
-    return { code: "cline_model_not_found" };
-  }
-  return {};
 }
 
 function credentialLabel(input: RuntimeCredentialInput) {

@@ -28,6 +28,8 @@ export type EngineHostRegistration = {
     url: string,
     signal: AbortSignal,
   ): Promise<{ url: string; html: string }>;
+  /** Opens a sign-in page in the person's browser. */
+  openExternal(url: string): Promise<void>;
 };
 
 const readyTimeoutMs = 15_000;
@@ -152,10 +154,15 @@ class EngineHostProcess {
     this.desktopRequests.set(message.id, controller);
     try {
       const { url } = message.input as { url: string };
-      const result = await this.registration.renderWebPage(
-        String(url ?? ""),
-        controller.signal,
-      );
+      const result =
+        message.method === "openExternal"
+          ? await this.registration
+              .openExternal(String(url ?? ""))
+              .then(() => null)
+          : await this.registration.renderWebPage(
+              String(url ?? ""),
+              controller.signal,
+            );
       child.postMessage({
         kind: "desktop-response",
         id: message.id,
