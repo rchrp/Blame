@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { chmod, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
-import { observeCheck } from "./check-observation.js";
-import { lightEditCodeInputSchema } from "./light-contracts.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { managedTestRun, observeCheck, parseTestReport, parseTestReports, planScopedLightPatch, restoreFiles } from "./test-client/units.js";
+import { lightEditCodeInputSchema } from "./test-client/contracts.js";
 import { auditSdkUsage, disjointUsage } from "../usage-audit.js";
 
 const patch = (path: string, before: string, after: string) =>
@@ -195,52 +196,9 @@ test("usage audit keeps missing attempts unknown and never counts cache or reaso
   );
 });
 
-test("experimental search groups repeated hits and publishes an immediately editable body", async () => {
-  const root = await mkdtemp(join(tmpdir(), "frontier-"));
-  try {
-    await writeFile(
-      join(root, "cache.ts"),
-      "export function calculate() {\n  const needle = 1;\n  return needle;\n}\n",
-    );
-    const workspace = new LightWorkspace(root, {
-      sessionId: "search",
-      experimentalSearchExpansion: true,
-    });
-    const found = await workspace.searchCode({
-      query: "needle",
-      scope: ["cache.ts"],
-    });
-    assert.equal(found.status, "ok");
-    const data = (
-      found as {
-        data: {
-          expanded: boolean;
-          results: Array<{ alias: string; content: string }>;
-        };
-      }
-    ).data;
-    assert.equal(data.expanded, true, JSON.stringify(found));
-    assert.equal(data.results.length, 1);
-    assert.match(data.results[0]!.content, /return needle/u);
-    const edited = await workspace.editCode({
-      operations: [
-        {
-          kind: "patch",
-          target: data.results[0]!.alias,
-          patch: patch(
-            "cache.ts",
-            "  const needle = 1;",
-            "  const needle = 2;",
-          ),
-        },
-      ],
-    });
-    assert.equal(edited.status, "ok", JSON.stringify(edited));
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
+// "experimental search groups repeated hits" is gone: it drove the
+// TypeScript runner-only `experimentalSearchExpansion` option, never on in
+// the product and not part of blame-harness.
 test("an outline cannot authorize replacement of an unobserved body", async () => {
   const root = await mkdtemp(join(tmpdir(), "frontier-"));
   try {
@@ -296,7 +254,6 @@ test("a local patch cannot add a sibling through the declaration boundary", asyn
 });
 
 test("bounded invocation reports reject entities, partial counts and setup errors", async () => {
-  const { parseTestReport, parseTestReports } = await import("./test-report.js");
   const xml =
     '<testsuite tests="2" failures="1" errors="0"><testcase name="one"/><testcase name="two" file="test.ts" line="4"><failure message="assertion">expected public getter</failure></testcase></testsuite>';
   const report = parseTestReport(xml);
@@ -352,7 +309,6 @@ test("bounded invocation reports reject entities, partial counts and setup error
 });
 
 test("mixed line endings outside a scoped replacement stay byte exact", async () => {
-  const { planScopedLightPatch } = await import("./light-patch.js");
   const source =
     "function value() {\r\n  const text = 'été';\n  return 1;\r\n}";
   const replacements = planScopedLightPatch(
@@ -373,22 +329,18 @@ test("mixed line endings outside a scoped replacement stay byte exact", async ()
 test("receipt persistence failure reports committed code without suggesting replay", async () => {
   const root = await mkdtemp(join(tmpdir(), "frontier-"));
   try {
-    const { LightEditService } = await import("./light-edit.js");
-    const { LightAliasRegistry } = await import("./light-aliases.js");
-    const { WorkspaceFiles } = await import("./workspace-files.js");
-    const { SessionJournal } = await import("./session-journal.js");
+    // The edit service alone (no coverage or attention writes) with a
+    // journal that exists but cannot be written: the receipt fails after the
+    // files are committed.
     await writeFile(join(root, "a.txt"), "before\n");
-    const journal = new SessionJournal(root, "receipt-failure");
-    journal.recordChange = async () => {
-      throw new Error("disk full");
-    };
-    const edit = new LightEditService(new LightAliasRegistry(), {
-      files: new WorkspaceFiles(root),
-      journal,
-    });
-    const result = await edit.edit({
+    const workspace = new LightWorkspace(root, { sessionId: "receipt-failure" });
+    const journalFile = join(root, ".blame/harness/light", `${createHash("sha256").update("receipt-failure").digest("hex").slice(0, 24)}.jsonl`);
+    await mkdir(join(root, ".blame/harness/light"), { recursive: true });
+    await writeFile(journalFile, "");
+    await chmod(journalFile, 0o444);
+    const result = await workspace.edits.edit({
       operations: [{ kind: "patch", patch: patch("a.txt", "before", "after") }],
-    });
+    }) as { status: string; applied?: boolean; recovery?: string };
     assert.equal(result.status, "failed");
     if (result.status !== "failed") return;
     assert.equal(result.applied, true);
@@ -402,21 +354,9 @@ test("receipt persistence failure reports committed code without suggesting repl
 test("rollback preserves a concurrent user edit", async () => {
   const root = await mkdtemp(join(tmpdir(), "frontier-"));
   try {
-    const { LightCommitService } = await import("./light-commit.js");
-    const { WorkspaceFiles } = await import("./workspace-files.js");
     await writeFile(join(root, "a.txt"), "user content");
-    const service = new LightCommitService(new WorkspaceFiles(root));
     await assert.rejects(
-      service.restoreFiles(
-        [
-          {
-            path: "a.txt",
-            before: Buffer.from("before"),
-            after: Buffer.from("after"),
-          },
-        ],
-        true,
-      ),
+      restoreFiles(root, [{ path: "a.txt", before: "before", after: "after" }], true),
       /concurrent change/u,
     );
     assert.equal(await readFile(join(root, "a.txt"), "utf8"), "user content");
@@ -492,10 +432,9 @@ test("a managed pytest task attributes a unique JUnit report", async () => {
       executable,
       "#!/bin/sh\ncase \"$*\" in *--version*) echo 'pytest 8.3.1'; exit 0;; esac\nfor arg in \"$@\"; do case \"$arg\" in --junitxml=*) path=${arg#--junitxml=}; printf '%s' '<testsuite tests=\"1\" failures=\"0\" errors=\"0\"><testcase name=\"ok\"/></testsuite>' > \"$path\";; esac; done\n",
     );
-    await import("node:fs/promises").then(({ chmod }) => chmod(executable, 0o755));
-    const { managedTestReport } = await import("./managed-test-report.js");
+    await chmod(executable, 0o755);
     const invocation = { executable, args: ["-m", "pytest"], cwd: "." };
-    const managed = await managedTestReport(
+    const managed = managedTestRun(
       {
         task_id: "python3:test",
         kind: "test",
@@ -511,19 +450,7 @@ test("a managed pytest task attributes a unique JUnit report", async () => {
       1,
     );
     assert.ok(managed);
-    const { executeWorkspaceCommand } = await import("./workspace-command-process.js");
-    const execution = await executeWorkspaceCommand(
-      managed.invocation.executable,
-      managed.invocation.args,
-      { cwd: root },
-    );
-    const check = observeCheck(
-      managed.command,
-      execution,
-      ".",
-      false,
-      await managed.read(),
-    );
+    const check = observeCheck(managed.command, managed.run, ".", false, managed.report ?? undefined);
     assert.equal(check.evidenceOrigin, "report");
     assert.equal(check.outcome, "passed");
     assert.match(managed.command, /--junitxml=/u);
@@ -535,9 +462,6 @@ test("a managed pytest task attributes a unique JUnit report", async () => {
 test("managed VSTest and Surefire tasks read only their invocation reports", async () => {
   const root = await mkdtemp(join(tmpdir(), "frontier-"));
   try {
-    const { chmod } = await import("node:fs/promises");
-    const { managedTestReport } = await import("./managed-test-report.js");
-    const { executeWorkspaceCommand } = await import("./workspace-command-process.js");
     const cases = [
       {
         executable: "dotnet",
@@ -559,7 +483,7 @@ test("managed VSTest and Surefire tasks read only their invocation reports", asy
       await writeFile(executable, item.script);
       await chmod(executable, 0o755);
       const invocation = { executable, args: item.args, cwd: "." };
-      const managed = await managedTestReport(
+      const managed = managedTestRun(
         {
           task_id: item.label,
           kind: "test",
@@ -575,18 +499,7 @@ test("managed VSTest and Surefire tasks read only their invocation reports", asy
         index + 1,
       );
       assert.ok(managed);
-      const execution = await executeWorkspaceCommand(
-        managed.invocation.executable,
-        managed.invocation.args,
-        { cwd: root },
-      );
-      const check = observeCheck(
-        managed.command,
-        execution,
-        ".",
-        false,
-        await managed.read(),
-      );
+      const check = observeCheck(managed.command, managed.run, ".", false, managed.report ?? undefined);
       assert.equal(check.evidenceOrigin, "report", item.executable);
       assert.equal(check.outcome, "passed", item.executable);
     }
@@ -596,7 +509,6 @@ test("managed VSTest and Surefire tasks read only their invocation reports", asy
 });
 
 test("joining CRLF lines does not leave a stray carriage return", async () => {
-  const { planScopedLightPatch } = await import("./light-patch.js");
   const source =
     "function f() {\r\n  const value =\r\n    1;\r\n  return value;\r\n}";
   const replacements = planScopedLightPatch(

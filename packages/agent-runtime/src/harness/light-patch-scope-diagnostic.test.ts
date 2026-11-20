@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { LightToolResult } from "./light-contracts.js";
-const { LightWorkspace } = await import(process.env.BLAME_SCOPE_DIAGNOSTIC_RUNTIME ?? "./light-workspace.js") as typeof import("./light-workspace.js");
+import { LightWorkspace } from "./test-client/light-workspace.js";
 const patch = (body: string, path = "code.ts") => `*** Begin Patch\n*** Update File: ${path}\n@@\n${body}\n*** End Patch`;
 const source = "/** existing description */\nexport function first() {\n  return 1;\n}\n" + "\n".repeat(40) + "export function second() {\n  return 20;\n}\n";
 function recovery(result: LightToolResult<unknown>) {
@@ -15,7 +15,7 @@ function recovery(result: LightToolResult<unknown>) {
     nextRead: { target: string; view: "range"; range: { startLine: number; endLine: number } };
   };
 }
-async function fixture(run: (workspace: InstanceType<typeof LightWorkspace>, root: string, alias: string) => Promise<void>, text = source, observe = true) {
+async function fixture(run: (workspace: LightWorkspace, root: string, alias: string) => Promise<void>, text = source, observe = true) {
   const root = await mkdtemp(join(tmpdir(), "blame-scope-diagnostic-"));
   try {
     await writeFile(join(root, "code.ts"), text);
@@ -27,7 +27,7 @@ async function fixture(run: (workspace: InstanceType<typeof LightWorkspace>, roo
     await run(workspace, root, data.alias ?? data.results![0]!.alias);
   } finally { await rm(root, { recursive: true, force: true }); }
 }
-const edit = (workspace: InstanceType<typeof LightWorkspace>, alias: string, content: string) =>
+const edit = (workspace: LightWorkspace, alias: string, content: string) =>
   workspace.editCode({ operations: [{ kind: "patch", target: alias, patch: content }] });
 
 test("a unique distant match names its scope conflict and reads the actual affected lines", async () => {

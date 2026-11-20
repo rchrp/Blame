@@ -5,8 +5,6 @@ import { join } from "node:path";
 import test from "node:test";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
 import type { LightToolResult } from "./light-contracts.js";
-import { withMissingPathRecovery } from "./light-path-recovery.js";
-import { WorkspaceFiles } from "./workspace-files.js";
 
 function recovery(result: LightToolResult<unknown>) {
   assert.equal(result.status, "blocked");
@@ -90,30 +88,10 @@ test("an aborted read offers no recovery candidates", async () => {
   });
 });
 
-test("an unrelated ENOENT cannot misreport an existing requested file as missing", async () => {
-  await fixture({ "actual/value.ts": source, "other/value.ts": source }, async (_workspace, root) => {
-    const files = new WorkspaceFiles(root), failure = Object.assign(new Error("Journal is missing"), { code: "ENOENT" });
-    await assert.rejects(withMissingPathRecovery({ files, input: { target: "actual/value.ts" },
-      literalPath: true, snapshot: await files.snapshot() }, async () => { throw failure; }), error => error === failure);
-  });
-});
-
-test("stale indexed candidates cannot force an unbounded metadata scan", async () => {
-  await fixture({ "z/value.ts": source }, async (_workspace, root) => {
-    const files = new WorkspaceFiles(root), snapshot = await files.snapshot();
-    snapshot.files = [...Array.from({ length: 32 }, (_, i) => `${String(i).padStart(2, "0")}/value.ts`), "z/value.ts"];
-    const failure = Object.assign(new Error("Requested file is missing"), { code: "ENOENT" });
-    await assert.rejects(withMissingPathRecovery({ files, input: { target: "missing/value.ts" },
-      literalPath: true, snapshot }, async () => { throw failure; }), error => error === failure);
-  });
-});
-
-test("cancellation during candidate inspection discards recovery output", async () => {
-  await fixture({ "actual/value.ts": source }, async (_workspace, root) => {
-    const files = new WorkspaceFiles(root), controller = new AbortController(), failure = new Error("Cancelled lookup");
-    const fileSize = files.fileSize.bind(files);
-    files.fileSize = async path => { const size = await fileSize(path); controller.abort(failure); return size; };
-    await assert.rejects(withMissingPathRecovery({ files, input: { target: "missing/value.ts" }, literalPath: true,
-      snapshot: await files.snapshot(), signal: controller.signal }, async () => { throw Object.assign(new Error("Missing"), { code: "ENOENT" }); }), error => error === failure);
-  });
-});
+// Three tests are gone with the TypeScript wrapper they drove
+// (`withMissingPathRecovery`): "an unrelated ENOENT cannot misreport an
+// existing requested file as missing", "stale indexed candidates cannot
+// force an unbounded metadata scan" and "cancellation during candidate
+// inspection discards recovery output" each injected a failure into an
+// in-process callback or a patched `WorkspaceFiles.fileSize`, which a
+// harness reached through its protocol cannot take.

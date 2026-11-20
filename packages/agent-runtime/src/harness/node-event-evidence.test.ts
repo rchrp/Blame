@@ -3,15 +3,13 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { nodeEventEvidence } from "./node-event-evidence.js";
-import type { LightCompletionNotification } from "./light-completion.js";
-import { LightFinishService } from "./light-finish-service.js";
-import { managedTestReport } from "./managed-test-report.js";
-import { observeCheck } from "./check-observation.js";
-import { executeWorkspaceCommand } from "./workspace-command-process.js";
-import { readTaskCatalog, taskInvocation } from "./task-catalog.js";
-const { LightWorkspace }=await import(process.env.BLAME_NODE_EVENT_RUNTIME??"./light-workspace.js") as typeof import("./light-workspace.js");
-async function fixture(run: (root:string,workspace:InstanceType<typeof LightWorkspace>)=>Promise<void>,scripts:Record<string,string>={test:"node --test"}) {
+import { nodeEventEvidence } from "./test-client/units.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
+import { managedTestRun, observeCheck } from "./test-client/units.js";
+import { readTaskCatalog, taskInvocation } from "./test-client/units.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+async function fixture(run: (root:string,workspace:LightWorkspace)=>Promise<void>,scripts:Record<string,string>={test:"node --test"}) {
  const root=await mkdtemp(join(tmpdir(),"blame-node-events-"));try{
   await writeFile(join(root,"package.json"),JSON.stringify({scripts}));
   await writeFile(join(root,"package-lock.json"),'{}');
@@ -24,9 +22,9 @@ async function fixture(run: (root:string,workspace:InstanceType<typeof LightWork
   await mkdir(join(root,".blame"));await run(root,new LightWorkspace(root,{sessionId:"node-events"}));
  }finally{await rm(root,{recursive:true,force:true});}
 }
-async function observed(workspace:InstanceType<typeof LightWorkspace>,args:string[]){
+async function observed(workspace:LightWorkspace,args:string[]){
  const result=await workspace.runTask({kind:"project",task:"test",args},{});assert.equal(result.status,"ok",JSON.stringify(result));
- return (result as {data:{check:import("./check-observation.js").CheckObservation}}).data.check;
+ return (result as {data:{check:import("./test-client/units.js").CheckObservation}}).data.check;
 }
 for(const [name,args,executed,outcome] of [
  ["ordinary",["suite.test.cjs"],2,"passed"],
@@ -91,11 +89,10 @@ test("green Node events cannot conceal a failing npm lifecycle process",async()=
 test("complete green events from a runner do not admit a timed-out npm lifecycle",async()=>{
  await fixture(async(root)=>{
   const task=(await readTaskCatalog(root)).find(t=>t.task_id==="test")!;
-  const report=await managedTestReport(task,taskInvocation(task,["named.test.cjs"]),root,1);
+  const report=managedTestRun(task,taskInvocation(task,["named.test.cjs"]),root,1,{timeoutMs:5000});
   assert.ok(report?.nodeEvents);
-  const result=await executeWorkspaceCommand(report.invocation.executable,report.invocation.args,{cwd:root,timeoutMs:5000});
-  const bytes=await report.read();assert.equal(typeof bytes,"string");
-  const check=observeCheck(task.command,result,".",false,undefined,{...report.nodeEvents,report:bytes as string});
+  const bytes=report.report;assert.equal(typeof bytes,"string");
+  const check=observeCheck(task.command,report.run,".",false,undefined,{...report.nodeEvents,report:bytes as string});
   assert.equal(check.process,"timed_out");assert.equal(check.outcome,"unknown");assert.equal(check.counts?.executed,1);
  },{test:"node --test",posttest:"node -e \"setTimeout(()=>{},30000)\""});
 });
@@ -125,12 +122,11 @@ test("restarting a runner sequence cannot expose a previous invocation report",a
  await fixture(async(root)=>{
   const task=(await readTaskCatalog(root)).find(t=>t.task_id==="test")!;
   const invocation=taskInvocation(task,["named.test.cjs"]);
-  const first=await managedTestReport(task,invocation,root,1);assert.ok(first);
-  const result=await executeWorkspaceCommand(first.invocation.executable,first.invocation.args,{cwd:root});
-  assert.equal(result.exitCode,0);assert.equal(typeof await first.read(),"string");
-  const [second,third]=await Promise.all([managedTestReport(task,invocation,root,1),managedTestReport(task,invocation,root,1)]);
+  const first=managedTestRun(task,invocation,root,1);assert.ok(first);
+  assert.equal(first.run.exitCode,0);assert.equal(typeof first.report,"string");
+  const [second,third]=[managedTestRun(task,invocation,root,1,{run:false}),managedTestRun(task,invocation,root,1,{run:false})];
   assert.ok(second);assert.ok(third);assert.notEqual(second.command,first.command);assert.notEqual(second.command,third.command);
-  assert.equal(await second.read(),undefined);assert.equal(await third.read(),undefined);
+  assert.equal(second.report,null);assert.equal(third.report,null);
  });
 });
 

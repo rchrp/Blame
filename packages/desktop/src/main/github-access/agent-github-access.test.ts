@@ -3,7 +3,6 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
 import {
   AgentGithubAccessSettings,
   grantSessionGithubAccess,
@@ -12,7 +11,7 @@ import {
   requestCloudGithubToken,
   sessionCommandCredentials,
   sessionGithubMcpServer,
-  withSessionCommandCredentials,
+  vmCommandCredentials,
   type AgentGithubAccessLevel,
   type CloudGithubTokenRequest,
   type CloudGithubTokenResult,
@@ -105,12 +104,6 @@ test("a Local Container session's requests carry GH_TOKEN only when its project 
   assert.deepEqual(grantedGithubTokens(), [token]);
   // Read and write is US-073's access: no GitHub MCP server.
   assert.equal(sessionGithubMcpServer("session-on"), undefined);
-  // What the agent process sends is replaced by what the desktop granted.
-  assert.deepEqual(
-    withSessionCommandCredentials({ ...request("another-session"), commandCredentials: { githubToken: "gho_forged" } })
-      .commandCredentials,
-    {},
-  );
 
   // Restarting the session with access off revokes the token, without reading gh.
   reads = 0;
@@ -131,13 +124,8 @@ test("a read-only session's token goes to GitHub's MCP server only, never to its
     await grantSessionGithubAccess(session, { level: async () => "read", readToken: async () => ({ token }), cloudToken: noCloudToken }),
     {},
   );
-  // Neither the granted token nor one the agent process forged reaches run_task.
+  // The granted token never reaches run_task.
   assert.deepEqual(credentials("session-read"), {});
-  assert.deepEqual(
-    withSessionCommandCredentials({ ...request("session-read"), commandCredentials: { githubToken: token } })
-      .commandCredentials,
-    {},
-  );
   assert.deepEqual(sessionGithubMcpServer("session-read"), {
     url: "https://api.githubcopilot.com/mcp/",
     headers: {
@@ -315,17 +303,7 @@ test("the cloud token is asked of the project's agent-token endpoint with the se
 });
 
 function credentials(sessionId: string) {
-  return withSessionCommandCredentials(request(sessionId)).commandCredentials;
-}
-
-function request(sessionId: string): LightWorkspaceExecutionRequest {
-  return {
-    execution: { backendMode: "remote", workspaceMode: "local-container" },
-    input: { kind: "command", command: "gh pr list" },
-    taskContract: { session_id: sessionId },
-    tool: "run_task",
-    workspaceRoot: "/home/blame/.local/share/blame/runtime/worktrees/project/story-US-1",
-  };
+  return vmCommandCredentials(sessionId);
 }
 
 function unavailable(result: HostGithubToken) {

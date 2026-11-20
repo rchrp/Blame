@@ -12,16 +12,22 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { blockedCommandReason } from "./command-policy.js";
-import { LightWorkspace } from "./light-workspace.js";
+import { blockedCommandReason } from "./test-client/units.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
 import { WorkspaceFiles } from "./workspace-files.js";
-import { validationOutput } from "./validation-output.js";
+import { validationOutput } from "./test-client/units.js";
 import { parseCode } from "./code-intelligence.js";
-import { editTargetSymbols } from "./light-navigation.js";
-import { projectProviderContext } from "../context-projection.js";
-import type { Message } from "@cline/sdk";
-import type { LightEditCodeInput, LightReadCodeInput } from "./light-contracts.js";
+import { editTargetSymbols as harnessEditTargets } from "./test-client/units.js";
+
+/** read_code's views and edit_code's operations, as the model sends them. */
+type LightReadCodeInput = { view?: "raw" | "fold" | "outline" | "range" | "signature" | string };
+type LightEditCodeInput = { operations: Array<Record<string, unknown>> };
+
+/** The symbols an edit may target after reading `intervals`, as the harness chooses them. */
+function editTargetSymbols(path: string, source: string, intervals: Array<[number, number]>) {
+  return harnessEditTargets(path, source, intervals);
+}
 
 const execute = promisify(execFile);
 const duplicated =
@@ -186,34 +192,9 @@ async function searchedTextAlias(workspace: LightWorkspace) {
   return results[0]!.alias;
 }
 
-test("provider projection retains the latest actual reread and preserves the transcript", async () => {
-  const source = "export const evidence = 'requested source remains available';\n".repeat(20);
-  await fixture({ "evidence.ts": source }, async (_root, workspace) => {
-    const history = await rereadHistory(workspace);
-    const original = JSON.stringify(history);
-    const projected = projectReadHistory(history);
-    assert.equal(JSON.stringify(history), original);
-    assert.doesNotMatch(JSON.stringify(projected.messages.slice(0, 2)), /requested source remains available/u);
-    assert.match(JSON.stringify(projected.messages.at(-1)), /requested source remains available/u);
-    assert.ok(projected.metrics.projectedBytesSaved > 500);
-    assert.deepEqual(projectReadHistory(projected.messages).messages, projected.messages);
-  });
-});
-
-async function rereadHistory(workspace: LightWorkspace) {
-  const history: Message[] = [];
-  for (const id of ["first", "second"]) {
-    const input = { target: "evidence.ts", view: "raw" as const };
-    const result = await workspace.readCode(input, {});
-    history.push({ role: "assistant", content: [{ type: "tool_use", id, name: "read_code", input }] });
-    history.push({ role: "user", content: [{ type: "tool_result", tool_use_id: id, content: JSON.stringify(result) }] });
-  }
-  return history;
-}
-
-function projectReadHistory(history: Message[]) {
-  return projectProviderContext(history, { systemPrompt: "", tools: [] });
-}
+// "provider projection retains the latest actual reread and preserves the
+// transcript" went with context-projection.ts, the Cline runtime's provider
+// projection; the engine projects its context in Rust.
 
 for (const [path, source] of Object.entries(classSources)) {
   test(`symbol outlines in ${path} remain scoped and available after reading the body`, async () => {
@@ -241,19 +222,19 @@ for (const [path, source] of Object.entries(classSources)) {
     const symbols = parseCode(path, Buffer.from(source)).symbols;
     const first = symbols.find(({ name }) => name === "first")!;
     const second = symbols.find(({ name }) => name === "second")!;
-    const targets = editTargetSymbols(symbols, [
+    const targets = editTargetSymbols(path, source, [
       [first.range_utf8_bytes[0] + 1, second.range_utf8_bytes[1]],
     ]);
     assert.deepEqual(
       new Set(targets.map(({ name }) => name)),
       new Set(["first", "second"]),
     );
-    const whole = editTargetSymbols(symbols, [[0, Buffer.byteLength(source)]]);
+    const whole = editTargetSymbols(path, source, [[0, Buffer.byteLength(source)]]);
     assert.deepEqual(
       whole.map(({ name }) => name),
       ["Counter"],
     );
-    const body = editTargetSymbols(symbols, [
+    const body = editTargetSymbols(path, source, [
       [first.range_utf8_bytes[1] - 2, first.range_utf8_bytes[1] - 1],
     ]);
     assert.deepEqual(
@@ -270,8 +251,8 @@ test("disjoint read intervals select their methods without the containing class"
     ["first", "third"].includes(name),
   );
   const targets = editTargetSymbols(
-    symbols,
-    methods.map(({ range_utf8_bytes }) => range_utf8_bytes),
+    "counter.py", source,
+    methods.map(({ range_utf8_bytes }) => range_utf8_bytes as [number, number]),
   );
   assert.deepEqual(targets.map(({ name }) => name).sort(), ["first", "third"]);
 });
@@ -279,8 +260,7 @@ test("disjoint read intervals select their methods without the containing class"
 test("a fully read function remains editable when it contains a nested function", () => {
   const source =
     "def outer():\n    def inner():\n        return 1\n    return inner()\n";
-  const symbols = parseCode("nested.py", Buffer.from(source)).symbols;
-  const targets = editTargetSymbols(symbols, [[0, Buffer.byteLength(source)]]);
+  const targets = editTargetSymbols("nested.py", source, [[0, Buffer.byteLength(source)]]);
   assert.deepEqual(
     targets.map(({ name }) => name),
     ["outer"],

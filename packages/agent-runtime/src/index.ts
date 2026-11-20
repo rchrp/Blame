@@ -1,15 +1,7 @@
-export type {
-  LightWorkspaceExecutionRequest,
-  LightWorkspaceExecutor,
-  LightWorkspaceToolName,
-} from "./harness/light-executor.js";
-export { executeLightWorkspaceRequest } from "./harness/light-executor.js";
-export * from "./harness/light-capabilities.js";
 export * from "./harness/light-contracts.js";
-export * from "./harness/light-tools.js";
-export * from "./harness/light-workspace.js";
 export * from "./harness/project-memory.js";
 export * from "./harness/session-journal.js";
+export { withGithubCli } from "./github-cli.js";
 export type {
   AgentPersonalization,
   Ambition,

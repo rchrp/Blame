@@ -4,12 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { LightToolResult } from "./light-contracts.js";
 
-// The same controls can run against an immutable pre-change runtime.
-const runtime = process.env.BLAME_GUIDANCE_RUNTIME;
-export const { LightWorkspace } = await import(runtime ? `${runtime}/light-workspace.js` : "./light-workspace.js") as typeof import("./light-workspace.js");
-export const { LightFinishService } = await import(runtime ? `${runtime}/light-finish-service.js` : "./light-finish-service.js") as typeof import("./light-finish-service.js");
-export const { observeCheck } = await import(runtime ? `${runtime}/check-observation.js` : "./check-observation.js") as typeof import("./check-observation.js");
-export const { localLightWorkspaceExecutor } = await import(runtime ? `${runtime}/light-executor.js` : "./light-executor.js") as typeof import("./light-executor.js");
+import { LightWorkspace } from "./test-client/light-workspace.js";
+
+// The guidance tests' fixture: workspaces served by blame-harness through
+// the test client.
+export { LightWorkspace } from "./test-client/light-workspace.js";
+export { LightFinishService } from "./test-client/light-finish-service.js";
+export { observeCheck } from "./test-client/units.js";
+export { localLightWorkspaceExecutor } from "./test-client/light-executor.js";
 
 export async function fixture(files: Record<string, string>, run: (workspace: InstanceType<typeof LightWorkspace>, root: string) => Promise<void>) {
   const root = await mkdtemp(join(tmpdir(), "light-agent-guidance-"));

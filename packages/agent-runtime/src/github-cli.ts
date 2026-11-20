@@ -4,7 +4,7 @@ import { access, chmod, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/pr
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import { promisify } from "node:util";
-import type { LightCommandCredentials } from "./light-contracts.js";
+import type { LightCommandCredentials } from "./harness/light-contracts.js";
 
 const execFileAsync = promisify(execFile);
 

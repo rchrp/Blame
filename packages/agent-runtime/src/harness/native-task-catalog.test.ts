@@ -5,10 +5,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
-import { LightFinishService } from "./light-finish-service.js";
-import { LightWorkspace } from "./light-workspace.js";
-import { readTaskCatalog, taskInvocation } from "./task-catalog.js";
-import { validationScopePaths } from "./validation-scope.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { readTaskCatalog, taskInvocation } from "./test-client/units.js";
+import { validationScopePaths } from "./test-client/units.js";
 import { WorkspaceFiles } from "./workspace-files.js";
 
 const execute = promisify(execFile);

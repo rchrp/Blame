@@ -8,9 +8,8 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { githubCliArchive, githubCliVersion, installGithubCli, withGithubCli, type GithubCliArchive } from "./github-cli.js";
-import { EnvironmentAdapter } from "./environment-adapter.js";
-import { lightSemanticHarnessTools } from "./light-tools.js";
-import type { WorkspaceFiles } from "./workspace-files.js";
+import { lightSemanticHarnessTools } from "./harness/test-client/light-tools.js";
+import { shellCommand } from "./harness/test-client/units.js";
 
 const posixOnly = { skip: process.platform === "win32" ? "The fixture gh is a shell script" : false };
 const appToken = "fixture-app-token";
@@ -54,10 +53,7 @@ test("a cloud command runs the gh Blame provides, with the App token and a confi
 
 test("the directory a shell command gets first is kept whatever characters its path holds", posixOnly, () => {
   const directory = "/tmp/it's a \"gh\" $HOME";
-  const { executable, args } = new EnvironmentAdapter({} as WorkspaceFiles, "linux").command(
-    `printf '%s' "$PATH"`,
-    directory,
-  );
+  const { executable, args } = shellCommand(`printf '%s' "$PATH"`, directory);
   const path = execFileSync(executable, args, { encoding: "utf8" });
   assert.equal(path.split(":")[0], directory);
 });

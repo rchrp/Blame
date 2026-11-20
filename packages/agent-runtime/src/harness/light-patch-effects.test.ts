@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
 test("removing one identical call has one file result despite several positions", async () => {
   const source = "prepare();\nwork();\nwork();\nwork();\nfinish();\n";

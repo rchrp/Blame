@@ -12,7 +12,6 @@ import { join } from "node:path";
 import test from "node:test";
 import { readAttachment } from "../../attachment-reader.js";
 import { storeWorkspaceAttachment } from "../../development-attachments.js";
-import { executeLightWorkspaceRequest } from "../../harness/light-executor.js";
 import type { ClientTool } from "../tool.js";
 import { attachmentTool } from "./attachments.js";
 import { callThroughToolSet, toolContext } from "./testing.js";
@@ -24,10 +23,10 @@ async function read(tool: ClientTool<never>, input: Record<string, unknown>) {
   return (output as { json: unknown }).json;
 }
 
-for (const executor of [undefined, executeLightWorkspaceRequest]) {
-  test(`reads original documents through ${executor ? "the workspace bridge" : "the local tool"}`, async () => {
+{
+  test("reads original documents through the local tool", async () => {
     await fixture(async (root) => {
-      const tool = attachmentTool(root, executor)!;
+      const tool = attachmentTool(root)!;
       for (const [name, expected] of [
         ["report.pdf", "revenue is 42 EUR"],
         ["report.docx", "owner is Alice"],
@@ -85,7 +84,7 @@ test("reads PDF, DOCX and XLSX documents anywhere in the workspace, but not beyo
     const bytes = await readFile(new URL("report.pdf", fixtures));
     await mkdir(join(root, "hw1"));
     await writeFile(join(root, "hw1", "HW 1 - report.pdf"), bytes);
-    const tool = attachmentTool(root, executeLightWorkspaceRequest)!;
+    const tool = attachmentTool(root)!;
     assert.match(
       JSON.stringify(await read(tool, { path: "hw1/HW 1 - report.pdf" })),
       /revenue is 42 EUR/,

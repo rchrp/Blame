@@ -2,9 +2,15 @@ import { appendFile, mkdir, readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { sha256 } from "./light-identity.js";
 import { WorkspaceFiles } from "./workspace-files.js";
-import type { LightAlias } from "./light-aliases.js";
-import type { ReadCoverageState } from "./read-coverage.js";
-import type { LightAttentionState } from "./light-attention.js";
+
+// What a session's journal holds, written by blame-harness
+// (crates/blame-harness/src/journal.rs, the same file and format); this
+// reader serves code outside the harness (direct-story-files.ts). The
+// harness's own state is opaque here.
+type LightAlias = { alias: string } & Record<string, unknown>;
+// The harness's read coverage, as its journal records it (`coverage.rs`).
+type ReadCoverageState = { entries: Array<{ path: string; intervals: Array<[number, number]>; [key: string]: unknown }>; receiptSequence: number };
+type LightAttentionState = Record<string, unknown>;
 
 export type JournalFileState = { hash: string; path: string };
 
@@ -40,7 +46,8 @@ export type JournalCompletionSnapshot = {
 export type JournalValidation = {
   scope?: "invocation_only";
   args?: string[];
-  check?: import("./check-observation.js").CheckObservation;
+  /** A check's observation (`observe_check` in the harness). */
+  check?: Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
   category?: "code" | "command" | "environment";
   command?: string;
   cwd?: string;

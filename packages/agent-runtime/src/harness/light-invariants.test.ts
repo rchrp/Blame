@@ -13,16 +13,17 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
-import { blockedCommandReason } from "./command-policy.js";
-import { LightCommitService } from "./light-commit.js";
-import type { LightCompletionNotification } from "./light-completion.js";
-import { LightFinishService } from "./light-finish-service.js";
-import type { LightRunTaskInput, LightToolResult } from "./light-contracts.js";
-import { lightSemanticHarnessTools } from "./light-tools.js";
-import { LightWorkspace } from "./light-workspace.js";
-import { completionAwareTerminalState } from "./run-lifecycle.js";
+import { blockedCommandReason } from "./test-client/units.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
+import type { LightToolResult } from "./light-contracts.js";
+import { lightSemanticHarnessTools } from "./test-client/light-tools.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
 import { WorkspaceFiles } from "./workspace-files.js";
+
+/** A run_task input, as the model sends it. */
+type LightRunTaskInput = Record<string, unknown>;
 
 test("a changed symbol requires a fresh observation before replacement", async () => {
   await fixture(
@@ -108,33 +109,9 @@ test("an aborted public edit cannot write source", async () => {
   });
 });
 
-test("cancellation during commit preparation leaves the batch unchanged", async () => {
-  await fixture({ "a.txt": "before" }, async (root) => {
-    const files = new WorkspaceFiles(root);
-    const controller = new AbortController();
-    const resolve = files.resolveForWriteVerified.bind(files);
-    files.resolveForWriteVerified = async (path) => {
-      controller.abort();
-      return resolve(path);
-    };
-    const revision = (await files.snapshot()).revision.source_revision_id;
-    await assert.rejects(
-      new LightCommitService(files).commit(
-        [
-          {
-            path: "a.txt",
-            before: Buffer.from("before"),
-            after: Buffer.from("after"),
-          },
-        ],
-        revision,
-        controller.signal,
-      ),
-      /abort/iu,
-    );
-    assert.equal(await readFile(join(root, "a.txt"), "utf8"), "before");
-  });
-});
+// "cancellation during commit preparation leaves the batch unchanged"
+// aborted from inside a patched `WorkspaceFiles.resolveForWriteVerified` of
+// the TypeScript commit service; the harness has no such seam.
 
 test("a check cannot prove source changed during execution", async () => {
   await fixture(
@@ -231,10 +208,6 @@ test("round trips have no delivered source effect and explanation tasks can fini
         {} as never,
       );
       assert.equal(notifications[0]?.completion.verification, "not_applicable");
-      assert.equal(
-        completionAwareTerminalState("succeeded", notifications[0]?.completion),
-        "succeeded",
-      );
       const strict = new LightFinishService({
         workspaceRoot: root,
         conversationId: "invariants",

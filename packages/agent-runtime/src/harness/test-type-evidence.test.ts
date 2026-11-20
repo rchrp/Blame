@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { observeCheck } from "./check-observation.js";
-import { checkReporting } from "./light-validation-report.js";
+import { observeCheck } from "./test-client/units.js";
+import { checkReporting } from "./test-client/units.js";
 
 // The pinned real Vitest 3.2.4 control executes a test containing TS2322 while
 // emitting this successful summary. A separate compiler invocation rejects it.

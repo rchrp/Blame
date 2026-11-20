@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import type { LightToolResult } from "./light-contracts.js";
-const { LightWorkspace } = await import(process.env.BLAME_EDIT_RECOVERY_RUNTIME ?? "./light-workspace.js") as typeof import("./light-workspace.js");
+import { LightWorkspace } from "./test-client/light-workspace.js";
 const source = "/** old documentation */\nexport function value() {\n  return 1;\n}\n";
 const patch = (text: string, path = "value.ts") => `*** Begin Patch\n*** Update File: ${path}\n@@\n${text}\n*** End Patch`;
-async function fixture(run: (root: string, workspace: InstanceType<typeof LightWorkspace>, alias: string) => Promise<void>, observed = true) {
+async function fixture(run: (root: string, workspace: LightWorkspace, alias: string) => Promise<void>, observed = true) {
   const root = await mkdtemp(join(tmpdir(), "blame-edit-hint-"));
   try {
     await writeFile(join(root, "value.ts"), source);

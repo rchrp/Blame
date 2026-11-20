@@ -3,9 +3,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { pathToFileURL } from "node:url";
-import { projectTestCommand } from "./project-test-command.js";
-import type { TaskCatalogItem } from "./task-catalog.js";
+import { projectTestCommand } from "./test-client/units.js";
+import type { TaskCatalogItem } from "./test-client/units.js";
 
 const task = { cwd: ".", task_id: "test", script: "test", package_manager: "npm", kind: "test" } as TaskCatalogItem;
 test("literal npm tests retain script and exact quoted argv", { skip: process.platform === "win32" }, () => {
@@ -36,13 +35,9 @@ test("ambiguous scope, shell expansion, options and oversized selections remain 
   assert.equal(projectTestCommand("npm test -- file.ts", ".", [task, task]), undefined);
 });
 
-// Compare immutable F13/F14 runtime modules using identical real shell and source inputs.
-const runtime = process.env.BLAME_TEST_COMMAND_RUNTIME;
-const load = <T>(name: string) => import(runtime
-  ? pathToFileURL(join(runtime, "harness", name + ".js")).href : "./" + name + ".js") as Promise<T>;
-const { LightWorkspace } = await load<typeof import("./light-workspace.js")>("light-workspace");
-const { LightFinishService } = await load<typeof import("./light-finish-service.js")>("light-finish-service");
-const { SessionJournal } = await load<typeof import("./session-journal.js")>("session-journal");
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
+import { SessionJournal } from "./session-journal.js";
 
 test("raw npm selected test is refreshed after final description edit and current build", { skip: process.platform === "win32" }, async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-npm-selection-"));

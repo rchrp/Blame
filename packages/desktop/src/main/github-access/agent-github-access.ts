@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
-import type { LightWorkspaceExecutionRequest } from "@blame/agent-runtime";
+import { withGithubCli } from "@blame/agent-runtime";
 import { setupPath } from "../host-tool-path.ts";
 import { allowedCloudApiBaseUrl } from "../preview-runtime/cloud-preview-client.ts";
 
@@ -310,12 +310,13 @@ export async function harnessCommandCredentials(
 ): Promise<{ githubToken?: string } | null> {
   const cloud = cloudSessionTokens.get(sessionId);
   if (cloud) {
+    // A cloud session's commands run on this host, which may have no gh:
+    // they get the one Blame provides, with a config directory of its own.
     const githubToken = await cloud.token();
-    return githubToken ? { githubToken } : {};
+    return githubToken ? withGithubCli({ githubToken }) : {};
   }
   if (location !== "vm") return null;
-  const grant = sessionGrants.get(sessionId);
-  return grant?.level === "write" ? { githubToken: grant.token } : {};
+  return vmCommandCredentials(sessionId);
 }
 
 /** What the agent process gives a cloud session's next command. */
@@ -363,21 +364,13 @@ function managedRuntimeSession(session: Record<string, unknown>) {
 }
 
 /**
- * The request with the credentials of its session, replacing any the agent
- * process sent. Without a token granted for writing they are empty, which
- * still keeps every inherited GitHub token away from the agent's commands.
+ * A VM session's command credentials: its token granted for writing, else
+ * none, which still keeps every inherited GitHub token away from its
+ * commands. The harness asks for them; nothing the agent sends is used.
  */
-export function withSessionCommandCredentials(
-  request: LightWorkspaceExecutionRequest,
-): LightWorkspaceExecutionRequest {
-  const sessionId =
-    request.taskContract?.session_id ?? request.toolContext?.sessionId;
-  const grant = sessionId ? sessionGrants.get(sessionId) : undefined;
-  return {
-    ...request,
-    commandCredentials:
-      grant?.level === "write" ? { githubToken: grant.token } : {},
-  };
+export function vmCommandCredentials(sessionId: string): { githubToken?: string } {
+  const grant = sessionGrants.get(sessionId);
+  return grant?.level === "write" ? { githubToken: grant.token } : {};
 }
 
 export const githubMcpUrl = "https://api.githubcopilot.com/mcp/";

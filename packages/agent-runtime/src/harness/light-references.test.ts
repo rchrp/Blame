@@ -5,11 +5,8 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import ts from "typescript";
-import { LightWorkspace } from "./light-workspace.js";
-import { LightAliasRegistry } from "./light-aliases.js";
-import { LightReferenceSearch } from "./light-reference-search.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { sha256 } from "./light-identity.js";
-import { WorkspaceFiles } from "./workspace-files.js";
 import {
   CompilerServices,
   querySemanticReferences,
@@ -744,24 +741,10 @@ test("unsupported languages and non-identifier queries preserve lexical fallback
   });
 });
 
-test("declaration discovery detects concurrent changes before registering candidate aliases", async () => {
-  await fixture(async (_workspace, root) => {
-    const workspaceFiles = new WorkspaceFiles(root);
-    const snapshot = await workspaceFiles.snapshot();
-    const originalSnapshot = workspaceFiles.snapshot.bind(workspaceFiles);
-    workspaceFiles.snapshot = async signal => {
-      await writeFile(join(root, "original.ts"), source.replace("calculate", "renamed"));
-      return originalSnapshot(signal);
-    };
-    const aliases = new LightAliasRegistry();
-    const result = await new LightReferenceSearch(workspaceFiles, aliases).recovery(
-      { query: "calculate", mode: "references" }, "symbol_target_required", snapshot.files,
-      snapshot.revision.source_revision_id);
-    assert.equal(result.declarationDiscovery?.status, "source_changed");
-    assert.deepEqual(result.declarationCandidates, []);
-    assert.equal(aliases.entries().length, 0);
-  });
-});
+// "declaration discovery detects concurrent changes before registering
+// candidate aliases" changed the source from inside a patched
+// `WorkspaceFiles.snapshot` of the TypeScript reference search; there is no
+// such seam behind the harness's protocol.
 
 test("bare candidate discovery never authorizes an unread edit or refreshes stale body coverage", async () => {
   await fixture(async (workspace, root) => {

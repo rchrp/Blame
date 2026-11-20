@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { data, fixture, LightFinishService, LightWorkspace } from "./light-agent-guidance-fixture.js";
 import { SessionJournal } from "./session-journal.js";
-import { latestFailedInvocations } from "./light-check-repair.js";
-import type { LightCompletionNotification } from "./light-completion.js";
+import { latestFailedInvocations } from "./test-client/units.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
 
 const alpha = ["--test-name-pattern=alpha", "suite.test.cjs"];
 const beta = ["--test-name-pattern=beta", "suite.test.cjs"];

@@ -1,21 +1,40 @@
-import type { AgentToolContext } from "@cline/sdk";
-import type { FinishTaskImage, LightToolResult } from "./light-contracts.js";
-import type { LocalFinishOptions } from "./light-finish-service.js";
-import { RustHarnessProcess } from "./rust-harness-adapter.js";
+import type { CompletionDecision } from "@blame/harness-core";
+import type { LightTaskContract, LightToolResult } from "../light-contracts.js";
+import { HarnessProcess } from "./harness.js";
 
-// Conformance adapter for finish_task: the TypeScript finish service's
-// interface, served by the Rust harness's finish_task request.
-// rust-harness-hooks.ts substitutes it for ./light-finish-service.js in the
-// tests, their fixture, light-executor and finish-task (rust mode only).
+// The finish service's interface the behavioural tests drive, served by
+// blame-harness's finish_task request: validation activities are replayed
+// to their listener, a cancelled finish fails with the signal's reason.
 
-export { unverifiedReply, type FinalReply, type LocalFinishOptions } from "./light-finish-service.js";
+type AgentToolContext = { signal?: AbortSignal; toolCallId?: string; [key: string]: unknown };
+export type FinishTaskImage = { caption: string; id: string };
+/** finish_task's notification, as the harness answers it. */
+export type LightCompletionNotification = {
+  completion: CompletionDecision;
+  images?: FinishTaskImage[];
+  memory?: { validationTaskId?: string; files?: Array<{ hash: string; path: string }>; [key: string]: unknown };
+  submission_outcome: "accepted" | "blocked";
+  summary: string;
+  verified: boolean;
+  validationReport?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+};
+/** A validation that finish ran or reused, as reported to its listener. */
+export type LightValidationActivity = { input: any; output?: unknown; phase: "finished" | "started"; toolCallId: string }; // eslint-disable-line @typescript-eslint/no-explicit-any
 
-const harness = new RustHarnessProcess();
+export type LocalFinishOptions = {
+  conversationId: string;
+  onComplete?(notification: LightCompletionNotification): Promise<void> | void;
+  onValidationActivity?(activity: LightValidationActivity): Promise<void> | void;
+  taskContract?: LightTaskContract;
+  workspaceRoot: string;
+};
+
+const harness = new HarnessProcess();
 
 type LocalFinishTaskInput = {
   context: AgentToolContext;
   input: unknown;
-  taskContract?: LocalFinishOptions["taskContract"];
+  taskContract?: LightTaskContract;
   workspaceRoot: string;
 };
 
@@ -60,4 +79,18 @@ export class LightFinishService {
     if (result.data?.notification) await this.options.onComplete?.(result.data.notification as never);
     return result.data?.summary ?? summary;
   }
+}
+
+/**
+ * finish_task as a tool (`createFinishTaskTool`): the summary back, the
+ * completion and validation activities to their listeners. `executor` named
+ * where the TypeScript harness ran elsewhere; blame-harness is the one.
+ */
+export function createFinishTaskTool(options: LocalFinishOptions & { executor?: unknown }) {
+  const service = new LightFinishService(options);
+  return {
+    name: "finish_task",
+    execute: (input: { summary: string; images?: FinishTaskImage[] }, context: AgentToolContext) =>
+      service.finish(input.summary, context, input.images ?? []),
+  };
 }

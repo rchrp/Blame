@@ -3,7 +3,7 @@ import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
 test("an explicit single-file update header selects its target", async () => {
   await fixture(async (root, workspace) => {
