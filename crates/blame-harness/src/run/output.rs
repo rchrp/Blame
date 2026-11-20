@@ -69,7 +69,7 @@ pub fn validation_output(root: &str, output: &str) -> Json {
         let name = format!("validation-{}.log", uuid());
         let mut options = fs::OpenOptions::new();
         options.write(true).create_new(true);
-        std::os::unix::fs::OpenOptionsExt::mode(&mut options, 0o600);
+        crate::platform::private_file(&mut options);
         std::io::Write::write_all(&mut options.open(directory.join(&name))?, output.as_bytes())?;
         Ok(name)
     })();

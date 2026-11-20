@@ -1805,7 +1805,10 @@ impl Workspace {
             .and_then(|environment| environment.get("isolated"))
             .and_then(Json::as_bool)
             == Some(true);
-        if !isolated || !target.starts_with('/') || self.files.normalize_path(target).is_ok() {
+        if !isolated
+            || !crate::pathx::is_absolute(target)
+            || self.files.normalize_path(target).is_ok()
+        {
             return Ok(None);
         }
         let directory =

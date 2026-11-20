@@ -13,7 +13,6 @@ use crate::obj;
 use crate::pathx;
 use std::fs;
 use std::io::Write;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 
 #[derive(Clone, Debug)]
@@ -301,7 +300,7 @@ fn write_file_atomic(path: &Path, content: &[u8], mode: u32) -> Outcome<()> {
         let mut file = fs::File::create(&temporary)?;
         file.write_all(content)?;
         file.sync_all()?;
-        fs::set_permissions(&temporary, fs::Permissions::from_mode(mode))?;
+        crate::platform::set_mode(&temporary, mode)?;
         fs::rename(&temporary, path)
     })();
     result.map_err(|error| {

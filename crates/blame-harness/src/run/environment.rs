@@ -114,7 +114,7 @@ pub fn with_command_credentials(
             .map(|(_, value)| value.clone())
             .unwrap_or_default();
         let entries: Vec<&str> = current
-            .split(':')
+            .split(crate::platform::PATH_DELIMITER)
             .filter(|entry| !entry.is_empty() && *entry != bin)
             .collect();
         // First: the pinned gh runs even where the host has another one.
@@ -124,7 +124,7 @@ pub fn with_command_credentials(
             std::iter::once(bin)
                 .chain(entries)
                 .collect::<Vec<_>>()
-                .join(":"),
+                .join(&crate::platform::PATH_DELIMITER.to_string()),
         );
     }
     filtered
@@ -145,7 +145,7 @@ fn path_entries(environment: &Environment) -> Vec<String> {
         .find(|(name, _)| *name == key)
         .map(|(_, value)| {
             value
-                .split(':')
+                .split(crate::platform::PATH_DELIMITER)
                 .filter(|entry| !entry.is_empty())
                 .map(str::to_string)
                 .collect()
@@ -169,7 +169,11 @@ pub fn with_bundled_tools(mut environment: Environment) -> Environment {
     }
     entries.push(directory);
     let key = path_key(&environment);
-    set(&mut environment, &key, entries.join(":"));
+    set(
+        &mut environment,
+        &key,
+        entries.join(&crate::platform::PATH_DELIMITER.to_string()),
+    );
     environment
 }
 
@@ -205,7 +209,11 @@ pub fn with_provisioned_package_managers(mut environment: Environment, cwd: &str
     }
     entries.extend(added);
     let key = path_key(&environment);
-    set(&mut environment, &key, entries.join(":"));
+    set(
+        &mut environment,
+        &key,
+        entries.join(&crate::platform::PATH_DELIMITER.to_string()),
+    );
     environment
 }
 
@@ -347,8 +355,15 @@ pub fn command_environment(
 /// The shell a literal command runs in: bash with pipefail, its profile
 /// loaded. A login profile can put directories before the inherited PATH
 /// (path_helper, `brew shellenv`): one that must come first goes back first,
-/// on the command's own line so line numbers stay the command's.
+/// on the command's own line so line numbers stay the command's. On Windows
+/// cmd.exe takes the command line as it is (`/d /s /c`).
 pub fn shell_command(command: &str, first_path_directory: Option<&str>) -> (String, Vec<String>) {
+    if cfg!(windows) {
+        return (
+            "cmd.exe".into(),
+            vec!["/d".into(), "/s".into(), "/c".into(), command.to_string()],
+        );
+    }
     let script = match first_path_directory {
         Some(directory) => format!(
             "PATH='{}':\"$PATH\"; {command}",
@@ -373,7 +388,9 @@ pub fn command_cwd(files: &WorkspaceFiles, path: Option<&str>) -> Outcome<String
 }
 
 pub fn target() -> &'static str {
-    if cfg!(target_os = "macos") {
+    if cfg!(windows) {
+        "windows-native"
+    } else if cfg!(target_os = "macos") {
         "macos-native"
     } else {
         "linux-native"

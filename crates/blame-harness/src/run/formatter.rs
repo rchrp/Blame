@@ -10,7 +10,7 @@ use crate::present::redact_secrets;
 use crate::text::js_trim;
 use regex::Regex;
 use std::io::{Read, Write};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
 use std::sync::LazyLock;
 use std::thread;
 use std::time::{Duration, Instant};
@@ -238,8 +238,7 @@ fn run_formatter(
     };
     args.extend(["--stdin-filepath".to_string(), path.to_string()]);
     let environment = workspace_command_environment(process_environment(), None);
-    let mut child = Command::new(&request.executable)
-        .args(&args)
+    let mut child = super::process::platform_command(&request.executable, &args, &environment)
         .current_dir(cwd)
         .env_clear()
         .envs(environment)

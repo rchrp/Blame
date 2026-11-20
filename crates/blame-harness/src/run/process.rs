@@ -5,7 +5,6 @@
 
 use crate::failure::{Failure, Outcome, Signal};
 use std::io::Read;
-use std::os::unix::process::{CommandExt, ExitStatusExt};
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::thread;
@@ -107,9 +106,20 @@ impl Shared {
     }
 
     /// SIGKILL to the process group, as `process.kill(-pid)`; without unsafe
-    /// code the signal goes through kill(1).
+    /// code the signal goes through kill(1). On Windows, the process tree
+    /// through `taskkill /T /F`, as the TypeScript harness does.
     fn terminate(&self) {
         let Some(pid) = self.pid else { return };
+        if cfg!(windows) {
+            let _ = hidden(
+                Command::new("taskkill")
+                    .args(["/pid", &pid.to_string(), "/T", "/F"])
+                    .stdout(Stdio::null())
+                    .stderr(Stdio::null()),
+            )
+            .status();
+            return;
+        }
         let group = Command::new("kill")
             .args(["-9", "--", &format!("-{pid}")])
             .stdout(Stdio::null())
@@ -157,9 +167,8 @@ impl Shared {
 /// command whose output is Node's error message.
 pub fn start(executable: &str, args: &[String], options: CommandOptions) -> Outcome<CommandHandle> {
     options.signal.check()?;
-    let mut command = Command::new(executable);
+    let mut command = platform_command(executable, args, &options.environment);
     command
-        .args(args)
         .current_dir(&options.cwd)
         .env_clear()
         .envs(
@@ -170,9 +179,11 @@ pub fn start(executable: &str, args: &[String], options: CommandOptions) -> Outc
         )
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .process_group(0);
-    let spawned = command.spawn();
+        .stderr(Stdio::piped());
+    // Its own process group, so termination reaches the command's children.
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(&mut command, 0);
+    let spawned = hidden(&mut command).spawn();
     let pid = spawned.as_ref().ok().map(|child| child.id());
     let shared = Arc::new(Shared {
         state: Mutex::new(State::default()),
@@ -231,7 +242,8 @@ pub fn start(executable: &str, args: &[String], options: CommandOptions) -> Outc
             state.exited = true;
             if let Ok(status) = status {
                 state.exit_code = status.code();
-                if let Some(signal) = status.signal() {
+                #[cfg(unix)]
+                if let Some(signal) = std::os::unix::process::ExitStatusExt::signal(&status) {
                     state.error.get_or_insert_with(|| {
                         format!("Command terminated by {}.", signal_name(signal))
                     });
@@ -291,6 +303,114 @@ fn error_code(error: &std::io::Error) -> String {
     }
 }
 
+/// No console window for a command (Node's `windowsHide`).
+fn hidden(command: &mut Command) -> &mut Command {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        command.creation_flags(CREATE_NO_WINDOW);
+    }
+    command
+}
+
+/// The command as the TypeScript harness spawns it. On Windows cmd.exe
+/// takes its command line verbatim (`windowsVerbatimArguments`), and any
+/// other executable is resolved through PATH and PATHEXT as execa's
+/// cross-spawn does: a `.cmd` or `.bat` shim runs through cmd.exe.
+pub(crate) fn platform_command(
+    executable: &str,
+    args: &[String],
+    environment: &[(String, String)],
+) -> Command {
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let lowered = executable.to_lowercase();
+        let name = lowered.rsplit(['\\', '/']).next().unwrap_or("");
+        if name == "cmd" || name == "cmd.exe" {
+            let mut command = Command::new(executable);
+            for arg in args {
+                command.raw_arg(arg);
+            }
+            return command;
+        }
+        if let Some(resolved) = windows_resolution(executable, environment) {
+            let extension = resolved.rsplit('.').next().unwrap_or("").to_lowercase();
+            if extension == "cmd" || extension == "bat" {
+                let line = std::iter::once(resolved.as_str())
+                    .chain(args.iter().map(String::as_str))
+                    .map(windows_quote)
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                let mut command = Command::new("cmd.exe");
+                command
+                    .raw_arg("/d")
+                    .raw_arg("/s")
+                    .raw_arg("/c")
+                    .raw_arg(format!("\"{line}\""));
+                return command;
+            }
+            let mut command = Command::new(resolved);
+            command.args(args);
+            return command;
+        }
+    }
+    let _ = environment;
+    let mut command = Command::new(executable);
+    command.args(args);
+    command
+}
+
+/// The file PATH and PATHEXT name for a bare Windows executable.
+#[cfg(windows)]
+fn windows_resolution(executable: &str, environment: &[(String, String)]) -> Option<String> {
+    let variable = |name: &str| {
+        environment
+            .iter()
+            .find(|(key, _)| key.eq_ignore_ascii_case(name))
+            .map(|(_, value)| value.clone())
+    };
+    let extensions: Vec<String> = variable("PATHEXT")
+        .unwrap_or_else(|| ".COM;.EXE;.BAT;.CMD".into())
+        .split(';')
+        .filter(|item| !item.is_empty())
+        .map(str::to_string)
+        .collect();
+    let has_extension = std::path::Path::new(executable).extension().is_some();
+    let candidates = |base: std::path::PathBuf| -> Option<String> {
+        if has_extension && base.is_file() {
+            return Some(base.to_string_lossy().into_owned());
+        }
+        extensions
+            .iter()
+            .map(|extension| {
+                std::path::PathBuf::from(format!("{}{extension}", base.to_string_lossy()))
+            })
+            .find(|path| path.is_file())
+            .map(|path| path.to_string_lossy().into_owned())
+    };
+    if executable.contains(['\\', '/']) {
+        return candidates(std::path::PathBuf::from(executable));
+    }
+    variable("PATH")?
+        .split(';')
+        .filter(|entry| !entry.is_empty())
+        .find_map(|entry| candidates(std::path::Path::new(entry).join(executable)))
+}
+
+/// cmd.exe quoting of one word of a shim's command line.
+#[cfg(windows)]
+fn windows_quote(word: &str) -> String {
+    if !word.is_empty()
+        && !word.contains([' ', '\t', '"', '&', '|', '<', '>', '^', '(', ')', '%', '!'])
+    {
+        return word.to_string();
+    }
+    format!("\"{}\"", word.replace('"', "\"\""))
+}
+
+#[cfg(unix)]
 fn signal_name(signal: i32) -> String {
     let name = match signal {
         1 => "SIGHUP",
@@ -523,7 +643,7 @@ pub fn execute(
     Ok(start(executable, args, options)?.completion())
 }
 
-#[cfg(test)]
+#[cfg(all(test, unix))]
 mod tests {
     use super::*;
 

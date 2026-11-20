@@ -504,6 +504,10 @@ pub fn project_test_command(
     cwd: &str,
     tasks: &[Task],
 ) -> Option<(String, Vec<String>)> {
+    // The raw command runs in cmd.exe on Windows: Bash quoting does not apply.
+    if cfg!(windows) {
+        return None;
+    }
     let parsed = parse_code("command.sh", command.as_bytes());
     let tree = parsed.trees.first()?;
     let root = tree.root.root();

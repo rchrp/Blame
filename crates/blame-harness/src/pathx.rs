@@ -3,9 +3,39 @@
 //! Workspace paths are checked against the root by spelling first (as the
 //! TypeScript harness does), then by real path where it matters.
 
+/// An absolute path's root and the rest, `/`-separated. On Unix the root is
+/// `/`; on Windows a drive (`C:/`), with backslashes and the `\\?\` prefix
+/// of canonical paths read as `/`, as Windows itself accepts them.
+fn split_root(path: &str) -> Option<(String, String)> {
+    if cfg!(windows) {
+        let portable = path.replace('\\', "/");
+        let portable = portable.strip_prefix("//?/").unwrap_or(&portable);
+        let bytes = portable.as_bytes();
+        if bytes.len() >= 2 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' {
+            let rest = &portable[2..];
+            return rest.starts_with('/').then(|| {
+                (
+                    format!("{}:/", bytes[0].to_ascii_uppercase() as char),
+                    rest.to_string(),
+                )
+            });
+        }
+        return portable
+            .starts_with('/')
+            .then(|| ("/".to_string(), portable.to_string()));
+    }
+    path.starts_with('/')
+        .then(|| ("/".to_string(), path.to_string()))
+}
+
+/// `path.isAbsolute`.
+pub fn is_absolute(path: &str) -> bool {
+    split_root(path).is_some()
+}
+
 /// `path.resolve(base, path)`: absolute, normalised, without a trailing slash.
 pub fn resolve(base: &str, path: &str) -> String {
-    let joined = if path.starts_with('/') {
+    let joined = if is_absolute(path) {
         path.to_string()
     } else {
         format!("{base}/{path}")
@@ -14,8 +44,9 @@ pub fn resolve(base: &str, path: &str) -> String {
 }
 
 fn normalize_absolute(path: &str) -> String {
+    let (root, rest) = split_root(path).unwrap_or_else(|| ("/".into(), path.replace('\\', "/")));
     let mut parts: Vec<&str> = Vec::new();
-    for part in path.split('/') {
+    for part in rest.split('/') {
         match part {
             "" | "." => {}
             ".." => {
@@ -24,17 +55,30 @@ fn normalize_absolute(path: &str) -> String {
             other => parts.push(other),
         }
     }
-    format!("/{}", parts.join("/"))
+    format!("{root}{}", parts.join("/"))
 }
 
-/// `path.relative(from, to)` for absolute normalised paths.
+/// `path.relative(from, to)` for absolute normalised paths; another
+/// Windows drive gives `to` itself, as Node does.
 pub fn relative(from: &str, to: &str) -> String {
+    let (from_root, from) = split_root(from).unwrap_or(("/".into(), from.to_string()));
+    let (to_root, to_rest) = split_root(to).unwrap_or(("/".into(), to.to_string()));
+    if from_root != to_root {
+        return normalize_absolute(to);
+    }
     let from_parts: Vec<&str> = from.split('/').filter(|part| !part.is_empty()).collect();
-    let to_parts: Vec<&str> = to.split('/').filter(|part| !part.is_empty()).collect();
+    let to_parts: Vec<&str> = to_rest.split('/').filter(|part| !part.is_empty()).collect();
+    let same = |left: &&str, right: &&str| {
+        if cfg!(windows) {
+            left.eq_ignore_ascii_case(right)
+        } else {
+            left == right
+        }
+    };
     let common = from_parts
         .iter()
         .zip(&to_parts)
-        .take_while(|(left, right)| left == right)
+        .take_while(|(left, right)| same(left, right))
         .count();
     let mut output: Vec<&str> = vec![".."; from_parts.len() - common];
     output.extend(&to_parts[common..]);
@@ -43,7 +87,7 @@ pub fn relative(from: &str, to: &str) -> String {
 
 /// `local === ".." || local.startsWith("../") || isAbsolute(local)`.
 pub fn escapes(local: &str) -> bool {
-    local == ".." || local.starts_with("../") || local.starts_with('/')
+    local == ".." || local.starts_with("../") || is_absolute(local)
 }
 
 /// `path.posix.basename`.

@@ -837,7 +837,7 @@ fn head_count(args: &[ShellWord]) -> Option<usize> {
 
 /// A workspace-relative path; none outside the workspace or inside dependencies.
 fn workspace_path(root: &str, directory: &str, value: &str) -> Option<String> {
-    let relative = if value.starts_with('/') {
+    let relative = if crate::pathx::is_absolute(value) {
         if value == root {
             ".".to_string()
         } else {

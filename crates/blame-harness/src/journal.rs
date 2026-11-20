@@ -15,7 +15,6 @@ use crate::json::Json;
 use crate::obj;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::os::unix::fs::OpenOptionsExt;
 use std::path::PathBuf;
 
 /// Alias change events between two full lists.
@@ -536,10 +535,7 @@ impl SessionJournal {
         let line = format!("{}\n", event.stringify());
         let directory = self.file.parent().expect("journal file has a directory");
         fs::create_dir_all(directory).map_err(|error| Failure::io(&error, "mkdir", directory))?;
-        let mut file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .mode(0o600)
+        let mut file = crate::platform::private_file(OpenOptions::new().create(true).append(true))
             .open(&self.file)
             .map_err(|error| Failure::io(&error, "open", &self.file))?;
         file.write_all(line.as_bytes())

@@ -4,8 +4,11 @@
 //! Layers, from the disk up: `files` (paths, snapshots, revisions),
 //! `journal`/`coverage`/`attention`/`aliases` (session state), `syntax`/
 //! `languages`/`fold`/`navigation` (code intelligence), `lexical`/`search`
-//! (search_code), `workspace` (read_code and the session), `tools`/`validate`/
-//! `present` (the model-facing surface), `harness`/`server` (execution).
+//! (search_code), `workspace` (read_code and the session), `edit` and its
+//! modules (edit_code), `run` (run_task), `turn` (one session's operations
+//! taking turns), `checks`/`finish` (check reports and finish_task),
+//! `tools`/`validate`/`present` (the model-facing surface),
+//! `harness`/`server` (execution).
 
 pub mod aliases;
 pub mod attention;
@@ -31,6 +34,7 @@ pub mod lock;
 pub mod navigation;
 pub mod patch;
 pub mod pathx;
+pub mod platform;
 pub mod present;
 pub mod read_results;
 pub mod run;

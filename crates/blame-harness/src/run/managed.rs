@@ -332,11 +332,13 @@ pub fn invocation_test_report(root: &str) -> Option<InvocationReport> {
     std::fs::create_dir_all(&parent).ok()?;
     let directory = make_temporary_directory(&parent.join("vitest-invocation-"))?;
     // Node's --import takes a file URL; JSON quoting keeps spaces in NODE_OPTIONS.
+    // `pathToFileURL`: a Windows path gets its drive after `file:///`.
+    let path = hook.to_string_lossy().replace('\\', "/");
+    let path = path.strip_prefix("//?/").unwrap_or(&path).to_string();
     let url = format!(
-        "file://{}",
-        hook.to_string_lossy()
-            .replace('%', "%25")
-            .replace(' ', "%20")
+        "file://{}{}",
+        if path.starts_with('/') { "" } else { "/" },
+        path.replace('%', "%25").replace(' ', "%20")
     );
     let previous = std::env::var("NODE_OPTIONS").unwrap_or_default();
     let options = js_trim(&format!("{previous} --import={}", crate::json::quote(&url))).to_string();

@@ -21,7 +21,6 @@ use crate::json::Json;
 use crate::present::redact_secrets;
 use crate::text::js_trim;
 use regex::Regex;
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 use std::time::Duration;
@@ -365,7 +364,7 @@ fn newest_candidate(candidates: Vec<ResolvedManager>) -> Option<ResolvedManager>
 
 fn executable_file(path: &Path) -> bool {
     std::fs::metadata(path)
-        .is_ok_and(|metadata| metadata.is_file() && metadata.permissions().mode() & 0o111 != 0)
+        .is_ok_and(|metadata| metadata.is_file() && crate::platform::executable(&metadata))
 }
 
 fn manager_version(executable: &str) -> Option<String> {
@@ -431,7 +430,10 @@ fn provisioned_candidates(name: &str) -> Vec<ResolvedManager> {
 
 fn system_manager(name: &str, version: Option<&str>) -> Option<ResolvedManager> {
     let path = std::env::var("PATH").unwrap_or_else(|_| "/usr/local/bin:/usr/bin:/bin".into());
-    for root in path.split(':').filter(|root| !root.is_empty()) {
+    for root in path
+        .split(crate::platform::PATH_DELIMITER)
+        .filter(|root| !root.is_empty())
+    {
         let candidate = Path::new(root).join(name);
         if !executable_file(&candidate) {
             continue;
@@ -503,7 +505,9 @@ fn bundled_package(name: &str, package: &str, version: Option<&str>) -> Option<R
     {
         // pnpm 11+ ships its native binary as an optional dependency next to
         // the wrapper (`native-binary.mjs`); never the downloading wrapper.
-        let platform = if cfg!(target_os = "macos") {
+        let platform = if cfg!(windows) {
+            "win32"
+        } else if cfg!(target_os = "macos") {
             "darwin"
         } else {
             "linux"
@@ -513,12 +517,13 @@ fn bundled_package(name: &str, package: &str, version: Option<&str>) -> Option<R
         } else {
             "x64"
         };
+        let binary = if cfg!(windows) { "pnpm.exe" } else { "pnpm" };
         let parent = std::fs::canonicalize(&root).ok()?.parent()?.to_path_buf();
         let native = std::fs::canonicalize(
             parent
                 .join("@pnpm")
                 .join(format!("exe.{platform}-{arch}"))
-                .join("pnpm"),
+                .join(binary),
         )
         .ok()?;
         return executable_file(&native).then(|| ResolvedManager {
@@ -545,7 +550,7 @@ fn stable_node() -> Option<String> {
     }
     if let Ok(path) = std::env::var("PATH") {
         candidates.extend(
-            path.split(':')
+            path.split(crate::platform::PATH_DELIMITER)
                 .filter(|root| !root.is_empty())
                 .map(|root| format!("{root}/node")),
         );

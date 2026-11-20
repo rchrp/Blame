@@ -8,7 +8,6 @@ use crate::pathx;
 use std::collections::HashSet;
 use std::fs;
 use std::io::Read;
-use std::os::unix::fs::{MetadataExt, PermissionsExt};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
@@ -188,20 +187,20 @@ impl WorkspaceFiles {
         Ok(ReadFile {
             absolute,
             content,
-            mode: metadata.permissions().mode() & 0o777,
+            mode: crate::platform::file_mode(&metadata),
             path: self.normalize_path(path)?,
         })
     }
 
     pub fn file_size(&self, path: &str) -> Outcome<u64> {
-        Ok(self.resolve_existing(path)?.1.size())
+        Ok(self.resolve_existing(path)?.1.len())
     }
 
     pub fn path_profile(&self, path: &str) -> Outcome<PathProfile> {
         let (_, metadata) = self.resolve_existing_path(path)?;
         Ok(PathProfile {
             directory: metadata.is_dir(),
-            size: metadata.size(),
+            size: metadata.len(),
         })
     }
 
@@ -323,7 +322,7 @@ impl WorkspaceFiles {
         };
         let mut content = Sha256::new();
         let mut state = Sha256::new();
-        state.update(format!("{}\0", info.permissions().mode() & 0o777).as_bytes());
+        state.update(format!("{}\0", crate::platform::file_mode(&info)).as_bytes());
         let mut buffer = vec![0u8; 64 * 1024];
         loop {
             let read = file
