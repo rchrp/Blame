@@ -304,7 +304,7 @@ function SecurityStoppedState({ onRun }: { onRun(): void }) {
           Audit stopped
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The running Cline sessions were cancelled and the partial audit state
+          The running agents were stopped and the partial audit state
           was saved to the cloud.
         </p>
         <Button className="mt-5" onClick={onRun}>

@@ -2,7 +2,6 @@ import {
   addedFile,
   isPatchText,
   parsePatch,
-  replacementFile,
 } from "./tool-call-patch.ts"
 import {
   basename,
@@ -10,7 +9,6 @@ import {
   lineCount,
   list,
   num,
-  operationResults,
   pair,
   plural,
   record,
@@ -32,7 +30,6 @@ import type {
 
 export function describeRead(source: ToolCallSource): ToolCallView {
   const harness = harnessResult(source.output)
-  if (source.toolName === "read_files") return describeClineRead(source)
   const input = record(source.input)
   const data = harness?.data ?? {}
   const target = str(input.target) ?? ""
@@ -136,74 +133,8 @@ export function describeRead(source: ToolCallSource): ToolCallView {
   }
 }
 
-function describeClineRead(source: ToolCallSource): ToolCallView {
-  const files = clineReadRequests(source.input)
-  const results = operationResults(source.output)
-  const failed = results.some((result) => result.success === false)
-  const verb = source.running ? "Reading" : "Read"
-  const bodies: ToolCallBody[] = results.flatMap((result, index): ToolCallBody[] => {
-    const request = files[index]
-    if (result.success === false) {
-      return [{ type: "error", message: result.error ?? `Could not read ${result.query ?? "the file"}.` }]
-    }
-    if (!result.result) return []
-    return [
-      {
-        type: "code",
-        path: request?.path ?? result.query,
-        startLine: request?.startLine ?? 1,
-        text: result.result.text,
-        truncated: result.result.truncated,
-      },
-    ]
-  })
-
-  if (files.length <= 1) {
-    const file = files[0]
-    const chips: ToolCallChip[] = []
-    if (file?.startLine !== undefined || file?.endLine !== undefined) {
-      chips.push({ label: `L${file.startLine ?? 1}–${file.endLine ?? "end"}` })
-    } else if (results[0]?.result && !results[0].result.truncated) {
-      chips.push({ label: plural(lineCount(results[0].result.text), "line") })
-    }
-    return {
-      family: "read",
-      verb,
-      target: { text: basename(file?.path ?? results[0]?.query ?? "file"), mono: true, title: file?.path },
-      chips,
-      bodies,
-      failed,
-    }
-  }
-
-  return {
-    family: "read",
-    verb,
-    target: { text: fileSummary(files.map((file) => file.path)), mono: true, title: files.map((file) => file.path).join("\n") },
-    chips: [{ label: plural(files.length, "file") }],
-    bodies,
-    failed,
-  }
-}
-
 export function describeSearch(source: ToolCallSource): ToolCallView {
   const input = record(source.input)
-  if (source.toolName === "search_codebase") {
-    const queries = typeof source.input === "string" ? [source.input] : strings(input.queries ?? source.input)
-    const results = operationResults(source.output)
-    const matches = results.reduce((total, result) => total + countMatches(result.result?.text), 0)
-    return {
-      family: "search",
-      verb: source.running ? "Searching for" : "Searched for",
-      target: { text: queries.map((query) => `"${query}"`).join(", ") || "code", mono: true },
-      chips: results.length ? [{ label: matches ? plural(matches, "match", "matches") : "No matches", tone: matches ? "neutral" : "warning" }] : [],
-      bodies: results.flatMap((result): ToolCallBody[] =>
-        result.result ? [{ type: "code", label: result.query, text: result.result.text, truncated: result.result.truncated }] : []
-      ),
-      failed: results.some((result) => result.success === false),
-    }
-  }
-
   const harness = harnessResult(source.output)
   const data = harness?.data ?? {}
   const query = str(input.query) ?? str(record(input.query).name) ?? str(record(input.query).pattern) ?? ""
@@ -271,23 +202,21 @@ export function editChanges(source: ToolCallSource) {
     if (files.some((file) => file.path === path)) continue
     files.push({ path, additions: num(item.additions), deletions: num(item.deletions), lines: [] })
   }
-  const clineFailure = operationResults(source.output).find((result) => result.success === false)
   const symbols = changes.flatMap((entry) => list(record(entry).symbols)).filter(
     (symbol): symbol is string => typeof symbol === "string"
   )
   return {
-    clineFailure,
-    failed: Boolean(harness?.failed || clineFailure),
+    failed: Boolean(harness?.failed),
     files,
     harness,
     // Edits are applied once the tool finished without failing.
-    applied: !source.running && source.output !== undefined && !(harness?.failed || clineFailure),
+    applied: !source.running && source.output !== undefined && !harness?.failed,
     symbols,
   }
 }
 
 export function describeEdit(source: ToolCallSource): ToolCallView {
-  const { clineFailure, failed, files, harness, symbols } = editChanges(source)
+  const { failed, files, harness, symbols } = editChanges(source)
   const rename = symbolOperations(source.input).find((operation) => operation.action === "rename")
   const allNew = files.length > 0 && files.every((file) => file.status === "added")
   const allDeleted = files.length > 0 && files.every((file) => file.status === "deleted")
@@ -307,8 +236,6 @@ export function describeEdit(source: ToolCallSource): ToolCallView {
   const bodies: ToolCallBody[] = []
   if (harness?.failed) {
     bodies.push({ type: "error", message: harness.message ?? "The edit was not applied.", recovery: harness.recovery })
-  } else if (clineFailure) {
-    bodies.push({ type: "error", message: clineFailure.error ?? "The edit was not applied." })
   }
   const symbolBodies = symbolOperations(source.input).flatMap((operation): ToolCallBody[] =>
     operation.content && operation.action !== "rename"
@@ -338,26 +265,9 @@ export function describeEdit(source: ToolCallSource): ToolCallView {
 
 function editedFiles(source: ToolCallSource): DiffFile[] {
   const input = record(source.input)
-  if (source.toolName === "editor") {
-    const path = str(input.path) ?? "file"
-    const newText = textOf(input.new_text)?.text ?? ""
-    const oldText = textOf(input.old_text)?.text
-    if (!oldText && num(input.insert_line) === undefined) return [addedFile(path, newText)]
-    const file = replacementFile(path, oldText, newText)
-    if (num(input.insert_line) !== undefined) file.note = `Inserted at line ${num(input.insert_line)}`
-    return [file]
-  }
   if (source.toolName === "write_file") {
     const path = str(input.path) ?? str(input.file_path) ?? "file"
     return [addedFile(path, textOf(input.content)?.text ?? "")]
-  }
-  if (source.toolName === "apply_patch") {
-    const patch = typeof source.input === "string" ? source.input : textOf(input.input)?.text
-    if (patch) return parsePatch(patch)
-    return list(input.files).flatMap((entry) => {
-      const path = str(record(entry).path)
-      return path ? [{ path, additions: num(record(entry).additions), deletions: num(record(entry).deletions), lines: [] }] : []
-    })
   }
   return list(input.operations).flatMap((entry): DiffFile[] => {
     const operation = record(entry)
@@ -390,24 +300,6 @@ function symbolActionLabel(action: string) {
   return "Replaced"
 }
 
-function clineReadRequests(input: unknown) {
-  const value = record(input)
-  const entries = typeof input === "string" ? [input] : Array.isArray(input) ? input : list(value.files ?? (value.path || value.file_path ? [value] : []))
-  return entries.flatMap((entry) => {
-    if (typeof entry === "string") return [{ path: entry, startLine: undefined, endLine: undefined }]
-    const item = record(entry)
-    const path = str(item.path) ?? str(item.file_path) ?? str(item.filePath)
-    return path ? [{ path, startLine: num(item.start_line), endLine: num(item.end_line) }] : []
-  })
-}
-
-function countMatches(text: string | undefined) {
-  if (!text) return 0
-  const found = text.match(/Found (\d+) (?:results?|matches?)/iu)
-  if (found) return Number(found[1])
-  return text.split("\n").filter((line) => /:\d+[:│|]/u.test(line) || /^\s*│?\s*\d+\s*│/u.test(line)).length
-}
-
 function pathFromTarget(target: string) {
   if (!target || /^s\d+$/u.test(target) || target.startsWith("@")) return ""
   return target.split("#", 1)[0] ?? ""
@@ -416,12 +308,6 @@ function pathFromTarget(target: string) {
 function symbolFromTarget(target: string) {
   const index = target.indexOf("#")
   return index > 0 ? target.slice(index + 1) : undefined
-}
-
-function fileSummary(paths: string[]) {
-  const names = paths.map(basename)
-  if (names.length <= 2) return names.join(", ")
-  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`
 }
 
 function diffStat(file: DiffFile) {
