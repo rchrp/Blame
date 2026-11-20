@@ -8,9 +8,10 @@ runtime, and ships as one binary that speaks the JSON-lines protocol of
 the engine (or any other agent) can run it in place of the TypeScript
 harness.
 
-This first part ports the foundations and the read side. Editing, `run_task`,
-completion, the compiler tier and symbolic analysis answer that they are not
-available yet; their seams are described below.
+Ported so far: the foundations, the read side, `edit_code` and the compiler
+tier (through a Node side process). `run_task`, completion and symbolic
+analysis answer that they are not available yet; their seams are described
+below.
 
 ## Running it
 
@@ -40,6 +41,27 @@ cargo run --release -p blame-harness -- serve
 
 Without `serve`, one request is read from stdin and its result printed.
 
+### The compiler side process
+
+What must stay on the TypeScript compiler (references and renames,
+dependency declarations, the import index behind `links`, TypeScript, JSONC
+and Prisma content validation) is answered by
+`packages/agent-runtime/src/harness/rust-harness-compiler.ts`, a small Node
+entry next to the modules it reuses unchanged. Give the harness its command:
+
+```bash
+blame-harness serve --compiler-command '["node","packages/agent-runtime/dist/harness/rust-harness-compiler.js"]'
+```
+
+(or `BLAME_HARNESS_COMPILER`). The harness starts it on the first query that
+needs it. Inside it, one compiler worker per workspace root (at most three,
+each stopped after 30 s idle, as in-process); the side process itself exits
+after `BLAME_HARNESS_COMPILER_IDLE_MS` (5 min) without a query and is
+started again when needed. Without a command, or without Node, the compiler
+tier is unavailable: references fall back to lexical search with
+`worker_failed`, the declaration view is refused, reads carry no `links`,
+and TypeScript/JSONC/Prisma edits are validated as unsupported.
+
 ## Layers
 
 | Module | Role | TypeScript source |
@@ -50,10 +72,11 @@ Without `serve`, one request is read from stdin and its result printed.
 | `syntax`, `languages` | Symbols, bodies, structural levels, syntax diagnostics, Vue/Svelte units, Python bodies | `code-intelligence.ts`, `component-symbols.ts`, `language-capabilities.ts`, `light-capabilities.ts` |
 | `fold`, `navigation`, `read_results` | Folded views and their economics, edit targets, read result shapes | `light-fold-view.ts`, `light-fold-economics.ts`, `light-navigation.ts`, `light-read-results.ts` |
 | `lexical`, `search_results`, `search` | ripgrep's engine in process, ranking, pages, scopes, symbol/reference/declaration discovery | `lexical-search.ts`, `light-search-results.ts`, `light-code-search.ts`, `light-reference-search.ts`, `light-reference-candidates.ts` |
-| `workspace` | One session on one workspace: `read_code` routing, `search_code` | `light-workspace.ts`, `light-path-recovery.ts`, `light-images.ts` |
+| `workspace` | One session on one workspace: `read_code` routing, `search_code`, `edit_code` | `light-workspace.ts`, `light-path-recovery.ts`, `light-images.ts` |
+| `edit`, `patch`, `cline_patch`, `diff`, `symbol_edit`, `commit`, `validation` | edit_code: planning, Cline patches (its parser ported), jsdiff's line diff, symbol replacements, atomic commit with `pending.json` recovery, final content validation | `light-edit.ts`, `light-patch.ts`, `@cline/core` apply-patch, `diff` 9, `light-symbol-replacement.ts`, `python-body.ts`, `patch-symbol-attribution.ts`, `light-commit.ts`, `content-validation.ts` |
 | `tools`, `validate`, `present` | The model-facing surface: definitions, validation, presentation | `light-tools.ts`, `light-contracts.ts`, `tool-result-envelope.ts`, `security-secret-redaction.ts` |
 | `harness`, `server` | Workspace cache, request and call execution, the protocol | `light-executor.ts`, `engine-tools.ts`, `semantic-harness-runner.ts` |
-| `compiler` | The port of the compiler tier (Node side process, later) | `semantic-reference-*.ts`, `import-index*.ts`, `dependency-declaration.ts` |
+| `compiler` | The compiler tier's port and its Node side process client | `semantic-reference-*.ts`, `import-index*.ts`, `dependency-declaration.ts` |
 
 A standalone tool server (MCP or another agent's plugin format) needs
 `tools::tool_definitions` and `harness::Harness::call`, nothing else.
@@ -95,19 +118,21 @@ node crates/blame-harness/conformance/run.mjs --binary target/release/blame-harn
 
 It runs every harness test file three ways: as is (TypeScript), with the
 workspace in Rust, and in compare mode, where the tests read TypeScript
-results while every `search_code`/`read_code` also runs in Rust on its own
-session journal and is compared byte for byte.
+results while every `search_code`/`read_code`/`edit_code` also runs in Rust
+on a shadow copy of the test's tree (made identical to it before each call)
+and is compared byte for byte, an edit's resulting files included.
+`classify.mjs` sorts the remaining failures by cause, `measure.mjs` and
+`measure-edit.mjs` compare latency and memory.
 
 ## Seams for the next parts
 
-- `edit_code`, `run_task`, `finish_task`: `tools::ToolDefinition::available`
-  is false and `Harness::execute` answers that they are not available. The
-  journal already replays `change`, `validation` and `terminal` events, and
-  the lock refuses a read while `pending.json` waits for recovery.
-- `@checks`: refused until validations are recorded by `run_task`.
-- Compiler tier: `compiler::CompilerPort` (references, dependency
-  declarations, the import index behind `links`). `NoCompiler` answers what
-  the TypeScript harness answers when its worker cannot start
-  (`worker_failed`), and reads carry no `links`.
+- `run_task`, `finish_task`: `tools::ToolDefinition::available` is false and
+  `Harness::execute` answers that they are not available. The journal
+  already replays `validation` and `terminal` events. The deterministic
+  formatter (`run_task`'s Prettier edits) will commit through the edit
+  service, as `replaceFiles` does in TypeScript.
+- `@checks`, and on edits the validation state and repair plan: they come
+  from checks `run_task` records; without them (the only case so far) the
+  TypeScript workspace adds none either.
 - Symbolic analysis (`BLAME_AGENT_SYMBOLIC_ANALYSIS`): not ported; reads
   carry no `symbolicAnalysis` hints.
