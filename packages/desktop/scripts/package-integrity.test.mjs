@@ -294,7 +294,7 @@ test("requires the engine binaries for the app and its VM, of the right platform
     await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /found: darwin-arm64, linux-arm64, linux-x64/);
     await rm(join(resources, "engine/linux-x64"), { recursive: true });
     await rm(join(resources, "engine/darwin-arm64/blame-harness"));
-    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /missing .*darwin-arm64\/blame-harness/);
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /missing .*darwin-arm64[\\/]blame-harness/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
