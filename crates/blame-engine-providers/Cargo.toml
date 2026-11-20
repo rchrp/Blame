@@ -8,6 +8,10 @@ license.workspace = true
 repository.workspace = true
 publish.workspace = true
 
+[features]
+# A mock provider server for tests, this crate's and the binary's.
+testing = ["tokio/rt"]
+
 [dependencies]
 blame-engine-core.workspace = true
 blame-engine-protocol.workspace = true
@@ -36,6 +40,7 @@ url = "2"
 uuid = { version = "1", default-features = false, features = ["v4"] }
 
 [dev-dependencies]
+blame-engine-providers = { path = ".", features = ["testing"] }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "net", "io-util", "time"] }
 
 [lints]

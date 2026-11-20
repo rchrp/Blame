@@ -19,6 +19,8 @@ mod native;
 mod registry;
 mod request;
 mod stream;
+#[cfg(feature = "testing")]
+pub mod testing;
 mod wire;
 
 pub use registry::{Options, Provider, ProviderKind, connect};
