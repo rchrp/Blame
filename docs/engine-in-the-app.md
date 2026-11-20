@@ -1,8 +1,9 @@
 # The agent engine in the desktop app
 
 How the app runs agents on `blame-engine` (`crates/`). Quick chats are the
-first conversations on it; development stories, one-shot agents, the engine
-in the Lima/WSL VM and provider settings follow the same contract. Until
+first conversations on it, one-shot agents run as engine tasks (below);
+development stories, the engine in the Lima/WSL VM and provider settings
+follow the same contract. Until
 they move, they still run on the Cline runtime (`cline-runtime.ts`).
 
 ## Processes
@@ -54,6 +55,7 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
+| task calls (`generateTitle`…), `cancelTask({ session })`, `deleteSession({ session })` | See [Tasks](#tasks); declared in `engine/task-protocol.ts`. |
 
 Host → renderer, on `engine:event`:
 
@@ -131,6 +133,88 @@ decision that arrives first is kept for a minute). The pending call shows in
 the transcript (`pendingApprovals`, a tool call in `awaiting_approval`).
 No quick-chat tool needs approval, so the conversation view has no
 Allow/Deny buttons yet: the first slice whose tools need approval adds them.
+
+## Tasks
+
+A task is an agent run with no user in it: a title, a commit message, a
+project initialization. It is a session of kind `task` (`SessionConfig.kind`)
+made of the same records as a conversation, so recovery, replay and the
+follow subscription work alike, but nothing can be sent to it, it cannot be
+rewound or reconfigured, and it ends by itself.
+
+```
+renderer                         engine host                                   blame-engine
+platform.engine.call(            tasks/handlers.ts → purposes/<agent>.ts
+  "generateTitle", input) ─────▶ TaskRunner.run(spec) ── task/run ───────────▶ creates the session, runs its turn
+                                                       ◀─ TaskOutcome ─────── when the turn ends
+                         ◀────── typed result, or EngineTaskError
+platform.engine.call("cancelTask", { session }) ──── $/cancel of that task/run ─▶ the task ends as interrupted
+platform.engine.follow(session) ─── records as for a conversation (progress of a long task)
+```
+
+### How a purpose declares its task
+
+A purpose (`engine/purposes/<agent>.ts`) returns a `TaskSpec`: the config
+(`taskConfig()` in `tasks/runner.ts`), the instruction that opens the turn,
+and `result(value)` that turns the validated result into the caller's type.
+Its **completion contract** (`SessionConfig.contract`) is what the engine
+enforces, not the prompt:
+
+| field | meaning |
+| --- | --- |
+| `result` | `{ source: "submit", name, description, input_schema }`: a tool the engine offers and answers itself; a call is accepted when its input matches the schema (`submitTool()`). `{ source: "tool", name }`: one of the session's tools, such as the harness's `finish_task`; its input is checked against the tool's schema, then the tool runs, and its completion is the result. |
+| `required` | Tools that must have completed in the turn, in a reply before the one calling the result tool: "inspect the code before answering" is `required: ["read_code"]`, not a sentence in the prompt. |
+| `allowed` | The only tools offered besides the result tool (`[]`: none). Absent: every tool of the session. |
+| `max_corrections` | How many times a model that stops without an accepted result is told so (default 2). |
+
+What the engine does, each step stored as a record:
+
+- A refused result call (`ResultRejected`, with the schema errors and the
+  unmet obligations) goes back to the model as the call's error; it fixes it
+  and calls again.
+- A model that stops in text gets a `ContractCorrection` whose text is a
+  pure function of what is unmet. The last one also forces the tool choice
+  where the provider can: OpenAI and Gemini. Claude refuses a forced choice
+  while it thinks, and the ChatGPT backend, OpenRouter and compatible
+  servers may not honour one, so they get the message only.
+- Past the corrections the turn ends as `contract_unmet`, naming what is
+  missing. Only an accepted result (`ResultAccepted`) ends the turn: under a
+  contract, a tool marked `ends_turn` does not.
+- `limits` bound a task: `max_requests_per_turn`, `max_turn_tokens` (checked
+  before each request) and `max_turn_ms` (a request or tool still running at
+  the deadline is stopped).
+
+`task/run` answers with a `TaskOutcome`: `completed` with the result,
+`failed` with `contract_unmet`, `limit_reached` or `provider_error`, or
+`interrupted`. The runner throws `EngineTaskError` for anything but
+`completed`, with the outcome and a sentence saying what went wrong.
+
+A conversation carries a contract the same way: a development story's
+purpose sets `contract: { result: { source: "tool", name: "finish_task" },
+... }` so a turn only ends through an accepted `finish_task`.
+
+### What a task leaves behind
+
+A task's log stays on the machine that ran it: the store never copies it to
+Blame's database, and the engine deletes it three days after its last record
+(`--task-retention`), long enough to look into a failure. A purpose that
+must be readable elsewhere sets `kind: { kind: "task", replicate: true }`.
+`deleteSession` (engine `session/delete`) removes a session from the engine;
+the API's copy is the app's to delete, as for a deleted quick chat.
+
+### Where a task runs
+
+On the host's engine. A task that reads no file runs there even for a
+project in the runtime VM (its folder is the temporary one). A task that
+works on files of a project in the VM fails with `VM_WORKSPACE_UNSUPPORTED`
+until the engine runs in the VM; there is no Cline fallback.
+
+### The tasks
+
+| renderer call | purpose | result tool | tools |
+| --- | --- | --- | --- |
+| `generateTitle` | `title` | `submit_title` (run configuration ids in the schema) | none |
+| `optimizeUserStory` | `user-story-optimization` | `submit_user_story` | none |
 
 ## Rules for the next slices
 
