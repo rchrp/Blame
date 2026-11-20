@@ -1,0 +1,80 @@
+# Builds the Rust binaries the desktop app ships (blame-engine, blame-harness)
+# with scripts/build-engine-binaries.mjs, one target per job, and uploads each
+# as the artifact engine-<target>. Release desktop downloads them into every
+# package; Release cache runs it on main so tag builds find a warm Cargo cache.
+name: Engine binaries
+
+on:
+  workflow_call:
+    inputs:
+      save-cache:
+        description: Save the Cargo cache (main only: tags cannot share theirs).
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Engine ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: darwin-arm64
+            runner: macos-latest
+          - target: darwin-x64
+            runner: macos-latest
+          - target: win32-x64
+            runner: windows-latest
+          # Static musl builds, for a Linux desktop and the Lima/WSL VM.
+          - target: linux-x64
+            runner: ubuntu-latest
+          - target: linux-arm64
+            runner: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+      # Installs the toolchain pinned in rust-toolchain.toml.
+      - run: rustup show
+
+      - name: Install zig and cargo-zigbuild
+        if: runner.os == 'Linux'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/zig"
+          "$RUNNER_TEMP/zig/bin/pip" install ziglang==0.17.1 cargo-zigbuild==0.24.1
+          echo "$RUNNER_TEMP/zig/bin" >> "$GITHUB_PATH"
+
+      - id: cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: engine-release-${{ matrix.target }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+          restore-keys: engine-release-${{ matrix.target }}-
+
+      - run: node scripts/build-engine-binaries.mjs ${{ matrix.target }}
+
+      - if: inputs.save-cache && steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
+      # The artifact holds <target>/blame-engine[.exe] and blame-harness[.exe].
+      - uses: actions/upload-artifact@v7
+        with:
+          name: engine-${{ matrix.target }}
+          if-no-files-found: error
+          retention-days: 3
+          path: target/engine-binaries/
