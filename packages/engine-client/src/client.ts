@@ -112,8 +112,10 @@ export class EngineClient {
   private readonly resolveClosed: (exit: EngineExit) => void;
   private ended: EngineExit | undefined;
   private stopping = false;
+  private readonly options: EngineClientOptions;
 
-  private constructor(private readonly options: EngineClientOptions) {
+  private constructor(options: EngineClientOptions) {
+    this.options = options;
     this.handlers = options.handlers ?? {};
     let resolve!: (exit: EngineExit) => void;
     this.closed = new Promise((r) => {
