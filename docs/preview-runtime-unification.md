@@ -257,8 +257,9 @@ nothing used it for 10 minutes (`runtime-power.ts`).
 
 - One place starts it: the runtime agent asks `ensureRuntimeRunning`
   before every request, and every command reaches the VM through it
-  (git, files, Docker, terminals, previews, the Cline hub); the code
-  graph, the only direct `blame-lima-runtime` caller, asks too. A start
+  (git, files, Docker, terminals, previews); the code graph and the
+  agent engine in the VM (`engine/vm-engine.ts`), the direct
+  `blame-lima-runtime` callers, ask too. A start
   checks the runtime first: it boots an installed VM (and updates an
   outdated one, as `ensure` does) but never installs a missing one.
 - The app no longer starts it at launch. A queued or interrupted local
