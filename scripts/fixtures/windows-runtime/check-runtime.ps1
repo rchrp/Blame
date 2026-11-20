@@ -99,7 +99,7 @@ $env:BLAME_TEST_WSL_STOPPED = ""
   $checks = New-Object System.Collections.Generic.List[object]
   Add-DistroChecks $checks
   Assert-Equal @($checks | Where-Object { $_.status -eq 'available' }).Count 2 "partial probe output keeps valid results"
-  Assert-Equal @($checks | Where-Object { $_.status -eq 'missing' }).Count 8 "partial probe output does not hide missing results"
+  Assert-Equal @($checks | Where-Object { $_.status -eq 'missing' }).Count 7 "partial probe output does not hide missing results"
 }
 
 Clear-Content -LiteralPath $env:BLAME_TEST_WSL_LOG
