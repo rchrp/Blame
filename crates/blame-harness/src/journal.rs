@@ -118,11 +118,247 @@ impl SessionJournal {
     }
 
     pub fn record_terminal(&mut self, state: &str) -> Outcome<()> {
+        self.record_terminal_summary(state, None)
+    }
+
+    /// The terminal event, with finish_task's summary.
+    pub fn record_terminal_summary(&mut self, state: &str, summary: Option<&str>) -> Outcome<()> {
         if self.terminal_state.is_some() {
             return Ok(());
         }
         self.terminal_state = Some(state.into());
-        self.append(&obj! { "type" => "terminal", "state" => state, "timestamp" => now() })
+        self.append(
+            &obj! { "type" => "terminal", "state" => state }
+                .with_opt("summary", summary)
+                .with("timestamp", now()),
+        )
+    }
+
+    /// A validation (a check a command ran, a formatter's output, the
+    /// dependency consistency): the input fields in their order, then its id,
+    /// paths (the session's changed paths by default), terminal, the paths'
+    /// current states and the time, as `recordValidation` writes them.
+    pub fn record_validation(
+        &mut self,
+        files: &crate::files::WorkspaceFiles,
+        input: Json,
+    ) -> Outcome<()> {
+        let text = |key: &str| input.get(key).and_then(Json::as_str).map(str::to_string);
+        let paths: Vec<String> = match input.get("paths").and_then(Json::as_array) {
+            Some(paths) => paths
+                .iter()
+                .filter_map(Json::as_str)
+                .map(str::to_string)
+                .collect(),
+            None => self.changed_paths(),
+        };
+        let terminal = text("terminal").unwrap_or_else(|| {
+            match text("status").as_deref() {
+                Some("passed") => "passed",
+                Some("failed") => "failed",
+                _ => "unknown",
+            }
+            .to_string()
+        });
+        let identity = text("command").or_else(|| text("taskId")).or_else(|| {
+            text("evidenceOrigin").map(|origin| {
+                Json::Arr(vec![
+                    Json::from(origin),
+                    Json::Arr(paths.iter().map(Json::from).collect()),
+                ])
+                .stringify()
+            })
+        });
+        let id = text("id").unwrap_or_else(|| {
+            format!(
+                "validation://{}",
+                sha256_hex(
+                    format!("{}\0{}", identity.as_deref().unwrap_or("undefined"), now()).as_bytes()
+                )
+            )
+        });
+        let mut event = obj! { "type" => "validation" };
+        event.extend(input);
+        event.set("id", id);
+        event.set("paths", Json::Arr(paths.iter().map(Json::from).collect()));
+        event.set("terminal", terminal);
+        event.set("files", Json::Arr(file_states(files, &paths)));
+        event.set("timestamp", now());
+        self.validations.push(event.clone());
+        self.append(&event)
+    }
+
+    /// The validations recorded in this session, public fields only.
+    pub fn current_validations(&self) -> Vec<Json> {
+        self.validations.iter().map(public_validation).collect()
+    }
+
+    /// The session's net changed paths (re-read from the journal).
+    pub fn current_changed_paths(&mut self, files: &crate::files::WorkspaceFiles) -> Vec<String> {
+        self.hydrate();
+        self.current_changes_by_path(files)
+            .into_iter()
+            .map(|(path, _)| path)
+            .collect()
+    }
+
+    /// Every file change in recording order: `{ after, before?, path, timestamp }`.
+    pub fn file_transitions(&mut self) -> Vec<Json> {
+        self.hydrate();
+        let mut transitions = Vec::new();
+        for change in &self.changes {
+            for path in strings(change.get("paths")) {
+                let Some(after) = state_hash(change.get("files"), &path) else {
+                    continue;
+                };
+                transitions.push(
+                    obj! { "after" => after }
+                        .with_opt("before", state_hash(change.get("beforeFiles"), &path))
+                        .with("path", path.as_str())
+                        .with(
+                            "timestamp",
+                            change.get("timestamp").cloned().unwrap_or(Json::Null),
+                        ),
+                );
+            }
+        }
+        transitions
+    }
+
+    /// What finish_task and `@checks` judge: the session's current changes
+    /// and the validations still current for the workspace's revision.
+    pub fn completion_snapshot(
+        &mut self,
+        files: &crate::files::WorkspaceFiles,
+        signal: &crate::failure::Signal,
+    ) -> Outcome<Json> {
+        self.hydrate();
+        let snapshot = files.snapshot(signal)?;
+        let current = self.current_changes_by_path(files);
+        let mut changes: Vec<Json> = Vec::new();
+        for (_, change) in &current {
+            let public = public_change(change);
+            if !changes.contains(&public) {
+                changes.push(public);
+            }
+        }
+        let revision = snapshot.revision.source_revision_id.clone();
+        let validations = self.current_validation_events(files, &revision);
+        let mut symbols: Vec<String> = Vec::new();
+        for change in &changes {
+            for symbol in strings(change.get("symbols")) {
+                if !symbols.contains(&symbol) {
+                    symbols.push(symbol);
+                }
+            }
+        }
+        let states: Vec<Json> = current
+            .iter()
+            .filter_map(|(path, change)| {
+                state_hash(change.get("files"), path)
+                    .map(|hash| obj! { "path" => path.as_str(), "hash" => hash })
+            })
+            .collect();
+        Ok(obj! {
+            "changedPaths" => Json::Arr(current.iter().map(|(path, _)| Json::from(path)).collect()),
+            "changes" => Json::Arr(changes),
+            "files" => Json::Arr(states),
+            "sourceRevisionId" => revision,
+            "symbols" => Json::Arr(symbols.into_iter().map(Json::from).collect()),
+            "validations" => Json::Arr(validations.iter().map(public_validation).collect()),
+        })
+    }
+
+    fn changed_paths(&self) -> Vec<String> {
+        let mut paths: Vec<String> = Vec::new();
+        for change in &self.changes {
+            for path in strings(change.get("paths")) {
+                if !paths.contains(&path) {
+                    paths.push(path);
+                }
+            }
+        }
+        paths
+    }
+
+    /// Each changed path with its latest change, when that change still
+    /// describes the file and differs from the file's state before the session.
+    fn current_changes_by_path(&self, files: &crate::files::WorkspaceFiles) -> Vec<(String, Json)> {
+        let mut latest: Vec<(String, &Json)> = Vec::new();
+        let mut initial: Vec<(String, String)> = Vec::new();
+        for change in &self.changes {
+            for path in strings(change.get("paths")) {
+                let known = latest.iter().position(|(known, _)| *known == path);
+                if known.is_none()
+                    && let Some(before) = state_hash(change.get("beforeFiles"), &path)
+                {
+                    initial.push((path.clone(), before));
+                }
+                match known {
+                    Some(index) => latest[index].1 = change,
+                    None => latest.push((path, change)),
+                }
+            }
+        }
+        latest
+            .into_iter()
+            .filter(|(path, change)| {
+                let after = state_hash(change.get("files"), path);
+                let before = initial
+                    .iter()
+                    .find(|(known, _)| known == path)
+                    .map(|(_, hash)| hash.clone());
+                after != before && file_state_current(files, path, change.get("files"))
+            })
+            .map(|(path, change)| (path, change.clone()))
+            .collect()
+    }
+
+    fn current_validation_events(
+        &self,
+        files: &crate::files::WorkspaceFiles,
+        revision: &str,
+    ) -> Vec<Json> {
+        let mut latest: Vec<(String, Json)> = Vec::new();
+        for validation in &self.validations {
+            if validation.get("sourceRevisionId").and_then(Json::as_str) != Some(revision) {
+                continue;
+            }
+            let states = validation.get("files");
+            if !strings_of_paths(states)
+                .iter()
+                .all(|path| file_state_current(files, path, states))
+            {
+                continue;
+            }
+            let text = |key: &str| validation.get(key).and_then(Json::as_str).map(Json::from);
+            let identity = text("taskId").or_else(|| text("command")).or_else(|| {
+                text("evidenceOrigin").map(|origin| {
+                    Json::Arr(vec![
+                        origin,
+                        validation.get("paths").cloned().unwrap_or(Json::Null),
+                    ])
+                })
+            });
+            let key = Json::Arr(vec![
+                text("cwd").unwrap_or_else(|| Json::from(".")),
+                identity.unwrap_or(Json::Null),
+                validation
+                    .get("args")
+                    .cloned()
+                    .unwrap_or(Json::Arr(Vec::new())),
+            ])
+            .stringify();
+            // A Map keeps the first insertion's position.
+            match latest.iter_mut().find(|(known, _)| *known == key) {
+                Some(slot) => slot.1 = validation.clone(),
+                None => latest.push((key, validation.clone())),
+            }
+        }
+        latest
+            .into_iter()
+            .map(|(_, validation)| validation)
+            .collect()
     }
 
     pub fn record_observation_audit(&mut self, audit: ObservationAudit<'_>) -> Outcome<()> {
@@ -221,18 +457,7 @@ impl SessionJournal {
 
     /// `@changes`: the session's recorded changes, public fields only.
     pub fn current_changes(&self) -> Vec<Json> {
-        self.changes
-            .iter()
-            .map(|change| {
-                obj! {
-                    "parse" => change.get("parse").cloned().unwrap_or(Json::Null),
-                    "paths" => change.get("paths").cloned().unwrap_or(Json::Arr(Vec::new())),
-                    "receipt" => change.get("receipt").cloned().unwrap_or(Json::Null),
-                    "symbols" => change.get("symbols").cloned().unwrap_or(Json::Arr(Vec::new())),
-                    "timestamp" => change.get("timestamp").cloned().unwrap_or(Json::Null),
-                }
-            })
-            .collect()
+        self.changes.iter().map(public_change).collect()
     }
 
     pub fn validations(&self) -> &[Json] {
@@ -320,6 +545,119 @@ impl SessionJournal {
         file.write_all(line.as_bytes())
             .map_err(|error| Failure::io(&error, "write", &self.file))
     }
+}
+
+fn strings(value: Option<&Json>) -> Vec<String> {
+    value
+        .and_then(Json::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(Json::as_str)
+        .map(str::to_string)
+        .collect()
+}
+
+fn strings_of_paths(states: Option<&Json>) -> Vec<String> {
+    states
+        .and_then(Json::as_array)
+        .into_iter()
+        .flatten()
+        .filter_map(|state| state.get("path").and_then(Json::as_str).map(str::to_string))
+        .collect()
+}
+
+fn state_hash(states: Option<&Json>, path: &str) -> Option<String> {
+    states
+        .and_then(Json::as_array)?
+        .iter()
+        .find(|state| state.get("path").and_then(Json::as_str) == Some(path))
+        .and_then(|state| state.get("hash").and_then(Json::as_str).map(str::to_string))
+}
+
+fn file_states(files: &crate::files::WorkspaceFiles, paths: &[String]) -> Vec<Json> {
+    let mut unique: Vec<&String> = Vec::new();
+    for path in paths {
+        if !unique.contains(&path) {
+            unique.push(path);
+        }
+    }
+    unique
+        .into_iter()
+        .map(|path| {
+            let hash = files
+                .read(path)
+                .map(|file| sha256_hex(&file.content))
+                .unwrap_or_else(|_| "absent".into());
+            obj! { "path" => path.as_str(), "hash" => hash }
+        })
+        .collect()
+}
+
+fn file_state_current(
+    files: &crate::files::WorkspaceFiles,
+    path: &str,
+    states: Option<&Json>,
+) -> bool {
+    let Some(expected) = state_hash(states, path) else {
+        return false;
+    };
+    match files.read(path) {
+        Ok(file) => sha256_hex(&file.content) == expected,
+        Err(_) => expected == "absent",
+    }
+}
+
+fn public_change(change: &Json) -> Json {
+    obj! {
+        "parse" => change.get("parse").cloned().unwrap_or(Json::Null),
+        "paths" => change.get("paths").cloned().unwrap_or(Json::Arr(Vec::new())),
+        "receipt" => change.get("receipt").cloned().unwrap_or(Json::Null),
+        "symbols" => change.get("symbols").cloned().unwrap_or(Json::Arr(Vec::new())),
+        "timestamp" => change.get("timestamp").cloned().unwrap_or(Json::Null),
+    }
+}
+
+/// `publicValidation`: absent fields stay absent, as `undefined` does in JSON.
+pub fn public_validation(validation: &Json) -> Json {
+    let field = |key: &str| {
+        validation
+            .get(key)
+            .filter(|value| !matches!(value, Json::Null))
+            .cloned()
+    };
+    let args = field("args").filter(|args| args.as_array().is_some_and(|items| !items.is_empty()));
+    obj! {}
+        .with_opt("scope", field("scope"))
+        .with_opt("args", args)
+        .with_opt("check", field("check"))
+        .with_opt("category", field("category"))
+        .with_opt("command", field("command"))
+        .with_opt("cwd", field("cwd"))
+        .with_opt("evidenceOrigin", field("evidenceOrigin"))
+        .with("id", validation.get("id").cloned().unwrap_or(Json::Null))
+        .with(
+            "paths",
+            validation
+                .get("paths")
+                .cloned()
+                .unwrap_or(Json::Arr(Vec::new())),
+        )
+        .with_opt("recovery", field("recovery"))
+        .with_opt("sourceRevisionId", field("sourceRevisionId"))
+        .with(
+            "status",
+            validation.get("status").cloned().unwrap_or(Json::Null),
+        )
+        .with_opt("taskId", field("taskId"))
+        .with_opt("taskKind", field("taskKind"))
+        .with(
+            "terminal",
+            validation.get("terminal").cloned().unwrap_or(Json::Null),
+        )
+        .with(
+            "timestamp",
+            validation.get("timestamp").cloned().unwrap_or(Json::Null),
+        )
 }
 
 fn empty_coverage() -> Json {

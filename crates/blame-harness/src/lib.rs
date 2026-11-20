@@ -31,6 +31,7 @@ pub mod patch;
 pub mod pathx;
 pub mod present;
 pub mod read_results;
+pub mod run;
 pub mod search;
 pub mod search_results;
 pub mod server;

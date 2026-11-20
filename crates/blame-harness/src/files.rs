@@ -424,6 +424,68 @@ impl WorkspaceFiles {
         Ok(String::from_utf8_lossy(&output.stdout).into_owned())
     }
 
+    /// A file as committed at `revision`: its content and mode, or none
+    /// when the revision has no such file.
+    pub fn baseline(&self, path: &str, revision: &str) -> Outcome<Option<(Vec<u8>, u32)>> {
+        let normalized = self.normalize_path(path)?;
+        let Some(entry) = self.git_optional(&["ls-tree", revision, "--", &normalized]) else {
+            return Ok(None);
+        };
+        let mode = entry
+            .split_whitespace()
+            .next()
+            .and_then(|mode| u32::from_str_radix(mode, 8).ok())
+            .unwrap_or(0)
+            & 0o777;
+        let output = Command::new("git")
+            .args(["show", &format!("{revision}:{normalized}")])
+            .current_dir(&self.root)
+            .stdin(Stdio::null())
+            .stderr(Stdio::null())
+            .output()
+            .map_err(|error| Failure::new(format!("git show: {error}")))?;
+        if !output.status.success() {
+            return Err(Failure::new(format!(
+                "Command failed: git show {revision}:{normalized}"
+            )));
+        }
+        Ok(Some((output.stdout, mode)))
+    }
+
+    /// Harness source paths changed between two commits (all of one when the
+    /// other is absent).
+    pub fn committed_changes(
+        &self,
+        previous: Option<&str>,
+        current: Option<&str>,
+    ) -> Outcome<Vec<String>> {
+        if previous == current {
+            return Ok(Vec::new());
+        }
+        let output = match (previous, current) {
+            (Some(previous), Some(current)) => self.git(&[
+                "diff",
+                "--no-renames",
+                "--name-only",
+                "-z",
+                previous,
+                current,
+                "--",
+            ])?,
+            (one, other) => self.git(&[
+                "ls-tree",
+                "-r",
+                "--name-only",
+                "-z",
+                one.or(other).unwrap_or_default(),
+            ])?,
+        };
+        Ok(nul_list(&output)
+            .into_iter()
+            .filter(|path| is_harness_source_path(path))
+            .collect())
+    }
+
     pub fn git_optional(&self, args: &[&str]) -> Option<String> {
         let output = self.git(args).ok()?;
         let trimmed = crate::text::js_trim(&output);
