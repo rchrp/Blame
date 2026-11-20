@@ -14,7 +14,8 @@ import {
   type UserBlock,
 } from "@blame/engine-client";
 import { mkdir } from "node:fs/promises";
-import { listProjectMemories } from "../cloud-api.js";
+import { listProjectMemories, saveProjectMemory } from "../cloud-api.js";
+import { takeCompletionMemory } from "../harness/completion-memory.js";
 import { selectProjectMemory } from "../harness/project-memory.js";
 import type { ApiConnection } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
@@ -185,7 +186,26 @@ export class EngineHost {
         await options.desktop?.openExternal?.({ url });
       },
     });
-    this.hub = new SessionHub(this.supervisor, options.emit);
+    this.hub = new SessionHub(this.supervisor, (event) => {
+      if (event.type === "activity" && !event.running)
+        void this.saveCompletionMemory(event.session);
+      options.emit(event);
+    });
+  }
+
+  /**
+   * A story's accepted finish_task may have left a memory for its project
+   * (harness/completion-memory.ts): saved to the account when the turn
+   * ends, as the agent runtime did after its own sessions.
+   */
+  private async saveCompletionMemory(session: string) {
+    const config = this.current.get(session)?.config;
+    const projectId = this.known.get(session)?.projectId;
+    const api = this.api;
+    if (config?.purpose !== "development-story" || !projectId || !api) return;
+    const memory = await takeCompletionMemory(config.workspace_root, session);
+    if (memory)
+      await saveProjectMemory(api, projectId, memory).catch(() => undefined);
   }
 
   /** Runs one call of the renderer (through the main process). */

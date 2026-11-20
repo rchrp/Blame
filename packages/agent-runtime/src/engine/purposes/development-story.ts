@@ -80,6 +80,8 @@ export const developmentStoryPurpose: Purpose<DevelopmentStorySettings> = {
             },
             effect_requirement: "none",
             story_id: settings.storyId,
+            // What a project memory left by this story is about.
+            objective: settings.title,
           },
           responseStyle: normalizePersonalization(settings.personalization)
             .responseStyle,
