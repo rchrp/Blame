@@ -308,6 +308,10 @@ const config: Configuration = {
     "**/node_modules/pnpm-legacy/**/*",
     "**/node_modules/@pnpm/exe.*/**/*",
     "**/node_modules/yarn/**/*",
+    // blame-harness adds them to a project's own test runs (its Node, not
+    // Electron's): real files, BLAME_HARNESS_NODE_ASSETS.
+    "**/node_modules/@blame/agent-runtime/dist/harness/node-event-reporter.js",
+    "**/node_modules/@blame/agent-runtime/dist/harness/invocation-test-preload.js",
   ],
   productName: "Blame",
   protocols: [{ name: "Blame", schemes: ["blame"] }],
