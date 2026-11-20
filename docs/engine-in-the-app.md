@@ -208,6 +208,10 @@ user's home (`~/.cline/skills`, `~/.agents/skills`) and Blame's own
 when the conversation started and the `skills` tool reads the current files.
 A plugin folder (`BLAME_AGENT_PLUGIN_PATHS`) adds its skills only.
 
+Until stories move to the engine, the conversations on Cline get these same
+tools through one adapter (`cline-client-tools.ts`): Cline's own MCP loading
+and skill service are off, so each tool has one implementation.
+
 ## Approvals
 
 `host/approval` waits in the host until `resolveApproval` answers it (a

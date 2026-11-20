@@ -31,7 +31,10 @@ import { PreviewHarnessService } from "../preview-runtime/preview-harness-servic
 import { previewLogService } from "../preview-runtime/preview-log-service.ts";
 import { ensureLocalPreviewAwake } from "../preview-runtime/local/local-preview-hibernation.ts";
 import type { PreviewService } from "../preview-runtime/preview-service.ts";
-import { agentSurfaceCall, agentSurfaceInfo } from "../preview-surfaces/surface-agent.ts";
+import {
+  agentSurfaceCall,
+  agentSurfaceInfo,
+} from "../preview-surfaces/surface-agent.ts";
 import {
   ensureRuntimeGitUserIdentity,
   getRuntimeGitIdentity,

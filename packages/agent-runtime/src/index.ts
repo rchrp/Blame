@@ -37,6 +37,7 @@ export {
   listMcpOAuthStatuses,
   type McpOAuthStatus,
 } from "./engine/tools/mcp-oauth.js";
+export { mcpSettingsPath } from "./engine/tools/mcp-settings.js";
 export type {
   AgentEvent,
   AgentApprovalRequest,

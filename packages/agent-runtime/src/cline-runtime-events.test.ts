@@ -570,6 +570,8 @@ test("starts development sessions with native skills and private specialist cons
     assert.equal(capturedStart.config.pluginPaths, undefined);
     assert.equal("pluginPaths" in (capturedStart.localRuntime ?? {}), false);
     assert.equal(capturedStart.localRuntime?.userInstructionService, undefined);
+    // The user's MCP servers come from the engine's MCP client, not Cline's.
+    assert.equal(capturedStart.config.disableMcpSettingsTools, true);
     const skills = capturedStart.config.extraTools?.find(
       (tool: { name: string }) => tool.name === "skills",
     );

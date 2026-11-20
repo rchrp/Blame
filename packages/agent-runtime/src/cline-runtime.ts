@@ -247,7 +247,9 @@ import {
   githubMcpTools,
   previewDevtoolsMcpTools,
   sessionStoryHistoryTools,
+  userMcpTools,
 } from "./cline-runtime-tools.js";
+import { McpConnections } from "./engine/tools/mcp.js";
 import {
   previewRuntimeContext,
   type PreviewRuntimeContext,
@@ -547,6 +549,9 @@ export class BlameAgentRuntime {
   private sessionUsageSignatures = new Map<string, string>();
   private readonly runLifecycles = new RunLifecycleRegistry();
   private readonly userInstructionServices = new BlameUserInstructionServices();
+  // The user's MCP servers, through the engine's MCP client; none unless
+  // the desktop names their settings file.
+  private readonly mcpConnections: McpConnections | undefined;
   private structuredEventSessions = new Set<string>();
   private readonly productionConfig = loadProductionConfig();
   private readonly events?: AgentRuntimeEvents;
@@ -555,6 +560,13 @@ export class BlameAgentRuntime {
   constructor(events?: AgentRuntimeEvents, options: RuntimeOptions = {}) {
     this.events = events;
     this.options = options;
+    const mcpSettingsPath = options.mcpSettingsPath;
+    this.mcpConnections = mcpSettingsPath
+      ? new McpConnections({
+          settingsPath: () => mcpSettingsPath,
+          log: (message, payload) => productionLogger.log(message, payload),
+        })
+      : undefined;
     if (options.git) {
       setGitRunner(options.git);
     }
@@ -699,6 +711,7 @@ export class BlameAgentRuntime {
     await this.disposeCore();
     await closeClaudeCodeBridge();
     this.userInstructionServices.stopAll();
+    await this.mcpConnections?.close();
   }
 
   private async core(backend?: AgentBackendConfig) {
@@ -936,6 +949,13 @@ export class BlameAgentRuntime {
       const githubTools = input.clineDefaultTools
         ? []
         : await githubMcpTools(this.options, sessionId, productionLogger);
+      const mcpSettingsDisabled =
+        input.disableMcpSettingsTools ??
+        this.productionConfig.disableMcpSettingsTools;
+      const mcpTools =
+        input.clineDefaultTools || mcpSettingsDisabled || !this.mcpConnections
+          ? []
+          : await userMcpTools(this.mcpConnections);
       const standardTools = input.clineDefaultTools
         ? undefined
         : runtimeTools(
@@ -989,6 +1009,7 @@ export class BlameAgentRuntime {
         ...webResearchTools(input.apiConnection, this.options.renderWebPage),
         ...(standardTools ?? []),
         ...githubTools,
+        ...mcpTools,
         ...(specialistTool ? [specialistTool] : []),
         ...sessionStoryHistoryTools(input, this.options.git),
         ...(input.conversationTools ?? []),
@@ -1066,9 +1087,10 @@ export class BlameAgentRuntime {
             },
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations,
-            disableMcpSettingsTools:
-              input.disableMcpSettingsTools ??
-              this.productionConfig.disableMcpSettingsTools,
+            // Blame connects the user's MCP servers itself (mcpTools).
+            disableMcpSettingsTools: input.clineDefaultTools
+              ? mcpSettingsDisabled
+              : true,
             ...(contextProjectionExtension
               ? { extensions: [contextProjectionExtension] }
               : {}),

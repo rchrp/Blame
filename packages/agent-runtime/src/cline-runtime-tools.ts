@@ -24,6 +24,7 @@ import {
   componentPreviewTool,
 } from "./engine/tools/component-preview.js";
 import { githubClientTools } from "./engine/tools/github.js";
+import type { McpConnections } from "./engine/tools/mcp.js";
 import {
   previewContainerLogsTool,
   previewDevtoolsTool,
@@ -148,6 +149,8 @@ export type RuntimeOptions = PreviewToolRuntimeOptions & {
   commandCredentials?(sessionId: string): Promise<LightCommandCredentials>;
   modelInactivityTimeoutMs?: number;
   projectMemoryPersistence?: ProjectMemoryPersistence;
+  /** The user's MCP settings file (Settings → MCP); no MCP servers without it. */
+  mcpSettingsPath?: string;
 };
 
 type ToolsLogger = {
@@ -180,6 +183,11 @@ export async function githubMcpTools(
       sessionId,
     ),
   );
+}
+
+/** The user's own MCP servers' tools, as Cline tools. */
+export async function userMcpTools(mcp: McpConnections): Promise<AgentTool[]> {
+  return clineTools(await mcp.clientTools());
 }
 
 /** The project's story history tools, as Cline tools. */

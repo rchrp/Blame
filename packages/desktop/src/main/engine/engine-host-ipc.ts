@@ -153,8 +153,7 @@ class EngineHostProcess {
     this.desktopRequests.set(message.id, controller);
     try {
       const service = this.registration.desktop[message.method] as
-        | ((input: unknown, signal: AbortSignal) => Promise<unknown>)
-        | undefined;
+        ((input: unknown, signal: AbortSignal) => Promise<unknown>) | undefined;
       if (!service)
         throw new Error(`Unknown desktop service ${String(message.method)}`);
       const result = await service(message.input, controller.signal);
