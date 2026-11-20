@@ -314,51 +314,67 @@ fn hidden(command: &mut Command) -> &mut Command {
     command
 }
 
-/// The command as the TypeScript harness spawns it. On Windows cmd.exe
-/// takes its command line verbatim (`windowsVerbatimArguments`), and any
-/// other executable is resolved through PATH and PATHEXT as execa's
-/// cross-spawn does: a `.cmd` or `.bat` shim runs through cmd.exe.
+/// The command as the TypeScript harness spawns it: the executable with its
+/// arguments.
+#[cfg(not(windows))]
+pub(crate) fn platform_command(
+    executable: &str,
+    args: &[String],
+    _environment: &[(String, String)],
+) -> Command {
+    let mut command = Command::new(executable);
+    command.args(args);
+    command
+}
+
+/// The command as the TypeScript harness spawns it. cmd.exe takes its
+/// command line verbatim (`windowsVerbatimArguments`), and any other
+/// executable is resolved through PATH and PATHEXT as execa's cross-spawn
+/// does.
+#[cfg(windows)]
 pub(crate) fn platform_command(
     executable: &str,
     args: &[String],
     environment: &[(String, String)],
 ) -> Command {
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        let lowered = executable.to_lowercase();
-        let name = lowered.rsplit(['\\', '/']).next().unwrap_or("");
-        if name == "cmd" || name == "cmd.exe" {
-            let mut command = Command::new(executable);
-            for arg in args {
-                command.raw_arg(arg);
-            }
-            return command;
+    use std::os::windows::process::CommandExt;
+    let lowered = executable.to_lowercase();
+    let name = lowered.rsplit(['\\', '/']).next().unwrap_or("");
+    if name == "cmd" || name == "cmd.exe" {
+        let mut command = Command::new(executable);
+        for arg in args {
+            command.raw_arg(arg);
         }
-        if let Some(resolved) = windows_resolution(executable, environment) {
-            let extension = resolved.rsplit('.').next().unwrap_or("").to_lowercase();
-            if extension == "cmd" || extension == "bat" {
-                let line = std::iter::once(resolved.as_str())
-                    .chain(args.iter().map(String::as_str))
-                    .map(windows_quote)
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                let mut command = Command::new("cmd.exe");
-                command
-                    .raw_arg("/d")
-                    .raw_arg("/s")
-                    .raw_arg("/c")
-                    .raw_arg(format!("\"{line}\""));
-                return command;
-            }
-            let mut command = Command::new(resolved);
-            command.args(args);
-            return command;
-        }
+        return command;
     }
-    let _ = environment;
-    let mut command = Command::new(executable);
-    command.args(args);
+    // cross-spawn's rule: only a `.exe` or `.com` file starts directly.
+    // Anything else goes through cmd.exe: a `.cmd` or `.bat` shim, and also a
+    // name PATH does not hold, so the command fails as it does in a shell
+    // (exit code 1, "is not recognized as an internal or external command").
+    let resolved = windows_resolution(executable, environment);
+    let file = resolved.as_deref().unwrap_or(executable);
+    let direct = std::path::Path::new(file)
+        .extension()
+        .and_then(|extension| extension.to_str())
+        .is_some_and(|extension| {
+            extension.eq_ignore_ascii_case("exe") || extension.eq_ignore_ascii_case("com")
+        });
+    if direct {
+        let mut command = Command::new(file);
+        command.args(args);
+        return command;
+    }
+    let line = std::iter::once(file)
+        .chain(args.iter().map(String::as_str))
+        .map(windows_quote)
+        .collect::<Vec<_>>()
+        .join(" ");
+    let mut command = Command::new("cmd.exe");
+    command
+        .raw_arg("/d")
+        .raw_arg("/s")
+        .raw_arg("/c")
+        .raw_arg(format!("\"{line}\""));
     command
 }
 
