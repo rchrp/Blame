@@ -173,11 +173,26 @@ class RustLightWorkspace {
     return this.request("edit_code", input, context, context.signal);
   }
 
-  /** Credentials as the workspace asks them: the call's own, else the session's, before each command. */
+  /**
+   * Credentials as the workspace asks them: the call's own, else the
+   * session's, before each command. In process a cancelled run_task answers
+   * with the command's own result, and only analyze rejects with the reason:
+   * the request is sent even when already aborted, and the harness says which.
+   */
   async runTask(input: unknown, context: CommandContext = {}) {
     const asked = this.options.commandCredentials;
     const credentials = context.commandCredentials ?? (asked ? await asked().catch(() => ({})) : undefined);
-    return this.request("run_task", input, context, context.signal, credentials ? { commandCredentials: credentials } : {});
+    const signal = context.signal;
+    try {
+      return await this.process.send("request", {
+        tool: "run_task", input, workspaceRoot: this.root, taskContract: this.taskContract, toolContext: toolContext(context),
+        ...(this.workspaceOptions ? { workspaceOptions: this.workspaceOptions } : {}),
+        ...(credentials ? { commandCredentials: credentials } : {}),
+      }, signal) as LightToolResult<unknown>;
+    } catch (error) {
+      if (signal?.aborted) throw signal.reason instanceof Error ? signal.reason : new Error(String(signal.reason));
+      throw error;
+    }
   }
 }
 
