@@ -389,9 +389,10 @@ impl Engine {
         self.stopping.is_cancelled()
     }
 
-    /// Stops every session (running turns end as interrupted, queued
-    /// messages are dropped), lets the client take the last records when it
-    /// is still there, and stops the harness. Bounded in time: what does not
+    /// Stops every session (running turns end as interrupted; queued
+    /// messages stay queued for when the conversation goes on), lets the
+    /// client take the last records when it is still there, and stops the
+    /// harness. Bounded in time: what does not
     /// finish is finished by recovery when the session is next opened.
     pub async fn shutdown(&self, client_alive: bool) {
         if self.stopping.is_cancelled() {
@@ -404,7 +405,7 @@ impl Engine {
                 forwarder.abort();
             }
             let session = live.session;
-            let _ = session.interrupt().await;
+            // Closing stops the running turn and nothing after it.
             if let Err(error) = session.close().await {
                 log!(Warn, "session {}: {error}", session.id());
             }

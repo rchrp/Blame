@@ -327,13 +327,12 @@ impl Session {
         if is_task(&core.records) {
             return Err(EngineError::Task("it takes no messages"));
         }
-        let running = View::new(&core.records)
-            .open_turns()
-            .first()
-            .map(|t| (*t).clone());
+        let running = running_turn(&core);
+        // Messages that waited through a quit go first.
+        let waiting = !View::new(&core.records).open_turns().is_empty();
         let (turn, delivery, started) = match (delivery, running) {
             (Delivery::Steer, Some(turn)) => (turn, Delivery::Steer, true),
-            (_, None) => (self.new_turn(), Delivery::Turn, true),
+            (_, None) => (self.new_turn(), Delivery::Turn, !waiting),
             (Delivery::Turn, Some(_)) => (self.new_turn(), Delivery::Turn, false),
         };
         self.inner
@@ -356,7 +355,7 @@ impl Session {
         let _control = self.inner.control.lock().await;
         let mut core = self.inner.core.lock().await;
         core.usable()?;
-        queued_behind_running(&core.records, &turn)?;
+        waiting_input(&core, &turn)?;
         self.inner
             .append_locked(
                 &mut core,
@@ -372,12 +371,22 @@ impl Session {
     /// Sends a queued message into the running turn now. Its turn ends as
     /// `Withdrawn` and the same input joins the running turn as a steer, in
     /// one write: the model reads it once, at its next request, and a crash
-    /// leaves either the queued message or the steer, never both.
+    /// leaves either the queued message or the steer, never both. When
+    /// nothing runs (the queue waited through a quit), the queue goes on
+    /// now, from its first message.
     pub async fn promote(&self, turn: TurnId) -> Result<MessageAccepted, EngineError> {
         let _control = self.inner.control.lock().await;
         let mut core = self.inner.core.lock().await;
         core.usable()?;
-        let (running, input) = queued_behind_running(&core.records, &turn)?;
+        let (running, input) = waiting_input(&core, &turn)?;
+        let Some(running) = running else {
+            let first = View::new(&core.records).open_turns()[0].clone();
+            self.inner.ensure_driver(&mut core);
+            return Ok(MessageAccepted {
+                turn: first,
+                started: true,
+            });
+        };
         self.inner
             .append_locked(
                 &mut core,
@@ -412,6 +421,10 @@ impl Session {
     /// the agent wants it to stop, not to move on to the next message.
     pub async fn interrupt(&self) -> Result<(), EngineError> {
         let mut core = self.inner.core.lock().await;
+        // Messages that waited through a quit stay queued: nothing runs.
+        if running_turn(&core).is_none() {
+            return Ok(());
+        }
         let open: Vec<TurnId> = View::new(&core.records)
             .open_turns()
             .iter()
@@ -801,21 +814,31 @@ fn validate(records: &[Record]) -> Result<(), EngineError> {
     }
 }
 
-/// The running turn and the input of `turn`, when `turn` waits in the queue
-/// behind it; `NotQueued` otherwise.
-fn queued_behind_running(
-    records: &[Record],
+/// The turn that runs now: the first open one, while the driver works on it
+/// or once it has begun. Messages that waited through a quit are open turns
+/// that have not begun, with no driver: none of them runs.
+fn running_turn(core: &Core) -> Option<TurnId> {
+    let view = View::new(&core.records);
+    let first = view.open_turns().first()?;
+    (core.driver.is_some() || view.has_started(first)).then(|| (*first).clone())
+}
+
+/// The running turn, if any, and the input of `turn`, when `turn` is a
+/// message waiting in the queue; `NotQueued` otherwise.
+fn waiting_input(
+    core: &Core,
     turn: &TurnId,
-) -> Result<(TurnId, Vec<UserBlock>), EngineError> {
-    let view = View::new(records);
-    let open = view.open_turns();
-    let Some((running, queued)) = open.split_first() else {
-        return Err(EngineError::NotQueued(turn.clone()));
-    };
-    if !queued.contains(&turn) {
+) -> Result<(Option<TurnId>, Vec<UserBlock>), EngineError> {
+    let running = running_turn(core);
+    let view = View::new(&core.records);
+    if !view.open_turns().contains(&turn)
+        || view.has_started(turn)
+        || running.as_ref() == Some(turn)
+    {
         return Err(EngineError::NotQueued(turn.clone()));
     }
-    let input = records
+    let input = core
+        .records
         .iter()
         .rev()
         .find_map(|record| match &record.body {
@@ -827,5 +850,5 @@ fn queued_behind_running(
             _ => None,
         })
         .ok_or_else(|| EngineError::NotQueued(turn.clone()))?;
-    Ok(((*running).clone(), input))
+    Ok((running, input))
 }

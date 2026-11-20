@@ -48,6 +48,11 @@ pub(super) async fn recover(inner: &Arc<Inner>) -> Result<(), EngineError> {
         .ok_or_else(|| EngineError::InvalidLog("no configuration".into()))?;
     let mut bodies = Vec::new();
     for turn in view.open_turns() {
+        // A message still waiting in the queue was never sent: it stays
+        // queued for when the conversation goes on.
+        if policy == RecoveryPolicy::Stop && !view.has_started(turn) {
+            continue;
+        }
         let state = view.turn_state(turn);
         if let Some(last) = &state.last_request
             && last.outcome == RequestOutcome::InFlight
@@ -117,7 +122,10 @@ pub(super) async fn recover(inner: &Arc<Inner>) -> Result<(), EngineError> {
         });
         inner.append_locked(&mut core, bodies).await?;
     }
-    inner.ensure_driver(&mut core);
+    // Stopped, messages still queued wait for the conversation to go on.
+    if policy == RecoveryPolicy::Continue {
+        inner.ensure_driver(&mut core);
+    }
     Ok(())
 }
 

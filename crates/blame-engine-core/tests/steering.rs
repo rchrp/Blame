@@ -6,7 +6,7 @@ mod common;
 use blame_engine_core::testing::{
     Behavior, Script, ScriptedProvider, ScriptedTools, World, config, standard_specs,
 };
-use blame_engine_core::{EngineError, EngineOptions, Session};
+use blame_engine_core::{EngineError, EngineOptions, RecoveryPolicy, Session};
 use blame_engine_protocol::{
     CompletionContract, Delivery, Record, RecordBody, ResultTool, SessionConfig, ToolOutcome,
     TurnOutcome,
@@ -260,6 +260,86 @@ async fn under_a_contract_an_acknowledgement_is_not_a_correction() {
         corrections, 0,
         "the acknowledgement is not counted against the contract"
     );
+}
+
+/// A turn mid-tool with a message queued behind it, then a quit (close)
+/// and a reopen: the running turn is stopped, the queued message waits.
+async fn quit_with_a_queued_message() -> (World, blame_engine_protocol::TurnId, Session) {
+    let gate = Arc::new(tokio::sync::Notify::new());
+    let world = gated_world(gate);
+    world
+        .provider
+        .push(Script::tool_calls(&[("run", json!({ "command": "test" }))]));
+    let session = create(&world).await;
+    let first = session.send(text("first"), Delivery::Turn).await.unwrap();
+    tool_running(&world).await;
+    let queued = session.send(text("later"), Delivery::Turn).await.unwrap();
+    session.close().await.unwrap();
+    drop(session);
+    let session = open(&world, RecoveryPolicy::Stop).await;
+    let records = session.records().await;
+    assert_eq!(ended(&records, &first.turn), Some(TurnOutcome::Interrupted));
+    assert_eq!(ended(&records, &queued.turn), None, "still queued");
+    (world, queued.turn, session)
+}
+
+#[tokio::test]
+async fn a_queued_message_waits_through_a_quit_and_runs_once_when_the_conversation_goes_on() {
+    let (world, queued, session) = quit_with_a_queued_message().await;
+    assert!(
+        session.is_idle(),
+        "nothing starts on its own after a reopen"
+    );
+    assert_eq!(world.provider.request_messages().len(), 1);
+    // A stop with nothing running leaves it queued.
+    session.interrupt().await.unwrap();
+    assert_eq!(ended(&session.records().await, &queued), None);
+    world
+        .provider
+        .push(Script::text("did later"))
+        .push(Script::text("did new"));
+    let new = session.send(text("new"), Delivery::Steer).await.unwrap();
+    assert!(!new.started, "it waits behind the queued message");
+    session.wait_idle().await;
+    let records = session.records().await;
+    assert_eq!(ended(&records, &queued), Some(TurnOutcome::Completed));
+    assert_eq!(ended(&records, &new.turn), Some(TurnOutcome::Completed));
+    let requests = world.provider.request_messages();
+    assert_eq!(requests.len(), 3);
+    let sightings = |needle: &str| {
+        requests
+            .iter()
+            .filter(|r| user_texts(r).last().map(String::as_str) == Some(needle))
+            .count()
+    };
+    assert_eq!((sightings("later"), sightings("new")), (1, 1));
+    check_invariants(&records, &standard_specs_sorted());
+}
+
+#[tokio::test]
+async fn a_message_that_waited_through_a_quit_can_be_sent_now_or_taken_back() {
+    let (world, queued, session) = quit_with_a_queued_message().await;
+    world.provider.push(Script::text("did later"));
+    let accepted = session.promote(queued.clone()).await.unwrap();
+    assert_eq!(
+        (accepted.turn.clone(), accepted.started),
+        (queued.clone(), true)
+    );
+    session.wait_idle().await;
+    assert_eq!(
+        ended(&session.records().await, &queued),
+        Some(TurnOutcome::Completed)
+    );
+    assert_eq!(world.provider.request_messages().len(), 2);
+
+    let (world, queued, session) = quit_with_a_queued_message().await;
+    session.withdraw(queued.clone()).await.unwrap();
+    assert_eq!(
+        ended(&session.records().await, &queued),
+        Some(TurnOutcome::Withdrawn)
+    );
+    assert!(session.is_idle());
+    assert_eq!(world.provider.request_messages().len(), 1);
 }
 
 fn standard_specs_sorted() -> Vec<blame_engine_protocol::ToolSpec> {

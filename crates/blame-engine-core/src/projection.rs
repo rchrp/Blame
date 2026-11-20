@@ -182,6 +182,8 @@ pub struct View<'a> {
     edits: HashMap<(Seq, u32), &'a str>,
     results: HashMap<&'a ToolCallId, &'a Record>,
     open_turns: Vec<&'a TurnId>,
+    /// Open turns that have begun: a checkpoint or a request of their own.
+    started: Vec<&'a TurnId>,
 }
 
 impl<'a> View<'a> {
@@ -192,9 +194,11 @@ impl<'a> View<'a> {
         let mut edits = HashMap::new();
         let mut results = HashMap::new();
         let mut open: Vec<&'a TurnId> = Vec::new();
+        let mut started: Vec<&'a TurnId> = Vec::new();
         for item in &items {
             let Item::Record(record) = item else {
                 open.clear();
+                started.clear();
                 continue;
             };
             match &record.body {
@@ -222,7 +226,16 @@ impl<'a> View<'a> {
                         open.push(turn);
                     }
                 }
-                RecordBody::TurnEnded { turn, .. } => open.retain(|t| *t != turn),
+                RecordBody::CheckpointCreated { turn, .. }
+                | RecordBody::RequestStarted { turn, .. } => {
+                    if !started.contains(&turn) {
+                        started.push(turn);
+                    }
+                }
+                RecordBody::TurnEnded { turn, .. } => {
+                    open.retain(|t| *t != turn);
+                    started.retain(|t| *t != turn);
+                }
                 _ => {}
             }
         }
@@ -233,6 +246,7 @@ impl<'a> View<'a> {
             edits,
             results,
             open_turns: open,
+            started,
         }
     }
 
@@ -249,6 +263,13 @@ impl<'a> View<'a> {
     /// others wait their turn.
     pub fn open_turns(&self) -> &[&'a TurnId] {
         &self.open_turns
+    }
+
+    /// Whether an open turn has begun (a checkpoint or a request of its
+    /// own). One that has not is a message still waiting: it can be taken
+    /// back, and a quit leaves it waiting.
+    pub fn has_started(&self, turn: &TurnId) -> bool {
+        self.started.contains(&turn)
     }
 
     pub fn compacted_through(&self) -> Option<Seq> {

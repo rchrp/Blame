@@ -284,7 +284,7 @@ describe("failures, steers and interruptions", () => {
     assert.equal(tool(items, "c1").endedWithoutResult, false);
   });
 
-  it("queues a message sent during a turn and starts it when the first ends", () => {
+  it("queues a message sent during a turn and starts it when it begins", () => {
     const log = new Log();
     log.user("t1", "first");
     log.request("t1", "r1");
@@ -298,6 +298,15 @@ describe("failures, steers and interruptions", () => {
 
     log.reply("t1", "r1", [text("one")]);
     log.ended("t1");
+    // Between turns, or after a quit (the engine keeps the queue waiting),
+    // it is still queued: it runs from its first request.
+    transcript = reduceTranscript(log.records);
+    assert.deepEqual(
+      transcript.turns.map((t) => t.status),
+      ["completed", "queued"],
+    );
+    assert.equal(transcript.runningTurn, undefined);
+    log.request("t2", "r2");
     transcript = reduceTranscript(log.records);
     assert.deepEqual(
       transcript.turns.map((t) => t.status),
