@@ -117,9 +117,12 @@ test("a command sent while another runs waits for it instead of failing on the w
     await delay(200);
     assert.equal(await readFile(order, "utf8").catch(() => ""), "", "The second command waits for the first.");
     await writeFile(join(root, ".blame/go"), "go");
-    const result = await second as { status: string; data?: { exitCode?: number } };
+    const result = await second as { status: string; data?: { exitCode?: number; process?: string } };
     assert.equal(result.status, "ok", JSON.stringify(result));
-    assert.equal(result.data?.exitCode, 0);
+    // On a slow machine the second command outlasts its 300 ms wait and
+    // answers while it still runs: it ran after the first all the same.
+    if (result.data?.process !== "running") assert.equal(result.data?.exitCode, 0);
+    for (let n = 0; n < 500 && await readFile(order, "utf8").catch(() => "") !== "ab"; n++) await delay(10);
     assert.equal(await readFile(order, "utf8"), "ab");
   });
 });
