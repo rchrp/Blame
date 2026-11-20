@@ -404,11 +404,13 @@ async fn an_interrupt_cancels_the_running_tool_and_ends_the_turn() {
             ("run", json!({ "command": "sleep" })),
             ("write", json!({ "path": "f", "text": "x" })),
         ]))
-        .push(Script::text("next turn"));
+        .push(Script::text("next turn"))
+        .push(Script::text("third answered"));
     let session = create(&world).await;
     session.send(text("first"), Delivery::Turn).await.unwrap();
     tool_running(&world).await;
     let queued = session.send(text("second"), Delivery::Turn).await.unwrap();
+    let queued_too = session.send(text("third"), Delivery::Turn).await.unwrap();
     session.interrupt().await.unwrap();
     session.wait_idle().await;
     let records = session.records().await;
@@ -428,13 +430,43 @@ async fn an_interrupt_cancels_the_running_tool_and_ends_the_turn() {
             _ => None,
         })
         .collect();
-    assert_eq!(ends[0].1, TurnOutcome::Interrupted);
     assert_eq!(
-        ends[1],
-        (queued.turn, TurnOutcome::Completed),
-        "the queue still runs"
+        ends,
+        [
+            (queued.turn, TurnOutcome::Interrupted),
+            (queued_too.turn, TurnOutcome::Interrupted),
+            (ends[2].0.clone(), TurnOutcome::Interrupted),
+        ],
+        "the queued messages are dropped before the running turn ends"
+    );
+    assert_eq!(
+        world.provider.request_messages().len(),
+        1,
+        "nothing else ran"
     );
     check_invariants(&records, &sorted_specs());
+
+    // The dropped messages never reach the model.
+    turn(&session, "fourth").await;
+    let requests = world.provider.request_messages();
+    assert_eq!(requests.len(), 2);
+    assert_eq!(user_texts(&requests[1]), ["first", "fourth"]);
+    check_invariants(&session.records().await, &sorted_specs());
+}
+
+#[tokio::test]
+async fn an_interrupt_right_after_a_send_stops_the_turn_before_it_runs() {
+    let world = fresh();
+    world.provider.push(Script::text("never sent"));
+    let session = create(&world).await;
+    session.send(text("first"), Delivery::Turn).await.unwrap();
+    session.interrupt().await.unwrap();
+    session.wait_idle().await;
+    assert_eq!(
+        outcome_of_last_turn(&session.records().await),
+        TurnOutcome::Interrupted
+    );
+    assert!(world.provider.request_messages().is_empty());
 }
 
 #[tokio::test]

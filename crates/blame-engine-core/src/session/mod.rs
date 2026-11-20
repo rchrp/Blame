@@ -23,7 +23,7 @@ use crate::projection::View;
 use blame_engine_protocol::rpc::{MessageAccepted, Rewound};
 use blame_engine_protocol::{
     Delivery, Delta, NoticeLevel, Record, RecordBody, Seq, SessionActivity, SessionConfig,
-    SessionId, ToolSpec, TurnId, UserBlock,
+    SessionId, ToolSpec, TurnId, TurnOutcome, UserBlock,
 };
 use std::sync::{Arc, Mutex, PoisonError};
 use tokio::sync::{broadcast, watch};
@@ -288,16 +288,47 @@ impl Session {
         TurnId(self.inner.ports.ids.next("turn"))
     }
 
-    /// Stops the running turn. Tools in flight are cancelled; turns queued
-    /// behind it still run.
+    /// Stops the running turn. Tools in flight are cancelled, and the
+    /// messages queued behind it are dropped: each queued turn is ended as
+    /// interrupted before it ever runs, so the model never sees it and a
+    /// client reading the log knows it was not answered. A user who stops
+    /// the agent wants it to stop, not to move on to the next message.
     pub async fn interrupt(&self) -> Result<(), EngineError> {
-        let core = self.inner.core.lock().await;
-        if let Some(Driver {
-            current: Some((_, cancel)),
-            ..
-        }) = &core.driver
-        {
-            cancel.cancel();
+        let mut core = self.inner.core.lock().await;
+        let open: Vec<TurnId> = View::new(&core.records)
+            .open_turns()
+            .iter()
+            .map(|turn| (*turn).clone())
+            .collect();
+        let Some((running, queued)) = open.split_first() else {
+            return Ok(());
+        };
+        if !queued.is_empty() {
+            core.usable()?;
+            // Ended before the running turn is, so the projection never
+            // promotes them to the front and never shows their input.
+            let bodies = queued
+                .iter()
+                .map(|turn| RecordBody::TurnEnded {
+                    turn: turn.clone(),
+                    outcome: TurnOutcome::Interrupted,
+                })
+                .collect();
+            self.inner.append_locked(&mut core, bodies).await?;
+        }
+        if let Some(driver) = &mut core.driver {
+            match &driver.current {
+                Some((turn, cancel)) if turn == running => cancel.cancel(),
+                // The driver has not picked the turn up yet (it is between
+                // turns, or just started): hand it an already cancelled
+                // token, so the turn ends as interrupted at its first step
+                // instead of running.
+                _ => {
+                    let cancel = CancellationToken::new();
+                    cancel.cancel();
+                    driver.current = Some((running.clone(), cancel));
+                }
+            }
         }
         Ok(())
     }
