@@ -16,6 +16,7 @@ blame-engine-core = { path = "crates/blame-engine-core" }
 blame-engine-store = { path = "crates/blame-engine-store" }
 blame-engine-providers = { path = "crates/blame-engine-providers" }
 blame-engine-checkpoint = { path = "crates/blame-engine-checkpoint" }
+blame-stdio = { path = "crates/blame-stdio" }
 
 async-trait = "0.1"
 futures-core = "0.3"

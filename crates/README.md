@@ -16,6 +16,7 @@ engine cannot rebuild.
 | `blame-engine-providers` | `ModelProvider` for each model provider | core |
 | `blame-engine-checkpoint` | `Checkpointer` on git trees | core |
 | `blame-engine` | The binary: wiring, transports, tool hosts | all |
+| `blame-stdio` | Keeps a process's own standard streams out of the processes it starts on Windows. The workspace's only unsafe code: one call, first thing in each binary's `main` | windows-sys |
 
 The harness will be its own crate, with no dependency on the engine, so it can
 also ship as a standalone tool server.

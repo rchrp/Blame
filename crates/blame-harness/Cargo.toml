@@ -17,6 +17,7 @@ name = "blame-harness"
 path = "src/main.rs"
 
 [dependencies]
+blame-stdio = { workspace = true }
 # Only to read JSON lines: values are converted into the harness's own
 # ordered `Json` (results must keep the key order the model reads).
 serde = { workspace = true }

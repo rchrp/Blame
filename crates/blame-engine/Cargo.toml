@@ -13,6 +13,7 @@ name = "blame-engine"
 path = "src/main.rs"
 
 [dependencies]
+blame-stdio = { workspace = true }
 blame-engine-protocol.workspace = true
 blame-engine-core.workspace = true
 blame-engine-store.workspace = true

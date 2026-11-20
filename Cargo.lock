@@ -157,6 +157,7 @@ dependencies = [
  "blame-engine-protocol",
  "blame-engine-providers",
  "blame-engine-store",
+ "blame-stdio",
  "futures-core",
  "futures-util",
  "serde",
@@ -245,6 +246,7 @@ name = "blame-harness"
 version = "0.1.0"
 dependencies = [
  "ast-grep-core",
+ "blame-stdio",
  "grep-matcher",
  "grep-regex",
  "grep-searcher",
@@ -267,6 +269,13 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-typescript",
  "unicode-normalization",
+]
+
+[[package]]
+name = "blame-stdio"
+version = "0.1.0"
+dependencies = [
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

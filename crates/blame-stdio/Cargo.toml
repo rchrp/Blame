@@ -1,0 +1,21 @@
+[package]
+name = "blame-stdio"
+description = "Keeps a Blame process's own stdin, stdout and stderr out of the processes it starts on Windows. The workspace's only unsafe code."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation"] }
+
+# Not the workspace's lints: they forbid unsafe code, and this crate exists
+# to hold the one call that needs it.
+[lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+undocumented_unsafe_blocks = "deny"

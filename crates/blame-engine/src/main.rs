@@ -43,6 +43,8 @@ const USAGE: &str = "usage:
   blame-engine --version";
 
 fn main() -> ExitCode {
+    // The harness and its commands must not hold the engine's own streams.
+    blame_stdio::keep_from_children();
     let args: Vec<String> = std::env::args().skip(1).collect();
     let words: Vec<&str> = args.iter().map(String::as_str).collect();
     let result = match words.as_slice() {

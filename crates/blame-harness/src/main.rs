@@ -10,6 +10,8 @@ use std::process::ExitCode;
 use std::sync::Arc;
 
 fn main() -> ExitCode {
+    // The commands the harness runs must not hold its own streams.
+    blame_stdio::keep_from_children();
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     if arguments
         .iter()
