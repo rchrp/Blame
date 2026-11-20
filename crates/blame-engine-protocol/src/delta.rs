@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 /// that misses deltas (it was closed, the link dropped) rebuilds the same
 /// state from the records that follow.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Delta {
     BlockStarted {
@@ -44,6 +46,7 @@ pub enum Delta {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum BlockKind {
     Text,
@@ -53,6 +56,7 @@ pub enum BlockKind {
 
 /// What a session is doing right now.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "state", rename_all = "snake_case")]
 pub enum SessionActivity {
     Idle,

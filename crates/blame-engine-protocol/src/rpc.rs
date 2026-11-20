@@ -45,6 +45,7 @@ pub enum Message<M> {
 
 /// The literal `"2.0"`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub enum Version {
     #[default]
     #[serde(rename = "2.0")]
@@ -52,6 +53,7 @@ pub enum Version {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum Outcome {
     Result(Value),
@@ -59,6 +61,8 @@ pub enum Outcome {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 pub struct RpcError {
     /// JSON-RPC code: -32600..-32603 for protocol faults, -32000 otherwise.
     pub code: i32,
@@ -68,6 +72,7 @@ pub struct RpcError {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct RpcErrorData {
     pub kind: ErrorKind,
 }
@@ -75,6 +80,8 @@ pub struct RpcErrorData {
 /// Sent by the client. Each variant documents the `result` it is answered
 /// with.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 #[serde(tag = "method", content = "params")]
 pub enum ClientRequest {
     /// First message on a connection. Result: [`Initialized`].
@@ -171,6 +178,7 @@ pub enum ClientRequest {
 
 /// Sent by the engine to the client that owns the session's client tools.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "method", content = "params")]
 pub enum EngineRequest {
     /// Run one of the session's `client_tools`. Result: [`ToolResult`].
@@ -224,6 +232,7 @@ pub enum EngineRequest {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "method", content = "params")]
 pub enum EngineNotification {
     #[serde(rename = "session/record")]
@@ -233,12 +242,14 @@ pub enum EngineNotification {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Initialized {
     pub protocol_version: u32,
     pub engine_version: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct SessionOpened {
     pub session: SessionId,
     /// Seq of the session's latest record.
@@ -247,6 +258,7 @@ pub struct SessionOpened {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct SessionSummary {
     pub session: SessionId,
     pub purpose: String,
@@ -256,23 +268,28 @@ pub struct SessionSummary {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct SessionList {
     pub sessions: Vec<SessionSummary>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Records {
     pub records: Vec<Record>,
     pub head: Seq,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct LogPushed {
     /// Highest seq the database now holds with no gap before it.
     pub acked: Seq,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 pub struct BlobPulled {
     /// The bytes, base64-encoded; absent when the database has no such blob.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -280,6 +297,7 @@ pub struct BlobPulled {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Subscribed {
     pub head: Seq,
     pub activity: SessionActivity,
@@ -289,6 +307,7 @@ pub struct Subscribed {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct MessageAccepted {
     pub turn: TurnId,
     /// False when the message waits for the running turn to end.
@@ -296,24 +315,29 @@ pub struct MessageAccepted {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Rewound {
     /// Seq of the `RewindFinished` record.
     pub finished: Seq,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ToolResult {
     pub outcome: ToolOutcome,
     pub content: Vec<ToolResultBlock>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct Approval {
     pub decision: ApprovalDecision,
 }
 
 /// How to authenticate to a provider.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Credential {
     ApiKey {

@@ -5,6 +5,7 @@ use serde_json::Value;
 /// Bytes kept outside the log (images, documents, oversized tool output),
 /// addressed by content so the same image is stored once.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct BlobRef {
     /// Lowercase hex SHA-256 of the bytes.
     pub sha256: String,
@@ -13,6 +14,7 @@ pub struct BlobRef {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct ModelRef {
     /// Provider id as the providers crate knows it, e.g. `anthropic`.
     pub provider: String,
@@ -20,6 +22,7 @@ pub struct ModelRef {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum ReasoningEffort {
     Minimal,
@@ -30,6 +33,7 @@ pub enum ReasoningEffort {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum UserBlock {
     Text { text: String },
@@ -44,6 +48,7 @@ pub enum UserBlock {
 /// provider's own public wire JSON (not a library's wrapper), so a stored
 /// session stays replayable whatever client library the engine uses later.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 pub struct NativeItem {
     /// Wire family the item belongs to, e.g. `anthropic-messages`.
     pub wire: String,
@@ -55,6 +60,8 @@ pub struct NativeItem {
 /// any model can be given; `native` is replayed instead when the request goes
 /// to the model that produced it.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum AssistantBlock {
     Text {
@@ -81,6 +88,7 @@ pub enum AssistantBlock {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ToolResultBlock {
     Text { text: String },
@@ -91,6 +99,8 @@ pub enum ToolResultBlock {
 /// overlap: `input_tokens` excludes cache reads and writes, and
 /// `output_tokens` includes `reasoning_tokens`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "ts", ts(optional_fields))]
 pub struct Usage {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub input_tokens: Option<u64>,

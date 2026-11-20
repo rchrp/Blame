@@ -11,6 +11,16 @@ publish.workspace = true
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
+ts-rs = { workspace = true, optional = true }
+
+[features]
+# Derives the TypeScript declarations of every wire type (see `typescript`).
+# Off by default so the engine itself carries no code generator.
+ts = ["dep:ts-rs"]
 
 [lints]
 workspace = true
+
+[[example]]
+name = "typescript"
+required-features = ["ts"]

@@ -18,6 +18,8 @@ mod delta;
 mod ids;
 mod record;
 pub mod rpc;
+#[cfg(feature = "ts")]
+pub mod typescript;
 
 pub use content::{
     AssistantBlock, BlobRef, ModelRef, NativeItem, ReasoningEffort, ToolResultBlock, Usage,
