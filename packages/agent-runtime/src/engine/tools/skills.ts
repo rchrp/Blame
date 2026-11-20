@@ -4,10 +4,10 @@
 // the `skills` tool reads the current instructions from disk.
 //
 // The folders are the ones people already use: in the workspace
-// `.clinerules/skills`, `.cline/skills`, `.claude/skills` and
-// `.agents/skills`; in their home `~/.cline/skills` (or `$CLINE_DIR/skills`)
-// and `~/.agents/skills`; and the `skills` folder of each plugin, Blame's own
-// (plugins/blame-native) first. A plugin contributes its skills only.
+// `.clinerules/skills` and `.cline/skills` (projects that also use Cline),
+// `.claude/skills` and `.agents/skills`; in their home `~/.agents/skills`;
+// and the `skills` folder of each plugin, Blame's own (plugins/blame-native)
+// first. A plugin contributes its skills only.
 
 import { readdir, readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -47,12 +47,10 @@ export function skillDirectories(input: {
   home?: string;
 }): string[] {
   const home = input.home ?? homedir();
-  const clineDir = process.env.CLINE_DIR?.trim() || join(home, ".cline");
   return unique([
     ...[".clinerules", ".cline", ".claude", ".agents"].map((folder) =>
       join(input.workspaceRoot, folder, "skills"),
     ),
-    join(clineDir, "skills"),
     join(home, ".agents", "skills"),
     ...(input.builtIn ? [blameNativeSkillsDirectory()] : []),
     ...(input.pluginPaths ?? []).map(pluginSkillsDirectory),

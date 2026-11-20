@@ -2,8 +2,7 @@ import type { McpOAuthStatus } from "@blame/agent-runtime";
 import type { CloudMcpServerConfig, McpServerConfig } from "@blame/app";
 import { ipcMain } from "electron";
 import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import {
   cloudDisabled,
   cloudOwner,
@@ -13,6 +12,7 @@ import {
   type McpSettings,
 } from "./mcp-cloud-sync";
 import { callEngineHost } from "./engine/engine-host-ipc";
+import { mcpSettingsFile } from "./mcp-settings-file";
 
 let settingsOperation: Promise<unknown> = Promise.resolve();
 let authorizationRunning = false;
@@ -149,11 +149,7 @@ async function runSettingsOperation<T>(
 }
 
 function settingsPath() {
-  const explicit = process.env.CLINE_MCP_SETTINGS_PATH?.trim();
-  if (explicit) return explicit;
-  const dataDir =
-    process.env.CLINE_DATA_DIR?.trim() || join(homedir(), ".cline", "data");
-  return join(dataDir, "settings", "cline_mcp_settings.json");
+  return mcpSettingsFile();
 }
 
 async function readSettings(): Promise<McpSettings> {

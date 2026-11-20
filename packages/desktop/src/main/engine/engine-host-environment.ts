@@ -1,6 +1,7 @@
 import { app } from "electron";
 import { join } from "node:path";
 import { setupPath } from "../host-tool-path.ts";
+import { mcpSettingsFile } from "../mcp-settings-file.ts";
 
 /**
  * What the engine host, its engine and the agents' commands run with. An app
@@ -14,5 +15,7 @@ export function engineHostEnvironment(): NodeJS.ProcessEnv {
     PATH: setupPath(),
     // Where cloud commands' gh is downloaded once (see github-cli.ts).
     BLAME_GITHUB_CLI_DIR: join(app.getPath("userData"), "github-cli"),
+    // The user's MCP servers, the file Settings → MCP writes.
+    BLAME_MCP_SETTINGS_PATH: mcpSettingsFile(),
   };
 }

@@ -10,8 +10,8 @@
 // package); several are launched in turn every round, so their timings share
 // the Mac's load. A first launch prepares a profile (local workspace, AI
 // preferences, one project in a scratch folder) that every measured launch
-// copies, so each one opens straight on the backlog. The MCP settings
-// (CLINE_DATA_DIR) and the Lima home stay in that profile too. It reports, per launch: the time to
+// copies, so each one opens straight on the backlog. The MCP settings (in
+// the app's data folder) and the Lima home stay in that profile too. It reports, per launch: the time to
 // the first window and to the backlog; the main process and renderer
 // footprints 3 s after the backlog shows; the engine host, which the
 // backlog starts: when it was started, how long it took to load and to
@@ -222,8 +222,6 @@ async function runInElectron() {
   app.setAsDefaultProtocolClient = () => false;
   process.env.LIMA_HOME = join(profile, "lima");
   process.env.BLAME_WSL_DISTRO = "BlameMainProcessBench";
-  // Agents keep their sessions there, by default in the person's home.
-  process.env.CLINE_DATA_DIR = join(profile, "cline-data");
   const fail = (error) => {
     console.error(error instanceof Error ? error.stack : String(error));
     app.exit(1);
