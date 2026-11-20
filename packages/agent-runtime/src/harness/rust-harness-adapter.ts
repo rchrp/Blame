@@ -27,7 +27,7 @@ type Pending = { resolve: (value: unknown) => void; reject: (error: Error) => vo
 const binary = process.env.BLAME_HARNESS_RUST_BINARY ?? process.env.BLAME_HARNESS_RUST ?? "blame-harness";
 const compareLog = process.env.BLAME_HARNESS_COMPARE;
 
-class RustHarnessProcess {
+export class RustHarnessProcess {
   private child?: ChildProcessWithoutNullStreams;
   private readonly pending = new Map<string, Pending>();
   private sequence = 0;
@@ -87,7 +87,10 @@ class RustHarnessProcess {
     const answer = new Promise<unknown>((resolve, reject) => this.pending.set(id, { resolve, reject }))
       .finally(() => { if (!this.pending.size) this.hold(false); });
     child.stdin.write(`${JSON.stringify({ id, [kind]: body })}\n`);
-    signal?.addEventListener("abort", () => child.stdin.write(`${JSON.stringify({ id, cancel: true })}\n`), { once: true });
+    const cancel = () => child.stdin.write(`${JSON.stringify({ id, cancel: true })}\n`);
+    // A signal aborted before the call still cancels what the call starts.
+    if (signal?.aborted) cancel();
+    else signal?.addEventListener("abort", cancel, { once: true });
     return answer;
   }
 }
