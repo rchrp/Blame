@@ -97,19 +97,20 @@ export async function conversationClientTools(
     };
   const preview = session.preview ? { ...session.preview } : undefined;
   const repair = storyPreviewRepair(services, session.previewRepair);
-  const [previewTools, github, mcp] = await Promise.all([
+  const [previewTools, github, mcp, components] = await Promise.all([
     previewClientTools(
       repair ? { ...services, repairPreviewInitialization: repair } : services,
       preview,
     ),
     githubClientTools(services, session.session),
     services.mcp?.clientTools() ?? [],
+    componentPreviewTarget(services, session, preview),
   ]);
   const api = services.connection();
   const tools = [
     attachmentTool(session.workspaceRoot),
     ...previewTools,
-    componentPreviewTool(services, preview),
+    componentPreviewTool(services, components),
     ...(api
       ? sessionStoryHistoryTools(
           {
@@ -185,6 +186,39 @@ export class ConversationTools {
     this.sessions.delete(session);
     this.toolSet.releaseSession(session);
   }
+}
+
+/**
+ * Where the conversation's component previews render, when its workspace
+ * holds a project they can render, whatever the workspace: a story's
+ * managed preview (local or cloud), its project folder, or a quick chat's
+ * folder. Asked once, with the conversation's other tools.
+ */
+async function componentPreviewTarget(
+  services: ConversationToolServices,
+  session: ConversationToolSession,
+  preview: PreviewRuntimeContext | undefined,
+): Promise<PreviewRuntimeContext | undefined> {
+  const target =
+    session.kind === "story"
+      ? (preview ?? { worktree: session.workspaceRoot })
+      : session.kind === "quick-chat"
+        ? {
+            worktree: session.workspaceRoot,
+            workspaceMode: "direct" as const,
+            ...(session.projectId ? { projectId: session.projectId } : {}),
+          }
+        : undefined;
+  if (!target || !services.componentPreview) return undefined;
+  const supported = await services
+    .prepareComponentPreview?.({ worktree: target.worktree })
+    .catch((error: unknown) => {
+      services.log?.("Component preview unavailable", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    });
+  return supported ? { ...target, componentPreview: true } : undefined;
 }
 
 function present<T>(value: T | undefined): value is T {

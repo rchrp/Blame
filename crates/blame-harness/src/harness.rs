@@ -497,9 +497,9 @@ impl Harness {
 impl Harness {
     /// finish_task as the engine's tool (`createFinishTaskTool` with the
     /// runner as executor): the input checked as zod checks it, with no
-    /// repair; screenshots refused, since no screenshot of the session is
-    /// known on this path; the accepted summary as the answer, a refusal as
-    /// the failure's text.
+    /// repair; screenshots accepted only when the session took them (the
+    /// engine names them in `knownScreenshots`); the accepted summary as the
+    /// answer, a refusal as the failure's text.
     fn call_finish(&self, request: &Json, input: &Json, signal: &Signal) -> Outcome<Presented> {
         let (parsed, issues) = finish_task_schema().run(Some(input));
         if !issues.is_empty() {
@@ -508,12 +508,20 @@ impl Harness {
         let parsed = parsed.unwrap_or(Json::Null);
         let images =
             crate::finish::finish_images(parsed.get("images").unwrap_or(&Json::Arr(Vec::new())));
-        if !images.is_empty() {
-            let unknown: Vec<String> = images
-                .iter()
-                .filter_map(|image| image.get("id").and_then(Json::as_str))
-                .map(|id| format!("screenshot:{id}"))
-                .collect();
+        let known: Vec<&str> = request
+            .get("knownScreenshots")
+            .and_then(Json::as_array)
+            .into_iter()
+            .flatten()
+            .filter_map(Json::as_str)
+            .collect();
+        let unknown: Vec<String> = images
+            .iter()
+            .filter_map(|image| image.get("id").and_then(Json::as_str))
+            .filter(|id| !known.contains(id))
+            .map(|id| format!("screenshot:{id}"))
+            .collect();
+        if !unknown.is_empty() {
             return Ok(text_result(
                 false,
                 format!(
@@ -524,7 +532,7 @@ impl Harness {
         }
         let summary = parsed.get("summary").cloned().unwrap_or(Json::Null);
         let context = request.get("toolContext").cloned().unwrap_or(Json::obj());
-        let inner = obj! { "input" => obj! { "summary" => summary.clone() }, "taskContract" => request.get("taskContract").cloned().unwrap_or(Json::Null), "tool" => "finish_task", "toolContext" => light_tool_context(&context) }
+        let inner = obj! { "input" => obj! { "summary" => summary.clone(), "finishImages" => Json::Arr(images) }, "taskContract" => request.get("taskContract").cloned().unwrap_or(Json::Null), "tool" => "finish_task", "toolContext" => light_tool_context(&context) }
             .with("workspaceRoot", request.get("workspaceRoot").cloned().unwrap_or(Json::Null));
         match self.execute(&inner, signal) {
             Ok(raw) => {

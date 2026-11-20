@@ -367,3 +367,106 @@ test("the screenshots reach the model as images through the tool set", async () 
     ),
   );
 });
+
+test("a conversation gets the tool once, when its workspace holds a project it renders", async () => {
+  const { conversationClientTools } = await import("./index.js");
+  const checked: string[] = [];
+  const services = (supported: boolean | Error) => ({
+    connection: () => undefined,
+    componentPreview: async () => rendered(1),
+    prepareComponentPreview: async ({ worktree }: { worktree: string }) => {
+      checked.push(worktree);
+      if (supported instanceof Error) throw supported;
+      return supported;
+    },
+  });
+  const names = async (
+    kind: "story" | "plan" | "quick-chat" | "new-project",
+    supported: boolean | Error = true,
+    preview?: {
+      worktree: string;
+      workspaceMode?: "direct" | "local-container" | "cloud-mirror";
+    },
+  ) =>
+    (
+      await conversationClientTools(services(supported), {
+        session: "s",
+        kind,
+        workspaceRoot: "/repo",
+        skills: false,
+        ...(preview ? { preview } : {}),
+      })
+    ).tools.map((tool) => tool.name);
+  // A story in a managed preview, local or cloud, or in the project folder.
+  for (const workspaceMode of [
+    "local-container",
+    "cloud-mirror",
+    "direct",
+  ] as const)
+    assert.ok(
+      (
+        await names("story", true, { worktree: "/worktree", workspaceMode })
+      ).includes("open_component_preview"),
+    );
+  assert.ok(
+    (await names("story")).includes("open_component_preview"),
+    "a story without a preview",
+  );
+  assert.ok((await names("quick-chat")).includes("open_component_preview"));
+  assert.ok(!(await names("plan")).includes("open_component_preview"));
+  assert.ok(!(await names("new-project")).includes("open_component_preview"));
+  assert.ok(
+    !(await names("quick-chat", false)).includes("open_component_preview"),
+  );
+  assert.ok(
+    !(await names("story", new Error("no git"))).includes(
+      "open_component_preview",
+    ),
+  );
+  // Plan and new-project conversations are never checked.
+  assert.deepEqual(checked, [
+    "/worktree",
+    "/worktree",
+    "/worktree",
+    "/repo",
+    "/repo",
+    "/repo",
+    "/repo",
+  ]);
+});
+
+test("in a quick chat the tool renders in the project folder", async () => {
+  const { conversationClientTools } = await import("./index.js");
+  const desktop = fakeDesktop(() => rendered(1));
+  const { tools } = await conversationClientTools(
+    {
+      connection: () => undefined,
+      ...desktop.options,
+      prepareComponentPreview: async () => true,
+    },
+    {
+      session: "chat-1",
+      kind: "quick-chat",
+      workspaceRoot: "/repo",
+      projectId: "p1",
+      skills: false,
+    },
+  );
+  const tool = tools.find((item) => item.name === "open_component_preview")!;
+  await tool.run(
+    { file: "src/card.blame-preview.tsx" } as never,
+    toolContext({ session: "chat-1" }),
+  );
+  const call = desktop.calls[0] as Extract<
+    ComponentPreviewHostInput,
+    { action: "render" }
+  >;
+  assert.equal(call.worktree, "/repo");
+  assert.equal(call.workspaceMode, "direct");
+  assert.equal(call.projectId, "p1");
+  assert.equal(call.sessionId, "chat-1");
+  assert.match(
+    tool.description,
+    /when your turn ends, Blame deletes it and stops the server/,
+  );
+});

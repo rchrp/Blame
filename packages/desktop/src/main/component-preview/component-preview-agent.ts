@@ -1,6 +1,11 @@
 import log from "electron-log";
 import type { CloudComponentPreviews } from "./component-preview-cloud-host.ts";
 import {
+  removePreviewScratch,
+  worktreeGit,
+  type Git,
+} from "./component-preview-cleanup.ts";
+import {
   ComponentPreviewService,
   type ComponentPreviewRenderInput,
 } from "./component-preview-service.ts";
@@ -11,6 +16,9 @@ import {
 // desktop's cloud preview service.
 
 let service: ComponentPreviewService | undefined;
+// The worktrees each conversation rendered in, so its turn's end can clean
+// them, whether or not a server is still running there.
+const sessionWorktrees = new Map<string, Set<string>>();
 
 function componentPreviewService(cloud: CloudComponentPreviews | undefined) {
   service ??= new ComponentPreviewService({
@@ -60,6 +68,12 @@ export async function componentPreviewHostRequest(
   }
   if (request.action !== "render")
     throw new Error("Invalid component preview action");
+  const sessionId = optionalText(request.sessionId);
+  if (sessionId)
+    sessionWorktrees.set(
+      sessionId,
+      (sessionWorktrees.get(sessionId) ?? new Set()).add(worktree),
+    );
   const workspaceMode = request.workspaceMode;
   const renderInput: ComponentPreviewRenderInput = {
     request: request.request,
@@ -87,7 +101,35 @@ export function stopComponentPreviews(selector: {
   return service ? service.stop(selector) : Promise.resolve(0);
 }
 
+// A conversation's turn ended: its preview files go, then its servers
+// stop (a cloud preview's sandbox gets the removal when its server stops).
+export async function endSessionComponentPreviews(
+  sessionId: string,
+  git: Git = worktreeGit,
+) {
+  const worktrees = [...(sessionWorktrees.get(sessionId) ?? [])];
+  sessionWorktrees.delete(sessionId);
+  const removed = await Promise.all(
+    worktrees.map((worktree) =>
+      removePreviewScratch(git, worktree).catch((error: unknown) => {
+        log.warn("Could not remove the temporary component previews", {
+          error: error instanceof Error ? error.message : String(error),
+        });
+        return 0;
+      }),
+    ),
+  );
+  const stopped = await stopComponentPreviews({ sessionId });
+  return { removed: removed.reduce((sum, count) => sum + count, 0), stopped };
+}
+
+// The app quits: every conversation's previews end.
 export async function shutdownComponentPreviews() {
+  await Promise.all(
+    [...sessionWorktrees.keys()].map((sessionId) =>
+      endSessionComponentPreviews(sessionId),
+    ),
+  );
   await service?.shutdown();
 }
 
