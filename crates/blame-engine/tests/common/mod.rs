@@ -56,6 +56,10 @@ pub struct FakeClient {
     pub cancelled: Mutex<Vec<u64>>,
     /// Holds `host/tool` answers until notified, when set.
     pub hold_tools: Option<Arc<tokio::sync::Notify>>,
+    /// Reported as `tool/progress` while each tool call runs.
+    pub progress: Mutex<Vec<String>>,
+    /// (provider, session) of each `host/credential`.
+    pub credential_asks: Mutex<Vec<(String, SessionId)>>,
 }
 
 impl FakeClient {
@@ -74,6 +78,8 @@ impl FakeClient {
             remote: None,
             cancelled: Mutex::new(Vec::new()),
             hold_tools: None,
+            progress: Mutex::new(Vec::new()),
+            credential_asks: Mutex::new(Vec::new()),
         }
     }
 
@@ -84,7 +90,11 @@ impl FakeClient {
 
     async fn answer(&self, call: EngineRequest) -> Result<Value, RpcError> {
         match call {
-            EngineRequest::Credential { .. } => {
+            EngineRequest::Credential { provider, session } => {
+                self.credential_asks
+                    .lock()
+                    .unwrap()
+                    .push((provider, session));
                 let n = self.credential_requests.fetch_add(1, Ordering::SeqCst) as usize;
                 let keys = self.keys.lock().unwrap();
                 let key = keys.get(n).or(keys.last()).cloned().unwrap_or_default();

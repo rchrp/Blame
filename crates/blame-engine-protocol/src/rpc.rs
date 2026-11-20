@@ -199,10 +199,16 @@ pub enum EngineRequest {
         tool: ToolSpec,
         input: Value,
     },
-    /// Obtain the secret for a provider. The engine keeps it in memory only.
-    /// Result: [`Credential`].
+    /// Obtain the secret for a provider. The engine keeps it in memory only,
+    /// one per provider, except for providers whose credential belongs to a
+    /// conversation (`claude-code`: one Claude Code process per session),
+    /// which are asked once per session. Result: [`Credential`].
     #[serde(rename = "host/credential")]
-    Credential { provider: String },
+    Credential {
+        provider: String,
+        /// The session the request is for.
+        session: SessionId,
+    },
     /// Copy records into Blame's database, which the client can reach and the
     /// engine may not (it can run in a VM with no route to it). Records come
     /// in seq order; ones the database already holds are ignored. Only sent

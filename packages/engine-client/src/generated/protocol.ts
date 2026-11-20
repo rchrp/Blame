@@ -75,7 +75,11 @@ call?: ToolCallId, tool?: string, } | { "type": "text", request: RequestId, inde
 export type EngineNotification = { "method": "session/record", "params": { session: SessionId, record: SessionRecord, } } | { "method": "session/delta", "params": { session: SessionId, delta: Delta, } };
 
 // prettier-ignore
-export type EngineRequest = { "method": "host/tool", "params": { session: SessionId, turn: TurnId, call: ToolCallId, name: string, input: JsonValue, } } | { "method": "host/approval", "params": { session: SessionId, turn: TurnId, call: ToolCallId, tool: ToolSpec, input: JsonValue, } } | { "method": "host/credential", "params": { provider: string, } } | { "method": "host/log/push", "params": { session: SessionId, records: Array<SessionRecord>, } } | { "method": "host/log/pull", "params": { session: SessionId, after: number, } } | { "method": "host/blob/push", "params": { blob: BlobRef, 
+export type EngineRequest = { "method": "host/tool", "params": { session: SessionId, turn: TurnId, call: ToolCallId, name: string, input: JsonValue, } } | { "method": "host/approval", "params": { session: SessionId, turn: TurnId, call: ToolCallId, tool: ToolSpec, input: JsonValue, } } | { "method": "host/credential", "params": { provider: string, 
+/**
+ * The session the request is for.
+ */
+session: SessionId, } } | { "method": "host/log/push", "params": { session: SessionId, records: Array<SessionRecord>, } } | { "method": "host/log/pull", "params": { session: SessionId, after: number, } } | { "method": "host/blob/push", "params": { blob: BlobRef, 
 /**
  * The bytes, base64-encoded.
  */
