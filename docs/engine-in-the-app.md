@@ -3,8 +3,9 @@
 How the app runs agents on `blame-engine` (`crates/`). Quick chats,
 development stories, plan mode and the new-project assistant are
 conversations on it; one-shot agents run on it as tasks (see "Tasks"). The
-engine in the Lima/WSL VM follows the same contract. `packages/benchmark-runner`
-still runs on the Cline runtime (`cline-runtime.ts`).
+engine in the Lima/WSL VM follows the same contract. Benchmarks run on it
+too: `packages/benchmark-runner` runs a story's agent as a task
+(`EngineHost.runStoryTask`, see "Benchmarks").
 
 ## Processes
 
@@ -252,10 +253,6 @@ credentials in the API (`/providers/credentials/resolve`):
 | `openai-compatible` | `api_key` with its base URL |
 | `claude-code` | the shared Claude Code bridge: a key scoped to the session and the bridge URL |
 
-The Cline story path, until it moves to the engine, maps `openai` and
-`chatgpt` to Cline's own ids in one place
-(`agent-runtime/src/supplemental-model-config.ts`).
-
 ## Tools
 
 A client tool is a `ClientTool` (`engine/tool.ts`): name, description, JSON
@@ -485,6 +482,30 @@ what is still conflicted, as before.
 | `assessInitializationImpact` | `initialization-impact` | `submit_initialization_impact` (the host reads the diff; a diff touching nothing the setup needs ends without an agent) | none |
 | `analyzeCodePractices` | `code-practices` | `submit_project_code_practices` (each practice once; a starter's defaults in the schema) | harness `read_code` (required), `search_code` |
 | `generateNewProject` | `new-project-generation` | `submit_new_project` | harness `search_code`, `read_code`, `edit_code`, `run_task`; `search_web`, `read_web_page` |
+
+## Benchmarks
+
+`packages/benchmark-runner` (`blame-headless run`, the Terminal-Bench adapter
+in `tools/terminal_bench/blame_agent.py` and the corpus in
+`tools/terminal_bench/corpus/`) runs one development story's agent per run,
+on the engine host in its own process: `EngineHost.runStoryTask` builds the
+story's config and brief, then runs it as a task with no person in it.
+
+- **End**: an accepted `finish_task` (the story's completion contract). The
+  request limit is `--max-iterations` (`max_requests_per_turn`); the runner's
+  deadline cancels the task (`timed_out`).
+- **Inputs**: the instruction, isolation (`BLAME_ISOLATED_ENVIRONMENT`: a
+  story worktree, else the project folder), required checks and acceptance
+  criteria (added to the harness contract), the project memory file.
+- **Outputs**: `result.json` and `events.jsonl` keep their shape. The events
+  come from the session's records once it ended; a tool's output is the
+  harness's own result, from the trace the harness runner writes when
+  `BLAME_HARNESS_TRACE_FILE` is set (`harness-trace.jsonl`, beside the
+  events). Usage and cost are the records' (`cost_micro_usd`); request counts
+  are exact (`requestObservations.coverage: "engine_records"`).
+- **Engine binary**: `BLAME_ENGINE_BIN`, else the payload's
+  `engine/<platform>-<arch>/blame-engine` (`scripts/headless-benchmark-payload.mjs`
+  ships the Linux builds), else this checkout's `target/debug`.
 
 ## Rules for the next slices
 

@@ -1,13 +1,7 @@
 import type {
-  CompareCheckpointResult as ClineCompareCheckpointResult,
-  Message,
-  RestoreResult as ClineRestoreResult,
-} from "@cline/sdk";
-import type {
   PreviewLifecycleState,
   PreviewManifest,
 } from "@blame/preview-contract";
-import type { AgentPersonalization } from "./personalization.js";
 
 export type ApiConnection = {
   url: string;
@@ -77,30 +71,6 @@ export type ReasoningEffort =
   | "xhigh"
   | "max";
 export type ReasoningSelection = "none" | "enabled" | ReasoningEffort;
-export type AgentMode = "act" | "plan" | "yolo";
-export type AgentBackendMode = "auto" | "local" | "hub" | "remote";
-export type AgentRuntimeConfigExtension =
-  | "plugins"
-  | "rules"
-  | "skills"
-  | "workflows";
-
-export type AgentBackendConfig = {
-  authToken?: string;
-  cwd?: string;
-  endpoint?: string;
-  key?: string;
-  mode: AgentBackendMode;
-  workspaceRoot?: string;
-};
-
-export type AgentRuntimePrewarmInput = {
-  backend: AgentBackendConfig;
-  cwd: string;
-  workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
-};
-
 export type BlameProvider = {
   id: string;
   name: string;
@@ -205,44 +175,6 @@ export type SubscriptionUsage = {
 export type RequiredProjectCheck =
   import("./harness/light-contracts.js").RequiredProjectCheck;
 
-export type StartSessionInput = {
-  requiredChecks?: RequiredProjectCheck[];
-  isolatedEnvironment?: boolean;
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  // Caps the context the agent works in (compaction follows it). Unset: the
-  // provider's own input limit.
-  maxInputTokens?: number;
-  autoApproveWriteTools?: boolean;
-  autoSendPrompt?: boolean;
-  checkpointEnabled?: boolean;
-  configExtensions?: AgentRuntimeConfigExtension[];
-  disableMcpSettingsTools?: boolean;
-  mode?: AgentMode;
-  maxIterations?: number;
-  pluginPaths?: string[];
-  prompt: string;
-  sessionId?: string | null;
-  initialMessages?: Message[];
-  userImages?: string[];
-  userFiles?: string[];
-  cwd: string;
-  workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
-  systemPrompt?: string;
-  previewDevtoolsScope?: string;
-  // The desktop offers open_component_preview (a Vite, React, Vue 3,
-  // Svelte 5 or Angular project, whatever the workspace mode).
-  componentPreview?: boolean;
-  credentialLabel?: string;
-  backend?: AgentBackendConfig;
-  executionId?: string;
-  projectId?: string;
-  storyId?: string;
-};
-
 export type CodeSelectionAttachment = {
   id?: string;
   content: string;
@@ -263,56 +195,6 @@ export type FileAttachment = {
   name: string;
   size: number;
   type: string;
-};
-
-// What an agent conversation is for: coding (chats and user stories),
-// planning user stories, or choosing the stack of a new project.
-export type AgentConversationPurpose = "development" | "plan" | "new-project";
-
-export type StartDevelopmentSessionInput = {
-  purpose?: AgentConversationPurpose;
-  requiredChecks?: RequiredProjectCheck[];
-  isolatedEnvironment?: boolean;
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  maxInputTokens?: number;
-  autoSendPrompt?: boolean;
-  checkpointEnabled?: boolean;
-  configExtensions?: AgentRuntimeConfigExtension[];
-  disableMcpSettingsTools?: boolean;
-  enableSpecialistConsult?: boolean;
-  maxIterations?: number;
-  pluginPaths?: string[];
-  title: string;
-  summary: string;
-  codeSelectionAttachments?: CodeSelectionAttachment[];
-  fileAttachments?: FileAttachment[];
-  feedback?: string;
-  feedbackCodeSelectionAttachments?: CodeSelectionAttachment[];
-  feedbackFileAttachments?: FileAttachment[];
-  resumeSessionId?: string | null;
-  sessionId?: string;
-  cwd: string;
-  workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
-  previewDevtoolsScope?: string;
-  componentPreview?: boolean;
-  codePractices?: ProjectCodePracticePreference[];
-  // Read when the conversation starts; later turns bring it with the message.
-  personalization?: AgentPersonalization;
-  projectInitialization?: {
-    runConfigurationId?: string;
-    previewManifest: PreviewManifest;
-    runConfigurations: ProjectRunConfiguration[];
-    databaseMode?: ProjectInitializationDatabaseMode | null;
-  };
-  backend?: AgentBackendConfig;
-  executionId?: string;
-  projectId?: string;
-  storyId?: string;
 };
 
 export type ApproveAndMergeResult = {
@@ -364,47 +246,6 @@ export type ResolveMergeConflictsResult = {
   conflicts: string[];
   resolved: boolean;
 };
-
-export type SendSessionInput = {
-  sessionId: string;
-  prompt: string;
-  executionId?: string;
-  userImages?: string[];
-  userFiles?: string[];
-};
-
-export type SendDevelopmentSessionInput = {
-  sessionId: string;
-  executionId?: string;
-  // What the person chose for this turn; a change reaches the agent with it.
-  personalization?: AgentPersonalization;
-  title: string;
-  summary: string;
-  codeSelectionAttachments?: CodeSelectionAttachment[];
-  fileAttachments?: FileAttachment[];
-  feedback?: string;
-  feedbackCodeSelectionAttachments?: CodeSelectionAttachment[];
-  feedbackFileAttachments?: FileAttachment[];
-  feedbackOnly?: boolean;
-};
-
-export type CompareCheckpointInput = {
-  checkpointRunCount: number;
-  cwd?: string;
-  sessionId: string;
-};
-
-export type CompareCheckpointResult = ClineCompareCheckpointResult;
-
-export type RestoreCheckpointInput = CompareCheckpointInput & {
-  restore?: {
-    messages?: boolean;
-    omitCheckpointMessageFromSession?: boolean;
-    workspace?: boolean;
-  };
-};
-
-export type RestoreCheckpointResult = ClineRestoreResult;
 
 export type ProjectCodePracticeKey =
   | "coding_style"
@@ -586,13 +427,6 @@ export type PlannedUserStory = {
   dismissed?: boolean;
 };
 
-export type AgentSessionRecord = {
-  sessionId: string;
-  title?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
 export type AgentUsageTotals = {
   cacheReadTokens?: number;
   cacheWriteTokens?: number;
@@ -604,34 +438,6 @@ export type AgentUsageTotals = {
   totalCost?: number;
   totalInputTokens: number;
   totalOutputTokens: number;
-};
-
-export type CompactSessionInput = {
-  apiConnection: ApiConnection;
-  backend?: AgentBackendConfig;
-  credentialLabel?: string;
-  maxInputTokens?: number;
-  modelId: string;
-  providerId: string;
-  sessionId: string;
-};
-
-export type CompactSessionResult = {
-  compacted: boolean;
-  tokensAfter?: number;
-  tokensBefore?: number;
-};
-
-export type AgentUsageSummary = {
-  aggregateUsage?: AgentUsageTotals;
-  usage?: AgentUsageTotals;
-};
-
-export type AgentDonePayload = {
-  completion?: import("@blame/harness-core").CompletionDecision;
-  text?: string;
-  verified?: boolean;
-  [key: string]: unknown;
 };
 
 export type AgentEvent = {
@@ -655,22 +461,4 @@ export type AgentEvent = {
   payload: unknown;
 };
 
-export type AgentRuntimeEvents = {
-  emit(event: AgentEvent): void;
-  captureHiddenToolEvent?(event: AgentEvent): void;
-};
-
 export type ApprovalDecision = "approve" | "deny" | "always";
-
-export type AgentApprovalRequest = {
-  id: string;
-  sessionId?: string;
-  toolName: string;
-  reason?: string;
-  input?: unknown;
-};
-
-export type ResolveApprovalInput = {
-  requestId: string;
-  decision: ApprovalDecision;
-};

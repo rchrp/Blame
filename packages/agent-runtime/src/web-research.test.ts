@@ -6,10 +6,6 @@ import {
   publicAddress,
   resolvePublicWebUrl,
 } from "./web-research-network.js";
-import { withoutNativeWebSearch } from "./web-research-policy.js";
-import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
-import { webResearchTools } from "./web-research-tools.js";
-import type { AgentToolContext } from "@cline/sdk";
 
 const text =
   "Mozilla Readability extracts useful article content for a local research agent. ".repeat(
@@ -107,82 +103,3 @@ test("public reading rejects local, mapped IPv6, non-web and authenticated URLs"
   await assert.rejects(resolvePublicWebUrl("http://localhost/"));
 });
 
-test("all provider search formats are removed without removing Blame tools or other capabilities", async () => {
-  const tools = [
-    { type: "web_search" },
-    { type: "web_search_preview" },
-    { type: "web_search_20250305", name: "web_search" },
-    { type: "function", name: "web_search" },
-    { type: "function", function: { name: "web_search" } },
-    { googleSearch: {} },
-    { google_search: {} },
-    { googleSearchRetrieval: {} },
-    {
-      google_search_retrieval: {},
-      functionDeclarations: [{ name: "search_web" }],
-    },
-    { type: "function", name: "search_web" },
-    { type: "function", name: "read_web_page" },
-    { type: "image_generation" },
-  ];
-  const expected = [
-    { functionDeclarations: [{ name: "search_web" }] },
-    ...tools.slice(-3),
-  ];
-  assert.deepEqual(withoutNativeWebSearch({ tools }), { tools: expected });
-  let captured: unknown;
-  const compatible = createProviderCompatibleFetch(async (_url, init) => {
-    captured = JSON.parse(String(init?.body));
-    return Response.json({});
-  });
-  await compatible("https://provider.test/v1/messages", {
-    method: "POST",
-    body: JSON.stringify({ tools }),
-  });
-  assert.deepEqual(captured, { tools: expected });
-  await compatible(
-    new Request("https://provider.test/v1/messages", {
-      method: "POST",
-      body: JSON.stringify({ tools }),
-    }),
-  );
-  assert.deepEqual(captured, { tools: expected });
-});
-
-test("search_web uses the authenticated Blame API and returns persisted source metadata", async () => {
-  const original = globalThis.fetch;
-  const source = webSource("https://example.org/");
-  globalThis.fetch = async (url, init) => {
-    assert.equal(url, "https://blame.test/api/v1/web/search");
-    assert.equal(
-      new Headers(init?.headers).get("Authorization"),
-      "Bearer test-token",
-    );
-    assert.equal(JSON.parse(String(init?.body)).query, "Mozilla");
-    return Response.json({
-      sources: [source],
-      resultCount: 1,
-      partial: false,
-      query: "Mozilla",
-      unavailableEngines: [],
-      retrievedAt: source.retrievedAt,
-    });
-  };
-  try {
-    const tools = webResearchTools({
-      url: "https://blame.test/api/v1",
-      token: "test-token",
-    });
-    const result = (await tools[0]!.execute(
-      { query: "Mozilla" },
-      {} as AgentToolContext,
-    )) as { kind: string; sources: unknown[] };
-    assert.equal(result.kind, "web_search");
-    assert.deepEqual(result.sources, [source]);
-    await assert.rejects(
-      tools[0]!.execute({ query: "x" }, {} as AgentToolContext),
-    );
-  } finally {
-    globalThis.fetch = original;
-  }
-});

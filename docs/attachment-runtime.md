@@ -36,6 +36,5 @@ This copies the input into a temporary workspace and prints only page/character
 counts; it leaves the source unchanged.
 
 The runtime's `attachment-reader.test.ts` also covers cancellation, bounds and
-workspace confinement. `cline-sdk-smoke.test.ts` checks the document tool result
-in a real SDK request to a local model stub. `scripts/semantic-harness-payload.test.mjs`
+workspace confinement. `scripts/semantic-harness-payload.test.mjs`
 checks PDF reading from the independently packaged remote harness.
