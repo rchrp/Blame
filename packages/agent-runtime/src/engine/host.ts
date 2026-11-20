@@ -39,7 +39,8 @@ import { purposeClientTools } from "./purposes/tool-sets.js";
 import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
-import { taskHandlers } from "./tasks/handlers.js";
+import { taskHandlers, type TaskHost } from "./tasks/handlers.js";
+import { runInitializationRepair } from "./tasks/project.js";
 import { TaskRunner } from "./tasks/runner.js";
 import { ToolSet, type ClientTool } from "./tool.js";
 import {
@@ -150,6 +151,9 @@ export class EngineHost {
       ...options.desktop,
       connection: () => this.api,
       mcp: this.mcp,
+      // A story's repair_preview_initialization runs the repair task.
+      repairInitialization: (input) =>
+        runInitializationRepair(this.taskHost(), input),
     });
     this.credentials = new CredentialResolver(
       {
@@ -349,7 +353,12 @@ export class EngineHost {
       await this.shutdown();
       return null;
     },
-    ...taskHandlers({
+    ...taskHandlers(this.taskHost()),
+  };
+
+  /** What the task handlers use of the host. */
+  private taskHost(): TaskHost {
+    return {
       runner: this.tasks,
       clientTools: (names) => this.tools.specs(names),
       client: () => this.supervisor.client(),
@@ -362,8 +371,8 @@ export class EngineHost {
         this.conversationTools.release(session);
       },
       gh: (cwd, args) => (this.options.gh ?? runHostGh)(cwd, args),
-    }),
-  };
+    };
+  }
 
   /** Stops following, ends running turns as interrupted and stops the engine. */
   async shutdown() {
@@ -682,6 +691,15 @@ function conversationToolSession(
           workspaceMode: story.workspaceMode,
           workspaceRoot,
         }),
+        ...(story.projectInitialization
+          ? {
+              previewRepair: {
+                model: story.model,
+                projectId: story.projectId,
+                initialization: story.projectInitialization,
+              },
+            }
+          : {}),
       };
     }
     case "plan":

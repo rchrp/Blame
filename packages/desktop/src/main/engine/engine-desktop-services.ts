@@ -101,7 +101,28 @@ export function engineDesktopServices(
       githubMcpService.listTools(optionalText(record(input).sessionId)),
     githubMcpCall: (input, signal) => githubMcpCall(input, signal),
     git: (input) => agentGit(input),
+    applyPreviewInitialization: (input) => applyPreviewInitialization(input),
   };
+}
+
+// A story's repaired preview setup, applied to its managed preview (a
+// cloud preview's is the cloud's to apply).
+async function applyPreviewInitialization(input: unknown) {
+  const request = record(input);
+  if (request.workspaceMode === "cloud-mirror")
+    return { status: "unavailable" as const };
+  const { applyProjectPreviewInitialization } =
+    await import("../workspace-ipc.ts");
+  await applyProjectPreviewInitialization({
+    databaseMode: request.databaseMode,
+    previewManifest: request.previewManifest,
+    reason: request.reason,
+    repairSessionId: request.repairSessionId,
+    runConfigurations: request.runConfigurations,
+    storyId: String(request.storyId ?? "preview-repair"),
+    worktree: String(request.worktree ?? ""),
+  } as never);
+  return { status: "applied" as const };
 }
 
 // A surface or component preview of a hibernated local preview wakes it and

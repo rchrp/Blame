@@ -258,7 +258,7 @@ one cache miss).
 | `preview_devtools__*` | `previewDevtools`, `previewDevtoolsTools`, `previewDevtoolsCall`, a preview scope | yes | yes | no | no |
 | `preview_terminal`, `preview_display`, `preview_device` | `previewSurfaceInfo`, `previewSurfaceCall` (replace the DevTools tools) | yes | yes | no | no |
 | `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no |
-| `repair_preview_initialization` | `repairPreviewInitialization` (a one-shot agent, session 3) | yes | no | no | no |
+| `repair_preview_initialization` | the repair task (`runInitializationRepair`), then main's `applyPreviewInitialization` (`tools/preview-repair.ts`) | yes | no | no | no |
 | `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no |
 | `open_component_preview` | `componentPreview`, a Vite-capable workspace | yes | no | no | no |
 | `propose_user_stories` | a project | yes | yes | no | yes |

@@ -88,6 +88,7 @@ const toolModules = [
   "tools/policy.js",
   "tools/preview.js",
   "tools/preview-types.js",
+  "tools/preview-repair.js",
   "tools/skills.js",
   "tools/story-history.js",
   "tools/story-proposal.js",
