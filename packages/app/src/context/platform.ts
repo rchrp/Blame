@@ -41,9 +41,9 @@ import type {
   ResolveApprovalInput,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
-  RunSecurityAuditInput,
   SaveProviderCredentialInput,
   SecurityAudit,
+  SecurityAuditWorkspaceMap,
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
@@ -510,16 +510,13 @@ export type AgentClient = {
   ): Promise<DirectStoryFilesResult>
 }
 
+// What the desktop does for an audit besides its agents (engine tasks, through
+// `engine`): the repository map, and the folder the agents work in.
 export type SecurityAuditClient = {
-  active(input: { root: string }): Promise<SecurityAudit | undefined>
-  run(input: RunSecurityAuditInput): Promise<SecurityAudit>
-  cancel(input: {
+  map(input: {
     root: string
-    auditId: string
-  }): Promise<SecurityAudit | undefined>
-  onChanged(
-    callback: (event: { root: string; audit: SecurityAudit }) => void
-  ): () => void
+    scope?: SecurityAudit["scope"]
+  }): Promise<SecurityAuditWorkspaceMap>
 }
 
 export type WorkspaceEntry = {

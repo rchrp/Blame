@@ -186,14 +186,6 @@ export class AgentRuntimePool {
     }
   }
 
-  cancelSecurityAudit(auditId: string) {
-    return this.broadcast("securityAudits.cancel", auditId);
-  }
-
-  finishSecurityAudit(auditId: string) {
-    return this.broadcast("securityAudits.finish", auditId);
-  }
-
   /** True when a worker was running this initialization and cancelled it. */
   async cancelInitialization(progressId: string) {
     const results = await this.broadcast("initializations.cancel", progressId);

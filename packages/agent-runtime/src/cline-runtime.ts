@@ -250,10 +250,6 @@ import {
 import { loadPrompt } from "./prompt-loader.js";
 import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
 import { reasoningConfig } from "./reasoning.js";
-import {
-  runSecurityDiscovery,
-  runSecurityValidation,
-} from "./security-audit-runtime.js";
 import { scanSecurityAuditRepository } from "./security-audit-scan.js";
 import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
 import { sessionStoryHistoryTools } from "./story-history-tools.js";
@@ -278,7 +274,6 @@ import type {
   AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
-  DiscoverSecurityAuditInput,
   DirectStoryFilesInput,
   InitializeProjectInput,
   InitializeProjectResult,
@@ -300,7 +295,6 @@ import type {
   StartDevelopmentSessionInput,
   StartNewProjectGenerationInput,
   StartSessionInput,
-  ValidateSecurityAuditInput,
 } from "./types.js";
 import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
 import { webResearchTools, webResearchGuidance } from './web-research-tools.js';
@@ -400,11 +394,6 @@ const transportRecoveryPrompt =
 
 export class BlameAgentRuntime {
   private clines = new Map<string, Promise<ClineCore>>();
-  private activeSecurityAuditSessions = new Map<
-    string,
-    Map<string, ClineCore>
-  >();
-  private cancelledSecurityAudits = new Set<string>();
   private readonly initializationCancellations =
     new InitializationCancellations();
   private sessionBackendKeys = new Map<string, string>();
@@ -536,12 +525,6 @@ export class BlameAgentRuntime {
 
   securityAudits = {
     map: (input: MapSecurityAuditInput) => this.mapSecurityAudit(input),
-    discover: (input: DiscoverSecurityAuditInput) =>
-      this.discoverSecurityAudit(input),
-    validate: (input: ValidateSecurityAuditInput) =>
-      this.validateSecurityAudit(input),
-    cancel: (auditId: string) => this.cancelSecurityAudit(auditId),
-    finish: (auditId: string) => this.finishSecurityAudit(auditId),
   };
 
   newProjects = {
@@ -1792,76 +1775,6 @@ export class BlameAgentRuntime {
   private async mapSecurityAudit(input: MapSecurityAuditInput) {
     assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
     return scanSecurityAuditRepository(input.workspaceRoot, this.options.git);
-  }
-
-  private async discoverSecurityAudit(input: DiscoverSecurityAuditInput) {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    return runSecurityDiscovery(
-      await this.core(input.backend),
-      input,
-      await this.initializationCredential(input),
-      this.securityAuditSessionControl(input.auditId),
-    );
-  }
-
-  private async validateSecurityAudit(input: ValidateSecurityAuditInput) {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    return runSecurityValidation(
-      await this.core(input.backend),
-      input,
-      await this.initializationCredential(input),
-      this.securityAuditSessionControl(input.auditId),
-    );
-  }
-
-  private securityAuditSessionControl(auditId: string) {
-    return {
-      assertActive: () => {
-        if (this.cancelledSecurityAudits.has(auditId)) {
-          throw new Error("Security audit cancelled");
-        }
-      },
-      started: (sessionId: string, cline: ClineCore) => {
-        if (this.cancelledSecurityAudits.has(auditId)) {
-          void Promise.allSettled([
-            cline.stop(sessionId),
-            cline.abort(sessionId, "Security audit cancelled"),
-          ]);
-          throw new Error("Security audit cancelled");
-        }
-        const sessions =
-          this.activeSecurityAuditSessions.get(auditId) ??
-          new Map<string, ClineCore>();
-        sessions.set(sessionId, cline);
-        this.activeSecurityAuditSessions.set(auditId, sessions);
-      },
-      finished: (sessionId: string) => {
-        const sessions = this.activeSecurityAuditSessions.get(auditId);
-        sessions?.delete(sessionId);
-        if (!sessions?.size) this.activeSecurityAuditSessions.delete(auditId);
-      },
-    };
-  }
-
-  private async cancelSecurityAudit(auditId: string) {
-    this.cancelledSecurityAudits.add(auditId);
-    const sessions = this.activeSecurityAuditSessions.get(auditId);
-    if (!sessions?.size) return false;
-    await Promise.allSettled(
-      [...sessions].map(([sessionId, cline]) =>
-        Promise.allSettled([
-          cline.stop(sessionId),
-          cline.abort(sessionId, "Security audit cancelled by user"),
-        ]),
-      ),
-    );
-    return true;
-  }
-
-  private finishSecurityAudit(auditId: string) {
-    this.cancelledSecurityAudits.delete(auditId);
-    this.activeSecurityAuditSessions.delete(auditId);
-    return true;
   }
 
   private async initializeProject(

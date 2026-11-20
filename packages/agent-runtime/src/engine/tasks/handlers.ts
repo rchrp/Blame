@@ -9,6 +9,7 @@ import { userStoryTask } from "../purposes/user-story.js";
 import type { EngineTaskMethods, TaskCall } from "../task-protocol.js";
 import { gitTaskHandlers } from "./git.js";
 import type { TaskRunner, TaskSpec } from "./runner.js";
+import { securityAuditTaskHandlers } from "./security-audit.js";
 
 export type TaskHost = {
   runner: TaskRunner;
@@ -57,6 +58,7 @@ export function taskHandlers(host: TaskHost): Handlers {
       );
       return { session, ...result };
     },
+    ...securityAuditTaskHandlers(run),
     cancelTask: async ({ session }) => host.runner.cancel(session),
     deleteSession: async ({ session }) => {
       await (await host.client()).deleteSession({ session });

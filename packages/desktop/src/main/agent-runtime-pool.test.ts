@@ -141,22 +141,6 @@ test("reports worker failure and restarts lazily", async () => {
   });
 });
 
-test("cancels a security audit on every active worker", async () => {
-  const harness = poolHarness(2);
-  await harness.pool.startSession("sessions.start", {});
-  await harness.pool.startSession("sessions.start", {});
-
-  await harness.pool.cancelSecurityAudit("audit-1");
-
-  assert.equal(harness.processes.length, 2);
-  for (const process of harness.processes) {
-    assert.deepEqual(process.calls.at(-1), {
-      input: "audit-1",
-      method: "securityAudits.cancel",
-    });
-  }
-});
-
 test("reports whether the worker running an initialization cancelled it", async () => {
   const harness = poolHarness(2);
   await harness.pool.startSession("sessions.start", {});

@@ -14,41 +14,9 @@ import type {
   ValidateSecurityAuditResult,
 } from "./types.js";
 
-type Correction = { validationError: string; previousResult: string };
-
-export function securityDiscoveryPrompt(
-  repository: MapSecurityAuditResult,
-  perspective: string,
-  correction?: Correction,
-) {
-  const prompt = [
-    `Perform an independent ${perspective} security discovery pass.`,
-    "Use the repository map to inspect relevant code with read-only tools.",
-    "Report candidates, not confirmed vulnerabilities. Trace attacker input to a sensitive operation and record concrete evidence. Do not report generic hardening advice.",
-    "Call submit_security_discovery exactly once. Do not answer with JSON text.",
-    `Repository map: ${JSON.stringify(repositoryPacket(repository))}`,
-  ];
-  return correctionPrompt(prompt, correction);
-}
-
-export function securityValidationPrompt(
-  repository: MapSecurityAuditResult,
-  candidates: SecurityCandidate[],
-  correction?: Correction,
-) {
-  const prompt = [
-    "Independently validate the canonical security candidates below.",
-    "Seek counter-evidence, existing controls, reachability constraints, and framework behavior. Reject speculation. A reportable finding needs a concrete attack path, impact, affected location, and actionable remediation.",
-    "Use only read-only repository tools. Call submit_security_validation exactly once. Do not answer with JSON text.",
-    `Repository map: ${JSON.stringify(repositoryPacket(repository))}`,
-    `Canonical candidates: ${JSON.stringify(candidates)}`,
-  ];
-  return correctionPrompt(prompt, correction);
-}
-
+/** A discovery pass's result, from the input its result tool accepted. */
 export function parseSecurityDiscovery(
   value: unknown,
-  sessionId: string,
   source: string,
 ): SecurityAuditDiscoveryResult {
   const result = record(value, "Security discovery result is invalid");
@@ -56,7 +24,6 @@ export function parseSecurityDiscovery(
     parseCandidate(candidate, `${source}-${index + 1}`, source),
   );
   return {
-    sessionId,
     threatModel: parseThreatModel(result.threatModel),
     candidates,
     inspectedPaths: strings(result.inspectedPaths),
@@ -79,9 +46,9 @@ export function mergeSecurityCandidates(
   }));
 }
 
+/** The validated findings and coverage, from the validator's accepted input. */
 export function parseSecurityValidation(
   value: unknown,
-  sessionId: string,
   repository: MapSecurityAuditResult,
   discoveries: SecurityAuditDiscoveryResult[],
 ): ValidateSecurityAuditResult {
@@ -115,7 +82,6 @@ export function parseSecurityValidation(
     ),
   );
   return {
-    sessionId,
     threatModel: mergeThreatModels(
       discoveries.map(({ threatModel }) => threatModel),
     ),
@@ -264,13 +230,6 @@ function securityCoverage(
   };
 }
 
-function repositoryPacket(repository: MapSecurityAuditResult) {
-  return {
-    revision: repository.revision,
-    surfaceMap: repository.surfaceMap,
-  };
-}
-
 function secretCoverage(repository: MapSecurityAuditResult) {
   const scanner = repository.deterministic.scanners.find(
     ({ id }) => id === "local-secret-scanner",
@@ -403,16 +362,6 @@ function parseTaxonomy(value: unknown) {
       : {}),
     ...(strings(taxonomy.asvs).length ? { asvs: strings(taxonomy.asvs) } : {}),
   };
-}
-
-function correctionPrompt(prompt: string[], correction?: Correction) {
-  if (!correction) return prompt.join("\n");
-  return [
-    ...prompt,
-    "Your previous tool input was rejected. Submit a complete corrected result.",
-    `Validation error: ${correction.validationError}`,
-    `Previous input: ${correction.previousResult.slice(0, 24_000)}`,
-  ].join("\n");
 }
 
 function securitySeverity(value: unknown): SecuritySeverity {

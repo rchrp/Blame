@@ -556,10 +556,8 @@ export type AnalyzeProjectCodePracticesResult = {
 };
 
 export type {
-  DiscoverSecurityAuditInput,
   MapSecurityAuditInput,
   MapSecurityAuditResult,
-  RunSecurityAuditInput,
   SecurityAttackPathStep,
   SecurityAudit,
   SecurityAuditDiscoveryResult,
@@ -570,6 +568,7 @@ export type {
   SecurityAuditProgressStep,
   SecurityAuditProgressStepStatus,
   SecurityAuditStatus,
+  SecurityAuditWorkspaceMap,
   SecurityCandidate,
   SecurityConfidence,
   SecurityCoverage,
@@ -585,7 +584,6 @@ export type {
   SecuritySourceLocation,
   SecuritySurfaceMap,
   SecurityThreatModel,
-  ValidateSecurityAuditInput,
   ValidateSecurityAuditResult,
 } from "./security-audit-types.js";
 

@@ -236,6 +236,8 @@ what is still conflicted, as before.
 | `generateCommitMessage`, and in `approveAndMerge`, `openPullRequest` | `commit-message` | `submit_commit_message` (its first line is the subject) | none: the changes are in the instruction |
 | `openPullRequest` | `pull-request-text` | `submit_pull_request` (`agentSummary` required when the story has one) | none |
 | `resolveMergeConflicts`, and in `approveAndMerge` | `merge-conflict-resolution` | `submit_merge_resolution` (`resolved`, `reason`) | harness: `search_code`, `read_code`, `edit_code`, `run_task`; `required: ["read_code"]`; `VM_WORKSPACE_UNSUPPORTED` in the VM |
+| `discoverSecurityAudit` | `security-discovery` | `submit_security_discovery` | harness, `allowed: search_code, read_code`, `required: read_code` |
+| `validateSecurityAudit` | `security-validation` | `submit_security_validation` (the given candidate ids in the schema) | harness, `allowed: search_code, read_code`, `required: read_code` |
 
 ## Rules for the next slices
 

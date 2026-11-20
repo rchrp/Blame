@@ -205,18 +205,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("backlog-status-pip:set-mode", input),
   },
   securityAudits: {
-    active: (input) => ipcRenderer.invoke("security-audits:active", input),
-    run: (input) => ipcRenderer.invoke("security-audits:run", input),
-    cancel: (input) => ipcRenderer.invoke("security-audits:cancel", input),
-    onChanged: (callback) => {
-      const handler = (
-        _event: unknown,
-        auditEvent: Parameters<typeof callback>[0],
-      ) => callback(auditEvent);
-      ipcRenderer.on("security-audits:changed", handler);
-      return () =>
-        ipcRenderer.removeListener("security-audits:changed", handler);
-    },
+    map: (input) => ipcRenderer.invoke("security-audits:map", input),
   },
   platform: process.platform,
   opaqueWindow: process.argv.includes(opaqueWindowArgument),

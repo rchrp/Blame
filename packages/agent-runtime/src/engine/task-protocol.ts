@@ -6,10 +6,15 @@ import type { SessionId } from "@blame/engine-client";
 import type {
   ApproveAndMergeResult,
   GenerateCommitMessageResult,
+  MapSecurityAuditResult,
   OpenPullRequestResult,
   ProjectCodePracticePreference,
   ProjectRunConfiguration,
   ResolveMergeConflictsResult,
+  SecurityAuditDiscoveryResult,
+  SecurityAuditMode,
+  SecurityAuditPerspective,
+  ValidateSecurityAuditResult,
 } from "../types.js";
 import type { EngineModelChoice } from "./protocol.js";
 
@@ -95,6 +100,23 @@ export type ResolveMergeConflictsTask = GitFlowCall & {
   targetBranch?: string;
 };
 
+/** One investigator of a security audit, reading the project's code. */
+export type DiscoverSecurityAuditTask = TaskCall & {
+  workspace: TaskWorkspace;
+  mode: SecurityAuditMode;
+  perspective: SecurityAuditPerspective;
+  repository: MapSecurityAuditResult;
+};
+
+/** The audit's validator: confirms or rejects every candidate in the code. */
+export type ValidateSecurityAuditTask = TaskCall & {
+  workspace: TaskWorkspace;
+  mode: SecurityAuditMode;
+  repository: MapSecurityAuditResult;
+  /** The investigators' and the deterministic scanners' candidates. */
+  discoveries: SecurityAuditDiscoveryResult[];
+};
+
 export type EngineTaskMethods = {
   approveAndMerge: {
     input: ApproveAndMergeTask;
@@ -125,6 +147,14 @@ export type EngineTaskMethods = {
     input: OptimizeUserStoryTask;
     result: { session: SessionId; markdown: string };
   };
+  discoverSecurityAudit: {
+    input: DiscoverSecurityAuditTask;
+    result: SecurityAuditDiscoveryResult & { session: SessionId };
+  };
+  validateSecurityAudit: {
+    input: ValidateSecurityAuditTask;
+    result: ValidateSecurityAuditResult & { session: SessionId };
+  };
   /** Stops a running task; false when none runs by that id. */
   cancelTask: { input: { session: SessionId }; result: boolean };
   /** Deletes a session from the engine (a deleted quick chat). */
@@ -138,6 +168,8 @@ export const engineTaskMethods = [
   "openPullRequest",
   "generateCommitMessage",
   "resolveMergeConflicts",
+  "discoverSecurityAudit",
+  "validateSecurityAudit",
   "cancelTask",
   "deleteSession",
 ] as const satisfies readonly (keyof EngineTaskMethods)[];

@@ -23,10 +23,9 @@ import { useSecurityAudits } from "@/components/security/data/use-security-audit
 import { SecurityEmptyState } from "@/components/security/security-empty-state"
 import { SecurityAuditHistory } from "@/components/security/security-audit-history"
 import { Button } from "@/components/ui/button"
-import { useCloudAuth } from "@/context/cloud-auth"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 
 export function SecurityPage() {
-  const auth = useCloudAuth()
   const selection = useModelSelection({ role: "alternative" })
   const security = useSecurityAudits()
   const backlog = useBacklogStore()
@@ -63,7 +62,7 @@ export function SecurityPage() {
   )
 
   const runAudit = (mode: SecurityAuditMode) => {
-    const model = selection.currentModel
+    const model = engineModelChoice(selection)
     if (!model || !security.project) {
       toast.error("Connect an analysis model before running an audit.")
       return
@@ -71,11 +70,7 @@ export function SecurityPage() {
     setSelectedAuditId(undefined)
     void security
       .run({
-        apiConnection: auth.apiConnection,
-        providerId: model.provider.id,
-        modelId: model.id,
-        credentialLabel: model.credentialLabel,
-        reasoningEffort: selection.currentVariant,
+        model,
         projectId: security.project.id,
         mode,
         scope: { type: "repository" },
