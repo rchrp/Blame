@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { claudeCodeArguments, parseAuthStatus } from "./claude-code-cli.js";
-import type { ModelInfo } from "@cline/llms";
 
-import { claudeCodeModelConfig } from "./claude-code-provider.js";
 import { lightCompletionDescription } from "../harness/light-completion.js";
 import {
   classifyClaudeCodeError,
@@ -18,7 +16,6 @@ import {
   requestEffort,
   systemPromptForClaudeCode,
 } from "./claude-code-protocol.js";
-import { withoutCommitHash } from "../workspace-prompt-metadata.js";
 
 test("parses the Messages request Cline sends and keeps custom tools only", () => {
   const request = parseMessagesRequest({
@@ -275,19 +272,6 @@ test("a request without tools starts Claude Code without Blame's MCP server or t
   assert.doesNotMatch(prompt, /mcp__blame__|read_code|search_code/u);
 });
 
-test("sends Claude Code models through Cline's Anthropic provider at no token cost", () => {
-  const config = claudeCodeModelConfig<{
-    providerId: string;
-    modelId: string;
-    knownModels?: Record<string, ModelInfo>;
-  }>({ providerId: "claude-code", modelId: "sonnet" });
-  assert.equal(config.providerId, "anthropic");
-  assert.equal(config.knownModels?.sonnet?.pricing?.input, 0);
-  assert.ok((config.knownModels?.sonnet?.contextWindow ?? 0) > 0);
-  const other = { providerId: "anthropic", modelId: "claude-sonnet-5-5" };
-  assert.equal(claudeCodeModelConfig(other), other);
-});
-
 test("Claude Code learns that Blame's tools replace its own shell and file tools", () => {
   const prompt = systemPromptForClaudeCode({
     model: "opus",
@@ -299,12 +283,6 @@ test("Claude Code learns that Blame's tools replace its own shell and file tools
   assert.match(prompt, /`search_code` is the grep/u);
   assert.match(prompt, /several tool calls in one response/u);
   assert.match(prompt, /always call them by that full name, such as `mcp__blame__read_code`/u);
-});
-
-test("workspace metadata in the prompt leaves out the commit hash so commits keep the prompt cache", () => {
-  const metadata = JSON.stringify({ workspaces: { "/repo": { hint: "repo", latestGitCommitHash: "abc123", latestGitBranchName: "main" } } }, null, 2);
-  assert.deepEqual(JSON.parse(withoutCommitHash(metadata)), { workspaces: { "/repo": { hint: "repo", latestGitBranchName: "main" } } });
-  assert.equal(withoutCommitHash("plain text"), "plain text");
 });
 
 test("an expired Claude Code sign-in is an authentication error, not a retried server error", () => {

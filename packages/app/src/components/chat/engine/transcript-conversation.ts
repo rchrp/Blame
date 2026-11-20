@@ -1,7 +1,6 @@
 // What the shared conversation timeline shows, from an engine session's
-// transcript (TranscriptReducer of @blame/engine-client). The only place
-// that knows both shapes: the timeline was written for the Cline runtime's
-// runs and activities, which stories still use.
+// transcript (TranscriptReducer of @blame/engine-client), in the runs and
+// activities the timeline components take.
 
 import type {
   ToolCallItem,

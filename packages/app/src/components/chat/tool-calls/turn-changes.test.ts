@@ -24,9 +24,11 @@ test("sums the files a turn edited, per file", () => {
   const changes = turnChanges([
     tool("edit_code", { operations: [] }, editOutput("src/a.ts", 3, 1)),
     tool("edit_code", { operations: [] }, editOutput("src/a.ts", 2, 0)),
-    tool("apply_patch", { input: "*** Begin Patch\n*** Add File: notes.md\n+hi\n*** End Patch" }, [
-      { query: "apply_patch", result: "ok", success: true },
-    ]),
+    tool(
+      "edit_code",
+      { operations: [{ kind: "patch", path: "notes.md", patch: "*** Begin Patch\n*** Add File: notes.md\n+hi\n*** End Patch" }] },
+      { status: "ok", data: {} }
+    ),
   ])
   assert.deepEqual(
     changes.files.map((file) => [file.path, file.additions, file.deletions, file.added]),

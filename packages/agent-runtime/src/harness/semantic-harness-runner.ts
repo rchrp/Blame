@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { appendFile } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { stdin, stdout } from "node:process";
 import {
@@ -104,6 +105,7 @@ async function serve() {
         .then(async ({ presented, raw }) => {
           if (!startedRun(raw)) started.delete(controller);
           await leaveMemory(message.call!, raw);
+          await traceCall(message.call!, raw, presented);
           write({ id, presented });
         })
         .catch((error: unknown) => {
@@ -143,6 +145,28 @@ function startedRun(result: unknown) {
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error);
+}
+
+// With BLAME_HARNESS_TRACE_FILE set (the benchmark runner), each call's raw
+// result is appended there: the engine keeps only what the model read, and
+// a benchmark's metrics and checks read the harness's own data.
+async function traceCall(
+  call: LightWorkspaceExecutionRequest,
+  raw: LightToolResult<unknown> | undefined,
+  presented: unknown,
+) {
+  const file = process.env.BLAME_HARNESS_TRACE_FILE;
+  if (!file) return;
+  const context = call.toolContext as { toolCallId?: unknown } | undefined;
+  const line = JSON.stringify({
+    at: Date.now(),
+    toolCallId: context?.toolCallId,
+    tool: call.tool,
+    input: call.input,
+    raw,
+    presented,
+  });
+  await appendFile(file, `${line}\n`).catch(() => undefined);
 }
 
 // An accepted finish_task may leave a memory for the project; the engine

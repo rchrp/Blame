@@ -89,8 +89,7 @@ export function StoryStatsIsland({
   // toggle and close, or the chat's toggle. The toggle hides while preparing.
   buttons?: number
   className?: string
-  // Compaction of a conversation that does not run on the Cline runtime
-  // (a quick chat on the engine): replaces the session's own.
+  // Compaction of the conversation, from its engine session.
   compaction?: StoryContextCompaction
   contextLimitKey?: string
   diffStats?: UserStoryDiffStats

@@ -8,7 +8,7 @@ type ContextModel = {
   maxInputTokens?: number
 }
 
-// Cline keeps this share of a window for input when only the window is known.
+// The share of a window kept for input when only the window is known.
 const windowInputRatio = 0.9
 
 export function providerInputLimit(model: ContextModel | undefined) {

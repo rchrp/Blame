@@ -1,60 +1,83 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { AgentEvent } from "@blame/agent-runtime";
-const { BenchmarkMetricsCollector } = await import(process.env.BLAME_METRICS_RUNTIME ?? "./benchmark-metrics.js") as typeof import("./benchmark-metrics.js");
-const event = (type: AgentEvent["type"], payload: Record<string, unknown>) => ({ type, payload }) as AgentEvent;
-const usage = (value: Record<string, unknown>) => event("usage", { usage: value });
-function context(events: AgentEvent[]) {
+import type { SessionRecord } from "@blame/engine-client";
+import { BenchmarkMetricsCollector } from "./benchmark-metrics.js";
+import { benchmarkEvents } from "./engine-events.js";
+
+// The engine records every request it sends and every complete reply, so
+// the observations are counts, not guesses from agent events.
+function observations(records: Array<Record<string, unknown>>) {
   const collector = new BenchmarkMetricsCollector();
-  for (const value of events) collector.record(value);
-  // Exercise the serialized benchmark API, including explicit JSON nulls.
-  return JSON.parse(JSON.stringify(collector.summary(new Date(0), new Date(1000)).context)) as {
-    modelRequests: number | null; averageInputTokens: number | null; maximumInputTokens: number | null;
-    requestObservations?: { schemaVersion: string; coverage: string; iterationStartEvents: number;
-      usageReportEvents: number; inputTokenReportEvents: number; transportAttempts: number | null; completedResponses: number | null };
+  const events = benchmarkEvents(
+    "s",
+    records.map((record, index) => ({ seq: index + 1, at_ms: index, ...record })) as SessionRecord[],
+    [],
+  );
+  for (const { at, event } of events) collector.record(event, at);
+  return JSON.parse(
+    JSON.stringify(collector.summary(new Date(0), new Date(1000)).context),
+  ) as {
+    modelRequests: number;
+    averageInputTokens: number | null;
+    requestObservations: {
+      coverage: string;
+      iterationStartEvents: number;
+      transportAttempts: number;
+      completedResponses: number;
+    };
   };
 }
-const observation = (iterations: number, reports: number, inputs: number) => ({
-  schemaVersion: "request-observations-v1", coverage: "agent_events_only", iterationStartEvents: iterations,
-  usageReportEvents: reports, inputTokenReportEvents: inputs, transportAttempts: null, completedResponses: null,
+
+const started = (attempt: number) => ({
+  type: "request_started",
+  turn: "t",
+  request: `r${attempt}`,
+  model: { provider: "anthropic", model: "m" },
+  attempt,
+  prefix_digest: "d",
 });
-test("a stalled iteration is observed without inventing zero transport attempts", () => {
-  const result = context([event("notice", { message: "Agent iteration started." })]);
-  assert.equal(result.modelRequests, null); assert.equal(result.averageInputTokens, null);
-  assert.equal(result.maximumInputTokens, null); assert.deepEqual(result.requestObservations, observation(1, 0, 0));
+const reply = (inputTokens?: number) => ({
+  type: "assistant_message",
+  turn: "t",
+  request: "r",
+  blocks: [],
+  stop: "end_turn",
+  usage: inputTokens === undefined ? { output_tokens: 3 } : { input_tokens: inputTokens, output_tokens: 3 },
 });
-test("output-only usage is a report, not an input-token sample or transport receipt", () => {
-  const result = context([usage({ outputTokens: 20 })]);
-  assert.equal(result.modelRequests, null); assert.equal(result.averageInputTokens, null);
-  assert.deepEqual(result.requestObservations, observation(0, 1, 0));
+
+test("a retried request is two attempts, one iteration and one reply", () => {
+  const context = observations([
+    started(1),
+    { type: "request_failed", turn: "t", request: "r1", error: { kind: "overloaded", message: "busy" } },
+    started(2),
+    reply(40),
+  ]);
+  assert.equal(context.modelRequests, 2);
+  assert.equal(context.requestObservations.coverage, "engine_records");
+  assert.equal(context.requestObservations.iterationStartEvents, 1);
+  assert.equal(context.requestObservations.transportAttempts, 2);
+  assert.equal(context.requestObservations.completedResponses, 1);
+  assert.equal(context.averageInputTokens, 40);
 });
-test("iteration starts and input-bearing reports retain different counts", () => {
-  const result = context([event("notice", { message: "Agent iteration started." }), usage({ inputTokens: 123 }),
-    event("notice", { message: "Agent iteration started." })]);
-  assert.equal(result.modelRequests, null); assert.equal(result.averageInputTokens, 123);
-  assert.deepEqual(result.requestObservations, observation(2, 1, 1));
+
+test("a request still waiting has no reply and no input sample", () => {
+  const context = observations([started(1)]);
+  assert.equal(context.modelRequests, 1);
+  assert.equal(context.requestObservations.completedResponses, 0);
+  assert.equal(context.averageInputTokens, null);
 });
-test("an observed zero input remains known zero", () => {
-  const result = context([usage({ inputTokens: 0 })]);
-  assert.equal(result.averageInputTokens, 0); assert.equal(result.maximumInputTokens, 0);
-  assert.equal(result.modelRequests, null); assert.deepEqual(result.requestObservations, observation(0, 1, 1));
+
+test("a compaction's usage is not a reply to the agent's request", () => {
+  const context = observations([
+    started(1),
+    reply(10),
+    { type: "context_compacted", through: 2, summary: "s", usage: { input_tokens: 500 } },
+  ]);
+  assert.equal(context.requestObservations.completedResponses, 1);
 });
-test("negative or nonfinite inputs do not become usage samples", () => {
-  const result = context([usage({ inputTokens: -2 }), usage({ inputTokens: Infinity }), usage({ inputTokens: NaN })]);
-  assert.equal(result.averageInputTokens, null); assert.equal(result.maximumInputTokens, null);
-  assert.deepEqual(result.requestObservations, observation(0, 3, 0));
-});
-test("empty streams explicitly leave request count and input statistics unknown", () => {
-  const result = context([]);
-  assert.equal(result.modelRequests, null); assert.equal(result.averageInputTokens, null); assert.equal(result.maximumInputTokens, null);
-  assert.deepEqual(result.requestObservations, observation(0, 0, 0));
-});
-test("cumulative-only counters are never counted as per-request input samples", () => {
-  const result = context([usage({ totalInputTokens: 999 })]);
-  assert.equal(result.averageInputTokens, null); assert.deepEqual(result.requestObservations, observation(0, 1, 0));
-});
-test("composition and command output are not transport or iteration-start evidence", () => {
-  const result = context([event("notice", { kind: "context_composed", metrics: { requestIndex: 1, composedBytes: 100 } }),
-    event("tool", { phase: "finished", tool: "run_task", output: { text: "Agent iteration started." } })]);
-  assert.equal(result.modelRequests, null); assert.deepEqual(result.requestObservations, observation(0, 0, 0));
+
+test("a reply without input tokens is a report, not an input sample", () => {
+  const context = observations([started(1), reply()]);
+  assert.equal(context.averageInputTokens, null);
+  assert.equal(context.requestObservations.completedResponses, 1);
 });

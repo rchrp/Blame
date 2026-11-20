@@ -15,7 +15,6 @@ import { selectedScenarios } from "./select-scenarios.mjs";
 import { recordCampaignProvenance } from "./campaign-provenance.mjs";
 
 const options = parseArguments(process.argv.slice(2));
-const harness = harnessOption(options.get("harness"));
 const label = requiredOption(options, "label");
 const output = resolve(
   options.get("output") ?? join(repositoryRoot, ".blame/benchmarks/corpus"),
@@ -38,7 +37,7 @@ process.stdout.write(`${JSON.stringify({ campaign, ...report })}\n`);
 async function executeScenario(campaignDirectory, scenario, index) {
   const runDirectory = join(
     campaignDirectory,
-    `${String(index + 1).padStart(2, "0")}-${scenario.id}-${harness}`,
+    `${String(index + 1).padStart(2, "0")}-${scenario.id}-blame`,
   );
   const workspace = join(runDirectory, "workspace");
   await mkdir(runDirectory, { recursive: true });
@@ -48,7 +47,7 @@ async function executeScenario(campaignDirectory, scenario, index) {
     `${baseRevision}\n`,
     "utf8",
   );
-  process.stdout.write(`START ${scenario.id} ${harness}\n`);
+  process.stdout.write(`START ${scenario.id}\n`);
   const run = await executeRunner(runDirectory, workspace, scenario);
   await writeFile(
     join(runDirectory, "runner-exit.json"),
@@ -82,8 +81,6 @@ function executeRunner(runDirectory, workspace, scenario) {
     join(runDirectory, "events.jsonl"),
     "--result",
     join(runDirectory, "result.json"),
-    "--harness",
-    harness,
     "--max-iterations",
     String(scenario.maxIterations),
     "--timeout-seconds",
@@ -100,10 +97,4 @@ function requiredOption(values, name) {
   const value = values.get(name)?.trim();
   if (!value) throw new Error(`Missing --${name}.`);
   return value;
-}
-
-function harnessOption(value) {
-  if (!value || value === "blame") return "blame";
-  if (value === "cline") return "cline";
-  throw new Error(`Invalid harness ${value}.`);
 }

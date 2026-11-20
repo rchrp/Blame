@@ -9,31 +9,20 @@ from harbor.models.agent.context import AgentContext
 from tools.terminal_bench.blame_agent import BlameAgent
 
 
-class HarnessSelectionTests(unittest.TestCase):
-    def agent(self, harness):
-        return BlameAgent(logs_dir=Path("/tmp/benchmark-adapter-test"),
-                          extra_env={"BLAME_BENCHMARK_HARNESS": harness})
+class RunCommandTests(unittest.TestCase):
+    def agent(self, extra_env=None):
+        return BlameAgent(logs_dir=Path("/tmp/benchmark-adapter-test"), extra_env=extra_env or {})
 
-    def test_default_remains_blame(self):
-        command = shlex.split(self.agent("")._run_command("/logs/instruction.md"))
-        self.assertEqual(command[command.index("--harness") + 1], "blame")
-
-    def test_cline_uses_same_runner_and_preserves_quoted_paths(self):
-        command = shlex.split(self.agent("cline")._run_command("/logs/a 'b.md"))
+    def test_runs_the_headless_runner_and_preserves_quoted_paths(self):
+        command = shlex.split(self.agent()._run_command("/logs/a 'b.md"))
         self.assertIn("blame-headless", command)
-        self.assertEqual(command[command.index("--harness") + 1], "cline")
+        self.assertNotIn("--harness", command)
         self.assertEqual(command[command.index("--instruction-file") + 1], "/logs/a 'b.md")
 
     def test_isolation_is_only_forwarded_when_explicitly_configured(self):
-        agent = self.agent("blame")
-        self.assertNotIn("BLAME_ISOLATED_ENVIRONMENT", agent._optional_runtime_environment())
-        agent = BlameAgent(logs_dir=Path("/tmp/benchmark-adapter-test"),
-                          extra_env={"BLAME_ISOLATED_ENVIRONMENT": "true"})
+        self.assertNotIn("BLAME_ISOLATED_ENVIRONMENT", self.agent()._optional_runtime_environment())
+        agent = self.agent({"BLAME_ISOLATED_ENVIRONMENT": "true"})
         self.assertEqual(agent._optional_runtime_environment()["BLAME_ISOLATED_ENVIRONMENT"], "true")
-
-    def test_unknown_harness_is_rejected_before_shell_execution(self):
-        with self.assertRaisesRegex(ValueError, "Unsupported benchmark harness"):
-            self.agent("cline; touch /tmp/unwanted")._run_command("/logs/instruction.md")
 
 
 class UsageRecoveryTests(unittest.TestCase):

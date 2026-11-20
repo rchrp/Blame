@@ -1,28 +1,31 @@
 import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
-import type {
-  AgentEvent,
-  AgentRuntimeEvents,
-  StartDevelopmentSessionInput,
-} from "@blame/agent-runtime";
+import type { SessionRecord, TaskOutcome } from "@blame/engine-client";
 import { runBenchmark } from "./benchmark-run.js";
 import { BenchmarkMetricsCollector } from "./benchmark-metrics.js";
 import type {
   BenchmarkConfig,
+  BenchmarkEngine,
   BenchmarkEventRecorder,
-  BenchmarkRuntime,
 } from "./contracts.js";
+import type { BenchmarkEvent } from "./engine-events.js";
 
 class MemoryRecorder implements BenchmarkEventRecorder {
   private readonly collector = new BenchmarkMetricsCollector();
+  readonly events: BenchmarkEvent[] = [];
   eventCount = 0;
   toolEventCount = 0;
   closed = false;
 
-  record(event: AgentEvent) {
+  record(event: BenchmarkEvent, at?: number) {
+    if (this.closed) throw new Error("recorded after close");
+    this.events.push(event);
     this.eventCount += 1;
     if (event.type === "tool") this.toolEventCount += 1;
-    this.collector.record(event);
+    this.collector.record(event, at);
   }
 
   metrics(startedAt: Date, finishedAt: Date) {
@@ -34,260 +37,186 @@ class MemoryRecorder implements BenchmarkEventRecorder {
   }
 }
 
-test("runs one development session and returns benchmark metrics", async () => {
-  const recorder = new MemoryRecorder();
-  const inputs: StartDevelopmentSessionInput[] = [];
+type Input = Parameters<BenchmarkEngine["runStoryTask"]>[0];
+
+function fakeEngine(options: {
+  outcome?: TaskOutcome | ((input: Input) => Promise<TaskOutcome>);
+  records?: () => Promise<SessionRecord[]>;
+  shutdown?: () => Promise<void>;
+}) {
+  const inputs: Input[] = [];
   let shutdown = false;
-  const requiredChecks = [{ id: "selected", task: "test", args: ["some.test.ts"] }];
-  const result = await runBenchmark({ ...benchmarkConfig(), requiredChecks }, {
-    createRecorder: () => recorder,
-    createRuntime: (events) =>
-      successfulRuntime(events, inputs, () => {
-        shutdown = true;
-      }),
-    now: sequencedClock(),
+  const engine: BenchmarkEngine = {
+    async runStoryTask(input) {
+      inputs.push(input);
+      const outcome =
+        typeof options.outcome === "function"
+          ? await options.outcome(input)
+          : (options.outcome ?? { status: "completed", call: "c", result: null });
+      return { session: input.session, outcome };
+    },
+    records: options.records ?? (async () => finishedRecords),
+    async shutdown() {
+      shutdown = true;
+      await options.shutdown?.();
+    },
+  };
+  return { engine, inputs, isShutdown: () => shutdown };
+}
+
+const finishedRecords = [
+  {
+    type: "assistant_message",
+    turn: "t",
+    request: "r",
+    blocks: [],
+    stop: "end_turn",
+    usage: { input_tokens: 12, output_tokens: 4 },
+  },
+  { type: "turn_ended", turn: "t", outcome: { status: "completed" } },
+].map((record, index) => ({ seq: index + 1, at_ms: index, ...record })) as SessionRecord[];
+
+test("runs a story task and returns its result, usage and events", async () => {
+  await withTrace(async (harnessTracePath) => {
+    await writeFile(
+      harnessTracePath,
+      `${JSON.stringify({ at: 1, toolCallId: "c", tool: "finish_task", raw: { status: "ok", data: { notification: { completion: { delivery: "satisfied" }, verified: true, summary: "Done." } } } })}\n`,
+    );
+    const recorder = new MemoryRecorder();
+    const fake = fakeEngine({});
+    const requiredChecks = [{ id: "selected", task: "test", args: ["some.test.ts"] }];
+    const result = await runBenchmark(
+      { ...benchmarkConfig(harnessTracePath), requiredChecks },
+      { createRecorder: () => recorder, createEngine: () => fake.engine, now: sequencedClock() },
+    );
+    assert.equal(result.status, "succeeded");
+    assert.equal(result.durationMs, 1_000);
+    assert.equal(result.harness, "blame");
+    assert.equal(result.verified, true);
+    assert.deepEqual(result.completion, { delivery: "satisfied" });
+    assert.equal(result.usage?.aggregateUsage.totalInputTokens, 12);
+    assert.equal(result.sessionId, fake.inputs[0]?.session);
+    const input = fake.inputs[0]!;
+    assert.equal(input.instruction, "Fix the task");
+    assert.equal(input.settings.workspaceMode, "local-container", "an isolated run");
+    assert.equal(input.settings.projectId, "project-1");
+    assert.deepEqual(input.limits, { max_requests_per_turn: 64 });
+    assert.deepEqual(input.taskContract?.required_checks, requiredChecks);
+    assert.deepEqual(input.taskContract?.acceptance_criteria, ["Fix the task"]);
+    assert.equal(recorder.events.at(-1)?.type, "done");
+    assert.equal(recorder.closed, true);
+    assert.equal(fake.isShutdown(), true);
   });
-  assert.equal(result.status, "succeeded");
-  assert.equal(result.durationMs, 1_000);
-  assert.equal(result.harness, "blame");
-  assert.equal(result.metrics.tools.calls, 0);
-  assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
-  assert.equal(inputs[0]?.summary, "Fix the task");
-  assert.deepEqual(inputs[0]?.requiredChecks, requiredChecks);
-  assert.equal(inputs[0]?.projectId, "project-1");
-  assert.equal(inputs[0]?.isolatedEnvironment, true);
-  assert.equal(result.isolatedEnvironment, true);
-  assert.equal(recorder.closed, true);
-  assert.equal(shutdown, true);
 });
 
-for (const harness of ["blame", "cline"] as const) {
-  test(`${harness} keeps dataset identifiers outside model task text`, async () => {
-    const inputs: StartDevelopmentSessionInput[] = [];
+test("keeps dataset identifiers outside the model's task text", async () => {
+  await withTrace(async (harnessTracePath) => {
+    const fake = fakeEngine({});
     const config = {
-      ...benchmarkConfig(), harness,
+      ...benchmarkConfig(harnessTracePath),
       taskId: "external-project__component-86420__trial",
     };
-    const result = await runBenchmark(config, {
+    await runBenchmark(config, {
       createRecorder: () => new MemoryRecorder(),
-      createRuntime: (events) => successfulRuntime(events, inputs, () => undefined),
+      createEngine: () => fake.engine,
+    });
+    const { title } = fake.inputs[0]!.settings;
+    assert.doesNotMatch(title, /external-project|component|86420|trial/u);
+  });
+});
+
+test("a run past its deadline is stopped and reported as timed out", async () => {
+  await withTrace(async (harnessTracePath) => {
+    const fake = fakeEngine({
+      outcome: (input) =>
+        new Promise((resolve) =>
+          input.signal?.addEventListener("abort", () => resolve({ status: "interrupted" })),
+        ),
+    });
+    const result = await runBenchmark(
+      { ...benchmarkConfig(harnessTracePath), timeoutMs: 20 },
+      { createRecorder: () => new MemoryRecorder(), createEngine: () => fake.engine },
+    );
+    assert.equal(result.status, "timed_out");
+    assert.equal(result.error, "Benchmark timed out.");
+  });
+});
+
+test("a run the agent did not finish fails with why", async () => {
+  await withTrace(async (harnessTracePath) => {
+    const fake = fakeEngine({
+      outcome: { status: "failed", failure: { kind: "contract_unmet", unmet: [{ kind: "result", tool: "finish_task" }] } },
+    });
+    const result = await runBenchmark(benchmarkConfig(harnessTracePath), {
+      createRecorder: () => new MemoryRecorder(),
+      createEngine: () => fake.engine,
+    });
+    assert.equal(result.status, "failed");
+    assert.match(result.error ?? "", /finish_task/);
+  });
+});
+
+test("a pre-cancelled benchmark never starts the engine", async () => {
+  await withTrace(async (harnessTracePath) => {
+    const controller = new AbortController();
+    controller.abort();
+    let created = false;
+    const result = await runBenchmark(benchmarkConfig(harnessTracePath), {
+      createRecorder: () => new MemoryRecorder(),
+      createEngine: () => {
+        created = true;
+        return fakeEngine({}).engine;
+      },
+      signal: controller.signal,
+    });
+    assert.equal(result.status, "cancelled");
+    assert.equal(created, false);
+  });
+});
+
+test("a stuck record read or shutdown cannot hold the result", async () => {
+  await withTrace(async (harnessTracePath) => {
+    const recorder = new MemoryRecorder();
+    const fake = fakeEngine({
+      records: () => new Promise(() => undefined),
+      shutdown: () => new Promise(() => undefined),
+    });
+    const result = await runBenchmark(benchmarkConfig(harnessTracePath), {
+      cleanupTimeoutMs: 10,
+      createRecorder: () => recorder,
+      createEngine: () => fake.engine,
     });
     assert.equal(result.status, "succeeded");
-    assert.equal(result.taskId, config.taskId);
-    assert.equal(inputs[0]?.summary, config.instruction);
-    assert.ok(inputs[0]?.title);
-    assert.doesNotMatch(inputs[0].title, /external-project|component|86420|trial/u);
+    assert.equal(result.cleanupIncomplete, true);
+    assert.equal(result.usage, undefined, "unknown usage is not zero usage");
+    assert.equal(recorder.closed, true);
   });
-}
-
-test("aborts a session that reaches the benchmark timeout", async () => {
-  let aborted = false;
-  const result = await runBenchmark(
-    { ...benchmarkConfig(), timeoutMs: 5 },
-    {
-      createRecorder: () => new MemoryRecorder(),
-      createRuntime: () =>
-        pendingRuntime(() => {
-          aborted = true;
-        }),
-    },
-  );
-  assert.equal(result.status, "timed_out");
-  assert.equal(aborted, true);
-  assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
 });
 
-test("waits past recoverable agent errors for the real terminal", async () => {
-  const recorder = new MemoryRecorder();
-  const result = await runBenchmark(benchmarkConfig(), {
-    createRecorder: () => recorder,
-    createRuntime: (events) =>
-      runtimeStub({
-        start() {
-          queueMicrotask(() => {
-            events.emit({
-              type: "error",
-              payload: { message: "Validation failed", recoverable: true },
-            });
-            events.emit({ type: "done", payload: { verified: false } });
-          });
-        },
-      }),
-  });
-  assert.equal(result.status, "succeeded");
-  assert.equal(result.verified, false);
-  assert.equal(recorder.eventCount, 2);
-});
-
-test("persists usage and closes the recorder when session abort never settles", async () => {
-  const recorder = new MemoryRecorder();
-  const started = performance.now();
-  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
-    cleanupTimeoutMs: 20,
-    createRecorder: () => recorder,
-    createRuntime: () => pendingRuntime(() => new Promise(() => undefined)),
-  });
-  assert.equal(result.status, "timed_out");
-  assert.equal(result.cleanupIncomplete, true);
-  assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
-  assert.equal(recorder.closed, true);
-  assert.ok(performance.now() - started < 500);
-});
-
-test("a stuck shutdown cannot prevent results or write late events into a closed recorder", async () => {
-  const recorder = new MemoryRecorder();
-  let events: AgentRuntimeEvents | undefined;
-  const result = await runBenchmark(benchmarkConfig(), {
-    cleanupTimeoutMs: 20,
-    createRecorder: () => recorder,
-    createRuntime: (sink) => {
-      events = sink;
-      return runtimeStub({ start: () => sink.emit({ type: "done", payload: {} }),
-        shutdown: () => new Promise(() => undefined) });
-    },
-  });
-  assert.equal(result.status, "succeeded");
-  assert.equal(result.cleanupIncomplete, true);
-  assert.equal(result.usage?.aggregateUsage?.totalInputTokens, 12);
-  const count = recorder.eventCount;
-  events?.emit({ type: "usage", payload: {} });
-  events?.captureHiddenToolEvent?.({ type: "tool", payload: {} });
-  assert.equal(recorder.eventCount, count);
-  assert.equal(recorder.closed, true);
-});
-
-test("a stuck usage lookup remains unavailable instead of becoming zero usage", async () => {
-  const runtime = pendingRuntime(() => undefined);
-  runtime.sessions.usage = () => new Promise(() => undefined);
-  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
-    cleanupTimeoutMs: 20,
-    createRecorder: () => new MemoryRecorder(),
-    createRuntime: () => runtime,
-  });
-  assert.equal(result.status, "timed_out");
-  assert.equal(result.cleanupIncomplete, true);
-  assert.equal(result.usage, undefined);
-});
-
-test("records hidden finalization tools once without changing terminal detection", async () => {
-  const recorder = new MemoryRecorder();
-  const result = await runBenchmark(benchmarkConfig(), {
-    createRecorder: () => recorder,
-    createRuntime: (events) => runtimeStub({ start() {
-      for (const phase of ["started", "finished"])
-        events.captureHiddenToolEvent?.({ type: "tool", payload: {
-          phase, toolCallId: "finish-1", toolCall: { id: "finish-1", name: "finish_task", input: { summary: "Done" } },
-        } });
-      events.emit({ type: "done", payload: { verified: true } });
-    } }),
-  });
-  assert.equal(result.status, "succeeded");
-  assert.equal(recorder.toolEventCount, 2);
-  assert.equal(result.metrics.tools.calls, 1);
-});
-
-test("the deadline covers a session creation that never settles", { timeout: 500 }, async () => {
-  const recorder = new MemoryRecorder();
-  const runtime = pendingRuntime(() => undefined);
-  runtime.sessions.startDevelopment = () => new Promise(() => undefined);
-  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
-    cleanupTimeoutMs: 20, createRecorder: () => recorder, createRuntime: () => runtime,
-  });
-  assert.equal(result.status, "timed_out");
-  assert.equal(result.cleanupIncomplete, true);
-  assert.equal(result.usage, undefined);
-  assert.equal(recorder.closed, true);
-});
-
-test("a pre-cancelled benchmark never starts a model session", async () => {
-  let started = false;
-  const result = await runBenchmark(benchmarkConfig(), {
-    signal: AbortSignal.abort(), createRecorder: () => new MemoryRecorder(),
-    createRuntime: () => runtimeStub({ start: () => { started = true; } }),
-  });
-  assert.equal(result.status, "cancelled");
-  assert.equal(started, false);
-});
-
-test("a session created after the deadline is aborted without reopening its recorder", { timeout: 500 }, async () => {
-  const recorder = new MemoryRecorder();
-  const aborted: string[] = [];
-  let created: (value: { sessionId: string }) => void = () => undefined;
-  const runtime = pendingRuntime(() => undefined);
-  runtime.sessions.startDevelopment = () => new Promise((resolve) => { created = resolve; });
-  runtime.sessions.abort = async (id) => { aborted.push(id); };
-  const result = await runBenchmark({ ...benchmarkConfig(), timeoutMs: 5 }, {
-    cleanupTimeoutMs: 20, createRecorder: () => recorder, createRuntime: () => runtime,
-  });
-  created({ sessionId: "late-session" });
-  await new Promise<void>((resolve) => setImmediate(resolve));
-  assert.equal(result.status, "timed_out");
-  assert.equal(result.sessionId, undefined);
-  assert.deepEqual(aborted, ["late-session"]);
-  assert.equal(recorder.closed, true);
-});
-
-function successfulRuntime(
-  events: AgentRuntimeEvents,
-  inputs: StartDevelopmentSessionInput[],
-  shutdown: () => void,
-): BenchmarkRuntime {
-  return runtimeStub({
-    shutdown,
-    start(input) {
-      inputs.push(input);
-      queueMicrotask(() => {
-        events.emit({ type: "tool", payload: { phase: "started" } });
-        events.emit({ type: "done", payload: { verified: true } });
-      });
-    },
-  });
-}
-
-function pendingRuntime(abort: () => void | Promise<void>) {
-  return runtimeStub({ abort, start: () => undefined });
-}
-
-function runtimeStub(callbacks: {
-  abort?: () => void | Promise<void>;
-  shutdown?: () => void | Promise<void>;
-  start(input: StartDevelopmentSessionInput): void;
-}): BenchmarkRuntime {
-  return {
-    sessions: {
-      abort: async () => callbacks.abort?.(),
-      startDevelopment: async (input) => {
-        callbacks.start(input);
-        return { sessionId: "session-1" };
-      },
-      usage: async () => ({
-        aggregateUsage: {
-          inputTokens: 12,
-          outputTokens: 4,
-          totalInputTokens: 12,
-          totalOutputTokens: 4,
-        },
-      }),
-    },
-    shutdown: async () => callbacks.shutdown?.(),
-  };
-}
-
-function benchmarkConfig(): BenchmarkConfig {
+function benchmarkConfig(harnessTracePath: string): BenchmarkConfig {
   return {
     isolatedEnvironment: true,
     apiToken: "token",
     apiUrl: "https://api.example.test",
-    harness: "blame",
+    harnessTracePath,
     instruction: "Fix the task",
     maxIterations: 64,
     modelId: "model",
-    providerId: "provider",
+    providerId: "anthropic",
     projectId: "project-1",
     taskId: "task-1",
     timeoutMs: 1_000,
     workspaceRoot: "/workspace",
   };
+}
+
+async function withTrace(run: (path: string) => Promise<void>) {
+  const directory = await mkdtemp(join(tmpdir(), "blame-benchmark-run-"));
+  try {
+    await run(join(directory, "harness-trace.jsonl"));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
 }
 
 function sequencedClock() {

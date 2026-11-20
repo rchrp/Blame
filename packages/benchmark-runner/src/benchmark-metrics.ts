@@ -1,5 +1,4 @@
-import type { AgentEvent } from "@blame/agent-runtime";
-import { unwrapFeedbackEnvelope } from "@blame/agent-runtime/tool-result-envelope";
+import type { BenchmarkEvent } from "./engine-events.js";
 import type {
   BenchmarkMetrics,
   BenchmarkNamedToolMetrics,
@@ -20,20 +19,16 @@ type ActiveTool = {
   tool: string;
 };
 
-const clineEditTools = new Set(["apply_patch", "editor"]);
-
 export class BenchmarkMetricsCollector {
   private readonly activeTools = new Map<string, ActiveTool>();
   private readonly inputTokens: number[] = [];
   private iterationStartEvents = 0;
+  private requestAttempts = 0;
+  private completedResponses = 0;
   private usageReportEvents = 0;
   private readonly spans: ToolSpan[] = [];
   private readonly toolsByName = new Map<string, BenchmarkNamedToolMetrics>();
-  private readonly compositionCategories = new Map<string, number>();
-  private composedBytes = 0;
-  private composedRequests = 0;
   private compactions = 0;
-  private duplicateBytes = 0;
   private deduplicatedReads = 0;
   private editAttempts = 0;
   private editBlocked = 0;
@@ -41,33 +36,13 @@ export class BenchmarkMetricsCollector {
   private firstEditAttemptAt: number | undefined;
   private firstEditSuccessAt: number | undefined;
   private hybridCalls = 0;
-  private latestComposedBytes = 0;
-  private latestDuplicateBytes = 0;
-  private latestMessageBytes = 0;
-  private latestProjectedBytesSaved = 0;
-  private latestSystemPromptBytes = 0;
-  private latestToolDefinitionBytes = 0;
-  private maximumComposedBytes = 0;
-  private messageBytes = 0;
   private navigationBytes = 0;
   private patchOperations = 0;
-  private projectedBytesSaved = 0;
-  private projectMemoryCandidates = 0;
-  private projectMemoryInjectedBytes = 0;
-  private projectMemoryRelevant = 0;
-  private projectMemoryRequests = 0;
-  private projectMemorySelected = 0;
-  private projectMemoryStale = 0;
   private readCalls = 0;
   private searchCalls = 0;
   private symbolOperations = 0;
-  private staleReadReplacements = 0;
-  private successfulEditReplacements = 0;
-  private validatedEditReplacements = 0;
-  private systemPromptBytes = 0;
-  private toolDefinitionBytes = 0;
 
-  record(event: AgentEvent, recordedAt = Date.now()) {
+  record(event: BenchmarkEvent, recordedAt = Date.now()) {
     if (event.type === "usage") return this.recordUsage(event);
     if (event.type === "notice") return this.recordNotice(event);
     if (event.type !== "tool") return;
@@ -88,82 +63,29 @@ export class BenchmarkMetricsCollector {
     };
   }
 
-  private recordUsage(event: AgentEvent) {
+  private recordUsage(event: BenchmarkEvent) {
     this.usageReportEvents += 1;
+    if (recordValue(event.payload).source !== "compaction")
+      this.completedResponses += 1;
     const usage = recordValue(recordValue(event.payload).usage);
     const inputTokens = numberValue(usage.inputTokens);
     if (inputTokens !== undefined && inputTokens >= 0) this.inputTokens.push(inputTokens);
   }
 
-  private recordNotice(event: AgentEvent) {
+  private recordNotice(event: BenchmarkEvent) {
     const payload = recordValue(event.payload);
     const kind = stringValue(payload.kind) ?? stringValue(payload.reason) ?? "";
     const message = stringValue(payload.message) ?? "";
-    if (message === "Agent iteration started.") this.iterationStartEvents += 1;
-    if (kind === "context_composed") this.recordComposition(payload.metrics);
-    if (kind === "project_memory_selected")
-      this.recordProjectMemory(payload.metrics);
+    if (message === "Agent iteration started.") {
+      this.requestAttempts += 1;
+      if (numberValue(payload.attempt) === 1) this.iterationStartEvents += 1;
+    }
     if (kind.includes("compaction") && payload.phase === "completed")
       this.compactions += 1;
     else if (message.endsWith("compacted")) this.compactions += 1;
   }
 
-  private recordProjectMemory(value: unknown) {
-    const metrics = recordValue(value);
-    this.projectMemoryRequests += 1;
-    this.projectMemoryCandidates += numberValue(metrics.candidates) ?? 0;
-    this.projectMemoryInjectedBytes += numberValue(metrics.bytes) ?? 0;
-    this.projectMemoryRelevant += numberValue(metrics.relevant) ?? 0;
-    this.projectMemorySelected += numberValue(metrics.selected) ?? 0;
-    this.projectMemoryStale += numberValue(metrics.stale) ?? 0;
-  }
-
-  private recordComposition(value: unknown) {
-    const metrics = recordValue(value);
-    const composedBytes = numberValue(metrics.composedBytes) ?? 0;
-    const duplicateBytes = numberValue(metrics.duplicateBytes) ?? 0;
-    const messageBytes = numberValue(metrics.messageBytes) ?? 0;
-    const projectedBytesSaved = numberValue(metrics.projectedBytesSaved) ?? 0;
-    const systemPromptBytes = numberValue(metrics.systemPromptBytes) ?? 0;
-    const toolDefinitionBytes = numberValue(metrics.toolDefinitionBytes) ?? 0;
-    this.composedRequests += 1;
-    this.composedBytes += composedBytes;
-    this.duplicateBytes += duplicateBytes;
-    this.messageBytes += messageBytes;
-    this.projectedBytesSaved += projectedBytesSaved;
-    this.systemPromptBytes += systemPromptBytes;
-    this.toolDefinitionBytes += toolDefinitionBytes;
-    this.latestComposedBytes = composedBytes;
-    this.latestDuplicateBytes = duplicateBytes;
-    this.latestMessageBytes = messageBytes;
-    this.latestProjectedBytesSaved = projectedBytesSaved;
-    this.latestSystemPromptBytes = systemPromptBytes;
-    this.latestToolDefinitionBytes = toolDefinitionBytes;
-    this.maximumComposedBytes = Math.max(
-      this.maximumComposedBytes,
-      composedBytes,
-    );
-    this.staleReadReplacements += numberValue(metrics.staleReadsReplaced) ?? 0;
-    this.successfulEditReplacements +=
-      numberValue(metrics.successfulEditsReplaced) ?? 0;
-    this.validatedEditReplacements +=
-      numberValue(metrics.validatedEditsReplaced) ?? 0;
-    this.recordCompositionCategories(metrics.categories);
-  }
-
-  private recordCompositionCategories(value: unknown) {
-    const categories = recordValue(value);
-    for (const [category, bytes] of Object.entries(categories)) {
-      const amount = numberValue(bytes);
-      if (amount === undefined) continue;
-      this.compositionCategories.set(
-        category,
-        (this.compositionCategories.get(category) ?? 0) + amount,
-      );
-    }
-  }
-
-  private recordTool(event: AgentEvent, recordedAt: number) {
+  private recordTool(event: BenchmarkEvent, recordedAt: number) {
     const payload = recordValue(event.payload);
     const call = recordValue(payload.toolCall);
     const tool =
@@ -190,8 +112,8 @@ export class BenchmarkMetricsCollector {
     this.activeTools.delete(id);
     const tool = active?.tool ?? fallbackTool;
     const input = active?.input ?? fallbackInput;
-    // Harness results with multi-line text arrive as multipart envelopes.
-    const output = unwrapFeedbackEnvelope(payload.output);
+    // The harness's raw result (from its trace), or what the model read.
+    const output = payload.output;
     const metric = this.namedToolMetric(tool);
     const inputBytes = serializedBytes(input);
     const outputBytes = serializedBytes(payload.output);
@@ -228,14 +150,9 @@ export class BenchmarkMetricsCollector {
     startedAt: number,
     finishedAt: number,
   ) {
-    if (tool === "edit_code")
-      this.recordEdit(input, output, startedAt, finishedAt, "blame");
-    if (clineEditTools.has(tool))
-      this.recordEdit(input, output, startedAt, finishedAt, "cline");
-    if (tool === "read_code" || tool === "read_files")
-      this.recordRead(tool, input, output);
-    if (tool === "search_code" || tool === "search_codebase")
-      this.recordSearch(tool, input, output);
+    if (tool === "edit_code") this.recordEdit(input, output, startedAt, finishedAt);
+    if (tool === "read_code") this.recordRead(output);
+    if (tool === "search_code") this.recordSearch(output);
   }
 
   private recordEdit(
@@ -243,14 +160,10 @@ export class BenchmarkMetricsCollector {
     output: unknown,
     startedAt: number,
     finishedAt: number,
-    harness: "blame" | "cline",
   ) {
     this.editAttempts += 1;
     this.firstEditAttemptAt ??= startedAt;
-    const operations =
-      harness === "blame"
-        ? arrayValue(recordValue(input).operations).map(recordValue)
-        : [{ kind: "patch" }];
+    const operations = arrayValue(recordValue(input).operations).map(recordValue);
     const kinds = new Set(operations.map(({ kind }) => kind));
     this.symbolOperations += operations.filter(
       ({ kind }) => kind === "symbol",
@@ -260,23 +173,20 @@ export class BenchmarkMetricsCollector {
     ).length;
     if (kinds.has("symbol") && kinds.has("patch")) this.hybridCalls += 1;
     if (editRejected(output)) this.editBlocked += 1;
-    if (!editSucceeded(output, harness)) return;
+    if (!editSucceeded(output)) return;
     this.editSuccesses += 1;
     this.firstEditSuccessAt ??= finishedAt;
   }
 
-  private recordRead(tool: string, input: unknown, output: unknown) {
-    const requestedFiles = arrayValue(recordValue(input).files).length;
-    this.readCalls += tool === "read_files" ? Math.max(1, requestedFiles) : 1;
+  private recordRead(output: unknown) {
+    this.readCalls += 1;
     const data = recordValue(recordValue(output).data);
     if (data.status === "already_in_context") this.deduplicatedReads += 1;
     this.navigationBytes += serializedBytes(output);
   }
 
-  private recordSearch(tool: string, input: unknown, output: unknown) {
-    const requestedQueries = arrayValue(recordValue(input).queries).length;
-    this.searchCalls +=
-      tool === "search_codebase" ? Math.max(1, requestedQueries) : 1;
+  private recordSearch(output: unknown) {
+    this.searchCalls += 1;
     this.navigationBytes += serializedBytes(output);
   }
 
@@ -284,58 +194,22 @@ export class BenchmarkMetricsCollector {
     const totalInput = this.inputTokens.reduce((sum, value) => sum + value, 0);
     return {
       averageInputTokens: this.inputTokens.length ? roundedAverage(totalInput, this.inputTokens.length) : null,
-      composition: this.compositionMetrics(),
       compactions: this.compactions,
       maximumInputTokens: this.inputTokens.length ? Math.max(...this.inputTokens) : null,
-      modelRequests: null,
+      modelRequests: this.requestAttempts,
       requestObservations: {
         schemaVersion: "request-observations-v1" as const,
-        coverage: "agent_events_only" as const,
+        // The engine records every request it sends, retries included, and
+        // every complete reply.
+        coverage: "engine_records" as const,
         iterationStartEvents: this.iterationStartEvents,
         usageReportEvents: this.usageReportEvents,
         inputTokenReportEvents: this.inputTokens.length,
-        // Iterations, composition and usage events do not observe forwarding,
-        // completed HTTP responses, hidden retries or provider billing.
-        transportAttempts: null,
-        completedResponses: null,
+        transportAttempts: this.requestAttempts,
+        completedResponses: this.completedResponses,
       },
-      projectMemory: this.projectMemoryMetrics(),
       toolPayloadBytes: tools.inputBytes + tools.outputBytes,
       toolPayloadReplayExposureBytes: this.replayExposureBytes(),
-    };
-  }
-
-  private projectMemoryMetrics() {
-    return {
-      candidates: this.projectMemoryCandidates,
-      injectedBytes: this.projectMemoryInjectedBytes,
-      relevant: this.projectMemoryRelevant,
-      requests: this.projectMemoryRequests,
-      selected: this.projectMemorySelected,
-      stale: this.projectMemoryStale,
-    };
-  }
-
-  private compositionMetrics() {
-    return {
-      categoryBytes: Object.fromEntries(this.compositionCategories),
-      composedBytes: this.composedBytes,
-      duplicateBytes: this.duplicateBytes,
-      latestComposedBytes: this.latestComposedBytes,
-      latestDuplicateBytes: this.latestDuplicateBytes,
-      latestMessageBytes: this.latestMessageBytes,
-      latestProjectedBytesSaved: this.latestProjectedBytesSaved,
-      latestSystemPromptBytes: this.latestSystemPromptBytes,
-      latestToolDefinitionBytes: this.latestToolDefinitionBytes,
-      maximumComposedBytes: this.maximumComposedBytes,
-      messageBytes: this.messageBytes,
-      projectedBytesSaved: this.projectedBytesSaved,
-      requests: this.composedRequests,
-      staleReadReplacements: this.staleReadReplacements,
-      successfulEditReplacements: this.successfulEditReplacements,
-      validatedEditReplacements: this.validatedEditReplacements,
-      systemPromptBytes: this.systemPromptBytes,
-      toolDefinitionBytes: this.toolDefinitionBytes,
     };
   }
 
@@ -411,11 +285,9 @@ function editRejected(output: unknown) {
   return result.status === "blocked" || outputFailed(output);
 }
 
-function editSucceeded(output: unknown, harness: "blame" | "cline") {
+function editSucceeded(output: unknown) {
   const result = recordValue(output);
-  if (harness === "blame")
-    return result.status === "ok" && recordValue(result.data).changed === true;
-  return result.success === true;
+  return result.status === "ok" && recordValue(result.data).changed === true;
 }
 
 function outputFailed(output: unknown): boolean {

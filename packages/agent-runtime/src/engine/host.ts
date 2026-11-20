@@ -11,7 +11,10 @@ import {
   type EngineCommand,
   type EngineLogLine,
   type HostParamsOf,
+  type JsonValue,
+  type Limits,
   type SessionConfig,
+  type TaskOutcome,
   type Transcript,
   type UserBlock,
 } from "@blame/engine-client";
@@ -20,12 +23,16 @@ import { setGitRunner } from "../runtime-git.js";
 import { mkdir } from "node:fs/promises";
 import { listProjectMemories, saveProjectMemory } from "../cloud-api.js";
 import { takeCompletionMemory } from "../harness/completion-memory.js";
-import { selectProjectMemory } from "../harness/project-memory.js";
+import {
+  selectProjectMemory,
+  type ProjectMemoryPersistence,
+} from "../harness/project-memory.js";
 import type { ApiConnection } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
 import type { DesktopServices } from "./desktop-services.js";
 import type {
+  DevelopmentStorySettings,
   EngineHostEvent,
   EngineHostInput,
   EngineHostMethod,
@@ -36,6 +43,7 @@ import type {
   EngineSessionSettings,
   EngineSessionStatus,
 } from "./protocol.js";
+import { developmentStoryPurpose } from "./purposes/development-story.js";
 import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
 import { engineTaskMethods } from "./task-protocol.js";
 import { purposeClientTools } from "./purposes/tool-sets.js";
@@ -44,7 +52,7 @@ import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
 import { taskHandlers, type TaskHost } from "./tasks/handlers.js";
 import { runInitializationRepair } from "./tasks/project.js";
-import { TaskRunner } from "./tasks/runner.js";
+import { EngineTaskError, TaskRunner } from "./tasks/runner.js";
 import { ToolSet, type ClientTool } from "./tool.js";
 import {
   ConversationTools,
@@ -86,6 +94,8 @@ export type EngineHostOptions = {
   credentials?: Partial<CredentialServices>;
   /** For tests: the clock (a session's prompt carries the day it started). */
   now?: () => Date;
+  /** Where project memories are kept: the account's API by default (a file for benchmarks). */
+  projectMemory?: ProjectMemoryPersistence;
   /** For tests: more client tools beside the app's own. */
   extraTools?: ClientTool<never>[];
   /** For tests: more client tools, by name, for sessions of a purpose. */
@@ -274,7 +284,68 @@ export class EngineHost {
     if (config?.purpose !== "development-story" || !projectId || !api) return;
     const memory = await takeCompletionMemory(config.workspace_root, session);
     if (memory)
-      await saveProjectMemory(api, projectId, memory).catch(() => undefined);
+      await (this.options.projectMemory?.save ?? saveProjectMemory)(
+        api,
+        projectId,
+        memory,
+      ).catch(() => undefined);
+  }
+
+  /**
+   * A development story's agent with no person in it (the benchmark runner):
+   * the story's own config and brief, run on this computer as a task that
+   * ends through an accepted finish_task. The task's harness contract gets
+   * `taskContract` on top of the story's. Resolves with how it ended; the
+   * records stay with the engine (follow the session to read them).
+   */
+  async runStoryTask(input: {
+    session: string;
+    settings: DevelopmentStorySettings;
+    instruction: string;
+    limits?: Limits;
+    taskContract?: { [key: string]: JsonValue };
+    signal?: AbortSignal;
+  }): Promise<{ session: string; outcome: TaskOutcome }> {
+    const { session, settings } = input;
+    const purpose = { purpose: "development-story" as const, settings };
+    const promptDate = this.now();
+    const story = await this.config(session, purpose, promptDate);
+    const harness = (
+      story.tool_options as {
+        harness?: { taskContract?: { [key: string]: JsonValue } };
+      }
+    ).harness;
+    const config: SessionConfig = {
+      ...story,
+      tool_options: {
+        ...story.tool_options,
+        harness: {
+          ...harness,
+          taskContract: { ...harness?.taskContract, ...input.taskContract },
+        },
+      },
+      limits: { ...story.limits, ...input.limits },
+      checkpoints: false,
+      kind: { kind: "task", replicate: false },
+    };
+    this.current.set(session, { config, promptDate });
+    const brief = await developmentStoryPurpose.firstMessage!(
+      settings,
+      { text: input.instruction },
+      this.firstMessageServices,
+    );
+    try {
+      await this.tasks.run(
+        { config, instruction: brief.text, result: (value) => value },
+        { session, signal: input.signal, what: "The story task" },
+      );
+      return { session, outcome: { status: "completed" } as TaskOutcome };
+    } catch (error) {
+      if (error instanceof EngineTaskError) return { session, outcome: error.outcome };
+      throw error;
+    } finally {
+      await this.saveCompletionMemory(session);
+    }
   }
 
   /** Runs one call of the renderer (through the main process). */
@@ -586,7 +657,9 @@ export class EngineHost {
     projectMemory: async ({ projectId, workspaceRoot, objective }) => {
       const api = this.api;
       if (!api) return undefined;
-      const records = await listProjectMemories(api, projectId);
+      const records = await (
+        this.options.projectMemory?.list ?? listProjectMemories
+      )(api, projectId);
       const selection = await selectProjectMemory({
         objective,
         records,

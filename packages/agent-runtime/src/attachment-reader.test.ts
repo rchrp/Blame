@@ -6,42 +6,8 @@ import test from "node:test";
 import { readAttachment } from "./attachment-reader.js";
 import { readPdfAttachment } from "./attachment-pdf.js";
 import { storeWorkspaceAttachment } from "./development-attachments.js";
-import {
-  developmentUserInput,
-  newAttachmentDirectory,
-} from "./cline-runtime-prompts.js";
 
 const fixtures = new URL("../src/fixtures/attachments/", import.meta.url);
-
-test("feedback prompts point at readable originals without embedding document contents", async () => {
-  await fixture(async (root) => {
-    const content = await readFile(new URL("report.pdf", fixtures));
-    const input = await developmentUserInput(
-      {
-        title: "Review",
-        summary: "Read",
-        feedbackOnly: true,
-        feedback: "Can you read this file?",
-        feedbackFileAttachments: [
-          {
-            name: "report.pdf",
-            size: content.length,
-            type: "application/pdf",
-            content: content.toString("base64"),
-          },
-        ],
-      },
-      newAttachmentDirectory(root),
-    );
-    assert.ok(input.prompt.includes(input.userFiles[0]!));
-    assert.match(input.prompt, /read_attachment/);
-    assert.doesNotMatch(input.prompt, /revenue is 42|JVBER/);
-    assert.match(
-      JSON.stringify(await readAttachment(root, { path: input.userFiles[0] })),
-      /revenue is 42/,
-    );
-  });
-});
 
 test("bounds text results and rejects unsupported files, traversal and symlink escapes", async () => {
   await fixture(async (root) => {

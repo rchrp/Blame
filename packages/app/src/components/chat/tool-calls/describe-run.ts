@@ -3,12 +3,10 @@ import {
   firstLine,
   formatDuration,
   harnessResult,
-  hostname,
   humanize,
   list,
   num,
   operationResults,
-  plural,
   record,
   str,
   strings,
@@ -26,7 +24,6 @@ import type {
 // Commands, tests and every tool that is not about source files.
 
 export function describeCommand(source: ToolCallSource): ToolCallView {
-  if (source.toolName === "run_commands") return describeClineCommands(source)
   const input = record(source.input)
   const kind = str(input.kind) ?? (str(input.command) ? "command" : str(input.task) ? "project" : undefined)
   const harness = harnessResult(source.output)
@@ -137,72 +134,6 @@ function servedBodies(source: ToolCallSource, answer: Record<string, unknown>): 
   return answer.servedBy === "read_code"
     ? describeRead({ ...source, toolName: "read_code", input: { target: str(answer.path) ?? "" }, output }).bodies
     : describeSearch({ ...source, toolName: "search_code", input: {}, output }).bodies
-}
-
-function describeClineCommands(source: ToolCallSource): ToolCallView {
-  const input = record(source.input)
-  const commands = typeof source.input === "string" ? [source.input] : strings(input.commands ?? source.input)
-  const results = operationResults(source.output)
-  const failed = results.some((result) => result.success === false)
-  const duration = source.running ? undefined : formatDuration(source.durationMs)
-  const bodies: ToolCallBody[] = (results.length ? results : commands.map((command) => ({ query: command }))).flatMap(
-    (result, index) => {
-      const item = result as { query?: string; result?: { text: string; truncated: boolean }; error?: string; success?: boolean }
-      return [
-        {
-          type: "terminal" as const,
-          command: item.query ?? commands[index],
-          output: item.result ? stripAnsi(item.result.text) : item.error,
-          exitCode: item.success === false ? 1 : item.success ? 0 : undefined,
-          truncated: item.result?.truncated,
-        },
-      ]
-    }
-  )
-  const chips: ToolCallChip[] = []
-  if (results.length) chips.push(failed ? { label: "Failed", tone: "danger" } : { label: "Done", tone: "success" })
-  if (duration) chips.push({ label: duration })
-  return {
-    family: "command",
-    verb: source.running ? "Running" : "Ran",
-    target:
-      commands.length === 1
-        ? { text: firstLine(commands[0]!, 90), mono: true, title: commands[0] }
-        : { text: plural(commands.length, "command"), title: commands.join("\n") },
-    chips,
-    bodies,
-    failed,
-  }
-}
-
-export function describeWeb(source: ToolCallSource): ToolCallView {
-  const requests = list(record(source.input).requests).map((entry) => ({
-    url: str(record(entry).url) ?? "",
-    prompt: str(record(entry).prompt),
-  }))
-  const results = operationResults(source.output)
-  const bodies: ToolCallBody[] = requests.flatMap((request, index): ToolCallBody[] => {
-    const result = results[index]
-    return [
-      { type: "fields", fields: [{ label: "URL", value: request.url, mono: true }, ...(request.prompt ? [{ label: "Looking for", value: request.prompt }] : [])] },
-      ...(result?.success === false
-        ? [{ type: "error" as const, message: result.error ?? "The page could not be fetched." }]
-        : result?.result
-          ? [{ type: "text" as const, text: result.result.text, truncated: result.result.truncated }]
-          : []),
-    ]
-  })
-  return {
-    family: "web",
-    verb: source.running ? "Fetching" : "Fetched",
-    target:
-      requests.length === 1
-        ? { text: hostname(requests[0]!.url), title: requests[0]!.url }
-        : { text: plural(requests.length, "web page") },
-    chips: [],
-    bodies,
-    failed: results.some((result) => result.success === false),
-  }
 }
 
 export function describeSkill(source: ToolCallSource): ToolCallView {

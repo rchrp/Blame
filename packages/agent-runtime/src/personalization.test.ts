@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildDevelopmentSystemPrompt } from "./cline-runtime-prompts.js";
+import {
+  projectPrompt,
+  worktreeEnvironment,
+} from "./engine/purposes/prompt.js";
 import { lightCompletionDescription } from "./harness/light-completion.js";
 import { finishSummaryLimit } from "./harness/light-contracts.js";
 import {
@@ -12,20 +15,27 @@ import {
   type AgentPersonalization,
 } from "./personalization.js";
 import { loadPrompt } from "./prompt-loader.js";
-import type { StartDevelopmentSessionInput } from "./types.js";
 
 const todaysFinishDescription =
   "Finish with the final reply the user reads. For a question, conversation, analysis or review, the summary is the answer itself, in the user's language, not a note that no change was needed. For code work, give a concise factual summary. Use run_task reporting or read_code @checks for test counts: null is unknown, pending is distinct from skipped, and unreported categories must not become zero. Separate commands run, passing tests, admitted verification and user criteria. Mention a non-obvious durable implementation decision only when it helps future work. The runtime checks known changes, reuses current checks, and refreshes relevant checks already requested in this session. Work without a current check is reported as unverified. Do not provide receipts or internal state. When the work changed something visible, attach the most useful screenshots you took in this run in images (before/after, each state that was asked for, light and dark when relevant), each with a one-line caption saying what it shows; refer to them as screenshot:<id>, exactly as the screenshot result named them. Do not attach screenshots that show nothing new.";
 
-const base: StartDevelopmentSessionInput = {
-  apiConnection: { token: "token", url: "https://example.com" },
-  cwd: process.cwd(),
-  modelId: "model",
-  providerId: "provider",
-  summary: "Summary",
-  title: "Title",
-  workspaceRoot: process.cwd(),
-};
+const base = {};
+
+// A project agent's system prompt (engine/purposes/prompt.ts), for a story
+// (development) or plan mode.
+async function buildDevelopmentSystemPrompt(input: {
+  personalization?: Partial<AgentPersonalization>;
+  purpose?: "development" | "plan";
+}) {
+  return projectPrompt({
+    template: input.purpose === "plan" ? "plan-agent-system" : "code-agent-system",
+    workspaceRoot: process.cwd(),
+    environment: worktreeEnvironment,
+    personalization: input.personalization,
+    promptDate: new Date("2026-01-01T00:00:00Z"),
+    tools: [],
+  });
+}
 
 function personalized(
   changes: Partial<AgentPersonalization>,
@@ -54,19 +64,6 @@ test("the default settings leave the system prompts and finish_task exactly as t
     lightCompletionDescription(defaultPersonalization.responseStyle),
     todaysFinishDescription,
   );
-});
-
-test("keeps the new project prompt free of personalization", async () => {
-  const plain = await buildDevelopmentSystemPrompt({
-    ...base,
-    purpose: "new-project",
-  });
-  const custom = await buildDevelopmentSystemPrompt({
-    ...base,
-    personalization: personalized({ ambition: "ambitious", experience: "new" }),
-    purpose: "new-project",
-  });
-  assert.equal(custom, plain);
 });
 
 for (const purpose of ["development", "plan"] as const) {
