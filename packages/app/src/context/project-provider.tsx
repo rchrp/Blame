@@ -229,7 +229,6 @@ async function completeGeneratedProjectInitialization(
   await createCloudApi(auth.apiConnection).completeProjectInitialization(
     projectId,
     {
-      clineSessionId: initialization.clineSessionId,
       previewManifest: initialization.previewManifest,
       runConfigurations: initialization.runConfigurations,
       checkedCommit: checkedCommit ?? null,

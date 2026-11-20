@@ -59,7 +59,7 @@ export function usePreviewSetupRepair(
       if (lockfileBehindManifest(launchError)) return undefined
       if (auth.status !== "authenticated") return undefined
       if (
-        !platform.agent ||
+        !platform.engine ||
         !platform.workspace?.applyProjectPreviewInitialization
       )
         return undefined
@@ -134,19 +134,20 @@ async function repairStoryPreviewSetup(
   context: PreviewSetupRepairContext,
   launchError: string
 ) {
-  const { agent, workspace } = context.platform
-  if (!agent || !workspace?.applyProjectPreviewInitialization) {
+  const { engine, workspace } = context.platform
+  if (!engine || !workspace?.applyProjectPreviewInitialization) {
     throw new Error("Preview repair is unavailable in this app.")
   }
   const setup = await currentPreviewSetup(context)
-  const result = await agent.initializations.repair({
-    apiConnection: context.apiConnection,
-    providerId: context.model.provider.id,
-    modelId: context.model.id,
-    credentialLabel: context.model.credentialLabel,
-    reasoningEffort: context.reasoningEffort,
-    cwd: context.projectPath,
-    workspaceRoot: context.projectPath,
+  const result = await engine.call("repairProjectInitialization", {
+    model: {
+      providerId: context.model.provider.id,
+      modelId: context.model.id,
+      credentialLabel: context.model.credentialLabel,
+      reasoning: context.reasoningEffort,
+    },
+    projectId: context.projectId,
+    workspace: { root: context.projectPath },
     previewManifest: setup.previewManifest,
     runConfigurations: setup.runConfigurations,
     preferences: { database: { mode: setup.databaseMode } },
@@ -163,7 +164,7 @@ async function repairStoryPreviewSetup(
     databaseMode: setup.databaseMode,
     previewManifest: result.previewManifest,
     reason: result.reason,
-    repairSessionId: result.sessionId,
+    repairSessionId: result.session,
     runConfigurations: result.runConfigurations,
     storyId: context.storyId,
     worktree: context.worktree,

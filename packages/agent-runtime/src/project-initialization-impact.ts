@@ -2,11 +2,24 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import type {
-  AssessProjectInitializationImpactInput,
+  AssessInitializationImpactTask,
   AssessProjectInitializationImpactResult,
+} from "./engine/task-protocol.js";
+import type {
   ProjectInitializationImpactClassification,
   ProjectInitializationImpactDiagnostics,
 } from "./types.js";
+
+/** The commits to compare, in the repository at `cwd`. */
+export type AssessProjectInitializationImpactInput = Pick<
+  AssessInitializationImpactTask,
+  "baseCommit" | "mergeCommit" | "previewManifest" | "runConfigurations"
+> & { cwd: string };
+
+export type ProjectInitializationImpact = Omit<
+  AssessProjectInitializationImpactResult,
+  "session" | "diagnostics"
+>;
 
 const execFileAsync = promisify(execFile);
 const maxDiffLength = 18_000;
@@ -72,7 +85,7 @@ export function projectInitializationImpactPrompt(
 ) {
   return [
     "Assess whether the changes between these commits make the persisted project initialization obsolete.",
-    "Return strict JSON only.",
+    "Call submit_initialization_impact with the result. Do not answer with JSON text.",
     `Base commit: ${diagnostics.baseCommit}`,
     `Merge commit: ${diagnostics.mergeCommit}`,
     `Changed files: ${JSON.stringify(diagnostics.changedFiles)}`,
@@ -85,10 +98,42 @@ export function projectInitializationImpactPrompt(
   ].join("\n");
 }
 
+const otherClassifications = [...classifications].filter(
+  (value) => value !== "initialization_update_required",
+);
+
+/** The result tool's input: a repair instruction comes with an update. */
+export const projectInitializationImpactResultSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["classification", "reason"],
+  properties: {
+    classification: { enum: [...classifications] },
+    reason: { type: "string", minLength: 1 },
+    repairInstruction: {
+      type: "string",
+      minLength: 1,
+      description:
+        "Only for initialization_update_required: what the repair agent should regenerate in previewManifest.",
+    },
+  },
+  anyOf: [
+    {
+      properties: {
+        classification: { const: "initialization_update_required" },
+      },
+      required: ["repairInstruction"],
+    },
+    {
+      properties: { classification: { enum: otherClassifications } },
+      not: { required: ["repairInstruction"] },
+    },
+  ],
+};
+
 export function parseProjectInitializationImpactResult(
-  text: string,
-): Omit<AssessProjectInitializationImpactResult, "sessionId" | "diagnostics"> {
-  const parsed = JSON.parse(jsonPayload(text)) as unknown;
+  parsed: unknown,
+): ProjectInitializationImpact {
   if (!isRecord(parsed))
     throw new Error("Initialization impact result must be an object");
   const classification = classificationValue(parsed.classification);
@@ -104,14 +149,16 @@ export function parseProjectInitializationImpactResult(
       "Initialization impact result is missing repairInstruction",
     );
   }
-  return { classification, reason, repairInstruction };
+  return {
+    classification,
+    reason,
+    ...(repairInstruction ? { repairInstruction } : {}),
+  };
 }
 
 export function deterministicInitializationImpact(
   diagnostics: ProjectInitializationImpactDiagnostics,
-):
-  | Omit<AssessProjectInitializationImpactResult, "sessionId" | "diagnostics">
-  | undefined {
+): ProjectInitializationImpact | undefined {
   if (diagnostics.changedFiles.length === 0) {
     return {
       classification: "initialization_still_valid",
@@ -246,17 +293,6 @@ function classificationValue(value: unknown) {
     );
   }
   return value as ProjectInitializationImpactClassification;
-}
-
-function jsonPayload(text: string) {
-  const trimmed = text.trim();
-  if (trimmed.startsWith("{")) return trimmed;
-  const match = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (match?.[1]) return match[1].trim();
-  const start = trimmed.indexOf("{");
-  const end = trimmed.lastIndexOf("}");
-  if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
-  return trimmed;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

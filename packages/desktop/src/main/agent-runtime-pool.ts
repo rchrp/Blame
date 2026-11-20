@@ -194,14 +194,6 @@ export class AgentRuntimePool {
     return this.broadcast("securityAudits.finish", auditId);
   }
 
-  /** True when a worker was running this initialization and cancelled it. */
-  async cancelInitialization(progressId: string) {
-    const results = await this.broadcast("initializations.cancel", progressId);
-    return results.some(
-      (result) => result.status === "fulfilled" && result.value === true,
-    );
-  }
-
   async shutdown() {
     this.stopping = true;
     this.stopRetireTimer();

@@ -1,9 +1,14 @@
 import * as React from "react"
 import type {
-  AgentEvent,
   PreviewManifest,
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
+import type {
+  EngineModelChoice,
+  EnginePlatformClient,
+  InitializationFeedback,
+} from "@blame/agent-runtime/engine-protocol"
+import type { SessionRecord } from "@blame/engine-client"
 import { toast } from "sonner"
 import { projectNameError } from "@blame/agent-runtime/project-name"
 
@@ -34,6 +39,8 @@ import type { HostDependencyReport } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { CloudApiError } from "@/lib/cloud-api"
+import { engineModelChoice } from "@/lib/agent-title-generation"
+import { followEngineTask } from "@/lib/engine-task-follow"
 
 import {
   newProjectSteps,
@@ -46,8 +53,7 @@ export type { NewProjectStep } from "./new-project-flow"
 export type ProjectCreationLog = {
   type: "stdout" | "stderr" | "exit" | "agent"
   data: string
-  channel?: "reasoning" | "text" | "tool" | "notice"
-  append?: boolean
+  channel?: "notice"
 }
 
 export type ProjectCreationStatus =
@@ -60,17 +66,6 @@ export type ProjectCreationStatus =
   | "error"
 
 const maxInitializationCompletionAttempts = 3
-
-type InitializationFeedback = {
-  validationError: string
-  previousResult: string
-}
-
-type GeneratedProjectInitializationResult = {
-  sessionId: string
-  previewManifest: PreviewManifest
-  runConfigurations: ProjectRunConfiguration[]
-}
 
 export type NewProjectWizard = ReturnType<typeof useNewProjectWizard>
 
@@ -98,9 +93,13 @@ export function useNewProjectWizard(input: {
   })
   const [ownedTargetKey, setOwnedTargetKey] = React.useState<string>()
   const nameError = projectNameError(projectName)
-  const creation = React.useRef<{ key: string; runId: string; path?: string }>(
-    undefined
-  )
+  const creation = React.useRef<{
+    key: string
+    runId: string
+    target?: { path: string; projectName: string }
+    generated?: boolean
+    finished?: boolean
+  }>(undefined)
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string>()
   const [logs, setLogs] = React.useState<ProjectCreationLog[]>([])
@@ -135,8 +134,8 @@ export function useNewProjectWizard(input: {
     step !== "mode" &&
     (step !== "assistant" || Boolean(planning.proposal))
   const createProjectAvailable = Boolean(
-    platform.workspace?.createProject &&
-    platform.agent &&
+    platform.workspace?.prepareNewProject &&
+    platform.engine &&
     modelSelection.currentModel
   )
 
@@ -255,7 +254,7 @@ export function useNewProjectWizard(input: {
       return
     }
     const workspace = platform.workspace
-    if (!workspace?.createProject) {
+    if (!workspace?.prepareNewProject) {
       setError("Project creation is available only in the desktop app.")
       return
     }
@@ -274,7 +273,7 @@ export function useNewProjectWizard(input: {
           "Sign in to Blame before generating a project with the AI agent."
         )
       }
-      if (!platform.agent || !modelSelection.currentModel) {
+      if (!platform.engine || !modelSelection.currentModel) {
         throw new Error(
           "Connect and select an AI model before generating a project."
         )
@@ -310,7 +309,7 @@ export function useNewProjectWizard(input: {
 
   async function runProjectCreation() {
     const workspace = platform.workspace
-    if (!workspace?.createProject) return
+    if (!workspace?.prepareNewProject) return
     setStepState("progress")
     setStatus("preparing")
 
@@ -333,41 +332,65 @@ export function useNewProjectWizard(input: {
       }
       setStatus((current) => statusFromProjectCreationEvent(event, current))
     })
-    const unsubscribeAgent = platform.agent?.sessions.onEvent(
-      runId,
-      (event) => {
-        const log = projectCreationLogFromAgentEvent(event)
-        if (log) setLogs((current) => appendProjectCreationLog(current, log))
-        setStatus(statusFromAgentEvent(event))
-        if (event.type === "error") {
-          setError(
-            eventText(event.payload) || "Project generation agent failed."
-          )
-        }
-      }
-    )
+    const engine = platform.engine
+    // Each generation is its own task: a failed one is not continued.
+    const task = `new-project-${crypto.randomUUID()}`
+    // The generation agent's work, from its task's records.
+    const stopFollowing = engine
+      ? followEngineTask(engine, task, (records) => {
+          for (const record of records) {
+            const log = projectCreationLogFromRecord(record)
+            if (log)
+              setLogs((current) => appendProjectCreationLog(current, log))
+          }
+        })
+      : undefined
 
     try {
       const currentModel = modelSelection.currentModel
-      const agent = platform.agent
-      if (auth.status !== "authenticated" || !currentModel || !agent) {
+      const model = engineModelChoice(modelSelection)
+      if (
+        auth.status !== "authenticated" ||
+        !currentModel ||
+        !model ||
+        !engine
+      ) {
         throw new Error("AI model selection is required to create a project.")
       }
-      const createdProject = attempt.path
-        ? { path: attempt.path }
-        : await workspace.createProject({
-            apiConnection: auth.apiConnection,
-            configuration: normalizedConfiguration,
-            credentialLabel: currentModel.credentialLabel,
-            modelId: currentModel.id,
-            parentPath,
-            projectName,
-            providerId: currentModel.provider.id,
-            reasoningEffort: modelSelection.currentVariant,
-            runId,
-          })
-      attempt.path = createdProject.path
+      // Each step runs once: a failed installation is retried alone.
+      attempt.target ??= await workspace.prepareNewProject({
+        parentPath,
+        projectName,
+        runId,
+      })
+      const path = attempt.target.path
       setOwnedTargetKey(key)
+      if (!attempt.generated) {
+        setStatus("generating")
+        await engine.call("generateNewProject", {
+          task,
+          model,
+          workspace: { root: path },
+          projectName: attempt.target.projectName,
+          configuration: normalizedConfiguration,
+        })
+        attempt.generated = true
+        setLogs((current) =>
+          appendProjectCreationLog(current, {
+            type: "agent",
+            channel: "notice",
+            data: "New project generation agent finished.\n",
+          })
+        )
+      }
+      if (!attempt.finished) {
+        await workspace.finishNewProject({
+          path,
+          configuration: normalizedConfiguration,
+          runId,
+        })
+        attempt.finished = true
+      }
       setStatus("verifying")
       setLogs((current) =>
         appendProjectCreationLog(current, {
@@ -377,12 +400,10 @@ export function useNewProjectWizard(input: {
         })
       )
       await initializeGeneratedProjectForBlame({
-        agent,
-        apiConnection: auth.apiConnection,
-        model: currentModel,
+        engine,
+        model,
         openGeneratedProject: projects.openGeneratedProject,
-        path: createdProject.path,
-        reasoningEffort: modelSelection.currentVariant,
+        path,
         appendLog(log) {
           setLogs((current) => appendProjectCreationLog(current, log))
         },
@@ -399,7 +420,7 @@ export function useNewProjectWizard(input: {
       setStatus("error")
     } finally {
       unsubscribe?.()
-      unsubscribeAgent?.()
+      stopFollowing?.()
       setCreating(false)
     }
   }
@@ -517,44 +538,35 @@ function statusFromProjectCreationEvent(
   return current
 }
 
-function statusFromAgentEvent(event: AgentEvent): ProjectCreationStatus {
-  if (event.type === "done") return "generating"
-  if (event.type === "error") return "error"
-  const text = eventText(event.payload)
-  if (/install|dependencies/i.test(text)) return "installing"
-  if (/verify|build|lint|test|preview/i.test(text)) return "verifying"
-  return "generating"
-}
-
-function projectCreationLogFromAgentEvent(
-  event: AgentEvent
+/** What the log shows of one record of the generation task. */
+export function projectCreationLogFromRecord(
+  record: SessionRecord
 ): ProjectCreationLog | undefined {
-  const text = projectCreationEventText(event)
-  if (text.value === undefined || text.value === "") return undefined
-  if (event.type === "tool")
-    return { type: "agent", channel: "tool", data: `[tool] ${text.value}\n` }
-  if (event.type === "notice") {
-    if (isNoisyAgentNotice(text.value)) return undefined
-    return { type: "agent", channel: "notice", data: `${text.value}\n` }
+  if (record.type === "tool_call_started")
+    return { type: "agent", data: `[tool] Running ${record.name}\n` }
+  if (record.type === "tool_call_finished" && record.outcome === "failed") {
+    const text = record.content
+      .flatMap((block) => (block.type === "text" ? [block.text] : []))
+      .join("\n")
+      .trim()
+    return text
+      ? { type: "stderr", data: `${compactEventText(text)}\n` }
+      : undefined
   }
-  if (event.type === "reasoning")
-    return {
-      type: "agent",
-      channel: "reasoning",
-      data: `Planning: ${text.value}\n`,
-      append: text.append,
-    }
-  if (event.type === "text")
-    return {
-      type: "agent",
-      channel: "text",
-      data: `${text.value}\n`,
-      append: text.append,
-    }
-  return {
-    type: event.type === "error" ? "stderr" : "agent",
-    data: `${text.value}\n`,
-  }
+  if (record.type !== "assistant_message") return undefined
+  const text = record.blocks
+    .flatMap((block) =>
+      block.type === "text"
+        ? [block.text]
+        : block.type === "reasoning" && block.text.trim()
+          ? [`Planning: ${block.text}`]
+          : []
+    )
+    .join("\n")
+    .trim()
+  return text
+    ? { type: "agent", data: `${compactEventText(text)}\n` }
+    : undefined
 }
 
 function appendProjectCreationLog(
@@ -563,64 +575,9 @@ function appendProjectCreationLog(
 ) {
   if (!next.channel) return [...current, next]
   const last = current.at(-1)
-  if (last?.channel === next.channel)
-    return [
-      ...current.slice(0, -1),
-      next.append ? appendStreamingProjectCreationLog(last, next) : next,
-    ]
+  if (last?.channel === next.channel) return [...current.slice(0, -1), next]
   if (last?.data === next.data) return current
   return [...current, next]
-}
-
-function projectCreationEventText(event: AgentEvent) {
-  if (event.type === "reasoning" || event.type === "text") {
-    const deltaText = eventDeltaText(event.payload)
-    if (deltaText !== undefined) return { value: deltaText, append: true }
-    return { value: eventText(event.payload), append: false }
-  }
-  return { value: eventText(event.payload), append: false }
-}
-
-function eventDeltaText(payload: unknown) {
-  if (!payload || typeof payload !== "object") return undefined
-  const value = (payload as Record<string, unknown>).text
-  return typeof value === "string" ? compactEventText(value) : undefined
-}
-
-function appendStreamingProjectCreationLog(
-  last: ProjectCreationLog,
-  next: ProjectCreationLog
-) {
-  const prefix = next.channel === "reasoning" ? "Planning: " : ""
-  const currentText = channelLogText(last.data, prefix)
-  const nextText = channelLogText(next.data, prefix)
-  // Compacting the joined text keeps the log the same however the stream
-  // was split into deltas.
-  const mergedText = compactEventText(`${currentText}${nextText}`)
-  return { ...next, data: `${prefix}${mergedText}\n` }
-}
-
-function channelLogText(data: string, prefix: string) {
-  const text =
-    prefix && data.startsWith(prefix) ? data.slice(prefix.length) : data
-  return text.endsWith("\n") ? text.slice(0, -1) : text
-}
-
-function eventText(payload: unknown): string {
-  if (typeof payload === "string") return cleanEventText(payload)
-  if (!payload || typeof payload !== "object") return ""
-  const record = payload as Record<string, unknown>
-  for (const key of ["message", "text", "reason", "error"]) {
-    const value = record[key]
-    if (typeof value === "string" && value.trim()) return cleanEventText(value)
-  }
-  const tool = record.toolName ?? record.name
-  if (typeof tool === "string") return `Running ${tool}`
-  return ""
-}
-
-function cleanEventText(value: string) {
-  return compactEventText(value).trim()
 }
 
 function compactEventText(value: string) {
@@ -628,12 +585,10 @@ function compactEventText(value: string) {
 }
 
 async function initializeGeneratedProjectForBlame(input: {
-  agent: NonNullable<ReturnType<typeof usePlatform>["agent"]>
-  apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
-  model: NonNullable<ReturnType<typeof useModelSelection>["currentModel"]>
+  engine: Pick<EnginePlatformClient, "call">
+  model: EngineModelChoice
   openGeneratedProject: ReturnType<typeof useProjects>["openGeneratedProject"]
   path: string
-  reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
   appendLog(log: ProjectCreationLog): void
 }) {
   let validationFeedback: InitializationFeedback | undefined
@@ -642,12 +597,16 @@ async function initializeGeneratedProjectForBlame(input: {
     attempt <= maxInitializationCompletionAttempts;
     attempt += 1
   ) {
-    const initialization = await runGeneratedProjectInitialization(
-      input,
-      validationFeedback
-    )
+    const initialization = await input.engine.call("initializeProject", {
+      model: input.model,
+      workspace: { root: input.path },
+      validationFeedback,
+    })
     try {
-      await openGeneratedProjectWithInitialization(input, initialization)
+      await input.openGeneratedProject(input.path, {
+        previewManifest: initialization.previewManifest,
+        runConfigurations: initialization.runConfigurations,
+      })
       return
     } catch (error) {
       if (!shouldRetryInitializationCompletion(error, attempt)) throw error
@@ -660,43 +619,12 @@ async function initializeGeneratedProjectForBlame(input: {
   }
 }
 
-function runGeneratedProjectInitialization(
-  input: Parameters<typeof initializeGeneratedProjectForBlame>[0],
-  validationFeedback: InitializationFeedback | undefined
-) {
-  return input.agent.initializations.run({
-    apiConnection: input.apiConnection,
-    providerId: input.model.provider.id,
-    modelId: input.model.id,
-    credentialLabel: input.model.credentialLabel,
-    reasoningEffort: input.reasoningEffort,
-    cwd: input.path,
-    workspaceRoot: input.path,
-    validationFeedback,
-  })
-}
-
-function openGeneratedProjectWithInitialization(
-  input: Parameters<typeof initializeGeneratedProjectForBlame>[0],
-  initialization: GeneratedProjectInitializationResult
-) {
-  return input.openGeneratedProject(input.path, {
-    clineSessionId: initialization.sessionId,
-    previewManifest: initialization.previewManifest,
-    runConfigurations: initialization.runConfigurations,
-  })
-}
-
 function refiningInitializationLog(): ProjectCreationLog {
   return {
     type: "agent",
     channel: "notice",
     data: "Refining Blame initialization artifacts...\n",
   }
-}
-
-function isNoisyAgentNotice(text: string) {
-  return /^Agent iteration (?:started|completed)\.$/.test(text)
 }
 
 function shouldRetryInitializationCompletion(error: unknown, attempt: number) {
@@ -713,7 +641,7 @@ function initializationValidationFeedback(
     previewManifest: PreviewManifest
     runConfigurations: ProjectRunConfiguration[]
   }
-) {
+): InitializationFeedback {
   return {
     validationError: errorMessage(error),
     previousResult: JSON.stringify({

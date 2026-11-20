@@ -1,7 +1,20 @@
 import type {
   AgentBackendConfig,
-  AnalyzeProjectCodePracticesInput,
+  ApiConnection,
+  ReasoningSelection,
 } from "./types.js";
+
+/** The model and workspace a security audit agent runs with. */
+type SecurityAuditAgentInput = {
+  apiConnection: ApiConnection;
+  providerId: string;
+  modelId: string;
+  reasoningEffort?: ReasoningSelection;
+  cwd: string;
+  workspaceRoot: string;
+  credentialLabel?: string;
+  backend?: AgentBackendConfig;
+};
 
 export type SecurityAuditMode = "standard" | "deep";
 export type SecurityAuditStatus =
@@ -221,7 +234,7 @@ export type SecurityAuditPerspective =
   | "backward_sensitive_operations"
   | "business_logic";
 
-export type DiscoverSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
+export type DiscoverSecurityAuditInput = SecurityAuditAgentInput & {
   auditId: string;
   mode: SecurityAuditMode;
   perspective: SecurityAuditPerspective;
@@ -251,7 +264,7 @@ export type SecurityDeterministicScanResult = {
   scanners: SecurityScannerCoverage[];
 };
 
-export type ValidateSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
+export type ValidateSecurityAuditInput = SecurityAuditAgentInput & {
   auditId: string;
   mode: SecurityAuditMode;
   repository: MapSecurityAuditResult;
@@ -267,7 +280,7 @@ export type ValidateSecurityAuditResult = {
   coverage: SecurityCoverage;
 };
 
-export type RunSecurityAuditInput = AnalyzeProjectCodePracticesInput & {
+export type RunSecurityAuditInput = SecurityAuditAgentInput & {
   projectId?: string;
   mode: SecurityAuditMode;
   scope?: { type: "repository" | "paths"; paths?: string[] };

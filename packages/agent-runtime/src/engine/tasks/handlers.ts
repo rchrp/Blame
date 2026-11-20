@@ -2,14 +2,17 @@
 // (`EngineTaskMethods`): each builds its task from a purpose and runs it.
 
 import { randomUUID } from "node:crypto";
-import type { EngineClient } from "@blame/engine-client";
+import type { EngineClient, ToolSpec } from "@blame/engine-client";
 import { titleTask } from "../purposes/title.js";
 import { userStoryTask } from "../purposes/user-story.js";
 import type { EngineTaskMethods, TaskCall } from "../task-protocol.js";
+import { projectTaskHandlers } from "./project.js";
 import type { TaskRunner, TaskSpec } from "./runner.js";
 
 export type TaskHost = {
   runner: TaskRunner;
+  /** Specs of the app's own client tools (web research), by name. */
+  clientTools(names: readonly string[]): ToolSpec[];
   client(): Promise<EngineClient>;
   /** What the credential and log handlers need to know of a session. */
   register(
@@ -20,13 +23,15 @@ export type TaskHost = {
   forget(session: string): void;
 };
 
-type Handlers = {
-  [M in keyof EngineTaskMethods]: (
+export type TaskHandlers<
+  Methods extends keyof EngineTaskMethods = keyof EngineTaskMethods,
+> = {
+  [M in Methods]: (
     input: EngineTaskMethods[M]["input"],
   ) => Promise<EngineTaskMethods[M]["result"]>;
 };
 
-export function taskHandlers(host: TaskHost): Handlers {
+export function taskHandlers(host: TaskHost): TaskHandlers {
   const run = <R>(call: TaskCall, spec: TaskSpec<R>, what: string) => {
     const session = call.task ?? `task-${randomUUID()}`;
     host.register(session, {
@@ -52,6 +57,7 @@ export function taskHandlers(host: TaskHost): Handlers {
       );
       return { session, ...result };
     },
+    ...projectTaskHandlers(host),
     cancelTask: async ({ session }) => host.runner.cancel(session),
     deleteSession: async ({ session }) => {
       await (await host.client()).deleteSession({ session });

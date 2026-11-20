@@ -18,7 +18,7 @@ export function ProjectCodePracticesRunner() {
   const project = useProjects().activeProject
 
   useCodePracticeAnalysisEffect({
-    agent: platform.agent,
+    engine: platform.engine,
     apiConnection: auth.apiConnection,
     authStatus: auth.status,
     model: selection.currentModel,
@@ -29,11 +29,11 @@ export function ProjectCodePracticesRunner() {
 }
 
 function useCodePracticeAnalysisEffect(selection: AnalysisSelection) {
-  const { agent, apiConnection, authStatus, model, project, reasoningEffort } =
+  const { engine, apiConnection, authStatus, model, project, reasoningEffort } =
     selection
   React.useEffect(() => {
     const input = analysisInput({
-      agent,
+      engine,
       apiConnection,
       authStatus,
       model,
@@ -42,7 +42,7 @@ function useCodePracticeAnalysisEffect(selection: AnalysisSelection) {
     })
     if (!input) return
     return startCodePracticeAnalysis(input)
-  }, [agent, apiConnection, authStatus, model, project, reasoningEffort])
+  }, [engine, apiConnection, authStatus, model, project, reasoningEffort])
 }
 
 function startCodePracticeAnalysis(input: Omit<AnalysisInput, "signal">) {
@@ -52,7 +52,7 @@ function startCodePracticeAnalysis(input: Omit<AnalysisInput, "signal">) {
 }
 
 type AnalysisSelection = {
-  agent: ReturnType<typeof usePlatform>["agent"]
+  engine: ReturnType<typeof usePlatform>["engine"]
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
   authStatus: ReturnType<typeof useCloudAuth>["status"]
   model: ReturnType<typeof useModelSelection>["currentModel"]
@@ -61,7 +61,7 @@ type AnalysisSelection = {
 }
 
 type AnalysisInput = {
-  agent: NonNullable<ReturnType<typeof usePlatform>["agent"]>
+  engine: NonNullable<ReturnType<typeof usePlatform>["engine"]>
   apiConnection: ReturnType<typeof useCloudAuth>["apiConnection"]
   credentialLabel?: string
   modelId: string
@@ -74,12 +74,12 @@ type AnalysisInput = {
 function analysisInput(
   selection: AnalysisSelection
 ): Omit<AnalysisInput, "signal"> | undefined {
-  const { agent, apiConnection, authStatus, model, project, reasoningEffort } =
+  const { engine, apiConnection, authStatus, model, project, reasoningEffort } =
     selection
-  if (!project || !model || !agent) return
+  if (!project || !model || !engine) return
   if (authStatus !== "authenticated") return
   return {
-    agent,
+    engine,
     apiConnection,
     credentialLabel: model.credentialLabel,
     modelId: model.id,
@@ -123,17 +123,17 @@ async function analyzeAndPersist(
   input: AnalysisInput,
   cloud: ReturnType<typeof createCloudApi>
 ) {
-  const result = await input.agent.codePractices.run({
-    apiConnection: input.apiConnection,
-    providerId: input.providerId,
-    modelId: input.modelId,
-    credentialLabel: input.credentialLabel,
-    reasoningEffort: input.reasoningEffort,
-    cwd: input.project.path,
-    workspaceRoot: input.project.path,
+  const result = await input.engine.call("analyzeCodePractices", {
+    model: {
+      providerId: input.providerId,
+      modelId: input.modelId,
+      credentialLabel: input.credentialLabel,
+      reasoning: input.reasoningEffort,
+    },
+    projectId: input.project.id,
+    workspace: { root: input.project.path },
   })
   await cloud.completeProjectCodePracticeAnalysis(input.project.id, {
-    clineSessionId: result.sessionId,
     practices: result.practices,
   })
 }

@@ -6,25 +6,18 @@ import type {
 import * as React from "react"
 import type {
   AgentEvent,
-  NewProjectsClient,
   AgentUsageSummary,
   CompactSessionInput,
   CompactSessionResult,
-  AnalyzeProjectCodePracticesInput,
-  AnalyzeProjectCodePracticesResult,
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
-  AssessProjectInitializationImpactInput,
-  AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
-  InitializeProjectInput,
-  InitializeProjectResult,
   ProjectInitializationDiagnostics,
   ClaudeCodeStatus,
   ConnectClaudeCodeInput,
@@ -42,8 +35,6 @@ import type {
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
-  RepairProjectInitializationInput,
-  RepairProjectInitializationResult,
   ResolveApprovalInput,
   ResolveMergeConflictsInput,
   ResolveMergeConflictsResult,
@@ -56,7 +47,6 @@ import type {
   SendSessionInput,
   StartDevelopmentSessionInput,
   StartSessionInput,
-  ReasoningSelection,
 } from "@blame/agent-runtime"
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 import type { UserStory } from "../components/backlog/data/backlog-data"
@@ -490,23 +480,6 @@ export type AgentClient = {
     resolve(input: ResolveApprovalInput): Promise<boolean>
     onRequest(callback: (event: AgentEvent) => void): () => void
   }
-  initializations: {
-    run(input: InitializeProjectInput): Promise<InitializeProjectResult>
-    /** Stops the run started with this progress id; false once it ended. */
-    cancel(progressId: string): Promise<boolean>
-    repair(
-      input: RepairProjectInitializationInput
-    ): Promise<RepairProjectInitializationResult>
-    assessImpact(
-      input: AssessProjectInitializationImpactInput
-    ): Promise<AssessProjectInitializationImpactResult>
-  }
-  codePractices: {
-    run(
-      input: AnalyzeProjectCodePracticesInput
-    ): Promise<AnalyzeProjectCodePracticesResult>
-  }
-  newProjects: NewProjectsClient
   approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
   // Open PR: commit, push the story branch, then gh pr create on the host.
   openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>
@@ -826,19 +799,18 @@ export type WorkspaceClient = {
   }): Promise<string>
   gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
   ensureGitRepository(input: { root: string }): Promise<boolean>
-  createProject(input: {
-    apiConnection: ApiConnection
-    configuration: NewProjectConfiguration
-    credentialLabel?: string
-    modelId: string
+  /** The new project's empty folder, before the agent generates it. */
+  prepareNewProject(input: {
     parentPath: string
     projectName: string
-    providerId: string
-    reasoningEffort?: ReasoningSelection
     runId: string
-  }): Promise<{
+  }): Promise<{ path: string; projectName: string }>
+  /** Installs the generated project and makes it a Git repository. */
+  finishNewProject(input: {
     path: string
-  }>
+    configuration: NewProjectConfiguration
+    runId: string
+  }): Promise<{ path: string }>
   createWorktree(input: {
     branch?: string | null // recorded by the story on an earlier run
     // Run in the project folder instead of a new worktree.

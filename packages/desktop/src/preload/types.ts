@@ -1,25 +1,18 @@
 import type { EnginePlatformClient } from "@blame/agent-runtime/engine-protocol";
 import type {
   AgentEvent,
-  NewProjectsClient,
   AgentUsageSummary,
   CompactSessionInput,
   CompactSessionResult,
-  AnalyzeProjectCodePracticesInput,
-  AnalyzeProjectCodePracticesResult,
   ApiConnection,
   ApproveAndMergeInput,
   ApproveAndMergeResult,
-  AssessProjectInitializationImpactInput,
-  AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
   GenerateCommitMessageInput,
   GenerateCommitMessageResult,
-  InitializeProjectInput,
-  InitializeProjectResult,
   ProjectInitializationDiagnostics,
   ClaudeCodeStatus,
   ConnectClaudeCodeInput,
@@ -37,8 +30,6 @@ import type {
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
-  RepairProjectInitializationInput,
-  RepairProjectInitializationResult,
   ResolveApprovalInput,
   ResolveMergeConflictsInput,
   ResolveMergeConflictsResult,
@@ -74,7 +65,10 @@ import type {
 } from "@blame/app";
 import type { HostDependencyReport } from "../main/host-dependencies";
 import type { RuntimeStatusReport } from "../main/runtime-manager";
-import type { CreateProjectInput } from "../main/project-creation";
+import type {
+  FinishNewProjectInput,
+  PrepareNewProjectInput,
+} from "../main/project-creation";
 import type { ReleaseNotes } from "../main/whats-new";
 import type {
   PreviewLogEvent,
@@ -516,9 +510,10 @@ export type BlameDesktopApi = {
     }): Promise<string>;
     gitRepositoryFingerprint(input: { root: string }): Promise<string | null>;
     ensureGitRepository(input: { root: string }): Promise<boolean>;
-    createProject(input: CreateProjectInput): Promise<{
-      path: string;
-    }>;
+    prepareNewProject(
+      input: PrepareNewProjectInput,
+    ): Promise<{ path: string; projectName: string }>;
+    finishNewProject(input: FinishNewProjectInput): Promise<{ path: string }>;
     createWorktree(input: {
       // The branch the story recorded on an earlier run, if any.
       branch?: string | null;
@@ -678,23 +673,6 @@ export type BlameDesktopApi = {
       resolve(input: ResolveApprovalInput): Promise<boolean>;
       onRequest(callback: (event: AgentEvent) => void): () => void;
     };
-    initializations: {
-      run(input: InitializeProjectInput): Promise<InitializeProjectResult>;
-      /** Stops the run started with this progress id; false once it ended. */
-      cancel(progressId: string): Promise<boolean>;
-      repair(
-        input: RepairProjectInitializationInput,
-      ): Promise<RepairProjectInitializationResult>;
-      assessImpact(
-        input: AssessProjectInitializationImpactInput,
-      ): Promise<AssessProjectInitializationImpactResult>;
-    };
-    codePractices: {
-      run(
-        input: AnalyzeProjectCodePracticesInput,
-      ): Promise<AnalyzeProjectCodePracticesResult>;
-    };
-    newProjects: NewProjectsClient;
     approveAndMerge(
       input: ApproveAndMergeInput,
     ): Promise<ApproveAndMergeResult>;

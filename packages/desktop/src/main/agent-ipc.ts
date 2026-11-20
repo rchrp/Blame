@@ -1,8 +1,4 @@
-import type {
-  AgentEvent,
-  NewProjectGenerationResult,
-  StartNewProjectGenerationInput,
-} from "@blame/agent-runtime";
+import type { AgentEvent } from "@blame/agent-runtime";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
@@ -73,7 +69,6 @@ export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
   registerSessionControlIpcHandlers(input.beforeWorkspaceWrite);
   registerSessionDataIpcHandlers(input.beforeWorkspaceWrite);
   registerSessionEventIpcHandlers();
-  registerAnalysisWorkflowIpcHandlers(input.beforeWorkspaceWrite);
   registerSecurityAuditIpcHandlers({
     resolveInput: (securityInput) => agentWorkspaceInput(securityInput),
     map: (securityInput) =>
@@ -292,50 +287,9 @@ function registerSessionEventIpcHandlers() {
   );
 }
 
-function registerAnalysisWorkflowIpcHandlers(
-  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
-) {
-  ipcMain.handle("agent:initializations:run", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    const workspace = agentWorkspacePath(resolved);
-    if (workspace && beforeWorkspaceWrite)
-      await beforeWorkspaceWrite(workspace);
-    return runWorkspaceTask(workspace, () =>
-      agentRuntime().run("initializations.run", resolved),
-    );
-  });
-  ipcMain.handle("agent:initializations:cancel", (_event, progressId) =>
-    typeof progressId === "string" && runtime
-      ? agentRuntime().cancelInitialization(progressId)
-      : false,
-  );
-  ipcMain.handle("agent:initializations:repair", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    const workspace = agentWorkspacePath(resolved);
-    if (workspace && beforeWorkspaceWrite)
-      await beforeWorkspaceWrite(workspace);
-    return runWorkspaceTask(workspace, () =>
-      agentRuntime().run("initializations.repair", resolved),
-    );
-  });
-  ipcMain.handle("agent:initializations:assess-impact", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("initializations.assessImpact", resolved),
-    ),
-  );
-  ipcMain.handle("agent:code-practices:run", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("codePractices.run", resolved),
-    ),
-  );
-}
-
 function registerDeliveryWorkflowIpcHandlers(
   beforeDelivery?: (worktree: string) => Promise<void>,
 ) {
-  ipcMain.handle("agent:new-projects:generate", (_event, input) =>
-    agentRuntime().run("newProjects.generate", input),
-  );
   ipcMain.handle("agent:approve-and-merge", async (_event, input) => {
     const resolved = {
       ...(await agentWorkspaceInput(input)),
@@ -512,17 +466,6 @@ async function runWorkspaceTask<T>(
   } finally {
     agentWorkspaceWriters.forget(operationId);
   }
-}
-
-export function generateNewProjectWithAgent(
-  input: StartNewProjectGenerationInput,
-) {
-  return agentWorkspaceInput(input).then((resolved) =>
-    agentRuntime().run<NewProjectGenerationResult>(
-      "newProjects.generate",
-      resolved,
-    ),
-  );
 }
 
 export function releaseAgentWorkspaceSessions(worktree: string) {

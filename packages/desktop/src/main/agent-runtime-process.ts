@@ -312,16 +312,6 @@ function sessionHandlers(runtime: BlameAgentRuntime) {
 
 function workflowHandlers(runtime: BlameAgentRuntime) {
   return {
-    "initializations.run": (input: unknown) =>
-      runtime.initializations.run(input as never),
-    "initializations.cancel": (input: unknown) =>
-      runtime.initializations.cancel(input as string),
-    "initializations.repair": (input: unknown) =>
-      runtime.initializations.repair(input as never),
-    "initializations.assessImpact": (input: unknown) =>
-      runtime.initializations.assessImpact(input as never),
-    "codePractices.run": (input: unknown) =>
-      runtime.codePractices.run(input as never),
     "securityAudits.map": (input: unknown) =>
       runtime.securityAudits.map(input as never),
     "securityAudits.discover": (input: unknown) =>
@@ -332,8 +322,6 @@ function workflowHandlers(runtime: BlameAgentRuntime) {
       runtime.securityAudits.cancel(input as string),
     "securityAudits.finish": (input: unknown) =>
       runtime.securityAudits.finish(input as string),
-    "newProjects.generate": (input: unknown) =>
-      runtime.newProjects.generate(input as never),
     approveAndMerge: (input: unknown) =>
       runtime.approveAndMerge(input as never),
     openPullRequest: (input: unknown) =>

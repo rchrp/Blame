@@ -120,7 +120,9 @@ export class EngineHost {
           clientVersion: options.clientVersion,
           onLog: options.onLog,
           handlers: {
-            tool: (params, context) => this.tools.handle(params, context),
+            tool: (params, context) =>
+              this.tasks.handleTool(params, context) ??
+              this.tools.handle(params, context),
             credential: (params) => this.credentials.resolve(params),
             approval: (params, { signal }) => this.approval(params, signal),
             ...logs,
@@ -224,6 +226,7 @@ export class EngineHost {
     },
     ...taskHandlers({
       runner: this.tasks,
+      clientTools: (names) => this.tools.specs(names),
       client: () => this.supervisor.client(),
       register: (session, known) => this.known.set(session, known),
       forget: (session) => {
