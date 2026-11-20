@@ -59,6 +59,13 @@ class RustHarnessProcess {
     return child;
   }
 
+  private hold(referenced: boolean) {
+    const child = this.child;
+    if (!child) return;
+    for (const handle of [child, child.stdin, child.stdout] as unknown as Array<{ ref?: () => void; unref?: () => void }>)
+      (referenced ? handle.ref : handle.unref)?.call(handle);
+  }
+
   private failAll(error: Error) {
     for (const waiting of this.pending.values()) waiting.reject(error);
     this.pending.clear();
@@ -68,7 +75,10 @@ class RustHarnessProcess {
   send(kind: "request" | "call", body: unknown, signal?: AbortSignal): Promise<unknown> {
     const child = this.start();
     const id = `c${++this.sequence}`;
-    const answer = new Promise<unknown>((resolve, reject) => this.pending.set(id, { resolve, reject }));
+    // A pending call keeps the test process alive; an idle harness does not.
+    if (!this.pending.size) this.hold(true);
+    const answer = new Promise<unknown>((resolve, reject) => this.pending.set(id, { resolve, reject }))
+      .finally(() => { if (!this.pending.size) this.hold(false); });
     child.stdin.write(`${JSON.stringify({ id, [kind]: body })}\n`);
     signal?.addEventListener("abort", () => child.stdin.write(`${JSON.stringify({ id, cancel: true })}\n`), { once: true });
     return answer;
@@ -136,7 +146,7 @@ class RustLightWorkspace {
 /**
  * Runs the TypeScript workspace and checks every read and edit against Rust.
  * The Rust harness works on a shadow copy of the workspace, made identical
- * to it (outside .blame) before each call, so both start from the same
+ * to it (outside .blame/harness) before each call, so both start from the same
  * files; an edit compares both results and both resulting trees.
  */
 class ComparingLightWorkspace extends TypeScriptLightWorkspace {
@@ -148,29 +158,30 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
   constructor(root: string, options: Options) {
     super(root, options);
     this.root = root;
-    this.shadow = mkdtempSync(join(tmpdir(), "rust-shadow-"));
-    shadows.push(this.shadow);
+    // One shadow per folder: workspaces reopened on it share its journal.
+    this.shadow = shadows.get(root) ?? mkdtempSync(join(tmpdir(), "rust-shadow-"));
+    shadows.set(root, this.shadow);
     this.rust = new RustLightWorkspace(this.shadow, options);
   }
 
   override async searchCode(input: Parameters<TypeScriptLightWorkspace["searchCode"]>[0], signal?: AbortSignal) {
     this.sync();
     const result = await super.searchCode(input, signal);
-    await this.compare("search_code", input, result, () => this.rust.searchCode(input, signal));
+    await this.compare("search_code", input, result, () => this.rust.searchCode(this.shadowed(input), signal));
     return result;
   }
 
   override async readCode(input: Parameters<TypeScriptLightWorkspace["readCode"]>[0], context: Parameters<TypeScriptLightWorkspace["readCode"]>[1]) {
     this.sync();
     const result = await super.readCode(input, context);
-    await this.compare("read_code", input, result, () => this.rust.readCode(this.shadowInput(input), context));
+    await this.compare("read_code", input, result, () => this.rust.readCode(this.shadowed(input), context));
     return result;
   }
 
   override async editCode(...args: Parameters<TypeScriptLightWorkspace["editCode"]>) {
     this.sync();
     const result = await super.editCode(...args);
-    await this.compare("edit_code", args[0], result, () => this.rust.editCode(args[0], args[1]), true);
+    await this.compare("edit_code", args[0], result, () => this.rust.editCode(this.shadowed(args[0]), args[1]), true);
     return result;
   }
 
@@ -180,13 +191,15 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
     return super.runTask(...args);
   }
 
-  /** An absolute target inside the workspace names the same file in the shadow. */
-  private shadowInput(input: { target: string }) {
-    return input.target.startsWith(`${this.root}/`) ? { ...input, target: this.shadow + input.target.slice(this.root.length) } : input;
+  /** An input naming the workspace by absolute path names the shadow instead. */
+  private shadowed<T>(input: T): T {
+    const pairs = [[this.root, this.shadow], [realpathSync(this.root), realpathSync(this.shadow)]];
+    const text = pairs.reduce((value, [from, to]) => value.split(JSON.stringify(from).slice(1, -1)).join(JSON.stringify(to).slice(1, -1)), JSON.stringify(input));
+    return JSON.parse(text) as T;
   }
 
   /**
-   * Makes the shadow's files the workspace's, outside .blame, and its pending
+   * Makes the shadow's files the workspace's, outside .blame/harness, and its pending
    * edit record too: crash recovery is part of what is compared.
    */
   private sync() {
@@ -228,8 +241,8 @@ class ComparingLightWorkspace extends TypeScriptLightWorkspace {
   }
 }
 
-const shadows: string[] = [];
-process.on("exit", () => { for (const shadow of shadows) rmSync(shadow, { recursive: true, force: true }); });
+const shadows = new Map<string, string>();
+process.on("exit", () => { for (const shadow of shadows.values()) rmSync(shadow, { recursive: true, force: true }); });
 
 function entries(root: string, relative = ""): Map<string, Dirent> {
   const found = new Map<string, Dirent>();
@@ -237,7 +250,8 @@ function entries(root: string, relative = ""): Map<string, Dirent> {
   try { listed = readdirSync(join(root, relative), { withFileTypes: true }); } catch { return found; }
   for (const entry of listed) {
     const path = relative ? `${relative}/${entry.name}` : entry.name;
-    if (path === ".blame") continue;
+    // Each harness's own state stays its own; the rest of .blame is project data.
+    if (path === ".blame/harness") continue;
     found.set(path, entry);
     if (entry.isDirectory()) for (const [child, value] of entries(root, path)) found.set(child, value);
   }
@@ -255,7 +269,10 @@ function mirror(source: string, target: string) {
     const [from, to] = [join(source, path), join(target, path)];
     if (entry.isDirectory()) { mkdirSync(to, { recursive: true }); continue; }
     if (entry.isSymbolicLink()) {
-      const link = readlinkSync(from);
+      // A link into the workspace points into the shadow instead.
+      const original = readlinkSync(from);
+      const prefix = [source, realpathSync(source)].find((root) => original === root || original.startsWith(`${root}/`));
+      const link = prefix ? target + original.slice(prefix.length) : original;
       let current: string | undefined;
       try { current = readlinkSync(to); } catch { current = undefined; }
       if (current !== link) { rmSync(to, { force: true }); symlinkSync(link, to); }
@@ -270,7 +287,7 @@ function mirror(source: string, target: string) {
   }
 }
 
-/** What differs between the two trees after an edit, outside .blame and .git. */
+/** What differs between the two trees after an edit, outside .blame/harness and .git. */
 function treeDifference(left: string, right: string) {
   const describe = (root: string) => new Map([...entries(root)].filter(([path, entry]) => entry.isFile() && !path.startsWith(".git/"))
     .map(([path]) => [path, `${statSync(join(root, path)).mode & 0o777}:${readFileSync(join(root, path)).toString("base64")}`]));
