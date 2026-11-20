@@ -120,6 +120,11 @@ jobs:
       - run: pnpm --filter @blame/desktop build:workspace-dependencies
       - run: pnpm --filter @blame/desktop test:windows-workspaces
       - run: pnpm --filter @blame/desktop test:package
+      # The harness tests drive the Rust harness; the build leaves tests out.
+      - uses: ./.github/actions/rust-binaries
+        with:
+          packages: blame-harness
+      - run: pnpm --filter @blame/agent-runtime exec tsc
       - run: pnpm --filter @blame/agent-runtime exec node --test dist/harness/workspace-command-process.test.js dist/harness/package-manager-runtime.test.js
 
   macos-terminal:
@@ -135,7 +140,12 @@ jobs:
       - run: pnpm --filter @blame/desktop build:workspace-dependencies
       - run: pnpm --filter @blame/desktop exec node --test --experimental-strip-types src/main/terminal-service.test.ts
       # The runner's Homebrew gh (/opt/homebrew/bin) must not shadow the one Blame provides.
-      - run: pnpm --filter @blame/agent-runtime exec node --test dist/harness/github-cli.test.js
+      # The test asks the Rust harness; the build leaves tests out.
+      - uses: ./.github/actions/rust-binaries
+        with:
+          packages: blame-harness
+      - run: pnpm --filter @blame/agent-runtime exec tsc
+      - run: pnpm --filter @blame/agent-runtime exec node --test dist/github-cli.test.js
 
   line-budgets:
     name: Line budgets
@@ -162,6 +172,8 @@ jobs:
           git config --global user.email "ci@blame.invalid"
       # The runtime imports compiled workspace packages.
       - run: pnpm exec turbo run build --filter="@blame/agent-runtime^..."
+      # The harness suite drives blame-harness, the engine tests blame-engine.
+      - uses: ./.github/actions/rust-binaries
       - run: pnpm --filter @blame/agent-runtime test
 
   test:
@@ -188,6 +200,10 @@ jobs:
       - run: pnpm --filter @blame/desktop build
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends xvfb
       - run: pnpm --filter @blame/desktop test:startup
+      # The payload and install tests start blame-harness.
+      - uses: ./.github/actions/rust-binaries
+        with:
+          packages: blame-harness
       - run: pnpm test:semantic-harness-payload
       - run: node --test scripts/semantic-harness-install.test.mjs
       - run: pnpm test:release

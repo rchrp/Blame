@@ -1,0 +1,25 @@
+name: Rust binaries
+description: Build the debug blame-engine and blame-harness that the tests drive
+
+inputs:
+  packages:
+    description: Cargo packages to build, separated by spaces
+    default: blame-engine blame-harness
+
+runs:
+  using: composite
+  steps:
+    # Installs the toolchain pinned in rust-toolchain.toml.
+    - run: rustup show
+      shell: bash
+
+    - uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: rust-debug-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+
+    - run: cargo build $(printf -- '-p %s ' ${{ inputs.packages }})
+      shell: bash
