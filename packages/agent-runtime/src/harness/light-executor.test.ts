@@ -3,14 +3,11 @@ import { access, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import type { AgentToolContext } from "@cline/sdk";
 import {
-  cachedLightWorkspaceExecutor,
   lightToolContext,
   localLightWorkspaceExecutor,
-  type LightWorkspaceExecutor,
-} from "./light-executor.js";
-import { lightSemanticHarnessTools } from "./light-tools.js";
+} from "./test-client/light-executor.js";
+import { lightSemanticHarnessTools } from "./test-client/light-tools.js";
 
 test("managed calls preserve compaction identity without transferring the transcript", () => {
   const context = transcriptContext();
@@ -52,58 +49,14 @@ for (const toolName of ["read_code", "edit_code"]) {
   });
 }
 
-test("drops workspaces idle past the limit and keeps one serving a request", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blame-cached-workspaces-"));
-  try {
-    const execute = cachedLightWorkspaceExecutor({ idleMs: 300 });
-    await command(execute, root, "idle", "echo idle");
-    const slow = command(execute, root, "busy", "sleep 1; echo busy");
-    await delay(700);
-    assert.equal(await runKnown(execute, root, "idle"), false);
-    await slow;
-    assert.equal(await runKnown(execute, root, "busy"), true);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
+// "drops workspaces idle past the limit and keeps one serving a request" and
+// "keeps the most recently used workspaces up to the limit" set the cache's
+// limits, which a harness process does not take: they are
+// crates/blame-harness/tests/protocol.rs's tests of the same names.
 
-test("keeps the most recently used workspaces up to the limit", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blame-cached-workspaces-"));
-  try {
-    const execute = cachedLightWorkspaceExecutor({ limit: 2 });
-    for (const session of ["a", "b", "c"]) await command(execute, root, session, "echo ok");
-    assert.equal(await runKnown(execute, root, "a"), false);
-    assert.equal(await runKnown(execute, root, "c"), true);
-  } finally {
-    await rm(root, { recursive: true, force: true });
-  }
-});
 
-function command(execute: LightWorkspaceExecutor, root: string, session: string, text: string) {
-  return execute({
-    input: { kind: "command", command: text },
-    taskContract: { session_id: session, environment: { isolated: true, managedPreview: false } },
-    tool: "run_task",
-    toolContext: { sessionId: session, toolCallId: `${session}-command` },
-    workspaceRoot: root,
-  });
-}
-
-/** Whether the session's workspace still knows its first run. */
-async function runKnown(execute: LightWorkspaceExecutor, root: string, session: string) {
-  const result = await execute({
-    input: { kind: "inspect", run: "r1", until: "now" },
-    taskContract: { session_id: session, environment: { isolated: true, managedPreview: false } },
-    tool: "run_task",
-    toolContext: { sessionId: session, toolCallId: `${session}-inspect` },
-    workspaceRoot: root,
-  });
-  return result.status === "ok";
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+/** A tool call's context as the engine's agent loop gives it, with its transcript. */
+type AgentToolContext = { agentId: string; iteration: number; sessionId?: string; toolCallId?: string; metadata?: Record<string, unknown>; snapshot?: unknown };
 
 function transcriptContext(): AgentToolContext {
   return {
@@ -113,6 +66,6 @@ function transcriptContext(): AgentToolContext {
       { id: "first-summary", metadata: { kind: "compaction_summary" } },
       { id: "source", content: "earlier source".repeat(100_000) },
       { id: "latest-summary", metadata: { kind: "compaction_summary" }, content: "retained summary" },
-    ] } as unknown as AgentToolContext["snapshot"],
+    ] },
   };
 }

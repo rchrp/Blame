@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use blame_engine_core::ports::{
     BlobSource, Clock, RemoteLog, SessionStore, StoreError, StoredSession,
 };
-use blame_engine_protocol::{BlobRef, Record, RecordBody, Seq, SessionId};
+use blame_engine_protocol::{BlobRef, Record, RecordBody, Seq, SessionId, SessionKind};
 use rusqlite::{Connection, OptionalExtension, TransactionBehavior, params};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -268,6 +268,67 @@ impl BlobSource for SqliteStore {
     }
 }
 
+/// The remote mark of a session kept on this machine only.
+pub(crate) const LOCAL_ONLY: i64 = i64::MAX;
+
+fn stays_local(records: &[Record]) -> bool {
+    matches!(
+        records.first().map(|record| &record.body),
+        Some(RecordBody::SessionCreated { config })
+            if config.kind == SessionKind::Task { replicate: false }
+    )
+}
+
+impl SqliteStore {
+    /// Deletes a session's records from this machine. Blobs stay: they are
+    /// shared by content and cost nothing to keep. `false` when there was no
+    /// such session.
+    pub async fn delete(&self, session: &SessionId) -> Result<bool, StoreError> {
+        let id = session.clone();
+        self.inner
+            .writer
+            .run(move |conn| {
+                let tx = conn
+                    .transaction_with_behavior(TransactionBehavior::Immediate)
+                    .map_err(sql)?;
+                tx.prepare_cached("DELETE FROM records WHERE session = ?1")
+                    .and_then(|mut s| s.execute([id.as_str()]))
+                    .map_err(sql)?;
+                let removed = tx
+                    .prepare_cached("DELETE FROM sessions WHERE id = ?1")
+                    .and_then(|mut s| s.execute([id.as_str()]))
+                    .map_err(sql)?;
+                tx.commit().map_err(sql)?;
+                Ok(removed > 0)
+            })
+            .await
+    }
+
+    /// Sessions kept on this machine only (tasks that were not replicated)
+    /// whose last record is older than `before_ms`.
+    pub async fn local_sessions_before(
+        &self,
+        before_ms: u64,
+    ) -> Result<Vec<SessionId>, StoreError> {
+        self.inner
+            .side
+            .run(move |conn| {
+                let mut statement = conn
+                    .prepare_cached(
+                        "SELECT id FROM sessions WHERE remote_head = ?1 AND updated_at_ms < ?2",
+                    )
+                    .map_err(sql)?;
+                let rows = statement
+                    .query_map(params![LOCAL_ONLY, int(before_ms)], |r| {
+                        r.get::<_, String>(0)
+                    })
+                    .map_err(sql)?;
+                rows.map(|row| row.map(SessionId).map_err(sql)).collect()
+            })
+            .await
+    }
+}
+
 pub(crate) fn int(value: u64) -> i64 {
     i64::try_from(value).unwrap_or(i64::MAX)
 }
@@ -350,9 +411,22 @@ fn append_in_transaction(
             .and_then(|mut s| s.execute(params![session.as_str(), int(new_head), int(at_ms)]))
             .map_err(sql)?;
     } else {
-        tx.prepare_cached("INSERT INTO sessions (id, head, updated_at_ms) VALUES (?1, ?2, ?3)")
-            .and_then(|mut s| s.execute(params![session.as_str(), int(new_head), int(at_ms)]))
-            .map_err(sql)?;
+        // A task that did not ask to be copied stays on this machine: its
+        // remote mark is set past any seq, so the replicator never sees it
+        // behind (no schema change: the log's first record says it).
+        let remote_head = if stays_local(&records) { LOCAL_ONLY } else { 0 };
+        tx.prepare_cached(
+            "INSERT INTO sessions (id, head, updated_at_ms, remote_head) VALUES (?1, ?2, ?3, ?4)",
+        )
+        .and_then(|mut s| {
+            s.execute(params![
+                session.as_str(),
+                int(new_head),
+                int(at_ms),
+                remote_head
+            ])
+        })
+        .map_err(sql)?;
     }
     // The commit is the point of no return, and where the sync happens.
     tx.commit().map_err(sql)?;

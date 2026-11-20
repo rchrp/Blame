@@ -10,7 +10,6 @@ import {
   describeQuestion,
   describeSkill,
   describeSpecialist,
-  describeWeb,
 } from "./describe-run.ts"
 import {
   describeComponentPreview,
@@ -35,23 +34,17 @@ export type ToolCallActivity = {
 
 const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   read_code: describeRead,
-  read_files: describeRead,
   inspect_code: describeRead,
   outline_code: describeRead,
   search_code: describeSearch,
-  search_codebase: describeSearch,
   get_relation_context: describeSearch,
   edit_code: describeEdit,
-  apply_patch: describeEdit,
-  editor: describeEdit,
   write_file: describeEdit,
   apply_change: describeEdit,
   review_change: describeEdit,
   run_task: describeCommand,
-  run_commands: describeCommand,
   inspect_run: describeCommand,
   validate_change: describeCommand,
-  fetch_web_content: describeWeb,
   search_web: describeWebResearch,
   read_web_page: describeWebResearch,
   skills: describeSkill,

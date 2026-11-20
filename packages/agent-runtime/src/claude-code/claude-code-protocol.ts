@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 
 /**
- * The subset of the Anthropic Messages API that Cline's Anthropic provider
+ * The subset of the Anthropic Messages API that the engine's Anthropic provider
  * sends. The bridge reads it and answers in the same wire format.
  */
 export type AnthropicBlock = {
@@ -99,7 +99,7 @@ export function systemText(request: MessagesRequest) {
     .join("\n\n");
 }
 
-/** The effort for Claude Code's `--effort`: Blame's pick, else what Cline sent. */
+/** The effort for Claude Code's `--effort`: Blame's pick, else what the client sent. */
 export function requestEffort(
   request: MessagesRequest,
 ): ClaudeCodeEffort | undefined {
@@ -316,7 +316,7 @@ export function bridgeToolName(name: string) {
     : name;
 }
 
-/** Rewrites one raw stream event from Claude Code into what Cline expects. */
+/** Rewrites one raw stream event from Claude Code into what the client expects. */
 export function clientStreamEvent(event: AnthropicBlock): AnthropicBlock {
   if (
     event.type === "content_block_start" &&

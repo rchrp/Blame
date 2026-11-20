@@ -1,15 +1,15 @@
-//! Blame's semantic harness (TypeScript), run as one long-lived child
-//! process for every session of the engine.
+//! Blame's workspace harness (`blame-harness`, crates/blame-harness), run as
+//! one long-lived child process for every session of the engine.
 //!
-//! The runner (`semantic-harness-runner.js --serve`) speaks JSON lines: it
-//! says `{"ready": true}` once, then answers each `{"id", ...}` message by
-//! id. The engine uses two of its messages: `describe` gives the model-facing
-//! tools, `call` runs one model call through the same wrapper an in-process
-//! session uses and answers with the result as the model reads it, so the
-//! bytes a model sees do not depend on which runtime ran the tool. A
-//! `{"id", "cancel": true}` aborts a call.
+//! The harness (`blame-harness serve --asks`) speaks JSON lines: it says
+//! `{"ready": true}` once, then answers each `{"id", ...}` message by id.
+//! The engine uses two of its messages: `describe` gives the model-facing
+//! tools, `call` runs one model call and answers with the result as the
+//! model reads it. A `{"id", "cancel": true}` aborts a call. What only the
+//! client knows the harness asks (`{"ask": ...}`), and the engine relays the
+//! question to the client as `host/harness` and writes back its answer.
 //!
-//! The runner keeps per-workspace state (indexes, managed runs) between
+//! The harness keeps per-workspace state (indexes, managed runs) between
 //! calls, which is why it stays alive. If it dies it is started again on the
 //! next call; calls it was running end as interrupted.
 
@@ -79,6 +79,8 @@ pub enum HarnessError {
 
 pub struct Harness {
     command: HarnessCommand,
+    /// Where the harness's questions go (`host/harness`): the client.
+    host: std::sync::OnceLock<Arc<crate::connection::Host>>,
     process: tokio::sync::Mutex<Option<Arc<Process>>>,
     /// Tools per describe request: they depend only on the task contract.
     described: Mutex<HashMap<String, Vec<ToolSpec>>>,
@@ -87,7 +89,7 @@ pub struct Harness {
 }
 
 struct Process {
-    stdin: tokio::sync::Mutex<Option<ChildStdin>>,
+    stdin: Arc<tokio::sync::Mutex<Option<ChildStdin>>>,
     child: tokio::sync::Mutex<Child>,
     pending: Arc<Mutex<HashMap<String, oneshot::Sender<Value>>>>,
     dead: CancellationToken,
@@ -97,11 +99,17 @@ impl Harness {
     pub fn new(command: HarnessCommand) -> Self {
         Self {
             command,
+            host: std::sync::OnceLock::new(),
             process: tokio::sync::Mutex::new(None),
             described: Mutex::new(HashMap::new()),
             next_id: AtomicU64::new(1),
             stopped: AtomicBool::new(false),
         }
+    }
+
+    /// The client the harness's questions are relayed to.
+    pub fn attach_host(&self, host: Arc<crate::connection::Host>) {
+        let _ = self.host.set(host);
     }
 
     /// The tools the harness offers under `options` (`tool_options.harness`).
@@ -146,6 +154,7 @@ impl Harness {
                 "sessionId": invocation.session,
                 "conversationId": invocation.session,
                 "toolCallId": invocation.call,
+                "metadata": { "contextGeneration": context_generation(invocation) },
             },
         });
         let reply = match self.request(json!({ "call": call }), &cancel).await {
@@ -259,7 +268,9 @@ took effect is unknown. Check before relying on it or running it again.",
             .kill_on_drop(true)
             .spawn()
             .map_err(|error| HarnessError::Start(format!("{:?}: {error}", self.command.program)))?;
-        let stdin = child.stdin.take().expect("piped");
+        let stdin = Arc::new(tokio::sync::Mutex::new(Some(
+            child.stdin.take().expect("piped"),
+        )));
         let stdout = child.stdout.take().expect("piped");
         let pending: Arc<Mutex<HashMap<String, oneshot::Sender<Value>>>> = Arc::default();
         let dead = CancellationToken::new();
@@ -267,6 +278,8 @@ took effect is unknown. Check before relying on it or running it again.",
         {
             let pending = pending.clone();
             let dead = dead.clone();
+            let host = self.host.get().cloned();
+            let answers = stdin.clone();
             tokio::spawn(async move {
                 let mut ready = Some(ready);
                 let mut lines = BufReader::new(stdout).lines();
@@ -275,6 +288,10 @@ took effect is unknown. Check before relying on it or running it again.",
                         log!(Warn, "the harness wrote a line that is not JSON");
                         continue;
                     };
+                    if let Some(ask) = message.get("ask") {
+                        tokio::spawn(answer(host.clone(), answers.clone(), ask.clone()));
+                        continue;
+                    }
                     if message.get("ready").is_some() {
                         if let Some(ready) = ready.take() {
                             let _ = ready.send(());
@@ -301,7 +318,7 @@ took effect is unknown. Check before relying on it or running it again.",
             }
         }
         Ok(Process {
-            stdin: tokio::sync::Mutex::new(Some(stdin)),
+            stdin,
             child: tokio::sync::Mutex::new(child),
             pending,
             dead,
@@ -319,6 +336,49 @@ impl Process {
         line.push('\n');
         stdin.write_all(line.as_bytes()).await?;
         stdin.flush().await
+    }
+}
+
+/// Relays one question of the harness to the client (`host/harness`) and
+/// writes its answer back; with no client, or on an error, the answer is an
+/// error, which the harness takes as no answer.
+async fn answer(
+    host: Option<Arc<crate::connection::Host>>,
+    stdin: Arc<tokio::sync::Mutex<Option<ChildStdin>>>,
+    ask: Value,
+) {
+    let id = ask.get("id").cloned().unwrap_or(Value::Null);
+    let params = ask.get("params").cloned().unwrap_or(Value::Null);
+    let session = params
+        .get("sessionId")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_owned();
+    let method = ask
+        .get("method")
+        .and_then(Value::as_str)
+        .unwrap_or_default()
+        .to_owned();
+    let reply = match host {
+        Some(host) => host
+            .request::<Value>(blame_engine_protocol::rpc::EngineRequest::Harness {
+                session: blame_engine_protocol::SessionId(session),
+                method,
+                params,
+            })
+            .await
+            .map_err(|error| error.to_string()),
+        None => Err("no client".to_owned()),
+    };
+    let answer = match reply {
+        Ok(result) => json!({ "answer": { "id": id, "result": result } }),
+        Err(error) => json!({ "answer": { "id": id, "error": error } }),
+    };
+    let mut line = answer.to_string();
+    line.push('\n');
+    if let Some(stdin) = stdin.lock().await.as_mut() {
+        let _ = stdin.write_all(line.as_bytes()).await;
+        let _ = stdin.flush().await;
     }
 }
 
@@ -355,6 +415,17 @@ fn spec(tool: &Value) -> Result<ToolSpec, String> {
         ends_turn: tool.get("endsTurn").and_then(Value::as_bool) == Some(true),
         needs_approval: false,
     })
+}
+
+/// The harness keys what it knows the model has read (and so answers
+/// "already in context") on `toolContext.metadata.contextGeneration`
+/// (`contextGeneration` in `light-read-results.ts`). A compaction replaces
+/// those reads by a summary, so each compaction starts a new generation.
+fn context_generation(invocation: &ToolInvocation) -> String {
+    match invocation.compacted_through {
+        Some(through) => format!("compaction:{through}"),
+        None => "initial".into(),
+    }
 }
 
 /// What a call of the harness tool `name` that a crash cut short did.

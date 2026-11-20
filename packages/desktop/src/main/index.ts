@@ -17,7 +17,7 @@ import {
   type IpcMainInvokeEvent,
   type WebContents,
 } from "electron";
-import { shutdownAgentRuntime } from "./agent-ipc";
+import { shutdownEngineHost } from "./engine/engine-host-ipc";
 import { desktopAppIdentity } from "./desktop-app-identity";
 import { desktopRuntimeEnvironment } from "./desktop-runtime-environment";
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery";
@@ -154,8 +154,9 @@ void app.whenReady().then(() => {
       rendererFile: desktopResources.renderer,
       rendererUrl: process.env.ELECTRON_RENDERER_URL,
     },
-    agentRuntime: {
-      modulePath: desktopResources.agentRuntime,
+    engineHost: {
+      modulePath: desktopResources.engineHost,
+      dataDir: join(app.getPath("userData"), "engine"),
     },
     localApi: {
       modulePath: fileURLToPath(import.meta.resolve("@blame/api/local")),
@@ -175,7 +176,7 @@ void app.whenReady().then(() => {
 async function finishAppImageTaskSmoke() {
   try {
     const { runAppImageTaskSmoke } = await import("./appimage-run-task-smoke");
-    await runAppImageTaskSmoke(desktopResources.agentRuntime);
+    await runAppImageTaskSmoke();
     console.log("Packaged AppImage run_task smoke test passed");
     app.exit(0);
   } catch (error) {
@@ -715,7 +716,7 @@ async function cleanupApplication() {
     suspendStartedCloudPreviews(),
     shutdownTerminalSessions(),
     shutdownWorkspaceProcesses(),
-    shutdownAgentRuntime(),
+    shutdownEngineHost(),
     shutdownPreviewDevtools(),
     shutdownGithubMcp(),
     shutdownComponentPreviews(),

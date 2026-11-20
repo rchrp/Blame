@@ -3,7 +3,6 @@ set -eu
 runtime_version="${1:-13}"
 runtime_root="/home/blame/.local/share/blame/runtime"
 package_manager_root="/opt/blame/package-managers"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${2:-0.2.0}}"
 docker_version="${BLAME_DOCKER_VERSION:-29.9.2}"
 compose_version="${BLAME_COMPOSE_VERSION:-5.6.1}"
 buildx_version="${BLAME_BUILDX_VERSION:-0.38.1}"
@@ -177,12 +176,6 @@ node_archive_sha256() {
   esac
 }
 
-ensure_cline_sdk() {
-  if valid_cline_sdk_install; then return; fi
-  printf '%s\n' "Bundled Cline SDK is missing or incompatible." >&2
-  return 1
-}
-
 valid_semantic_harness_install() {
   global_node_root="$(npm root -g)"
   package_path="$global_node_root/@blame/semantic-harness-runtime/package.json"
@@ -196,26 +189,10 @@ process.exit(manifest.version === process.argv[2] ? 0 : 1);
     semantic_harness_smoke_test
 }
 
+# The payload is the Node side of the engine's blame-harness: its command,
+# the compiler side process, says it is ready and exits when its input closes.
 semantic_harness_smoke_test() {
-  workspace="$(mktemp -d)"
-  printf '%s\n' '{"scripts":{}}' >"$workspace/package.json"
-  if printf '{"input":{"target":"@capabilities"},"taskContract":{"session_id":"provision-smoke"},"tool":"read_code","workspaceRoot":"%s"}' "$workspace" |
-    blame-semantic-harness |
-    node -e '
-let value = "";
-process.stdin.on("data", (chunk) => value += chunk);
-process.stdin.on("end", () => {
-  const result = JSON.parse(value);
-  const valid = result.status === "ok" && typeof result.data?.description === "string";
-  process.exit(valid ? 0 : 1);
-});
-'; then
-    status=0
-  else
-    status=$?
-  fi
-  rm -rf "$workspace"
-  return "$status"
+  blame-semantic-harness </dev/null | head -n 1 | grep -q '"ready":true'
 }
 
 ensure_semantic_harness() {
@@ -226,34 +203,13 @@ ensure_semantic_harness() {
   fi
   payload_sha256="$(sha256sum "$payload" | awk '{ print $1 }')"
   marker="/etc/blame-semantic-harness-sha256"
-  if valid_semantic_harness_install && valid_cline_sdk_install &&
+  if valid_semantic_harness_install &&
     [ "$(cat "$marker" 2>/dev/null || true)" = "$payload_sha256" ]; then
     return
   fi
   npm install -g --force "$payload"
   valid_semantic_harness_install
   printf '%s\n' "$payload_sha256" >"$marker"
-}
-
-valid_cline_sdk_install() {
-  global_node_root="$(npm root -g)"
-  node -e '
-const fs = require("fs");
-const path = require("path");
-const root = path.join(process.argv[1], "@blame/semantic-harness-runtime/node_modules");
-const version = process.argv[2];
-const readVersion = (name) => JSON.parse(fs.readFileSync(path.join(root, name, "package.json"), "utf8")).version;
-const coreRoot = path.join(root, "../vendor/cline-core");
-const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-process.exit(
-  readVersion("@cline/sdk") === version &&
-  coreRoot &&
-  JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8")).version === version &&
-  fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json"))
-    ? 0
-    : 1
-);
-' "$global_node_root" "$cline_sdk_version" >/dev/null 2>&1
 }
 
 runtime_architecture() {
@@ -543,7 +499,6 @@ import sys
 import threading
 import time
 import uuid
-import urllib.request
 import traceback
 
 def log_error(msg):
@@ -558,17 +513,15 @@ sys.excepthook = lambda exctype, value, tb: log_error("".join(traceback.format_e
 
 
 processes = {}
-semantic_processes = {}
 write_lock = threading.Lock()
 processes_lock = threading.Lock()
-semantic_processes_lock = threading.Lock()
 json_pool_lock = threading.Lock()
 json_pool = None
 json_worker_count = max(1, min(2, os.cpu_count() or 1))
 large_json_threshold = 64 * 1024
 ignored_env_directories = {".git", ".blame", "build", "coverage", "dist", "node_modules", "out"}
 env_template_suffixes = (".example", ".sample", ".template")
-runtime_agent_version = "15"
+runtime_agent_version = "16"
 
 def serialize_json_line(value):
     return json.dumps(value, separators=(",", ":")) + "\n"
@@ -793,11 +746,6 @@ def terminate_process(process):
 def cleanup_processes():
     with processes_lock:
         active = list(processes.values())
-    with semantic_processes_lock:
-        active.extend(semantic_processes.values())
-    with semantic_server_lock:
-        if semantic_server is not None:
-            active.append(semantic_server)
     for process in active:
         terminate_process(process)
 
@@ -864,452 +812,6 @@ def run_read_existing_files(params):
             result[path] = None
     return {"files": result}
 
-# One long-lived harness serves every semantic request, answered by id: a
-# session's managed runs and caches then outlive a single tool call. A
-# harness that does not announce itself ready (an older payload) is served
-# one process per request, as before.
-semantic_server = None
-semantic_server_lock = threading.Lock()
-semantic_server_write_lock = threading.Lock()
-semantic_server_retry_at = 0
-semantic_pending = {}
-semantic_pending_lock = threading.Lock()
-semantic_server_ready_timeout = 20
-semantic_server_retry_seconds = 60
-
-def start_semantic_server():
-    account = target_user("blame")
-    process = subprocess.Popen(
-        ["blame-semantic-harness", "--serve"],
-        env=clean_env({}, account),
-        stdin=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        preexec_fn=demote(account),
-        start_new_session=True,
-    )
-    try:
-        line = read_line_with_timeout(process.stdout, semantic_server_ready_timeout)
-        ready = json.loads(line or "{}").get("ready") is True
-    except Exception:
-        ready = False
-    if not ready:
-        terminate_process(process)
-        return None
-    threading.Thread(target=read_semantic_server, args=(process,), daemon=True).start()
-    return process
-
-def semantic_server_process():
-    global semantic_server, semantic_server_retry_at
-    with semantic_server_lock:
-        if semantic_server is not None and semantic_server.poll() is None:
-            return semantic_server
-        if time.monotonic() < semantic_server_retry_at:
-            return None
-        semantic_server = start_semantic_server()
-        if semantic_server is None:
-            semantic_server_retry_at = time.monotonic() + semantic_server_retry_seconds
-        return semantic_server
-
-def read_semantic_server(process):
-    for line in process.stdout:
-        try:
-            message = json.loads(line)
-        except Exception:
-            continue
-        with semantic_pending_lock:
-            entry = semantic_pending.pop(str(message.get("id")), None)
-        if entry is not None:
-            entry["response"] = message
-            entry["done"].set()
-    # The harness stopped: requests it held get no answer from it.
-    with semantic_pending_lock:
-        stopped = [key for key, entry in semantic_pending.items() if entry["process"] is process]
-        entries = [semantic_pending.pop(key) for key in stopped]
-    for entry in entries:
-        entry["response"] = {"error": "The semantic harness stopped."}
-        entry["done"].set()
-
-def send_semantic_server(process, message):
-    with semantic_server_write_lock:
-        process.stdin.write(json.dumps(message) + "\n")
-        process.stdin.flush()
-
-def run_semantic_workspace(params):
-    operation_id = str(params.get("operationId") or "")
-    if not operation_id:
-        raise RuntimeError("Semantic workspace operation id is required")
-    request = {
-        # Granted by the desktop for this request's commands only; never logged.
-        "commandCredentials": params.get("commandCredentials") or {},
-        "input": params.get("input"),
-        "taskContract": params.get("taskContract"),
-        "tool": params.get("tool"),
-        "toolContext": params.get("toolContext"),
-        "workspaceRoot": params.get("workspaceRoot"),
-    }
-    process = semantic_server_process()
-    if process is None:
-        return run_semantic_workspace_once(operation_id, request)
-    entry = {"done": threading.Event(), "process": process}
-    with semantic_pending_lock:
-        semantic_pending[operation_id] = entry
-    try:
-        send_semantic_server(process, {"id": operation_id, "request": request})
-    except Exception as error:
-        with semantic_pending_lock:
-            semantic_pending.pop(operation_id, None)
-        raise CommandError({"stdout": "", "stderr": f"The semantic harness is unavailable: {error}", "code": 1})
-    entry["done"].wait()
-    response = entry["response"]
-    if "error" in response:
-        raise CommandError({"stdout": "", "stderr": str(response["error"]), "code": 1})
-    return response.get("result") or {}
-
-def run_semantic_workspace_once(operation_id, request):
-    account = target_user("blame")
-    process = subprocess.Popen(
-        ["blame-semantic-harness"],
-        env=clean_env({}, account),
-        stdin=subprocess.PIPE,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        preexec_fn=demote(account),
-        start_new_session=True,
-    )
-    with semantic_processes_lock:
-        semantic_processes[operation_id] = process
-    try:
-        stdout, stderr = process.communicate(json.dumps(request))
-    finally:
-        with semantic_processes_lock:
-            semantic_processes.pop(operation_id, None)
-    if process.returncode != 0:
-        raise CommandError({"stdout": stdout, "stderr": stderr, "code": process.returncode})
-    return json.loads(stdout or "{}")
-
-def run_semantic_workspace_cancel(params):
-    operation_id = str(params.get("operationId") or "")
-    with semantic_pending_lock:
-        entry = semantic_pending.get(operation_id)
-    if entry is not None:
-        try:
-            send_semantic_server(entry["process"], {"id": operation_id, "cancel": True})
-        except Exception:
-            pass
-        return {"stopped": True}
-    with semantic_processes_lock:
-        process = semantic_processes.get(operation_id)
-    if process is not None:
-        terminate_process(process)
-    return {"stopped": bool(process)}
-
-def npm_root():
-    return subprocess.check_output(["npm", "root", "-g"], text=True).strip()
-
-def cline_hub_module_path():
-    root = npm_root()
-    path = os.path.join(root, "@blame", "semantic-harness-runtime", "vendor", "cline-core", "dist", "index.js")
-    if not path:
-        raise RuntimeError("Cline SDK is not installed in BlameRuntime")
-    if not os.path.exists(path):
-        raise RuntimeError("Cline SDK is not installed in BlameRuntime")
-    return path
-
-def run_node_json(script, timeout=15):
-    process = subprocess.run(
-        ["node", "--input-type=module", "-e", script],
-        env=clean_env({}, target_user("blame")),
-        stdin=subprocess.DEVNULL,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=timeout,
-        preexec_fn=demote(target_user("blame")),
-    )
-    if process.returncode != 0:
-        raise CommandError({"stdout": process.stdout, "stderr": process.stderr, "code": process.returncode})
-    return json.loads(process.stdout or "{}")
-
-hub_process = None
-hub_result_cache = None
-hub_lock = threading.Lock()
-hub_startup_timeout = 60
-
-def read_line_with_timeout(pipe, timeout):
-    result = [None]
-    def read():
-        result[0] = pipe.readline()
-    t = threading.Thread(target=read, daemon=True)
-    t.start()
-    t.join(timeout)
-    if t.is_alive():
-        raise TimeoutError("Cline hub readiness deadline exceeded")
-    return result[0]
-
-def cline_hub_build_id():
-    module = "file://" + cline_hub_module_path()
-    script = f"const hub = await import({json.dumps(module)}); console.log(JSON.stringify({{\"buildId\": hub.resolveHubBuildId()}}));"
-    return run_node_json(script)["buildId"]
-
-default_cline_hub_port = 25463
-
-def cline_hub_port(params):
-    # Each Blame build (installed, dev) asks for its own port: WSL distros
-    # share one network, so two builds would otherwise fight over it.
-    try:
-        port = int(params.get("port") or default_cline_hub_port)
-    except (TypeError, ValueError):
-        return default_cline_hub_port
-    return port if 1024 <= port <= 65535 else default_cline_hub_port
-
-def is_cline_hub_process(pid):
-    try:
-        with open(f"/proc/{pid}/cmdline", "rb") as cmdline:
-            return b"ensureHubServer" in cmdline.read()
-    except OSError:
-        return False
-
-def run_cline_hub_ensure(params):
-    # Serialize the whole startup, including callers from another agent process.
-    import fcntl
-    os.makedirs("/var/log/blame-runtime", exist_ok=True)
-    with hub_lock, open("/var/log/blame-runtime/cline-hub.lock", "a") as lock_file:
-        fcntl.flock(lock_file, fcntl.LOCK_EX)
-        return ensure_cline_hub_locked(params)
-
-def ensure_cline_hub_locked(params):
-    global hub_process, hub_result_cache
-    import hashlib
-    port = cline_hub_port(params)
-    module = cline_hub_module_path()
-    with open(module, "rb") as source:
-        fingerprint = runtime_agent_version + ":" + hashlib.sha256(source.read()).hexdigest()
-    instance_path = "/var/log/blame-runtime/cline-hub-instance.json"
-    try:
-        with open(instance_path, "r", encoding="utf-8") as instance_file:
-            instance = json.load(instance_file)
-    except (OSError, ValueError):
-        instance = {}
-
-    import socket
-
-    def is_pid_alive(pid):
-        try:
-            os.kill(pid, 0)
-            return True
-        except OSError:
-            return False
-
-    def is_port_listening(port):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(1.0)
-        try:
-            s.connect(("127.0.0.1", port))
-            s.close()
-            return True
-        except Exception:
-            return False
-
-    # In VMware nested-virtualisation, the WSL2 localhost proxy (127.0.0.1)
-    # does not work. We must use the real WSL2 VM IP. The Hyper-V NAT has a
-    # cold-start delay of ~30 s for the first TCP connection; we pre-warm it
-    # with a Windows-side curl so Electron always gets a fast route.
-    try:
-        hub_host = subprocess.run(
-            ["hostname", "-I"], stdin=subprocess.DEVNULL, capture_output=True, text=True
-        ).stdout.strip().split()[0]
-    except Exception:
-        hub_host = "127.0.0.1"
-
-    # Try to reuse an existing healthy hub running inside WSL2
-    discovery_root = None
-    try:
-        blame_account = pwd.getpwnam("blame")
-        discovery_root = os.path.join(blame_account.pw_dir, ".cline", "data", "locks", "hub")
-    except Exception:
-        pass
-
-    import time
-
-    expected_build_id = cline_hub_build_id()
-    reused = False
-    if discovery_root:
-        discovery_files = [os.path.join(discovery_root, "production.json")]
-        owners_dir = os.path.join(discovery_root, "owners")
-        if os.path.isdir(owners_dir):
-            discovery_files.extend(
-                os.path.join(owners_dir, filename)
-                for filename in os.listdir(owners_dir)
-                if filename.endswith(".json")
-            )
-        for filepath in discovery_files:
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                pid = data.get("pid")
-                authToken = data.get("authToken")
-                if (pid and authToken and data.get("buildId") == expected_build_id
-                        and instance.get("pid") == pid and instance.get("fingerprint") == fingerprint
-                        and instance.get("port", default_cline_hub_port) == port
-                        and is_pid_alive(pid)):
-                    # Process is alive. Wait up to 3 seconds for the port to start listening.
-                    port_ready = False
-                    for _ in range(15):
-                        if is_port_listening(port):
-                            port_ready = True
-                            break
-                        time.sleep(0.2)
-
-                    if port_ready and run_cline_hub_status({"port": port}).get("status") == "ready":
-                        baseUrl = f"ws://{hub_host}:{port}/hub"
-                        url = f"{baseUrl}?authToken={authToken}"
-                        hub_result_cache = {
-                            "action": "connected",
-                            "authToken": authToken,
-                            "status": "ready",
-                            "url": url
-                        }
-                        reused = True
-                        break
-            except Exception:
-                continue
-
-    if reused:
-        return hub_result_cache
-
-    # The hub started before goes too, even on another port, so it no longer
-    # holds a port another Blame build may need.
-    previous = instance.get("pid")
-    if isinstance(previous, int) and is_cline_hub_process(previous):
-        try:
-            os.kill(previous, signal.SIGTERM)
-        except OSError:
-            pass
-
-    # If we could not reuse, clean up the port and discovery files to avoid EADDRINUSE
-    try:
-        subprocess.run(["fuser", "-k", f"{port}/tcp"], stdin=subprocess.DEVNULL, capture_output=True)
-    except Exception:
-        pass
-    if discovery_root:
-        try:
-            production_file = os.path.join(discovery_root, "production.json")
-            if os.path.exists(production_file):
-                os.remove(production_file)
-            owners_dir = os.path.join(discovery_root, "owners")
-            if os.path.isdir(owners_dir):
-                for filename in os.listdir(owners_dir):
-                    if filename.endswith(".json"):
-                        os.remove(os.path.join(owners_dir, filename))
-        except Exception:
-            pass
-
-    module = cline_hub_module_path()
-    ready_read, ready_write = os.pipe()
-    script = f"""
-import {{ writeSync, closeSync }} from "node:fs";
-const hub = await import({json.dumps("file://" + module)});
-const result = await hub.ensureHubServer({{
-  host: "0.0.0.0",
-  port: {port},
-  runtimeHandlers: hub.createLocalHubScheduleRuntimeHandlers()
-}});
-// Replace host with the actual WSL2 IP, then embed authToken as a query
-// parameter so that connectToHub() (which runs on Windows and cannot read
-// the WSL2 discovery file) can still authenticate without the discovery file.
-const baseUrl = result.url ? result.url.replace(/^ws:\\/\\/[^/]+/, "ws://{hub_host}:{port}") : result.url;
-const url = baseUrl && result.authToken
-  ? baseUrl + "?authToken=" + encodeURIComponent(result.authToken)
-  : baseUrl;
-writeSync({ready_write}, JSON.stringify({{
-  action: result.action,
-  authToken: result.authToken,
-  status: "ready",
-  url: url
-}}) + "\\n");
-closeSync({ready_write});
-"""
-    log_path = "/var/log/blame-runtime/cline-hub.log"
-    proc = None
-    try:
-        # The hub outlives the RPC agent. Its logs must never depend on an
-        # agent-owned pipe; readiness uses a separate, short-lived descriptor.
-        with open(log_path, "a", encoding="utf-8") as log_file:
-            log_file.write(f"Starting Cline hub with runtime agent {runtime_agent_version} using {module}\n")
-            log_file.flush()
-            proc = subprocess.Popen(
-                ["node", "--input-type=module", "-e", script],
-                env=clean_env({}, target_user("blame")),
-                stdin=subprocess.DEVNULL,
-                stdout=log_file,
-                stderr=log_file,
-                pass_fds=(ready_write,),
-                text=True,
-                preexec_fn=demote(target_user("blame")),
-                start_new_session=True,
-            )
-    finally:
-        os.close(ready_write)
-        if proc is None:
-            os.close(ready_read)
-
-    def monitor_hub(process):
-        code = process.wait()
-        with open(log_path, "a", encoding="utf-8") as log_file:
-            log_file.write(f"Cline hub process {process.pid} exited with code {code}\n")
-
-    threading.Thread(target=monitor_hub, args=(proc,), daemon=True).start()
-    with os.fdopen(ready_read, "r", encoding="utf-8") as ready_pipe:
-        try:
-            line = read_line_with_timeout(ready_pipe, hub_startup_timeout)
-        except TimeoutError:
-            proc.kill()
-            proc.wait()
-            raise RuntimeError(f"Cline hub startup timed out after {hub_startup_timeout} seconds; see {log_path}") from None
-        if not line:
-            if proc.poll() is None:
-                proc.kill()
-            proc.wait()
-            raise RuntimeError(f"Cline hub startup failed (exit={proc.returncode}); see {log_path}")
-    try:
-        result = json.loads(line)
-        if result.get("status") != "ready" or not result.get("url"):
-            raise ValueError("Cline hub returned an invalid startup result")
-        with open(instance_path, "w", encoding="utf-8") as instance_file:
-            json.dump({"pid": proc.pid, "fingerprint": fingerprint, "port": port}, instance_file)
-    except Exception:
-        proc.kill()
-        proc.wait()
-        raise
-    hub_process = proc
-    hub_result_cache = result
-    return result
-
-def run_cline_hub_status(params):
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{cline_hub_port(params)}/health", timeout=3) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-            return {"status": "ready", "url": payload.get("url")}
-    except Exception as error:
-        return {"status": "unavailable", "error": str(error)}
-
-def run_cline_hub_stop(params):
-    global hub_process, hub_result_cache
-    with hub_lock:
-        if hub_process is not None:
-            hub_process.terminate()
-            try:
-                hub_process.wait(timeout=5)
-            except Exception:
-                pass
-            hub_process = None
-            hub_result_cache = None
-        return {"status": "stopped"}
-
 def run_status():
     checks = {
         "version": version(),
@@ -1326,11 +828,6 @@ methods = {
     "kill": run_kill,
     "scanEnvFiles": run_scan_env_files,
     "readExistingFiles": run_read_existing_files,
-    "lightWorkspace": run_semantic_workspace,
-    "lightWorkspaceCancel": run_semantic_workspace_cancel,
-    "clineHubEnsure": run_cline_hub_ensure,
-    "clineHubStatus": run_cline_hub_status,
-    "clineHubStop": run_cline_hub_stop,
     "status": lambda params: run_status(),
 }
 
@@ -1369,8 +866,6 @@ def main():
             print(runtime_agent_version)
         elif command == "version":
             print(version())
-        elif command == "cline-hub-ensure":
-            print(json.dumps(run_cline_hub_ensure({"port": sys.argv[2] if len(sys.argv) > 2 else None})))
         elif command == "serve":
             serve()
         else:
@@ -1410,7 +905,6 @@ ensure_preview_tools
 ensure_node
 ensure_package_managers
 ensure_semantic_harness
-ensure_cline_sdk
 remove_external_cli_payloads
 ensure_container_stack
 ensure_gh

@@ -6,8 +6,6 @@ runtime_home="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 manifest_path="$runtime_home/manifest.json"
 runtime_version="$(sed -n 's/.*"runtimeVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_version="${runtime_version:-1}"
-manifest_cline_sdk_version="$(sed -n 's/.*"clineSdkVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
-cline_sdk_version="${BLAME_CLINE_SDK_VERSION:-${manifest_cline_sdk_version:-0.2.0}}"
 runtime_agent_version="$(sed -n 's/.*"runtimeAgentVersion"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$manifest_path" | head -n 1)"
 runtime_agent_version="${runtime_agent_version:-1}"
 semantic_harness_payload="$runtime_home/payloads/blame-semantic-harness.tgz"
@@ -137,12 +135,11 @@ test_vm_running() {
 }
 
 add_vm_checks() {
-  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME/Library/Application Support/Blame" "$cline_sdk_version" "$runtime_version" "$runtime_agent_version" "$semantic_harness_sha256" <<'EOF' 2>/dev/null || true
+  output="$(with_lima_environment shell "$vm_name" sudo -n sh -s -- "$HOME/Library/Application Support/Blame" "$runtime_version" "$runtime_agent_version" "$semantic_harness_sha256" <<'EOF' 2>/dev/null || true
 host_mount="$1"
-cline_sdk_version="$2"
-runtime_version="$3"
-runtime_agent_version="$4"
-semantic_harness_sha256="$5"
+runtime_version="$2"
+runtime_agent_version="$3"
+semantic_harness_sha256="$4"
 check() {
   name="$1"
   shift
@@ -152,26 +149,6 @@ check() {
     printf '%s\tmissing\n' "$name"
   fi
 }
-node_major_ok() {
-  node -e 'process.exit(Number(process.versions.node.split(".")[0]) >= 22 ? 0 : 1)'
-}
-valid_cline_sdk_install() {
-  node_major_ok
-  global_node_root="$(npm root -g)"
-  node - "$global_node_root" "$cline_sdk_version" <<'NODE'
-const fs = require("fs");
-const path = require("path");
-const root = path.join(process.argv[2], "@blame/semantic-harness-runtime/node_modules");
-const version = process.argv[3];
-const sdkPackage = path.join(root, "@cline/sdk/package.json");
-const coreRoot = path.join(root, "../vendor/cline-core");
-if (!fs.existsSync(sdkPackage) || !coreRoot) process.exit(1);
-const sdk = JSON.parse(fs.readFileSync(sdkPackage, "utf8"));
-const core = JSON.parse(fs.readFileSync(path.join(coreRoot, "package.json"), "utf8"));
-const sdkEntry = path.join(root, "@cline/sdk/dist/index.js");
-process.exit(sdk.version === version && core.version === version && fs.existsSync(sdkEntry) && fs.existsSync(path.join(coreRoot, "dist/blame-patch.json")) ? 0 : 1);
-NODE
-}
 check host-home test -d "$host_mount"
 check agent test -x /usr/local/bin/blame-runtime-agent
 check agent-version sh -lc 'test "$(blame-runtime-agent agent-version 2>/dev/null)" = "$1"' sh "$runtime_agent_version"
@@ -179,14 +156,13 @@ check runtime-version sh -lc 'test "$(cat /etc/blame-runtime-version 2>/dev/null
 check docker sh -lc 'command -v dockerd >/dev/null 2>&1 && command -v docker >/dev/null 2>&1'
 check docker-compose sh -lc 'docker compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
-check cline-sdk valid_cline_sdk_install
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "$1"' sh "$semantic_harness_sha256"
 check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
 check gh sh -lc '/usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "'
 EOF
 )"
   if [ -z "$output" ]; then
-    for name in agent agent-version runtime-version docker docker-compose git cline-sdk semantic-harness package-managers gh; do
+    for name in agent agent-version runtime-version docker docker-compose git semantic-harness package-managers gh; do
       append_check "$(new_check "$name" "missing" "$repair_action")"
     done
     return
@@ -510,7 +486,7 @@ invoke_provisioner() {
   require_payload
   write_runtime_progress "configuring"
   copy_payload
-  with_lima_environment shell "$vm_name" sudo -n sh -s -- "$runtime_version" "$cline_sdk_version" <"$provisioner"
+  with_lima_environment shell "$vm_name" sudo -n sh -s -- "$runtime_version" <"$provisioner"
 }
 
 ensure_runtime() {

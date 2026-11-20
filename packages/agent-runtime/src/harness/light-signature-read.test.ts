@@ -3,8 +3,8 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-const { LightWorkspace }=await import(process.env.BLAME_SIGNATURE_RUNTIME??"./light-workspace.js") as typeof import("./light-workspace.js");
-async function fixture(source: string, path: string, run: (root: string, workspace: InstanceType<typeof LightWorkspace>) => Promise<void>) {
+import { LightWorkspace } from "./test-client/light-workspace.js";
+async function fixture(source: string, path: string, run: (root: string, workspace: LightWorkspace) => Promise<void>) {
  const root=await mkdtemp(join(tmpdir(),"blame-signature-"));try {await writeFile(join(root,path),source);await run(root,new LightWorkspace(root,{sessionId:"signature"}));}finally{await rm(root,{recursive:true,force:true});}
 }
 for(const [path,source,target] of [

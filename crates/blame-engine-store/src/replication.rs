@@ -99,6 +99,28 @@ impl SqliteStore {
     /// Waits until the remote has everything, or `timeout` passes. `true`
     /// means caught up. Needs a running [`Replicator`] to make progress.
     pub async fn wait_flushed(&self, timeout: Duration) -> Result<bool, StoreError> {
+        self.wait_until(timeout, ReplicationLag::is_caught_up).await
+    }
+
+    /// Like [`wait_flushed`](Self::wait_flushed) for one session's records:
+    /// true once the remote holds all of them (a session deleted here keeps
+    /// its copy there).
+    pub async fn wait_session_flushed(
+        &self,
+        session: &SessionId,
+        timeout: Duration,
+    ) -> Result<bool, StoreError> {
+        self.wait_until(timeout, |lag| {
+            lag.sessions.iter().all(|behind| &behind.session != session)
+        })
+        .await
+    }
+
+    async fn wait_until(
+        &self,
+        timeout: Duration,
+        done: impl Fn(&ReplicationLag) -> bool,
+    ) -> Result<bool, StoreError> {
         let clock = self.inner.clock.clone();
         let mut deadline = pin!(clock.sleep(timeout));
         loop {
@@ -106,7 +128,7 @@ impl SqliteStore {
             // pass finishing in between cannot be missed.
             let mut progress = pin!(self.inner.progress.notified());
             progress.as_mut().enable();
-            if self.replication_lag().await?.is_caught_up() {
+            if done(&self.replication_lag().await?) {
                 return Ok(true);
             }
             if let Either::Left(()) = first(&mut deadline, progress).await {

@@ -1,5 +1,5 @@
 import type { PreviewManifest, ProjectRunConfiguration } from "./types.js";
-import type { PreviewSurfaceInfo } from "./preview-surface-tools.js";
+import type { PreviewSurfaceInfo } from "./engine/tools/preview-types.js";
 export type PreviewInitialization = {
   previewManifest: PreviewManifest;
   runConfigurations: ProjectRunConfiguration[];

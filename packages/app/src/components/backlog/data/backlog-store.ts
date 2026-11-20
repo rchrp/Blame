@@ -5,19 +5,11 @@ import { toast } from "sonner"
 import { createBacklogApi } from "@/components/backlog/data/backlog-api"
 import {
   mergeLoadedStories,
-  mergeStoryAgentRun,
   mergeUserStory,
-  storyWithActiveAgentRun,
 } from "@/components/backlog/data/backlog-store-merge"
 import type {
   BacklogColumnId,
   UserStory,
-  UserStoryAgentActivity,
-  UserStoryAgentRun,
-  UserStoryAgentRunDraft,
-  UserStoryAgentRunFinalization,
-  UserStoryAgentRunUpdate,
-  UserStoryComment,
   UserStoryDraft,
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
@@ -187,7 +179,7 @@ function useBacklogActions(
   const projectPath = projects.activeProject?.path
 
   const api = React.useMemo(
-    () => createBacklogApi(auth.apiConnection, platform.agentScreenshots),
+    () => createBacklogApi(auth.apiConnection),
     [auth.apiConnection, platform.agentScreenshots]
   )
 
@@ -282,146 +274,13 @@ function useBacklogActions(
           ),
           stories: current.stories.map((currentStory) =>
             currentStory.id === story.id
-              ? mergeUserStory(currentStory, nextStory, {
-                  replaceAgentActivities: input.agentActivities !== undefined,
-                })
+              ? mergeUserStory(currentStory, nextStory)
               : currentStory
           ),
         }))
         return nextStory
       }),
     [api, setState]
-  )
-  const undoComment = React.useCallback(
-    async (
-      story: UserStory,
-      commentId: string,
-      input: { clineSessionId?: string; runId: string }
-    ) => {
-      const nextStory = await api.undoComment(story.id, commentId, input)
-      replaceStory(nextStory, setState)
-      return nextStory
-    },
-    [api, setState]
-  )
-  const validateCommentUndo = React.useCallback(
-    (story: UserStory, commentId: string, runId: string) =>
-      api.validateCommentUndo(story.id, commentId, runId),
-    [api]
-  )
-  const createComment = React.useCallback(
-    async (
-      story: UserStory,
-      input: Pick<
-        UserStoryComment,
-        "body" | "codeSelectionAttachments" | "fileAttachments"
-      >
-    ) => {
-      const comment = await api.createComment(story.id, input)
-      setState((current) => ({
-        ...current,
-        detailedStoryIds: storyStateIds(
-          current.detailedStoryIds,
-          story.id,
-          true
-        ),
-        stories: current.stories.map((currentStory) =>
-          currentStory.id === story.id
-            ? storyWithComment(currentStory, comment)
-            : currentStory
-        ),
-      }))
-      return comment
-    },
-    [api, setState]
-  )
-  const createAgentRun = React.useCallback(
-    async (story: UserStory, input: UserStoryAgentRunDraft) => {
-      const run = await api.createAgentRun(story.id, input)
-      setState((current) => ({
-        ...current,
-        detailedStoryIds: storyStateIds(
-          current.detailedStoryIds,
-          story.id,
-          true
-        ),
-        stories: current.stories.map((currentStory) =>
-          currentStory.id === story.id
-            ? storyWithActiveAgentRun(currentStory, run)
-            : currentStory
-        ),
-      }))
-      return run
-    },
-    [api, setState]
-  )
-  const updateAgentRun = React.useCallback(
-    async (
-      story: UserStory,
-      run: UserStoryAgentRun,
-      input: UserStoryAgentRunUpdate
-    ) => {
-      const nextRun = await api.updateAgentRun(story.id, run.id, input)
-      setState((current) => ({
-        ...current,
-        stories: current.stories.map((currentStory) =>
-          currentStory.id === story.id
-            ? mergeStoryAgentRun(currentStory, nextRun)
-            : currentStory
-        ),
-      }))
-      return nextRun
-    },
-    [api, setState]
-  )
-  const finalizeAgentRun = React.useCallback(
-    (
-      story: UserStory,
-      run: UserStoryAgentRun,
-      input: UserStoryAgentRunFinalization
-    ) =>
-      enqueueStoryRequest(updateQueues, story.id, async () => {
-        const nextStory = await api.finalizeAgentRun(story.id, run.id, input)
-        setState((current) => ({
-          ...current,
-          detailedStoryIds: storyStateIds(
-            current.detailedStoryIds,
-            story.id,
-            true
-          ),
-          stories: current.stories.map((currentStory) =>
-            currentStory.id === story.id
-              ? mergeUserStory(currentStory, nextStory, {
-                  replaceAgentActivities: true,
-                })
-              : currentStory
-          ),
-        }))
-        return nextStory
-      }),
-    [api, setState]
-  )
-  const updateAgentLocal = React.useCallback(
-    (
-      story: UserStory,
-      input: UserStoryUpdate,
-      run?: UserStoryAgentRun,
-      runInput?: UserStoryAgentRunUpdate
-    ) => {
-      recordPerformanceCount("backlog.store.update_agent_local")
-      setState((current) => ({
-        ...current,
-        stories: current.stories.map((currentStory) =>
-          storyWithLocalAgentUpdate(currentStory, story, input, run, runInput)
-        ),
-      }))
-    },
-    [setState]
-  )
-  const activityDetail = React.useCallback(
-    (story: UserStory, activityId: string) =>
-      api.activityDetail(story.id, activityId),
-    [api]
   )
   const loadDetail = React.useCallback(
     async (story: UserStory) => {
@@ -522,11 +381,7 @@ function useBacklogActions(
   )
   return React.useMemo(
     () => ({
-      activityDetail,
       create,
-      createAgentRun,
-      createComment,
-      finalizeAgentRun,
       load,
       loadDetail,
       projectId,
@@ -534,19 +389,11 @@ function useBacklogActions(
       remove,
       setStoryCleanup,
       setStorySetupInitializing,
-      undoComment,
       update,
-      updateAgentLocal,
-      updateAgentRun,
       updateLocal,
-      validateCommentUndo,
     }),
     [
-      activityDetail,
       create,
-      createAgentRun,
-      createComment,
-      finalizeAgentRun,
       load,
       loadDetail,
       projectId,
@@ -554,62 +401,10 @@ function useBacklogActions(
       remove,
       setStoryCleanup,
       setStorySetupInitializing,
-      undoComment,
       update,
-      updateAgentLocal,
-      updateAgentRun,
       updateLocal,
-      validateCommentUndo,
     ]
   )
-}
-
-function agentRunWithUpdate(
-  run: UserStoryAgentRun,
-  input: UserStoryAgentRunUpdate
-) {
-  const { agentActivity, agentActivityUpdates, ...metadata } = input
-  const nextRun = {
-    ...run,
-    ...definedUpdate(metadata),
-    updatedAt: new Date().toISOString(),
-  }
-  const activities = agentActivityUpdates ?? activityUpdateList(agentActivity)
-  if (!activities.length) return nextRun
-  return {
-    ...nextRun,
-    activities: nextAgentActivities(nextRun.activities ?? [], activities),
-  }
-}
-
-function nextAgentActivities(
-  activities: UserStoryAgentRun["activities"],
-  updates: UserStoryAgentActivity[]
-) {
-  const currentActivities = activities ?? []
-  return updates.reduce(upsertAgentActivity, currentActivities)
-}
-
-function activityUpdateList(
-  activity: UserStoryAgentRunUpdate["agentActivity"]
-) {
-  return activity ? [activity] : []
-}
-
-function upsertAgentActivity(
-  activities: UserStoryAgentActivity[],
-  activity: UserStoryAgentActivity
-) {
-  const exists = activities.some((item) => item.id === activity.id)
-  if (!exists) return [...activities, activity]
-  return activities.map((item) => (item.id === activity.id ? activity : item))
-}
-
-function storyWithComment(story: UserStory, comment: UserStoryComment) {
-  return {
-    ...story,
-    comments: [...(story.comments ?? []), comment],
-  }
 }
 
 async function enqueueStoryRequest<T>(
@@ -627,26 +422,9 @@ async function enqueueStoryRequest<T>(
   }
 }
 
-function storyWithLocalAgentUpdate(
-  currentStory: UserStory,
-  targetStory: UserStory,
-  input: UserStoryUpdate,
-  run?: UserStoryAgentRun,
-  runInput?: UserStoryAgentRunUpdate
-) {
-  if (currentStory.id !== targetStory.id) return currentStory
-  const nextStory = { ...currentStory, ...definedUpdate(input) }
-  if (!run || !runInput) return nextStory
-  const currentRun =
-    nextStory.agentRuns?.find((currentRun) => currentRun.id === run.id) ?? run
-  return mergeStoryAgentRun(nextStory, agentRunWithUpdate(currentRun, runInput))
-}
-
-function definedUpdate(input: UserStoryUpdate | UserStoryAgentRunUpdate) {
-  const { agentActivity, ...update } = input
-  void agentActivity
+function definedUpdate(input: UserStoryUpdate) {
   return Object.fromEntries(
-    Object.entries(update).filter(([, value]) => value !== undefined)
+    Object.entries(input).filter(([, value]) => value !== undefined)
   )
 }
 
@@ -667,19 +445,6 @@ function storyStateIds(
   if (active) next.add(storyId)
   else next.delete(storyId)
   return next
-}
-
-function replaceStory(
-  story: UserStory,
-  setState: React.Dispatch<React.SetStateAction<BacklogState>>
-) {
-  setState((current) => ({
-    ...current,
-    detailedStoryIds: storyStateIds(current.detailedStoryIds, story.id, true),
-    stories: current.stories.map((currentStory) =>
-      currentStory.id === story.id ? story : currentStory
-    ),
-  }))
 }
 
 function runCreatedStoryAttachmentUpload(

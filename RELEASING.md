@@ -9,7 +9,6 @@ Everything is built on GitHub-hosted runners and published as a GitHub Release. 
 | [Release cache](.github/workflows/release-cache.yml)       | Lockfile changes, twice a week  | pnpm store caches on `main` for the macOS and Windows release runners    |
 | [Release packages](.github/workflows/release-packages.yml) | Stable release published        | Homebrew tap commit, winget-pkgs pull request, and AUR push              |
 | [Release runtime](.github/workflows/release-runtime.yml)   | Tag `runtime-v<version>`        | Published release with the four runtime images and their `manifest.json` |
-| [Update Cline SDK](.github/workflows/cline-sdk-update.yml) | Every Monday, or manually       | Pull request updating every `@cline/*` package and the runtime version   |
 
 Users never download from GitHub URLs directly. [`download.blame.so`](deploy/downloads) is a stable redirector, so you can change the hosting later without breaking installed apps:
 
@@ -30,7 +29,7 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
    ```
 
 3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published while it builds macOS (x64 and arm64, both packaged on Apple Silicon, signed and notarized), Windows, and Linux, and then creates a draft release.
-   Once Windows signing is configured, **approve two signing requests in SignPath** while the Windows job runs: `Blame.exe` first, then the installer (see [Windows signing](#windows-signing)).
+   Once Windows signing is configured, **approve two signing requests in SignPath** while the Windows job runs: `Blame.exe` and the engine executables first, then the installer (see [Windows signing](#windows-signing)).
 4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
 5. Edit the generated notes if needed. **If you edited them, re-run the `GitHub Release` job** of the workflow run (**Re-run jobs → GitHub Release**) so the update metadata carries the edit (see [Release notes in the app](#release-notes-in-the-app)). Then click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
 6. Publishing starts **Release packages**, which updates the package managers (see below).
@@ -60,8 +59,8 @@ To test the screen, install a packaged build that already includes it, then upda
 [SignPath Foundation](https://signpath.org) signs the Windows app for free, as an open-source project; the [Code signing policy](CODE_SIGNING_POLICY.md) is the public side of it. Until the `SIGNPATH_API_TOKEN` secret exists, the Windows job builds an unsigned installer and says so in a notice. Once it exists, the Windows job of **Release desktop**:
 
 1. builds the app folder only, with the publisher check on (below);
-2. uploads `Blame.exe` and submits it to SignPath with the `windows-app` artifact configuration;
-3. waits for the request to be approved and signed, checks the signature, and packages the installer around the signed `Blame.exe` (`scripts/windows-signing.mjs installer`);
+2. uploads `Blame.exe` and the engine executables (`resources/engine/win32-x64/*.exe`) and submits them to SignPath with the `windows-app` artifact configuration;
+3. waits for the request to be approved and signed, checks the signature, and packages the installer around the signed files (`scripts/windows-signing.mjs installer`);
 4. uploads the installer and submits it with the `windows-installer` configuration;
 5. waits again, checks the signature, and rebuilds `latest.yml` (sha512, size) and the blockmap for the signed installer (`scripts/windows-signing.mjs update-info`). `SHA256SUMS` is computed afterwards from these files, so the in-app updater, Homebrew and winget all see the signed installer.
 
@@ -75,7 +74,7 @@ To test the screen, install a packaged build that already includes it, then upda
 **Set up once SignPath approves Blame:**
 
 1. In SignPath, enable multi-factor authentication for every member, add the predefined trusted build system **GitHub.com** to the organization and link it to the project, and install the SignPath GitHub App on this repository.
-2. Create the project (slug `blame`) with the signing policy `release-signing`, and two artifact configurations whose slugs and contents come from [`packaging/signpath/`](packaging/signpath): `windows-app` and `windows-installer`. They restrict signing to files whose product name is `Blame` and whose product version is the release's.
+2. Create the project (slug `blame`) with the signing policy `release-signing`, and two artifact configurations whose slugs and contents come from [`packaging/signpath/`](packaging/signpath): `windows-app` and `windows-installer`. They restrict signing to files whose product name is `Blame` and whose product version is the release's; the engine executables carry no version resource, so `windows-app` restricts them by path only.
 3. Create a CI user with the **Submitter** role on that signing policy, and add its API token as the `SIGNPATH_API_TOKEN` secret.
 4. Add the organization ID as the `SIGNPATH_ORGANIZATION_ID` variable. If the project or signing policy slug differs, set `SIGNPATH_PROJECT_SLUG` or `SIGNPATH_SIGNING_POLICY_SLUG`.
 5. Push a beta tag and approve both requests. If SignPath rejects a file over its product version, compare it with the file's properties (`Blame.exe` carries `1.2.0.0`, the installer `1.2.0` or `1.2.0-beta.1`) and adjust the configuration.
@@ -141,24 +140,6 @@ The macOS images are provisioned natively in a chroot on runners of their archit
 
 Never delete a runtime release that a published desktop version still references.
 
-## Cline SDK updates
-
-Blame pins every `@cline/*` package to one exact version. The SDK is also baked into the runtime images. Every Monday, the **Update Cline SDK** workflow compares that version with npm's latest release. When a newer one exists, it opens a pull request (or refreshes the open one) that:
-
-- pins every `@cline/*` dependency to the new version and updates `pnpm-lock.yaml`,
-- writes the new `clineSdkVersion` into both runtime manifests and bumps `runtimeVersion`,
-- updates the version pinned by the sandbox runner image and the runtime provisioning script fallbacks,
-- regenerates Blame's `@cline/core` patch with `scripts/patch-cline-core.mjs` (see `patches/README.md`),
-- lists the releases and SDK commits since the current version.
-
-When the patch cannot be regenerated, the pull request opens as a draft that names it. Once a maintainer has pushed commits to the pull request, the workflow no longer overwrites it and comments when a newer Cline release appears.
-
-The pull request is never merged automatically. CI runs the **Agent runtime tests**, which include a smoke test that drives a real Cline session through Blame's configuration. After merging, release the runtime and then the desktop app, as the pull request describes.
-
-To check by hand: `pnpm update:cline-sdk check`.
-
-New models do not wait for an SDK update. The API refreshes its catalog from the live Cline catalog every few hours, and desktop sessions fetch the metadata of a model their bundled SDK does not know yet from `GET /api/v1/providers/catalog/model`.
-
 ## Local builds
 
 Use local builds to try a change before you tag it. They never publish anything.
@@ -191,10 +172,10 @@ MAC_CSC_LINK
 
 Optional variables: `BLAME_HOMEPAGE`, `BLAME_MAINTAINER_EMAIL`, `BLAME_MAINTAINER_NAME`.
 
-For Cline SDK update pull requests:
+For pull requests that workflows open (the sandbox runner pin):
 
 - Allow GitHub Actions to open pull requests: **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**.
-- Optional secret `CLINE_SDK_UPDATE_TOKEN`: a fine-grained token with **Contents** and **Pull requests** write access on this repository. Pull requests opened with the default token do not trigger CI. Without this secret, close and reopen the pull request to start CI.
+- Optional secret `AUTOMATION_PR_TOKEN`: a fine-grained token with **Contents** and **Pull requests** write access on this repository. Pull requests opened with the default token do not trigger CI. Without this secret, close and reopen the pull request to start CI.
 
 For the package managers (each one is optional):
 
@@ -214,7 +195,7 @@ Setup, once:
 
 - A GitHub environment `sandbox-runner-release`, with required reviewers, holding the secret `VERCEL_TOKEN` (a Vercel token that can read the `blame-sandbox-runtime` project's environment).
 - Repository variables `VERCEL_TEAM_ID`, `VERCEL_RUNNER_PROJECT_ID` (the `blame-sandbox-runtime` project) and `BLAME_SANDBOX_RUNNER_REPOSITORY` (for example `vcr.vercel.com/<team>/<project>/blame-runner`).
-- GitHub Actions allowed to open pull requests, as for the Cline SDK update. The optional `CLINE_SDK_UPDATE_TOKEN` also lets the pin pull request start CI.
+- GitHub Actions allowed to open pull requests (see above). The optional `AUTOMATION_PR_TOKEN` also lets the pin pull request start CI.
 - Remove `BLAME_SANDBOX_RUNNER_IMAGE` and `BLAME_SANDBOX_RUNNER_VERSION` from the production API environment once the first pin is merged: when set, they override the pin. Self-hosted deployments that publish their own runner set both instead.
 
 The workflow's signature is verifiable by anyone: `cosign verify-blob` with the bundle from the `-signatures` image, `--certificate-identity-regexp 'https://github.com/rchrp/Blame/.github/workflows/release-sandbox-runner.yml@.*'` and `--certificate-oidc-issuer https://token.actions.githubusercontent.com`.

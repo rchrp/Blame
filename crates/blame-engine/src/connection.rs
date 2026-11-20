@@ -4,6 +4,8 @@
 
 use crate::log::log;
 use crate::transport::Outbound;
+use blame_engine_core::ports::ToolProgress;
+use blame_engine_protocol::ToolCallId;
 use blame_engine_protocol::rpc::{
     EngineNotification, EngineRequest, Message, Outcome, RpcError, Version,
 };
@@ -229,6 +231,8 @@ impl Drop for Withdraw<'_> {
 #[derive(Default)]
 pub struct Host {
     current: Mutex<Option<Arc<Connection>>>,
+    /// Where `tool/progress` of each client tool call still running goes.
+    progress: Mutex<HashMap<ToolCallId, ToolProgress>>,
 }
 
 impl Host {
@@ -257,7 +261,40 @@ impl Host {
         serde_json::from_value(value).map_err(|error| HostError::Decode(error.to_string()))
     }
 
+    /// Routes the client's `tool/progress` for `call` to `sink` until the
+    /// returned guard is dropped (the call is answered or withdrawn).
+    pub fn track_progress(&self, call: ToolCallId, sink: ToolProgress) -> ProgressGuard<'_> {
+        self.progress_map().insert(call.clone(), sink);
+        ProgressGuard { host: self, call }
+    }
+
+    /// Progress the client reported for one of its running tools. Progress
+    /// for a call that already finished is dropped.
+    pub fn progress(&self, call: &ToolCallId, text: String) {
+        let sink = self.progress_map().get(call).cloned();
+        match sink {
+            Some(sink) => sink(text),
+            None => log!(Debug, "progress for {call}, which is not running"),
+        }
+    }
+
+    fn progress_map(&self) -> std::sync::MutexGuard<'_, HashMap<ToolCallId, ToolProgress>> {
+        self.progress.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     fn slot(&self) -> std::sync::MutexGuard<'_, Option<Arc<Connection>>> {
         self.current.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
+
+/// Stops routing progress for a call when dropped.
+pub struct ProgressGuard<'a> {
+    host: &'a Host,
+    call: ToolCallId,
+}
+
+impl Drop for ProgressGuard<'_> {
+    fn drop(&mut self) {
+        self.host.progress_map().remove(&self.call);
     }
 }

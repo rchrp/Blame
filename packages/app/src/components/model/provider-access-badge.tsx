@@ -20,7 +20,7 @@ type ProviderAccess = {
 }
 
 const providerAccess: Record<string, ProviderAccess> = {
-  "openai-codex": {
+  chatgpt: {
     // The electric blue of Cloud Previews.
     className:
       "border-sky-500/35 bg-sky-500/8 text-sky-600 shadow-[0_0_8px_oklch(0.65_0.2_250_/_0.15)] dark:text-sky-300",

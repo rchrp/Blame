@@ -11,6 +11,7 @@
 //! `harness`/`server` (execution).
 
 pub mod aliases;
+pub mod ask;
 pub mod attention;
 pub mod base64;
 pub mod checks;
@@ -46,6 +47,7 @@ pub mod syntax;
 pub mod text;
 pub mod tools;
 pub mod turn;
+pub mod units;
 pub mod validate;
 pub mod validation;
 pub mod workspace;

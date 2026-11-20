@@ -3,8 +3,8 @@ import test from "node:test";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { data, fixture, LightFinishService, LightWorkspace } from "./light-agent-guidance-fixture.js";
-import type { LightCompletionNotification } from "./light-completion.js";
-import { currentValidationReport, validationStateAfterEdit } from "./light-validation-report.js";
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
+import { currentValidationReport, validationStateAfterEdit } from "./test-client/units.js";
 import type { JournalCompletionSnapshot } from "./session-journal.js";
 
 const original = "exports.value = 1;\n";

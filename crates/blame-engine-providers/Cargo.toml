@@ -18,7 +18,9 @@ blame-engine-protocol.workspace = true
 async-trait.workspace = true
 futures-core.workspace = true
 serde.workspace = true
-serde_json.workspace = true
+# `raw_value`: models.dev's catalog is cut to the served providers without
+# parsing the other ~300.
+serde_json = { workspace = true, features = ["raw_value"] }
 thiserror.workspace = true
 tokio = { workspace = true, features = ["net", "io-util", "time"] }
 
@@ -29,6 +31,9 @@ rig-core = { version = "=0.46.0", default-features = false, features = ["reqwest
 # The same reqwest Rig sends with, so the ChatGPT sign-in adds no second
 # HTTP stack; also lets the registry build its own client (timeouts).
 rig-reqwest = { version = "=0.46.0", default-features = false, features = ["rustls"] }
+# The reqwest Rig sends with, with gzip for the models.dev catalog (6.8 MB
+# raw, 0.7 MB gzipped). Provider clients turn it off (`no_gzip`).
+reqwest = { version = "0.13", default-features = false, features = ["gzip"] }
 
 # Already in the tree through rig-core; listed because this crate uses them
 # directly.

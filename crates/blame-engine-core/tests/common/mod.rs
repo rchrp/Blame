@@ -86,6 +86,9 @@ pub fn kind(body: &RecordBody) -> &'static str {
         RecordBody::RewindFinished { .. } => "rewound",
         RecordBody::RewindUndone { .. } => "undone",
         RecordBody::Notice { .. } => "notice",
+        RecordBody::ResultAccepted { .. } => "accepted",
+        RecordBody::ResultRejected { .. } => "rejected",
+        RecordBody::ContractCorrection { .. } => "correction",
     }
 }
 

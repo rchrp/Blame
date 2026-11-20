@@ -1,6 +1,6 @@
 // Small, defensive readers for tool call payloads. Tool inputs and outputs
-// come from several runtimes (Cline built-ins, the Blame harness, older
-// harness versions) and may be compacted into { excerpt, truncated } records.
+// come from the Blame harness (current and older versions) and other tools,
+// and may be compacted into { excerpt, truncated } records.
 import { unwrapFeedbackEnvelope } from "@blame/agent-runtime/tool-result-envelope"
 
 export type TextValue = { text: string; truncated: boolean }
@@ -135,7 +135,7 @@ export function harnessResult(output: unknown): HarnessResult | undefined {
   }
 }
 
-// Results from Cline built-in tools: one { query, result, success } per item.
+// Results given as one { query, result, success } per item.
 export type OperationResult = {
   error?: string
   query?: string

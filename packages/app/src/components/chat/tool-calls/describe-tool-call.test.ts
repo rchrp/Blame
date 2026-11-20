@@ -4,8 +4,7 @@ import { encodeToolResult } from "@blame/agent-runtime/tool-result-envelope"
 
 import { describeToolCall, toolCallSource } from "./describe-tool-call.ts"
 
-// Payloads below are real outputs captured from the Blame harness and the
-// shapes produced by Cline built-in tools.
+// Payloads below are real outputs captured from the Blame harness.
 function view(
   toolName: string,
   input: unknown,
@@ -272,16 +271,6 @@ test("reads name the file, symbol or range", () => {
     ),
     "Listed src/ 1 entry"
   )
-  assert.equal(
-    row(
-      view(
-        "read_files",
-        { files: [{ path: "src/a.ts", start_line: 4, end_line: 10 }] },
-        [{ query: "src/a.ts", result: "code", success: true }]
-      )
-    ),
-    "Read a.ts L4–10"
-  )
 })
 
 test("running tools use the present tense", () => {
@@ -293,32 +282,6 @@ test("running tools use the present tense", () => {
   assert.equal(
     view("search_code", { query: "x" }, undefined, true).verb,
     "Searching for"
-  )
-})
-
-test("Cline patches and commands get the same treatment", () => {
-  const patch = view(
-    "apply_patch",
-    {
-      input:
-        "*** Begin Patch\n*** Add File: notes.md\n+# Notes\n+hello\n*** End Patch",
-    },
-    [
-      {
-        query: "apply_patch",
-        result: "Successfully applied patch to the following files:\nnotes.md",
-        success: true,
-      },
-    ]
-  )
-  assert.equal(row(patch), "Created notes.md +2")
-  assert.equal(
-    row(
-      view("run_commands", { commands: ["ls"] }, [
-        { query: "ls", result: "a\nb", success: true },
-      ])
-    ),
-    "Ran ls Done 1.3 s"
   )
 })
 

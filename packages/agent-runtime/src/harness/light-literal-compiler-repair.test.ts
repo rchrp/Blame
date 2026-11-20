@@ -4,7 +4,7 @@ import { mkdir, symlink } from "node:fs/promises";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { data, fixture, LightWorkspace, LightFinishService } from "./light-agent-guidance-fixture.js";
-import { failedLiteralCompilerInvocations } from "./light-check-repair.js";
+import { failedLiteralCompilerInvocations } from "./test-client/units.js";
 import { SessionJournal } from "./session-journal.js";
 
 const compiler = "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json";

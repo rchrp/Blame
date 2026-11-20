@@ -267,8 +267,6 @@ async function executeTrial(trial, scenario) {
     join(directory, "events.jsonl"),
     "--result",
     join(directory, "result.json"),
-    "--harness",
-    trial.arm === "cline" ? "cline" : "blame",
     "--max-iterations",
     String(scenario.maxIterations),
     "--timeout-seconds",

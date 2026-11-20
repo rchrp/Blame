@@ -5,15 +5,11 @@ import ProjectCodePractice from '#models/project_code_practice'
 import ProjectInitialization from '#models/project_initialization'
 import ProviderCredential from '#models/provider_credential'
 import QuickChat from '#models/quick_chat'
-import QuickChatAgentRun from '#models/quick_chat_agent_run'
-import QuickChatMessage from '#models/quick_chat_message'
 import User from '#models/user'
 import UserAiPreference from '#models/user_ai_preference'
 import UserMcpConfiguration from '#models/user_mcp_configuration'
 import UserSubscription from '#models/user_subscription'
 import UserStory from '#models/user_story'
-import UserStoryAgentRun from '#models/user_story_agent_run'
-import UserStoryComment from '#models/user_story_comment'
 import db from '@adonisjs/lucid/services/db'
 import testUtils from '@adonisjs/core/services/test_utils'
 import type { ApiClient } from '@japa/api-client'
@@ -70,6 +66,7 @@ test.group('account privacy', (group) => {
     assert.include(serialized, 'Owned project')
     assert.include(serialized, 'Owned story')
     assert.include(serialized, 'Owned quick chat')
+    assert.include(serialized, 'owned-quick-chat-session')
     assert.notInclude(serialized, 'Private stranger project')
     assert.notInclude(serialized, passwordHash)
     assert.notInclude(serialized, encryptedApiKey)
@@ -211,32 +208,14 @@ async function createStory(projectId: string) {
     priority: 'Medium',
     owner: 'user',
   })
-  const comment = await UserStoryComment.create({
-    userStoryId: story.id,
-    body: 'Owned comment',
-    author: 'user',
-  })
-  await UserStoryAgentRun.create({
-    userStoryId: story.id,
-    commentId: comment.id,
-    kind: 'change-request',
-    status: 'completed',
-  })
   return story.id
 }
 
 async function createQuickChat(projectId: string) {
-  const chat = await QuickChat.create({ projectId, title: 'Owned quick chat' })
-  const message = await QuickChatMessage.create({
-    quickChatId: chat.id,
-    body: 'Owned message',
-    author: 'user',
-  })
-  await QuickChatAgentRun.create({
-    quickChatId: chat.id,
-    messageId: message.id,
-    kind: 'initial',
-    status: 'completed',
+  const chat = await QuickChat.create({
+    projectId,
+    title: 'Owned quick chat',
+    engineSessionId: 'owned-quick-chat-session',
   })
   return chat.id
 }
@@ -321,11 +300,8 @@ async function assertOwnedRowsDeleted(ids: OwnedDataIds, assert: Assert) {
     db.from('project_code_practices').where('project_id', ids.projectId),
     db.from('project_agent_memories').where('project_id', ids.projectId),
     db.from('user_stories').where('project_id', ids.projectId),
-    db.from('user_story_comments').where('user_story_id', ids.storyId),
-    db.from('user_story_agent_runs').where('user_story_id', ids.storyId),
-    db.from('quick_chats').where('project_id', ids.projectId),
-    db.from('quick_chat_messages').where('quick_chat_id', ids.chatId),
-    db.from('quick_chat_agent_runs').where('quick_chat_id', ids.chatId),
+    db.from('user_stories').where('id', ids.storyId),
+    db.from('quick_chats').where('id', ids.chatId),
   ])
   for (const records of rows) assert.lengthOf(records, 0)
 }

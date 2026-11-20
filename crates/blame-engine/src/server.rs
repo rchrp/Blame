@@ -14,14 +14,23 @@ use crate::connection::{Connection, Host};
 use crate::engine::{Engine, OpenError, Settings};
 use crate::log::log;
 use crate::transport::{Inbound, Outbound};
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
 use blame_engine_core::ports::{SessionStore, StoreError};
+use blame_engine_core::projection::task_outcome;
 use blame_engine_core::{EngineError, Session, SessionEvent};
 use blame_engine_protocol::rpc::{
     ClientRequest, EngineNotification, Initialized, Message, Outcome, Records, RpcError,
     RpcErrorData, SessionList, SessionOpened, SessionSummary, Subscribed,
 };
-use blame_engine_protocol::{Delta, ErrorKind, PROTOCOL_VERSION, Record, Seq, SessionId};
+use blame_engine_protocol::{
+    Delta, ErrorKind, PROTOCOL_VERSION, Record, Seq, SessionConfig, SessionId, TaskOutcome,
+    UserBlock,
+};
 use serde_json::Value;
+use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
 use std::time::Duration;
 use tokio::sync::broadcast;
@@ -30,6 +39,10 @@ use tokio_util::task::TaskTracker;
 
 /// The largest page `session/read` returns.
 const MAX_READ: u32 = 1000;
+
+/// The largest blob a client may put: what Blame's database accepts
+/// (`packages/api/config/engine_sessions.ts`).
+const MAX_BLOB: usize = 25 * 1024 * 1024;
 
 struct Server {
     settings: Mutex<Option<Settings>>,
@@ -41,6 +54,9 @@ struct Server {
     exit: CancellationToken,
     /// Client requests still running, waited for before the engine stops.
     requests: TaskTracker,
+    /// The task each running `task/run` request drives, by request id: what
+    /// a `$/cancel` of that request interrupts.
+    tasks: Mutex<HashMap<u64, SessionId>>,
 }
 
 /// How long requests received before the end may take to finish.
@@ -55,6 +71,7 @@ pub async fn serve(settings: Settings, mut inbound: Box<dyn Inbound>, outbound: 
         host: Arc::new(Host::default()),
         exit: CancellationToken::new(),
         requests: TaskTracker::new(),
+        tasks: Mutex::new(HashMap::new()),
     });
     let connection = Connection::start(1, outbound);
     let stop_signal = stop_signal();
@@ -97,13 +114,13 @@ pub async fn serve(settings: Settings, mut inbound: Box<dyn Inbound>, outbound: 
     log!(Info, "stopped");
 }
 
+/// What the reader finishes before it reads the next message.
+type Barrier = Pin<Box<dyn Future<Output = ()> + Send>>;
+
 /// Handles one message. An `initialize` request is returned instead of
-/// spawned, for the caller to finish before reading further.
-fn dispatch(
-    server: &Arc<Server>,
-    connection: &Arc<Connection>,
-    line: &str,
-) -> Option<impl std::future::Future<Output = ()> + use<>> {
+/// spawned, for the caller to finish before reading further; so is the
+/// creation of a `task/run`'s session, whose run then goes on by itself.
+fn dispatch(server: &Arc<Server>, connection: &Arc<Connection>, line: &str) -> Option<Barrier> {
     let value: Value = match serde_json::from_str(line) {
         Ok(value) => value,
         Err(error) => {
@@ -123,6 +140,32 @@ fn dispatch(
         .and_then(Value::as_str)
         .map(str::to_owned);
     match serde_json::from_value::<Message<ClientRequest>>(value) {
+        Ok(Message::Request {
+            id,
+            call:
+                ClientRequest::RunTask {
+                    session,
+                    config,
+                    instruction,
+                },
+            ..
+        }) => {
+            let (created, ready) = tokio::sync::oneshot::channel();
+            let task_server = server.clone();
+            let connection = connection.clone();
+            server.requests.spawn(async move {
+                let outcome =
+                    match run_task(&task_server, id, session, config, instruction, created).await {
+                        Ok(value) => Outcome::Result(value.unwrap_or(Value::Null)),
+                        Err(error) => Outcome::Error(error),
+                    };
+                connection.respond(id, outcome).await;
+            });
+            return Some(Box::pin(async move {
+                // Dropped without a send when the creation failed.
+                let _ = ready.await;
+            }));
+        }
         Ok(Message::Request { id, call, .. }) => {
             let initialize = matches!(call, ClientRequest::Initialize { .. });
             let shutdown = matches!(call, ClientRequest::Shutdown {});
@@ -138,7 +181,7 @@ fn dispatch(
                 connection.respond(id, outcome).await;
             };
             if initialize {
-                return Some(task);
+                return Some(Box::pin(task));
             }
             if shutdown {
                 // Not tracked: it waits for the tracked ones.
@@ -152,11 +195,21 @@ fn dispatch(
             call: ClientRequest::Cancel { id },
             ..
         }) => {
-            // Every client request changes a session or is quick: each runs
-            // to its end, so that what the log says and what the client was
-            // told stay the same.
-            log!(Debug, "$/cancel of request {id}: it runs to completion");
+            // A task stops; every other request changes a session or is
+            // quick, and runs to its end, so that what the log says and what
+            // the client was told stay the same.
+            match server.task_of(id) {
+                Some(session) => {
+                    let server = server.clone();
+                    tokio::spawn(async move { server.interrupt_task(&session).await });
+                }
+                None => log!(Debug, "$/cancel of request {id}: it runs to completion"),
+            }
         }
+        Ok(Message::Notification {
+            call: ClientRequest::ToolProgress { call, text },
+            ..
+        }) => server.host.progress(&call, text),
         Ok(Message::Notification { .. }) => {}
         Err(error) => {
             let Some(id) = id else {
@@ -203,6 +256,10 @@ const KNOWN_METHODS: &[&str] = &[
     "session/compact",
     "session/configure",
     "session/close",
+    "session/delete",
+    "task/run",
+    "blob/put",
+    "tool/progress",
     "shutdown",
     "$/cancel",
 ];
@@ -249,7 +306,7 @@ async fn handle(
             server.exit.cancel();
             Ok(None)
         }
-        ClientRequest::Cancel { .. } => Ok(Some(Value::Null)),
+        ClientRequest::Cancel { .. } | ClientRequest::ToolProgress { .. } => Ok(Some(Value::Null)),
         call => {
             let engine = server.engine.get().cloned().ok_or_else(|| {
                 rpc_error(-32002, "initialize first".into(), ErrorKind::InvalidRequest)
@@ -267,10 +324,38 @@ async fn handle(
 }
 
 impl Server {
+    fn tasks_slot(&self) -> std::sync::MutexGuard<'_, HashMap<u64, SessionId>> {
+        self.tasks.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
+    fn task_of(&self, request: u64) -> Option<SessionId> {
+        self.tasks_slot().get(&request).cloned()
+    }
+
+    async fn interrupt_task(&self, session: &SessionId) {
+        let Some(engine) = self.engine.get() else {
+            return;
+        };
+        match engine.session(session).await {
+            Ok(live) => {
+                if let Err(error) = live.interrupt().await {
+                    log!(Warn, "task {session} could not be interrupted: {error}");
+                }
+            }
+            Err(error) => log!(Warn, "task {session} could not be interrupted: {error}"),
+        }
+    }
+
     /// Lets the requests already received finish, for a bounded time: a
     /// message the client sent right before `shutdown` is still stored.
+    /// Running tasks are interrupted first: they would not end by
+    /// themselves in time.
     async fn finish_requests(&self) {
         self.requests.close();
+        let running: Vec<SessionId> = self.tasks_slot().values().cloned().collect();
+        for session in running {
+            self.interrupt_task(&session).await;
+        }
         if tokio::time::timeout(FINISH_REQUESTS, self.requests.wait())
             .await
             .is_err()
@@ -457,12 +542,72 @@ async fn session_call(
             engine.close(&session).await.map_err(open_error)?;
             Ok(Some(Value::Null))
         }
+        ClientRequest::Delete { session } => {
+            engine.delete(&session).await.map_err(open_error)?;
+            Ok(Some(Value::Null))
+        }
+        ClientRequest::CatalogList { refresh } => {
+            let catalog = engine.catalog();
+            if refresh {
+                // A failure is in the listing's `refresh_error`.
+                let _ = catalog.refresh(false).await;
+            } else {
+                catalog.refresh_if_stale();
+            }
+            reply(catalog.listing())
+        }
+        ClientRequest::PutBlob { media_type, data } => {
+            let bytes = decode_blob(&media_type, &data)?;
+            let blob = engine
+                .store()
+                .put_blob(&media_type, bytes)
+                .await
+                .map_err(store_error)?;
+            reply(blob)
+        }
         ClientRequest::Initialize { .. }
         | ClientRequest::Shutdown {}
-        | ClientRequest::Cancel { .. } => {
+        | ClientRequest::Cancel { .. }
+        | ClientRequest::RunTask { .. }
+        | ClientRequest::ToolProgress { .. } => {
             unreachable!("handled before")
         }
     }
+}
+
+/// Starts a task, tells the reader once its session exists, and answers
+/// with its outcome when it ends.
+async fn run_task(
+    server: &Arc<Server>,
+    request: u64,
+    session: Option<SessionId>,
+    config: SessionConfig,
+    instruction: Vec<UserBlock>,
+    created: tokio::sync::oneshot::Sender<()>,
+) -> Handled {
+    let engine =
+        server.engine.get().cloned().ok_or_else(|| {
+            rpc_error(-32002, "initialize first".into(), ErrorKind::InvalidRequest)
+        })?;
+    if engine.is_stopping() {
+        return Err(rpc_error(
+            -32000,
+            "the engine is stopping".into(),
+            ErrorKind::Cancelled,
+        ));
+    }
+    let session = engine
+        .create_task(session, config, instruction)
+        .await
+        .map_err(open_error)?;
+    server.tasks_slot().insert(request, session.id().clone());
+    let _ = created.send(());
+    session.wait_idle().await;
+    server.tasks_slot().remove(&request);
+    let records = session.records().await;
+    // A task whose turn did not end (its log broke on a storage failure)
+    // stopped all the same.
+    reply(task_outcome(&records).unwrap_or(TaskOutcome::Interrupted))
 }
 
 async fn opened(session: &Session) -> SessionOpened {
@@ -541,6 +686,26 @@ async fn forward(
     }
 }
 
+/// The bytes of a `blob/put`, refused when Blame's database would refuse to
+/// keep them: a blob that cannot be copied there would make its session
+/// impossible to reopen on another machine.
+fn decode_blob(media_type: &str, data: &str) -> Result<Vec<u8>, RpcError> {
+    let invalid = |message: String| rpc_error(-32602, message, ErrorKind::InvalidRequest);
+    if media_type.is_empty() || !media_type.contains('/') {
+        return Err(invalid(format!("`{media_type}` is not a media type")));
+    }
+    let bytes = BASE64
+        .decode(data)
+        .map_err(|error| invalid(format!("the blob is not base64: {error}")))?;
+    if bytes.len() > MAX_BLOB {
+        return Err(invalid(format!(
+            "the blob has {} bytes, more than the {MAX_BLOB} a blob may have",
+            bytes.len()
+        )));
+    }
+    Ok(bytes)
+}
+
 fn rpc_error(code: i32, message: String, kind: ErrorKind) -> RpcError {
     RpcError {
         code,
@@ -563,7 +728,9 @@ fn engine_error(error: EngineError) -> RpcError {
         | EngineError::Closed
         | EngineError::InvalidRewind { .. }
         | EngineError::NothingToUndo
-        | EngineError::InvalidFork { .. } => ErrorKind::InvalidRequest,
+        | EngineError::InvalidFork { .. }
+        | EngineError::Task(_)
+        | EngineError::InvalidContract(_) => ErrorKind::InvalidRequest,
         _ => ErrorKind::Internal,
     };
     rpc_error(-32000, error.to_string(), kind)

@@ -226,7 +226,7 @@ static SEMANTIC: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?").expect("pattern"));
 
 /// Prisma's packages move together: an unversioned one takes the declared version.
-fn aligned_packages(input: &DependencyInput, manifest: &[u8]) -> Vec<String> {
+pub fn aligned_packages(input: &DependencyInput, manifest: &[u8]) -> Vec<String> {
     if input.action != "add" {
         return input.packages.clone();
     }

@@ -6,7 +6,6 @@ import {
   mkdtemp,
   readFile,
   readdir,
-  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -22,7 +21,20 @@ const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
 const agentRuntimeDist = join(agentRuntimeDir, "dist");
 const payloadName = "blame-semantic-harness.tgz";
 const { preProcessFile } = createRequire(join(agentRuntimeDir, "package.json"))("typescript");
-const dependencyNames = [
+// The Node side of blame-harness in the runtime VM: the compiler side
+// process (its command, `blame-semantic-harness`), the Node test reporter
+// and the Vitest preload hook it adds to owned test invocations, and what
+// it takes from node_modules. Dependencies: the npm packages these modules
+// import, plus those found by name only: the ast-grep grammars, the bundled
+// package managers and ripgrep.
+const entryPoints = [
+  "harness/rust-harness-compiler.js",
+  // Worker entry points are reached through URLs rather than static imports.
+  "harness/semantic-reference-worker.js",
+  "harness/node-event-reporter.js",
+  "harness/invocation-test-preload.js",
+];
+const namedDependencies = [
   "@ast-grep/lang-bash",
   "@ast-grep/lang-c",
   "@ast-grep/lang-cpp",
@@ -31,37 +43,20 @@ const dependencyNames = [
   "@ast-grep/lang-java",
   "@ast-grep/lang-python",
   "@ast-grep/lang-rust",
-  "@ast-grep/napi",
-  "@cline/sdk",
   "@vscode/ripgrep",
-  "bowser",
-  "diff",
-  "@xmldom/xmldom",
-  "execa",
-  "fast-glob",
-  "jsonc-parser",
-  "mammoth",
-  "pdfjs-dist",
-  "read-excel-file",
   "npm",
   "npm-legacy",
   "pnpm",
   "pnpm-legacy",
-  "proper-lockfile",
-  "typescript",
-  "write-file-atomic",
   "yarn",
-  "zod",
 ];
 
 export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion }) {
-  await access(join(agentRuntimeDist, "harness/semantic-harness-runner.js"));
+  await access(join(agentRuntimeDist, entryPoints[0]));
   const staging = await mkdtemp(join(tmpdir(), "blame-semantic-harness-"));
   try {
-    const runtimeFiles = await copyRuntimeModules(staging);
-    await cp(join(rootDir, "scripts/runtime-sdk-check.mjs"), join(staging, "runtime-sdk-check.mjs"));
-    const coreManifest = await copyRuntimeSdk(staging);
-    await writePayloadManifest(staging, runtimeFiles, coreManifest, runtimeVersion);
+    const { files, packages } = await copyRuntimeModules(staging);
+    await writePayloadManifest(staging, files, packages, runtimeVersion);
     const archive = await packArchive(staging, join(staging, "packed"));
     for (const outputPath of outputPaths) {
       await mkdir(dirname(outputPath), { recursive: true });
@@ -73,41 +68,22 @@ export async function buildSemanticHarnessPayload({ outputPaths, runtimeVersion 
   }
 }
 
-async function copyRuntimeSdk(staging) {
-  const coreRoot = await runtimeCorePackagePath();
-  await access(join(coreRoot, "dist/blame-patch.json"));
-  // pnpm's generated .bin launchers embed absolute build-machine paths.
-  // Dependencies are installed from the payload manifest, so shipping this
-  // local node_modules tree only makes otherwise identical payloads differ.
-  await cp(coreRoot, join(staging, "vendor/cline-core"), {
-    recursive: true,
-    filter: (source) => source !== join(coreRoot, "node_modules"),
-  });
-  return JSON.parse(await readFile(join(coreRoot, "package.json"), "utf8"));
-}
-
-export async function runtimeCorePackagePath() {
-  const sdkRoot = await realpath(join(agentRuntimeDir, "node_modules/@cline/sdk"));
-  const locations = createRequire(join(sdkRoot, "package.json")).resolve.paths("@cline/core") ?? [];
-  for (const location of locations) {
-    try { return dirname(await realpath(join(location, "@cline/core/package.json"))); }
-    catch (error) { if (error.code !== "ENOENT") throw error; }
-  }
-  throw new Error("Cline SDK core dependency is missing");
-}
-
-async function writePayloadManifest(staging, runtimeFiles, coreManifest, runtimeVersion) {
+async function writePayloadManifest(staging, runtimeFiles, packages, runtimeVersion) {
   const agentPackage = JSON.parse(await readFile(join(agentRuntimeDir, "package.json"), "utf8"));
-  const dependencies = Object.fromEntries(dependencyNames.map((name) => [name, agentPackage.dependencies[name]]));
+  const names = [...new Set([...packages, ...namedDependencies])].sort();
+  const missing = names.filter((name) => !agentPackage.dependencies[name]);
+  if (missing.length)
+    throw new Error(`The harness payload needs undeclared agent-runtime dependencies: ${missing.join(", ")}`);
+  const dependencies = Object.fromEntries(names.map((name) => [name, agentPackage.dependencies[name]]));
   const manifest = {
     name: "@blame/semantic-harness-runtime",
     version: payloadVersion(runtimeVersion),
     private: true,
     type: "module",
-    bin: { "blame-semantic-harness": "harness/semantic-harness-runner.js" },
+    bin: { "blame-semantic-harness": entryPoints[0] },
     engines: { node: ">=24.15.0" },
-    files: [...runtimeFiles, "vendor/cline-core", "runtime-sdk-check.mjs"],
-    dependencies: { ...coreManifest.dependencies, ...dependencies },
+    files: runtimeFiles,
+    dependencies,
   };
   await writeFile(join(staging, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
 }
@@ -123,11 +99,9 @@ async function packArchive(directory, destination) {
 }
 
 async function copyRuntimeModules(staging) {
-  // Worker entry points are reached through URLs rather than static imports.
-  const pending = [join(agentRuntimeDist, "harness/semantic-harness-runner.js"),
-    join(agentRuntimeDist, "attachment-pdf-worker.js"),
-    join(agentRuntimeDist, "harness/semantic-reference-worker.js")];
+  const pending = entryPoints.map((entry) => join(agentRuntimeDist, entry));
   const copied = new Set();
+  const packages = new Set();
   while (pending.length) {
     const source = pending.pop();
     if (copied.has(source)) continue;
@@ -140,8 +114,15 @@ async function copyRuntimeModules(staging) {
     copied.add(source);
     for (const { fileName } of imports)
       if (fileName.startsWith(".")) pending.push(resolve(dirname(source), fileName));
+      else if (!fileName.startsWith("node:")) packages.add(packageName(fileName));
   }
-  return [...copied].map((path) => relative(agentRuntimeDist, path).replaceAll("\\", "/"));
+  const files = [...copied].map((path) => relative(agentRuntimeDist, path).replaceAll("\\", "/"));
+  return { files, packages: [...packages] };
+}
+
+function packageName(specifier) {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
 }
 
 export async function prepareSemanticHarnessPayload(options) {

@@ -1,8 +1,11 @@
 import * as React from "react"
 import { motion, useReducedMotion } from "motion/react"
-import type { AgentUsageSummary, AgentUsageTotals } from "@blame/agent-runtime"
+import type { AgentUsageTotals } from "@blame/agent-runtime"
 
-import type { UserStory } from "@/components/backlog/data/backlog-data"
+import type {
+  UserStory,
+  UserStoryAgentUsage,
+} from "@/components/backlog/data/backlog-data"
 import type { UserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
 import {
   compactTokens,
@@ -34,7 +37,10 @@ import {
   saveStoryContextLimit,
   useStoryContextLimit,
 } from "@/components/backlog/data/story-context-limit"
-import { useStoryModelChoice } from "@/components/backlog/data/story-model-choice"
+import {
+  type StoryModelSource,
+  useStoryModelChoice,
+} from "@/components/backlog/data/story-model-choice"
 import {
   Select,
   SelectContent,
@@ -49,24 +55,28 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { usePlatform } from "@/context/platform"
 import {
   CompactContextButton,
-  type CompactableAgent,
   compactionNote,
   type StoryContextCompaction,
-  useStoryContextCompaction,
 } from "@/components/backlog/drawer/story-context-compaction"
 import { cn } from "@/lib/utils"
 
-// A story, or a quick chat: the island reads the same agent fields of both.
-export type AgentStatsSource = CompactableAgent & Pick<UserStory, "agentUsage">
+// A story or a quick chat, as its engine session's records describe it
+// (engineStatsSource): the model of its last turn and what was spent.
+export type AgentStatsSource = StoryModelSource & {
+  agentStatus?: UserStory["agentStatus"]
+  agentUsage?: UserStoryAgentUsage | null
+  /** The last turn's model. */
+  model?: { providerId: string; modelId: string; reasoningEffort?: string | null }
+}
 
 // The agent at a glance, floating at the top right of the story drawer or
 // the chat: the full panel, or a small pill with the context donut.
 export function StoryStatsIsland({
   buttons = 2,
   className,
+  compaction,
   contextLimitKey,
   diffStats,
   expanded,
@@ -79,6 +89,8 @@ export function StoryStatsIsland({
   // toggle and close, or the chat's toggle. The toggle hides while preparing.
   buttons?: number
   className?: string
+  // Compaction of the conversation, from its engine session.
+  compaction?: StoryContextCompaction
   contextLimitKey?: string
   diffStats?: UserStoryDiffStats
   expanded: boolean
@@ -87,7 +99,7 @@ export function StoryStatsIsland({
   source?: AgentStatsSource
   useEditorModel?: boolean
 }) {
-  const stats = useStoryStats(source, contextLimitKey, useEditorModel)
+  const stats = useStoryStats(source, contextLimitKey, useEditorModel, compaction)
   const reduceMotion = useReducedMotion()
   // The full face stays mounted so the island always knows its height and
   // can move between two known sizes.
@@ -267,11 +279,9 @@ type StoryStats = ReturnType<typeof useStoryStats>
 function useStoryStats(
   source: AgentStatsSource | undefined,
   contextLimitKey: string | undefined,
-  useEditorModel: boolean
+  useEditorModel: boolean,
+  compactionOverride: StoryContextCompaction | undefined
 ) {
-  const sessionUsage = useSessionUsage(
-    source?.agentUsage ? undefined : source?.clineSessionId
-  )
   const selection = useModelSelection()
   const choiceOfModel = useStoryModelChoice(useEditorModel ? undefined : source)
   const provider = choiceOfModel
@@ -285,9 +295,8 @@ function useStoryStats(
     model,
     selection.allProviders
   )
-  const compaction = useStoryContextCompaction(source)
-  const totals =
-    usageTotalsFromAgentUsage(source?.agentUsage) ?? sessionUsage.totals
+  const compaction = compactionOverride ?? { status: "unavailable" as const }
+  const totals = usageTotalsFromAgentUsage(source?.agentUsage)
   const context = storyContextUsage(source?.agentUsage, budget.limit)
   const plan = usePlanUsage(
     selection,
@@ -549,9 +558,9 @@ function ModelHeader({
   source?: AgentStatsSource
 }) {
   const names = useModelDisplayNames()
-  const providerId = source?.agentProviderId
-  const modelId = source?.agentModelId
-  const effort = latestReasoningEffort(source)
+  const providerId = source?.model?.providerId
+  const modelId = source?.model?.modelId
+  const effort = source?.model?.reasoningEffort ?? undefined
   if (!providerId || !modelId) return null
   return (
     <Pop
@@ -851,54 +860,7 @@ function TokensStat({ totals }: { totals?: AgentUsageTotals }) {
   )
 }
 
-function latestReasoningEffort(source?: AgentStatsSource) {
-  const runs = source?.agentRuns ?? []
-  const latest = [...runs]
-    .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
-    .at(-1)
-  return latest?.reasoningEffort ?? undefined
-}
-
-type SessionUsageState = {
-  loading?: boolean
-  sessionId?: string
-  totals?: AgentUsageTotals
-}
-
-// Stories saved before usage was stored ask the agent session for it.
-function useSessionUsage(
-  sessionId: string | null | undefined
-): SessionUsageState {
-  const platform = usePlatform()
-  const [state, setState] = React.useState<SessionUsageState>({})
-
-  React.useEffect(() => {
-    const agent = platform.agent
-    if (!agent || !sessionId) return
-
-    let active = true
-    void agent.sessions
-      .usage(sessionId)
-      .then((summary) => {
-        if (active) setState({ sessionId, totals: usageTotals(summary) })
-      })
-      .catch(() => {
-        if (active) setState({ sessionId })
-      })
-    return () => {
-      active = false
-    }
-  }, [platform.agent, sessionId])
-
-  if (!platform.agent || !sessionId) return {}
-  return { ...state, loading: state.sessionId !== sessionId }
-}
-
-function usageTotals(summary: AgentUsageSummary | undefined) {
-  return summary?.aggregateUsage ?? summary?.usage
-}
-
-function usageTotalsFromAgentUsage(usage: UserStory["agentUsage"]) {
+function usageTotalsFromAgentUsage(usage: AgentStatsSource["agentUsage"]) {
   if (!usage) return undefined
   return {
     cacheReadTokens: usage.cacheReadTokens,

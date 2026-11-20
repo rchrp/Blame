@@ -1,21 +1,4 @@
-export {
-  BlameAgentRuntime,
-  createClineBaselineRuntime,
-} from "./cline-runtime.js";
-export {
-  claudeCodeBridgeIdle,
-  closeClaudeCodeSessions,
-} from "./claude-code/claude-code-provider.js";
-export type {
-  LightWorkspaceExecutionRequest,
-  LightWorkspaceExecutor,
-  LightWorkspaceToolName,
-} from "./harness/light-executor.js";
-export { executeLightWorkspaceRequest } from "./harness/light-executor.js";
-export * from "./harness/light-capabilities.js";
 export * from "./harness/light-contracts.js";
-export * from "./harness/light-tools.js";
-export * from "./harness/light-workspace.js";
 export * from "./harness/project-memory.js";
 export * from "./harness/session-journal.js";
 export type {
@@ -29,32 +12,13 @@ export type * from "./preview-environment-types.js";
 export type {
   PreviewEnvironmentToolInput,
   PreviewEnvironmentToolResult,
-} from "./preview-environment-tool.js";
-export type { InitializationProgress } from "./initialization-progress.js";
-export {
-  authorizeMcpOAuth,
-  clearMcpOAuth,
-  listMcpOAuthStatuses,
-  type McpOAuthStatus,
-} from "./mcp-oauth.js";
+} from "./engine/tools/preview-types.js";
+export type { McpOAuthStatus } from "./engine/tools/mcp-oauth.js";
 export type {
   AgentEvent,
-  AgentApprovalRequest,
-  AgentBackendConfig,
-  AgentBackendMode,
-  AgentDonePayload,
-  AgentRuntimePrewarmInput,
-  AgentRuntimeEvents,
-  AgentSessionRecord,
-  AgentUsageSummary,
   AgentUsageTotals,
-  AnalyzeProjectCodePracticesInput,
-  AnalyzeProjectCodePracticesResult,
-  DiscoverSecurityAuditInput,
-  ApproveAndMergeInput,
   ApproveAndMergePush,
   ApproveAndMergeResult,
-  OpenPullRequestInput,
   OpenPullRequestResult,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
@@ -62,42 +26,24 @@ export type {
   PullRequestStateInput,
   ApprovalDecision,
   ApiConnection,
-  AssessProjectInitializationImpactInput,
-  AssessProjectInitializationImpactResult,
   BlameModel,
   BlameProvider,
-  CompareCheckpointInput,
-  CompareCheckpointResult,
   DeleteProviderCredentialInput,
   DirectStoryFile,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
-  GenerateCommitMessageInput,
   GenerateCommitMessageResult,
-  GenerateTitleInput,
-  GenerateTitleResult,
-  InitializeProjectInput,
-  InitializeProjectResult,
   ClaudeCodeStatus,
-  ConnectClaudeCodeInput,
-  LoginOAuthProviderInput,
   ProviderAuthMethod,
   SaveLocalProviderCredentialInput,
   SubscriptionUsage,
-  SubscriptionUsageInput,
   SubscriptionUsageWindow,
   ModelBenchmark,
   ModelRecommendation,
   ModelRecommendationProfile,
   ModelRecommendations,
-  NewProjectGenerationConfiguration,
-  NewProjectGenerationResult,
-  NewProjectsClient,
   OAuthCredentials,
-  OptimizeUserStoryPromptInput,
-  OptimizeUserStoryPromptResult,
   PlannedUserStory,
-  AgentConversationPurpose,
   StoryPlanPriority,
   PreviewLifecyclePhase,
   PreviewLifecycleState,
@@ -138,23 +84,11 @@ export type {
   ProviderListResponse,
   ReasoningEffort,
   ReasoningSelection,
-  RepairProjectInitializationInput,
-  RepairProjectInitializationResult,
   MapSecurityAuditInput,
   MapSecurityAuditResult,
-  ResolveMergeConflictsInput,
   ResolveMergeConflictsResult,
-  ResolveApprovalInput,
-  RestoreCheckpointInput,
-  RestoreCheckpointResult,
-  RunSecurityAuditInput,
   SaveOAuthCredentialInput,
   SaveProviderCredentialInput,
-  SendDevelopmentSessionInput,
-  SendSessionInput,
-  StartNewProjectGenerationInput,
-  StartDevelopmentSessionInput,
-  StartSessionInput,
   RequiredProjectCheck,
   SecurityAttackPathStep,
   SecurityAudit,
@@ -166,6 +100,7 @@ export type {
   SecurityAuditProgressStep,
   SecurityAuditProgressStepStatus,
   SecurityAuditStatus,
+  SecurityAuditWorkspaceMap,
   SecurityCandidate,
   SecurityConfidence,
   SecurityCoverage,
@@ -181,8 +116,5 @@ export type {
   SecuritySourceLocation,
   SecuritySurfaceMap,
   SecurityThreatModel,
-  ValidateSecurityAuditInput,
   ValidateSecurityAuditResult,
-  CompactSessionInput,
-  CompactSessionResult,
 } from "./types.js";

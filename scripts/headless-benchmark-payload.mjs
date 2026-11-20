@@ -1,10 +1,22 @@
 #!/usr/bin/env node
 import { execFile } from "node:child_process";
-import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import {
+  access,
+  chmod,
+  copyFile,
+  mkdir,
+  mkdtemp,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import {
+  buildEngineBinaries,
+  defaultEngineBinariesDir,
+} from "./build-engine-binaries.mjs";
 
 const execFileAsync = promisify(execFile);
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,6 +25,11 @@ const outputPath = resolve(
   rootDir,
   valueArg(argumentsList, "--output") ?? "dist/blame-benchmark-runner.tgz",
 );
+// The runs happen in Linux containers: the payload carries the engine for
+// both of their architectures (static musl builds). `--engine-binaries`
+// reuses a build (target/engine-binaries layout) instead of making one.
+const engineTargets = ["linux-x64", "linux-arm64"];
+const prebuiltEngines = valueArg(argumentsList, "--engine-binaries");
 
 await buildPayload(outputPath);
 process.stdout.write(`${outputPath}\n`);
@@ -35,6 +52,7 @@ async function buildPayload(targetPath) {
       staging,
     ]);
     await prunePayload(staging);
+    await stageEngines(staging);
     await writeProvenance(staging);
     await mkdir(dirname(targetPath), { recursive: true });
     await rm(targetPath, { force: true });
@@ -65,6 +83,19 @@ async function prunePayload(staging) {
       rm(resolve(runtimeRoot, path), { force: true, recursive: true }),
     ),
   );
+}
+
+// engine/<platform>-<arch>/blame-engine, where the runner looks first.
+async function stageEngines(staging) {
+  if (!prebuiltEngines) await buildEngineBinaries(engineTargets);
+  const source = resolve(rootDir, prebuiltEngines ?? defaultEngineBinariesDir);
+  for (const target of engineTargets) {
+    const directory = resolve(staging, "engine", target);
+    await mkdir(directory, { recursive: true });
+    const destination = resolve(directory, "blame-engine");
+    await copyFile(resolve(source, target, "blame-engine"), destination);
+    await chmod(destination, 0o755);
+  }
 }
 
 async function writeProvenance(staging) {

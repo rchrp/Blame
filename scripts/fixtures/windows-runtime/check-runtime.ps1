@@ -108,7 +108,7 @@ $calls = @(Get-Content -LiteralPath $env:BLAME_TEST_WSL_LOG -Encoding UTF8 | For
 Assert-Equal $calls.Count 3 "translate, copy, provision"
 Assert-Equal $calls[0] @('-d', 'BlameRuntime', '-u', 'root', '--exec', 'wslpath', '-u', $SemanticHarnessPayload) "literal payload path"
 Assert-Equal $calls[1] @('-d', 'BlameRuntime', '-u', 'root', '--exec', 'cp', '--', $env:BLAME_TEST_WSL_PATH, '/tmp/blame-semantic-harness.tgz') "translated path excludes stderr"
-Assert-Equal $calls[2] @('-d', 'BlameRuntime', '-u', 'root', '--exec', 'sh', '-s', '--', $RuntimeVersion, $ClineSdkVersion) "provisioner argv"
+Assert-Equal $calls[2] @('-d', 'BlameRuntime', '-u', 'root', '--exec', 'sh', '-s', '--', $RuntimeVersion) "provisioner argv"
 Assert-Equal (Get-Content -LiteralPath $env:BLAME_TEST_WSL_INPUT -Raw -Encoding UTF8) "echo provision`n" "provisioner stdin"
 foreach ($failure in @('wslpath', 'cp', 'provision')) {
   Clear-Content -LiteralPath $env:BLAME_TEST_WSL_LOG

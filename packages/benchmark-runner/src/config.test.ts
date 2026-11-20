@@ -5,32 +5,33 @@ import { join } from "node:path";
 import test from "node:test";
 import { parseBenchmarkCommand } from "./config.js";
 
-test("selects the requested benchmark harness", async () => {
+test("writes the harness trace beside the events unless told otherwise", async () => {
   await withInstruction(async (directory, instructionPath) => {
     const base = await parseBenchmarkCommand(
-      ["run", "--instruction-file", instructionPath],
+      ["run", "--instruction-file", instructionPath, "--events", "out/events.jsonl"],
       environment(),
       directory,
     );
-    const cline = await parseBenchmarkCommand(
-      ["run", "--instruction-file", instructionPath, "--harness", "cline"],
+    assert.equal(base.config.harnessTracePath, join(directory, "out", "harness-trace.jsonl"));
+    assert.equal(base.paths.harnessTracePath, base.config.harnessTracePath);
+    const chosen = await parseBenchmarkCommand(
+      ["run", "--instruction-file", instructionPath, "--harness-trace", "trace.jsonl"],
       environment(),
       directory,
     );
-    assert.equal(base.config.harness, "blame");
-    assert.equal(cline.config.harness, "cline");
+    assert.equal(chosen.config.harnessTracePath, join(directory, "trace.jsonl"));
   });
 });
 
-test("rejects an unknown benchmark harness", async () => {
+test("refuses the removed harness choice", async () => {
   await withInstruction(async (directory, instructionPath) => {
     await assert.rejects(
       parseBenchmarkCommand(
-        ["run", "--instruction-file", instructionPath, "--harness", "unknown"],
+        ["run", "--instruction-file", instructionPath, "--harness", "cline"],
         environment(),
         directory,
       ),
-      /Invalid harness: unknown/u,
+      /--harness is gone/u,
     );
   });
 });

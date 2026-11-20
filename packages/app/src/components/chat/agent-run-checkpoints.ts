@@ -1,22 +1,13 @@
 export type CheckpointRun = {
   checkpointRunCount?: number | null
-  clineSessionId?: string | null
 }
 
+// Which turns of the timeline can be undone: the conversation says it per
+// turn (an engine turn whose opening message has a rewind target).
 export function checkpointRunTargets(runs: CheckpointRun[]) {
-  let checkpointRunCount = 0
-  return runs.map((run) => {
-    if (!run.clineSessionId) return undefined
-    checkpointRunCount = run.checkpointRunCount ?? checkpointRunCount + 1
-    return { checkpointRunCount }
-  })
-}
-
-export function nextCheckpointRunCount(runs: CheckpointRun[]) {
-  return (
-    runs.reduce(
-      (maximum, run) => Math.max(maximum, run.checkpointRunCount ?? 0),
-      runs.filter((run) => run.clineSessionId).length
-    ) + 1
+  return runs.map((run) =>
+    run.checkpointRunCount
+      ? { checkpointRunCount: run.checkpointRunCount }
+      : undefined
   )
 }

@@ -16,6 +16,12 @@ export interface HostContext {
   id: number;
 }
 
+/** What a `host/tool` handler is also given: a way to say how the call is going. */
+export interface ToolHostContext extends HostContext {
+  /** Sent to the engine as `tool/progress`; viewers see it as a `tool_progress` delta. */
+  progress(text: string): void;
+}
+
 type Handler<Params, Result> = (
   params: Params,
   context: HostContext,
@@ -32,11 +38,20 @@ type Handler<Params, Result> = (
  */
 export interface HostHandlers {
   /** Runs one of the session's `client_tools`. */
-  tool?: Handler<HostParamsOf<"host/tool">, ToolResult>;
+  tool?: (
+    params: HostParamsOf<"host/tool">,
+    context: ToolHostContext,
+  ) => Promise<ToolResult> | ToolResult;
   /** Asks the user to allow a tool call. */
   approval?: Handler<HostParamsOf<"host/approval">, Approval>;
   /** Returns the secret for a provider, or `{ type: "missing" }`. Held in memory only by the engine. */
   credential?: Handler<HostParamsOf<"host/credential">, Credential>;
+  /**
+   * Answers a question of the workspace harness while it runs a session's
+   * call: `commandCredentials` or `refreshPreviewDependencies`. Any JSON
+   * value; `null` (or an error) means no answer.
+   */
+  harness?: Handler<HostParamsOf<"host/harness">, unknown>;
   /** Copies records into Blame's database; returns the highest seq held without a gap. */
   logPush?: Handler<HostParamsOf<"host/log/push">, LogPushed>;
   /** Reads records the engine does not have back from Blame's database. */

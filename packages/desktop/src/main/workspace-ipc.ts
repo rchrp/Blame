@@ -15,10 +15,6 @@ import { BrowserWindow, ipcMain } from "electron";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
-import {
-  generateNewProjectWithAgent,
-  releaseAgentWorkspaceSessions,
-} from "./agent-ipc";
 import { containerRuntimeEnvironment } from "./container-runtime";
 import {
   assertHostDependencies,
@@ -56,10 +52,11 @@ import {
   previewRecoveryFailureFingerprint,
 } from "./preview-recovery-fingerprint.ts";
 import {
-  createProject,
-  setNewProjectAgentRuntime,
+  finishNewProject,
+  prepareNewProject,
   setProjectCreationWindowsProvider,
-  type CreateProjectInput,
+  type FinishNewProjectInput,
+  type PrepareNewProjectInput,
 } from "./project-creation";
 import {
   collectProjectInitializationDiagnostics,
@@ -361,7 +358,6 @@ export function registerWorkspaceIpcHandlers(
   } = {},
 ) {
   setProjectCreationWindowsProvider(() => BrowserWindow.getAllWindows());
-  setNewProjectAgentRuntime({ generate: generateNewProjectWithAgent });
   startIdlePreviewSuspension();
   onLocalPreviewChange((worktree) => {
     for (const window of BrowserWindow.getAllWindows())
@@ -501,8 +497,12 @@ export function registerWorkspaceIpcHandlers(
       ensureWorkspaceGitRepository(input.root),
   );
   ipcMain.handle(
-    "workspace:create-project",
-    (_event, input: CreateProjectInput) => createProject(input),
+    "workspace:prepare-new-project",
+    (_event, input: PrepareNewProjectInput) => prepareNewProject(input),
+  );
+  ipcMain.handle(
+    "workspace:finish-new-project",
+    (_event, input: FinishNewProjectInput) => finishNewProject(input),
   );
   ipcMain.handle(
     "workspace:create-worktree",
@@ -1161,7 +1161,6 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   try {
     await stopSetupRunsForWorktree(worktree);
     await stopProjectLogStream(worktree);
-    await releaseAgentWorkspaceSessions(worktree);
     await settled;
     // A create or prefetch may have completed while removal was waiting.
     const current = await inspectWorktreeRemoval({

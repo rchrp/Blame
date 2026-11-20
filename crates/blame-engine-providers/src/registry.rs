@@ -1,12 +1,13 @@
 //! Provider ids and credentials → a `ModelProvider`.
 
+use crate::catalog::{Catalog, LiveCatalog};
 use crate::native::Target;
 use crate::wire::Wire;
 use crate::{request, stream};
 use async_trait::async_trait;
 use blame_engine_core::ports::{ModelProvider, ModelRequest, ModelStream, ProviderError};
-use blame_engine_protocol::ErrorKind;
 use blame_engine_protocol::rpc::Credential;
+use blame_engine_protocol::{ErrorKind, ModelRef};
 use rig_core::providers::anthropic::completion::CacheTtl;
 use rig_core::providers::anthropic::wire::{ANTHROPIC, AnthropicConfig, Auth as AnthropicAuth};
 use rig_core::providers::gemini::GeminiConfig;
@@ -16,6 +17,7 @@ use rig_core::providers::openai::wire::{
 };
 use rig_core::providers::{chatgpt, gemini};
 use rig_reqwest::ReqwestClient;
+use std::sync::Arc;
 use std::time::Duration;
 
 /// The providers this crate serves, by the id `ModelRef::provider` holds.
@@ -88,6 +90,9 @@ pub struct Options {
     pub idle_timeout: Duration,
     /// How long opening a connection may take.
     pub connect_timeout: Duration,
+    /// The models.dev facts requests are encoded and priced with, read
+    /// again for each request: a refresh reaches connected providers.
+    pub catalog: Arc<LiveCatalog>,
 }
 
 impl Default for Options {
@@ -95,6 +100,7 @@ impl Default for Options {
         Self {
             idle_timeout: rig_core::driver::STREAM_IDLE_TIMEOUT,
             connect_timeout: Duration::from_secs(30),
+            catalog: Arc::new(LiveCatalog::default()),
         }
     }
 }
@@ -128,6 +134,7 @@ pub struct Provider {
     client: Client,
     http: ReqwestClient,
     idle_timeout: Duration,
+    catalog: Arc<LiveCatalog>,
 }
 
 enum Client {
@@ -241,6 +248,9 @@ pub fn connect(
     };
     let http = rig_reqwest::reqwest::Client::builder()
         .connect_timeout(options.connect_timeout)
+        // Replies stream as sent: no decoder between the provider's events
+        // and the loop.
+        .no_gzip()
         .build()
         .map_err(|error| {
             ProviderError::new(
@@ -253,6 +263,7 @@ pub fn connect(
         client,
         http: ReqwestClient::from(http),
         idle_timeout: options.idle_timeout,
+        catalog: options.catalog.clone(),
     })
 }
 
@@ -261,13 +272,15 @@ impl Provider {
         self.kind
     }
 
-    fn target(&self, request: &ModelRequest) -> Target {
+    fn target(&self, request: &ModelRequest, catalog: Arc<Catalog>) -> Target {
         let rig_provider = match &self.client {
             Client::Anthropic(config) => config.dialect.name,
             Client::Responses(config) | Client::Chat(config) => config.dialect.name,
             Client::Gemini(_) => gemini::PROVIDER_NAME,
         };
         Target {
+            kind: self.kind,
+            catalog,
             wire: self.kind.wire(),
             model: request.model.clone(),
             rig_provider,
@@ -280,8 +293,29 @@ impl Provider {
     }
 }
 
+/// Whether a request to `model` can force the tool the model calls.
+///
+/// The OpenAI Responses API (`tool_choice: {"type": "function"}`) and Gemini
+/// (`functionCallingConfig` mode `ANY` with the allowed name) take it from
+/// every model that calls tools. Claude refuses a forced choice while it
+/// thinks, which it always does on the models Blame offers; the ChatGPT
+/// subscription backend, OpenRouter and OpenAI-compatible servers may or
+/// may not honour it, depending on the model behind them. Those get the
+/// corrective message only: a refused request would fail the turn, where a
+/// message never does.
+pub fn forces_tool(model: &ModelRef) -> bool {
+    matches!(
+        ProviderKind::from_id(&model.provider),
+        Some(ProviderKind::OpenAi | ProviderKind::Gemini)
+    )
+}
+
 #[async_trait]
 impl ModelProvider for Provider {
+    fn forces_tool(&self, model: &ModelRef) -> bool {
+        forces_tool(model)
+    }
+
     async fn stream(&self, request: ModelRequest) -> Result<ModelStream, ProviderError> {
         if request.model.provider != self.kind.id() {
             return Err(ProviderError::new(
@@ -293,8 +327,9 @@ impl ModelProvider for Provider {
                 ),
             ));
         }
-        let target = self.target(&request);
+        let target = self.target(&request, self.catalog.current());
         let rig = request::to_rig(&request, &target).await?;
+        let facts = target.facts();
         let model = request.model.model.clone();
         let idle = Some(self.idle_timeout);
         let http = self.http.clone();
@@ -305,6 +340,7 @@ impl ModelProvider for Provider {
                     .connect(http)
                     .completion(model)
                     .with_idle_timeout(idle);
+                model.wire = model.wire.with_facts(facts);
                 if model.wire.default_max_tokens.is_none() {
                     model.wire = model.wire.with_default_max_tokens(FALLBACK_MAX_TOKENS);
                 }
@@ -313,26 +349,36 @@ impl ModelProvider for Provider {
                 }
                 model.stream(rig)
             }
-            Client::Responses(config) => config
-                .clone()
-                .connect(http)
-                .responses(model)
-                .with_idle_timeout(idle)
-                .stream(rig),
-            Client::Chat(config) => config
-                .clone()
-                .connect(http)
-                .chat(model)
-                .with_idle_timeout(idle)
-                .stream(rig),
-            Client::Gemini(config) => config
-                .clone()
-                .connect(http)
-                .completion(model)
-                .with_idle_timeout(idle)
-                .stream(rig),
+            Client::Responses(config) => {
+                let mut model = config
+                    .clone()
+                    .connect(http)
+                    .responses(model)
+                    .with_idle_timeout(idle);
+                model.wire = model.wire.with_facts(facts);
+                model.stream(rig)
+            }
+            Client::Chat(config) => {
+                let mut model = config
+                    .clone()
+                    .connect(http)
+                    .chat(model)
+                    .with_idle_timeout(idle);
+                model.wire = model.wire.with_facts(facts);
+                model.stream(rig)
+            }
+            Client::Gemini(config) => {
+                let mut model = config
+                    .clone()
+                    .connect(http)
+                    .completion(model)
+                    .with_idle_timeout(idle);
+                model.wire = model.wire.with_facts(facts);
+                model.stream(rig)
+            }
         };
-        let reply = opened.map_err(|error| crate::error::from_rig(&error))?;
+        let reply =
+            opened.map_err(|error| crate::error::about(crate::error::from_rig(&error), &target))?;
         Ok(stream::events(reply, target))
     }
 }

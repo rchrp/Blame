@@ -1,6 +1,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import http from "node:http";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
 
@@ -42,6 +43,18 @@ export type ClaudeCodeBridgeOptions = {
 };
 
 const maxBodyBytes = 64 * 1024 * 1024;
+
+/**
+ * Where the bridge keeps its port, secret and lanes: the same for every
+ * process of the app, so the agent workers and the engine host share one
+ * bridge.
+ */
+export function claudeCodeStateDirectory() {
+  return (
+    process.env.BLAME_CLAUDE_CODE_STATE_DIR?.trim() ||
+    join(tmpdir(), "blame-claude-code")
+  );
+}
 // Each Claude Code process holds ~110-120 MB, whatever its context size
 // (measured 2026-11-19, Claude Code 2.1, idle and after a 160k-token turn).
 // Every agent worker shares one bridge, so these bound the whole app: three
@@ -64,8 +77,8 @@ const watchIntervalMs = 5_000;
 const sleepGapMs = 15_000;
 
 /**
- * A loopback server that lets Cline use the user's own Claude Code login.
- * Cline talks to it as an Anthropic Messages endpoint; Claude Code reaches
+ * A loopback server that lets Blame's engine use the user's own Claude Code login.
+ * The engine talks to it as an Anthropic Messages endpoint; Claude Code reaches
  * Blame's tools through its MCP endpoint. The first agent worker to need it
  * hosts it; the others reach it through its saved port and secret.
  */
@@ -170,7 +183,7 @@ export class ClaudeCodeBridge implements ClaudeCodeBridgeHandle {
     return bridgeToken(this.secret, scope);
   }
 
-  /** The endpoint Cline calls; an effort picked in Blame rides in the path. */
+  /** The endpoint the client calls; an effort picked in Blame rides in the path. */
   baseUrl(host: string, effort?: ClaudeCodeEffort) {
     const prefix = effort ? `/effort/${effort}` : "";
     return `http://${host}:${this.port}${prefix}/v1`;
@@ -259,7 +272,7 @@ export class ClaudeCodeBridge implements ClaudeCodeBridgeHandle {
       active = lane;
     } else {
       // An idle conversation of this scope that does not continue here is
-      // over: a finished subagent, or history Cline rewrote.
+      // over: a finished subagent, or history the client rewrote.
       for (const old of lanes)
         if (old.idle) old.close("Superseded by a newer conversation of the same session.");
       active = new ClaudeCodeLane(parsed, sink, {

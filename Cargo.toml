@@ -36,8 +36,10 @@ unsafe_code = "forbid"
 all = { level = "warn", priority = -1 }
 
 # The engine ships inside the desktop app and the runtime images: size matters
-# as much as speed. Panics unwind so one failed session never takes the others.
+# as much as speed. Fat LTO saves 8 % of the engine against thin LTO at the
+# same speed (docs/engine-in-the-app.md, "Engine binaries"); opt-level stays 3.
+# Panics unwind so one failed session never takes the others.
 [profile.release]
 codegen-units = 1
-lto = "thin"
+lto = "fat"
 strip = true

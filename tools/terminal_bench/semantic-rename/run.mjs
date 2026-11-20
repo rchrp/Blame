@@ -152,7 +152,7 @@ async function run() {
       "benchmark-runner/dist/cli.js");
     const args = [runner, "run", "--workspace", workspace, "--instruction-file", join(directory, "instruction.txt"),
       "--task-id", task.id, "--events", join(directory, "events.jsonl"), "--result", join(directory, "result.json"),
-      "--harness", trial.arm === "cline" ? "cline" : "blame", "--max-iterations", String(protocol.budgets.maxIterations),
+      ...harnessArguments(trial.arm), "--max-iterations", String(protocol.budgets.maxIterations),
       "--timeout-seconds", String(protocol.budgets.timeoutSeconds)];
     process.stdout.write("START " + name + "\n");
     started = performance.now();
@@ -214,3 +214,10 @@ else if (process.argv[2] === "score") {
   const task = protocol.tasks.find((task) => task.id === process.argv[5]);
   await score(resolve(process.argv[3]), resolve(process.argv[4]), task);
 } else throw new Error("Use bind, run, analyze or score <output> <workspace> <task>");
+
+// Only Blame's harness is left: a study arm on Cline cannot run any more.
+function harnessArguments(arm) {
+  if (arm === "cline")
+    throw new Error("The Cline arm is gone: the benchmark runner has only Blame's harness.");
+  return [];
+}

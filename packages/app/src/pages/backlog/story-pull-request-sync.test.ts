@@ -24,7 +24,7 @@ function reviewStory(overrides: Partial<UserStory> = {}): SyncedStory {
     priority: "Medium",
     owner: "Product",
     branch: "story/checkout",
-    clineSessionId: "session-1",
+    engineSessionId: "session-1",
     createdAt: "2026-11-09T09:00:00Z",
     worktree: "/worktrees/story-1",
     workspaceMode: "local-container",
@@ -89,10 +89,8 @@ test("a pull request merged on GitHub makes the story done and cleans it up", as
   assert.deepEqual(update?.options, { cleanup: false })
   assert.deepEqual(update?.input, {
     agentLastError: null,
-    agentLastEvent: "Pull request merged on GitHub.",
     agentStatus: null,
     branch: null,
-    clineSessionId: null,
     mergedAt: "2026-11-09T10:15:00Z",
     previewUrl: null,
     status: "done",
@@ -134,7 +132,6 @@ test("a pull request closed without merge gives the story its actions back", asy
     [
       {
         agentLastError: null,
-        agentLastEvent: "Pull request closed without merging.",
         pullRequestUrl: null,
       },
     ]

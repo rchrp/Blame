@@ -14,10 +14,10 @@ import { usePlatform, type NotificationTarget } from "@/context/platform"
 export function useAppActivity() {
   const platform = usePlatform()
   const runningStories = useBacklogSelector((backlog) =>
-    runningAgents(backlog.stories, [])
+    runningAgents(backlog.stories)
   )
   const quickChats = useQuickChatStore()
-  const running = runningStories + runningAgents([], quickChats.chats)
+  const running = runningStories + quickChats.runningCount
   const previousRunning = React.useRef(running)
   const setActiveChat = quickChats.setActiveId
 
@@ -38,14 +38,11 @@ export function useAppActivity() {
   }, [platform.systemNotifications, setActiveChat])
 }
 
+// Quick chats report theirs live from the engine (useQuickChatStore).
 export function runningAgents(
-  stories: readonly { agentStatus?: string | null }[],
-  chats: readonly { agentStatus?: string | null }[]
+  stories: readonly { agentStatus?: string | null }[]
 ) {
-  return (
-    stories.filter((story) => story.agentStatus === "Running").length +
-    chats.filter((chat) => chat.agentStatus === "Running").length
-  )
+  return stories.filter((story) => story.agentStatus === "Running").length
 }
 
 function agentsLabel(count: number) {

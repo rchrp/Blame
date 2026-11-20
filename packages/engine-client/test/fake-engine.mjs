@@ -88,6 +88,9 @@ function append(session, body) {
   return record;
 }
 
+// A client tool's call -> its session, while it runs (for `tool/progress`).
+const runningCalls = new Map();
+
 function delta(session, value) {
   if (subscribed.has(session))
     write({ method: "session/delta", params: { session, delta: value } });
@@ -205,6 +208,8 @@ async function runTurn(session, turn, text) {
           name,
           input: { n: name },
         });
+        runningCalls.set(call, session);
+        void promise.finally(() => runningCalls.delete(call)).catch(() => {});
         if (word === "cancel")
           setTimeout(() => write({ method: "$/cancel", params: { id } }), 30);
         const outcome = await Promise.race([
@@ -453,6 +458,16 @@ lines.on("line", (line) => {
     process.stderr.write(`cancelled request ${message.params.id}\n`);
     cancelable.get(message.params.id)?.();
     cancelable.delete(message.params.id);
+    return;
+  }
+  if (message.method === "tool/progress") {
+    const session = runningCalls.get(message.params.call);
+    if (session)
+      delta(session, {
+        type: "tool_progress",
+        call: message.params.call,
+        text: message.params.text,
+      });
     return;
   }
   if (message.method === undefined) {

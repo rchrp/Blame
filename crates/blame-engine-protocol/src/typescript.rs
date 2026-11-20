@@ -9,13 +9,14 @@
 //! set and untagged, which TypeScript cannot express faithfully from the Rust
 //! side; clients write that small part by hand.
 
+use crate::catalog::ModelCatalog;
 use crate::delta::{BlockKind, Delta, SessionActivity};
 use crate::rpc::{
     Approval, BlobPulled, ClientRequest, Credential, EngineNotification, EngineRequest,
     Initialized, LogPushed, MessageAccepted, Outcome, Records, Rewound, RpcError, RpcErrorData,
     SessionList, SessionOpened, SessionSummary, Subscribed, ToolResult, Version,
 };
-use crate::{PROTOCOL_VERSION, Record, RecordBody};
+use crate::{PROTOCOL_VERSION, Record, RecordBody, TaskOutcome};
 use std::any::TypeId;
 use std::collections::HashSet;
 use ts_rs::{Config, TS, TypeVisitor};
@@ -87,6 +88,8 @@ pub fn declarations() -> String {
     collector.collect::<RpcErrorData>();
     collector.collect::<Outcome>();
     collector.collect::<Version>();
+    collector.collect::<TaskOutcome>();
+    collector.collect::<ModelCatalog>();
 
     let mut declarations = collector.declarations;
     declarations.sort_by(|a, b| a.0.cmp(&b.0));

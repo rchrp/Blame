@@ -4,11 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
-import {
-  executeWorkspaceCommand,
-  startWorkspaceCommand,
-} from "./workspace-command-process.js";
-import { LightWorkspace } from "./light-workspace.js";
+import { executeWorkspaceCommand } from "./test-client/units.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 import { SessionJournal } from "./session-journal.js";
 
 test("command results preserve nonzero status and diagnostic streams", async () => {
@@ -64,23 +61,15 @@ test("a timeout stops the owned process group and preserves partial output", { s
 });
 
 test("a cancelled command returns a bounded failure", async () => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 150);
   const started = performance.now();
-  try {
-    const result = await run("setTimeout(()=>{},3000)", { signal: controller.signal });
-    assert.equal(result.failed, true);
-    assert.equal(result.interruption, "cancelled");
-    assert.ok(performance.now() - started < 1000);
-  } finally {
-    clearTimeout(timer);
-  }
+  const result = run("setTimeout(()=>{},3000)", { cancelAfterMs: 150 });
+  assert.equal(result.failed, true);
+  assert.equal(result.interruption, "cancelled");
+  assert.ok(performance.now() - started < 1000);
 });
 
 test("a pre-cancelled command is never started", () => {
-  const controller = new AbortController();
-  controller.abort();
-  assert.throws(() => run("process.exit(0)", { signal: controller.signal }), /abort/iu);
+  assert.throws(() => run("process.exit(0)", { cancelAfterMs: 0 }), /cancel/iu);
 });
 
 test("capture overflow terminates the command instead of claiming success", async () => {
@@ -93,26 +82,10 @@ test("capture overflow terminates the command instead of claiming success", asyn
   assert.ok(Buffer.byteLength(result.all) < 1200);
 });
 
-test("a running command exposes stable incremental output cursors", async () => {
-  await fixture(async root => {
-    const controller = new AbortController();
-    const execution = startWorkspaceCommand(process.execPath,
-      ["-e", "console.log('first');const fs=require('node:fs');const timer=setInterval(()=>{if(fs.existsSync('release')){clearInterval(timer);console.log('second')}},10)"],
-      { cwd: root, signal: controller.signal });
-    try {
-      // Child startup is not guaranteed within 50ms under concurrent compilers.
-      // Hold the second chunk until the first cursor has actually been observed.
-      const deadline = Date.now() + 3000;
-      while (!execution.inspect().output.includes("first") && Date.now() < deadline) await delay(10);
-      const first = execution.inspect();
-      assert.equal(first.process, "running"); assert.match(first.output, /first/u);
-      await writeFile(join(root, "release"), "ready");
-      await execution.completion;
-      const second = execution.inspect(first.cursor);
-      assert.equal(second.process, "exited"); assert.equal(second.output.trim(), "second");
-    } finally { controller.abort(); await execution.completion; }
-  });
-});
+// "a running command exposes stable incremental output cursors" drove the
+// TypeScript process handle (`startWorkspaceCommand(...).inspect(cursor)`)
+// in process; the same cursors are checked through run_task's inspection
+// below, the only way the harness exposes a running command.
 
 test("run_task inspects a long command without launching it again", async () => {
   await fixture(async (root) => {

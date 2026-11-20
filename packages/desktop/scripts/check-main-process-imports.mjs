@@ -5,8 +5,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { parseSync } from "vite";
 
 // The main process does not load the agent runtime: its entry pulls the
-// whole engine, Cline SDK included, which only agent workers need
-// (agent-runtime-process.js, a separate entry they are forked from). With
+// whole engine host, MCP SDK and document readers included, which only it needs
+// (engine-host-process.js, a separate entry it is forked from). With
 // it, the main process held 262 MB instead of 90 on the backlog and showed
 // its window 0.56 s later (measured 2026-11-19, main-process-bench.mjs). The main process uses the
 // runtime's targeted entries, whose modules import nothing from npm but the

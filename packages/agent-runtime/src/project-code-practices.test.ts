@@ -5,36 +5,33 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 
 import {
-  parseProjectCodePracticesResult,
   projectCodePracticesPrompt,
+  projectCodePracticesResultSchema,
   resolveProjectCodePracticesResult,
 } from "./project-code-practices.js";
 import { scanProjectCodePractices } from "./project-code-practices-scan.js";
 
-const practices = [
-  { practice: "unit_tests", detected: true, comment: "Tests are configured." },
-  {
-    practice: "coding_style",
+const practices = {
+  unit_tests: { detected: true, comment: "Tests are configured." },
+  coding_style: {
     detected: false,
     comment: "Strict linting is not configured.",
   },
-  {
-    practice: "commit_message_convention",
+  commit_message_convention: {
     detected: true,
     comment: "Recent commits use Conventional Commits.",
   },
-  {
-    practice: "layered_architecture",
+  layered_architecture: {
     detected: false,
     comment: "Dependency boundaries are not enforced.",
   },
-];
+};
 
-test("parses every required project code practice", () => {
-  const result = parseProjectCodePracticesResult({
-    projectState: "established",
-    practices,
-  });
+test("gives every required practice, in order, from the keyed result", () => {
+  const result = resolveProjectCodePracticesResult(
+    { projectState: "established", practices },
+    commitEvidence(0, 0),
+  );
 
   assert.deepEqual(
     result.map(({ practice }) => practice),
@@ -45,27 +42,31 @@ test("parses every required project code practice", () => {
       "commit_message_convention",
     ],
   );
+  assert.equal(result[0]!.comment, "Strict linting is not configured.");
 });
 
-test("rejects incomplete project code practice results", () => {
-  assert.throws(
-    () =>
-      parseProjectCodePracticesResult({
-        projectState: "established",
-        practices: practices.slice(0, 3),
-      }),
-    /exactly four/,
-  );
-});
-
-test("rejects extra project code practice results", () => {
-  assert.throws(
-    () =>
-      parseProjectCodePracticesResult({
-        projectState: "established",
-        practices: [...practices, practices[0]],
-      }),
-    /exactly four/,
+test("the schema names each practice once and makes a starter adopt them all", () => {
+  const schema = projectCodePracticesResultSchema;
+  assert.deepEqual(schema.properties.practices.required, [
+    "coding_style",
+    "unit_tests",
+    "layered_architecture",
+    "commit_message_convention",
+  ]);
+  assert.equal(schema.properties.practices.additionalProperties, false);
+  const starter = schema.anyOf[1]!.properties as {
+    projectState: unknown;
+    practices: { properties: Record<string, { properties: unknown }> };
+  };
+  assert.deepEqual(starter.projectState, { const: "starter" });
+  assert.deepEqual(starter.practices.properties.unit_tests!.properties, {
+    detected: { const: true },
+    comment: { type: "string", minLength: 1 },
+  });
+  // Only keywords the engine checks.
+  assert.doesNotMatch(
+    JSON.stringify(schema),
+    /"(?:pattern|minProperties|maxProperties|\$ref|contains)"/,
   );
 });
 
@@ -99,22 +100,22 @@ test("does not detect the commit convention without a strict majority", () => {
 
 for (const evaluatedCount of [0, 1]) {
   test(`preserves the analyst's starter defaults with ${evaluatedCount} non-conventional scaffold commits`, () => {
-    const starterPractices = practices.map(({ practice }) => ({
-      practice,
-      detected: true,
-      comment:
-        "Only template code is present; adopt the professional standard for future work.",
-    }));
+    const comment =
+      "Only template code is present; adopt the professional standard for future work.";
+    const starterPractices = Object.fromEntries(
+      Object.keys(practices).map((practice) => [
+        practice,
+        { detected: true, comment },
+      ]),
+    );
     const result = resolveProjectCodePracticesResult(
-      JSON.stringify({ projectState: "starter", practices: starterPractices }),
+      { projectState: "starter", practices: starterPractices },
       commitEvidence(0, evaluatedCount),
     );
 
     assert.equal(result.length, 4);
     assert.ok(result.every(({ detected }) => detected));
-    assert.ok(
-      result.every(({ comment }) => comment === starterPractices[0]!.comment),
-    );
+    assert.ok(result.every((practice) => practice.comment === comment));
   });
 }
 
@@ -135,28 +136,16 @@ test("does not infer a starter from a short commit history", () => {
   );
 });
 
-test("requests a corrected analysis when starter practices contradict its defaults", () => {
+test("refuses a result missing a practice", () => {
+  const { unit_tests: _missing, ...incomplete } = practices;
   assert.throws(
     () =>
       resolveProjectCodePracticesResult(
-        { projectState: "starter", practices },
+        { projectState: "established", practices: incomplete },
         commitEvidence(0, 0),
       ),
-    /starter project.*detected: true for all four/,
+    /missing unit_tests/,
   );
-});
-
-test("requires the analyst to classify the project state", () => {
-  for (const projectState of [undefined, "new-project", true]) {
-    assert.throws(
-      () =>
-        resolveProjectCodePracticesResult(
-          { projectState, practices },
-          commitEvidence(0, 1),
-        ),
-      /projectState must be starter or established/,
-    );
-  }
 });
 
 test("scans nested manifests, configurations, tests, and source evidence", async (context) => {

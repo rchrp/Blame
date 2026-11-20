@@ -23,7 +23,6 @@ const projectInitializationColumns = [
   'project_id',
   'status',
   'step',
-  'cline_session_id',
   'agent_provider_id',
   'agent_model_id',
   'preview_manifest',
@@ -48,7 +47,6 @@ const projectCodePracticeColumns = [
 const projectCodePracticeAnalysisColumns = [
   'project_id',
   'status',
-  'cline_session_id',
   'agent_provider_id',
   'agent_model_id',
   'error',
@@ -99,52 +97,14 @@ const userStoryColumns = [
   'workspace_mode',
   'run_mode',
   'ambition',
+  'engine_session_id',
   'agent_status',
-  'cline_session_id',
-  'agent_provider_id',
-  'agent_model_id',
-  'agent_last_event',
   'agent_last_error',
-  'agent_activities',
-  'agent_final_response',
-  'agent_usage',
-  'agent_session_summary',
+  'agent_models',
   'merged_at',
   'merge_commit',
   'base_commit',
   'discarded_reason',
-  'created_at',
-  'updated_at',
-]
-const messageColumns = [
-  'id',
-  'body',
-  'code_selection_attachments',
-  'file_attachments',
-  'author',
-  'created_at',
-  'updated_at',
-]
-const agentRunColumns = [
-  'id',
-  'kind',
-  'cline_session_id',
-  'checkpoint_run_count',
-  'diff_end_ref',
-  'status',
-  'activities',
-  'final_response',
-  'usage',
-  'session_summary',
-  'completed_at',
-  'created_at',
-  'updated_at',
-]
-const agentRunActivityColumns = [
-  'id',
-  'run_id',
-  'activity_id',
-  'activity',
   'created_at',
   'updated_at',
 ]
@@ -153,16 +113,7 @@ const quickChatColumns = [
   'project_id',
   'title',
   'workspace',
-  'agent_status',
-  'cline_session_id',
-  'agent_provider_id',
-  'agent_model_id',
-  'agent_last_event',
-  'agent_last_error',
-  'agent_activities',
-  'agent_final_response',
-  'agent_usage',
-  'agent_session_summary',
+  'engine_session_id',
   'created_at',
   'updated_at',
 ]
@@ -310,62 +261,8 @@ export default class AccountExportQueries {
     return this.ownedRows('user_stories', userStoryColumns, 'project_id', projectIds)
   }
 
-  userStoryComments(storyIds: string[]) {
-    return this.ownedRows(
-      'user_story_comments',
-      ['user_story_id', ...messageColumns],
-      'user_story_id',
-      storyIds
-    )
-  }
-
-  userStoryAgentRuns(storyIds: string[]) {
-    return this.ownedRows(
-      'user_story_agent_runs',
-      ['user_story_id', 'comment_id', ...agentRunColumns],
-      'user_story_id',
-      storyIds
-    )
-  }
-
-  userStoryAgentRunActivities(runIds: string[]) {
-    return this.ownedRows(
-      'user_story_agent_run_activities',
-      agentRunActivityColumns,
-      'run_id',
-      runIds
-    )
-  }
-
   quickChats(projectIds: string[]) {
     return this.ownedRows('quick_chats', quickChatColumns, 'project_id', projectIds)
-  }
-
-  quickChatMessages(chatIds: string[]) {
-    return this.ownedRows(
-      'quick_chat_messages',
-      ['quick_chat_id', ...messageColumns],
-      'quick_chat_id',
-      chatIds
-    )
-  }
-
-  quickChatAgentRuns(chatIds: string[]) {
-    return this.ownedRows(
-      'quick_chat_agent_runs',
-      ['quick_chat_id', 'message_id', ...agentRunColumns],
-      'quick_chat_id',
-      chatIds
-    )
-  }
-
-  quickChatAgentRunActivities(runIds: string[]) {
-    return this.ownedRows(
-      'quick_chat_agent_run_activities',
-      agentRunActivityColumns,
-      'run_id',
-      runIds
-    )
   }
 
   providerConnections(userId: string) {
@@ -411,22 +308,6 @@ export default class AccountExportQueries {
 
   userStoryFileAttachmentLinks(storyIds: string[]) {
     return this.attachmentLinks('user_story_file_attachments', 'user_story_id', storyIds)
-  }
-
-  userStoryCommentFileAttachmentLinks(commentIds: string[]) {
-    return this.attachmentLinks(
-      'user_story_comment_file_attachments',
-      'user_story_comment_id',
-      commentIds
-    )
-  }
-
-  quickChatMessageFileAttachmentLinks(messageIds: string[]) {
-    return this.attachmentLinks(
-      'quick_chat_message_file_attachments',
-      'quick_chat_message_id',
-      messageIds
-    )
   }
 
   private attachmentLinks(table: string, ownerColumn: string, ownerIds: string[]) {

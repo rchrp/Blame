@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { blockedCommandReason } from "./command-policy.js";
+import { blockedCommandReason } from "./test-client/units.js";
 import { workspaceCommandEnvironment } from "./workspace-command-environment.js";
 
 test("Git source attribution is inspection even in a compound command", () => {

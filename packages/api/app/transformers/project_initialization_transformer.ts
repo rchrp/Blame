@@ -15,7 +15,6 @@ export default class ProjectInitializationTransformer extends BaseTransformer<Pr
             projectId: this.resource.initialization.projectId,
             status: this.resource.initialization.status,
             step: this.resource.initialization.step,
-            clineSessionId: this.resource.initialization.clineSessionId,
             agentProviderId: this.resource.initialization.agentProviderId,
             agentModelId: this.resource.initialization.agentModelId,
             previewManifest: this.resource.initialization.previewManifest,

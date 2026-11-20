@@ -54,11 +54,16 @@ import {
   markInitializationRunning,
 } from "@/components/project-initialization/project-initialization-availability"
 import {
-  agentInitializationProgress,
-  initializationProgressChannel,
   initializationProgressFor,
+  initializationTaskProgress,
   setInitializationProgress,
+  type InitializationProgressUpdate,
 } from "@/components/project-initialization/project-initialization-progress"
+import { followEngineTask } from "@/lib/engine-task-follow"
+import type {
+  EngineHostResult,
+  InitializationFeedback,
+} from "@blame/agent-runtime/engine-protocol"
 
 const toastId = "project-initialization"
 const maxBackendCompletionAttempts = 3
@@ -71,7 +76,7 @@ type InitializationAuth = Pick<
 type InitializationRunInput = {
   project: { id: string; name: string; path: string }
   auth: InitializationAuth
-  agent: NonNullable<ReturnType<typeof usePlatform>["agent"]>
+  engine: NonNullable<ReturnType<typeof usePlatform>["engine"]>
   providerId: string
   modelId: string
   credentialLabel?: string
@@ -87,14 +92,7 @@ type InitializationRunInput = {
   checkedCommit?: string
 }
 
-type InitializationValidationFeedback = {
-  validationError: string
-  previousResult: string
-}
-
-type InitializationAgentResult = Awaited<
-  ReturnType<InitializationRunInput["agent"]["initializations"]["run"]>
->
+type InitializationAgentResult = EngineHostResult<"initializeProject">
 
 type OpenHostDependenciesDialog = (
   run: InitializationRunInput,
@@ -104,12 +102,12 @@ type OpenHostDependenciesDialog = (
 // The run this app has in progress for a project, so Cancel can stop it.
 type ActiveInitializationRun = {
   project: InitializationRunInput["project"]
-  agent: InitializationRunInput["agent"]
-  /** The channel of the run's progress: the agent runtime cancels the run by it. */
-  progressId: string
+  engine: InitializationRunInput["engine"]
+  /** The engine task of the analysis running now: Cancel stops it by this id. */
+  task?: string
   /** The person cancelled it: it saves nothing and starts no other agent run. */
   cancelled: boolean
-  /** The agent runtime stopped the analysis after the cancellation. */
+  /** The engine stopped the analysis after the cancellation. */
   agentStopped: boolean
 }
 
@@ -157,7 +155,7 @@ function useProjectInitializationController() {
 
   useInitializationEffect(
     activeProject,
-    platform.agent,
+    platform.engine,
     platform.workspace,
     initializationAuth,
     currentModel,
@@ -168,7 +166,7 @@ function useProjectInitializationController() {
   )
   useInitializationRunRequests({
     activeProject,
-    agent: platform.agent,
+    engine: platform.engine,
     workspace: platform.workspace,
     auth: initializationAuth,
     currentModel,
@@ -376,7 +374,7 @@ function InitializationDatabaseDialog({
 
 function useInitializationEffect(
   activeProject: { id: string; name: string; path: string } | undefined,
-  agent: NonNullable<ReturnType<typeof usePlatform>["agent"]> | undefined,
+  engine: NonNullable<ReturnType<typeof usePlatform>["engine"]> | undefined,
   workspace: WorkspaceClient | undefined,
   auth: InitializationAuth,
   currentModel: ModelSelection["currentModel"],
@@ -389,7 +387,7 @@ function useInitializationEffect(
     () =>
       initializationEffect({
         activeProject,
-        agent,
+        engine,
         workspace,
         auth,
         currentModel,
@@ -400,7 +398,7 @@ function useInitializationEffect(
       }),
     [
       activeProject,
-      agent,
+      engine,
       workspace,
       auth,
       currentModel,
@@ -425,7 +423,7 @@ function useInitializationRunRequests(
     const run = runInput(
       input.activeProject,
       input.auth,
-      input.agent,
+      input.engine,
       input.currentModel,
       input.currentVariant
     )
@@ -457,7 +455,7 @@ function useInitializationRunRequests(
 
 function initializationEffect(input: {
   activeProject?: { id: string; name: string; path: string }
-  agent?: NonNullable<ReturnType<typeof usePlatform>["agent"]>
+  engine?: NonNullable<ReturnType<typeof usePlatform>["engine"]>
   workspace?: WorkspaceClient
   auth: InitializationAuth
   currentModel: ModelSelection["currentModel"]
@@ -467,7 +465,7 @@ function initializationEffect(input: {
   openSetupPrompt: (run: InitializationRunInput) => void
 }) {
   if (!input.activeProject || input.auth.status !== "authenticated") return
-  if (!input.agent) return
+  if (!input.engine) return
   const controller = new AbortController()
   void maybeInitializeProject(input, controller.signal)
   return () => controller.abort()
@@ -477,7 +475,7 @@ async function maybeInitializeProject(
   input: Parameters<typeof initializationEffect>[0],
   signal: AbortSignal
 ) {
-  if (!input.activeProject || !input.agent) return
+  if (!input.activeProject || !input.engine) return
   const cloud = createCloudApi(input.auth.apiConnection)
   const snapshot = await cloud.projectInitialization(input.activeProject.id)
   if (signal.aborted) return
@@ -492,7 +490,7 @@ async function maybeInitializeProject(
   const run = runInput(
     input.activeProject,
     input.auth,
-    input.agent,
+    input.engine,
     input.currentModel,
     input.currentVariant
   )
@@ -512,15 +510,15 @@ async function maybeInitializeProject(
 function runInput(
   project: InitializationRunInput["project"] | undefined,
   auth: InitializationAuth,
-  agent: InitializationRunInput["agent"] | undefined,
+  engine: InitializationRunInput["engine"] | undefined,
   model: ModelSelection["currentModel"],
   variant: ModelSelection["currentVariant"]
 ): InitializationRunInput | undefined {
-  if (!project || !model || auth.status !== "authenticated" || !agent) return
+  if (!project || !model || auth.status !== "authenticated" || !engine) return
   return {
     project,
     auth,
-    agent,
+    engine,
     providerId: model.provider.id,
     modelId: model.id,
     credentialLabel: model.credentialLabel,
@@ -534,31 +532,16 @@ async function runInitialization(input: InitializationRunInput) {
   const cloud = createCloudApi(input.auth.apiConnection)
   const run: ActiveInitializationRun = {
     project: input.project,
-    agent: input.agent,
-    progressId: crypto.randomUUID(),
+    engine: input.engine,
     cancelled: false,
     agentStopped: false,
   }
-  const progress = (update: {
-    percent: number
-    label: string
-    detail?: string
-  }) => {
+  const progress = (update: InitializationProgressUpdate) => {
     // A cancelled run says it is stopping until it ends.
     if (run.cancelled) return
     setInitializationProgress(projectId, update)
     showProgress(input.project.name, projectId)
   }
-  const stopFollowing = input.agent.sessions.onEvent(
-    initializationProgressChannel(run.progressId),
-    (event) => {
-      // The agent runtime knows the run once it reports on it: a
-      // cancellation sent before then reaches it now.
-      if (run.cancelled) void stopAgentRun(run)
-      const update = agentInitializationProgress(event)
-      if (update) progress(update)
-    }
-  )
   activeRuns.set(projectId, run)
   markInitializationRunning(projectId, true)
   progress({ percent: 2, label: "Starting the analysis" })
@@ -568,7 +551,6 @@ async function runInitialization(input: InitializationRunInput) {
     if (run.cancelled) await persistInitializationCancellation(input, cloud)
     else await persistInitializationError(input, cloud, error)
   } finally {
-    stopFollowing()
     activeRuns.delete(projectId)
     setInitializationProgress(projectId, undefined)
     markInitializationRunning(projectId, false)
@@ -589,12 +571,12 @@ function cancelInitialization(projectId: string) {
   void stopAgentRun(run)
 }
 
-// False until the agent runtime runs the analysis: the next progress
-// notice of the run sends the cancellation again.
+// False until the engine runs the analysis (the host scans the project
+// first): the task's start sends the cancellation again.
 async function stopAgentRun(run: ActiveInitializationRun) {
-  if (run.agentStopped) return
-  run.agentStopped = await run.agent.initializations
-    .cancel(run.progressId)
+  if (run.agentStopped || !run.task) return
+  run.agentStopped = await run.engine
+    .call("cancelTask", { session: run.task })
     .catch(() => false)
 }
 
@@ -676,23 +658,20 @@ async function persistInitializationResult(
   input: InitializationRunInput,
   cloud: ReturnType<typeof createCloudApi>,
   run: ActiveInitializationRun,
-  progress: (update: {
-    percent: number
-    label: string
-    detail?: string
-  }) => void
+  progress: (update: InitializationProgressUpdate) => void
 ) {
   await cloud.startProjectInitialization(input.project.id, {
     providerId: input.providerId,
     modelId: input.modelId,
   })
   notifyProjectInitializationUpdated(input.project.id)
-  let feedback: InitializationValidationFeedback | undefined
+  let feedback: InitializationFeedback | undefined
   for (let attempt = 1; attempt <= maxBackendCompletionAttempts; attempt += 1) {
     assertNotCancelled(run)
     const result = await runProjectInitializationAgent(
       input,
-      run.progressId,
+      run,
+      progress,
       feedback
     )
     // A setup the agent submitted as the person cancelled is not saved.
@@ -714,23 +693,48 @@ async function persistInitializationResult(
   }
 }
 
-function runProjectInitializationAgent(
+// Each analysis is its own engine task, followed for the progress bar.
+async function runProjectInitializationAgent(
   input: InitializationRunInput,
-  progressId: string,
-  validationFeedback?: InitializationValidationFeedback
+  run: ActiveInitializationRun,
+  progress: (update: InitializationProgressUpdate) => void,
+  validationFeedback?: InitializationFeedback
 ) {
-  return input.agent.initializations.run({
-    progressId,
-    apiConnection: input.auth.apiConnection,
-    providerId: input.providerId,
-    modelId: input.modelId,
-    credentialLabel: input.credentialLabel,
-    reasoningEffort: input.reasoningEffort,
-    cwd: input.project.path,
-    workspaceRoot: input.project.path,
+  const task = `initialization-${crypto.randomUUID()}`
+  run.task = task
+  run.agentStopped = false
+  const step = initializationTaskProgress()
+  progress({ percent: 4, label: "Reading the repository" })
+  const pending = input.engine.call("initializeProject", {
+    task,
+    model: {
+      providerId: input.providerId,
+      modelId: input.modelId,
+      credentialLabel: input.credentialLabel,
+      reasoning: input.reasoningEffort,
+    },
+    projectId: input.project.id,
+    workspace: { root: input.project.path },
     preferences: input.preferences,
     validationFeedback,
   })
+  // Its first records come once the host has scanned the project.
+  let started = false
+  const stopFollowing = followEngineTask(input.engine, task, (records) => {
+    if (!started) {
+      started = true
+      progress({ percent: 10, label: "Analyzing the project" })
+    }
+    for (const record of records) {
+      const update = step(record)
+      if (update) progress(update)
+    }
+  })
+  try {
+    return await pending
+  } finally {
+    stopFollowing()
+  }
 }
 
 async function completeProjectInitialization(
@@ -739,7 +743,6 @@ async function completeProjectInitialization(
   result: InitializationAgentResult
 ) {
   await cloud.completeProjectInitialization(input.project.id, {
-    clineSessionId: result.sessionId,
     previewManifest: result.previewManifest,
     runConfigurations: result.runConfigurations,
     databaseMode: input.preferences?.database?.mode ?? null,
@@ -761,7 +764,7 @@ function isBackendValidationError(error: unknown) {
 function validationFeedback(
   error: unknown,
   result: InitializationAgentResult
-): InitializationValidationFeedback {
+): InitializationFeedback {
   return {
     validationError: errorMessage(error),
     previousResult: JSON.stringify({

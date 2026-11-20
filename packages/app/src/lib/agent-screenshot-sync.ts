@@ -10,7 +10,9 @@ import type {
 
 export type ScreenshotOwner = {
   id: string
-  kind: "quickChat" | "userStory"
+  // Only stories sync screenshots: quick chats run on the engine, whose
+  // conversations carry their images as blobs.
+  kind: "userStory"
   scope: string
 }
 
@@ -127,14 +129,13 @@ async function screenshotRequest(
   init: RequestInit
 ) {
   const base = connection.url.replace(/\/$/, "")
-  const collection = owner.kind === "userStory" ? "user-stories" : "quick-chats"
   const headers = new Headers(init.headers)
   headers.set("Accept", "application/json")
   headers.set("Content-Type", "application/json")
   if (connection.token)
     headers.set("Authorization", `Bearer ${connection.token}`)
   const response = await fetch(
-    `${base}/projects/${collection}/${encodeURIComponent(owner.id)}/agent-screenshots/${path}`,
+    `${base}/projects/user-stories/${encodeURIComponent(owner.id)}/agent-screenshots/${path}`,
     { ...init, headers }
   )
   if (!response.ok)

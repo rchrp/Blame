@@ -27,9 +27,9 @@ type NativeImage = {
 
 export const screenshotIdPattern = /^[0-9a-f]{64}$/u;
 
-// An MCP result with images becomes a list of content blocks. Cline keeps
-// such a list as the tool result; an object would be serialized as JSON and
-// the image would reach the model as base64 text.
+// An MCP result with images becomes a list of content blocks, kept as the
+// tool result; an object would be serialized as JSON and the image would
+// reach the model as base64 text.
 export function previewToolModelOutput(result: unknown): unknown {
   const record = recordValue(result);
   if (!Array.isArray(record.content)) return result;

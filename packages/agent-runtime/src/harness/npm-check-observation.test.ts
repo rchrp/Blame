@@ -4,18 +4,17 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { SessionJournal } from "./session-journal.js";
-import { WorkspaceFiles } from "./workspace-files.js";
-import type { LightCompletionNotification } from "./light-completion.js";
-const { LightTaskRunner } = await import(process.env.BLAME_NPM_OBSERVATION_MODULE ?? "./light-task-runner.js") as typeof import("./light-task-runner.js");
-const { LightFinishService } = await import(process.env.BLAME_NPM_FINISH_MODULE ?? "./light-finish-service.js") as typeof import("./light-finish-service.js");
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
-async function fixture(run: (root: string, tasks: InstanceType<typeof LightTaskRunner>, journal: SessionJournal) => Promise<void>, script="node --test") {
+async function fixture(run: (root: string, tasks: LightWorkspace["tasks"], journal: SessionJournal) => Promise<void>, script="node --test") {
   const root=await mkdtemp(join(tmpdir(),"blame-npm-observation-"));
   try{
     await writeFile(join(root,"package.json"),JSON.stringify({scripts:{test:script}}));
     await writeFile(join(root,"suite.test.cjs"),"require('node:test').test('actual case',()=>{});\n");
     const journal=new SessionJournal(root,"npm-observation");
-    await run(root,new LightTaskRunner({files:new WorkspaceFiles(root),journal}),journal);
+    await run(root,new LightWorkspace(root,{sessionId:"npm-observation"}).tasks,journal);
   }finally{await rm(root,{recursive:true,force:true});}
 }
 test("literal raw npm wrapper retains original command and confirms reported Node cases only",async()=>{

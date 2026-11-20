@@ -9,6 +9,7 @@ import type {
   SessionRecord,
   ToolCallId,
   TurnId,
+  TurnOutcome,
 } from "../protocol.js";
 import { LiveState } from "./live.js";
 import type {
@@ -358,6 +359,7 @@ export class TranscriptReducer {
           this.push(this.checkpoints, {
             turn: body.turn,
             checkpoint: body.checkpoint,
+            snapshot: body.snapshot,
             userSeq: user.seq,
             to: user.rewind.to,
           });
@@ -466,6 +468,23 @@ export class TranscriptReducer {
           code: body.code,
           text: body.text,
         });
+        return;
+      case "contract_correction":
+        // The engine told the model it may not stop yet: shown like a
+        // notice, so a reader sees why the agent went on.
+        this.append({
+          kind: "notice",
+          key: String(record.seq),
+          seq: record.seq,
+          atMs: at,
+          level: "info",
+          code: "contract_correction",
+          text: body.text,
+        });
+        return;
+      case "result_accepted":
+      case "result_rejected":
+        // The result call shows as completed or failed already.
         return;
       case "rewind_started":
       case "rewind_finished":
@@ -776,10 +795,9 @@ function isVisible(block: AssistantBlock): boolean {
   return block.type !== "opaque";
 }
 
-function statusOf(
-  status: "completed" | "interrupted" | "limit_reached" | "failed",
-): TurnStatus {
-  return status;
+function statusOf(status: TurnOutcome["status"]): TurnStatus {
+  // A turn that ran out of contract corrections did not do what it had to.
+  return status === "contract_unmet" ? "failed" : status;
 }
 
 /** A tool call's state follows from what the log has said about it. */

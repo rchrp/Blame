@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
-async function withOrder<T>(enabled: boolean, run: () => Promise<T>) {
+type Workspace = LightWorkspace;
+
+// The harness reads the setting when it starts: each order gets a harness
+// of its own for the same folder and session.
+async function withOrder<T>(enabled: boolean, run: (workspace: Workspace) => Promise<T>, root: string) {
   const before = process.env.BLAME_AGENT_DECLARATION_SOURCE_ORDER;
-  try { process.env.BLAME_AGENT_DECLARATION_SOURCE_ORDER = String(enabled); return await run(); }
+  try { process.env.BLAME_AGENT_DECLARATION_SOURCE_ORDER = String(enabled); return await run(new LightWorkspace(root, { sessionId: "guidance" })); }
   finally { if (before === undefined) delete process.env.BLAME_AGENT_DECLARATION_SOURCE_ORDER; else process.env.BLAME_AGENT_DECLARATION_SOURCE_ORDER = before; }
 }
 
@@ -13,10 +18,10 @@ test("test-heavy callers do not exhaust declaration bytes before the source defi
     `src/__tests__/a${i}.test.ts`,
     Array.from({ length: 40 }, (_, j) => `export interface Example${j} { value: string }`).join("\n") + `\n/* ${"x".repeat(125_000)} */\n`,
   ]));
-  await fixture({ ...callers, "src/types.ts": "export interface MutateOptions { settled?: () => void }\n" }, async workspace => {
-    const lookup = () => workspace.searchCode({ query: "interface MutateOptions", scope: "src" });
-    const reference = data(await withOrder(false, lookup));
-    const changed = data(await withOrder(true, lookup));
+  await fixture({ ...callers, "src/types.ts": "export interface MutateOptions { settled?: () => void }\n" }, async (_workspace, root) => {
+    const lookup = (workspace: Workspace) => workspace.searchCode({ query: "interface MutateOptions", scope: "src" });
+    const reference = data(await withOrder(false, lookup, root));
+    const changed = data(await withOrder(true, lookup, root));
     assert.deepEqual(reference.declarationCandidates, []);
     assert.equal(changed.declarationCandidates[0].path, "src/types.ts");
     for (const result of [reference, changed]) {
@@ -32,14 +37,14 @@ test("test-heavy callers do not exhaust declaration bytes before the source defi
 
 test("file limits, explicit test scopes and exact test-filename affinity remain usable", async () => {
   const callers = Object.fromEntries(Array.from({ length: 70 }, (_, i) => [`src/__tests__/a${String(i).padStart(2, "0")}.spec.ts`, "// needle\n"]));
-  await fixture({ ...callers, "src/api.ts": "export function needle() { return 1 }\n", "src/__tests__/testTarget.ts": "export function testTarget() { return 2 }\n" }, async workspace => {
-    const broad = data(await withOrder(true, () => workspace.searchCode({ query: "needle", scope: "src", mode: "text" })));
+  await fixture({ ...callers, "src/api.ts": "export function needle() { return 1 }\n", "src/__tests__/testTarget.ts": "export function testTarget() { return 2 }\n" }, async (_workspace, root) => {
+    const broad = data(await withOrder(true, (workspace) => workspace.searchCode({ query: "needle", scope: "src", mode: "text" }), root));
     assert.equal(broad.declarationCandidates[0].path, "src/api.ts");
     assert.equal(broad.declarationDiscovery.visitedFiles, 64);
     assert.equal(broad.declarationDiscovery.limited, true);
-    const scoped = data(await withOrder(true, () => workspace.searchCode({ query: "testTarget", scope: "src/__tests__", mode: "text" })));
+    const scoped = data(await withOrder(true, (workspace) => workspace.searchCode({ query: "testTarget", scope: "src/__tests__", mode: "text" }), root));
     assert.equal(scoped.declarationCandidates[0].path, "src/__tests__/testTarget.ts");
-    const targeted = data(await withOrder(true, () => workspace.searchCode({ query: "testTarget", scope: "src", mode: "text" })));
+    const targeted = data(await withOrder(true, (workspace) => workspace.searchCode({ query: "testTarget", scope: "src", mode: "text" }), root));
     assert.equal(targeted.declarationCandidates[0].path, "src/__tests__/testTarget.ts");
   });
 });

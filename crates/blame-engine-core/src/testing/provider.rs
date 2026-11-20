@@ -167,6 +167,7 @@ pub struct ScriptedProvider {
     inner: Arc<Mutex<ProviderState>>,
     responder: Option<Arc<Responder>>,
     clock: Option<ManualClock>,
+    forces_tools: bool,
 }
 
 #[derive(Default)]
@@ -186,6 +187,12 @@ impl ScriptedProvider {
             responder: Some(Arc::new(responder)),
             ..Self::default()
         }
+    }
+
+    /// Says it can force the tool a reply calls, as the OpenAI API can.
+    pub fn forcing_tools(mut self) -> Self {
+        self.forces_tools = true;
+        self
     }
 
     /// The clock `Step::Delay` waits on.
@@ -241,6 +248,10 @@ impl ModelProvider for ScriptedProvider {
                 delay: None,
             })),
         }
+    }
+
+    fn forces_tool(&self, _model: &blame_engine_protocol::ModelRef) -> bool {
+        self.forces_tools
     }
 }
 

@@ -8,16 +8,15 @@ use blame_engine_core::ports::{ModelMessage, ModelRequest, ProviderError, ToolRe
 use blame_engine_protocol::{
     AssistantBlock, BlobRef, ErrorKind, ReasoningEffort, ToolOutcome, ToolResultBlock, UserBlock,
 };
-use rig_core::catalog::{Catalog, ReasoningSupport};
+use rig_core::catalog::ReasoningSupport;
 use rig_core::completion::{
     CachePoint, CacheRetention, CompletionRequest, Effort, GenerationOptions, OnUnsupported,
     Reasoning, ToolDefinition,
 };
 use rig_core::message::{
     CallId, Document, DocumentData, DocumentMediaType, DocumentSourceKind, Image, ImageMediaType,
-    Message, MimeType, Text, ToolName, ToolResult, ToolResultContent, UserContent,
+    Message, MimeType, Text, ToolChoice, ToolName, ToolResult, ToolResultContent, UserContent,
 };
-use rig_core::providers::registry::ProviderId;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -81,6 +80,14 @@ pub(crate) async fn to_rig(
         })
         .collect::<Result<_, ProviderError>>()?;
     rig.max_tokens = request.max_output_tokens.map(u64::from);
+    // The loop asks only where `forces_tool` said yes.
+    if let Some(name) = &request.forced_tool {
+        let name =
+            ToolName::new(name.as_str()).map_err(|_| invalid("the forced tool has no name"))?;
+        rig.tool_choice = Some(ToolChoice::Specific {
+            function_names: vec![name],
+        });
+    }
 
     // An option a model cannot honour is skipped rather than failing the
     // request: the loop asks for what it wants and each provider does what
@@ -90,11 +97,12 @@ pub(crate) async fn to_rig(
     match request.reasoning {
         Some(effort) if target.effort_as_asked => {
             let effort = match effort {
-                // Claude Code's lowest level.
-                ReasoningEffort::Minimal | ReasoningEffort::Low => "low",
+                // Claude Code's lowest level: it has no "off".
+                ReasoningEffort::Off | ReasoningEffort::Minimal | ReasoningEffort::Low => "low",
                 ReasoningEffort::Medium => "medium",
                 ReasoningEffort::High => "high",
                 ReasoningEffort::Xhigh => "xhigh",
+                ReasoningEffort::Max => "max",
             };
             raw.insert("output_config".into(), json!({ "effort": effort }));
         }
@@ -147,31 +155,48 @@ pub(crate) async fn to_rig(
 /// refuses any level, which would be skipped without a word, so the effort
 /// becomes a budget inside the range the catalog gives it and below the
 /// output cap, which the thinking counts towards. `None` when that leaves
-/// no room to think.
+/// no room to think. `Off` turns reasoning off where the model allows it,
+/// and asks for its least otherwise. A model the catalog does not know
+/// gets what was asked, as asked.
 fn reasoning(
     effort: ReasoningEffort,
     target: &Target,
     max_output_tokens: Option<u32>,
 ) -> Option<Reasoning> {
-    let spec = ProviderId::catalog(target.rig_provider)
-        .and_then(|provider| Catalog::builtin().get(provider, &target.model.model));
-    let range = match spec.map(|found| &found.spec.reasoning) {
+    let spec = target.spec();
+    let (levels, budget, can_disable) = match spec.as_ref().map(|spec| &spec.reasoning) {
         Some(ReasoningSupport::Listed {
             levels,
-            budget: Some(range),
+            budget,
+            can_disable,
             ..
-        }) if levels.is_empty() => range.clone(),
-        Some(ReasoningSupport::Listed { levels, .. }) if !levels.is_empty() => {
-            return Some(Reasoning::Effort(nearest(effort_of(effort), levels)));
+        }) => (levels.as_slice(), budget.clone(), *can_disable),
+        _ => {
+            return Some(match effort_of(effort) {
+                Some(effort) => Reasoning::Effort(effort),
+                None => Reasoning::Off,
+            });
         }
-        _ => return Some(Reasoning::Effort(effort_of(effort))),
+    };
+    let effort = match effort_of(effort) {
+        Some(effort) => effort,
+        None if can_disable => return Some(Reasoning::Off),
+        // The least the model offers.
+        None => Effort::Minimal,
+    };
+    if !levels.is_empty() {
+        return Some(Reasoning::Effort(nearest(effort, levels)));
+    }
+    let Some(range) = budget else {
+        return Some(Reasoning::Effort(effort));
     };
     let wanted: u32 = match effort {
-        ReasoningEffort::Minimal => 1_024,
-        ReasoningEffort::Low => 2_048,
-        ReasoningEffort::Medium => 8_192,
-        ReasoningEffort::High => 16_384,
-        ReasoningEffort::Xhigh => 32_768,
+        Effort::Minimal => 1_024,
+        Effort::Low => 2_048,
+        Effort::Medium => 8_192,
+        Effort::High => 16_384,
+        Effort::XHigh => 32_768,
+        _ => u32::MAX,
     };
     let ceiling = max_output_tokens.map_or(*range.end(), |cap| {
         (*range.end()).min(cap.saturating_sub(1))
@@ -203,14 +228,17 @@ fn nearest(wanted: Effort, levels: &[Effort]) -> Effort {
         .map_or(wanted, |(_, level)| level)
 }
 
-fn effort_of(effort: ReasoningEffort) -> Effort {
-    match effort {
+/// Rig's level for `effort`; `None` for `Off`, which is no level.
+fn effort_of(effort: ReasoningEffort) -> Option<Effort> {
+    Some(match effort {
+        ReasoningEffort::Off => return None,
         ReasoningEffort::Minimal => Effort::Minimal,
         ReasoningEffort::Low => Effort::Low,
         ReasoningEffort::Medium => Effort::Medium,
         ReasoningEffort::High => Effort::High,
         ReasoningEffort::Xhigh => Effort::XHigh,
-    }
+        ReasoningEffort::Max => Effort::Max,
+    })
 }
 
 async fn user(
@@ -334,6 +362,8 @@ mod tests {
 
     fn target(provider: &'static str, model: &str) -> Target {
         Target {
+            kind: crate::ProviderKind::from_id(provider).expect("a served provider"),
+            catalog: crate::catalog::Catalog::snapshot(),
             wire: Wire::AnthropicMessages,
             model: ModelRef {
                 provider: provider.to_owned(),
@@ -374,6 +404,35 @@ mod tests {
         assert_eq!(
             reasoning(ReasoningEffort::Xhigh, &unknown, None),
             Some(Reasoning::Effort(Effort::XHigh))
+        );
+        assert_eq!(
+            reasoning(ReasoningEffort::Off, &unknown, None),
+            Some(Reasoning::Off)
+        );
+        // `max` where the model lists it; a budget model's whole range.
+        let opus = target("anthropic", "claude-opus-5-5");
+        assert_eq!(
+            reasoning(ReasoningEffort::Max, &opus, None),
+            Some(Reasoning::Effort(Effort::Max))
+        );
+        assert_eq!(
+            reasoning(ReasoningEffort::Max, &older, Some(64_000)),
+            Some(Reasoning::Budget { tokens: 63_999 })
+        );
+        // `off` where the model can turn reasoning off, its least where
+        // it cannot.
+        assert_eq!(
+            reasoning(ReasoningEffort::Off, &sonnet, None),
+            Some(Reasoning::Off)
+        );
+        let gemini = Target {
+            kind: crate::ProviderKind::Gemini,
+            rig_provider: "gcp.gemini",
+            ..target("gemini", "gemini-3.5-flash")
+        };
+        assert_eq!(
+            reasoning(ReasoningEffort::Off, &gemini, None),
+            Some(Reasoning::Effort(Effort::Minimal))
         );
     }
 }

@@ -1,8 +1,7 @@
 {
   "vm": "BlameRuntime",
   "runtimeVersion": "15",
-  "clineSdkVersion": "0.2.0",
-  "runtimeAgentVersion": "15",
+  "runtimeAgentVersion": "16",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
   "dockerVersion": "29.9.2",

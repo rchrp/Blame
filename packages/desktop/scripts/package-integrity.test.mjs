@@ -15,15 +15,61 @@ import test from "node:test";
 import {
   verifyAsarWorkspaceRuntime,
   verifyAsarGeneratedJavaScript,
+  verifyPackagedEngineBinaries,
   verifyPackagedWorkspaceRuntime,
   verifyStagedWorkspaceRuntime,
 } from "./package-integrity.mjs";
+import { engineExecutables } from "../../../scripts/build-engine-binaries.mjs";
 
 const require = createRequire(import.meta.url);
 const builder = createRequire(require.resolve("electron-builder"));
 const asar = createRequire(builder.resolve("app-builder-lib"))(
   "@electron/asar",
 );
+
+// The first bytes of an executable, as verifyPackagedEngineBinaries reads them.
+const executables = {
+  "darwin-arm64": () => header(32, (buffer) => buffer.writeUInt32LE(0xfeedfacf, 0) + buffer.writeUInt32LE(0x0100000c, 4)),
+  "darwin-x64": () => header(32, (buffer) => buffer.writeUInt32LE(0xfeedfacf, 0) + buffer.writeUInt32LE(0x01000007, 4)),
+  "linux-arm64": (programType = 1) => elf(183, programType),
+  "linux-x64": (programType = 1) => elf(62, programType),
+  "win32-x64": () => header(0x46, (buffer) => {
+    buffer.write("MZ", 0, "latin1");
+    buffer.writeUInt32LE(0x40, 0x3c);
+    buffer.write("PE\0\0", 0x40, "latin1");
+    buffer.writeUInt16LE(0x8664, 0x44);
+  }),
+};
+
+function header(length, write) {
+  const buffer = Buffer.alloc(length);
+  write(buffer);
+  return buffer;
+}
+
+// One program header; type 3 (PT_INTERP) is a dynamically linked binary.
+function elf(machine, programType) {
+  return header(120, (buffer) => {
+    buffer.writeUInt32BE(0x7f454c46, 0);
+    buffer.writeUInt16LE(machine, 18);
+    buffer.writeBigUInt64LE(64n, 32);
+    buffer.writeUInt16LE(56, 54);
+    buffer.writeUInt16LE(1, 56);
+    buffer.writeUInt32LE(programType, 64);
+  });
+}
+
+async function writeEngineBinaries(resources, targets) {
+  for (const [target, bytes] of Object.entries(targets)) {
+    for (const executable of engineExecutables(target)) {
+      const path = join(resources, "engine", target, executable);
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, bytes, { mode: 0o755 });
+    }
+  }
+}
+
+const packagedTargets = { darwin: ["darwin-arm64", "linux-arm64"], win32: ["win32-x64", "linux-x64"], linux: ["linux-x64"] };
 
 async function fixture(
   action,
@@ -50,10 +96,10 @@ async function fixture(
   await file("node_modules/@blame/agent-runtime/package.json", {
     name: "@blame/agent-runtime",
     exports: { ".": { types: "./src/index.ts", default: "./dist/index.js" } },
-    dependencies: { "@blame/harness-core": "1", "@blame/model-catalog": "1" },
+    dependencies: { "@blame/harness-core": "1", "@blame/preview-contract": "1" },
   });
   await file("node_modules/@blame/agent-runtime/dist/index.js");
-  for (const name of ["harness-core", "model-catalog"]) {
+  for (const name of ["harness-core", "preview-contract"]) {
     await file(`node_modules/@blame/${name}/package.json`, {
       name: `@blame/${name}`,
       exports: { ".": { types: "./src/index.ts", default: "./dist/index.js" } },
@@ -77,6 +123,11 @@ async function fixture(
     const binary = join(`${archive}.unpacked`, agentBrowser, "bin/agent-browser");
     await mkdir(dirname(binary), { recursive: true });
     await writeFile(binary, "");
+    const platform = archivePath.includes(".app/") ? "darwin" : archivePath.startsWith("win-") ? "win32" : "linux";
+    await writeEngineBinaries(
+      dirname(archive),
+      Object.fromEntries(packagedTargets[platform].map((target) => [target, executables[target]()])),
+    );
   }
   try {
     await action({ source, dist, archive, file, pack, agentBrowser });
@@ -115,7 +166,7 @@ for (const archivePath of [
 ]) {
   test(`accepts compiled transitive packages without TypeScript sources in ${archivePath}`, async () => {
     await fixture(async ({ source, dist, file, pack }) => {
-      for (const name of ["harness-core", "model-catalog"]) {
+      for (const name of ["harness-core", "preview-contract"]) {
         await file(`node_modules/@blame/${name}/dist/index.js`);
         await rm(join(source, `node_modules/@blame/${name}/src`), {
           recursive: true,
@@ -130,7 +181,7 @@ for (const archivePath of [
 
 test("detects a dependency lost between deployment and packaging", async () => {
   await fixture(async ({ source, archive, file, pack }) => {
-    for (const name of ["harness-core", "model-catalog"])
+    for (const name of ["harness-core", "preview-contract"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
     await verifyStagedWorkspaceRuntime(source);
     await rm(join(source, "node_modules/@blame/harness-core"), {
@@ -147,7 +198,7 @@ test("detects a dependency lost between deployment and packaging", async () => {
 for (const compilerPackage of ["typescript", "@typescript/typescript6", "@typescript/old"]) {
 test(`requires the default libraries of packaged ${compilerPackage}`, async () => {
   await fixture(async ({ dist, file, pack }) => {
-    for (const name of ["harness-core", "model-catalog"])
+    for (const name of ["harness-core", "preview-contract"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
     await file(`node_modules/${compilerPackage}/lib/typescript.js`);
     await file(`node_modules/${compilerPackage}/lib/lib.d.ts`);
@@ -167,7 +218,7 @@ test(`requires the default libraries of packaged ${compilerPackage}`, async () =
 
 test("resolves the TypeScript compatibility wrapper and checks its implementation libraries", async () => {
   await fixture(async ({ dist, file, pack }) => {
-    for (const name of ["harness-core", "model-catalog"])
+    for (const name of ["harness-core", "preview-contract"])
       await file(`node_modules/@blame/${name}/dist/index.js`);
     await file("node_modules/typescript/lib/typescript.js", 'module.exports = require("@typescript/old");\n');
     await pack();
@@ -184,7 +235,7 @@ test("resolves the TypeScript compatibility wrapper and checks its implementatio
 
 test("requires agent-browser's binary outside the archive", async () => {
   await fixture(async ({ archive, dist, file, pack, agentBrowser }) => {
-    for (const name of ["harness-core", "model-catalog"]) {
+    for (const name of ["harness-core", "preview-contract"]) {
       await file(`node_modules/@blame/${name}/dist/index.js`);
     }
     await pack();
@@ -207,7 +258,7 @@ test("refuses success when no packaged application was produced", async () => {
 
 test("resolves pnpm transitive dependencies from the package's real location", async () => {
   await fixture(async ({ source, file }) => {
-    for (const name of ["harness-core", "model-catalog"]) {
+    for (const name of ["harness-core", "preview-contract"]) {
       await file(`node_modules/@blame/${name}/dist/index.js`);
     }
     const scope = join(
@@ -218,10 +269,47 @@ test("resolves pnpm transitive dependencies from the package's real location", a
     const runtime = join(source, "node_modules/@blame/agent-runtime");
     await rename(runtime, join(scope, "agent-runtime"));
     await rename(
-      join(source, "node_modules/@blame/model-catalog"),
-      join(scope, "model-catalog"),
+      join(source, "node_modules/@blame/preview-contract"),
+      join(scope, "preview-contract"),
     );
     await symlink(join(scope, "agent-runtime"), runtime, "junction");
     assert.equal(await verifyStagedWorkspaceRuntime(source), 4);
   });
+});
+
+test("requires the engine binaries for the app and its VM, of the right platform and architecture", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-package-engine-"));
+  try {
+    const resources = join(root, "Resources");
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /found: none/);
+    await writeEngineBinaries(resources, { "darwin-arm64": executables["darwin-arm64"]() });
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /found: darwin-arm64$/);
+    await writeEngineBinaries(resources, { "linux-arm64": executables["linux-x64"]() });
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /ELF for arm64 at .*linux-arm64\/blame-engine, found ELF/);
+    await writeEngineBinaries(resources, { "linux-arm64": executables["linux-arm64"](3) });
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /dynamically linked/);
+    await writeEngineBinaries(resources, { "linux-arm64": executables["linux-arm64"]() });
+    assert.deepEqual(await verifyPackagedEngineBinaries(resources, "darwin"), ["darwin-arm64", "linux-arm64"]);
+    await writeEngineBinaries(resources, { "linux-x64": executables["linux-x64"]() });
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /found: darwin-arm64, linux-arm64, linux-x64/);
+    await rm(join(resources, "engine/linux-x64"), { recursive: true });
+    await rm(join(resources, "engine/darwin-arm64/blame-harness"));
+    await assert.rejects(verifyPackagedEngineBinaries(resources, "darwin"), /missing .*darwin-arm64\/blame-harness/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("accepts a Windows package's executables and a Linux package's single directory", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-package-engine-"));
+  try {
+    await writeEngineBinaries(join(root, "win"), { "win32-x64": executables["win32-x64"](), "linux-x64": executables["linux-x64"]() });
+    assert.deepEqual(await verifyPackagedEngineBinaries(join(root, "win"), "win32"), ["linux-x64", "win32-x64"]);
+    await writeEngineBinaries(join(root, "linux"), { "linux-x64": executables["linux-x64"]() });
+    assert.deepEqual(await verifyPackagedEngineBinaries(join(root, "linux"), "linux"), ["linux-x64"]);
+    await writeEngineBinaries(join(root, "linux"), { "linux-x64": executables["darwin-x64"]() });
+    await assert.rejects(verifyPackagedEngineBinaries(join(root, "linux"), "linux"), /ELF for x64 at .*, found Mach-O/);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
 });

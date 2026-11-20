@@ -21,4 +21,9 @@ pub enum EngineError {
     InvalidFork { at: Seq, reason: String },
     #[error("the stored log is not a valid session: {0}")]
     InvalidLog(String),
+    /// A task takes no messages, no rewind and no new configuration.
+    #[error("the session is a task: {0}")]
+    Task(&'static str),
+    #[error("invalid completion contract: {0}")]
+    InvalidContract(String),
 }

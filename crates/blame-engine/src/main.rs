@@ -4,14 +4,18 @@
 //! ```text
 //! blame-engine serve --data-dir DIR [--harness-command CMD]
 //!                    [--idle-timeout SECONDS] [--durability full|os-crash|relaxed]
+//!                    [--task-retention SECONDS]
+//!                    [--catalog-url URL]
 //! blame-engine auth chatgpt login [--device] [--auth-base URL]
 //! blame-engine auth chatgpt refresh [--auth-base URL]   (refresh token on stdin)
-//! blame-engine catalog
+//! blame-engine catalog [--cache-dir DIR] [--refresh] [--catalog-url URL]
 //! blame-engine --version
 //! ```
 
 mod auth;
+mod catalog;
 mod connection;
+mod context;
 mod engine;
 mod log;
 mod ports;
@@ -22,6 +26,7 @@ mod transport;
 use crate::engine::Settings;
 use crate::log::log;
 use crate::tools::{Harness, HarnessCommand};
+use blame_engine_providers::catalog::RefreshOptions;
 use blame_engine_store::Durability;
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -30,10 +35,11 @@ use std::time::Duration;
 
 const USAGE: &str = "usage:
   blame-engine serve --data-dir DIR [--harness-command CMD] [--idle-timeout SECONDS]
-                     [--durability full|os-crash|relaxed]
+                     [--durability full|os-crash|relaxed] [--task-retention SECONDS]
+                     [--catalog-url URL]
   blame-engine auth chatgpt login [--device] [--auth-base URL]
   blame-engine auth chatgpt refresh [--auth-base URL]    (refresh token on stdin)
-  blame-engine catalog
+  blame-engine catalog [--cache-dir DIR] [--refresh] [--catalog-url URL]
   blame-engine --version";
 
 fn main() -> ExitCode {
@@ -53,7 +59,9 @@ fn main() -> ExitCode {
             Ok(())
         }
         ["serve", rest @ ..] => parse_serve(rest).and_then(serve),
-        ["catalog"] => print_json(&blame_engine_providers::catalog::providers()),
+        ["catalog", rest @ ..] => {
+            catalog::Print::parse(rest).and_then(|print| runtime()?.block_on(print.run()))
+        }
         ["auth", "chatgpt", "login", rest @ ..] => {
             auth::Login::parse(rest).and_then(|login| runtime()?.block_on(login.run()))
         }
@@ -122,6 +130,8 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
     let mut harness = None;
     let mut idle_after = Duration::from_secs(10 * 60);
     let mut durability = Durability::Full;
+    let mut task_retention = engine::TASK_RETENTION;
+    let mut catalog = RefreshOptions::default();
     for (name, value) in options(
         args,
         &[
@@ -129,6 +139,8 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
             "--harness-command",
             "--idle-timeout",
             "--durability",
+            "--task-retention",
+            "--catalog-url",
         ],
         &[],
     )? {
@@ -143,6 +155,13 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
                         .map_err(|_| format!("--idle-timeout takes seconds, not {value}"))?,
                 );
             }
+            "--task-retention" => {
+                task_retention = Duration::from_secs(
+                    value
+                        .parse()
+                        .map_err(|_| format!("--task-retention takes seconds, not {value}"))?,
+                );
+            }
             "--durability" => {
                 durability = match value {
                     "full" => Durability::Full,
@@ -151,6 +170,7 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
                     other => return Err(format!("unknown durability {other}")),
                 };
             }
+            "--catalog-url" => catalog.url = value.to_owned(),
             _ => unreachable!("only known options are returned"),
         }
     }
@@ -159,6 +179,8 @@ fn parse_serve(args: &[&str]) -> Result<Settings, String> {
         durability,
         idle_after,
         harness: harness.map(|command| Arc::new(Harness::new(command))),
+        task_retention,
+        catalog,
     })
 }
 

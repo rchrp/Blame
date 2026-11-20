@@ -5,62 +5,20 @@ import type {
 } from "./platform-runtime-power"
 import * as React from "react"
 import type {
-  AgentEvent,
-  NewProjectsClient,
-  AgentUsageSummary,
-  CompactSessionInput,
-  CompactSessionResult,
-  AnalyzeProjectCodePracticesInput,
-  AnalyzeProjectCodePracticesResult,
   ApiConnection,
-  ApproveAndMergeInput,
-  ApproveAndMergeResult,
-  AssessProjectInitializationImpactInput,
-  AssessProjectInitializationImpactResult,
-  CompareCheckpointInput,
-  CompareCheckpointResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
-  GenerateCommitMessageInput,
-  GenerateCommitMessageResult,
-  GenerateTitleInput,
-  GenerateTitleResult,
-  InitializeProjectInput,
-  InitializeProjectResult,
   ProjectInitializationDiagnostics,
-  ClaudeCodeStatus,
-  ConnectClaudeCodeInput,
-  SubscriptionUsage,
-  SubscriptionUsageInput,
-  LoginOAuthProviderInput,
-  OpenPullRequestInput,
-  OpenPullRequestResult,
-  OptimizeUserStoryPromptInput,
-  OptimizeUserStoryPromptResult,
   ApplyPreviewInitializationInput,
   PreviewManifest,
   ProjectPreviewRuntimeState,
   ProjectRunConfiguration,
-  ProviderListResponse,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
-  RepairProjectInitializationInput,
-  RepairProjectInitializationResult,
-  ResolveApprovalInput,
-  ResolveMergeConflictsInput,
-  ResolveMergeConflictsResult,
-  RestoreCheckpointInput,
-  RestoreCheckpointResult,
-  RunSecurityAuditInput,
-  SaveProviderCredentialInput,
   SecurityAudit,
-  SendDevelopmentSessionInput,
-  SendSessionInput,
-  StartDevelopmentSessionInput,
-  StartSessionInput,
-  ReasoningSelection,
+  SecurityAuditWorkspaceMap,
 } from "@blame/agent-runtime"
 import type { NewProjectConfiguration } from "../components/new-project/new-project-options"
 import type { UserStory } from "../components/backlog/data/backlog-data"
@@ -121,6 +79,8 @@ export type Platform = {
     ready(): void
   }
   agent?: AgentClient
+  // The agent engine (docs/engine-in-the-app.md): quick chats run on it.
+  engine?: import("@blame/agent-runtime/engine-protocol").EnginePlatformClient
   agentScreenshots?: AgentScreenshotsClient
   api?: ApiConnection
   localApi?: import("./platform-local-api").LocalApiClient
@@ -445,106 +405,26 @@ export type DesktopUpdatesClient = {
   setChannel(channel: DesktopUpdateChannel): Promise<DesktopUpdateStatus>
 }
 
+// What the app asks besides agents (they are all on `engine`).
 export type AgentClient = {
-  providers: {
-    list(connection: ApiConnection): Promise<ProviderListResponse>
-    saveCredential(
-      connection: ApiConnection,
-      input: SaveProviderCredentialInput
-    ): Promise<unknown>
-    deleteCredential(connection: ApiConnection, id: string): Promise<void>
-    loginOAuth(input: LoginOAuthProviderInput): Promise<unknown>
-    // Desktop only: Claude Code signs in on the user's computer.
-    claudeCodeStatus?(): Promise<ClaudeCodeStatus>
-    connectClaudeCode?(input: ConnectClaudeCodeInput): Promise<unknown>
-    subscriptionUsage?(
-      input: SubscriptionUsageInput
-    ): Promise<SubscriptionUsage | null>
-  }
-  sessions: {
-    start(input: StartSessionInput): Promise<{ sessionId: string }>
-    startDevelopment(
-      input: StartDevelopmentSessionInput
-    ): Promise<{ sessionId: string }>
-    send(input: SendSessionInput): Promise<unknown>
-    sendDevelopment(input: SendDevelopmentSessionInput): Promise<unknown>
-    abort(sessionId: string): Promise<void>
-    // Whether this session is still executing in the desktop app.
-    live?(sessionId: string): Promise<boolean>
-    compareCheckpoint(
-      input: CompareCheckpointInput
-    ): Promise<CompareCheckpointResult>
-    list(): Promise<unknown>
-    messages(sessionId: string): Promise<unknown>
-    restoreCheckpoint(
-      input: RestoreCheckpointInput
-    ): Promise<RestoreCheckpointResult>
-    usage(sessionId: string): Promise<AgentUsageSummary | undefined>
-    // Cline's manual compaction of an idle session, used on its next resume.
-    compact?(input: CompactSessionInput): Promise<CompactSessionResult>
-    eventStreamUrl?(sessionId: string): Promise<string | null>
-    onEvent(
-      sessionId: string,
-      callback: (event: AgentEvent) => void
-    ): () => void
-  }
-  approvals: {
-    resolve(input: ResolveApprovalInput): Promise<boolean>
-    onRequest(callback: (event: AgentEvent) => void): () => void
-  }
-  initializations: {
-    run(input: InitializeProjectInput): Promise<InitializeProjectResult>
-    /** Stops the run started with this progress id; false once it ended. */
-    cancel(progressId: string): Promise<boolean>
-    repair(
-      input: RepairProjectInitializationInput
-    ): Promise<RepairProjectInitializationResult>
-    assessImpact(
-      input: AssessProjectInitializationImpactInput
-    ): Promise<AssessProjectInitializationImpactResult>
-  }
-  codePractices: {
-    run(
-      input: AnalyzeProjectCodePracticesInput
-    ): Promise<AnalyzeProjectCodePracticesResult>
-  }
-  newProjects: NewProjectsClient
-  promptOptimizer: {
-    optimizeUserStory(
-      input: OptimizeUserStoryPromptInput
-    ): Promise<OptimizeUserStoryPromptResult>
-    generateTitle(input: GenerateTitleInput): Promise<GenerateTitleResult>
-  }
-  approveAndMerge(input: ApproveAndMergeInput): Promise<ApproveAndMergeResult>
-  // Open PR: commit, push the story branch, then gh pr create on the host.
-  openPullRequest(input: OpenPullRequestInput): Promise<OpenPullRequestResult>
   pullRequestAvailability(
     input: PullRequestAvailabilityInput
   ): Promise<PullRequestAvailability>
   // What GitHub says about the story's pull request: gh pr view on the host.
   pullRequestState(input: PullRequestStateInput): Promise<PullRequestState>
-  generateCommitMessage(
-    input: GenerateCommitMessageInput
-  ): Promise<GenerateCommitMessageResult>
   // The files a Direct story wrote in the project folder that can be committed.
   directStoryFiles(
     input: DirectStoryFilesInput
   ): Promise<DirectStoryFilesResult>
-  resolveMergeConflicts(
-    input: ResolveMergeConflictsInput
-  ): Promise<ResolveMergeConflictsResult>
 }
 
+// What the desktop does for an audit besides its agents (engine tasks, through
+// `engine`): the repository map, and the folder the agents work in.
 export type SecurityAuditClient = {
-  active(input: { root: string }): Promise<SecurityAudit | undefined>
-  run(input: RunSecurityAuditInput): Promise<SecurityAudit>
-  cancel(input: {
+  map(input: {
     root: string
-    auditId: string
-  }): Promise<SecurityAudit | undefined>
-  onChanged(
-    callback: (event: { root: string; audit: SecurityAudit }) => void
-  ): () => void
+    scope?: SecurityAudit["scope"]
+  }): Promise<SecurityAuditWorkspaceMap>
 }
 
 export type WorkspaceEntry = {
@@ -584,7 +464,6 @@ export type HostDependencyIssue = {
   name:
     | "git"
     | "blame-runtime"
-    | "cline-sdk"
     | "docker"
     | "docker-compose"
     | "node"
@@ -834,19 +713,18 @@ export type WorkspaceClient = {
   }): Promise<string>
   gitRepositoryFingerprint(input: { root: string }): Promise<string | null>
   ensureGitRepository(input: { root: string }): Promise<boolean>
-  createProject(input: {
-    apiConnection: ApiConnection
-    configuration: NewProjectConfiguration
-    credentialLabel?: string
-    modelId: string
+  /** The new project's empty folder, before the agent generates it. */
+  prepareNewProject(input: {
     parentPath: string
     projectName: string
-    providerId: string
-    reasoningEffort?: ReasoningSelection
     runId: string
-  }): Promise<{
+  }): Promise<{ path: string; projectName: string }>
+  /** Installs the generated project and makes it a Git repository. */
+  finishNewProject(input: {
     path: string
-  }>
+    configuration: NewProjectConfiguration
+    runId: string
+  }): Promise<{ path: string }>
   createWorktree(input: {
     branch?: string | null // recorded by the story on an earlier run
     // Run in the project folder instead of a new worktree.

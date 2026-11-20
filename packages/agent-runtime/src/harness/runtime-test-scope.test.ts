@@ -4,8 +4,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import { data, fixture } from "./light-agent-guidance-fixture.js";
-import { runtimeTestScope } from "./runtime-test-scope.js";
-import { observeCheck } from "./check-observation.js";
+import { runtimeTestScope } from "./test-client/units.js";
+import { observeCheck } from "./test-client/units.js";
 
 test("a wrapper's types argument can repeat runtime while changed tests still fail compilation", async () => {
   await fixture({

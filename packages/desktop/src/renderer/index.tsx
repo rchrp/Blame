@@ -15,6 +15,7 @@ mountApp(root, {
     appearance: window.blame.appearance,
     auth: window.blame.auth,
     agent: window.blame.agent,
+    engine: window.blame.engine,
     agentScreenshots: window.blame.agentScreenshots,
     previewServing: window.blame.previewServing,
     agentGithubAccess: window.blame.agentGithubAccess,

@@ -24,7 +24,11 @@ export class EngineSupervisor implements ClientSource {
   private stopped = false;
   private readonly started = new Set<(client: EngineClient) => void>();
 
-  constructor(private readonly start: () => Promise<EngineClient>) {}
+  private readonly start: () => Promise<EngineClient>;
+
+  constructor(start: () => Promise<EngineClient>) {
+    this.start = start;
+  }
 
   /** The running client, if there is one. */
   get current(): EngineClient | undefined {

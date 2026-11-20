@@ -1,6 +1,9 @@
 import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import type { ReasoningSelection, RequiredProjectCheck } from "@blame/agent-runtime";
+import { dirname, join, resolve } from "node:path";
+import type {
+  ReasoningSelection,
+  RequiredProjectCheck,
+} from "@blame/agent-runtime/engine";
 import type { BenchmarkConfig, BenchmarkPaths } from "./contracts.js";
 import {
   assertHeadlessDevelopment,
@@ -33,15 +36,24 @@ export async function parseBenchmarkCommand(
     throw new HeadlessConfigurationError("Expected the run command.");
   }
   const options = optionValues(argumentsList.slice(1));
+  if (options.has("harness"))
+    throw new HeadlessConfigurationError(
+      "--harness is gone: every run uses Blame's harness on the engine.",
+    );
   const instructionPath = requiredOption(options, "instruction-file");
   const instruction = await readFile(resolve(cwd, instructionPath), "utf8");
   const checksPath = options.get("required-checks-file");
   const requiredChecks = checksPath ? requiredChecksValue(
     JSON.parse(await readFile(resolve(cwd, checksPath), "utf8")),
   ) : undefined;
+  const paths = benchmarkPaths(options, cwd);
   return {
-    config: { ...benchmarkConfig(options, environment, cwd, instruction), ...(requiredChecks ? { requiredChecks } : {}) },
-    paths: benchmarkPaths(options, cwd),
+    config: {
+      ...benchmarkConfig(options, environment, cwd, instruction),
+      harnessTracePath: paths.harnessTracePath,
+      ...(requiredChecks ? { requiredChecks } : {}),
+    },
+    paths,
   };
 }
 
@@ -50,14 +62,13 @@ function benchmarkConfig(
   environment: NodeJS.ProcessEnv,
   cwd: string,
   instruction: string,
-): BenchmarkConfig {
+): Omit<BenchmarkConfig, "harnessTracePath"> {
   const reasoningEffort = reasoningValue(environment.BLAME_REASONING_EFFORT);
   return {
     apiUrl: requiredEnvironment(environment, "BLAME_API_URL"),
     isolatedEnvironment: isolatedEnvironmentValue(environment.BLAME_ISOLATED_ENVIRONMENT),
     apiToken: requiredEnvironment(environment, "BLAME_API_TOKEN"),
     credentialLabel: optionalEnvironment(environment, "BLAME_CREDENTIAL_LABEL"),
-    harness: harnessValue(options.get("harness")),
     instruction,
     maxIterations: positiveInteger(
       options.get("max-iterations") ?? environment.BLAME_MAX_ITERATIONS,
@@ -84,14 +95,8 @@ function benchmarkConfig(
   };
 }
 
-function harnessValue(value: string | undefined) {
-  if (value === undefined || value === "blame") return "blame" as const;
-  if (value === "cline") return "cline" as const;
-  throw new HeadlessConfigurationError(`Invalid harness: ${value}.`);
-}
-
-// Validate transport before starting a paid session. The runtime independently
-// validates the contract at admission; this CLI also works with older runtimes.
+// Validate the checks before starting a paid session; the harness validates
+// the contract again when the task starts.
 function requiredChecksValue(value: unknown): RequiredProjectCheck[] {
   const invalid = () => { throw new HeadlessConfigurationError("Invalid required-checks file: expected at most 16 unique IDs, catalog tasks and literal test argv."); };
   if (!Array.isArray(value) || value.length > 16) return invalid();
@@ -117,10 +122,16 @@ function isolatedEnvironmentValue(value: string | undefined) {
 
 function benchmarkPaths(options: Map<string, string>, cwd: string) {
   const defaultRoot = resolve(cwd, ".blame", "benchmarks");
+  const eventsPath = resolve(
+    cwd,
+    options.get("events") ?? `${defaultRoot}/events.jsonl`,
+  );
   return {
-    eventsPath: resolve(
+    eventsPath,
+    // Each harness call's raw result, beside the events.
+    harnessTracePath: resolve(
       cwd,
-      options.get("events") ?? `${defaultRoot}/events.jsonl`,
+      options.get("harness-trace") ?? join(dirname(eventsPath), "harness-trace.jsonl"),
     ),
     resultPath: resolve(
       cwd,

@@ -6,10 +6,8 @@ import * as React from "react"
 const drafts = new Map<string, string>()
 const generating = new Set<string>()
 const listeners = new Set<() => void>()
-let version = 0
 
 function emit() {
-  version += 1
   for (const listener of listeners) listener()
 }
 
@@ -43,10 +41,17 @@ export async function generateCommitMessageDraft<T>(
 }
 
 export function useCommitMessageDraft(root: string | undefined) {
-  React.useSyncExternalStore(
+  // The snapshots are the values themselves: the React Compiler memoizes
+  // what a render reads, so a read of the maps alone would never refresh.
+  const message = React.useSyncExternalStore(
     subscribe,
-    () => version,
-    () => version
+    () => (root && drafts.get(root)) || "",
+    () => ""
+  )
+  const isGenerating = React.useSyncExternalStore(
+    subscribe,
+    () => Boolean(root && generating.has(root)),
+    () => false
   )
   const setMessage = React.useCallback(
     (message: string) => {
@@ -54,9 +59,5 @@ export function useCommitMessageDraft(root: string | undefined) {
     },
     [root]
   )
-  return {
-    generating: Boolean(root && generating.has(root)),
-    message: (root && drafts.get(root)) || "",
-    setMessage,
-  }
+  return { generating: isGenerating, message, setMessage }
 }

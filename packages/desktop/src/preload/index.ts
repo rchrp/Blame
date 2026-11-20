@@ -1,7 +1,7 @@
 import { createPreviewTerminalClient } from "./preview-terminal-client";
 import { opaqueWindowArgument } from "../main/window-blur";
 import { contextBridge, ipcRenderer } from "electron";
-import type { AgentEvent } from "@blame/agent-runtime";
+import type { EngineHostEvent } from "@blame/agent-runtime/engine-protocol";
 import type { RuntimeProgress } from "@blame/app";
 import type { BlameDesktopApi } from "./types";
 
@@ -11,6 +11,16 @@ type AuthCallbackDelivery = {
   id: number;
   result: AuthCallbackResult;
 };
+
+type EngineEventListener = Parameters<BlameDesktopApi["engine"]["follow"]>[1];
+type EngineActivityListener = Parameters<BlameDesktopApi["engine"]["onActivity"]>[0];
+// One listener for every engine event this window gets, dispatched here.
+const engineFollowers = new Map<string, EngineEventListener>();
+const engineActivityListeners = new Set<EngineActivityListener>();
+ipcRenderer.on("engine:event", (_event, value: EngineHostEvent) => {
+  if (value.type === "follow") engineFollowers.get(value.subscription)?.(value.event);
+  else for (const listener of engineActivityListeners) listener(value);
+});
 
 const authCallbacks = new Set<AuthCallback>();
 const deliveredAuthCallbackIds = new Set<number>();
@@ -194,18 +204,7 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("backlog-status-pip:set-mode", input),
   },
   securityAudits: {
-    active: (input) => ipcRenderer.invoke("security-audits:active", input),
-    run: (input) => ipcRenderer.invoke("security-audits:run", input),
-    cancel: (input) => ipcRenderer.invoke("security-audits:cancel", input),
-    onChanged: (callback) => {
-      const handler = (
-        _event: unknown,
-        auditEvent: Parameters<typeof callback>[0],
-      ) => callback(auditEvent);
-      ipcRenderer.on("security-audits:changed", handler);
-      return () =>
-        ipcRenderer.removeListener("security-audits:changed", handler);
-    },
+    map: (input) => ipcRenderer.invoke("security-audits:map", input),
   },
   platform: process.platform,
   opaqueWindow: process.argv.includes(opaqueWindowArgument),
@@ -472,8 +471,10 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:git-repository-fingerprint", input),
     ensureGitRepository: (input) =>
       ipcRenderer.invoke("workspace:ensure-git-repository", input),
-    createProject: (input) =>
-      ipcRenderer.invoke("workspace:create-project", input),
+    prepareNewProject: (input) =>
+      ipcRenderer.invoke("workspace:prepare-new-project", input),
+    finishNewProject: (input) =>
+      ipcRenderer.invoke("workspace:finish-new-project", input),
     createWorktree: (input) =>
       ipcRenderer.invoke("workspace:create-worktree", input),
     checkHostDependencies: (input) =>
@@ -590,105 +591,37 @@ const api: BlameDesktopApi = {
       return () => ipcRenderer.removeListener(channel, handler);
     },
   },
+  engine: {
+    call: (method, input) => ipcRenderer.invoke("engine:call", method, input),
+    follow: (session, onEvent, location) => {
+      const subscription = globalThis.crypto.randomUUID();
+      engineFollowers.set(subscription, onEvent);
+      void ipcRenderer
+        .invoke("engine:call", "follow", { session, subscription, location })
+        .catch((error) => {
+          if (!engineFollowers.has(subscription)) return;
+          onEvent({ type: "state", state: "stopped", error: preloadErrorMessage(error) });
+        });
+      return () => {
+        if (!engineFollowers.delete(subscription)) return;
+        void ipcRenderer
+          .invoke("engine:call", "unfollow", { subscription })
+          .catch(() => undefined);
+      };
+    },
+    onActivity: (callback) => {
+      engineActivityListeners.add(callback);
+      return () => engineActivityListeners.delete(callback);
+    },
+  },
+  // What the app asks besides agents (they are all on platform.engine).
   agent: {
-    providers: {
-      list: (connection) =>
-        ipcRenderer.invoke("agent:providers:list", connection),
-      saveCredential: (connection, input) =>
-        ipcRenderer.invoke(
-          "agent:providers:save-credential",
-          connection,
-          input,
-        ),
-      deleteCredential: (connection, id) =>
-        ipcRenderer.invoke("agent:providers:delete-credential", connection, id),
-      loginOAuth: (input) =>
-        ipcRenderer.invoke("agent:providers:login-oauth", input),
-      claudeCodeStatus: () =>
-        ipcRenderer.invoke("agent:providers:claude-code-status"),
-      connectClaudeCode: (input) =>
-        ipcRenderer.invoke("agent:providers:connect-claude-code", input),
-      subscriptionUsage: (input) =>
-        ipcRenderer.invoke("agent:providers:subscription-usage", input),
-    },
-    sessions: {
-      start: (input) => ipcRenderer.invoke("agent:sessions:start", input),
-      startDevelopment: (input) =>
-        ipcRenderer.invoke("agent:sessions:start-development", input),
-      live: (sessionId) => ipcRenderer.invoke("agent:sessions:live", sessionId),
-      send: (input) => ipcRenderer.invoke("agent:sessions:send", input),
-      sendDevelopment: (input) =>
-        ipcRenderer.invoke("agent:sessions:send-development", input),
-      abort: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:abort", sessionId),
-      compareCheckpoint: (input) =>
-        ipcRenderer.invoke("agent:sessions:compare-checkpoint", input),
-      list: () => ipcRenderer.invoke("agent:sessions:list"),
-      messages: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:messages", sessionId),
-      restoreCheckpoint: (input) =>
-        ipcRenderer.invoke("agent:sessions:restore-checkpoint", input),
-      usage: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:usage", sessionId),
-      compact: (input) => ipcRenderer.invoke("agent:sessions:compact", input),
-      eventStreamUrl: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:event-stream-url", sessionId),
-      onEvent: (sessionId, callback) => {
-        const channel = `agent:sessions:event:${sessionId}`;
-        const handler = (_event: unknown, event: AgentEvent) => callback(event);
-        ipcRenderer.on(channel, handler);
-        ipcRenderer.send("agent:sessions:listen", sessionId);
-        return () => {
-          ipcRenderer.removeListener(channel, handler);
-          ipcRenderer.send("agent:sessions:unlisten", sessionId);
-        };
-      },
-    },
-    approvals: {
-      resolve: (input) => ipcRenderer.invoke("agent:approvals:resolve", input),
-      onRequest: (callback) => {
-        const handler = (_event: unknown, event: AgentEvent) => callback(event);
-        ipcRenderer.on("agent:approvals:event", handler);
-        return () =>
-          ipcRenderer.removeListener("agent:approvals:event", handler);
-      },
-    },
-    initializations: {
-      run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
-      cancel: (progressId) =>
-        ipcRenderer.invoke("agent:initializations:cancel", progressId),
-      repair: (input) =>
-        ipcRenderer.invoke("agent:initializations:repair", input),
-      assessImpact: (input) =>
-        ipcRenderer.invoke("agent:initializations:assess-impact", input),
-    },
-    codePractices: {
-      run: (input) => ipcRenderer.invoke("agent:code-practices:run", input),
-    },
-    newProjects: {
-      generate: (input) =>
-        ipcRenderer.invoke("agent:new-projects:generate", input),
-    },
-    promptOptimizer: {
-      optimizeUserStory: (input) =>
-        ipcRenderer.invoke("agent:prompt-optimizer:optimize-user-story", input),
-      generateTitle: (input) =>
-        ipcRenderer.invoke("agent:prompt-optimizer:generate-title", input),
-    },
-    approveAndMerge: (input) =>
-      ipcRenderer.invoke("agent:approve-and-merge", input),
-    openPullRequest: (input) =>
-      ipcRenderer.invoke("agent:open-pull-request", input),
     pullRequestAvailability: (input) =>
       ipcRenderer.invoke("agent:pull-request-availability", input),
     pullRequestState: (input) =>
       ipcRenderer.invoke("agent:pull-request-state", input),
-    generateCommitMessage: (input) =>
-      ipcRenderer.invoke("agent:generate-commit-message", input),
     directStoryFiles: (input) =>
       ipcRenderer.invoke("agent:direct-story-files", input),
-    resolveMergeConflicts: (input) =>
-      ipcRenderer.invoke("agent:resolve-merge-conflicts", input),
   },
 };
 

@@ -3,8 +3,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { lightSearchCodeInputSchema, lightReadCodeInputSchema } from "./light-contracts.js";
-import { lightSemanticHarnessTools, parseLeniently } from "./light-tools.js";
+import { lightSearchCodeInputSchema, lightReadCodeInputSchema } from "./test-client/contracts.js";
+import { lightSemanticHarnessTools, parseLeniently } from "./test-client/light-tools.js";
 import { mkdir } from "node:fs/promises";
 
 test("a number, object or array sent as a JSON string is read as what the schema expects", () => {

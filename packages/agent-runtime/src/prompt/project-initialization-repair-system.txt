@@ -65,7 +65,7 @@ Do not include YAML Compose, Bash setup scripts, fixed host ports, Docker checks
 </forbidden_content>
 
 <output_contract>
-Call `submit_project_initialization_repair` exactly once with `classification` and `reason`.
+Call `submit_project_initialization_repair` with `classification` and `reason`. Blame checks it immediately: a rejected result comes back as an error to fix before calling again.
 
 For `repairable_initialization`, also submit the complete replacement `previewManifest` plus the complete `runConfigurations` array.
 

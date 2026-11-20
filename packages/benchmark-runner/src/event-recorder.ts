@@ -1,5 +1,5 @@
 import { createWriteStream, type WriteStream } from "node:fs";
-import type { AgentEvent } from "@blame/agent-runtime";
+import type { BenchmarkEvent } from "./engine-events.js";
 import { BenchmarkMetricsCollector } from "./benchmark-metrics.js";
 import type { BenchmarkEventRecorder } from "./contracts.js";
 
@@ -19,8 +19,8 @@ export class JsonlEventRecorder implements BenchmarkEventRecorder {
     });
   }
 
-  record(event: AgentEvent) {
-    const recordedAt = new Date();
+  record(event: BenchmarkEvent, at = Date.now()) {
+    const recordedAt = new Date(at);
     this.eventCount += 1;
     if (event.type === "tool") this.toolEventCount += 1;
     this.collector.record(event, recordedAt.getTime());

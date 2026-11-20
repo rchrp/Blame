@@ -1,4 +1,3 @@
-import { pathToFileURL } from "node:url";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import {
@@ -14,17 +13,25 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import test from "node:test";
-import { buildSemanticHarnessPayload, runtimeCorePackagePath } from "./semantic-harness-payload.mjs";
+import { buildSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 
 const rootDir = resolve(import.meta.dirname, "..");
 const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
 
-test("standalone payload executes navigation and command dependencies", async () => {
+// The payload is the Node side of blame-harness in the runtime VM: the
+// harness runs against it with the environment the VM's launcher gives it
+// (packages/desktop/src/main/engine/vm-engine.ts), one request per process.
+const harnessBinary = process.env.BLAME_HARNESS_BIN ??
+  join(rootDir, "target/debug", process.platform === "win32" ? "blame-harness.exe" : "blame-harness");
+
+test("standalone payload serves blame-harness's compiler tier and commands", async () => {
   await withPayload(async (packageRoot, workspaceRoot) => {
-    await assert.rejects(access(join(packageRoot, "harness/semantic-workspace.js")));
+    await assert.rejects(access(join(packageRoot, "harness/semantic-harness-runner.js")));
+    await assert.rejects(access(join(packageRoot, "harness/light-workspace.js")));
+    const manifest = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
     const result = await executeRunner(packageRoot, workspaceRoot);
     assert.equal(result.status, "ok");
-    assert.match(result.data.description, /Symbol read\/edit/u);
+    assert.match(JSON.stringify(result.data), /Symbol read\/edit/u);
     const command = await executeRunner(packageRoot, workspaceRoot, {
       tool: "run_task", input: { kind: "command", command: "node -e \"console.log('payload-ready')\"" },
     });
@@ -64,25 +71,6 @@ test("standalone payload executes navigation and command dependencies", async ()
     assert.equal(renamed.data.semanticRename.engine, "typescript_language_service");
     assert.match(await readFile(join(workspaceRoot, "module.ts"), "utf8"), /function updatedTarget/u);
     assert.match(await readFile(join(workspaceRoot, "consumer.ts"), "utf8"), /updatedTarget as aliased/u);
-    const content = Buffer.from("# Context from completed US-001\n\nHéros validé.\n");
-    const attachment = await executeRunner(packageRoot, workspaceRoot, {
-      tool: "store_attachment",
-      input: { name: "context-from-us-001.md", contentBase64: content.toString("base64") },
-    });
-    assert.equal(attachment.status, "ok", JSON.stringify(attachment));
-    assert.ok(attachment.data.path.startsWith(join(workspaceRoot, ".blame", "attachments")));
-    assert.deepEqual(await readFile(attachment.data.path), content);
-    await access(join(packageRoot, "attachment-pdf-worker.js"));
-    const pdf = await readFile(join(agentRuntimeDir, "src/fixtures/attachments/report.pdf"));
-    const storedPdf = await executeRunner(packageRoot, workspaceRoot, {
-      tool: "store_attachment", input: { name: "report.pdf", contentBase64: pdf.toString("base64") },
-    });
-    assert.equal(storedPdf.status, "ok", JSON.stringify(storedPdf));
-    const page = await executeRunner(packageRoot, workspaceRoot, {
-      tool: "read_attachment", input: { path: storedPdf.data.path, page: 2 },
-    });
-    assert.equal(page.status, "ok", JSON.stringify(page));
-    assert.match(page.data.text, /deadline is Friday/);
   });
 });
 
@@ -118,7 +106,6 @@ async function withPayload(action) {
     await buildSemanticHarnessPayload({ outputPaths: [archive], runtimeVersion: "payload-test" });
     await extractArchive(archive, installRoot);
     const packageRoot = join(installRoot, "package");
-    await assert.rejects(access(join(packageRoot, "vendor/cline-core/node_modules")));
     await linkRuntimeDependencies(packageRoot);
     await mkdir(workspaceRoot);
     await writeFile(join(workspaceRoot, "package.json"), '{"scripts":{}}\n');
@@ -137,26 +124,18 @@ async function linkRuntimeDependencies(packageRoot) {
   const manifest = JSON.parse(
     await readFile(join(packageRoot, "package.json"), "utf8"),
   );
-  const coreRoot = await runtimeCorePackagePath();
-  const dependencyRoot = dirname(dirname(coreRoot));
   for (const name of Object.keys(manifest.dependencies)) {
     const destination = join(packageRoot, "node_modules", name);
-    const source = await dependencyPath(name, dependencyRoot);
+    const source = await realpath(join(agentRuntimeDir, "node_modules", name));
     await mkdir(dirname(destination), { recursive: true });
     await symlink(source, destination, process.platform === "win32" ? "junction" : undefined);
   }
 }
 
-async function dependencyPath(name, coreDependencies) {
-  try { return await realpath(join(agentRuntimeDir, "node_modules", name)); }
-  catch (error) { if (error.code !== "ENOENT") throw error; }
-  return realpath(join(coreDependencies, name));
-}
-
 async function executeRunner(packageRoot, workspaceRoot, request = {}) {
   const stdout = await runProcess(
-    process.execPath,
-    [join(packageRoot, "harness/semantic-harness-runner.js")],
+    harnessBinary,
+    [],
     JSON.stringify({
       input: { target: "@capabilities" },
       taskContract: { session_id: "payload-e2e" },
@@ -164,13 +143,24 @@ async function executeRunner(packageRoot, workspaceRoot, request = {}) {
       workspaceRoot,
       ...request,
     }),
+    packageRoot,
   );
   return JSON.parse(stdout);
 }
 
-function runProcess(command, args, input) {
+function harnessEnvironment(packageRoot) {
+  if (!packageRoot) return process.env;
+  return {
+    ...process.env,
+    BLAME_HARNESS_COMPILER: JSON.stringify([process.execPath, join(packageRoot, "harness/rust-harness-compiler.js")]),
+    BLAME_HARNESS_NODE_ASSETS: join(packageRoot, "harness"),
+    BLAME_HARNESS_NODE_MODULES: join(packageRoot, "node_modules"),
+  };
+}
+
+function runProcess(command, args, input, packageRoot) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"], env: harnessEnvironment(packageRoot) });
     const stdout = [];
     const stderr = [];
     child.stdout.on("data", (chunk) => stdout.push(Buffer.from(chunk)));
@@ -205,31 +195,4 @@ test("rebuilding an unchanged payload preserves its update fingerprint", async (
     await buildSemanticHarnessPayload({ outputPaths: [second], runtimeVersion: "stable-test" });
     assert.deepEqual(await readFile(first), await readFile(second));
   } finally { await rm(temporary, { recursive: true, force: true }); }
-});
-
-test("standalone payload ships the patched SDK used by the managed hub", async () => {
-  await withPayload(async (packageRoot) => {
-    const { verifyPackagedSdk } = await import(pathToFileURL(join(packageRoot, "runtime-sdk-check.mjs")).href);
-    const coreManifest = JSON.parse(await readFile(join(packageRoot, "vendor/cline-core/package.json"), "utf8"));
-    await verifyPackagedSdk(packageRoot, coreManifest.version);
-    await assert.rejects(verifyPackagedSdk(packageRoot, "invalid"), /Incompatible SDK/);
-    const entry = join(packageRoot, "vendor/cline-core/dist/index.js");
-    const sdk = await import(pathToFileURL(entry).href);
-    const config = { providerId: "anthropic", modelId: "fixture", compaction: { enabled: true, strategy: "basic", imageTokenLimit: 36000 } };
-    const messages = Array.from({ length: 6 }, (_, index) => ({ role: index % 2 ? "assistant" : "user", content: [
-      { type: "text", text: "Inspect the input." },
-      { type: "image", mediaType: "image/png", data: "A".repeat(600000) },
-    ] }));
-    const prepare = sdk.createContextCompactionPrepareTurn(sdk.splitCoreSessionConfig(config).config);
-    const result = await prepare({ messages, apiMessages: messages, systemPrompt: "", tools: [],
-      abortSignal: new AbortController().signal, agentId: "fixture", conversationId: "fixture", parentAgentId: null, iteration: 1,
-      model: { id: "fixture", provider: "anthropic", info: { maxInputTokens: 922000, contextWindow: 1050000 } },
-    });
-    assert.equal(result, undefined);
-    assert.match(sdk.resolveHubBuildId(), /^blame-sdk-v1-/);
-    // Hub sessions run Cline's message builder without Blame's extensions.
-    const { changes } = JSON.parse(await readFile(join(packageRoot, "vendor/cline-core/dist/blame-patch.json"), "utf8"));
-    assert.ok(changes.includes("message builder: 100,000-character tool result backstop"));
-    assert.match(await readFile(entry, "utf8"), /=100000,(?:[\w$]+=\d+,)*[\w$]+=\{maxToolResultChars:"CLINE_MESSAGE_BUILDER_MAX_TOOL_RESULT_CHARS"/u);
-  });
 });

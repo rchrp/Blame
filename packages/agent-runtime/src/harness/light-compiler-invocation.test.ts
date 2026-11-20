@@ -4,13 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
-import type { LightCompletionNotification } from "./light-completion.js";
-const prefix = process.env.BLAME_COMPILER_RUNTIME;
-const { LightWorkspace } = await import(prefix ? `${prefix}/light-workspace.js` : "./light-workspace.js") as typeof import("./light-workspace.js");
-const { LightFinishService } = await import(prefix ? `${prefix}/light-finish-service.js` : "./light-finish-service.js") as typeof import("./light-finish-service.js");
-const { readTaskCatalog } = await import(prefix ? `${prefix}/task-catalog.js` : "./task-catalog.js") as typeof import("./task-catalog.js");
+import type { LightCompletionNotification } from "./test-client/light-finish-service.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
+import { readTaskCatalog } from "./test-client/units.js";
 const command = "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.json";
-async function fixture(run: (root: string, workspace: InstanceType<typeof LightWorkspace>) => Promise<void>, options: { script?: string; badSource?: boolean; badPost?: boolean; taskName?: string } = {}) {
+async function fixture(run: (root: string, workspace: LightWorkspace) => Promise<void>, options: { script?: string; badSource?: boolean; badPost?: boolean; taskName?: string } = {}) {
   const root = await mkdtemp(join(tmpdir(), "blame-compiler-check-"));
   try {
     await mkdir(join(root, "node_modules")); await mkdir(join(root, ".blame"));
@@ -27,16 +26,16 @@ async function fixture(run: (root: string, workspace: InstanceType<typeof LightW
     await run(root, new LightWorkspace(root, { sessionId: "compiler-check" }));
   } finally { await rm(root, { recursive: true, force: true }); }
 }
-function data(result: Awaited<ReturnType<InstanceType<typeof LightWorkspace>["runTask"]>>) {
+function data(result: Awaited<ReturnType<LightWorkspace["runTask"]>>) {
   assert.equal(result.status, "ok", JSON.stringify(result));
   return (result as { data: { command: string; exitCode: number; validation?: { status?: string }; reporting?: { counts: { passed: number | null } } } }).data;
 }
-async function checks(workspace: InstanceType<typeof LightWorkspace>) {
+async function checks(workspace: LightWorkspace) {
   const result = await workspace.readCode({ target: "@checks" }, {});
   assert.equal(result.status, "ok");
   return (result as { data: { checks: { task: string; status: string; admission: string; reporting: unknown; scope?: string }[] } }).data.checks;
 }
-const check = (workspace: InstanceType<typeof LightWorkspace>) => workspace.runTask({ kind: "project", task: "test:study:types" }, {});
+const check = (workspace: LightWorkspace) => workspace.runTask({ kind: "project", task: "test:study:types" }, {});
 
 test("compiler-only no-emit scripts take precedence over a test-like name", async () => {
   await fixture(async root => {

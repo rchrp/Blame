@@ -15,10 +15,10 @@ import { promisify } from "node:util";
 
 import {
   applyProjectOverlays,
-  createProject,
+  finishNewProject,
   initializeGeneratedRepository,
+  prepareNewProject,
   projectCreationRecipe,
-  setNewProjectAgentRuntime,
   validateProjectTarget,
   type ProjectCreationRecipe,
   type NewProjectConfiguration,
@@ -85,84 +85,73 @@ test("accepts valid parent and project name", async () => {
   assert.equal(target, join(parent, "valid-app"));
 });
 
-test("creates an empty target directory and delegates generation to the AI agent", async () => {
+test("prepares an empty folder, then installs and commits what the agent generated", async () => {
   const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
-  let receivedCwd = "";
-  let receivedConfiguration: NewProjectConfiguration | undefined;
-  setNewProjectAgentRuntime({
-    async generate(input) {
-      receivedCwd = input.cwd;
-      receivedConfiguration = input.configuration;
-      const info = await stat(input.cwd);
-      assert.equal(info.isDirectory(), true);
-      await writeFile(
-        join(input.cwd, "package.json"),
-        '{"name":"agent-app"}',
-        "utf8",
-      );
-      return {
-        path: input.cwd,
-        sessionId: input.sessionId ?? "session",
-      };
-    },
+  const prepared = await prepareNewProject({
+    parentPath: parent,
+    projectName: "agent-app",
+    runId: "agent-run",
   });
+  assert.deepEqual(prepared, {
+    path: join(parent, "agent-app"),
+    projectName: "agent-app",
+  });
+  assert.equal((await stat(prepared.path)).isDirectory(), true);
+  // The renderer's engine task writes the scaffold here.
+  await writeFile(
+    join(prepared.path, "package.json"),
+    '{"name":"agent-app"}',
+    "utf8",
+  );
 
-  try {
-    const commands: string[] = [];
-    const result = await createProject(
-      {
-        apiConnection: { url: "http://localhost" },
-        configuration: baseConfiguration,
-        modelId: "model",
-        parentPath: parent,
-        projectName: "agent-app",
-        providerId: "provider",
-        runId: "agent-run",
+  const commands: string[] = [];
+  const result = await finishNewProject(
+    {
+      path: prepared.path,
+      configuration: baseConfiguration,
+      runId: "agent-run",
+    },
+    {
+      async runCommand(command) {
+        commands.push(command.command);
+        await writeFile(
+          join(command.cwd, "pnpm-lock.yaml"),
+          "lockfileVersion: '9.0'\n",
+        );
       },
-      {
-        async runCommand(command) {
-          commands.push(command.command);
-          await writeFile(
-            join(command.cwd, "pnpm-lock.yaml"),
-            "lockfileVersion: '9.0'\n",
-          );
-        },
-      },
-    );
+    },
+  );
 
-    assert.equal(receivedCwd, join(parent, "agent-app"));
-    assert.equal(receivedConfiguration, baseConfiguration);
-    assert.equal(result.path, join(parent, "agent-app"));
-    assert.deepEqual(commands, ["pnpm"]);
-    assert.match(
-      (await runGit(result.path, ["ls-files"])).stdout,
-      /pnpm-lock.yaml/,
-    );
-    const gitRoot = await runGit(result.path, ["rev-parse", "--show-toplevel"]);
-    assert.equal(gitRoot.stdout.trim(), await realpath(result.path));
-  } finally {
-    setNewProjectAgentRuntime(undefined);
-  }
+  assert.equal(result.path, join(parent, "agent-app"));
+  assert.deepEqual(commands, ["pnpm"]);
+  assert.match(
+    (await runGit(result.path, ["ls-files"])).stdout,
+    /pnpm-lock.yaml/,
+  );
+  const gitRoot = await runGit(result.path, ["rev-parse", "--show-toplevel"]);
+  assert.equal(gitRoot.stdout.trim(), await realpath(result.path));
+  await assert.rejects(
+    prepareNewProject({
+      parentPath: parent,
+      projectName: "agent-app",
+      runId: "again",
+    }),
+    /already exists/,
+  );
 });
 
-test("retries a failed dependency installation without regenerating the project", async () => {
+test("retries a failed dependency installation on its own", async () => {
   const parent = await mkdtemp(join(tmpdir(), "blame-retry-project-"));
-  let generations = 0;
-  let installs = 0;
-  setNewProjectAgentRuntime({
-    async generate(input) {
-      generations += 1;
-      await writeFile(join(input.cwd, "package.json"), '{"name":"retry-app"}');
-      return { path: input.cwd, sessionId: input.sessionId! };
-    },
-  });
-  const input = {
-    apiConnection: { url: "http://localhost" },
-    configuration: baseConfiguration,
-    modelId: "model",
+  const { path } = await prepareNewProject({
     parentPath: parent,
     projectName: "retry-app",
-    providerId: "provider",
+    runId: "install-retry-run",
+  });
+  await writeFile(join(path, "package.json"), '{"name":"retry-app"}');
+  let installs = 0;
+  const input = {
+    path,
+    configuration: baseConfiguration,
     runId: "install-retry-run",
   };
   const options = {
@@ -171,19 +160,14 @@ test("retries a failed dependency installation without regenerating the project"
       if (installs === 1) throw new Error("registry unavailable");
     },
   };
-  try {
-    await assert.rejects(
-      createProject(input, options),
-      /Dependency installation failed.*registry unavailable.*try again/,
-    );
-    await assert.rejects(stat(join(parent, "retry-app", ".git")), /ENOENT/);
-    const result = await createProject(input, options);
-    assert.equal(generations, 1);
-    assert.equal(installs, 2);
-    assert.equal((await stat(join(result.path, ".git"))).isDirectory(), true);
-  } finally {
-    setNewProjectAgentRuntime(undefined);
-  }
+  await assert.rejects(
+    finishNewProject(input, options),
+    /Dependency installation failed.*registry unavailable.*try again/,
+  );
+  await assert.rejects(stat(join(path, ".git")), /ENOENT/);
+  const result = await finishNewProject(input, options);
+  assert.equal(installs, 2);
+  assert.equal((await stat(join(result.path, ".git"))).isDirectory(), true);
 });
 
 test("rejects spaces in project names before running the agent", async () => {
@@ -229,7 +213,7 @@ test("initial repository commit excludes generated runtime artifacts", async () 
     "utf8",
   );
   await writeFile(
-    join(target, ".blame", "logs", "cline.log"),
+    join(target, ".blame", "logs", "agent.log"),
     "debug\n",
     "utf8",
   );

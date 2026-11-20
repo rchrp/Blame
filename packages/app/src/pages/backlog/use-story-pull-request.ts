@@ -11,8 +11,10 @@ import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useGitIdentity } from "@/context/git-identity"
 import type { usePlatform } from "@/context/platform"
 import type { useProjects } from "@/context/projects"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 import { measurePerformanceOperation } from "@/lib/performance-diagnostics"
 import { projectCodePractices } from "@/lib/project-code-practices"
+import { storyLocation } from "./story-engine"
 import { approveAndMergeValidationError } from "./story-post-merge"
 import { activeStory } from "./story-runtime-state"
 import { withStoryTransition } from "./story-transitions"
@@ -57,27 +59,24 @@ export function useStoryPullRequest({
         return story
       }
       try {
-        const [currentStory, codePractices] = await Promise.all([
+        const [currentStory, codePractices, agentSummary] = await Promise.all([
           detailedStory(activeStory(story, storiesRef.current), backlog),
           projectCodePractices(auth, projects),
+          storyAgentSummary(story, platform),
         ])
         const result = await measurePerformanceOperation(
           "agent.transition.open_pull_request",
           () =>
-            platform.agent!.openPullRequest({
-              apiConnection: auth.apiConnection,
-              providerId: alternativeSelection.currentModel!.provider.id,
-              modelId: alternativeSelection.currentModel!.id,
-              credentialLabel:
-                alternativeSelection.currentModel!.credentialLabel,
-              reasoningEffort: alternativeSelection.currentVariant,
+            platform.engine!.call("openPullRequest", {
+              model: engineModelChoice(alternativeSelection)!,
+              projectId: projects.activeProject!.id,
               repositoryRoot: projects.activeProject!.path,
               worktree: currentStory.worktree!,
               storyBranch: currentStory.branch!,
               targetBranch: currentStory.targetBranch ?? undefined,
               title: currentStory.title,
               summary: currentStory.summary,
-              agentSummary: currentStory.agentFinalResponse ?? undefined,
+              agentSummary,
               codePractices,
             })
         )
@@ -93,9 +92,6 @@ export function useStoryPullRequest({
         )
         return await updateStory(currentStory, {
           agentLastError: null,
-          agentLastEvent: result.created
-            ? `Pull request opened: ${result.url}`
-            : `Pushed to pull request ${result.url}`,
           pullRequestUrl: result.url,
         })
       } catch (error) {
@@ -155,4 +151,20 @@ function detailedStory(
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : String(error)
+}
+
+// What the agent said it did, from the last turn its session finished.
+async function storyAgentSummary(
+  story: UserStory,
+  platform: ReturnType<typeof usePlatform>
+) {
+  if (!story.engineSessionId || !platform.engine) return undefined
+  const location = storyLocation(
+    story.workspaceMode ?? "direct",
+    platform.platform
+  )
+  const [status] = await platform.engine
+    .call("status", { sessions: [story.engineSessionId], location })
+    .catch(() => [])
+  return status?.lastReply
 }

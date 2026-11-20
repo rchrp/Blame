@@ -15,7 +15,7 @@ import { accountRequiredRoutes, hostedRoutes, previewEdgeRoutes } from '#start/r
 import { localRoutes } from '#start/routes/local'
 
 const ProviderCredentialsController = () => import('#controllers/provider_credentials_controller')
-const ModelCatalogController = () => import('#controllers/model_catalog_controller')
+const ModelRecommendationsController = () => import('#controllers/model_recommendations_controller')
 const ProjectCodePracticesController = () =>
   import('#controllers/project_code_practices_controller')
 const ProjectAgentMemoriesController = () =>
@@ -25,14 +25,10 @@ const ProjectCodePracticeAnalysesController = () =>
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
 const SecurityAuditsController = () => import('#controllers/security_audits_controller')
-const QuickChatAgentRunsController = () => import('#controllers/quick_chat_agent_runs_controller')
-const QuickChatMessagesController = () => import('#controllers/quick_chat_messages_controller')
 const QuickChatsController = () => import('#controllers/quick_chats_controller')
 const UserAiPreferencesController = () => import('#controllers/user_ai_preferences_controller')
 const UserMcpConfigurationsController = () =>
   import('#controllers/user_mcp_configurations_controller')
-const UserStoryAgentRunsController = () => import('#controllers/user_story_agent_runs_controller')
-const UserStoryCommentsController = () => import('#controllers/user_story_comments_controller')
 const FileAttachmentsController = () => import('#controllers/file_attachments_controller')
 
 router.get('/', () => {
@@ -116,8 +112,7 @@ router
 
     router
       .group(() => {
-        router.get('catalog', [ModelCatalogController, 'show'])
-        router.get('catalog/model', [ModelCatalogController, 'model'])
+        router.post('recommendations', [ModelRecommendationsController, 'store'])
         router.get('credentials', [ProviderCredentialsController, 'index'])
         router.post('credentials', [ProviderCredentialsController, 'store'])
         router.post('credentials/oauth', [ProviderCredentialsController, 'storeOAuth'])
@@ -165,24 +160,6 @@ router
         router.get('/:id', [QuickChatsController, 'show'])
         router.patch('/:id', [QuickChatsController, 'update'])
         router.delete('/:id', [QuickChatsController, 'destroy'])
-        router.post('/:id/messages', [QuickChatMessagesController, 'store'])
-        router.post('/:id/messages/:messageId/undo', [QuickChatMessagesController, 'undo'])
-        router.post('/:id/messages/:messageId/undo-validation', [
-          QuickChatMessagesController,
-          'validateUndo',
-        ])
-        router.post('/:id/agent-runs', [QuickChatAgentRunsController, 'store'])
-        router.patch('/:id/agent-runs/:runId', [QuickChatAgentRunsController, 'update'])
-        router.post('/:id/agent-runs/:runId/finalize', [QuickChatAgentRunsController, 'finalize'])
-        router.get('/:id/agent-runs/:runId/activities/:activityId', [
-          QuickChatAgentRunsController,
-          'activityDetail',
-        ])
-        router.put('/:id/agent-screenshots/:screenshotId', [
-          QuickChatsController,
-          'storeScreenshot',
-        ])
-        router.get('/:id/agent-screenshots/:screenshotId', [QuickChatsController, 'showScreenshot'])
       })
       .prefix('projects/quick-chats')
       .as('projects.quick_chats')
@@ -195,7 +172,6 @@ router
         router.get('/:id', [controllers.UserStories, 'show'])
         router.patch('/:id', [controllers.UserStories, 'update'])
         router.delete('/:id', [controllers.UserStories, 'destroy'])
-        router.get('/:id/agent-activities/:activityId', [controllers.UserStories, 'activityDetail'])
         router.put('/:id/agent-screenshots/:screenshotId', [
           controllers.UserStories,
           'storeScreenshot',
@@ -203,19 +179,6 @@ router
         router.get('/:id/agent-screenshots/:screenshotId', [
           controllers.UserStories,
           'showScreenshot',
-        ])
-        router.post('/:id/agent-runs', [UserStoryAgentRunsController, 'store'])
-        router.patch('/:id/agent-runs/:runId', [UserStoryAgentRunsController, 'update'])
-        router.post('/:id/agent-runs/:runId/finalize', [UserStoryAgentRunsController, 'finalize'])
-        router.get('/:id/agent-runs/:runId/activities/:activityId', [
-          UserStoryAgentRunsController,
-          'activityDetail',
-        ])
-        router.post('/:id/comments', [UserStoryCommentsController, 'store'])
-        router.post('/:id/comments/:commentId/undo', [UserStoryCommentsController, 'undo'])
-        router.post('/:id/comments/:commentId/undo-validation', [
-          UserStoryCommentsController,
-          'validateUndo',
         ])
       })
       .prefix('projects/user-stories')

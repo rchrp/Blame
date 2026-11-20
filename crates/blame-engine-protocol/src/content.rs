@@ -25,11 +25,16 @@ pub struct ModelRef {
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(rename_all = "snake_case")]
 pub enum ReasoningEffort {
+    /// No reasoning, on a model that can turn it off; the lowest level on
+    /// one that cannot.
+    Off,
     Minimal,
     Low,
     Medium,
     High,
     Xhigh,
+    /// The most the model offers.
+    Max,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

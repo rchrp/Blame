@@ -17,7 +17,6 @@ import {
   updateProjectCloudIgnore,
 } from "./project-cloud-ignore.js";
 import { scanProjectForInitialization } from "./project-initialization-scan.js";
-import { saveProjectInitialization } from "./cline-initialization.js";
 
 const generated = [
   {
@@ -114,26 +113,7 @@ test("accepted analysis merges the latest manual edits and retains local exclude
   });
   const manual = "# User rules\n/personal/\n!/archives/keep.json\n";
   await writeFile(join(root, ".blameignore"), manual);
-  const result = await saveProjectInitialization(
-    root,
-    {
-      sessionId: "submitted",
-      previewManifest: {
-        confidence: "high",
-        project: { root: ".", detectedStack: [], confidence: "high" },
-        setup: [],
-        services: [],
-        caches: [],
-        risks: [],
-        probes: [],
-      },
-      runConfigurations: [],
-      cloudPreviewIgnore: generated,
-    },
-    "completed",
-  );
-  assert.equal(result.sessionId, "completed");
-  assert.equal("cloudPreviewIgnore" in result, false);
+  await updateProjectCloudIgnore(root, generated);
   const first = await readProjectCloudIgnore(root);
   assert.equal(first, mergeProjectCloudIgnore(manual, generated));
   await updateProjectCloudIgnore(root, undefined);

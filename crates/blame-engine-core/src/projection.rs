@@ -9,9 +9,9 @@
 use crate::digest::Sha256;
 use crate::ports::{ModelMessage, ToolResultMessage};
 use blame_engine_protocol::{
-    AssistantBlock, ErrorInfo, ErrorKind, ModelRef, ReasoningEffort, Record, RecordBody, RequestId,
-    Seq, SessionConfig, StopReason, ToolCallId, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec,
-    TurnId, UserBlock,
+    AssistantBlock, ErrorInfo, ErrorKind, ModelRef, Obligation, ReasoningEffort, Record,
+    RecordBody, RequestId, Seq, SessionConfig, StopReason, TaskFailure, TaskOutcome, ToolCallId,
+    ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec, TurnId, TurnOutcome, UserBlock,
 };
 use serde_json::{Value, json};
 use std::collections::{HashMap, VecDeque};
@@ -138,6 +138,24 @@ pub struct TurnState<'a> {
     pub calls: Vec<CallState<'a>>,
     /// A steer arrived after the latest request was sent.
     pub steer_pending: bool,
+    /// When the message that opened the turn was stored.
+    pub started_at_ms: u64,
+    /// Tokens of every reply of the turn: input, cache reads and writes,
+    /// output.
+    pub tokens: u64,
+    /// Tools with a call that completed in this turn, in completion order.
+    pub completed: Vec<&'a str>,
+    /// The same, as it stood when the latest reply arrived: what a result
+    /// in that reply could rely on.
+    pub completed_before_reply: Vec<&'a str>,
+    /// The call accepted as the turn's result.
+    pub accepted: Option<&'a ToolCallId>,
+    /// Contract corrections sent in this turn.
+    pub corrections: u32,
+    /// A correction was stored after the latest request was sent.
+    pub correction_pending: bool,
+    /// The tool the latest correction forces, until a reply arrives.
+    pub forced_tool: Option<&'a str>,
 }
 
 impl TurnState<'_> {
@@ -173,7 +191,7 @@ impl<'a> View<'a> {
             match &record.body {
                 RecordBody::SessionCreated { config: c }
                 | RecordBody::ConfigChanged { config: c } => {
-                    config = Some(c);
+                    config = Some(&**c);
                 }
                 RecordBody::ContextCompacted {
                     through, summary, ..
@@ -297,6 +315,13 @@ impl<'a> View<'a> {
                     }
                 },
                 RecordBody::RequestStarted { .. } => flush(&mut out, &mut steer),
+                // Joins the turn like a steer: the model reads it at the
+                // start of the next request.
+                RecordBody::ContractCorrection { text, .. } => {
+                    if shown {
+                        steer.push(UserBlock::Text { text: text.clone() });
+                    }
+                }
                 RecordBody::AssistantMessage { blocks, .. } => {
                     // A steer stored while this reply streamed was not part of
                     // its request: it stays pending until the next one.
@@ -338,9 +363,10 @@ impl<'a> View<'a> {
         input
             .iter()
             .enumerate()
-            .map(|(index, block)| match self.edit(seq, index) {
-                Some(text) => UserBlock::Text { text: text.into() },
-                None => block.clone(),
+            .filter_map(|(index, block)| match self.edit(seq, index) {
+                Some("") => None,
+                Some(text) => Some(UserBlock::Text { text: text.into() }),
+                None => Some(block.clone()),
             })
             .collect()
     }
@@ -349,17 +375,18 @@ impl<'a> View<'a> {
         let blocks: Vec<AssistantBlock> = blocks
             .iter()
             .enumerate()
-            .map(|(index, block)| match (self.edit(seq, index), block) {
-                (Some(text), AssistantBlock::Text { .. }) => AssistantBlock::Text {
+            .filter_map(|(index, block)| match (self.edit(seq, index), block) {
+                (Some(""), AssistantBlock::Text { .. } | AssistantBlock::Reasoning { .. }) => None,
+                (Some(text), AssistantBlock::Text { .. }) => Some(AssistantBlock::Text {
                     text: text.into(),
                     native: None,
-                },
-                (Some(text), AssistantBlock::Reasoning { .. }) => AssistantBlock::Reasoning {
+                }),
+                (Some(text), AssistantBlock::Reasoning { .. }) => Some(AssistantBlock::Reasoning {
                     text: text.into(),
                     native: None,
-                },
+                }),
                 // A call's structure is what pairs it with its result.
-                _ => block.clone(),
+                _ => Some(block.clone()),
             })
             .collect();
         let results: Vec<ToolResultMessage> = blocks
@@ -395,9 +422,10 @@ impl<'a> View<'a> {
                 content: content
                     .iter()
                     .enumerate()
-                    .map(|(index, block)| match self.edit(seq, index) {
-                        Some(text) => ToolResultBlock::Text { text: text.into() },
-                        None => block.clone(),
+                    .filter_map(|(index, block)| match self.edit(seq, index) {
+                        Some("") => None,
+                        Some(text) => Some(ToolResultBlock::Text { text: text.into() }),
+                        None => Some(block.clone()),
                     })
                     .collect(),
             },
@@ -412,8 +440,20 @@ impl<'a> View<'a> {
     }
 
     fn edit(&self, seq: Seq, index: usize) -> Option<&'a str> {
-        let index = u32::try_from(index).ok()?;
-        self.edits.get(&(seq, index)).copied()
+        self.edit_of(seq, u32::try_from(index).ok()?)
+    }
+
+    /// The text in effect for block `block` of record `seq`, when an edit
+    /// replaced it (the latest edit wins); empty when an edit removed it.
+    /// A context policy reads it to propose only what changes.
+    pub fn edit_of(&self, seq: Seq, block: u32) -> Option<&'a str> {
+        self.edits.get(&(seq, block)).copied()
+    }
+
+    /// The `ToolCallFinished` that answers `call` in the history in effect:
+    /// the first one stored, as the model is shown.
+    pub fn result_record(&self, call: &ToolCallId) -> Option<&'a Record> {
+        self.results.get(call).copied()
     }
 
     /// Where `turn` stands. Only meaningful for an open turn.
@@ -432,9 +472,19 @@ impl<'a> View<'a> {
             compacted_since_failure: false,
             calls: Vec::new(),
             steer_pending: false,
+            started_at_ms: 0,
+            tokens: 0,
+            completed: Vec::new(),
+            completed_before_reply: Vec::new(),
+            accepted: None,
+            corrections: 0,
+            correction_pending: false,
+            forced_tool: None,
         };
         let mut seen_requests: Vec<&RequestId> = Vec::new();
         let mut calls: HashMap<&ToolCallId, usize> = HashMap::new();
+        // Every call of the turn by its id, for the tools that completed.
+        let mut names: HashMap<&ToolCallId, &'a str> = HashMap::new();
         let mut opened = false;
         for item in &self.items {
             let Item::Record(record) = item else {
@@ -448,7 +498,12 @@ impl<'a> View<'a> {
                 RecordBody::UserMessage {
                     turn: t, delivery, ..
                 } if t == turn => match delivery {
-                    blame_engine_protocol::Delivery::Turn => opened = true,
+                    blame_engine_protocol::Delivery::Turn => {
+                        if !opened {
+                            state.started_at_ms = record.at_ms;
+                        }
+                        opened = true;
+                    }
                     blame_engine_protocol::Delivery::Steer => state.steer_pending = true,
                 },
                 RecordBody::CheckpointCreated { turn: t, .. } if t == turn => {
@@ -476,6 +531,7 @@ impl<'a> View<'a> {
                         overflows,
                     });
                     state.steer_pending = false;
+                    state.correction_pending = false;
                     state.compacted_since_failure = false;
                 }
                 RecordBody::AssistantMessage {
@@ -486,6 +542,12 @@ impl<'a> View<'a> {
                     usage,
                 } if t == turn => {
                     state.cost_micro_usd += usage.cost_micro_usd.unwrap_or(0);
+                    state.tokens += usage.input_tokens.unwrap_or(0)
+                        + usage.cache_read_tokens.unwrap_or(0)
+                        + usage.cache_write_tokens.unwrap_or(0)
+                        + usage.output_tokens.unwrap_or(0);
+                    state.completed_before_reply = state.completed.clone();
+                    state.forced_tool = None;
                     state.calls.clear();
                     calls.clear();
                     for block in blocks {
@@ -493,6 +555,7 @@ impl<'a> View<'a> {
                             call, name, input, ..
                         } = block
                         {
+                            names.insert(call, name.as_str());
                             calls.insert(call, state.calls.len());
                             state.calls.push(CallState {
                                 call,
@@ -582,6 +645,23 @@ impl<'a> View<'a> {
                     {
                         state.calls[index].finished = Some(*outcome);
                     }
+                    if *outcome == ToolOutcome::Completed
+                        && let Some(name) = names.remove(call)
+                    {
+                        state.completed.push(name);
+                    }
+                }
+                RecordBody::ResultAccepted { turn: t, call } if t == turn => {
+                    state.accepted = Some(call);
+                }
+                RecordBody::ContractCorrection {
+                    turn: t,
+                    forced_tool,
+                    ..
+                } if t == turn => {
+                    state.corrections += 1;
+                    state.correction_pending = true;
+                    state.forced_tool = forced_tool.as_deref();
                 }
                 _ => {}
             }
@@ -810,6 +890,58 @@ pub fn cache_breakpoints(messages: &[ModelMessage]) -> Vec<usize> {
         Some(previous) if previous != last => vec![previous, last],
         _ => vec![last],
     }
+}
+
+/// How a task ended, once its turn has: `None` while it runs (or when the
+/// log is not a task's).
+pub fn task_outcome(records: &[Record]) -> Option<TaskOutcome> {
+    let view = View::new(records);
+    let items = view.items();
+    let (turn, outcome) = items
+        .iter()
+        .filter_map(Item::record)
+        .find_map(|record| match &record.body {
+            RecordBody::TurnEnded { turn, outcome } => Some((turn, outcome)),
+            _ => None,
+        })?;
+    let failed = |failure| TaskOutcome::Failed { failure };
+    Some(match outcome {
+        TurnOutcome::Completed => {
+            let accepted =
+                items
+                    .iter()
+                    .filter_map(Item::record)
+                    .find_map(|record| match &record.body {
+                        RecordBody::ResultAccepted { turn: t, call } if t == turn => Some(call),
+                        _ => None,
+                    });
+            match accepted.and_then(|call| Some((call, view.call_input(call)?))) {
+                Some((call, (_, input))) => TaskOutcome::Completed {
+                    call: call.clone(),
+                    result: input.clone(),
+                },
+                None => failed(TaskFailure::ContractUnmet {
+                    unmet: vec![Obligation::Result {
+                        tool: view
+                            .config()
+                            .and_then(|config| config.contract.as_ref())
+                            .map(|contract| contract.result.name().to_owned())
+                            .unwrap_or_default(),
+                    }],
+                }),
+            }
+        }
+        TurnOutcome::Interrupted => TaskOutcome::Interrupted,
+        TurnOutcome::LimitReached { limit } => failed(TaskFailure::LimitReached {
+            limit: limit.clone(),
+        }),
+        TurnOutcome::Failed { error } => failed(TaskFailure::ProviderError {
+            error: error.clone(),
+        }),
+        TurnOutcome::ContractUnmet { unmet } => failed(TaskFailure::ContractUnmet {
+            unmet: unmet.clone(),
+        }),
+    })
 }
 
 /// How a tool call is named in `RewindFinished::unreverted_commands`: the

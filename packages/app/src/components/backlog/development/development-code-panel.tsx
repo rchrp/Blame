@@ -121,7 +121,7 @@ export function DevelopmentCodePanel({
   if (!workspace.hasServer) {
     return (
       <DevelopmentEmptyState
-        description="File inspection will be restored through the Cline runtime."
+        description="File inspection needs the desktop app."
         icon={ServerOffIcon}
         title="Backend unavailable"
       />

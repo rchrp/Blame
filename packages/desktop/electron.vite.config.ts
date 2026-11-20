@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url"
 import { defineConfig } from "electron-vite"
 import appPlugin from "@blame/app/vite"
 
@@ -9,7 +10,7 @@ export default defineConfig({
       },
       rolldownOptions: {
         input: {
-          "agent-runtime-process": "src/main/agent-runtime-process.ts",
+          "engine-host-process": "src/main/engine/engine-host-process.ts",
           index: "src/main/index.ts",
         },
         output: {
@@ -37,7 +38,7 @@ export default defineConfig({
     build: {
       rolldownOptions: {
         input: {
-          main: "src/renderer/index.html",
+          main: fileURLToPath(new URL("./src/renderer/index.html", import.meta.url)),
         },
       },
     },

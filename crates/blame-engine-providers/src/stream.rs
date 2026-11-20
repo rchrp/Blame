@@ -29,7 +29,7 @@ pub(crate) fn events(mut reply: Streamed<Completion>, target: Target) -> ModelSt
                 // A payload Rig does not model changes nothing we store.
                 Ok(Item::Unknown(_)) => continue,
                 Err(failure) => {
-                    yield Err(error::from_rig(&failure));
+                    yield Err(error::about(error::from_rig(&failure), &target));
                     return;
                 }
             };
@@ -65,12 +65,12 @@ pub(crate) fn events(mut reply: Streamed<Completion>, target: Target) -> ModelSt
         let response = match reply.finish().await {
             Ok(response) => response,
             Err(failure) => {
-                yield Err(error::from_rig(&failure));
+                yield Err(error::about(error::from_rig(&failure), &target));
                 return;
             }
         };
         if let Some(message) = &response.error {
-            yield Err(error::from_reported(message));
+            yield Err(error::about(error::from_reported(message), &target));
             return;
         }
         let stop = stop_reason(&response);

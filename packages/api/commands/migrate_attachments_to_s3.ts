@@ -22,7 +22,7 @@ const migrationBatchSize = 100
 
 export default class MigrateAttachmentsToS3 extends BaseCommand {
   static commandName = 'attachments:migrate-to-s3'
-  static description = 'Move legacy inline message attachments to S3-compatible object storage'
+  static description = 'Move legacy inline story attachments to S3-compatible object storage'
   static options: CommandOptions = { startApp: true }
 
   async run() {
@@ -73,16 +73,6 @@ function sources(): LegacySource[] {
       ownerType: 'userStory',
       table: 'user_stories',
     },
-    {
-      owners: userStoryComments,
-      ownerType: 'userStoryComment',
-      table: 'user_story_comments',
-    },
-    {
-      owners: quickChatMessages,
-      ownerType: 'quickChatMessage',
-      table: 'quick_chat_messages',
-    },
   ]
 }
 
@@ -90,24 +80,6 @@ async function userStories(ownerIds: string[]) {
   return db
     .from('user_stories as owner')
     .innerJoin('projects as project', 'project.id', 'owner.project_id')
-    .select(['owner.id', 'owner.file_attachments', 'project.user_id'])
-    .whereIn('owner.id', ownerIds)
-}
-
-async function userStoryComments(ownerIds: string[]) {
-  return db
-    .from('user_story_comments as owner')
-    .innerJoin('user_stories as story', 'story.id', 'owner.user_story_id')
-    .innerJoin('projects as project', 'project.id', 'story.project_id')
-    .select(['owner.id', 'owner.file_attachments', 'project.user_id'])
-    .whereIn('owner.id', ownerIds)
-}
-
-async function quickChatMessages(ownerIds: string[]) {
-  return db
-    .from('quick_chat_messages as owner')
-    .innerJoin('quick_chats as chat', 'chat.id', 'owner.quick_chat_id')
-    .innerJoin('projects as project', 'project.id', 'chat.project_id')
     .select(['owner.id', 'owner.file_attachments', 'project.user_id'])
     .whereIn('owner.id', ownerIds)
 }

@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
 test("a six-second command returns its final outcome without status polling", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-initial-wait-"));

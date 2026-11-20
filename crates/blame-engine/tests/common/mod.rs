@@ -56,6 +56,12 @@ pub struct FakeClient {
     pub cancelled: Mutex<Vec<u64>>,
     /// Holds `host/tool` answers until notified, when set.
     pub hold_tools: Option<Arc<tokio::sync::Notify>>,
+    /// Reported as `tool/progress` while each tool call runs.
+    pub progress: Mutex<Vec<String>>,
+    /// (provider, session) of each `host/credential`.
+    pub credential_asks: Mutex<Vec<(String, SessionId)>>,
+    /// (session, method, params) of each `host/harness`.
+    pub harness_asks: Mutex<Vec<(SessionId, String, Value)>>,
 }
 
 impl FakeClient {
@@ -74,6 +80,9 @@ impl FakeClient {
             remote: None,
             cancelled: Mutex::new(Vec::new()),
             hold_tools: None,
+            progress: Mutex::new(Vec::new()),
+            credential_asks: Mutex::new(Vec::new()),
+            harness_asks: Mutex::new(Vec::new()),
         }
     }
 
@@ -84,7 +93,11 @@ impl FakeClient {
 
     async fn answer(&self, call: EngineRequest) -> Result<Value, RpcError> {
         match call {
-            EngineRequest::Credential { .. } => {
+            EngineRequest::Credential { provider, session } => {
+                self.credential_asks
+                    .lock()
+                    .unwrap()
+                    .push((provider, session));
                 let n = self.credential_requests.fetch_add(1, Ordering::SeqCst) as usize;
                 let keys = self.keys.lock().unwrap();
                 let key = keys.get(n).or(keys.last()).cloned().unwrap_or_default();
@@ -105,6 +118,23 @@ impl FakeClient {
                 Ok(serde_json::to_value((self.tool)(&name, &input)).unwrap())
             }
             EngineRequest::Approval { .. } => Ok(json!({ "decision": "approved" })),
+            // A command's credentials, as the app grants them.
+            EngineRequest::Harness {
+                session,
+                method,
+                params,
+            } => {
+                let answer = if method == "commandCredentials" {
+                    json!({ "githubToken": "granted-by-the-client" })
+                } else {
+                    Value::Null
+                };
+                self.harness_asks
+                    .lock()
+                    .unwrap()
+                    .push((session, method, params));
+                Ok(answer)
+            }
             EngineRequest::LogPush { session, records } => {
                 let remote = self.remote.as_ref().ok_or_else(|| rpc("no remote"))?;
                 remote
@@ -211,6 +241,9 @@ impl Engine {
             .arg("serve")
             .arg("--data-dir")
             .arg(data_dir)
+            // No test reaches models.dev; one that wants a catalog server
+            // passes its own `--catalog-url`, which comes later and wins.
+            .args(["--catalog-url", "http://127.0.0.1:9/api.json"])
             .args(extra)
             // Fast enough for tests; durability itself is the store's test.
             .args(["--durability", "relaxed"])
@@ -257,6 +290,21 @@ impl Engine {
                             let client = client.clone();
                             let stdin = stdin.clone();
                             tokio::spawn(async move {
+                                if let EngineRequest::Tool { call: running, .. } = &call {
+                                    let progress = client.progress.lock().unwrap().clone();
+                                    for text in progress {
+                                        let message: Message<ClientRequest> =
+                                            Message::Notification {
+                                                jsonrpc: Version::V2,
+                                                call: ClientRequest::ToolProgress {
+                                                    call: running.clone(),
+                                                    text,
+                                                },
+                                            };
+                                        write(&stdin, &serde_json::to_string(&message).unwrap())
+                                            .await;
+                                    }
+                                }
                                 let outcome = match client.answer(call).await {
                                     Ok(value) => Outcome::Result(value),
                                     Err(error) => Outcome::Error(error),
@@ -341,6 +389,44 @@ impl Engine {
             Outcome::Result(value) => Ok(serde_json::from_value(value).expect("a readable result")),
             Outcome::Error(error) => Err(error),
         }
+    }
+
+    /// Sends a request and returns its id and the answer to come, without
+    /// waiting for it (a `task/run`).
+    pub async fn send_request(&self, call: ClientRequest) -> (u64, oneshot::Receiver<Outcome>) {
+        let id = self.next_id.fetch_add(1, Ordering::Relaxed);
+        let (reply, answer) = oneshot::channel();
+        self.pending.lock().unwrap().insert(id, reply);
+        let message: Message<ClientRequest> = Message::Request {
+            jsonrpc: Version::V2,
+            id,
+            call,
+        };
+        write(&self.stdin, &serde_json::to_string(&message).unwrap()).await;
+        (id, answer)
+    }
+
+    /// The answer of a request sent with [`Self::send_request`].
+    pub async fn answer<T: DeserializeOwned>(
+        answer: oneshot::Receiver<Outcome>,
+    ) -> Result<T, RpcError> {
+        let outcome = tokio::time::timeout(WAIT, answer)
+            .await
+            .expect("the engine answers in time")
+            .expect("the engine answers");
+        match outcome {
+            Outcome::Result(value) => Ok(serde_json::from_value(value).expect("a readable result")),
+            Outcome::Error(error) => Err(error),
+        }
+    }
+
+    /// `$/cancel` of a request of this client.
+    pub async fn cancel(&self, id: u64) {
+        let message: Message<ClientRequest> = Message::Notification {
+            jsonrpc: Version::V2,
+            call: ClientRequest::Cancel { id },
+        };
+        write(&self.stdin, &serde_json::to_string(&message).unwrap()).await;
     }
 
     pub async fn call<T: DeserializeOwned>(&self, call: ClientRequest) -> T {
@@ -513,6 +599,9 @@ pub fn kind(body: &RecordBody) -> &'static str {
         RecordBody::RewindFinished { .. } => "rewound",
         RecordBody::RewindUndone { .. } => "undone",
         RecordBody::Notice { .. } => "notice",
+        RecordBody::ResultAccepted { .. } => "accepted",
+        RecordBody::ResultRejected { .. } => "rejected",
+        RecordBody::ContractCorrection { .. } => "correction",
     }
 }
 
@@ -543,6 +632,8 @@ pub fn config(workspace: &Path) -> SessionConfig {
         tool_options: Default::default(),
         limits: Default::default(),
         checkpoints: false,
+        kind: Default::default(),
+        contract: None,
     }
 }
 

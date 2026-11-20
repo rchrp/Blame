@@ -6,7 +6,7 @@ import { symbolicReadHints } from "./light-symbolic-hint.js";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
 const source = "export function clamp(x:number,y:number):number { return Math.max(0, Math.min(Math.abs(x), y)); }";
 const request = { source, functionName: "clamp", inputs: { x: {min:-4,max:4}, y: {min:-4,max:4} }, assertion: "result >= 0" };

@@ -15,22 +15,7 @@ export function equalUserStoryCardStory(
 }
 
 function stableUserStoryCardFields(story: UserStory) {
-  const {
-    agentActivities,
-    agentFinalResponse,
-    agentLastEvent,
-    agentRuns,
-    agentSessionSummary,
-    agentUsage,
-    runningAgentRuns,
-    ...stable
-  } = story
-  void agentActivities
-  void agentFinalResponse
-  void agentLastEvent
-  void agentRuns
-  void agentSessionSummary
-  void agentUsage
-  void runningAgentRuns
-  return stable
+  // Everything a card shows comes from the story itself; its agent's
+  // conversation lives in the engine and never re-renders the board.
+  return story
 }

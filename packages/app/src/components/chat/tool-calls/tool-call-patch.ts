@@ -1,6 +1,6 @@
 import type { DiffFile, DiffLine } from "./tool-call-view.ts"
 
-// Parses Cline patches ("*** Begin Patch / *** Update File: … / *** End Patch")
+// Parses harness patches ("*** Begin Patch / *** Update File: … / *** End Patch")
 // into per-file diff lines with addition and deletion counts.
 export function parsePatch(patch: string): DiffFile[] {
   const files: DiffFile[] = []
@@ -71,26 +71,6 @@ export function addedFile(path: string, text: string): DiffFile {
     deletions: 0,
     status: "added",
     lines: lines.map((line) => ({ kind: "add", text: line })),
-  }
-}
-
-// A find-and-replace edit shown as a small diff.
-export function replacementFile(
-  path: string,
-  oldText: string | undefined,
-  newText: string
-): DiffFile {
-  const removed = oldText ? oldText.replace(/\n$/u, "").split("\n") : []
-  const added = newText.replace(/\n$/u, "").split("\n")
-  return {
-    path,
-    additions: added.length,
-    deletions: removed.length,
-    status: "modified",
-    lines: [
-      ...removed.map((line): DiffLine => ({ kind: "remove", text: line })),
-      ...added.map((line): DiffLine => ({ kind: "add", text: line })),
-    ],
   }
 }
 

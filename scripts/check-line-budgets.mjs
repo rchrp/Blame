@@ -6,7 +6,6 @@ const reviewThreshold = 600
 const root = new URL("../", import.meta.url).pathname
 const legacy = new Map(Object.entries({
   "packages/desktop/src/main/workspace-ipc.ts": budget(2700, 2650),
-  "packages/agent-runtime/src/cline-runtime.ts": budget(4750, 4700),
   "packages/app/src/components/backlog/drawer/markdown-editor.tsx": budget(2405, 2350),
   "packages/app/src/components/chat/agent-conversation.tsx": budget(2348, 2300),
   "packages/app/src/components/model/model-selector.tsx": budget(2087, 2050),

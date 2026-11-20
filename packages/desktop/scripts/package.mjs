@@ -9,6 +9,10 @@ import {
   buildSemanticHarnessPayload,
   semanticHarnessPayloadPath,
 } from "../../../scripts/semantic-harness-payload.mjs";
+import {
+  formatSizes,
+  stageEngineBinaries,
+} from "../../../scripts/build-engine-binaries.mjs";
 
 import { verifyStagedWorkspaceRuntime, verifyPackagedWorkspaceRuntime } from "./package-integrity.mjs";
 import { pruneNodeModules } from "./package-prune.mjs";
@@ -57,6 +61,17 @@ try {
       ),
     ],
   });
+  // The Rust binaries (docs/engine-in-the-app.md, "Engine binaries"): built
+  // here, or the release workflow's, from BLAME_ENGINE_BINARIES_DIR.
+  const engineBinaries = await stageEngineBinaries(
+    join(stagingDir, "resources/engine"),
+    {
+      platform: builderTargetPlatform(args),
+      arch: builderTargetArchitecture(args),
+      prebuiltDir: process.env.BLAME_ENGINE_BINARIES_DIR?.trim() || undefined,
+    },
+  );
+  console.log(`Staged the engine binaries:\n${formatSizes(engineBinaries)}`);
   await rm(join(stagingDir, "out"), { force: true, recursive: true });
   await cp(join(desktopDir, "out"), join(stagingDir, "out"), {
     recursive: true,

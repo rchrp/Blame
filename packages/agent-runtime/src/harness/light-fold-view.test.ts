@@ -1,27 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { parseCode } from "./code-intelligence.js";
-import {
-  foldBodyMinimumCharacters,
-  foldCallCharacters,
-  foldFileMinimumCharacters,
-} from "./light-fold-economics.js";
-import { foldMarkerPattern, lineAlignedWindow, planFold, renderFold, type FoldAttention } from "./light-fold-view.js";
+import { fold as harnessFold, foldEconomics, lineAlignedWindow as harnessWindow } from "./test-client/units.js";
 
+type FoldAttention = { lines: Set<number>; symbols: Set<string> };
 const none: FoldAttention = { lines: new Set(), symbols: new Set() };
+const { foldBodyMinimumCharacters, foldCallCharacters, foldFileMinimumCharacters } = foldEconomics();
+const foldMarkerPattern = new RegExp(foldEconomics().foldMarkerPattern, "u");
 
 function fold(path: string, source: string, attention = none, window?: [number, number]) {
   const content = Buffer.from(source);
-  const parsed = parseCode(path, content);
-  const range = window ?? [0, content.byteLength];
-  const plan = planFold(content, parsed, range, attention);
-  const aliases = new Map<string, string>();
-  const view = renderFold(content, parsed, range, plan, (symbol) => {
-    const key = symbol.qualified_name;
-    if (!aliases.has(key)) aliases.set(key, `s${aliases.size + 1}`);
-    return aliases.get(key);
-  });
+  const { plan, view } = harnessFold(path, source, { lines: [...attention.lines], symbols: [...attention.symbols] }, window);
   return { content, plan, view };
+}
+
+function lineAlignedWindow(content: Buffer, range: [number, number]) {
+  return harnessWindow(content.toString("utf8"), range);
 }
 
 function body(lines: number, prefix = "value") {

@@ -973,13 +973,13 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/api/v1/projects/:projectId/initialization/cancel'
     types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').cancelProjectInitializationValidator)>>
+      body: {}
       paramsTuple: [ParamValue]
       params: { projectId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').cancelProjectInitializationValidator)>>
+      query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>>
     }
   }
   'projects.project_initializations.repair': {
@@ -1008,30 +1008,17 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['check']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
-  'providers.model_catalog.show': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/providers/catalog'
+  'providers.model_recommendations.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/providers/recommendations'
     types: {
-      body: {}
+      body: ExtractBody<InferInput<(typeof import('#validators/model_recommendations').modelRecommendationsValidator)>>
       paramsTuple: []
       params: {}
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['show']>>>
-    }
-  }
-  'providers.model_catalog.model': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/providers/catalog/model'
-    types: {
-      body: {}
-      paramsTuple: []
-      params: {}
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/model_catalog_controller').default['model']>>>
+      query: ExtractQuery<InferInput<(typeof import('#validators/model_recommendations').modelRecommendationsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/model_recommendations_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/model_recommendations_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/model_recommendations_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'providers.provider_credentials.index': {
@@ -1307,123 +1294,6 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['destroy']>>>
     }
   }
-  'projects.quick_chats.quick_chat_messages.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/quick-chats/:id/messages'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').createQuickChatMessageValidator)>>
-      paramsTuple: [ParamValue]
-      params: { id: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').createQuickChatMessageValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.quick_chats.quick_chat_messages.undo': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/quick-chats/:id/messages/:messageId/undo'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; messageId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['undo']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.quick_chats.quick_chat_messages.validate_undo': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/quick-chats/:id/messages/:messageId/undo-validation'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; messageId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat').undoQuickChatMessageValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['validateUndo']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['validateUndo']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chat_messages_controller').default['validateUndo']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.quick_chats.quick_chat_agent_runs.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/quick-chats/:id/agent-runs'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat_agent_run').createQuickChatAgentRunValidator)>>
-      paramsTuple: [ParamValue]
-      params: { id: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat_agent_run').createQuickChatAgentRunValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.quick_chats.quick_chat_agent_runs.update': {
-    methods: ["PATCH"]
-    pattern: '/api/v1/projects/quick-chats/:id/agent-runs/:runId'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat_agent_run').updateQuickChatAgentRunValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; runId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat_agent_run').updateQuickChatAgentRunValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.quick_chats.quick_chat_agent_runs.finalize': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/quick-chats/:id/agent-runs/:runId/finalize'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/quick_chat_agent_run').finalizeQuickChatAgentRunValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; runId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/quick_chat_agent_run').finalizeQuickChatAgentRunValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['finalize']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['finalize']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['finalize']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.quick_chats.quick_chat_agent_runs.activity_detail': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/quick-chats/:id/agent-runs/:runId/activities/:activityId'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue, ParamValue, ParamValue]
-      params: { id: ParamValue; runId: ParamValue; activityId: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['activityDetail']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['activityDetail']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chat_agent_runs_controller').default['activityDetail']>>>
-    }
-  }
-  'projects.quick_chats.quick_chats.store_screenshot': {
-    methods: ["PUT"]
-    pattern: '/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user_story').agentScreenshotUploadValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; screenshotId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/user_story').agentScreenshotUploadValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['storeScreenshot']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['storeScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['storeScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.quick_chats.quick_chats.show_screenshot': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/quick-chats/:id/agent-screenshots/:screenshotId'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; screenshotId: ParamValue }
-      query: ExtractQueryForGet<InferInput<(typeof import('#validators/user_story').agentScreenshotQueryValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['showScreenshot']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['showScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['showScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/user-stories'
@@ -1489,19 +1359,6 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['destroy']>>>
     }
   }
-  'projects.user_stories.user_stories.activity_detail': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/user-stories/:id/agent-activities/:activityId'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; activityId: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['activityDetail']>>>
-    }
-  }
   'projects.user_stories.user_stories.store_screenshot': {
     methods: ["PUT"]
     pattern: '/api/v1/projects/user-stories/:id/agent-screenshots/:screenshotId'
@@ -1526,97 +1383,6 @@ export interface Registry {
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['showScreenshot']>>>
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['showScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_stories_controller').default['showScreenshot']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.user_stories.user_story_agent_runs.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user_story_agent_run').createUserStoryAgentRunValidator)>>
-      paramsTuple: [ParamValue]
-      params: { id: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_agent_run').createUserStoryAgentRunValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.user_stories.user_story_agent_runs.update': {
-    methods: ["PATCH"]
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user_story_agent_run').updateUserStoryAgentRunValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; runId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_agent_run').updateUserStoryAgentRunValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['update']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.user_stories.user_story_agent_runs.finalize': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/finalize'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user_story_agent_run').finalizeUserStoryAgentRunValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; runId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_agent_run').finalizeUserStoryAgentRunValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['finalize']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['finalize']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['finalize']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.user_stories.user_story_agent_runs.activity_detail': {
-    methods: ["GET","HEAD"]
-    pattern: '/api/v1/projects/user-stories/:id/agent-runs/:runId/activities/:activityId'
-    types: {
-      body: {}
-      paramsTuple: [ParamValue, ParamValue, ParamValue]
-      params: { id: ParamValue; runId: ParamValue; activityId: ParamValue }
-      query: {}
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['activityDetail']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['activityDetail']>>>
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_story_agent_runs_controller').default['activityDetail']>>>
-    }
-  }
-  'projects.user_stories.user_story_comments.store': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/user-stories/:id/comments'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user_story_comment').createUserStoryCommentValidator)>>
-      paramsTuple: [ParamValue]
-      params: { id: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').createUserStoryCommentValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['store']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.user_stories.user_story_comments.undo': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; commentId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['undo']>>> | { status: 422; response: { errors: SimpleError[] } }
-    }
-  }
-  'projects.user_stories.user_story_comments.validate_undo': {
-    methods: ["POST"]
-    pattern: '/api/v1/projects/user-stories/:id/comments/:commentId/undo-validation'
-    types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
-      paramsTuple: [ParamValue, ParamValue]
-      params: { id: ParamValue; commentId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/user_story_comment').undoUserStoryCommentValidator)>>
-      response: ExtractResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['validateUndo']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['validateUndo']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/user_story_comments_controller').default['validateUndo']>>> | { status: 422; response: { errors: SimpleError[] } }
     }
   }
   'preview_edge_internal.resolve': {

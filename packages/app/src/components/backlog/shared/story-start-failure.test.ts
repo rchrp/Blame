@@ -15,10 +15,10 @@ test("a queued story shows why its agent did not start", () => {
   assert.equal(
     storyStartFailure({
       agentLastError:
-        "Cline runtime backend unavailable in BlameRuntime.\n  Hub connection closed (code=1006)\n",
+        "The agent engine is unavailable.\n  Connection closed (code=1006)\n",
       status: "ready",
     }),
-    "Couldn't start the agent: Cline runtime backend unavailable in BlameRuntime. Hub connection closed (code=1006)"
+    "Couldn't start the agent: The agent engine is unavailable. Connection closed (code=1006)"
   )
 })
 

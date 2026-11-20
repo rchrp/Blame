@@ -1,522 +1,87 @@
-import type {
-  AgentEvent,
-  NewProjectGenerationResult,
-  StartNewProjectGenerationInput,
-} from "@blame/agent-runtime";
-import { app, BrowserWindow, ipcMain } from "electron";
+// What the main process adds to the agents, which all run in the engine host
+// (engine/engine-host-ipc.ts): the git flows' worktree and VM facts, which
+// worktrees an agent is writing in (a preview stays up, the runtime keeps
+// running), and the app's calls with no agent in them (Open PR's checks, a
+// Direct story's files, a security audit's map).
+import { ipcMain } from "electron";
 import { randomUUID } from "node:crypto";
-import { join } from "node:path";
-import { createServer } from "node:http";
-import type { AddressInfo } from "node:net";
-import log from "electron-log";
-import {
-  clineAgentEnvironment,
-  writeClineTelemetryOptOut,
-} from "@blame/agent-runtime/cline-sdk-opt-out";
-import { excludeComponentPreviewFiles } from "./component-preview-exclude";
-import { stopComponentPreviews } from "./component-preview/component-preview-agent";
-import { releaseAgentPreviewSession } from "./preview-browser-ipc";
-import {
-  refreshRuntimeBackendConnection,
-  resolveAgentWorkspaceInput,
-  retryableHubTransportError,
-} from "./cline-backend-resolver";
-import { runtimeHubPortConflict } from "./runtime-hub-port";
-import { withSessionStartDeadline } from "./session-start-deadline";
-import { AgentEventStream } from "./agent-event-stream";
-import { AgentRuntimePool } from "./agent-runtime-pool";
-import { agentHeavyChecks } from "./agent-heavy-checks";
-import {
-  AgentRuntimeProcessClient,
-  type AgentRuntimeProcessCallbacks,
-} from "./agent-runtime-process-client";
-import { createAgentHostRequestHandler } from "./agent-runtime-main-host";
-import type { AgentRuntimeMethod } from "./agent-runtime-process-protocol";
-import { prepareSessionGithubAccess } from "./ipc/agent-github-access-ipc";
-import { setupPath } from "./host-tool-path";
-import { keepRuntimeRunningWhile, onRuntimeRunning } from "./runtime-power";
-import { runtimeAgentClient } from "./runtime-agent";
+import { callEngineHost, engineActiveWorkspaces } from "./engine/engine-host-ipc";
+import { keepRuntimeRunningWhile } from "./runtime-power";
 import { registerSecurityAuditIpcHandlers } from "./security-audit-ipc";
 import { WorkspaceWriterRegistry } from "./workspaces/workspace-writer-registry";
 import { runtimeManagedPath } from "./workspace-runtime";
-import type { PreviewService } from "./preview-runtime/preview-service";
 import { useAgentWorkspaceCheck } from "./preview-runtime/local/local-preview-idle.ts";
 
-type AgentRuntimeRegistration = {
-  modulePath: string;
-  packaged: boolean;
-  previewService: PreviewService;
-  beforeDelivery?(worktree: string): Promise<void>;
-  beforeWorkspaceWrite?(worktree: string): Promise<void>;
-};
-
-let runtime: AgentRuntimePool | undefined;
-let runtimePrewarmPromise: Promise<void> | undefined;
-const runtimePrewarmWorkspace =
-  "/home/blame/.local/share/blame/runtime/worktrees/.prewarm";
 const agentWorkspaceWriters = new WorkspaceWriterRegistry();
 
-export function registerAgentIpcHandlers(input: AgentRuntimeRegistration) {
-  runtime ??= createAgentRuntimePool(input);
+export function registerAgentIpcHandlers() {
   // A preview stays up while an agent works in its worktree.
   useAgentWorkspaceCheck(localAgentOwnsWorkspace);
-  // The Blame Runtime starts when a story, preview or terminal needs it:
-  // an agent is likely next. One at work there keeps it running.
-  onRuntimeRunning(() => void prewarmAgentRuntime());
+  // A git flow at work in the Blame Runtime keeps it running.
   keepRuntimeRunningWhile(() =>
     agentWorkspaceWriters
       .activeWorkspaces()
       .some((workspace) => runtimeManagedPath(workspace)),
   );
-  registerProviderIpcHandlers();
-  registerSessionStartIpcHandlers(input.beforeWorkspaceWrite);
-  registerSessionControlIpcHandlers(input.beforeWorkspaceWrite);
-  registerSessionDataIpcHandlers(input.beforeWorkspaceWrite);
-  registerSessionEventIpcHandlers();
-  registerAnalysisWorkflowIpcHandlers(input.beforeWorkspaceWrite);
-  registerSecurityAuditIpcHandlers({
-    resolveInput: (securityInput) => agentWorkspaceInput(securityInput),
-    map: (securityInput) =>
-      agentRuntime().run("securityAudits.map", securityInput),
-    discover: (securityInput) =>
-      agentRuntime().run("securityAudits.discover", securityInput),
-    validate: (securityInput) =>
-      agentRuntime().run("securityAudits.validate", securityInput),
-    cancel: (auditId) => agentRuntime().cancelSecurityAudit(auditId),
-    finish: (auditId) => agentRuntime().finishSecurityAudit(auditId),
-  });
-  registerDeliveryWorkflowIpcHandlers(input.beforeDelivery);
-}
-
-// Once per start of the runtime: a stop takes its Cline hub with it.
-function prewarmAgentRuntime() {
-  if (process.platform !== "darwin" || runtimePrewarmPromise) return;
-  const startedAt = Date.now();
-  runtimePrewarmPromise = prewarmMacosAgentRuntime()
-    .then(() =>
-      log.info(`Agent runtime prewarm completed in ${Date.now() - startedAt}ms`),
-    )
-    .catch((error) => log.warn("Agent runtime prewarm failed", error))
-    .finally(() => {
-      runtimePrewarmPromise = undefined;
-    });
-}
-
-async function prewarmMacosAgentRuntime() {
-  const client = runtimeAgentClient();
-  await client.exec({
-    args: ["-p", runtimePrewarmWorkspace],
-    command: "mkdir",
-    user: "blame",
-  });
-  const workspace = await resolveAgentWorkspaceInput(
-    {
-      cwd: runtimePrewarmWorkspace,
-      workspaceRoot: runtimePrewarmWorkspace,
-    },
-    { agentClient: client, platform: "darwin" },
+  registerSecurityAuditIpcHandlers((input) =>
+    callEngineHost("mapSecurityAudit", input),
   );
-  await agentRuntime().run("runtime.prewarm", workspace);
-}
-
-function registerProviderIpcHandlers() {
-  ipcMain.handle("agent:providers:list", (_event, connection) =>
-    agentRuntime().run("providers.list", connection),
-  );
-  ipcMain.handle(
-    "agent:providers:save-credential",
-    (_event, connection, input) =>
-      agentRuntime().run("providers.saveCredential", [connection, input]),
-  );
-  ipcMain.handle(
-    "agent:providers:delete-credential",
-    (_event, connection, id) =>
-      agentRuntime().run("providers.deleteCredential", [connection, id]),
-  );
-  ipcMain.handle("agent:providers:login-oauth", (_event, input) =>
-    agentRuntime().run("providers.loginOAuth", input),
-  );
-  ipcMain.handle("agent:providers:claude-code-status", () =>
-    agentRuntime().run("providers.claudeCodeStatus", undefined),
-  );
-  ipcMain.handle("agent:providers:connect-claude-code", (_event, input) =>
-    agentRuntime().run("providers.connectClaudeCode", input),
-  );
-  ipcMain.handle("agent:providers:subscription-usage", (_event, input) =>
-    agentRuntime().run("providers.subscriptionUsage", input),
-  );
-}
-
-function registerSessionStartIpcHandlers(
-  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
-) {
-  ipcMain.handle("agent:sessions:start", async (_event, input) => {
-    let prepared = await agentWorkspaceInput(input);
-    const workspace = agentWorkspacePath(prepared);
-    if (workspace && beforeWorkspaceWrite)
-      await beforeWorkspaceWrite(workspace);
-    prepared = await prepareComponentPreviews(prepared, workspace);
-    return startWorkspaceSession("sessions.start", prepared, workspace);
-  });
-  ipcMain.handle("agent:sessions:start-development", async (_event, input) => {
-    let prepared = await agentWorkspaceInput({
-      ...input,
-      sessionId:
-        typeof input.sessionId === "string" && input.sessionId.trim()
-          ? input.sessionId
-          : `${Date.now()}_${randomUUID().replaceAll("-", "").slice(0, 5)}`,
-    });
-    const workspace = agentWorkspacePath(prepared);
-    if (workspace && beforeWorkspaceWrite)
-      await beforeWorkspaceWrite(workspace);
-    prepared = await prepareComponentPreviews(prepared, workspace);
-    let session;
-    const pendingSessionId = workspace ? `pending:${randomUUID()}` : undefined;
-    if (workspace && pendingSessionId)
-      agentWorkspaceWriters.begin(pendingSessionId, workspace);
-    const sessionInput = eventStream.prepareSession(prepared);
-    // Before the runtime starts: its first managed requests carry the token.
-    const githubAccess = await prepareSessionGithubAccess(sessionInput);
-    try {
-      session = await startRuntimeSession(
-        "sessions.startDevelopment",
-        sessionInput,
-      );
-    } catch (error) {
-      if (!retryableHubTransportError(error)) throw error;
-      log.warn(
-        "Cline hub connection closed during session start; refreshing the runtime backend and retrying once",
-      );
-      session = await startRuntimeSession(
-        "sessions.startDevelopment",
-        refreshRuntimeBackendConnection(
-          await agentWorkspaceInput(sessionInput),
-        ),
-      ).catch(async (retryError: unknown) => {
-        throw await explainedHubFailure(retryError);
-      });
-    } finally {
-      if (pendingSessionId && !session)
-        agentWorkspaceWriters.forget(pendingSessionId);
-    }
-    if (pendingSessionId)
-      agentWorkspaceWriters.rebind(pendingSessionId, session.sessionId);
-    if (githubAccess.notice)
-      emitAgentEvent({
-        type: "notice",
-        sessionId: session.sessionId,
-        executionId:
-          typeof sessionInput.executionId === "string"
-            ? sessionInput.executionId
-            : undefined,
-        payload: { message: githubAccess.notice, recoverable: true },
-      });
-    return session;
-  });
-}
-
-function registerSessionControlIpcHandlers(
-  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
-) {
-  ipcMain.handle("agent:sessions:send", async (_event, input) => {
-    await beforeAgentSessionWrite(input.sessionId, beforeWorkspaceWrite);
-    return runWorkspaceSession("sessions.send", input.sessionId, input);
-  });
-  ipcMain.handle("agent:sessions:send-development", async (_event, input) => {
-    await beforeAgentSessionWrite(input.sessionId, beforeWorkspaceWrite);
-    return runWorkspaceSession(
-      "sessions.sendDevelopment",
-      input.sessionId,
-      input,
-    );
-  });
-  ipcMain.handle("agent:sessions:live", (_event, sessionId) =>
-    typeof sessionId === "string" && runtime
-      ? runtime.sessionLive(sessionId)
-      : false,
-  );
-  ipcMain.handle("agent:sessions:abort", async (_event, sessionId) => {
-    try {
-      return await agentRuntime().abortSession(sessionId);
-    } finally {
-      agentWorkspaceWriters.end(sessionId);
-      agentHeavyChecks.endSession(sessionId);
-      if (typeof sessionId === "string") void stopSessionComponentPreviews(sessionId);
-    }
-  });
-}
-
-function registerSessionDataIpcHandlers(
-  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
-) {
-  ipcMain.handle("agent:sessions:compare-checkpoint", (_event, input) =>
-    agentRuntime().runSession(
-      "sessions.compareCheckpoint",
-      input.sessionId,
-      input,
-    ),
-  );
-  ipcMain.handle("agent:sessions:list", () => agentRuntime().listSessions());
-  ipcMain.handle("agent:sessions:messages", (_event, sessionId) =>
-    agentRuntime().runSession("sessions.messages", sessionId, sessionId),
-  );
-  ipcMain.handle("agent:sessions:restore-checkpoint", async (_event, input) => {
-    await beforeAgentSessionWrite(input.sessionId, beforeWorkspaceWrite);
-    return runWorkspaceSession(
-      "sessions.restoreCheckpoint",
-      input.sessionId,
-      input,
-    );
-  });
-  ipcMain.handle("agent:sessions:usage", (_event, sessionId) =>
-    agentRuntime().runSession("sessions.usage", sessionId, sessionId),
-  );
-  ipcMain.handle("agent:sessions:compact", (_event, input) =>
-    agentRuntime().runSession("sessions.compact", input.sessionId, input),
-  );
-  ipcMain.handle("agent:sessions:event-stream-url", (_event, sessionId) =>
-    agentEventStreamUrl(sessionId),
-  );
-}
-
-function registerSessionEventIpcHandlers() {
-  ipcMain.on("agent:sessions:listen", (event, sessionId: string) => {
-    registerRendererAgentEventCleanup(event.sender);
-    setRendererAgentEventSubscription(event.sender.id, sessionId, true);
-  });
-  ipcMain.on("agent:sessions:unlisten", (event, sessionId: string) =>
-    setRendererAgentEventSubscription(event.sender.id, sessionId, false),
-  );
-  ipcMain.handle("agent:approvals:resolve", (_event, input) =>
-    agentRuntime().resolveApproval(input),
-  );
-}
-
-function registerAnalysisWorkflowIpcHandlers(
-  beforeWorkspaceWrite?: (worktree: string) => Promise<void>,
-) {
-  ipcMain.handle("agent:initializations:run", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    const workspace = agentWorkspacePath(resolved);
-    if (workspace && beforeWorkspaceWrite)
-      await beforeWorkspaceWrite(workspace);
-    return runWorkspaceTask(workspace, () =>
-      agentRuntime().run("initializations.run", resolved),
-    );
-  });
-  ipcMain.handle("agent:initializations:cancel", (_event, progressId) =>
-    typeof progressId === "string" && runtime
-      ? agentRuntime().cancelInitialization(progressId)
-      : false,
-  );
-  ipcMain.handle("agent:initializations:repair", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    const workspace = agentWorkspacePath(resolved);
-    if (workspace && beforeWorkspaceWrite)
-      await beforeWorkspaceWrite(workspace);
-    return runWorkspaceTask(workspace, () =>
-      agentRuntime().run("initializations.repair", resolved),
-    );
-  });
-  ipcMain.handle("agent:initializations:assess-impact", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("initializations.assessImpact", resolved),
-    ),
-  );
-  ipcMain.handle("agent:code-practices:run", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("codePractices.run", resolved),
-    ),
-  );
-}
-
-function registerDeliveryWorkflowIpcHandlers(
-  beforeDelivery?: (worktree: string) => Promise<void>,
-) {
-  ipcMain.handle("agent:new-projects:generate", (_event, input) =>
-    agentRuntime().run("newProjects.generate", input),
-  );
-  ipcMain.handle(
-    "agent:prompt-optimizer:optimize-user-story",
-    (_event, input) =>
-      agentWorkspaceInput(input).then((resolved) =>
-        agentRuntime().run("promptOptimizer.optimizeUserStory", resolved),
-      ),
-  );
-  ipcMain.handle("agent:prompt-optimizer:generate-title", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("promptOptimizer.generateTitle", resolved),
-    ),
-  );
-  ipcMain.handle("agent:approve-and-merge", async (_event, input) => {
-    const resolved = {
-      ...(await agentWorkspaceInput(input)),
-      // The target branch is never advanced under a running agent.
-      activeWorktrees: agentWorkspaceWriters.activeWorkspaces(),
-    };
-    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
-      throw new Error("Agent delivery worktree is invalid");
-    }
-    if (beforeDelivery) await beforeDelivery(resolved.worktree);
-    return runWorkspaceTask(resolved.worktree, () =>
-      agentRuntime().run("approveAndMerge", resolved),
-    );
-  });
-  // gh runs here, on the host, with the person's own sign-in.
-  ipcMain.handle("agent:open-pull-request", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
-      throw new Error("Agent pull request worktree is invalid");
-    }
-    if (beforeDelivery) await beforeDelivery(resolved.worktree);
-    return runWorkspaceTask(resolved.worktree, () =>
-      agentRuntime().run("openPullRequest", resolved),
-    );
-  });
   ipcMain.handle("agent:pull-request-availability", (_event, input) =>
-    agentRuntime().run("pullRequestAvailability", input),
+    callEngineHost("pullRequestAvailability", input),
   );
   ipcMain.handle("agent:pull-request-state", (_event, input) =>
-    agentRuntime().run("pullRequestState", input),
-  );
-  ipcMain.handle("agent:generate-commit-message", (_event, input) =>
-    agentWorkspaceInput(input).then((resolved) =>
-      agentRuntime().run("generateCommitMessage", resolved),
-    ),
+    callEngineHost("pullRequestState", input),
   );
   ipcMain.handle("agent:direct-story-files", (_event, input) =>
-    agentRuntime().run("directStoryFiles", input),
-  );
-  ipcMain.handle("agent:resolve-merge-conflicts", async (_event, input) => {
-    const resolved = await agentWorkspaceInput(input);
-    if (typeof resolved.worktree !== "string" || !resolved.worktree) {
-      throw new Error("Agent merge-conflict worktree is invalid");
-    }
-    if (beforeDelivery) await beforeDelivery(resolved.worktree);
-    return runWorkspaceTask(resolved.worktree, () =>
-      agentRuntime().run("resolveMergeConflicts", resolved),
-    );
-  });
-}
-
-// A session of a Vite, React, Vue 3, Nuxt 3 or later, Svelte 5 or Angular
-// project gets open_component_preview, whatever its workspace: a managed
-// preview, local or cloud, the project folder, or no web service at all.
-// Other projects, such as an Ember, Vue 2, Nuxt 2 or Svelte 4 app, do not
-// have it. Git ignores the temporary preview files from the start; a cloud
-// preview's sandbox ignores them when its server starts.
-async function prepareComponentPreviews(
-  input: Record<string, unknown>,
-  workspace: string | undefined,
-): Promise<Record<string, unknown>> {
-  if (!workspace) return input;
-  const { hasComponentPreviewProject } =
-    await import("./component-preview/component-preview-location");
-  const supported = await hasComponentPreviewProject(workspace).catch(
-    (error: unknown) => {
-      log.warn("Could not look for a Vite, React, Vue, Svelte or Angular project", {
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return false;
-    },
-  );
-  if (!supported) return input;
-  await excludeComponentPreviewFiles(workspace).catch((error: unknown) =>
-    log.warn("Could not hide temporary component previews from Git", {
-      error: error instanceof Error ? error.message : String(error),
-    }),
-  );
-  return { ...input, componentPreview: true };
-}
-
-function stopSessionComponentPreviews(sessionId: string) {
-  return stopComponentPreviews({ sessionId }).catch((error: unknown) =>
-    log.warn("Could not stop a component preview server", {
-      error: error instanceof Error ? error.message : String(error),
-    }),
+    callEngineHost("directStoryFiles", input),
   );
 }
 
-function agentWorkspacePath(input: unknown) {
-  if (!input || typeof input !== "object") return undefined;
-  const value = input as Record<string, unknown>;
-  for (const key of ["workspaceRoot", "worktree", "cwd"]) {
-    if (typeof value[key] === "string" && value[key]) return value[key];
-  }
-  return undefined;
-}
+// The git flows run in the engine host; main adds what only it knows. The
+// worktree's preview is synced first, the worktree counts as written while
+// the flow runs, the target branch never moves under a running agent, and a
+// worktree in the runtime VM is said to be one.
+const engineGitFlows = new Set([
+  "approveAndMerge",
+  "openPullRequest",
+  "generateCommitMessage",
+  "resolveMergeConflicts",
+]);
+const engineDeliveries = new Set([
+  "approveAndMerge",
+  "openPullRequest",
+  "resolveMergeConflicts",
+]);
 
-function startRuntimeSession(
-  method: "sessions.start" | "sessions.startDevelopment",
+export async function engineGitFlowCall(
+  method: string,
   input: unknown,
+  call: (input: unknown) => Promise<unknown>,
+  beforeDelivery?: (worktree: string) => Promise<void>,
 ) {
-  return withSessionStartDeadline(
-    agentRuntime().startSession(method, input),
-    (sessionId) => agentRuntime().abortSession(sessionId),
-  );
+  if (!engineGitFlows.has(method)) return call(input);
+  const flow = (input ?? {}) as Record<string, unknown>;
+  const worktree = flow.worktree;
+  if (typeof worktree !== "string" || !worktree)
+    throw new Error("The git flow's worktree is invalid");
+  const resolved = {
+    ...flow,
+    inVm: runtimeManagedPath(worktree),
+    ...(method === "approveAndMerge"
+      ? {
+          activeWorktrees: [
+            ...agentWorkspaceWriters.activeWorkspaces(),
+            ...engineActiveWorkspaces(),
+          ],
+        }
+      : {}),
+  };
+  if (!engineDeliveries.has(method)) return call(resolved);
+  if (beforeDelivery) await beforeDelivery(worktree);
+  return runWorkspaceTask(worktree, () => call(resolved));
 }
 
-// The hub connection closed again after a fresh one: when another program
-// holds the hub port, that is what the user can fix.
-async function explainedHubFailure(error: unknown) {
-  if (!retryableHubTransportError(error)) return error;
-  const conflict = await runtimeHubPortConflict();
-  return conflict ? Object.assign(new Error(conflict), { cause: error }) : error;
-}
-
-async function beforeAgentSessionWrite(
-  sessionId: string,
-  callback?: (worktree: string) => Promise<void>,
-) {
-  const workspace = agentWorkspaceWriters.workspaceForSession(sessionId);
-  if (workspace && callback) await callback(workspace);
-}
-
-async function startWorkspaceSession(
-  method: "sessions.start",
-  input: Record<string, unknown>,
-  workspace: string | undefined,
-) {
-  const pendingSessionId = workspace ? `pending:${randomUUID()}` : undefined;
-  if (workspace && pendingSessionId)
-    agentWorkspaceWriters.begin(pendingSessionId, workspace);
-  try {
-    const session = await startRuntimeSession(
-      method,
-      eventStream.prepareSession(input),
-    );
-    if (pendingSessionId)
-      agentWorkspaceWriters.rebind(pendingSessionId, session.sessionId);
-    return session;
-  } catch (error) {
-    if (pendingSessionId) agentWorkspaceWriters.forget(pendingSessionId);
-    throw error;
-  }
-}
-
-async function runWorkspaceSession(
-  method:
-    | "sessions.send"
-    | "sessions.sendDevelopment"
-    | "sessions.restoreCheckpoint",
-  sessionId: string,
-  input: unknown,
-) {
-  const workspace = agentWorkspaceWriters.workspaceForSession(sessionId);
-  if (workspace) agentWorkspaceWriters.begin(sessionId, workspace);
-  try {
-    return await agentRuntime().runSession(method, sessionId, input);
-  } catch (error) {
-    agentWorkspaceWriters.end(sessionId);
-    throw error;
-  }
-}
-
-async function runWorkspaceTask<T>(
-  workspace: string | undefined,
-  task: () => Promise<T>,
-) {
-  if (!workspace) return task();
+async function runWorkspaceTask<T>(workspace: string, task: () => Promise<T>) {
   const operationId = `operation:${randomUUID()}`;
   agentWorkspaceWriters.begin(operationId, workspace);
   try {
@@ -526,208 +91,9 @@ async function runWorkspaceTask<T>(
   }
 }
 
-export function generateNewProjectWithAgent(
-  input: StartNewProjectGenerationInput,
-) {
-  return agentWorkspaceInput(input).then((resolved) =>
-    agentRuntime().run<NewProjectGenerationResult>(
-      "newProjects.generate",
-      resolved,
-    ),
-  );
-}
-
-export function releaseAgentWorkspaceSessions(worktree: string) {
-  const sessionIds = agentWorkspaceWriters.releaseWorkspace(worktree);
-  return agentRuntime().releaseWorkspace(worktree, sessionIds);
-}
-
 export function localAgentOwnsWorkspace(worktree: string) {
-  return agentWorkspaceWriters.hasActiveWriter(worktree);
-}
-
-export async function shutdownAgentRuntime() {
-  shutdownAgentEventServer();
-  agentWorkspaceWriters.clear();
-  const currentRuntime = runtime;
-  runtime = undefined;
-  await currentRuntime?.shutdown();
-}
-
-function createAgentRuntimePool(input: AgentRuntimeRegistration) {
-  const clineSettings = join(app.getPath("userData"), "cline", "settings.json");
-  try {
-    writeClineTelemetryOptOut(clineSettings);
-  } catch (error) {
-    log.warn("Could not write the agents' Cline settings", error);
-  }
-  const environment = {
-    ...clineAgentEnvironment(process.env, clineSettings),
-    // An app opened from the Finder inherits launchd's minimal PATH: agent
-    // commands need the same Node, package manager and tool directories as
-    // the other runtimes Blame starts.
-    PATH: setupPath(),
-    BLAME_AGENT_PACKAGED: String(input.packaged),
-    BLAME_CLAUDE_CODE_STATE_DIR: join(app.getPath("userData"), "claude-code"),
-    // Where cloud commands' gh is downloaded once (see github-cli.ts).
-    BLAME_GITHUB_CLI_DIR: join(app.getPath("userData"), "github-cli"),
-  };
-  return new AgentRuntimePool({
-    createProcess: (callbacks) =>
-      createAgentRuntimeProcess(input.modulePath, environment, callbacks),
-    handleHostRequest: createAgentHostRequestHandler(input.previewService),
-    onEvent: emitAgentEvent,
-  });
-}
-
-function createAgentRuntimeProcess(
-  modulePath: string,
-  environment: NodeJS.ProcessEnv,
-  callbacks: AgentRuntimeProcessCallbacks,
-) {
-  return new AgentRuntimeProcessClient({
-    ...callbacks,
-    environment,
-    modulePath,
-  });
-}
-
-function agentRuntime() {
-  if (!runtime) throw new Error("Agent runtime is not initialized");
-  return runtime;
-}
-
-/** Work of the agent runtime for the rest of the main process, which never loads it. */
-export function runOnAgentRuntime<Result>(
-  method: AgentRuntimeMethod,
-  input?: unknown,
-) {
-  return agentRuntime().run<Result>(method, input);
-}
-
-function emitAgentEvent(event: AgentEvent) {
-  if (event.sessionId && (event.type === "done" || event.type === "error")) {
-    agentWorkspaceWriters.end(event.sessionId);
-    agentHeavyChecks.endSession(event.sessionId);
-    releaseAgentPreviewSession(event.sessionId);
-    void stopSessionComponentPreviews(event.sessionId);
-  }
-  const rawTransportEvent = agentTransportEvent(event);
-  const transportEvent =
-    eventStream.publish(rawTransportEvent) ?? rawTransportEvent;
-  BrowserWindow.getAllWindows().forEach((window) => {
-    if (
-      transportEvent.sessionId &&
-      rendererAgentEventSubscriptions
-        .get(window.webContents.id)
-        ?.has(transportEvent.sessionId)
-    ) {
-      window.webContents.send(
-        `agent:sessions:event:${transportEvent.sessionId}`,
-        transportEvent,
-      );
-    }
-    if (transportEvent.type === "approval") {
-      window.webContents.send("agent:approvals:event", transportEvent);
-    }
-  });
-}
-
-function agentTransportEvent(event: AgentEvent): AgentEvent {
-  return {
-    ...event,
-    payload: agentTransportPayload(event.payload),
-  };
-}
-
-function agentTransportPayload(payload: unknown) {
-  if (!payload || typeof payload !== "object" || !("raw" in payload)) {
-    return payload;
-  }
-  const { raw, ...transportPayload } = payload as Record<string, unknown>;
-  void raw;
-  return transportPayload;
-}
-
-export function agentWorkspaceInput<T extends Record<string, unknown>>(
-  input: T,
-) {
-  return resolveAgentWorkspaceInput(input);
-}
-
-const eventStream = new AgentEventStream();
-const rendererAgentEventSubscriptions = new Map<number, Map<string, number>>();
-const rendererAgentEventCleanupRegistered = new Set<number>();
-let streamServer: ReturnType<typeof createServer> | undefined;
-let streamServerUrl: string | undefined;
-
-async function agentEventStreamUrl(sessionId: string) {
-  const url = await ensureAgentEventServer();
-  return eventStream.url(sessionId, url);
-}
-
-function ensureAgentEventServer() {
-  if (streamServerUrl) return Promise.resolve(streamServerUrl);
-  if (streamServer) return waitForAgentEventServer();
-  streamServer = createServer((request, response) => {
-    if (!eventStream.handle(request, response)) notFound(response);
-  });
-  streamServer.listen(0, "127.0.0.1");
-  return waitForAgentEventServer();
-}
-
-function waitForAgentEventServer() {
-  return new Promise<string>((resolve, reject) => {
-    if (!streamServer)
-      return reject(new Error("Agent event stream is unavailable."));
-    streamServer.once("error", reject);
-    streamServer.once("listening", () => {
-      const address = streamServer?.address() as AddressInfo | null;
-      if (!address)
-        return reject(new Error("Agent event stream is unavailable."));
-      streamServerUrl = `http://127.0.0.1:${address.port}`;
-      resolve(streamServerUrl);
-    });
-  });
-}
-
-function notFound(response: import("node:http").ServerResponse) {
-  response.writeHead(404);
-  response.end();
-}
-
-function shutdownAgentEventServer() {
-  eventStream.close();
-  rendererAgentEventSubscriptions.clear();
-  rendererAgentEventCleanupRegistered.clear();
-  streamServer?.close();
-  streamServer = undefined;
-  streamServerUrl = undefined;
-}
-
-function registerRendererAgentEventCleanup(
-  renderer: import("electron").WebContents,
-) {
-  if (rendererAgentEventCleanupRegistered.has(renderer.id)) return;
-  rendererAgentEventCleanupRegistered.add(renderer.id);
-  renderer.once("destroyed", () => {
-    rendererAgentEventSubscriptions.delete(renderer.id);
-    rendererAgentEventCleanupRegistered.delete(renderer.id);
-  });
-}
-
-function setRendererAgentEventSubscription(
-  rendererId: number,
-  sessionId: string,
-  listening: boolean,
-) {
-  const sessions =
-    rendererAgentEventSubscriptions.get(rendererId) ??
-    new Map<string, number>();
-  const count = sessions.get(sessionId) ?? 0;
-  if (listening) sessions.set(sessionId, count + 1);
-  else if (count > 1) sessions.set(sessionId, count - 1);
-  else sessions.delete(sessionId);
-  if (sessions.size) rendererAgentEventSubscriptions.set(rendererId, sessions);
-  else rendererAgentEventSubscriptions.delete(rendererId);
+  return (
+    agentWorkspaceWriters.hasActiveWriter(worktree) ||
+    engineActiveWorkspaces().includes(worktree)
+  );
 }

@@ -3,12 +3,10 @@ import test from "node:test";
 
 import {
   parseProjectInitializationRepairPayload,
-  parseProjectInitializationRepairResult,
   projectInitializationRepairResultSchema,
   projectInitializationRepairPrompt,
 } from "./project-initialization-repair.js";
 import { parsePreviewManifest } from "./preview-manifest.js";
-import type { RepairProjectInitializationInput } from "./types.js";
 
 function canonicalRepair() {
   return {
@@ -65,9 +63,7 @@ function canonicalRepair() {
 }
 
 test("returns only canonical repaired initialization state", () => {
-  const result = parseProjectInitializationRepairResult(
-    JSON.stringify(canonicalRepair()),
-  );
+  const result = parseProjectInitializationRepairPayload(canonicalRepair());
 
   assert.equal(result.classification, "repairable_initialization");
   assert.equal(result.previewManifest?.services[0]?.kind, "preview");
@@ -84,13 +80,11 @@ test("rejects removed initialization artifact fields", () => {
   const repair = canonicalRepair();
   assert.throws(
     () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          ...repair,
-          setupScript: "npm install",
-          dockerCompose: "services: {}",
-        }),
-      ),
+      parseProjectInitializationRepairPayload({
+        ...repair,
+        setupScript: "npm install",
+        dockerCompose: "services: {}",
+      }),
     /unsupported field setupScript/,
   );
 });
@@ -99,12 +93,10 @@ test("rejects fields outside the manifest contract and unknown services", () => 
   const unknownField = canonicalRepair();
   assert.throws(
     () =>
-      parseProjectInitializationRepairResult(
-        JSON.stringify({
-          ...unknownField,
-          previewManifest: { ...unknownField.previewManifest, version: 2 },
-        }),
-      ),
+      parseProjectInitializationRepairPayload({
+        ...unknownField,
+        previewManifest: { ...unknownField.previewManifest, version: 2 },
+      }),
     /unsupported field version/,
   );
 
@@ -112,18 +104,16 @@ test("rejects fields outside the manifest contract and unknown services", () => 
   invalid.runConfigurations[0]!.services = ["missing"];
   invalid.runConfigurations[0]!.previewService = "missing";
   assert.throws(
-    () => parseProjectInitializationRepairResult(JSON.stringify(invalid)),
+    () => parseProjectInitializationRepairPayload(invalid),
     /previewService must be a configured service|references unknown service missing/,
   );
 });
 
 test("omits artifacts for non-initialization failures", () => {
-  const result = parseProjectInitializationRepairResult(
-    JSON.stringify({
-      classification: "project_code_failure",
-      reason: "The application fails during startup.",
-    }),
-  );
+  const result = parseProjectInitializationRepairPayload({
+    classification: "project_code_failure",
+    reason: "The application fails during startup.",
+  });
   assert.deepEqual(result, {
     classification: "project_code_failure",
     reason: "The application fails during startup.",
@@ -134,18 +124,13 @@ test("requires complete run configurations for a repair", () => {
   const value = canonicalRepair() as Record<string, unknown>;
   delete value.runConfigurations;
   assert.throws(
-    () => parseProjectInitializationRepairResult(JSON.stringify(value)),
+    () => parseProjectInitializationRepairPayload(value),
     /missing runConfigurations/,
   );
 });
 
-test("includes validation feedback in repair correction prompts", () => {
-  const input: RepairProjectInitializationInput = {
-    apiConnection: { url: "https://example.com", token: "token" },
-    providerId: "provider",
-    modelId: "model",
-    cwd: "/project",
-    workspaceRoot: "/project",
+test("gives the repair agent the current setup and the diagnostics", () => {
+  const input = {
     previewManifest: parsePreviewManifest(canonicalRepair().previewManifest),
     runConfigurations: [],
     diagnostics: {
@@ -156,17 +141,15 @@ test("includes validation feedback in repair correction prompts", () => {
       serviceLogs: {},
     },
   };
-  const prompt = projectInitializationRepairPrompt(
-    input,
-    { rootName: "project", topLevelEntries: [], files: {}, gitLog: [] },
-    {
-      validationError: "Manifest is invalid.",
-      previousResult: '{"classification":"repairable_initialization"}',
-    },
-  );
+  const prompt = projectInitializationRepairPrompt(input, {
+    rootName: "project",
+    topLevelEntries: [],
+    files: {},
+    gitLog: [],
+  });
 
-  assert.match(prompt, /Your previous tool input was rejected by validation/);
-  assert.match(prompt, /Validation error: Manifest is invalid\./);
+  assert.match(prompt, /"launchError":"Preview failed"/);
+  assert.match(prompt, /Current previewManifest: \{/);
   assert.match(prompt, /submit_project_initialization_repair/);
 });
 

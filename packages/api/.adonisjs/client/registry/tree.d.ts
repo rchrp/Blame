@@ -161,19 +161,6 @@ export interface ApiDefinition {
         show: typeof routes['projects.quick_chats.quick_chats.show']
         update: typeof routes['projects.quick_chats.quick_chats.update']
         destroy: typeof routes['projects.quick_chats.quick_chats.destroy']
-        storeScreenshot: typeof routes['projects.quick_chats.quick_chats.store_screenshot']
-        showScreenshot: typeof routes['projects.quick_chats.quick_chats.show_screenshot']
-      }
-      quickChatMessages: {
-        store: typeof routes['projects.quick_chats.quick_chat_messages.store']
-        undo: typeof routes['projects.quick_chats.quick_chat_messages.undo']
-        validateUndo: typeof routes['projects.quick_chats.quick_chat_messages.validate_undo']
-      }
-      quickChatAgentRuns: {
-        store: typeof routes['projects.quick_chats.quick_chat_agent_runs.store']
-        update: typeof routes['projects.quick_chats.quick_chat_agent_runs.update']
-        finalize: typeof routes['projects.quick_chats.quick_chat_agent_runs.finalize']
-        activityDetail: typeof routes['projects.quick_chats.quick_chat_agent_runs.activity_detail']
       }
     }
     userStories: {
@@ -183,27 +170,14 @@ export interface ApiDefinition {
         show: typeof routes['projects.user_stories.user_stories.show']
         update: typeof routes['projects.user_stories.user_stories.update']
         destroy: typeof routes['projects.user_stories.user_stories.destroy']
-        activityDetail: typeof routes['projects.user_stories.user_stories.activity_detail']
         storeScreenshot: typeof routes['projects.user_stories.user_stories.store_screenshot']
         showScreenshot: typeof routes['projects.user_stories.user_stories.show_screenshot']
-      }
-      userStoryAgentRuns: {
-        store: typeof routes['projects.user_stories.user_story_agent_runs.store']
-        update: typeof routes['projects.user_stories.user_story_agent_runs.update']
-        finalize: typeof routes['projects.user_stories.user_story_agent_runs.finalize']
-        activityDetail: typeof routes['projects.user_stories.user_story_agent_runs.activity_detail']
-      }
-      userStoryComments: {
-        store: typeof routes['projects.user_stories.user_story_comments.store']
-        undo: typeof routes['projects.user_stories.user_story_comments.undo']
-        validateUndo: typeof routes['projects.user_stories.user_story_comments.validate_undo']
       }
     }
   }
   providers: {
-    modelCatalog: {
-      show: typeof routes['providers.model_catalog.show']
-      model: typeof routes['providers.model_catalog.model']
+    modelRecommendations: {
+      store: typeof routes['providers.model_recommendations.store']
     }
     providerCredentials: {
       index: typeof routes['providers.provider_credentials.index']

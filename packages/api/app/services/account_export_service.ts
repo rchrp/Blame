@@ -28,7 +28,7 @@ export default class AccountExportService {
   ) {
     return {
       format: 'blame-account-export',
-      version: 2,
+      version: 4,
       generatedAt: DateTime.utc().toISO(),
       account,
       security: await securityExport(queries, userId),
@@ -53,37 +53,22 @@ export default class AccountExportService {
     const projects = await queries.projects(userId)
     const projectIds = identifiers(projects)
     const userStories = await queries.userStories(projectIds)
-    const quickChats = await queries.quickChats(projectIds)
-    const userStoryComments = await queries.userStoryComments(identifiers(userStories))
-    const quickChatMessages = await queries.quickChatMessages(identifiers(quickChats))
     return {
       projects,
       ...(await projectExport(queries, projectIds)),
-      ...(await storyExport(queries, userStories, userStoryComments)),
-      ...(await chatExport(queries, quickChats, quickChatMessages)),
+      // The conversations of stories and quick chats are their engine
+      // sessions; the rows only name them.
+      userStories: normalizeRows(userStories, storyJsonColumns),
+      quickChats: await queries.quickChats(projectIds),
       fileAttachments: await fileAttachmentExport(queries, userId),
       fileAttachmentLinks: {
         userStories: await queries.userStoryFileAttachmentLinks(identifiers(userStories)),
-        userStoryComments: await queries.userStoryCommentFileAttachmentLinks(
-          identifiers(userStoryComments)
-        ),
-        quickChatMessages: await queries.quickChatMessageFileAttachmentLinks(
-          identifiers(quickChatMessages)
-        ),
       },
     }
   }
 }
 
-const storyJsonColumns = [
-  'code_selection_attachments',
-  'file_attachments',
-  'agent_activities',
-  'agent_usage',
-]
-const messageJsonColumns = ['code_selection_attachments', 'file_attachments']
-const agentRunJsonColumns = ['activities', 'usage']
-const chatJsonColumns = ['agent_activities', 'agent_usage']
+const storyJsonColumns = ['code_selection_attachments', 'file_attachments', 'agent_models']
 const additionalRecords = {
   contact: 'privacy@blame.so',
   notice:
@@ -123,42 +108,6 @@ async function projectExport(queries: AccountExportQueries, projectIds: string[]
       'symbols',
     ]),
     securityAudits: normalizeRows(await queries.securityAudits(projectIds), ['payload']),
-  }
-}
-
-async function storyExport(
-  queries: AccountExportQueries,
-  userStories: ExportRow[],
-  userStoryComments: ExportRow[]
-) {
-  const storyIds = identifiers(userStories)
-  const agentRuns = await queries.userStoryAgentRuns(storyIds)
-  return {
-    userStories: normalizeRows(userStories, storyJsonColumns),
-    userStoryComments: normalizeRows(userStoryComments, messageJsonColumns),
-    userStoryAgentRuns: normalizeRows(agentRuns, agentRunJsonColumns),
-    userStoryAgentRunActivities: normalizeRows(
-      await queries.userStoryAgentRunActivities(identifiers(agentRuns)),
-      ['activity']
-    ),
-  }
-}
-
-async function chatExport(
-  queries: AccountExportQueries,
-  quickChats: ExportRow[],
-  quickChatMessages: ExportRow[]
-) {
-  const chatIds = identifiers(quickChats)
-  const agentRuns = await queries.quickChatAgentRuns(chatIds)
-  return {
-    quickChats: normalizeRows(quickChats, chatJsonColumns),
-    quickChatMessages: normalizeRows(quickChatMessages, messageJsonColumns),
-    quickChatAgentRuns: normalizeRows(agentRuns, agentRunJsonColumns),
-    quickChatAgentRunActivities: normalizeRows(
-      await queries.quickChatAgentRunActivities(identifiers(agentRuns)),
-      ['activity']
-    ),
   }
 }
 

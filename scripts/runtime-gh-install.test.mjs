@@ -91,7 +91,7 @@ const allMatches = (source, pattern) => [...source.matchAll(pattern)].map((match
 
 // github-cli.ts is the reference: every other file writes the same release by hand.
 async function pinnedGithubCli() {
-  const source = await repositoryFile("packages/agent-runtime/src/harness/github-cli.ts");
+  const source = await repositoryFile("packages/agent-runtime/src/github-cli.ts");
   const version = source.match(/^export const githubCliVersion = "([^"]+)";$/m)?.[1];
   const checksum = (architecture) => source.match(new RegExp(`"linux_${architecture}\\.tar\\.gz": "([0-9a-f]{64})"`))?.[1];
   const pinned = { version, amd64: checksum("amd64"), arm64: checksum("arm64") };

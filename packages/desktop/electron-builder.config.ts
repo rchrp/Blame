@@ -149,6 +149,13 @@ async function signMacosRuntimeExecutables(context: PackContext) {
     await signGzipMachO(archive, identity, keychainFile)
   }
   await assertVirtualizationEntitlement(limactl)
+  // blame-engine and blame-harness need no entitlement; the Linux binaries
+  // for the VM are not Mach-O and stay plain sealed resources.
+  for (const executable of await macosExecutables(
+    join(appRoot, "Contents/Resources/engine"),
+  )) {
+    await signMacosExecutable(executable, identity, keychainFile)
+  }
 }
 
 async function assertVirtualizationEntitlement(executable: string) {
@@ -301,6 +308,10 @@ const config: Configuration = {
     "**/node_modules/pnpm-legacy/**/*",
     "**/node_modules/@pnpm/exe.*/**/*",
     "**/node_modules/yarn/**/*",
+    // blame-harness adds them to a project's own test runs (its Node, not
+    // Electron's): real files, BLAME_HARNESS_NODE_ASSETS.
+    "**/node_modules/@blame/agent-runtime/dist/harness/node-event-reporter.js",
+    "**/node_modules/@blame/agent-runtime/dist/harness/invocation-test-preload.js",
   ],
   productName: "Blame",
   protocols: [{ name: "Blame", schemes: ["blame"] }],
@@ -327,6 +338,12 @@ const config: Configuration = {
       from: "resources/runtime",
       to: "runtime",
     },
+    // Staged by scripts/package.mjs: engine/<platform>-<arch>/ for the app,
+    // engine/linux-<arch>/ for the runtime VM.
+    {
+      from: "resources/engine",
+      to: "engine",
+    },
   ],
   files: ["out/**/*", "icons/prod/**/*", "package.json"],
   npmRebuild: rebuildNativeDependencies,
@@ -351,7 +368,11 @@ const config: Configuration = {
     hardenedRuntime: true,
     icon: "icons/prod/icon.icns",
     notarize: true,
-    signIgnore: ["/Contents/Resources/runtime/macos/lima/bundle/"],
+    // Signed in afterPack with their own entitlements (none for the engine).
+    signIgnore: [
+      "/Contents/Resources/runtime/macos/lima/bundle/",
+      "/Contents/Resources/engine/",
+    ],
     target: ["dmg", "zip"],
   },
   nsis: {

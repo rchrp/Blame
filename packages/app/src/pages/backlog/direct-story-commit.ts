@@ -1,7 +1,11 @@
 import type { DirectStoryFile } from "@blame/agent-runtime"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
-import type { AgentClient, WorkspaceClient } from "@/context/platform"
+import type {
+  AgentClient,
+  Platform,
+  WorkspaceClient,
+} from "@/context/platform"
 
 // Approving a Direct story commits its own files in the project folder, on the
 // branch checked out there. The folder is shared with the person, other Direct
@@ -31,7 +35,7 @@ export type DirectStoryCommitResult =
     }
 
 export async function commitDirectStory(
-  story: Pick<UserStory, "agentRuns" | "clineSessionId">,
+  story: Pick<UserStory, "engineSessionId">,
   root: string,
   dependencies: DirectStoryCommitDependencies
 ): Promise<DirectStoryCommitResult> {
@@ -66,7 +70,8 @@ export async function commitDirectStory(
 export function directCommitValidationError(
   story: Pick<UserStory, "worktree">,
   authStatus: string,
-  agent: Pick<AgentClient, "directStoryFiles" | "generateCommitMessage"> | undefined,
+  agent: Pick<AgentClient, "directStoryFiles"> | undefined,
+  engine: Platform["engine"],
   workspace: Pick<WorkspaceClient, "gitCommit" | "gitLog"> | undefined,
   model: unknown
 ) {
@@ -74,8 +79,9 @@ export function directCommitValidationError(
   if (authStatus !== "authenticated")
     return "Reconnect the provider before approving the commit."
   if (!model) return "Select a model before approving the commit."
-  if (!agent?.directStoryFiles || !agent.generateCommitMessage || !workspace)
+  if (!agent?.directStoryFiles || !workspace)
     return "Desktop agent runtime is not available."
+  if (!engine) return "Blame's agent engine is not available."
 }
 
 // The story's own files and text: with them, the runtime ends the message with
@@ -95,15 +101,10 @@ export function directCommitMessageRequest(
   }
 }
 
-// Every agent session of the story: its runs, and the one it ends with.
-export function storySessionIds(
-  story: Pick<UserStory, "agentRuns" | "clineSessionId">
-) {
-  const ids = [
-    ...(story.agentRuns ?? []).map((run) => run.clineSessionId),
-    story.clineSessionId,
-  ]
-  return [...new Set(ids.filter((id): id is string => Boolean(id)))]
+// The harness journals each write under the engine session that made it;
+// a story has one session for its whole life, rewinds included.
+export function storySessionIds(story: Pick<UserStory, "engineSessionId">) {
+  return story.engineSessionId ? [story.engineSessionId] : []
 }
 
 async function filesToCommit(

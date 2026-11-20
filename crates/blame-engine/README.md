@@ -32,10 +32,10 @@ blame-engine --version
   engine, never on a virtiofs/9p/SMB mount: SQLite's WAL needs shared memory)
   and `checkpoints/` (git directories for workspaces that are not
   repositories). One engine per data directory.
-- `--harness-command` starts Blame's TypeScript harness, either a JSON array
-  (`["node", "/path/semantic-harness-runner.js", "--serve"]`) or a single
-  program path. It is started on first use, kept alive, started again if it
-  dies and stopped with the engine.
+- `--harness-command` starts Blame's workspace harness (`blame-harness`),
+  either a JSON array (`["/path/blame-harness", "serve", "--asks"]`) or a
+  single program path. It is started on first use, kept alive, started again
+  if it dies and stopped with the engine.
 - `--idle-timeout` (600 by default): a session with no running turn and no
   subscriber is dropped from memory after this long, and opened again from
   its log when used.
@@ -59,9 +59,12 @@ blame-engine --version
    seq the client has: the answer comes first, then every record after that
    seq, then live records and deltas.
 3. Answer the engine's requests: `host/credential` (kept in memory only,
-   asked again once when the provider refuses it), `host/tool` for the
-   session's `client_tools`, `host/approval`, and the log requests. The
-   engine withdraws a request it no longer needs with `$/cancel`.
+   one per provider, per session for `claude-code`; asked again once when
+   the provider refuses it), `host/tool` for the session's `client_tools`
+   (report progress meanwhile with the `tool/progress` notification),
+   `host/approval`, and the log requests. The engine withdraws a request it
+   no longer needs with `$/cancel`. Attachments go in with `blob/put`, whose
+   `BlobRef` a message's image or document block then carries.
 4. Stop with `shutdown` (answered once running turns ended as interrupted
    and the last records reached the client), or by closing stdin. SIGTERM,
    SIGINT and SIGHUP stop it the same way.
@@ -79,9 +82,11 @@ Its settings go in `tool_options.harness`:
 ```
 
 `taskContract.session_id` defaults to the session id. The tools, their
-descriptions and schemas come from the runner itself (`describe`), and their
-results are presented exactly as the in-process runtime presents them
-(`call`, see `semantic-harness-runner.ts`).
+descriptions and schemas come from the harness itself (`describe`), and their
+results are presented as the harness presents them (`call`, see
+`crates/blame-harness/README.md`). What only the client knows (command
+credentials, the preview's dependency refresh) the harness asks for, and the
+engine relays the question to the client (`host/harness`).
 
 ## Tests
 

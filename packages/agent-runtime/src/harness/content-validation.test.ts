@@ -7,7 +7,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 import { parseCode } from "./code-intelligence.js";
 import { validateContent } from "./content-validation.js";
-import { LightWorkspace } from "./light-workspace.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
 
 const execute = promisify(execFile);
 const ordinaryFunction = "int value(void) { return 1; }\n";

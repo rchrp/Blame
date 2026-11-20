@@ -11,7 +11,10 @@ import type { useCloudAuth } from "@/context/cloud-auth"
 
 import type { usePlatform } from "@/context/platform"
 
-import { generateAgentTitleSelection } from "@/lib/agent-title-generation"
+import {
+  engineModelChoice,
+  generateAgentTitleSelection,
+} from "@/lib/agent-title-generation"
 
 const untitledUserStoryTitle = "Untitled user story"
 
@@ -46,7 +49,7 @@ function queuedStoryTitleGenerationBlocked(
     !request.projectPath ||
     request.auth.status !== "authenticated" ||
     !request.model ||
-    !request.platform.agent?.promptOptimizer.generateTitle
+    !request.platform.engine
   )
 }
 
@@ -69,7 +72,7 @@ export async function runQueuedStoryTitleGeneration(
 
 async function generatedQueuedStoryTitle(request: QueuedUserStoryTitleRequest) {
   return generateAgentTitleSelection(
-    request.platform.agent!.promptOptimizer.generateTitle,
+    request.platform.engine!,
     queuedStoryTitleGenerationInput(request)
   )
 }
@@ -92,12 +95,12 @@ async function persistGeneratedQueuedStoryTitle(
 
 function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {
   return {
-    apiConnection: request.auth.apiConnection,
     context: "user-story" as const,
-    providerId: request.model!.provider.id,
-    modelId: request.model!.id,
-    credentialLabel: request.model!.credentialLabel,
-    reasoningEffort: request.reasoningEffort,
+    model: engineModelChoice({
+      currentModel: request.model,
+      currentVariant: request.reasoningEffort,
+    })!,
+    projectId: request.story.projectId,
     prompt: request.story.summary,
     runConfigurations: request.runConfigurations,
     workspace: request.projectPath!,

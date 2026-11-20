@@ -245,7 +245,7 @@ function containerRuntimeDependency(name: HostDependencyIssue["name"]) {
 }
 
 function runtimeRepairDependency(name: HostDependencyIssue["name"]) {
-  return name === "cline-sdk" || containerRuntimeDependency(name)
+  return containerRuntimeDependency(name)
 }
 
 function dependencyButtonLabel(
@@ -264,7 +264,6 @@ function dependencyButtonLabel(
 function dependencyLabel(issue: HostDependencyIssue) {
   const labels: Record<HostDependencyIssue["name"], string> = {
     "blame-runtime": "Blame Runtime",
-    "cline-sdk": "Cline SDK",
     corepack: "Corepack",
     docker: "Docker Engine",
     "docker-compose": "Docker Compose",
@@ -294,7 +293,6 @@ function dependencyActionAvailable(
 function dependencyUrl(issue: HostDependencyIssue) {
   const urls: Record<HostDependencyIssue["name"], string> = {
     "blame-runtime": "https://blame.dev",
-    "cline-sdk": "https://blame.dev",
     corepack: "https://nodejs.org/en/download",
     docker: "https://docs.docker.com/engine/install/",
     "docker-compose": "https://docs.docker.com/compose/install/linux/",

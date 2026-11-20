@@ -28,9 +28,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   BETTER_AUTH_SECRET: Env.schema.secret.optional(),
   BETTER_AUTH_TRUSTED_ORIGINS: Env.schema.string.optional(),
   BLAME_SITE_URL: Env.schema.string.optional({ format: 'url', tld: false }),
-  BLAME_MODEL_CATALOG_LIVE_REFRESH: Env.schema.boolean.optional(),
-  BLAME_MODEL_CATALOG_REFRESH_HOURS: Env.schema.number.optional(),
-  BLAME_MODELS_DEV_URL: Env.schema.string.optional({ format: 'url', tld: false }),
+  // `false` ranks models without OpenRouter's benchmarks (tests, offline).
+  BLAME_MODEL_BENCHMARKS: Env.schema.boolean.optional(),
   OPENROUTER_API_KEY: Env.schema.secret.optional(),
   BLAME_SPEECH_TO_TEXT_MODEL: Env.schema.string.optional(),
   BLAME_SPEECH_TO_TEXT_REQUESTS_PER_MINUTE: Env.schema.number.optional(),

@@ -7,12 +7,23 @@ import {
 } from "./agent-title-generation.ts"
 
 const input = {
-  apiConnection: { url: "http://127.0.0.1:3333" },
   context: "quick-chat" as const,
-  providerId: "claude-code",
-  modelId: "haiku",
+  model: { providerId: "claude-code", modelId: "haiku" },
   prompt: "Read the README and the package.json of this project.",
   workspace: "/projects/v-twin",
+}
+
+// The engine's `call`, answering `generateTitle` with `answer`.
+function engine(
+  answer: (input: unknown) => { session: string; title: string },
+  requests: unknown[] = []
+) {
+  return {
+    call: (async (method: string, request: unknown) => {
+      requests.push({ method, request })
+      return answer(request)
+    }) as never,
+  }
 }
 
 test("keeps a short generated title without trailing punctuation", () => {
@@ -45,22 +56,27 @@ test("rejects an empty or overly long title", () => {
 test("fails instead of returning a rejected title, so callers keep their draft", async () => {
   const requests: unknown[] = []
   await assert.rejects(
-    generateAgentTitle(async (request) => {
-      requests.push(request)
-      return { sessionId: "s1", title: '<invoke name="mcp__blame__read_code">' }
-    }, input),
+    generateAgentTitle(
+      engine(
+        () => ({
+          session: "s1",
+          title: '<invoke name="mcp__blame__read_code">',
+        }),
+        requests
+      ),
+      input
+    ),
     /did not return a title/
   )
   assert.deepEqual(requests, [
     {
-      ...input,
-      cwd: "/projects/v-twin",
-      workspaceRoot: "/projects/v-twin",
+      method: "generateTitle",
+      request: { ...input, workspace: { root: "/projects/v-twin" } },
     },
   ])
   assert.equal(
     await generateAgentTitle(
-      async () => ({ sessionId: "s2", title: "Summarize project purpose" }),
+      engine(() => ({ session: "s2", title: "Summarize project purpose" })),
       input
     ),
     "Summarize project purpose"

@@ -1,0 +1,23 @@
+import * as React from "react"
+
+import { useCloudAuth } from "@/context/cloud-auth"
+import { usePlatform } from "@/context/platform"
+
+// The engine host reaches Blame's API with the person's own connection: for
+// provider credentials, the conversations' logs and web search. It is told
+// again whenever the connection changes (sign-in, token refresh).
+export function EngineConnection() {
+  const auth = useCloudAuth()
+  const engine = usePlatform().engine
+  const signedIn = auth.status === "authenticated"
+  const { token, url } = auth.apiConnection
+  React.useEffect(() => {
+    if (!engine) return
+    void engine
+      .call("connect", { api: signedIn ? { token, url } : null })
+      .catch((error: unknown) =>
+        console.error("The agent engine could not be connected.", error)
+      )
+  }, [engine, signedIn, token, url])
+  return null
+}

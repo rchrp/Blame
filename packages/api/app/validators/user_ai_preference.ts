@@ -1,4 +1,5 @@
 import vine from '@vinejs/vine'
+import { engineProviderId } from '#validators/provider_id'
 
 const reasoningEffort = vine
   .enum(['none', 'enabled', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max'])
@@ -19,7 +20,7 @@ const personalization = vine.object({
   ambition: vine.enum(personalizationValues.ambition),
 })
 const modelPreference = vine.object({
-  providerId: vine.string().trim().minLength(1),
+  providerId: engineProviderId,
   modelId: vine.string().trim().minLength(1),
   credentialLabel,
   reasoningEffort,

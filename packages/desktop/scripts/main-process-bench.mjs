@@ -10,13 +10,13 @@
 // package); several are launched in turn every round, so their timings share
 // the Mac's load. A first launch prepares a profile (local workspace, AI
 // preferences, one project in a scratch folder) that every measured launch
-// copies, so each one opens straight on the backlog. Agents' Cline data and
-// the Lima home stay in that profile too. It reports, per launch: the time to
+// copies, so each one opens straight on the backlog. The MCP settings (in
+// the app's data folder) and the Lima home stay in that profile too. It reports, per launch: the time to
 // the first window and to the backlog; the main process and renderer
-// footprints 3 s after the backlog shows; the first agent worker, which the
-// backlog starts: when it was started, how long it took to load the runtime
-// and to answer its first request, and its footprint; how long a
-// sessions.list then takes; and the main process footprint after it. With
+// footprints 3 s after the backlog shows; the engine host, which the
+// backlog starts: when it was started, how long it took to load and to
+// answer its first request, and its footprint; how long a `running` call
+// then takes; and the main process footprint after it. With
 // --modules it also lists the modules the main process loaded (slower:
 // compare its timings only with another --modules run).
 import { execFile, spawn } from "node:child_process";
@@ -197,13 +197,13 @@ async function runInElectron() {
   const mark = (name) => {
     marks[name] ??= Date.now() - launchedAt;
   };
-  // The first agent worker: when the app starts it, when it has loaded the
-  // runtime and when it answers its first request.
+  // The engine host: when the app starts it, when it has loaded and when it
+  // answers its first request.
   const worker = {};
   const fork = utilityProcess.fork;
   utilityProcess.fork = (modulePath, ...rest) => {
     const child = fork.call(utilityProcess, modulePath, ...rest);
-    if (modulePath.endsWith("agent-runtime-process.js") && !worker.child) {
+    if (modulePath.endsWith("engine-host-process.js") && !worker.child) {
       worker.child = child;
       worker.forkedAt = performance.now();
       mark("workerForkMs");
@@ -222,8 +222,6 @@ async function runInElectron() {
   app.setAsDefaultProtocolClient = () => false;
   process.env.LIMA_HOME = join(profile, "lima");
   process.env.BLAME_WSL_DISTRO = "BlameMainProcessBench";
-  // Agents keep their sessions there, by default in the person's home.
-  process.env.CLINE_DATA_DIR = join(profile, "cline-data");
   const fail = (error) => {
     console.error(error instanceof Error ? error.stack : String(error));
     app.exit(1);
@@ -289,9 +287,9 @@ async function runInElectron() {
       rendererFootprintMiB: await footprintMiB(contents.getOSProcessId()),
       workersAtBacklog: worker.child?.pid ? 1 : 0,
     };
-    // A request the backlog does not make, on the worker it started.
+    // A request the backlog does not make, on the host it started.
     const startedAt = performance.now();
-    await contents.executeJavaScript("window.blame.agent.sessions.list()");
+    await contents.executeJavaScript('window.blame.engine.call("running")');
     result.sessionsListMs = Math.round(performance.now() - startedAt);
     await delay(3_000);
     result.mainAfterAgentMiB = await footprintMiB(process.pid);
@@ -308,7 +306,7 @@ async function runInElectron() {
       result.engineLoaded = [...modules].some(
         (url) =>
           url.endsWith("/packages/agent-runtime/dist/index.js") ||
-          url.includes("/@cline/sdk/"),
+          url.includes("/@modelcontextprotocol/sdk/"),
       );
     }
     console.log(`${resultPrefix}${JSON.stringify(result)}`);

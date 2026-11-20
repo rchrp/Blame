@@ -1,9 +1,6 @@
 import * as React from "react"
 
-import type {
-  UserStory,
-  UserStoryAgentRun,
-} from "@/components/backlog/data/backlog-data"
+import type { UserStory } from "@/components/backlog/data/backlog-data"
 import type { CloudAiModelPreference } from "@/context/cloud-auth"
 import type { ReasoningSelection } from "@blame/agent-runtime"
 
@@ -12,7 +9,7 @@ import type { ReasoningSelection } from "@blame/agent-runtime"
 // until the person picks another one for it; the saved default only applies
 // to new stories. Kept per story in local storage.
 
-const storageKey = "blame.story-model-choice.v1"
+const storageKey = "blame.story-model-choice.v2"
 const listeners = new Set<() => void>()
 let choices: Record<string, CloudAiModelPreference> = readChoices()
 
@@ -42,16 +39,8 @@ export function saveStoryModelChoice(
   for (const listener of listeners) listener()
 }
 
-// A story, or a quick chat, which keeps the same agent fields.
-export type StoryModelSource = Pick<
-  UserStory,
-  "agentModelId" | "agentProviderId" | "id"
-> & {
-  agentRuns?: Pick<
-    UserStoryAgentRun,
-    "createdAt" | "modelId" | "providerId" | "reasoningEffort"
-  >[]
-}
+// A story, or a quick chat: the models that worked on it, latest last.
+export type StoryModelSource = Pick<UserStory, "id" | "agentModels">
 
 export function storyModelChoice(
   story: StoryModelSource,
@@ -59,27 +48,14 @@ export function storyModelChoice(
 ): CloudAiModelPreference | undefined {
   const chosen = saved[story.id]
   if (chosen) return chosen
-  const lastRun = [...(story.agentRuns ?? [])]
-    .filter((run) => run.providerId && run.modelId)
-    .sort((left, right) => left.createdAt.localeCompare(right.createdAt))
-    .at(-1)
-  if (lastRun?.providerId && lastRun.modelId) {
-    return {
-      credentialLabel: null,
-      modelId: lastRun.modelId,
-      providerId: lastRun.providerId,
-      reasoningEffort: (lastRun.reasoningEffort as ReasoningSelection) ?? null,
-    }
+  const last = story.agentModels?.at(-1)
+  if (!last) return undefined
+  return {
+    credentialLabel: null,
+    modelId: last.modelId,
+    providerId: last.providerId,
+    reasoningEffort: (last.reasoningEffort as ReasoningSelection) ?? null,
   }
-  if (story.agentProviderId && story.agentModelId) {
-    return {
-      credentialLabel: null,
-      modelId: story.agentModelId,
-      providerId: story.agentProviderId,
-      reasoningEffort: null,
-    }
-  }
-  return undefined
 }
 
 export function useStoryModelChoice(story: StoryModelSource | undefined) {

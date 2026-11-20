@@ -1,6 +1,6 @@
-// A stand-in for semantic-harness-runner.js --serve: the same JSON-lines
-// protocol, with tools whose behaviour the engine's tests choose. Every
-// message it gets is appended to the log file given as its first argument.
+// A stand-in for `blame-harness serve --asks`: the same JSON-lines protocol,
+// with tools whose behaviour the engine's tests choose. Every message it
+// gets is appended to the log file given as its first argument.
 import { appendFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline";
@@ -14,9 +14,17 @@ const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAY
 note({ started: process.pid });
 write({ ready: true, protocol: 1 });
 const slow = new Map();
+// Calls waiting for the client's answer to their question, by question id.
+const asking = new Map();
 for await (const line of createInterface({ input: process.stdin, crlfDelay: Infinity })) {
   const message = JSON.parse(line);
   note(message);
+  if (message.answer) {
+    const id = asking.get(message.answer.id);
+    asking.delete(message.answer.id);
+    write({ id, presented: { ok: true, content: JSON.stringify(message.answer) } });
+    continue;
+  }
   const { id } = message;
   if (message.cancel) {
     if (slow.has(id)) {
@@ -35,6 +43,7 @@ for await (const line of createInterface({ input: process.stdin, crlfDelay: Infi
         { name: "edit_code", description: "Edits code.", inputSchema: object, effect: "workspace_write", endsTurn: false },
         { name: "crash", description: "Kills the harness.", inputSchema: object, effect: "command", endsTurn: false },
         { name: "slow", description: "Never ends.", inputSchema: object, effect: "command", endsTurn: false },
+        { name: "ask_client", description: "Asks the client.", inputSchema: object, effect: "command", endsTurn: false },
         { name: "finish_task", description: "Finishes.", inputSchema: object, effect: "command", endsTurn: true },
       ],
     });
@@ -58,6 +67,12 @@ for await (const line of createInterface({ input: process.stdin, crlfDelay: Infi
     case "slow":
       slow.set(id, true);
       break;
+    case "ask_client": {
+      const question = `q${id}`;
+      asking.set(question, id);
+      write({ ask: { id: question, method: "commandCredentials", params: { sessionId: call.toolContext.sessionId, workspaceRoot: call.workspaceRoot } } });
+      break;
+    }
     case "finish_task":
       write({ id, presented: { ok: true, content: `Done: ${call.input.summary}` } });
       break;

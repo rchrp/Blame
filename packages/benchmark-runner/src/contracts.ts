@@ -1,20 +1,20 @@
+import type { SessionRecord, TaskOutcome } from "@blame/engine-client";
 import type {
-  AgentEvent,
-  AgentRuntimeEvents,
-  AgentUsageSummary,
-  BlameAgentRuntime,
+  EngineHost,
   ReasoningSelection,
-  StartDevelopmentSessionInput,
-} from "@blame/agent-runtime";
+  RequiredProjectCheck,
+} from "@blame/agent-runtime/engine";
+import type { BenchmarkEvent, usageSummary } from "./engine-events.js";
 
 export type BenchmarkConfig = {
   isolatedEnvironment?: boolean;
   apiUrl: string;
   apiToken: string;
   credentialLabel?: string;
-  harness: BenchmarkHarness;
+  /** Where the harness writes each call's raw result (next to the events). */
+  harnessTracePath: string;
   instruction: string;
-  requiredChecks?: StartDevelopmentSessionInput["requiredChecks"];
+  requiredChecks?: RequiredProjectCheck[];
   maxIterations: number;
   modelId: string;
   projectMemoryFile?: string;
@@ -25,8 +25,6 @@ export type BenchmarkConfig = {
   timeoutMs: number;
   workspaceRoot: string;
 };
-
-export type BenchmarkHarness = "blame" | "cline";
 
 export type BenchmarkStatus =
   | "cancelled"
@@ -45,7 +43,8 @@ export type BenchmarkResult = {
   error?: string;
   eventCount: number;
   finishedAt: string;
-  harness: BenchmarkHarness;
+  /** Blame's harness, the only one. */
+  harness: "blame";
   metrics: BenchmarkMetrics;
   modelId: string;
   providerId: string;
@@ -55,7 +54,7 @@ export type BenchmarkResult = {
   status: BenchmarkStatus;
   taskId: string;
   toolEventCount: number;
-  usage?: AgentUsageSummary;
+  usage?: ReturnType<typeof usageSummary>;
   verified?: boolean;
 };
 
@@ -70,53 +69,21 @@ export type BenchmarkMetrics = {
 
 export type BenchmarkContextMetrics = {
   averageInputTokens: number | null;
-  composition: BenchmarkContextCompositionMetrics;
   compactions: number;
   maximumInputTokens: number | null;
-  /** Transport requests are unobserved by this agent-event collector. */
+  /** Requests sent to the model, retries included (from the engine's records). */
   modelRequests: number | null;
   requestObservations: {
     schemaVersion: "request-observations-v1";
-    coverage: "agent_events_only";
+    coverage: "engine_records";
     iterationStartEvents: number;
     usageReportEvents: number;
     inputTokenReportEvents: number;
     transportAttempts: number | null;
     completedResponses: number | null;
   };
-  projectMemory: BenchmarkProjectMemoryMetrics;
   toolPayloadBytes: number;
   toolPayloadReplayExposureBytes: number;
-};
-
-export type BenchmarkProjectMemoryMetrics = {
-  candidates: number;
-  injectedBytes: number;
-  relevant: number;
-  requests: number;
-  selected: number;
-  stale: number;
-};
-
-export type BenchmarkContextCompositionMetrics = {
-  categoryBytes: Record<string, number>;
-  composedBytes: number;
-  duplicateBytes: number;
-  latestComposedBytes: number;
-  latestDuplicateBytes: number;
-  latestMessageBytes: number;
-  latestProjectedBytesSaved: number;
-  latestSystemPromptBytes: number;
-  latestToolDefinitionBytes: number;
-  maximumComposedBytes: number;
-  messageBytes: number;
-  projectedBytesSaved: number;
-  requests: number;
-  staleReadReplacements: number;
-  successfulEditReplacements: number;
-  validatedEditReplacements: number;
-  systemPromptBytes: number;
-  toolDefinitionBytes: number;
 };
 
 export type BenchmarkEditingMetrics = {
@@ -158,37 +125,32 @@ export type BenchmarkNamedToolMetrics = {
 
 export type BenchmarkPaths = {
   eventsPath: string;
+  harnessTracePath: string;
   resultPath: string;
 };
 
-export type BenchmarkRuntime = {
-  sessions: Pick<
-    BlameAgentRuntime["sessions"],
-    "abort" | "startDevelopment" | "usage"
-  >;
-  shutdown: BlameAgentRuntime["shutdown"];
+/** What a run needs of the engine (a fake one in tests). */
+export type BenchmarkEngine = {
+  runStoryTask(
+    input: Parameters<EngineHost["runStoryTask"]>[0],
+  ): Promise<{ session: string; outcome: TaskOutcome }>;
+  /** Every record of the run's session, once it has ended. */
+  records(session: string): Promise<SessionRecord[]>;
+  shutdown(): Promise<void>;
 };
-
-export type BenchmarkRuntimeFactory = (
-  events: AgentRuntimeEvents,
-  harness: BenchmarkHarness,
-  config: BenchmarkConfig,
-) => BenchmarkRuntime;
 
 export type BenchmarkEventRecorder = {
   readonly eventCount: number;
   readonly toolEventCount: number;
   close(): Promise<void>;
   metrics(startedAt: Date, finishedAt: Date): BenchmarkMetrics;
-  record(event: AgentEvent): void;
+  record(event: BenchmarkEvent, at?: number): void;
 };
 
 export type BenchmarkRunDependencies = {
   cleanupTimeoutMs?: number;
   createRecorder(): BenchmarkEventRecorder;
-  createRuntime: BenchmarkRuntimeFactory;
+  createEngine(config: BenchmarkConfig): BenchmarkEngine;
   now?(): Date;
   signal?: AbortSignal;
 };
-
-export type BenchmarkSessionInput = StartDevelopmentSessionInput;

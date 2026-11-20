@@ -293,8 +293,8 @@ function ConnectProviderContent({
           }
           setError(undefined)
           setSaving(true)
-          void selection.agent?.providers
-            .saveCredential(selection.apiConnection, {
+          void selection.providers
+            ?.saveCredential({
               providerId: provider.id,
               label: label.trim(),
               apiKey,
@@ -329,17 +329,12 @@ function ConnectProviderContent({
         {oauth ? (
           <Button
             type="button"
-            disabled={oauthLoading || !selection.agent || !label.trim()}
+            disabled={oauthLoading || !selection.providers || !label.trim()}
             onClick={() => {
               setError(undefined)
               setOauthLoading(true)
-              void selection.agent?.providers
-                .loginOAuth({
-                  apiConnection: selection.apiConnection,
-                  providerId: provider.id,
-                  label: label.trim(),
-                  baseUrl: showBaseUrl ? baseUrl.trim() || null : null,
-                })
+              void selection.providers
+                ?.signInChatGpt(label.trim())
                 .then(() => selection.refreshProviders())
                 .then(onDone)
                 .catch((error) =>
@@ -442,12 +437,12 @@ function ConnectProviderContent({
             <Button
               type="button"
               variant="destructive"
-              disabled={deleting || saving || !selection.agent}
+              disabled={deleting || saving || !selection.providers}
               onClick={() => {
                 setDeleting(true)
                 setError(undefined)
-                void selection.agent?.providers
-                  .deleteCredential(selection.apiConnection, credential.id)
+                void selection.providers
+                  ?.deleteCredential(credential.id)
                   .then(() => selection.refreshProviders())
                   .then(onDone)
                   .catch((error) =>
@@ -475,7 +470,7 @@ function ConnectProviderContent({
             disabled={
               oauth ||
               saving ||
-              !selection.agent ||
+              !selection.providers ||
               !label.trim() ||
               !apiKey.trim() ||
               (openAICompatible && !modelIds.length)

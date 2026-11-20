@@ -1,63 +1,24 @@
 import vine from '@vinejs/vine'
+import { engineProviderId } from '#validators/provider_id'
 import { DateTime } from 'luxon'
+import { sessionIdPattern } from '#lib/engine/engine_log_records'
 
 const status = vine.enum(['backlog', 'ready', 'in-progress', 'in-review', 'done', 'discarded'])
 const priority = vine.enum(['Low', 'Medium', 'High'])
-export const agentStatus = vine.enum(['Running', 'Paused'])
-export const agentActivityKind = vine.enum([
-  'reasoning',
-  'message',
-  'tool',
-  'approval',
-  'notice',
-  'error',
-])
-export const agentActivityMessageKind = vine.enum(['intermediate', 'final'])
-export const agentActivityStatus = vine.enum(['running', 'completed', 'failed'])
-const agentErrorCode = vine.enum([
-  'cline_not_subscribed',
-  'cline_org_subscription_unsupported',
-  'cline_pass_limit',
-  'cline_free_model_limit',
-  'cline_model_not_found',
-])
-export const agentActivity = vine.object({
-  id: vine.string().trim().minLength(1).maxLength(255),
-  kind: agentActivityKind,
-  title: vine.string().trim().minLength(1).maxLength(255),
-  detail: vine.string().maxLength(262144),
-  actionUrl: vine
-    .string()
-    .trim()
-    .url({ protocols: ['https'] })
-    .maxLength(2048)
-    .optional(),
-  errorCode: agentErrorCode.optional(),
-  resetAt: vine.string().trim().maxLength(255).optional(),
-  status: agentActivityStatus.optional(),
-  iteration: vine.number().optional(),
-  messageKind: agentActivityMessageKind.optional(),
-  agentName: vine.string().trim().maxLength(255).optional(),
-  agentAvatar: vine.string().trim().maxLength(2048).optional(),
-  toolCallId: vine.string().trim().maxLength(255).optional(),
-  parentToolCallId: vine.string().trim().maxLength(255).optional(),
-  toolName: vine.string().trim().maxLength(255).optional(),
-  detailArtifact: vine.string().trim().maxLength(2048).optional(),
-  detailTruncated: vine.boolean().optional(),
-  originalDetailLength: vine.number().optional(),
-  images: vine
-    .array(
-      vine.object({
-        id: vine.string().regex(/^[0-9a-f]{64}$/),
-        caption: vine.string().trim().minLength(1).maxLength(160),
-      })
-    )
-    .maxLength(8)
-    .optional(),
-  createdAt: vine.string().trim().minLength(1).maxLength(255),
-  updatedAt: vine.string().trim().maxLength(255).optional(),
-})
-export const codeSelectionAttachment = vine.object({
+const agentStatus = vine.enum(['Running', 'Paused'])
+// The models that worked on the story, as the desktop reports them.
+const agentModels = vine
+  .array(
+    vine.object({
+      providerId: engineProviderId.clone(),
+      modelId: vine.string().trim().minLength(1).maxLength(255),
+      reasoningEffort: vine.string().trim().maxLength(32).nullable().optional(),
+    })
+  )
+  .maxLength(16)
+  .nullable()
+  .optional()
+const codeSelectionAttachment = vine.object({
   id: vine.string().trim().minLength(1).maxLength(255),
   content: vine.string().maxLength(262144),
   endLine: vine.number(),
@@ -66,26 +27,14 @@ export const codeSelectionAttachment = vine.object({
   startLine: vine.number(),
   storyId: vine.string().trim().minLength(1).maxLength(255).optional(),
 })
-export const fileAttachment = vine.object({
+const fileAttachment = vine.object({
   id: vine.string().trim().minLength(1).maxLength(36),
   content: vine.string().maxLength(13981016).optional(),
   name: vine.string().trim().minLength(1).maxLength(255),
   size: vine.number().nonNegative().withoutDecimals(),
   type: vine.string().trim().maxLength(255),
 })
-export const agentUsage = vine.object({
-  cacheReadTokens: vine.number().optional(),
-  cacheWriteTokens: vine.number().optional(),
-  cost: vine.number().optional(),
-  inputTokens: vine.number(),
-  outputTokens: vine.number(),
-  totalCacheReadTokens: vine.number().optional(),
-  totalCacheWriteTokens: vine.number().optional(),
-  totalCost: vine.number().optional(),
-  totalInputTokens: vine.number(),
-  totalOutputTokens: vine.number(),
-})
-export const nullableDateTime = vine
+const nullableDateTime = vine
   .string()
   .trim()
   .nullable()
@@ -124,23 +73,15 @@ export const createUserStoryValidator = vine.create({
   runMode: vine.enum(['local-container', 'vercel-compose', 'direct']).nullable().optional(),
   ambition: vine.enum(['quick', 'standard', 'ambitious']).nullable().optional(),
   agentStatus: agentStatus.nullable().optional(),
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
-  agentProviderId: vine.string().trim().maxLength(80).nullable().optional(),
-  agentModelId: vine.string().trim().maxLength(255).nullable().optional(),
-  agentLastEvent: vine.string().trim().maxLength(4096).nullable().optional(),
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
-  agentActivities: vine.array(agentActivity).nullable().optional(),
-  agentActivity: agentActivity.nullable().optional(),
-  agentFinalResponse: vine.string().nullable().optional(),
-  agentUsage: agentUsage.nullable().optional(),
-  agentSessionSummary: vine.string().nullable().optional(),
+  agentModels,
   mergedAt: nullableDateTime,
   mergeCommit: vine.string().trim().maxLength(255).nullable().optional(),
   baseCommit: vine.string().trim().maxLength(255).nullable().optional(),
   discardedReason: vine.string().trim().maxLength(2048).nullable().optional(),
 })
 
-export const updateUserStoryValidator = vine.create({
+export const updateUserStoryValidator = vine.withMetaData<{ storyId: string }>().create({
   projectId: vine.string().trim().minLength(1).optional(),
   title: vine.string().trim().minLength(1).maxLength(255).optional(),
   summary: vine.string().optional(),
@@ -158,18 +99,23 @@ export const updateUserStoryValidator = vine.create({
   workspaceMode: vine.enum(['local-container', 'cloud-mirror', 'direct']).nullable().optional(),
   runMode: vine.enum(['local-container', 'vercel-compose', 'direct']).nullable().optional(),
   ambition: vine.enum(['quick', 'standard', 'ambitious']).nullable().optional(),
+  // The desktop names the story's engine session when its agent starts; the id
+  // follows the engine's own rule and names one story only.
+  engineSessionId: vine
+    .string()
+    .regex(sessionIdPattern)
+    .unique({
+      table: 'user_stories',
+      column: 'engine_session_id',
+      filter: (query, _value, field) => {
+        query.whereNot('id', field.meta.storyId)
+      },
+    })
+    .nullable()
+    .optional(),
   agentStatus: agentStatus.nullable().optional(),
-  clineSessionId: vine.string().trim().maxLength(255).nullable().optional(),
-  agentProviderId: vine.string().trim().maxLength(80).nullable().optional(),
-  agentModelId: vine.string().trim().maxLength(255).nullable().optional(),
-  agentLastEvent: vine.string().trim().maxLength(4096).nullable().optional(),
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
-  agentActivities: vine.array(agentActivity).nullable().optional(),
-  agentActivity: agentActivity.nullable().optional(),
-  agentActivityUpdates: vine.array(agentActivity).maxLength(16).optional(),
-  agentFinalResponse: vine.string().nullable().optional(),
-  agentUsage: agentUsage.nullable().optional(),
-  agentSessionSummary: vine.string().nullable().optional(),
+  agentModels,
   mergedAt: nullableDateTime,
   mergeCommit: vine.string().trim().maxLength(255).nullable().optional(),
   baseCommit: vine.string().trim().maxLength(255).nullable().optional(),

@@ -1,6 +1,7 @@
 import { dirname, join } from "node:path";
 import { registerPreviewDevicesIpc } from "./ipc/preview-devices-ipc";
 import {
+  app,
   ipcMain,
   shell,
   systemPreferences,
@@ -9,7 +10,15 @@ import {
 } from "electron";
 import { openAttachment } from "./attachment-open";
 import { installApplicationMenu } from "./application-menu";
-import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
+import {
+  engineGitFlowCall,
+  localAgentOwnsWorkspace,
+  registerAgentIpcHandlers,
+} from "./agent-ipc";
+import { engineBinary, harnessBinary } from "./engine/engine-binary";
+import { engineDesktopServices } from "./engine/engine-desktop-services";
+import type { EngineSessionSettings } from "@blame/agent-runtime/engine-protocol";
+import { registerEngineIpcHandlers } from "./engine/engine-host-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
 import { registerPreviewServingIpcHandlers } from "./ipc/preview-serving-ipc";
@@ -17,7 +26,10 @@ import {
   requestDevelopmentServing,
   useServingAgentCheck,
 } from "./preview-runtime/local/local-preview-serving";
-import { registerAgentGithubAccessIpcHandlers } from "./ipc/agent-github-access-ipc";
+import {
+  prepareSessionGithubAccess,
+  registerAgentGithubAccessIpcHandlers,
+} from "./ipc/agent-github-access-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
@@ -29,7 +41,11 @@ import { registerWhatsNewIpcHandlers } from "./whats-new-ipc";
 import { DeployService } from "./deploy/deploy-service";
 import { registerDeployIpcHandlers } from "./ipc/deploy-ipc";
 import { registerMcpIpcHandlers } from "./mcp-ipc";
-import { registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc";
+import { engineHostEnvironment } from "./engine/engine-host-environment";
+import {
+  registerPreviewBrowserIpcHandlers,
+  releaseAgentPreviewSession,
+} from "./preview-browser-ipc";
 import { PreviewService } from "./preview-runtime/preview-service";
 import { registerPreviewRuntimeIpcHandlers } from "./ipc/preview-runtime-ipc";
 import { registerGithubIssueIpcHandlers } from "./github-issue-ipc";
@@ -56,8 +72,10 @@ export type DesktopIpcOptions = {
     rendererFile: string;
     rendererUrl?: string;
   };
-  agentRuntime: {
+  // The engine host's utility process and where the engine keeps its data.
+  engineHost: {
     modulePath: string;
+    dataDir: string;
   };
   // The API this computer runs for use without an account.
   localApi: ConstructorParameters<typeof LocalApiService>[0];
@@ -120,16 +138,47 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerBacklogStatusPipIpcHandlers({
     ...options.backlogStatusPip,
   });
-  registerAgentIpcHandlers({
-    ...options.agentRuntime,
-    packaged: options.packaged,
-    previewService: previews,
-    beforeDelivery: (worktree) => previews.syncBarrier(worktree),
-    beforeWorkspaceWrite: (worktree) => {
-      // A story that changes again needs its development server back.
-      void requestDevelopmentServing(worktree).catch(() => undefined);
-      return previews.syncBarrier(worktree);
+  registerAgentIpcHandlers();
+  registerEngineIpcHandlers({
+    ...options.engineHost,
+    binary: engineBinary({
+      applicationPath: app.getAppPath(),
+      resourcesPath: process.resourcesPath,
+      packaged: app.isPackaged,
+    }),
+    harness: harnessBinary({
+      applicationPath: app.getAppPath(),
+      resourcesPath: process.resourcesPath,
+      packaged: app.isPackaged,
+    }),
+    clientVersion: app.getVersion(),
+    isAppWindow: options.isAppWindow,
+    environment: engineHostEnvironment(),
+    // A session's preview browsers stay open while it works.
+    onActivity: ({ session, running }) => {
+      if (!running) releaseAgentPreviewSession(session);
     },
+    desktop: engineDesktopServices(previews),
+    beforeCall: async (method, input, api) => {
+      const story = storyCall(method, input);
+      if (!story) return;
+      // A story that changes again needs its development server back.
+      void requestDevelopmentServing(story.root).catch(() => undefined);
+      await previews.syncBarrier(story.root);
+      // The story's tools reach GitHub under its engine session id.
+      if (method === "createSession")
+        await prepareSessionGithubAccess({
+          sessionId: story.session,
+          projectId: story.projectId,
+          workspaceMode: story.workspaceMode,
+          workspaceRoot: story.root,
+          apiConnection: api,
+        });
+    },
+    prepareCall: (method, input, call) =>
+      engineGitFlowCall(method, input, call, (worktree) =>
+        previews.syncBarrier(worktree),
+      ),
   });
   useServingAgentCheck(localAgentOwnsWorkspace);
   registerPreviewServingIpcHandlers({ isAppWindow: options.isAppWindow });
@@ -187,4 +236,25 @@ function openMicrophoneSettings() {
   if (process.platform === "win32") {
     return shell.openExternal("ms-settings:privacy-microphone");
   }
+}
+
+/** The development story an engine call starts or continues, if any. */
+function storyCall(method: string, input: unknown) {
+  if (method !== "createSession" && method !== "send") return undefined;
+  const call = input as {
+    session: string;
+    purpose?: string;
+    settings?: unknown;
+  };
+  const withSettings = (
+    method === "send" ? call.settings : call
+  ) as EngineSessionSettings | undefined;
+  if (withSettings?.purpose !== "development-story") return undefined;
+  const story = withSettings.settings;
+  return {
+    session: call.session,
+    projectId: story.projectId,
+    root: story.workspace.root,
+    workspaceMode: story.workspaceMode,
+  };
 }

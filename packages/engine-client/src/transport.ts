@@ -75,10 +75,10 @@ class ProcessTransport implements Transport {
   private spawnError: Error | undefined;
   private writable = true;
 
-  constructor(
-    command: EngineCommand,
-    private readonly events: TransportEvents,
-  ) {
+  private readonly events: TransportEvents;
+
+  constructor(command: EngineCommand, events: TransportEvents) {
+    this.events = events;
     this.child = spawn(command.command, [...(command.args ?? [])], {
       stdio: ["pipe", "pipe", "pipe"],
       env: command.env ?? process.env,

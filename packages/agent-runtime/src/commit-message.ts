@@ -1,4 +1,12 @@
-import type { CommitMessageRuntimeInput } from "./cline-runtime-configuration.js";
+import type { ProjectCodePracticePreference } from "./types.js";
+
+/** What a commit message is written for: a story, or the Git page's selection. */
+export type CommitMessageSubject = {
+  title?: string;
+  /** The Git page's selected files; a story commits all of its changes. */
+  selectedPaths?: string[];
+  codePractices?: ProjectCodePracticePreference[];
+};
 
 export function fallbackCommitSubject(title: string, files: string[]) {
   const subject = commitSubjectFromTitle(title);
@@ -26,15 +34,14 @@ function fallbackChangedFilesSubject(files: string[]) {
   return "complete backlog item";
 }
 
-export function commitMessagePaths(input: CommitMessageRuntimeInput) {
-  if (!("selectedPaths" in input)) return ["."];
+export function commitMessagePaths(input: CommitMessageSubject) {
   const paths = input.selectedPaths?.filter(Boolean) ?? [];
   return paths.length ? paths : ["."];
 }
 
 // Builds a message from `git status --porcelain` and recent commit subjects.
 export function fallbackCommitMessageFromStatus(
-  input: CommitMessageRuntimeInput,
+  input: CommitMessageSubject,
   status: string,
   log: string,
 ) {
@@ -53,7 +60,7 @@ export function fallbackCommitMessageFromStatus(
   return limitCommitMessage(`${type}${scope ? `(${scope})` : ""}: ${subject}`);
 }
 
-function commitMessageConventionEnabled(input: CommitMessageRuntimeInput) {
+function commitMessageConventionEnabled(input: CommitMessageSubject) {
   return (
     input.codePractices?.find(
       (item) => item.practice === "commit_message_convention",

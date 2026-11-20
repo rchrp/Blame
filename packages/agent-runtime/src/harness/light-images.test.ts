@@ -3,26 +3,22 @@ import { mkdtemp, open, readFile, rm, symlink, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import test from "node:test";
-import type { AgentToolContext, ToolResultContent } from "@cline/sdk";
-import { projectProviderContext } from "../context-projection.js";
 import { unwrapFeedbackEnvelope } from "../tool-result-envelope.js";
-import { executeLightWorkspaceRequest } from "./light-executor.js";
-import { lightSemanticHarnessTools } from "./light-tools.js";
+import { lightSemanticHarnessTools } from "./test-client/light-tools.js";
 
 const pixel = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9ZlL8AAAAASUVORK5CYII=", "base64");
-const context: AgentToolContext = { agentId: "image-reader", iteration: 1, metadata: { modelSupportsImages: true } };
+const context: { agentId: string; iteration: number; metadata?: Record<string, unknown> } = { agentId: "image-reader", iteration: 1, metadata: { modelSupportsImages: true } };
 
-for (const executor of [undefined, executeLightWorkspaceRequest]) {
-  test(`image reads reach the provider as media through ${executor ? "the bridge" : "local execution"}`, async () => {
+// The image block is what the engine hands its provider projection, which
+// is Rust's now (the TypeScript projection went with the Cline runtime).
+{
+  test("image reads reach the provider as media", async () => {
     await fixture(async (root) => {
-      const tool = lightSemanticHarnessTools(root, { executor }).find((tool) => tool.name === "read_code")!;
+      const tool = lightSemanticHarnessTools(root).find((tool) => tool.name === "read_code")!;
       const output = await tool.execute({ target: "pixel.png" }, context);
       assert.ok(Array.isArray(output));
       assert.deepEqual(output[1], { type: "image", mediaType: "image/png", data: pixel.toString("base64") });
       assert.doesNotMatch(output[0].text, /base64|�/);
-      const content: ToolResultContent = { type: "tool_result", tool_use_id: "image-1", name: "read_code", content: output };
-      const result = projectProviderContext([{ role: "user", content: [content] }], { systemPrompt: "", tools: [] });
-      assert.deepEqual(result.messages[0]?.content, [content]);
     });
   });
 }
@@ -76,8 +72,9 @@ async function fixture(action: (root: string) => Promise<void>) {
   }
 }
 
-for (const executor of [undefined, executeLightWorkspaceRequest]) {
-  test(`explicit isolation permits external image reads through ${executor ? "the bridge" : "local execution"}`, async () => {
+{
+  const executor = undefined;
+  test("explicit isolation permits external image reads", async () => {
     await outsideImageFixture(async (root, outside) => {
       const tools = isolatedImageTools(root, executor);
       const output = await tools.find((tool) => tool.name === "read_code")!.execute({ target: outside }, context);
@@ -129,7 +126,7 @@ test("image reader rejects a file exceeding the SDK encoded-image budget", async
   });
 });
 
-function isolatedImageTools(root: string, executor?: typeof executeLightWorkspaceRequest) {
+function isolatedImageTools(root: string, executor?: unknown) {
   return lightSemanticHarnessTools(root, {
     executor,
     taskContract: { session_id: "isolated-image-reader", environment: { isolated: true, managedPreview: false } },

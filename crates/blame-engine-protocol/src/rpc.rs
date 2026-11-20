@@ -168,10 +168,54 @@ pub enum ClientRequest {
     /// Result: `null`.
     #[serde(rename = "session/close")]
     Close { session: SessionId },
+    /// Stops the session and deletes its records from this engine. The copy
+    /// in Blame's database is the client's to delete. Result: `null`.
+    #[serde(rename = "session/delete")]
+    Delete { session: SessionId },
+    /// Runs a task: a session of kind `task` whose only turn opens with
+    /// `instruction` and ends by its contract. The session exists before
+    /// the engine reads the next message of this connection, so a
+    /// `session/subscribe` sent right after sees it from its first record.
+    /// Answered when the task ends; `$/cancel` of this request interrupts
+    /// it. Result: [`TaskOutcome`](crate::TaskOutcome).
+    #[serde(rename = "task/run")]
+    RunTask {
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        session: Option<SessionId>,
+        config: SessionConfig,
+        instruction: Vec<UserBlock>,
+    },
+    /// Stores bytes the client attaches to a message (an image, a
+    /// document) and returns the reference to put in a [`UserBlock`]. The
+    /// blob is copied to Blame's database with the record that uses it.
+    /// Result: [`BlobRef`].
+    #[serde(rename = "blob/put")]
+    PutBlob {
+        media_type: String,
+        /// The bytes, base64-encoded.
+        data: String,
+    },
+    /// What a client tool is doing while it runs (`host/tool` not yet
+    /// answered). Reaches the session's viewers as a `tool_progress` delta.
+    /// A notification: it has no answer.
+    #[serde(rename = "tool/progress")]
+    ToolProgress { call: ToolCallId, text: String },
+    /// The providers and models to offer, from models.dev. `refresh` asks
+    /// models.dev first (a conditional request, at most every few seconds)
+    /// and answers once it replied or gave up; without it the answer is
+    /// immediate, and a copy older than its time to live is revalidated in
+    /// the background. Result: [`crate::catalog::ModelCatalog`].
+    #[serde(rename = "catalog/list")]
+    CatalogList {
+        #[serde(default)]
+        refresh: bool,
+    },
     /// Stops every session and exits. Result: `null`.
     #[serde(rename = "shutdown")]
     Shutdown {},
-    /// Withdraws a request of this client that is still running.
+    /// Withdraws a request of this client that is still running. Only a
+    /// `task/run` stops for it; every other request runs to its end, so
+    /// what the log says and what the client was told stay the same.
     #[serde(rename = "$/cancel")]
     Cancel { id: u64 },
 }
@@ -199,10 +243,16 @@ pub enum EngineRequest {
         tool: ToolSpec,
         input: Value,
     },
-    /// Obtain the secret for a provider. The engine keeps it in memory only.
-    /// Result: [`Credential`].
+    /// Obtain the secret for a provider. The engine keeps it in memory only,
+    /// one per provider, except for providers whose credential belongs to a
+    /// conversation (`claude-code`: one Claude Code process per session),
+    /// which are asked once per session. Result: [`Credential`].
     #[serde(rename = "host/credential")]
-    Credential { provider: String },
+    Credential {
+        provider: String,
+        /// The session the request is for.
+        session: SessionId,
+    },
     /// Copy records into Blame's database, which the client can reach and the
     /// engine may not (it can run in a VM with no route to it). Records come
     /// in seq order; ones the database already holds are ignored. Only sent
@@ -226,6 +276,19 @@ pub enum EngineRequest {
     /// Result: [`BlobPulled`].
     #[serde(rename = "host/blob/pull")]
     BlobPull { sha256: String },
+    /// A question of the harness while it runs a session's call, which only
+    /// the client can answer: `commandCredentials` (the GitHub credentials
+    /// of the session's next command, or `null` to keep the harness's
+    /// environment) or `refreshPreviewDependencies` (the session's preview
+    /// takes a dependency change; the answer is its state, `null` for none).
+    /// `params` are the harness's (`sessionId`, `workspaceRoot`). Result:
+    /// any JSON value; an error or no handler counts as no answer.
+    #[serde(rename = "host/harness")]
+    Harness {
+        session: SessionId,
+        method: String,
+        params: Value,
+    },
     /// Withdraws a request of the engine that is still running.
     #[serde(rename = "$/cancel")]
     Cancel { id: u64 },

@@ -118,13 +118,16 @@ pub struct EngineOptions {
 /// Default for `Limits::max_parallel_tool_calls`.
 pub const DEFAULT_PARALLEL_TOOL_CALLS: u32 = 4;
 
-/// Decides, before each request, whether earlier blocks should be shown to
-/// the model differently (a stale file read replaced by a pointer). Whatever
-/// it proposes is stored as `ContextEdited` before the request is built, so
-/// the same history is rebuilt after a restart.
+/// Decides, before each new request, whether blocks should be shown to the
+/// model differently (a stale file read replaced by a pointer). Whatever it
+/// proposes is stored as `ContextEdited` before the request is built, so the
+/// same history is rebuilt after a restart. It is not asked before a retry
+/// (unless a compaction came in between): a retry repeats the bytes it
+/// retries.
 pub trait ContextPolicy: Send + Sync {
-    /// Edits to apply now. Already-applied edits are part of `view`; returning
-    /// them again stores them again, so return only new ones.
+    /// Edits to apply now. Already-applied edits are part of `view`
+    /// ([`View::edit_of`]); returning them again stores them again, so return
+    /// only new ones. An edit with an empty replacement removes the block.
     fn edits(&self, view: &View<'_>, tools: &[ToolSpec]) -> Vec<ContextEdit>;
 }
 

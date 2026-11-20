@@ -7,7 +7,6 @@ import {
   ChevronUpIcon,
   ClockIcon,
   CopyIcon,
-  ExternalLinkIcon,
   LoaderCircleIcon,
   MessageSquareIcon,
   RotateCcwIcon,
@@ -19,11 +18,8 @@ import {
 import * as React from "react"
 import { toast } from "sonner"
 
-import { agentErrorText } from "@/components/backlog/data/agent-flow"
-import {
-  agentStreamStore,
-  type AgentStreamIdentity,
-} from "@/components/backlog/data/agent-stream-store"
+import { ApprovalDecision } from "@/components/chat/engine/engine-approvals"
+import { EngineToolImages } from "@/components/chat/engine/engine-blob-image"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -74,7 +70,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { usePlatform } from "@/context/platform"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { publicAssetUrl } from "@/lib/public-asset-url"
 import { cn } from "@/lib/utils"
@@ -126,7 +121,7 @@ export function screenshotOwnerFor(
   return {
     id,
     kind,
-    scope: kind === "userStory" ? `story:${id}` : `chat:${id}`,
+    scope: `story:${id}`,
   }
 }
 import { TurnSummary } from "./turn-summary"
@@ -178,16 +173,17 @@ export type AgentConversationComment = {
 export type AgentConversationRun = {
   activities?: UserStoryAgentActivity[] | null
   checkpointRunCount?: number | null
-  clineSessionId?: string | null
   commentId?: string | null
   completedAt?: string | null
+  // The files before the turn and after it (absent: the files now), as
+  // checkpointer references the workspace's git can diff.
+  diffStartRef?: string | null
   diffEndRef?: string | null
   createdAt: string
   executionId?: string | null
   finalResponse?: string | null
   id: string
   kind: UserStoryAgentRunKind
-  lastSequenceNumber?: number | null
   messageId?: string | null
   // The model that answered this turn, when it was recorded.
   modelId?: string | null
@@ -226,9 +222,8 @@ export function AgentConversationTimeline({
   comments: AgentConversationComment[]
   unsentComments?: AgentConversationComment[]
   loadChangedFileDiffs?: (
-    sessionId: string,
-    checkpointRunCount: number,
-    diffEndRef: string
+    from: string,
+    to: string | undefined
   ) => Promise<VcsFileDiff[]>
   onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   onUserMessageUndo?: (
@@ -362,9 +357,8 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
   highlightFinalResponse: boolean
   onFileLinkClick?: (path: string) => void
   loadChangedFileDiffs?: (
-    sessionId: string,
-    checkpointRunCount: number,
-    diffEndRef: string
+    from: string,
+    to: string | undefined
   ) => Promise<VcsFileDiff[]>
   onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   onLoadActivityDetail: (
@@ -383,23 +377,16 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
   run: AgentConversationRun
 }) {
   const activities = agentTimelineActivities(run)
-  const sessionId = run.clineSessionId
   const turnResponseHeader = responseHeaderForRun?.(run) ?? responseHeader
   const loadActivityDetail = (activity: UserStoryAgentActivity) =>
     onLoadActivityDetail(run, activity)
 
   function openChangedFile(path: string) {
-    if (
-      !onChangedFileClick ||
-      !loadChangedFileDiffs ||
-      !checkpointRunCount ||
-      !sessionId ||
-      !run.diffEndRef
-    ) {
+    if (!onChangedFileClick || !loadChangedFileDiffs || !run.diffStartRef) {
       onFileLinkClick?.(path)
       return
     }
-    void loadChangedFileDiffs(sessionId, checkpointRunCount, run.diffEndRef)
+    void loadChangedFileDiffs(run.diffStartRef, run.diffEndRef ?? undefined)
       .then((diffs) => onChangedFileClick(path, diffs))
       .catch((error) => toast.error(errorMessage(error)))
   }
@@ -918,47 +905,22 @@ function AgentWorkAccordion({
   )
 }
 
+// The run's activities by id. They come folded from the engine's records,
+// live deltas included, so there is no separate stream to merge.
 function useAgentActivityRegistry(
   activities: UserStoryAgentActivity[],
   run: AgentConversationRun
 ) {
-  const identity = React.useMemo(
-    () =>
-      run.status === "running" && run.clineSessionId
-        ? { runId: run.id, sessionId: run.clineSessionId }
-        : undefined,
-    [run.clineSessionId, run.id, run.status]
+  void run
+  return React.useMemo(
+    () => ({
+      activityIds: activities.map((activity) => activity.id),
+      persistedById: new Map(
+        activities.map((activity) => [activity.id, activity])
+      ),
+    }),
+    [activities]
   )
-  React.useEffect(() => {
-    if (!identity) return
-    agentStreamStore.seed(identity, activities, run.lastSequenceNumber ?? 0)
-  }, [activities, identity, run.lastSequenceNumber])
-  const order = useAgentStreamOrder(identity)
-  return {
-    activityIds: mergedActivityIds(activities, order.activityIds),
-    identity,
-    persistedById: new Map(
-      activities.map((activity) => [activity.id, activity])
-    ),
-  }
-}
-
-function useAgentStreamOrder(identity: AgentStreamIdentity | undefined) {
-  const subscribe = React.useCallback(
-    (listener: () => void) =>
-      identity
-        ? agentStreamStore.subscribeOrder(identity, listener)
-        : () => undefined,
-    [identity]
-  )
-  const getSnapshot = React.useCallback(
-    () =>
-      identity
-        ? agentStreamStore.orderSnapshot(identity)
-        : emptyAgentStreamOrder,
-    [identity]
-  )
-  return React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
 }
 
 function AgentActivityTimeline({
@@ -983,7 +945,6 @@ function AgentActivityTimeline({
             alwaysVisible && index === visibleActivityIds.length - 1
           }
           fallback={registry.persistedById.get(activityId)}
-          identity={registry.identity}
           registry={registry}
           key={`${props.run.id}-${activityId}`}
         />
@@ -1050,38 +1011,14 @@ type StreamingAgentActivityItemProps = Omit<
 > & {
   activityId: string
   fallback?: UserStoryAgentActivity
-  identity?: AgentStreamIdentity
   registry?: ReturnType<typeof useAgentActivityRegistry>
 }
 
 function StreamingAgentActivityItem(props: StreamingAgentActivityItemProps) {
-  const activity = useStreamedAgentActivity(props)
+  const activity = props.fallback
   return activity ? (
     <AgentStreamActivity activity={activity} {...props} />
   ) : null
-}
-
-function useStreamedAgentActivity({
-  activityId,
-  fallback,
-  identity,
-}: StreamingAgentActivityItemProps) {
-  const subscribe = React.useCallback(
-    (listener: () => void) =>
-      identity
-        ? agentStreamStore.subscribeActivity(identity, activityId, listener)
-        : () => undefined,
-    [activityId, identity]
-  )
-  const getSnapshot = React.useCallback(
-    () =>
-      identity
-        ? agentStreamStore.activitySnapshot(identity, activityId)
-        : undefined,
-    [activityId, identity]
-  )
-  const live = React.useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-  return live?.activity ?? fallback
 }
 
 function AgentStreamActivity({
@@ -1114,6 +1051,22 @@ function AgentStreamActivity({
       />
     )
   }
+  if (activity.kind === "tool" && activity.images?.length) {
+    return (
+      <div className="grid gap-1">
+        <AgentStreamTool activity={activity} {...props} />
+        <EngineToolImages images={activity.images} />
+      </div>
+    )
+  }
+  if (activity.kind === "approval" && activity.toolCallId) {
+    return (
+      <div className="grid gap-1">
+        <AgentStreamTool activity={activity} {...props} />
+        <ApprovalDecision call={activity.toolCallId} />
+      </div>
+    )
+  }
   return <AgentStreamTool activity={activity} {...props} />
 }
 
@@ -1134,12 +1087,7 @@ function SpecialistConsultation({
 }) {
   const [open, setOpen] = React.useState(false)
   const responseId = specialistResponseActivityId(activity.id)
-  const response = useStreamedAgentActivity({
-    ...props,
-    activityId: responseId,
-    fallback: registry.persistedById.get(responseId),
-    identity: registry.identity,
-  })
+  const response = registry.persistedById.get(responseId)
   const threadIds = activity.toolCallId
     ? specialistThreadActivityIds(registry.activityIds, activity.toolCallId)
     : []
@@ -1301,12 +1249,9 @@ function AgentStreamError({
 }) {
   return (
     <AgentErrorTimelineItem
-      actionUrl={activity.actionUrl}
       alwaysVisible={alwaysVisible}
       createdAt={activity.createdAt}
       detail={activity.detail}
-      errorCode={activity.errorCode}
-      resetAt={activity.resetAt}
     />
   )
 }
@@ -1653,21 +1598,14 @@ function AgentMarkdownTimelineItem({
 }
 
 function AgentErrorTimelineItem({
-  actionUrl,
   alwaysVisible,
   createdAt,
   detail,
-  errorCode,
-  resetAt,
 }: {
-  actionUrl?: string
   alwaysVisible: boolean
   createdAt: string
   detail: string
-  errorCode?: UserStoryAgentActivity["errorCode"]
-  resetAt?: string
 }) {
-  const platform = usePlatform()
   const entering = useEnterAnimation(createdAt)
   return (
     <div
@@ -1684,21 +1622,6 @@ function AgentErrorTimelineItem({
           <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap">
             {detail}
           </p>
-          {resetAt ? (
-            <p className="mt-2 text-xs">{clineLimitResetLabel(resetAt)}</p>
-          ) : null}
-          {actionUrl && platform.openExternalLink ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-3"
-              onClick={() => platform.openExternalLink?.(actionUrl)}
-            >
-              <ExternalLinkIcon />
-              {clineErrorActionLabel(errorCode)}
-            </Button>
-          ) : null}
         </div>
       </div>
       <MarkdownMessageActions
@@ -1708,19 +1631,6 @@ function AgentErrorTimelineItem({
       />
     </div>
   )
-}
-
-function clineErrorActionLabel(errorCode: UserStoryAgentActivity["errorCode"]) {
-  return errorCode === "cline_not_subscribed"
-    ? "View ClinePass"
-    : "Manage ClinePass"
-}
-
-function clineLimitResetLabel(resetAt: string) {
-  const date = new Date(resetAt)
-  return Number.isNaN(date.getTime())
-    ? `Limit resets ${resetAt}.`
-    : `Limit resets ${date.toLocaleString()}.`
 }
 
 function modelSwitched(
@@ -2011,24 +1921,6 @@ function agentTimelineActivities(run: AgentConversationRun) {
   return hasVisibleResponse ? activities : [...activities, failure]
 }
 
-const emptyAgentStreamOrder = { activityIds: [], revision: 0 }
-
-function mergedActivityIds(
-  persisted: UserStoryAgentActivity[],
-  liveIds: string[]
-) {
-  if (!liveIds.length) return persisted.map((activity) => activity.id)
-  const ids = [...liveIds]
-  const known = new Set(ids)
-  persisted.forEach((activity) => {
-    const activityId = activity.id
-    if (known.has(activityId)) return
-    known.add(activityId)
-    ids.push(activityId)
-  })
-  return ids
-}
-
 function finalResponseActivities(
   run: AgentConversationRun,
   activities: UserStoryAgentActivity[],
@@ -2053,7 +1945,7 @@ function failedRunResponse(
   run: AgentConversationRun
 ): UserStoryAgentActivity | undefined {
   if (run.status !== "failed" && run.status !== "cancelled") return undefined
-  const response = agentErrorText(run.finalResponse ?? "")
+  const response = (run.finalResponse ?? "").trim()
   return {
     createdAt: run.completedAt ?? run.updatedAt ?? run.createdAt,
     detail: response || "Agent session failed.",

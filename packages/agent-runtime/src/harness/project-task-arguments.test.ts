@@ -3,14 +3,14 @@ import { mkdtemp, readFile, rm, writeFile, access } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { lightRunTaskInputSchema } from "./light-contracts.js";
-import { LightWorkspace } from "./light-workspace.js";
-import { LightFinishService } from "./light-finish-service.js";
+import { lightRunTaskInputSchema } from "./test-client/contracts.js";
+import { LightWorkspace } from "./test-client/light-workspace.js";
+import { LightFinishService } from "./test-client/light-finish-service.js";
 import {
   readTaskCatalog,
   taskInvocation,
   type TaskCatalogItem,
-} from "./task-catalog.js";
+} from "./test-client/units.js";
 import { SessionJournal } from "./session-journal.js";
 
 const filtered = [

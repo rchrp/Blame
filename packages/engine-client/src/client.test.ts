@@ -303,6 +303,42 @@ describe("requests from the engine", () => {
     );
   });
 
+  it("passes a tool's progress to the engine while it runs", async () => {
+    const deltas: unknown[] = [];
+    const client = await start([], {
+      handlers: {
+        tool: async ({ name }, { progress }) => {
+          progress(`${name} half way`);
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          return { outcome: "completed", content: [] };
+        },
+      },
+    });
+    client.onNotification((n) => {
+      if (n.method === "session/delta") deltas.push(n.params.delta);
+    });
+    const seen = records(client);
+    await client.createSession({ session: "s", config: sessionConfig });
+    await client.subscribe({ session: "s", after: 0 });
+    await client.sendMessage({
+      session: "s",
+      input: userText("tools"),
+      delivery: "turn",
+    });
+    await waitFor(
+      () => seen.some((r) => r.type === "turn_ended"),
+      "the turn to end",
+    );
+    const progress = deltas
+      .filter(
+        (d): d is { type: "tool_progress"; text: string } =>
+          (d as { type: string }).type === "tool_progress",
+      )
+      .map((d) => d.text)
+      .sort();
+    assert.deepEqual(progress, ["read_a half way", "read_b half way"]);
+  });
+
   it("asks the user's approval and carries the decision back", async () => {
     const seen = await runTool("approval", {
       approval: () => ({ decision: "denied" }),

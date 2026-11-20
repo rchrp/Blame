@@ -13,8 +13,6 @@ import type { TestCounts } from "./tool-call-view.ts"
 
 const editTools = new Set([
   "edit_code",
-  "apply_patch",
-  "editor",
   "write_file",
   "apply_change",
   "review_change",

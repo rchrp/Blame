@@ -141,6 +141,11 @@ impl RemoteLog for ClientRemoteLog {
     }
 }
 
+/// Providers whose credential belongs to one conversation: the client hands
+/// out a key per session (the Claude Code bridge keeps one Claude Code
+/// process per key), so they are connected once per session.
+const SESSION_SCOPED: &[&str] = &["claude-code"];
+
 /// Every provider, connected on first use with the credential the client
 /// gives through `host/credential`. Credentials stay in memory only; one that
 /// the provider refuses is asked for again, once per request.
@@ -164,12 +169,22 @@ impl ProviderRouter {
 
     /// The connected provider `id`, asking the client for a credential when
     /// there is none yet or when `fresh` (the last one was refused).
-    async fn provider(&self, id: &str, fresh: bool) -> Result<Arc<Provider>, ProviderError> {
+    async fn provider(
+        &self,
+        id: &str,
+        session: &SessionId,
+        fresh: bool,
+    ) -> Result<Arc<Provider>, ProviderError> {
+        let key = if SESSION_SCOPED.contains(&id) {
+            format!("{id}\u{0}{session}")
+        } else {
+            id.to_owned()
+        };
         let slot = self
             .connected
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .entry(id.to_owned())
+            .entry(key)
             .or_default()
             .clone();
         // One question per provider at a time: three sessions starting
@@ -183,6 +198,7 @@ impl ProviderRouter {
             .host
             .request::<Credential>(EngineRequest::Credential {
                 provider: id.to_owned(),
+                session: session.clone(),
             })
             .await
         {
@@ -224,9 +240,15 @@ impl ProviderRouter {
 
 #[async_trait]
 impl ModelProvider for ProviderRouter {
+    fn forces_tool(&self, model: &blame_engine_protocol::ModelRef) -> bool {
+        blame_engine_providers::forces_tool(model)
+    }
+
     async fn stream(&self, request: ModelRequest) -> Result<ModelStream, ProviderError> {
         let id = request.model.provider.clone();
-        let provider = self.provider(&id, false).await?;
+        // The loop keys the prompt cache by session.
+        let session = SessionId::from(request.cache.key.clone());
+        let provider = self.provider(&id, &session, false).await?;
         match Self::attempt(&provider, request.clone()).await {
             Ok(result) => result,
             Err(refused) => {
@@ -235,7 +257,7 @@ impl ModelProvider for ProviderRouter {
                     "`{id}` refused its credential ({}); asking the client again",
                     refused.message
                 );
-                let provider = self.provider(&id, true).await?;
+                let provider = self.provider(&id, &session, true).await?;
                 match Self::attempt(&provider, request).await {
                     Ok(result) => result,
                     Err(error) => Err(error),

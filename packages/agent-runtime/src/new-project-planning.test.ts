@@ -20,21 +20,21 @@ test("the stack tool accepts a complete catalog configuration", async () => {
   const tool = projectStackProposalTool();
   assert.equal(tool.name, "propose_project_stack");
   assert.deepEqual(
-    await tool.execute(
-      { configuration: defaultNewProjectConfiguration },
+    await tool.run(
+      { configuration: defaultNewProjectConfiguration } as never,
       {} as never,
     ),
-    { accepted: true, configuration: defaultNewProjectConfiguration },
+    { json: { accepted: true, configuration: defaultNewProjectConfiguration } },
   );
   await assert.rejects(
     async () =>
-      tool.execute(
+      tool.run(
         {
           configuration: {
             ...defaultNewProjectConfiguration,
             frontend: "angular",
           },
-        },
+        } as never,
         {} as never,
       ),
     /frontend|angular/iu,

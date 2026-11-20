@@ -223,19 +223,29 @@ fn vitest_no_test_files(command: &str, output: &str) -> bool {
         && !VITEST_FAILURE.is_match(output)
 }
 
+const MAX_SAFE_INTEGER: u64 = (1 << 53) - 1;
+
 fn mocha_reported_counts(output: &str) -> Option<Json> {
     let mut values: Vec<Option<u64>> = Vec::new();
     let mut any = false;
     for field in ["passing", "failing", "pending", "skipped"] {
         let expression =
             Regex::new(&format!(r"(?m)^\s*(\d+) {field}(?: \([^\r\n]*\))?\s*$")).expect("pattern");
-        let hits: Vec<u64> = expression
+        // A count past JavaScript's safe integers is not a count the
+        // runner could have meant (`Number.isSafeInteger`).
+        let hits: Vec<Option<u64>> = expression
             .captures_iter(output)
-            .filter_map(|captures| captures[1].parse().ok())
+            .map(|captures| {
+                captures[1]
+                    .parse()
+                    .ok()
+                    .filter(|count| *count <= MAX_SAFE_INTEGER)
+            })
             .collect();
-        if hits.len() > 1 {
+        if hits.len() > 1 || hits.iter().any(Option::is_none) {
             return None;
         }
+        let hits: Vec<u64> = hits.into_iter().flatten().collect();
         any |= !hits.is_empty();
         values.push(hits.first().copied());
     }

@@ -1,13 +1,7 @@
 import type {
-  CompareCheckpointResult as ClineCompareCheckpointResult,
-  Message,
-  RestoreResult as ClineRestoreResult,
-} from "@cline/sdk";
-import type {
   PreviewLifecycleState,
   PreviewManifest,
 } from "@blame/preview-contract";
-import type { AgentPersonalization } from "./personalization.js";
 
 export type ApiConnection = {
   url: string;
@@ -77,30 +71,6 @@ export type ReasoningEffort =
   | "xhigh"
   | "max";
 export type ReasoningSelection = "none" | "enabled" | ReasoningEffort;
-export type AgentMode = "act" | "plan" | "yolo";
-export type AgentBackendMode = "auto" | "local" | "hub" | "remote";
-export type AgentRuntimeConfigExtension =
-  | "plugins"
-  | "rules"
-  | "skills"
-  | "workflows";
-
-export type AgentBackendConfig = {
-  authToken?: string;
-  cwd?: string;
-  endpoint?: string;
-  key?: string;
-  mode: AgentBackendMode;
-  workspaceRoot?: string;
-};
-
-export type AgentRuntimePrewarmInput = {
-  backend: AgentBackendConfig;
-  cwd: string;
-  workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
-};
-
 export type BlameProvider = {
   id: string;
   name: string;
@@ -171,11 +141,6 @@ export type SaveLocalProviderCredentialInput = {
   accountId?: string | null;
 };
 
-export type ConnectClaudeCodeInput = {
-  apiConnection: ApiConnection;
-  label?: string;
-};
-
 export type ClaudeCodeStatus = {
   installed: boolean;
   executablePath?: string;
@@ -186,12 +151,6 @@ export type ClaudeCodeStatus = {
   email?: string;
   subscriptionType?: string;
   error?: string;
-};
-
-export type SubscriptionUsageInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  credentialLabel?: string;
 };
 
 /** One limit window of a subscription plan, such as 5 hours or a week. */
@@ -213,53 +172,8 @@ export type SubscriptionUsage = {
   checkedAt: number;
 };
 
-export type LoginOAuthProviderInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  label?: string;
-  baseUrl?: string | null;
-};
-
 export type RequiredProjectCheck =
   import("./harness/light-contracts.js").RequiredProjectCheck;
-
-export type StartSessionInput = {
-  requiredChecks?: RequiredProjectCheck[];
-  isolatedEnvironment?: boolean;
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  // Caps the context the agent works in (compaction follows it). Unset: the
-  // provider's own input limit.
-  maxInputTokens?: number;
-  autoApproveWriteTools?: boolean;
-  autoSendPrompt?: boolean;
-  checkpointEnabled?: boolean;
-  configExtensions?: AgentRuntimeConfigExtension[];
-  disableMcpSettingsTools?: boolean;
-  mode?: AgentMode;
-  maxIterations?: number;
-  pluginPaths?: string[];
-  prompt: string;
-  sessionId?: string | null;
-  initialMessages?: Message[];
-  userImages?: string[];
-  userFiles?: string[];
-  cwd: string;
-  workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
-  systemPrompt?: string;
-  previewDevtoolsScope?: string;
-  // The desktop offers open_component_preview (a Vite, React, Vue 3,
-  // Svelte 5 or Angular project, whatever the workspace mode).
-  componentPreview?: boolean;
-  credentialLabel?: string;
-  backend?: AgentBackendConfig;
-  executionId?: string;
-  projectId?: string;
-  storyId?: string;
-};
 
 export type CodeSelectionAttachment = {
   id?: string;
@@ -283,80 +197,6 @@ export type FileAttachment = {
   type: string;
 };
 
-// What an agent conversation is for: coding (chats and user stories),
-// planning user stories, or choosing the stack of a new project.
-export type AgentConversationPurpose = "development" | "plan" | "new-project";
-
-export type StartDevelopmentSessionInput = {
-  purpose?: AgentConversationPurpose;
-  requiredChecks?: RequiredProjectCheck[];
-  isolatedEnvironment?: boolean;
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  maxInputTokens?: number;
-  autoSendPrompt?: boolean;
-  checkpointEnabled?: boolean;
-  configExtensions?: AgentRuntimeConfigExtension[];
-  disableMcpSettingsTools?: boolean;
-  enableSpecialistConsult?: boolean;
-  maxIterations?: number;
-  pluginPaths?: string[];
-  title: string;
-  summary: string;
-  codeSelectionAttachments?: CodeSelectionAttachment[];
-  fileAttachments?: FileAttachment[];
-  feedback?: string;
-  feedbackCodeSelectionAttachments?: CodeSelectionAttachment[];
-  feedbackFileAttachments?: FileAttachment[];
-  resumeSessionId?: string | null;
-  sessionId?: string;
-  cwd: string;
-  workspaceRoot: string;
-  workspaceMode?: "local-container" | "cloud-mirror" | "direct";
-  previewDevtoolsScope?: string;
-  componentPreview?: boolean;
-  codePractices?: ProjectCodePracticePreference[];
-  // Read when the conversation starts; later turns bring it with the message.
-  personalization?: AgentPersonalization;
-  projectInitialization?: {
-    runConfigurationId?: string;
-    previewManifest: PreviewManifest;
-    runConfigurations: ProjectRunConfiguration[];
-    databaseMode?: ProjectInitializationDatabaseMode | null;
-  };
-  backend?: AgentBackendConfig;
-  executionId?: string;
-  projectId?: string;
-  storyId?: string;
-};
-
-export type ApproveAndMergeInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  storyBranch: string;
-  // The branch the story started from and merges into; without it, the
-  // branch checked out in the project folder.
-  targetBranch?: string;
-  // Worktrees where an agent is running, filled in by the desktop host: the
-  // target branch is not advanced inside one of them.
-  activeWorktrees?: string[];
-  // Only true also pushes the target branch to its upstream; otherwise the
-  // merge stays on the local target branch.
-  push?: boolean;
-  title: string;
-  summary: string;
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
-};
-
 export type ApproveAndMergeResult = {
   baseCommit: string;
   mergeCommit: string;
@@ -372,31 +212,12 @@ export type ApproveAndMergePush =
   | { status: "skipped" };
 
 export type {
-  OpenPullRequestInput,
   OpenPullRequestResult,
   PullRequestAvailability,
   PullRequestAvailabilityInput,
   PullRequestState,
   PullRequestStateInput,
 } from "./pull-request-types.js";
-
-export type GenerateCommitMessageInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  title?: string;
-  summary?: string;
-  // A story's commit (Direct mode): the message closes the GitHub issues of
-  // origin the title or summary says it handles, as Approve & Merge does.
-  closeLinkedIssues?: boolean;
-  selectedPaths?: string[];
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
-};
 
 export type GenerateCommitMessageResult = {
   message: string;
@@ -421,86 +242,10 @@ export type DirectStoryFilesResult = {
   files: DirectStoryFile[];
 };
 
-export type GenerateTitleInput = {
-  apiConnection: ApiConnection;
-  context: "quick-chat" | "user-story";
-  providerId: string;
-  modelId: string;
-  prompt: string;
-  cwd: string;
-  workspaceRoot: string;
-  reasoningEffort?: ReasoningSelection;
-  credentialLabel?: string;
-  backend?: AgentBackendConfig;
-  runConfigurations?: ProjectRunConfiguration[];
-};
-
-export type GenerateTitleResult = {
-  sessionId: string;
-  title: string;
-  runConfigurationId?: string | null;
-};
-
-export type ResolveMergeConflictsInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  credentialLabel?: string;
-  reasoningEffort?: ReasoningSelection;
-  repositoryRoot: string;
-  worktree: string;
-  title?: string;
-  summary?: string;
-  targetBranch?: string;
-  codePractices?: ProjectCodePracticePreference[];
-  backend?: AgentBackendConfig;
-};
-
 export type ResolveMergeConflictsResult = {
   conflicts: string[];
   resolved: boolean;
 };
-
-export type SendSessionInput = {
-  sessionId: string;
-  prompt: string;
-  executionId?: string;
-  userImages?: string[];
-  userFiles?: string[];
-};
-
-export type SendDevelopmentSessionInput = {
-  sessionId: string;
-  executionId?: string;
-  // What the person chose for this turn; a change reaches the agent with it.
-  personalization?: AgentPersonalization;
-  title: string;
-  summary: string;
-  codeSelectionAttachments?: CodeSelectionAttachment[];
-  fileAttachments?: FileAttachment[];
-  feedback?: string;
-  feedbackCodeSelectionAttachments?: CodeSelectionAttachment[];
-  feedbackFileAttachments?: FileAttachment[];
-  feedbackOnly?: boolean;
-};
-
-export type CompareCheckpointInput = {
-  checkpointRunCount: number;
-  cwd?: string;
-  sessionId: string;
-};
-
-export type CompareCheckpointResult = ClineCompareCheckpointResult;
-
-export type RestoreCheckpointInput = CompareCheckpointInput & {
-  restore?: {
-    messages?: boolean;
-    omitCheckpointMessageFromSession?: boolean;
-    workspace?: boolean;
-  };
-};
-
-export type RestoreCheckpointResult = ClineRestoreResult;
 
 export type ProjectCodePracticeKey =
   | "coding_style"
@@ -599,45 +344,9 @@ export type ProjectInitializationPreferences = {
   };
 };
 
-export type InitializeProjectInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  preferences?: ProjectInitializationPreferences;
-  validationFeedback?: {
-    validationError: string;
-    previousResult: string;
-  };
-  backend?: AgentBackendConfig;
-  /** Channel of `initialization_progress` notices, see initialization-progress.ts. */
-  progressId?: string;
-};
-
-export type InitializeProjectResult = {
-  sessionId: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-};
-
-export type AnalyzeProjectCodePracticesInput = Omit<
-  InitializeProjectInput,
-  "preferences"
->;
-
-export type AnalyzeProjectCodePracticesResult = {
-  sessionId: string;
-  practices: ProjectCodePracticeResult[];
-};
-
 export type {
-  DiscoverSecurityAuditInput,
   MapSecurityAuditInput,
   MapSecurityAuditResult,
-  RunSecurityAuditInput,
   SecurityAttackPathStep,
   SecurityAudit,
   SecurityAuditDiscoveryResult,
@@ -648,6 +357,7 @@ export type {
   SecurityAuditProgressStep,
   SecurityAuditProgressStepStatus,
   SecurityAuditStatus,
+  SecurityAuditWorkspaceMap,
   SecurityCandidate,
   SecurityConfidence,
   SecurityCoverage,
@@ -663,7 +373,6 @@ export type {
   SecuritySourceLocation,
   SecuritySurfaceMap,
   SecurityThreatModel,
-  ValidateSecurityAuditInput,
   ValidateSecurityAuditResult,
 } from "./security-audit-types.js";
 
@@ -699,79 +408,6 @@ export type ProjectInitializationImpactDiagnostics = {
   strategicFilesAfter: Record<string, string>;
 };
 
-export type AssessProjectInitializationImpactInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  baseCommit: string;
-  mergeCommit: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-  backend?: AgentBackendConfig;
-};
-
-export type AssessProjectInitializationImpactResult = {
-  sessionId?: string;
-  classification: ProjectInitializationImpactClassification;
-  reason: string;
-  repairInstruction?: string;
-  diagnostics?: ProjectInitializationImpactDiagnostics;
-};
-
-export type RepairProjectInitializationInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-  preferences?: ProjectInitializationPreferences;
-  diagnostics:
-    | ProjectInitializationDiagnostics
-    | ProjectInitializationImpactDiagnostics;
-  backend?: AgentBackendConfig;
-};
-
-export type RepairProjectInitializationResult = {
-  sessionId: string;
-  classification: ProjectInitializationRepairClassification;
-  reason: string;
-  previewManifest?: PreviewManifest;
-  runConfigurations?: ProjectRunConfiguration[];
-};
-
-export type {
-  NewProjectGenerationConfiguration,
-  StartNewProjectGenerationInput,
-  NewProjectGenerationResult,
-  NewProjectsClient,
-} from "./new-project-types.js";
-
-export type OptimizeUserStoryPromptInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  prompt: string;
-  cwd: string;
-  workspaceRoot: string;
-  reasoningEffort?: ReasoningSelection;
-  credentialLabel?: string;
-  title?: string;
-  backend?: AgentBackendConfig;
-};
-
-export type OptimizeUserStoryPromptResult = {
-  sessionId: string;
-  markdown: string;
-};
-
 export type StoryPlanPriority = "Low" | "Medium" | "High";
 
 /** A user story an agent proposes; nothing is created until the person adds it. */
@@ -791,13 +427,6 @@ export type PlannedUserStory = {
   dismissed?: boolean;
 };
 
-export type AgentSessionRecord = {
-  sessionId: string;
-  title?: string;
-  createdAt?: string;
-  updatedAt?: string;
-};
-
 export type AgentUsageTotals = {
   cacheReadTokens?: number;
   cacheWriteTokens?: number;
@@ -809,34 +438,6 @@ export type AgentUsageTotals = {
   totalCost?: number;
   totalInputTokens: number;
   totalOutputTokens: number;
-};
-
-export type CompactSessionInput = {
-  apiConnection: ApiConnection;
-  backend?: AgentBackendConfig;
-  credentialLabel?: string;
-  maxInputTokens?: number;
-  modelId: string;
-  providerId: string;
-  sessionId: string;
-};
-
-export type CompactSessionResult = {
-  compacted: boolean;
-  tokensAfter?: number;
-  tokensBefore?: number;
-};
-
-export type AgentUsageSummary = {
-  aggregateUsage?: AgentUsageTotals;
-  usage?: AgentUsageTotals;
-};
-
-export type AgentDonePayload = {
-  completion?: import("@blame/harness-core").CompletionDecision;
-  text?: string;
-  verified?: boolean;
-  [key: string]: unknown;
 };
 
 export type AgentEvent = {
@@ -860,22 +461,4 @@ export type AgentEvent = {
   payload: unknown;
 };
 
-export type AgentRuntimeEvents = {
-  emit(event: AgentEvent): void;
-  captureHiddenToolEvent?(event: AgentEvent): void;
-};
-
 export type ApprovalDecision = "approve" | "deny" | "always";
-
-export type AgentApprovalRequest = {
-  id: string;
-  sessionId?: string;
-  toolName: string;
-  reason?: string;
-  input?: unknown;
-};
-
-export type ResolveApprovalInput = {
-  requestId: string;
-  decision: ApprovalDecision;
-};

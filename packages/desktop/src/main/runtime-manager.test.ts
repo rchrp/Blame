@@ -144,7 +144,7 @@ test("reports missing managed runtime Git as repairable", async () => {
   assert.equal(status.issues[0]?.status, "missing");
 });
 
-test("reports missing Windows runtime Cline SDK as repairable", async () => {
+test("reports a missing Windows runtime dependency as repairable", async () => {
   const manager = createRuntimeManager(
     { platform: "win32" },
     async (_command, args) => {
@@ -154,7 +154,7 @@ test("reports missing Windows runtime Cline SDK as repairable", async () => {
         checks: [
           { name: "wsl", status: "available" },
           { name: "distro", status: "available" },
-          { name: "cline-sdk", status: "missing" },
+          { name: "docker-compose", status: "missing" },
         ],
       });
     },
@@ -163,7 +163,7 @@ test("reports missing Windows runtime Cline SDK as repairable", async () => {
   const status = await manager.checkRuntimeDependencies();
 
   assert.equal(status.status, "repairable");
-  assert.equal(status.issues[0]?.name, "cline-sdk");
+  assert.equal(status.issues[0]?.name, "docker-compose");
   assert.equal(status.issues[0]?.status, "missing");
 });
 
@@ -543,7 +543,7 @@ test("flags an outdated runtime version as an update", async () => {
         checks: [
           { name: "vm", status: "available" },
           { name: "runtime-version", status: "missing" },
-          { name: "cline-sdk", status: "missing" },
+          { name: "semantic-harness", status: "missing" },
         ],
       });
     },
