@@ -10,6 +10,7 @@ import type { QuickChat } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import { transcriptConversation } from "@/components/chat/engine/transcript-conversation"
+import type { QueuedMessageControls } from "@/components/chat/engine/queued-messages"
 import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -130,6 +131,21 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     quickChats.touch(target.id)
   }
 
+  // The queue is the engine's: these act on it, and the transcript shows
+  // the result (a withdrawn turn disappears, a promoted one is a steer).
+  const queue: QueuedMessageControls = {
+    async remove(turn) {
+      await platform.engine!.call("withdraw", { session: session!, turn })
+    },
+    async sendNow(turn) {
+      await platform.engine!.call("promote", { session: session!, turn })
+    },
+    async edit(turn, text) {
+      await platform.engine!.call("withdraw", { session: session!, turn })
+      await send({ text })
+    },
+  }
+
   async function interrupt() {
     if (session) await platform.engine!.call("interrupt", { session })
   }
@@ -157,6 +173,7 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     error: view.error,
     interrupt,
     loaded: !session || view.loaded,
+    queue,
     running,
     send,
     transcript,

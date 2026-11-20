@@ -13,12 +13,15 @@ import {
   type TranscriptConversation,
 } from "@/components/chat/engine/transcript-conversation"
 import { EngineApprovalProvider } from "@/components/chat/engine/engine-approvals"
+import type { QueuedMessageControls } from "@/components/chat/engine/queued-messages"
 import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import { usePlatform } from "@/context/platform"
 import { storyLocation } from "@/pages/backlog/story-engine"
 
 export type StoryConversation = {
   conversation?: TranscriptConversation
+  /** What can be done with the messages queued behind the running turn. */
+  queue?: QueuedMessageControls
   transcript?: Transcript
   loaded: boolean
   error?: string
@@ -53,14 +56,39 @@ export function StoryConversationProvider({
         : undefined,
     [transcript]
   )
+  const session = story?.engineSessionId
+  // The engine keeps the queue; an edit takes the message out and queues
+  // its new text (the session already has the settings it was sent with).
+  const queue = React.useMemo<QueuedMessageControls | undefined>(() => {
+    const engine = platform.engine
+    if (!engine || !session) return undefined
+    return {
+      async remove(turn) {
+        await engine.call("withdraw", { session, location, turn })
+      },
+      async sendNow(turn) {
+        await engine.call("promote", { session, location, turn })
+      },
+      async edit(turn, text) {
+        await engine.call("withdraw", { session, location, turn })
+        await engine.call("send", {
+          session,
+          location,
+          message: { text },
+          delivery: "turn",
+        })
+      },
+    }
+  }, [location, platform.engine, session])
   const value = React.useMemo(
     () => ({
       conversation,
       error: view.error,
-      loaded: !story?.engineSessionId || view.loaded,
+      loaded: !session || view.loaded,
+      queue,
       transcript,
     }),
-    [conversation, story?.engineSessionId, transcript, view.error, view.loaded]
+    [conversation, queue, session, transcript, view.error, view.loaded]
   )
   return (
     <StoryConversationContext.Provider value={value}>

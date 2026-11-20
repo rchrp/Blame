@@ -509,7 +509,8 @@ export function UserStoryDrawerPanel({
   const handleCommentSubmit = useLatestCallback(() => {
     void submitComment()
   })
-  // ⌘↵ while the agent works: queue the comment and send it right away.
+  // ↵ while the agent works: the comment goes into its running turn now
+  // (⌘↵ queues it for when the turn ends).
   const handleCommentSendNow = useLatestCallback(() => {
     void submitComment(true)
   })
@@ -941,8 +942,8 @@ export function UserStoryDrawerPanel({
         commentFileAttachments
       )
     try {
-      // While the agent works, the message waits for its turn to end, or
-      // with "Send now" joins the running turn.
+      // While the agent works, the message joins the running turn (↵), or
+      // with ⌘↵ waits for it to end.
       const sent = await onRequestChanges(userStory, {
         text: body,
         codeSelectionAttachments: commentCodeSelectionAttachments,
