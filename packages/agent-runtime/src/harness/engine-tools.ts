@@ -29,6 +29,11 @@ export type EngineToolDescription = {
 export type EngineDescribeRequest = {
   responseStyle?: ResponseStyle;
   taskContract?: LightTaskContract;
+  /**
+   * The harness tools a session gets, when not all of them (plan mode reads
+   * and runs but does not edit). The engine only calls described tools.
+   */
+  tools?: string[];
 };
 
 /**
@@ -69,7 +74,10 @@ export function describeEngineTools(request: EngineDescribeRequest): EngineToolD
   const nothing: LightWorkspaceExecutor = () =>
     Promise.reject(new Error("Describing the harness tools runs nothing."));
   // The descriptions do not depend on the workspace, only on the contract.
-  return engineTools("/", nothing, request.taskContract, request.responseStyle).map((tool) => ({
+  const wanted = request.tools ? new Set(request.tools) : undefined;
+  return engineTools("/", nothing, request.taskContract, request.responseStyle)
+    .filter((tool) => !wanted || wanted.has(tool.name))
+    .map((tool) => ({
     name: tool.name,
     description: tool.description,
     inputSchema: tool.inputSchema,

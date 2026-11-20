@@ -10,5 +10,7 @@ import { fileURLToPath } from "node:url";
 
 /** The harness runner the engine starts (`--harness-command`), next to this module. */
 export function harnessRunnerPath() {
-  return fileURLToPath(new URL("../harness/semantic-harness-runner.js", import.meta.url));
+  return fileURLToPath(
+    new URL("../harness/semantic-harness-runner.js", import.meta.url),
+  );
 }

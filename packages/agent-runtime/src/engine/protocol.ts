@@ -19,7 +19,16 @@ import type {
 } from "../types.js";
 
 /** What a conversation is for; each has its own config builder in the host. */
-export type EnginePurpose = "quick-chat";
+export type EnginePurpose = EngineSessionSettings["purpose"];
+
+/**
+ * Where a workspace lives, which decides the engine that works on it: the
+ * one on this computer, or (later) one inside the Blame Runtime VM.
+ */
+export type EngineLocation = "host" | "vm";
+
+/** A workspace as the renderer names it; the host picks the engine for it. */
+export type EngineWorkspace = { root: string; location: EngineLocation };
 
 /** The model a conversation uses, in the app's ids (the API's provider ids). */
 export type EngineModelChoice = {
@@ -43,9 +52,66 @@ export type QuickChatSettings = {
   codePractices?: ProjectCodePracticePreference[];
 };
 
-export type EngineSessionSettings = {
-  purpose: "quick-chat";
-  settings: QuickChatSettings;
+/** How a story's worktree is run (`UserStory.workspaceMode`). */
+export type StoryWorkspaceMode = "direct" | "local-container" | "cloud-mirror";
+
+/** What the renderer decides about a development story's agent. */
+export type DevelopmentStorySettings = {
+  workspace: EngineWorkspace;
+  workspaceMode: StoryWorkspaceMode;
+  projectId: string;
+  storyId: string;
+  /** The story's title, shown to the agent with its first message. */
+  title: string;
+  model: EngineModelChoice;
+  maxContextTokens?: number;
+  personalization?: Partial<AgentPersonalization>;
+  codePractices?: ProjectCodePracticePreference[];
+  /** The story's managed preview, when it has one (its devtools scope). */
+  previewDevtoolsScope?: string;
+};
+
+/** Plan mode: an agent that reads the project and proposes stories. */
+export type PlanSettings = {
+  workspace: EngineWorkspace;
+  projectId: string;
+  model: EngineModelChoice;
+  maxContextTokens?: number;
+  personalization?: Partial<AgentPersonalization>;
+};
+
+/**
+ * The new-project assistant: it helps pick a stack, in a scratch folder the
+ * host makes for the conversation (there is no project yet).
+ */
+export type NewProjectSettings = {
+  /** The project's working name. */
+  title: string;
+  model: EngineModelChoice;
+  personalization?: Partial<AgentPersonalization>;
+};
+
+export type EngineSessionSettings =
+  | { purpose: "quick-chat"; settings: QuickChatSettings }
+  | { purpose: "development-story"; settings: DevelopmentStorySettings }
+  | { purpose: "plan"; settings: PlanSettings }
+  | { purpose: "new-project"; settings: NewProjectSettings };
+
+/** Where a session's engine is, for calls that name only the session (default: this computer). */
+export type EngineSessionRef = {
+  session: SessionId;
+  location?: EngineLocation;
+};
+
+/** A session as its records say, without following it. */
+export type EngineSessionStatus = {
+  session: SessionId;
+  /** The engine has the session (on this computer or in Blame's database). */
+  exists: boolean;
+  running: boolean;
+  /** How its last turn ended, when one did. */
+  lastOutcome?: TurnOutcome;
+  turns: number;
 };
 
 /** One file the person attached to a message, as the renderer read it. */
@@ -73,8 +139,7 @@ export type EngineHostMethods = {
     result: { changed: boolean };
   };
   send: {
-    input: {
-      session: SessionId;
+    input: EngineSessionRef & {
       message: EngineMessage;
       delivery: "turn" | "steer";
       /**
@@ -85,25 +150,32 @@ export type EngineHostMethods = {
     };
     result: { turn: string; started: boolean };
   };
-  interrupt: { input: { session: SessionId }; result: null };
-  compact: { input: { session: SessionId }; result: null };
+  interrupt: { input: EngineSessionRef; result: null };
+  compact: { input: EngineSessionRef; result: null };
   rewind: {
-    input: { session: SessionId; to: Seq; restoreWorkspace: boolean };
+    input: EngineSessionRef & { to: Seq; restoreWorkspace: boolean };
     result: { finished: Seq };
   };
-  undoRewind: { input: { session: SessionId }; result: null };
+  undoRewind: { input: EngineSessionRef; result: null };
   resolveApproval: {
-    input: {
-      session: SessionId;
+    input: EngineSessionRef & {
       call: ToolCallId;
       decision: "approved" | "denied";
     };
     result: boolean;
   };
   /** The caller names the subscription, so it can follow again after a host restart. */
-  follow: { input: { session: SessionId; subscription: string }; result: null };
+  follow: {
+    input: EngineSessionRef & { subscription: string };
+    result: null;
+  };
   unfollow: { input: { subscription: string }; result: null };
   running: { input: undefined; result: SessionId[] };
+  /** Where each session stands, from its records (recovery after a quit). */
+  status: {
+    input: { sessions: SessionId[]; location?: EngineLocation };
+    result: EngineSessionStatus[];
+  };
   shutdown: { input: undefined; result: null };
 };
 
@@ -127,6 +199,7 @@ export const engineHostMethods = [
   "unfollow",
   "running",
   "shutdown",
+  "status",
 ] as const satisfies readonly EngineHostMethod[];
 
 /** What the host tells the renderers. */
