@@ -10,7 +10,7 @@
 //! desktop app (directly, or through `limactl shell` / `wsl.exe` when it runs
 //! in the runtime VM), a WebSocket for an engine in the cloud.
 
-use crate::content::{ToolResultBlock, UserBlock};
+use crate::content::{BlobRef, ToolResultBlock, UserBlock};
 use crate::delta::{Delta, SessionActivity};
 use crate::ids::{Seq, SessionId, ToolCallId, TurnId};
 use crate::record::{
@@ -83,6 +83,10 @@ pub enum ClientRequest {
         protocol_version: u32,
         client_name: String,
         client_version: String,
+        /// The client answers `host/log/*` and `host/blob/*`: sessions are
+        /// then copied to Blame's database and can be reopened from it.
+        #[serde(default)]
+        remote_log: bool,
     },
     /// Result: [`SessionOpened`]. `session` lets the client choose the id.
     #[serde(rename = "session/create")]
@@ -191,6 +195,29 @@ pub enum EngineRequest {
     /// Result: [`Credential`].
     #[serde(rename = "host/credential")]
     Credential { provider: String },
+    /// Copy records into Blame's database, which the client can reach and the
+    /// engine may not (it can run in a VM with no route to it). Records come
+    /// in seq order; ones the database already holds are ignored. Only sent
+    /// to a client that announced `remote_log`. Result: [`LogPushed`].
+    #[serde(rename = "host/log/push")]
+    LogPush {
+        session: SessionId,
+        records: Vec<Record>,
+    },
+    /// Records of a session the engine has never seen, or is behind on.
+    /// Result: [`Records`].
+    #[serde(rename = "host/log/pull")]
+    LogPull { session: SessionId, after: Seq },
+    /// Result: `null`.
+    #[serde(rename = "host/blob/push")]
+    BlobPush {
+        blob: BlobRef,
+        /// The bytes, base64-encoded.
+        data: String,
+    },
+    /// Result: [`BlobPulled`].
+    #[serde(rename = "host/blob/pull")]
+    BlobPull { sha256: String },
     /// Withdraws a request of the engine that is still running.
     #[serde(rename = "$/cancel")]
     Cancel { id: u64 },
@@ -237,6 +264,19 @@ pub struct SessionList {
 pub struct Records {
     pub records: Vec<Record>,
     pub head: Seq,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LogPushed {
+    /// Highest seq the database now holds with no gap before it.
+    pub acked: Seq,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BlobPulled {
+    /// The bytes, base64-encoded; absent when the database has no such blob.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub data: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
