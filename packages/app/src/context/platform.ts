@@ -121,6 +121,8 @@ export type Platform = {
     ready(): void
   }
   agent?: AgentClient
+  // The agent engine (docs/engine-in-the-app.md): quick chats run on it.
+  engine?: import("@blame/agent-runtime/engine-protocol").EnginePlatformClient
   agentScreenshots?: AgentScreenshotsClient
   api?: ApiConnection
   localApi?: import("./platform-local-api").LocalApiClient

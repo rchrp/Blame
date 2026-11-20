@@ -2,6 +2,7 @@ import { createPreviewTerminalClient } from "./preview-terminal-client";
 import { opaqueWindowArgument } from "../main/window-blur";
 import { contextBridge, ipcRenderer } from "electron";
 import type { AgentEvent } from "@blame/agent-runtime";
+import type { EngineHostEvent } from "@blame/agent-runtime/engine-protocol";
 import type { RuntimeProgress } from "@blame/app";
 import type { BlameDesktopApi } from "./types";
 
@@ -11,6 +12,16 @@ type AuthCallbackDelivery = {
   id: number;
   result: AuthCallbackResult;
 };
+
+type EngineEventListener = Parameters<BlameDesktopApi["engine"]["follow"]>[1];
+type EngineActivityListener = Parameters<BlameDesktopApi["engine"]["onActivity"]>[0];
+// One listener for every engine event this window gets, dispatched here.
+const engineFollowers = new Map<string, EngineEventListener>();
+const engineActivityListeners = new Set<EngineActivityListener>();
+ipcRenderer.on("engine:event", (_event, value: EngineHostEvent) => {
+  if (value.type === "follow") engineFollowers.get(value.subscription)?.(value.event);
+  else for (const listener of engineActivityListeners) listener(value);
+});
 
 const authCallbacks = new Set<AuthCallback>();
 const deliveredAuthCallbackIds = new Set<number>();
@@ -588,6 +599,29 @@ const api: BlameDesktopApi = {
       ) => callback(event);
       ipcRenderer.on(channel, handler);
       return () => ipcRenderer.removeListener(channel, handler);
+    },
+  },
+  engine: {
+    call: (method, input) => ipcRenderer.invoke("engine:call", method, input),
+    follow: (session, onEvent) => {
+      const subscription = globalThis.crypto.randomUUID();
+      engineFollowers.set(subscription, onEvent);
+      void ipcRenderer
+        .invoke("engine:call", "follow", { session, subscription })
+        .catch((error) => {
+          if (!engineFollowers.has(subscription)) return;
+          onEvent({ type: "state", state: "stopped", error: preloadErrorMessage(error) });
+        });
+      return () => {
+        if (!engineFollowers.delete(subscription)) return;
+        void ipcRenderer
+          .invoke("engine:call", "unfollow", { subscription })
+          .catch(() => undefined);
+      };
+    },
+    onActivity: (callback) => {
+      engineActivityListeners.add(callback);
+      return () => engineActivityListeners.delete(callback);
     },
   },
   agent: {

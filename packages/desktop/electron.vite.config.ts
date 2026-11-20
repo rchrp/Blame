@@ -10,6 +10,7 @@ export default defineConfig({
       rolldownOptions: {
         input: {
           "agent-runtime-process": "src/main/agent-runtime-process.ts",
+          "engine-host-process": "src/main/engine/engine-host-process.ts",
           index: "src/main/index.ts",
         },
         output: {

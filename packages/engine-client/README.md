@@ -73,7 +73,7 @@ await client.sendMessage({
 - One method per `ClientRequest`: `createSession`, `openSession`, `listSessions`,
   `readRecords`, `subscribe`, `unsubscribe`, `sendMessage`, `interrupt`,
   `rewind`, `undoRewind`, `fork`, `compact`, `configure`, `closeSession`,
-  `shutdown`. Each takes `{ signal?, timeoutMs? }`: aborting sends `$/cancel`
+  `putBlob`, `shutdown`. Each takes `{ signal?, timeoutMs? }`: aborting sends `$/cancel`
   and rejects at once.
 - `onNotification(listener)` receives `session/record` and `session/delta` for
   every subscribed session. Most callers use `followSession` instead.
@@ -94,7 +94,7 @@ await client.sendMessage({
 
 | Handler                                      | Engine request                                            |
 | -------------------------------------------- | --------------------------------------------------------- |
-| `tool`                                       | `host/tool`: run one of the session's `client_tools`      |
+| `tool`                                       | `host/tool`: run one of the session's `client_tools`; its context's `progress(text)` sends `tool/progress` |
 | `approval`                                   | `host/approval`: ask the user, answer `approved`/`denied` |
 | `credential`                                 | `host/credential`: `api_key`, `bearer` or `missing`       |
 | `logPush`, `logPull`, `blobPush`, `blobPull` | `host/log/*`, `host/blob/*` (all four or none)            |

@@ -1,3 +1,4 @@
+import type { EnginePlatformClient } from "@blame/agent-runtime/engine-protocol";
 import type {
   AgentEvent,
   NewProjectsClient,
@@ -635,6 +636,7 @@ export type BlameDesktopApi = {
     stop(id: string): Promise<boolean>;
     onEvent(id: string, callback: (event: TerminalEvent) => void): () => void;
   };
+  engine: EnginePlatformClient;
   agent: {
     providers: {
       list(connection: ApiConnection): Promise<ProviderListResponse>;

@@ -6,7 +6,7 @@ export type {
   EngineLogLine,
   RequestOptions,
 } from "./client.js";
-export type { HostContext, HostHandlers } from "./host.js";
+export type { HostContext, HostHandlers, ToolHostContext } from "./host.js";
 export { spawnTransport } from "./transport.js";
 export type {
   EngineCommand,

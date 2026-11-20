@@ -15,12 +15,11 @@ const fallbackProfile: ModelRecommendationProfile = {
 }
 
 export default class ModelUsageProfileService {
+  // Only stories keep their usage here: a quick chat's usage is in the
+  // records of its engine session.
   async forUser(userId: string) {
-    const [storyRows, chatRows] = await Promise.all([
-      usageRows('user_stories', userId),
-      usageRows('quick_chats', userId),
-    ])
-    const samples = [...storyRows, ...chatRows]
+    const rows = await usageRows(userId)
+    const samples = rows
       .map((row) => usageSample(row.agent_usage))
       .filter((sample): sample is UsageSample => sample !== undefined)
     if (!samples.length) return fallbackProfile
@@ -33,9 +32,9 @@ export default class ModelUsageProfileService {
   }
 }
 
-function usageRows(table: 'user_stories' | 'quick_chats', userId: string) {
+function usageRows(userId: string) {
   return db
-    .from(`${table} as source`)
+    .from('user_stories as source')
     .join('projects', 'projects.id', 'source.project_id')
     .where('projects.user_id', userId)
     .whereNotNull('source.agent_usage')

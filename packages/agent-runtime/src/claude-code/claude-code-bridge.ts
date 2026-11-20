@@ -1,6 +1,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import http from "node:http";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { performance } from "node:perf_hooks";
 
@@ -42,6 +43,18 @@ export type ClaudeCodeBridgeOptions = {
 };
 
 const maxBodyBytes = 64 * 1024 * 1024;
+
+/**
+ * Where the bridge keeps its port, secret and lanes: the same for every
+ * process of the app, so the agent workers and the engine host share one
+ * bridge.
+ */
+export function claudeCodeStateDirectory() {
+  return (
+    process.env.BLAME_CLAUDE_CODE_STATE_DIR?.trim() ||
+    join(tmpdir(), "blame-claude-code")
+  );
+}
 // Each Claude Code process holds ~110-120 MB, whatever its context size
 // (measured 2026-11-19, Claude Code 2.1, idle and after a 160k-token turn).
 // Every agent worker shares one bridge, so these bound the whole app: three

@@ -1,248 +1,267 @@
+import EngineSession from '#models/engine_session'
 import Project from '#models/project'
 import User from '#models/user'
+import env from '#start/env'
 import testUtils from '@adonisjs/core/services/test_utils'
+import db from '@adonisjs/lucid/services/db'
 import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
+import { DateTime } from 'luxon'
+import { randomUUID } from 'node:crypto'
 
-type QuickChatBody = {
-  data: {
-    agentFinalResponse?: string | null
-    agentRuns?: QuickChatAgentRunBody['data'][]
-    id: string
-    messages?: QuickChatMessageBody['data'][]
-    title: string
-  }
+type QuickChatData = {
+  createdAt: string
+  engineSessionId: string | null
+  id: string
+  lastActivityAt: string
+  projectId: string
+  title: string
+  updatedAt: string | null
+  workspace: string | null
 }
 
-type QuickChatListBody = {
-  data: QuickChatBody['data'][]
-}
-
-type QuickChatMessageBody = {
-  data: {
-    body: string
-    id: string
-    quickChatId: string
-  }
-}
-
-type QuickChatAgentRunBody = {
-  data: {
-    activities?: {
-      detail: string
-      id: string
-      kind: string
-    }[]
-    checkpointRunCount?: number | null
-    diffEndRef?: string | null
-    finalResponse?: string | null
-    id: string
-    kind: string
-    lastSequenceNumber?: number
-    quickChatId: string
-    status: string
-  }
-}
+const keys = [
+  'createdAt',
+  'engineSessionId',
+  'id',
+  'lastActivityAt',
+  'projectId',
+  'title',
+  'updatedAt',
+  'workspace',
+]
 
 test.group('quick chats', (group) => {
   group.setup(() => testUtils.db().truncate())
   group.each.setup(() => testUtils.db().truncate())
 
-  test('lists quick chat summaries without detail payloads', async ({ client, assert }) => {
+  test('creates a chat that names its engine session', async ({ client, assert }) => {
     const user = await createUser()
-    const project = await createProject(user.id, 'Alpha')
-    const createResponse = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
+    const project = await createProject(user.id)
+    const engineSessionId = sessionId()
+
+    const response = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
       projectId: project.id,
-      title: 'Large chat',
+      title: 'Layout',
       workspace: '/workspace',
+      engineSessionId,
     })
-    const chat = createResponse.body() as unknown as QuickChatBody
-    const messageResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages`)
-      .loginAs(user)
-      .json({ body: 'Please change the layout' })
-    const message = messageResponse.body() as unknown as QuickChatMessageBody
 
-    await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs`)
-      .loginAs(user)
-      .json({ kind: 'resume', messageId: message.data.id })
-
-    const summaryResponse = await client
-      .get('/api/v1/projects/quick-chats')
-      .qs({ projectId: project.id, view: 'summary' })
-      .loginAs(user)
-
-    summaryResponse.assertStatus(200)
-    const summary = summaryResponse.body() as unknown as QuickChatListBody
-    assert.equal(summary.data[0].title, 'Large chat')
-    assert.isUndefined(summary.data[0].agentFinalResponse)
-    assert.isUndefined(summary.data[0].messages)
-    assert.isUndefined(summary.data[0].agentRuns)
-
-    const detailResponse = await client
-      .get(`/api/v1/projects/quick-chats/${chat.data.id}`)
-      .loginAs(user)
-
-    detailResponse.assertStatus(200)
-    const detail = detailResponse.body() as unknown as QuickChatBody
-    assert.lengthOf(detail.data.messages ?? [], 1)
-    assert.lengthOf(detail.data.agentRuns ?? [], 1)
+    response.assertStatus(200)
+    const chat = data(response)
+    assert.sameMembers(Object.keys(chat), keys)
+    assert.equal(chat.projectId, project.id)
+    assert.equal(chat.title, 'Layout')
+    assert.equal(chat.workspace, '/workspace')
+    assert.equal(chat.engineSessionId, engineSessionId)
+    assert.equal(chat.lastActivityAt, chat.updatedAt)
   })
 
-  test('persists run boundaries and undoes the exact message run', async ({ client, assert }) => {
-    const user = await createUser()
-    const project = await createProject(user.id, 'Alpha')
-    const chatResponse = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
-      projectId: project.id,
-      title: 'History',
-    })
-    const chat = chatResponse.body() as unknown as QuickChatBody
-    const firstMessageResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages`)
-      .loginAs(user)
-      .json({ body: 'First' })
-    const firstMessage = firstMessageResponse.body() as unknown as QuickChatMessageBody
-    const firstRunResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs`)
-      .loginAs(user)
-      .json({ checkpointRunCount: 4, kind: 'resume', messageId: firstMessage.data.id })
-    const firstRun = firstRunResponse.body() as unknown as QuickChatAgentRunBody
-    const ref = 'a'.repeat(40)
-    const updatedRunResponse = await client
-      .patch(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs/${firstRun.data.id}`)
-      .loginAs(user)
-      .json({ diffEndRef: ref, status: 'completed' })
-    const updatedRun = updatedRunResponse.body() as unknown as QuickChatAgentRunBody
-    assert.equal(updatedRun.data.checkpointRunCount, 4)
-    assert.equal(updatedRun.data.diffEndRef, ref)
-
-    const secondMessageResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages`)
-      .loginAs(user)
-      .json({ body: 'Second' })
-    const secondMessage = secondMessageResponse.body() as unknown as QuickChatMessageBody
-    const secondRunResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs`)
-      .loginAs(user)
-      .json({ checkpointRunCount: 5, kind: 'resume', messageId: secondMessage.data.id })
-    const secondRun = secondRunResponse.body() as unknown as QuickChatAgentRunBody
-
-    const invalidUndo = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages/${firstMessage.data.id}/undo`)
-      .loginAs(user)
-      .json({ runId: secondRun.data.id })
-    invalidUndo.assertStatus(409)
-
-    const undoResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages/${secondMessage.data.id}/undo`)
-      .loginAs(user)
-      .json({ runId: secondRun.data.id })
-    undoResponse.assertStatus(200)
-    const undone = undoResponse.body() as unknown as QuickChatBody
-    assert.deepEqual(
-      (undone.data.messages ?? []).map((message) => message.id),
-      [firstMessage.data.id]
-    )
-    assert.deepEqual(
-      (undone.data.agentRuns ?? []).map((run) => run.id),
-      [firstRun.data.id]
-    )
-  })
-
-  test('finalizes response-only runs transactionally and replays idempotently', async ({
+  test('lists chats by last activity, a push to the session included', async ({
     client,
     assert,
   }) => {
     const user = await createUser()
-    const project = await createProject(user.id, 'Alpha')
-    const fixture = await responseOnlyRun(client, user, project.id)
-    const input = responseOnlyFinalization(fixture)
-    const finalized = await finalizeQuickChatRun(client, user, fixture, input)
-    assert.equal(finalized.data.agentFinalResponse, input.finalResponse)
-    assert.equal(finalized.data.agentRuns?.[0]?.finalResponse, input.finalResponse)
-    assert.equal(finalized.data.agentRuns?.[0]?.lastSequenceNumber, 1)
-    assert.deepEqual(
-      finalized.data.agentRuns?.[0]?.activities?.map((activity) => activity.id),
-      ['message-final']
-    )
+    const project = await createProject(user.id)
+    const older = await createChat(client, user, project.id, 'Older')
+    const newer = await createChat(client, user, project.id, 'Newer')
+    await ageChat(older.id, 2)
+    await ageChat(newer.id, 1)
+    const other = await createProject(user.id)
+    await createChat(client, user, other.id, 'Other project')
 
-    const replayed = await finalizeQuickChatRun(client, user, fixture, input)
-    assert.lengthOf(replayed.data.agentRuns?.[0]?.activities ?? [], 1)
+    assert.deepEqual(await listedTitles(client, user, project.id), ['Newer', 'Older'])
+
+    assert.equal(await pushRecords(user, older.engineSessionId!), 200)
+    const session = await EngineSession.findOrFail(older.engineSessionId!)
+
+    const listed = await list(client, user, project.id)
+    assert.deepEqual(
+      listed.map((chat) => chat.title),
+      ['Older', 'Newer']
+    )
+    assert.equal(
+      DateTime.fromISO(listed[0].lastActivityAt).toSeconds(),
+      session.updatedAt.startOf('second').toSeconds()
+    )
+  })
+
+  test('requires a project of the user to list', async ({ client }) => {
+    const user = await createUser()
+    const stranger = await createUser()
+    const project = await createProject(stranger.id)
+
+    const missing = await client.get('/api/v1/projects/quick-chats').loginAs(user)
+    missing.assertStatus(422)
+    const foreign = await client
+      .get('/api/v1/projects/quick-chats')
+      .qs({ projectId: project.id })
+      .loginAs(user)
+    foreign.assertStatus(404)
+  })
+
+  test('shows and renames a chat', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id)
+    const chat = await createChat(client, user, project.id, 'Draft')
+
+    const shown = await client.get(`/api/v1/projects/quick-chats/${chat.id}`).loginAs(user)
+    shown.assertStatus(200)
+    assert.deepEqual(data(shown), chat)
+
+    const renamed = await client
+      .patch(`/api/v1/projects/quick-chats/${chat.id}`)
+      .loginAs(user)
+      .json({ title: 'Final', workspace: null })
+    renamed.assertStatus(200)
+    assert.equal(data(renamed).title, 'Final')
+    assert.isNull(data(renamed).workspace)
+    assert.equal(data(renamed).engineSessionId, chat.engineSessionId)
+  })
+
+  test('deleting a chat deletes its engine session', async ({ client, assert }) => {
+    const user = await createUser()
+    const project = await createProject(user.id)
+    const pushed = await createChat(client, user, project.id, 'Pushed')
+    const unpushed = await createChat(client, user, project.id, 'Never pushed')
+    assert.equal(await pushRecords(user, pushed.engineSessionId!), 200)
+
+    const response = await client.delete(`/api/v1/projects/quick-chats/${pushed.id}`).loginAs(user)
+    response.assertStatus(204)
+    assert.isNull(await EngineSession.find(pushed.engineSessionId!))
+    const records = await db
+      .from('engine_session_records')
+      .where('session_id', pushed.engineSessionId!)
+    assert.lengthOf(records, 0)
+
+    const second = await client.delete(`/api/v1/projects/quick-chats/${unpushed.id}`).loginAs(user)
+    second.assertStatus(204)
+    assert.lengthOf(await list(client, user, project.id), 0)
+  })
+
+  test("another user's chat is not found", async ({ client, assert }) => {
+    const owner = await createUser()
+    const stranger = await createUser()
+    const project = await createProject(owner.id)
+    const chat = await createChat(client, owner, project.id, 'Private')
+    assert.equal(await pushRecords(owner, chat.engineSessionId!), 200)
+
+    const path = `/api/v1/projects/quick-chats/${chat.id}`
+    const shown = await client.get(path).loginAs(stranger)
+    shown.assertStatus(404)
+    const renamed = await client.patch(path).loginAs(stranger).json({ title: 'Taken' })
+    renamed.assertStatus(404)
+    const deleted = await client.delete(path).loginAs(stranger)
+    deleted.assertStatus(404)
+    const created = await client.post('/api/v1/projects/quick-chats').loginAs(stranger).json({
+      projectId: project.id,
+      title: 'Intruder',
+      engineSessionId: sessionId(),
+    })
+    created.assertStatus(404)
+    assert.isNotNull(await EngineSession.find(chat.engineSessionId!))
+    const owned = await client.get(path).loginAs(owner)
+    assert.equal(data(owned).title, 'Private')
+  })
+
+  test('refuses an engine session id that is invalid, taken or of another account', async ({
+    assert,
+    client,
+  }) => {
+    const user = await createUser()
+    const stranger = await createUser()
+    const project = await createProject(user.id)
+    const existing = await createChat(client, user, project.id, 'First')
+    const foreignSession = sessionId()
+    assert.equal(await pushRecords(stranger, foreignSession), 200)
+
+    for (const engineSessionId of [undefined, '', 'has space', 'x'.repeat(65), 'é']) {
+      const response = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
+        projectId: project.id,
+        title: 'Invalid',
+        engineSessionId,
+      })
+      response.assertStatus(422)
+    }
+    const taken = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
+      projectId: project.id,
+      title: 'Taken',
+      engineSessionId: existing.engineSessionId,
+    })
+    taken.assertStatus(422)
+    const foreign = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
+      projectId: project.id,
+      title: 'Foreign',
+      engineSessionId: foreignSession,
+    })
+    foreign.assertStatus(403)
   })
 })
 
-async function responseOnlyRun(
-  client: ApiClient,
-  user: Awaited<ReturnType<typeof createUser>>,
-  projectId: string
-) {
-  const chatResponse = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
-    projectId,
-    title: 'Response fallback',
-  })
-  const chat = chatResponse.body() as unknown as QuickChatBody
-  const executionId = crypto.randomUUID()
-  const sessionId = crypto.randomUUID()
-  const runResponse = await client
-    .post(`/api/v1/projects/quick-chats/${chat.data.id}/agent-runs`)
-    .loginAs(user)
-    .json({ clineSessionId: sessionId, executionId, kind: 'resume' })
-  return {
-    chat,
-    executionId,
-    run: runResponse.body() as unknown as QuickChatAgentRunBody,
-    sessionId,
-  }
+function data(response: { body(): unknown }) {
+  return (response.body() as { data: QuickChatData }).data
 }
 
-function responseOnlyFinalization(fixture: Awaited<ReturnType<typeof responseOnlyRun>>) {
-  return {
-    activities: [],
-    agentLastError: null,
-    agentLastEvent: 'Agent completed.',
-    agentStatus: null,
-    finalResponse: 'Delivered only by done.',
-    persistenceEvent: {
-      createdAt: new Date().toISOString(),
-      eventId: crypto.randomUUID(),
-      eventType: 'done',
-      executionId: fixture.executionId,
-      runId: fixture.run.data.id,
-      sequenceNumber: 1,
-      sessionId: fixture.sessionId,
-    },
-    status: 'completed' as const,
-  }
-}
-
-async function finalizeQuickChatRun(
-  client: ApiClient,
-  user: Awaited<ReturnType<typeof createUser>>,
-  fixture: Awaited<ReturnType<typeof responseOnlyRun>>,
-  input: ReturnType<typeof responseOnlyFinalization>
-) {
+async function createChat(client: ApiClient, user: User, projectId: string, title: string) {
   const response = await client
-    .post(
-      `/api/v1/projects/quick-chats/${fixture.chat.data.id}/agent-runs/${fixture.run.data.id}/finalize`
-    )
+    .post('/api/v1/projects/quick-chats')
     .loginAs(user)
-    .json(input)
+    .json({ projectId, title, engineSessionId: sessionId() })
   response.assertStatus(200)
-  return response.body() as unknown as QuickChatBody
+  return data(response)
+}
+
+async function list(client: ApiClient, user: User, projectId: string) {
+  const response = await client.get('/api/v1/projects/quick-chats').qs({ projectId }).loginAs(user)
+  response.assertStatus(200)
+  return (response.body() as { data: QuickChatData[] }).data
+}
+
+async function listedTitles(client: ApiClient, user: User, projectId: string) {
+  const chats = await list(client, user, projectId)
+  return chats.map((chat) => chat.title)
+}
+
+/** Moves the chat into the past: timestamps keep whole seconds on both databases. */
+async function ageChat(id: string, hours: number) {
+  const at = DateTime.utc().minus({ hours }).toFormat(db.connection().dialect.dateTimeFormat)
+  await db.from('quick_chats').where('id', id).update({ created_at: at, updated_at: at })
+}
+
+/** Pushes the first record of a session the way the desktop relays the engine's log. */
+async function pushRecords(user: User, id: string) {
+  const token = await User.accessTokens.create(user)
+  const response = await fetch(
+    `http://${env.get('HOST')}:${env.get('PORT')}/api/v1/engine/sessions/${id}/records`,
+    {
+      method: 'POST',
+      headers: {
+        'authorization': `Bearer ${token.value!.release()}`,
+        'content-type': 'application/octet-stream',
+      },
+      body: JSON.stringify({
+        records: [
+          {
+            seq: 1,
+            at_ms: Date.now(),
+            type: 'session_created',
+            config: { purpose: 'quick_chat', workspace_root: '/work' },
+          },
+        ],
+      }),
+    }
+  )
+  return response.status
 }
 
 function createUser() {
-  return User.create({
-    email: `${crypto.randomUUID()}@example.com`,
-    password: 'password123',
-  })
+  return User.create({ email: `${randomUUID()}@example.com`, password: 'password123' })
 }
 
-function createProject(userId: string, name: string) {
-  return Project.create({
-    name,
-    repositoryFingerprint: crypto.randomUUID(),
-    userId,
-  })
+function createProject(userId: string) {
+  return Project.create({ name: 'Quick chat project', repositoryFingerprint: randomUUID(), userId })
+}
+
+function sessionId() {
+  return `quick-chat-${randomUUID()}`
 }

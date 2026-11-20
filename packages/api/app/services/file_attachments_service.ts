@@ -20,10 +20,6 @@ type CreateUploadInput = Omit<FileAttachmentReference, 'content' | 'downloadUrl'
 }
 
 const ownerConfigs = {
-  quickChatMessage: {
-    column: 'quick_chat_message_id',
-    table: 'quick_chat_message_file_attachments',
-  },
   userStory: {
     column: 'user_story_id',
     table: 'user_story_file_attachments',

@@ -14,6 +14,8 @@ use crate::connection::{Connection, Host};
 use crate::engine::{Engine, OpenError, Settings};
 use crate::log::log;
 use crate::transport::{Inbound, Outbound};
+use base64::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64;
 use blame_engine_core::ports::{SessionStore, StoreError};
 use blame_engine_core::{EngineError, Session, SessionEvent};
 use blame_engine_protocol::rpc::{
@@ -30,6 +32,10 @@ use tokio_util::task::TaskTracker;
 
 /// The largest page `session/read` returns.
 const MAX_READ: u32 = 1000;
+
+/// The largest blob a client may put: what Blame's database accepts
+/// (`packages/api/config/engine_sessions.ts`).
+const MAX_BLOB: usize = 25 * 1024 * 1024;
 
 struct Server {
     settings: Mutex<Option<Settings>>,
@@ -157,6 +163,10 @@ fn dispatch(
             // told stay the same.
             log!(Debug, "$/cancel of request {id}: it runs to completion");
         }
+        Ok(Message::Notification {
+            call: ClientRequest::ToolProgress { call, text },
+            ..
+        }) => server.host.progress(&call, text),
         Ok(Message::Notification { .. }) => {}
         Err(error) => {
             let Some(id) = id else {
@@ -203,6 +213,8 @@ const KNOWN_METHODS: &[&str] = &[
     "session/compact",
     "session/configure",
     "session/close",
+    "blob/put",
+    "tool/progress",
     "shutdown",
     "$/cancel",
 ];
@@ -249,7 +261,7 @@ async fn handle(
             server.exit.cancel();
             Ok(None)
         }
-        ClientRequest::Cancel { .. } => Ok(Some(Value::Null)),
+        ClientRequest::Cancel { .. } | ClientRequest::ToolProgress { .. } => Ok(Some(Value::Null)),
         call => {
             let engine = server.engine.get().cloned().ok_or_else(|| {
                 rpc_error(-32002, "initialize first".into(), ErrorKind::InvalidRequest)
@@ -457,9 +469,19 @@ async fn session_call(
             engine.close(&session).await.map_err(open_error)?;
             Ok(Some(Value::Null))
         }
+        ClientRequest::PutBlob { media_type, data } => {
+            let bytes = decode_blob(&media_type, &data)?;
+            let blob = engine
+                .store()
+                .put_blob(&media_type, bytes)
+                .await
+                .map_err(store_error)?;
+            reply(blob)
+        }
         ClientRequest::Initialize { .. }
         | ClientRequest::Shutdown {}
-        | ClientRequest::Cancel { .. } => {
+        | ClientRequest::Cancel { .. }
+        | ClientRequest::ToolProgress { .. } => {
             unreachable!("handled before")
         }
     }
@@ -539,6 +561,26 @@ async fn forward(
             return;
         }
     }
+}
+
+/// The bytes of a `blob/put`, refused when Blame's database would refuse to
+/// keep them: a blob that cannot be copied there would make its session
+/// impossible to reopen on another machine.
+fn decode_blob(media_type: &str, data: &str) -> Result<Vec<u8>, RpcError> {
+    let invalid = |message: String| rpc_error(-32602, message, ErrorKind::InvalidRequest);
+    if media_type.is_empty() || !media_type.contains('/') {
+        return Err(invalid(format!("`{media_type}` is not a media type")));
+    }
+    let bytes = BASE64
+        .decode(data)
+        .map_err(|error| invalid(format!("the blob is not base64: {error}")))?;
+    if bytes.len() > MAX_BLOB {
+        return Err(invalid(format!(
+            "the blob has {} bytes, more than the {MAX_BLOB} a blob may have",
+            bytes.len()
+        )));
+    }
+    Ok(bytes)
 }
 
 fn rpc_error(code: i32, message: String, kind: ErrorKind) -> RpcError {

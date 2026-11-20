@@ -38,3 +38,13 @@ test("uses persisted checkpoint positions when history contains gaps", () => {
   ])
   assert.equal(nextCheckpointRunCount([first, second]), 8)
 })
+
+test("an engine turn that can be undone carries its own checkpoint", () => {
+  assert.deepEqual(
+    checkpointRunTargets([
+      { checkpointRunCount: 1, id: "a" },
+      { checkpointRunCount: null, id: "b" },
+    ]),
+    [{ checkpointRunCount: 1 }, undefined]
+  )
+})

@@ -67,6 +67,7 @@ export type AgentStatsSource = CompactableAgent & Pick<UserStory, "agentUsage">
 export function StoryStatsIsland({
   buttons = 2,
   className,
+  compaction,
   contextLimitKey,
   diffStats,
   expanded,
@@ -79,6 +80,9 @@ export function StoryStatsIsland({
   // toggle and close, or the chat's toggle. The toggle hides while preparing.
   buttons?: number
   className?: string
+  // Compaction of a conversation that does not run on the Cline runtime
+  // (a quick chat on the engine): replaces the session's own.
+  compaction?: StoryContextCompaction
   contextLimitKey?: string
   diffStats?: UserStoryDiffStats
   expanded: boolean
@@ -87,7 +91,7 @@ export function StoryStatsIsland({
   source?: AgentStatsSource
   useEditorModel?: boolean
 }) {
-  const stats = useStoryStats(source, contextLimitKey, useEditorModel)
+  const stats = useStoryStats(source, contextLimitKey, useEditorModel, compaction)
   const reduceMotion = useReducedMotion()
   // The full face stays mounted so the island always knows its height and
   // can move between two known sizes.
@@ -267,7 +271,8 @@ type StoryStats = ReturnType<typeof useStoryStats>
 function useStoryStats(
   source: AgentStatsSource | undefined,
   contextLimitKey: string | undefined,
-  useEditorModel: boolean
+  useEditorModel: boolean,
+  compactionOverride: StoryContextCompaction | undefined
 ) {
   const sessionUsage = useSessionUsage(
     source?.agentUsage ? undefined : source?.clineSessionId
@@ -285,7 +290,8 @@ function useStoryStats(
     model,
     selection.allProviders
   )
-  const compaction = useStoryContextCompaction(source)
+  const sessionCompaction = useStoryContextCompaction(source)
+  const compaction = compactionOverride ?? sessionCompaction
   const totals =
     usageTotalsFromAgentUsage(source?.agentUsage) ?? sessionUsage.totals
   const context = storyContextUsage(source?.agentUsage, budget.limit)

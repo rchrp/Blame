@@ -126,7 +126,7 @@ export function screenshotOwnerFor(
   return {
     id,
     kind,
-    scope: kind === "userStory" ? `story:${id}` : `chat:${id}`,
+    scope: `story:${id}`,
   }
 }
 import { TurnSummary } from "./turn-summary"

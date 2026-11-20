@@ -41,7 +41,11 @@ export type ClientRequest = { "method": "initialize", "params": { protocol_versi
  * The client answers `host/log/*` and `host/blob/*`: sessions are
  * then copied to Blame's database and can be reopened from it.
  */
-remote_log: boolean, } } | { "method": "session/create", "params": { session?: SessionId, config: SessionConfig, } } | { "method": "session/open", "params": { session: SessionId, } } | { "method": "session/list", "params": Record<symbol, never> } | { "method": "session/read", "params": { session: SessionId, after: number, limit: number, } } | { "method": "session/subscribe", "params": { session: SessionId, after: number, } } | { "method": "session/unsubscribe", "params": { session: SessionId, } } | { "method": "session/send", "params": { session: SessionId, input: Array<UserBlock>, delivery: Delivery, } } | { "method": "session/interrupt", "params": { session: SessionId, } } | { "method": "session/rewind", "params": { session: SessionId, to: number, restore_workspace: boolean, } } | { "method": "session/undo_rewind", "params": { session: SessionId, } } | { "method": "session/fork", "params": { session: SessionId, at: number, workspace_root: string, } } | { "method": "session/compact", "params": { session: SessionId, } } | { "method": "session/configure", "params": { session: SessionId, config: SessionConfig, } } | { "method": "session/close", "params": { session: SessionId, } } | { "method": "shutdown", "params": Record<symbol, never> } | { "method": "$/cancel", "params": { id: number, } };
+remote_log: boolean, } } | { "method": "session/create", "params": { session?: SessionId, config: SessionConfig, } } | { "method": "session/open", "params": { session: SessionId, } } | { "method": "session/list", "params": Record<symbol, never> } | { "method": "session/read", "params": { session: SessionId, after: number, limit: number, } } | { "method": "session/subscribe", "params": { session: SessionId, after: number, } } | { "method": "session/unsubscribe", "params": { session: SessionId, } } | { "method": "session/send", "params": { session: SessionId, input: Array<UserBlock>, delivery: Delivery, } } | { "method": "session/interrupt", "params": { session: SessionId, } } | { "method": "session/rewind", "params": { session: SessionId, to: number, restore_workspace: boolean, } } | { "method": "session/undo_rewind", "params": { session: SessionId, } } | { "method": "session/fork", "params": { session: SessionId, at: number, workspace_root: string, } } | { "method": "session/compact", "params": { session: SessionId, } } | { "method": "session/configure", "params": { session: SessionId, config: SessionConfig, } } | { "method": "session/close", "params": { session: SessionId, } } | { "method": "blob/put", "params": { media_type: string, 
+/**
+ * The bytes, base64-encoded.
+ */
+data: string, } } | { "method": "tool/progress", "params": { call: ToolCallId, text: string, } } | { "method": "shutdown", "params": Record<symbol, never> } | { "method": "$/cancel", "params": { id: number, } };
 
 // prettier-ignore
 export type ContextEdit = { 
@@ -75,7 +79,11 @@ call?: ToolCallId, tool?: string, } | { "type": "text", request: RequestId, inde
 export type EngineNotification = { "method": "session/record", "params": { session: SessionId, record: SessionRecord, } } | { "method": "session/delta", "params": { session: SessionId, delta: Delta, } };
 
 // prettier-ignore
-export type EngineRequest = { "method": "host/tool", "params": { session: SessionId, turn: TurnId, call: ToolCallId, name: string, input: JsonValue, } } | { "method": "host/approval", "params": { session: SessionId, turn: TurnId, call: ToolCallId, tool: ToolSpec, input: JsonValue, } } | { "method": "host/credential", "params": { provider: string, } } | { "method": "host/log/push", "params": { session: SessionId, records: Array<SessionRecord>, } } | { "method": "host/log/pull", "params": { session: SessionId, after: number, } } | { "method": "host/blob/push", "params": { blob: BlobRef, 
+export type EngineRequest = { "method": "host/tool", "params": { session: SessionId, turn: TurnId, call: ToolCallId, name: string, input: JsonValue, } } | { "method": "host/approval", "params": { session: SessionId, turn: TurnId, call: ToolCallId, tool: ToolSpec, input: JsonValue, } } | { "method": "host/credential", "params": { provider: string, 
+/**
+ * The session the request is for.
+ */
+session: SessionId, } } | { "method": "host/log/push", "params": { session: SessionId, records: Array<SessionRecord>, } } | { "method": "host/log/pull", "params": { session: SessionId, after: number, } } | { "method": "host/blob/push", "params": { blob: BlobRef, 
 /**
  * The bytes, base64-encoded.
  */

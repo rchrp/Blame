@@ -18,6 +18,7 @@ import {
   type WebContents,
 } from "electron";
 import { shutdownAgentRuntime } from "./agent-ipc";
+import { shutdownEngineHost } from "./engine/engine-host-ipc";
 import { desktopAppIdentity } from "./desktop-app-identity";
 import { desktopRuntimeEnvironment } from "./desktop-runtime-environment";
 import { DesktopAuthCallbackDeliveryQueue } from "./desktop-auth-callback-delivery";
@@ -156,6 +157,10 @@ void app.whenReady().then(() => {
     },
     agentRuntime: {
       modulePath: desktopResources.agentRuntime,
+    },
+    engineHost: {
+      modulePath: desktopResources.engineHost,
+      dataDir: join(app.getPath("userData"), "engine"),
     },
     localApi: {
       modulePath: fileURLToPath(import.meta.resolve("@blame/api/local")),
@@ -716,6 +721,7 @@ async function cleanupApplication() {
     shutdownTerminalSessions(),
     shutdownWorkspaceProcesses(),
     shutdownAgentRuntime(),
+    shutdownEngineHost(),
     shutdownPreviewDevtools(),
     shutdownGithubMcp(),
     shutdownComponentPreviews(),

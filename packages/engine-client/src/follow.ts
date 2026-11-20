@@ -93,7 +93,10 @@ class Follower implements SessionFollower {
   private client: EngineClient | undefined;
   private resyncing = false;
 
-  constructor(private readonly options: FollowOptions) {
+  private readonly options: FollowOptions;
+
+  constructor(options: FollowOptions) {
+    this.options = options;
     this.lastSeq = options.after ?? 0;
     this.done = this.run();
   }

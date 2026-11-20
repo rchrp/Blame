@@ -59,9 +59,12 @@ blame-engine --version
    seq the client has: the answer comes first, then every record after that
    seq, then live records and deltas.
 3. Answer the engine's requests: `host/credential` (kept in memory only,
-   asked again once when the provider refuses it), `host/tool` for the
-   session's `client_tools`, `host/approval`, and the log requests. The
-   engine withdraws a request it no longer needs with `$/cancel`.
+   one per provider, per session for `claude-code`; asked again once when
+   the provider refuses it), `host/tool` for the session's `client_tools`
+   (report progress meanwhile with the `tool/progress` notification),
+   `host/approval`, and the log requests. The engine withdraws a request it
+   no longer needs with `$/cancel`. Attachments go in with `blob/put`, whose
+   `BlobRef` a message's image or document block then carries.
 4. Stop with `shutdown` (answered once running turns ended as interrupted
    and the last records reached the client), or by closing stdin. SIGTERM,
    SIGINT and SIGHUP stop it the same way.

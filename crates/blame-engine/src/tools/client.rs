@@ -9,10 +9,11 @@ use tokio_util::sync::CancellationToken;
 pub async fn call(
     host: &Host,
     invocation: ToolInvocation,
-    _progress: ToolProgress,
+    progress: ToolProgress,
     cancel: CancellationToken,
 ) -> ToolOutput {
     let name = invocation.name.clone();
+    let _progress = host.track_progress(invocation.call.clone(), progress);
     let request = host.request::<ToolResult>(EngineRequest::Tool {
         session: invocation.session,
         turn: invocation.turn,

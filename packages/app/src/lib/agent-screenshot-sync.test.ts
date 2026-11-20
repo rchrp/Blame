@@ -102,13 +102,13 @@ test("another device fetches a missing screenshot and caches it", async () => {
       {
         client: screenshots.value,
         connection,
-        owner: { id: "chat-1", kind: "quickChat", scope: "runner:p:web" },
+        owner: { id: "story-1", kind: "userStory", scope: "runner:p:web" },
       }
     )
     assert.equal(result?.dataUrl, "data:image/png;base64,AAAA")
     assert.match(
       fetches.calls[0].url,
-      /\/projects\/quick-chats\/chat-1\/agent-screenshots\/c{64}\?sessionId=session-1$/
+      /\/projects\/user-stories\/story-1\/agent-screenshots\/c{64}\?sessionId=session-1$/
     )
     assert.equal(screenshots.cached.length, 1)
     assert.equal(

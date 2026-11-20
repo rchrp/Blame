@@ -129,17 +129,6 @@ test.group('file attachments', (group) => {
       .loginAs(user)
       .json({ body: 'Stored reference', fileAttachments: [storedReference] })
     commentResponse.assertStatus(200)
-    const chatResponse = await client
-      .post('/api/v1/projects/quick-chats')
-      .loginAs(user)
-      .json({ projectId: project.id, title: 'Stored reference' })
-    chatResponse.assertStatus(200)
-    const chat = chatResponse.body() as unknown as StoryBody
-    const messageResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages`)
-      .loginAs(user)
-      .json({ body: 'Stored reference', fileAttachments: [storedReference] })
-    messageResponse.assertStatus(200)
 
     const unauthorizedResponse = await client.get(`/api/v1/attachments/${id}`).loginAs(stranger)
     unauthorizedResponse.assertStatus(404)
@@ -157,7 +146,7 @@ test.group('file attachments', (group) => {
       .json({ password: 'password123' })
     exportResponse.assertStatus(200)
     const accountExport = exportResponse.body() as unknown as AccountExportBody
-    assert.equal(accountExport.version, 2)
+    assert.equal(accountExport.version, 3)
     assert.equal(accountExport.workspace.fileAttachments[0].content, 'SGVsbG8=')
 
     await UserSubscription.query().where('userId', user.id).delete()
@@ -382,10 +371,7 @@ test.group('file attachments', (group) => {
     assert.isNull(await FileAttachment.find('abandoned-conversation-file'))
   })
 
-  test('stores comment and quick chat message attachments as objects', async ({
-    assert,
-    client,
-  }) => {
+  test('stores comment attachments as objects', async ({ assert, client }) => {
     const user = await createUser()
     const project = await createProject(user.id)
     const storyResponse = await client.post('/api/v1/projects/user-stories').loginAs(user).json({
@@ -405,24 +391,7 @@ test.group('file attachments', (group) => {
     commentResponse.assertStatus(200)
     assertStoredReference(commentResponse.body(), 'comment-file', assert)
 
-    const chatResponse = await client
-      .post('/api/v1/projects/quick-chats')
-      .loginAs(user)
-      .json({ projectId: project.id, title: 'Attachment chat' })
-    chatResponse.assertStatus(200)
-    const chat = chatResponse.body() as unknown as StoryBody
-    const messageResponse = await client
-      .post(`/api/v1/projects/quick-chats/${chat.data.id}/messages`)
-      .loginAs(user)
-      .json({
-        body: 'Message attachment',
-        fileAttachments: [inlineAttachment('message-file')],
-      })
-    messageResponse.assertStatus(200)
-    assertStoredReference(messageResponse.body(), 'message-file', assert)
-
     assert.equal(await attachmentLinkCount('user_story_comment_file_attachments'), 1)
-    assert.equal(await attachmentLinkCount('quick_chat_message_file_attachments'), 1)
   })
 })
 

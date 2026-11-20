@@ -2,7 +2,7 @@ import type { AgentPersistenceEvent } from "./backlog-data.ts"
 
 const storageKey = "blame:agent-snapshot-outbox:v1"
 
-export type AgentSnapshotTarget = "quick-chat" | "user-story"
+export type AgentSnapshotTarget = "user-story"
 
 export type DurableAgentSnapshot<T> = {
   event: AgentPersistenceEvent
@@ -125,8 +125,7 @@ function durableAgentSnapshot(
     typeof snapshot.projectId === "string" &&
     typeof snapshot.runId === "string" &&
     typeof snapshot.targetId === "string" &&
-    (snapshot.targetType === "quick-chat" ||
-      snapshot.targetType === "user-story") &&
+    snapshot.targetType === "user-story" &&
     snapshot.update !== undefined
   )
 }

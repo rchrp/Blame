@@ -161,19 +161,6 @@ export interface ApiDefinition {
         show: typeof routes['projects.quick_chats.quick_chats.show']
         update: typeof routes['projects.quick_chats.quick_chats.update']
         destroy: typeof routes['projects.quick_chats.quick_chats.destroy']
-        storeScreenshot: typeof routes['projects.quick_chats.quick_chats.store_screenshot']
-        showScreenshot: typeof routes['projects.quick_chats.quick_chats.show_screenshot']
-      }
-      quickChatMessages: {
-        store: typeof routes['projects.quick_chats.quick_chat_messages.store']
-        undo: typeof routes['projects.quick_chats.quick_chat_messages.undo']
-        validateUndo: typeof routes['projects.quick_chats.quick_chat_messages.validate_undo']
-      }
-      quickChatAgentRuns: {
-        store: typeof routes['projects.quick_chats.quick_chat_agent_runs.store']
-        update: typeof routes['projects.quick_chats.quick_chat_agent_runs.update']
-        finalize: typeof routes['projects.quick_chats.quick_chat_agent_runs.finalize']
-        activityDetail: typeof routes['projects.quick_chats.quick_chat_agent_runs.activity_detail']
       }
     }
     userStories: {

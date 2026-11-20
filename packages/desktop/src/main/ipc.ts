@@ -1,6 +1,7 @@
 import { dirname, join } from "node:path";
 import { registerPreviewDevicesIpc } from "./ipc/preview-devices-ipc";
 import {
+  app,
   ipcMain,
   shell,
   systemPreferences,
@@ -10,6 +11,8 @@ import {
 import { openAttachment } from "./attachment-open";
 import { installApplicationMenu } from "./application-menu";
 import { localAgentOwnsWorkspace, registerAgentIpcHandlers } from "./agent-ipc";
+import { engineBinaryPath } from "./engine/engine-binary";
+import { registerEngineIpcHandlers } from "./engine/engine-host-ipc";
 import { registerAppearanceIpcHandlers } from "./appearance-ipc";
 import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc";
 import { registerPreviewServingIpcHandlers } from "./ipc/preview-serving-ipc";
@@ -58,6 +61,11 @@ export type DesktopIpcOptions = {
   };
   agentRuntime: {
     modulePath: string;
+  };
+  // The engine host's utility process and where the engine keeps its data.
+  engineHost: {
+    modulePath: string;
+    dataDir: string;
   };
   // The API this computer runs for use without an account.
   localApi: ConstructorParameters<typeof LocalApiService>[0];
@@ -129,6 +137,16 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
       // A story that changes again needs its development server back.
       void requestDevelopmentServing(worktree).catch(() => undefined);
       return previews.syncBarrier(worktree);
+    },
+  });
+  registerEngineIpcHandlers({
+    ...options.engineHost,
+    binary: engineBinaryPath({ applicationPath: app.getAppPath() }),
+    clientVersion: app.getVersion(),
+    isAppWindow: options.isAppWindow,
+    renderWebPage: async (url, signal) => {
+      const { renderResearchPage } = await import("./web-research-browser.ts");
+      return renderResearchPage(url, signal);
     },
   });
   useServingAgentCheck(localAgentOwnsWorkspace);

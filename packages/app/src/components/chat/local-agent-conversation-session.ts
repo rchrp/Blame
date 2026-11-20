@@ -17,8 +17,10 @@ import type {
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 import type { AgentConversationRun } from "@/components/chat/agent-conversation"
-import { quickChatClineLogRelativePath } from "@/components/chat/data/quick-chat-agent-flow"
-import { agentTurnRecovery } from "@/components/chat/data/quick-chat-run-recovery"
+import {
+  agentTurnRecovery,
+  clineLogRelativePath,
+} from "@/components/chat/local-agent-turn-recovery"
 import type { useModelSelection } from "@/components/model/model-selection"
 import type { Platform } from "@/context/platform"
 import { uploadFileAttachments } from "@/lib/file-attachment-api"
@@ -214,7 +216,7 @@ export class LocalAgentConversationSession {
         log: (id) =>
           workspace.readFile({
             root: cwd,
-            path: quickChatClineLogRelativePath(id),
+            path: clineLogRelativePath(id),
           }),
         messages: (id) => platform.agent!.sessions.messages(id),
       }

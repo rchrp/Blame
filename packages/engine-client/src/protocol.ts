@@ -6,6 +6,7 @@
 import type {
   Approval,
   BlobPulled,
+  BlobRef,
   ClientRequest,
   Credential,
   EngineNotification,
@@ -73,10 +74,14 @@ export interface ClientResults {
   "session/compact": null;
   "session/configure": null;
   "session/close": null;
+  "blob/put": BlobRef;
   shutdown: null;
 }
 
-/** Requests that are answered; `$/cancel` is a notification. */
+/** What the client says without waiting for an answer. */
+export type ClientNotification = "$/cancel" | "tool/progress";
+
+/** Requests that are answered; the `ClientNotification`s are not. */
 export type ClientMethod = keyof ClientResults;
 
 /** The parameters of a client request, as generated from Rust. */
@@ -110,7 +115,7 @@ type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 type MustBeTrue<T extends true> = T;
 
 export type _ClientMethodsAreAllHandled = MustBeTrue<
-  Same<ClientMethod | "$/cancel", ClientRequest["method"]>
+  Same<ClientMethod | ClientNotification, ClientRequest["method"]>
 >;
 export type _HostMethodsAreAllHandled = MustBeTrue<
   Same<HostMethod | "$/cancel", EngineRequest["method"]>

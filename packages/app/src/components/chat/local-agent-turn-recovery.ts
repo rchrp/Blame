@@ -1,18 +1,17 @@
+// Recovery of a planning conversation's turn on the Cline runtime: its
+// turns resume one runtime session and share one log. Quick chats run on the
+// engine, whose log says how each turn ended.
+
 import type { AgentEvent } from "@blame/agent-runtime"
 
 import {
   completedClineLog,
   finalAssistantResponse,
-} from "../../backlog/data/agent-run-recovery.ts"
-import { agentPersistenceEvent } from "../../backlog/data/agent-stream-coordinator.ts"
-import type {
-  QuickChat,
-  QuickChatAgentRun,
-  QuickChatAgentRunFinalization,
-} from "./quick-chat-data.ts"
+} from "../backlog/data/agent-run-recovery.ts"
 
-export const interruptedQuickChatMessage =
-  "The agent stopped before its reply reached Blame. Send a message to continue."
+export function clineLogRelativePath(sessionId: string) {
+  return `.blame/logs/cline-${sessionId}.log`
+}
 
 type AgentTurnRecoverySources = {
   // Whether the desktop app still runs this session; absent on older builds.
@@ -50,31 +49,6 @@ export async function agentTurnRecovery(
     }
   }
   return live === false ? { kind: "interrupted" } : undefined
-}
-
-export function interruptedQuickChatRunFinalization(
-  chat: Pick<QuickChat, "clineSessionId">,
-  run: QuickChatAgentRun,
-  completedAt = new Date().toISOString()
-): QuickChatAgentRunFinalization {
-  return {
-    activities: [],
-    agentLastError: interruptedQuickChatMessage,
-    agentLastEvent: interruptedQuickChatMessage,
-    agentStatus: null,
-    completedAt,
-    finalResponse: run.finalResponse || interruptedQuickChatMessage,
-    persistenceEvent: agentPersistenceEvent(
-      { createdAt: completedAt, payload: {}, type: "error" },
-      {
-        executionId: run.executionId ?? run.id,
-        lastSequenceNumber: run.lastSequenceNumber,
-        runId: run.id,
-        sessionId: run.clineSessionId ?? chat.clineSessionId ?? run.id,
-      }
-    ),
-    status: "failed",
-  }
 }
 
 function nextTurn(

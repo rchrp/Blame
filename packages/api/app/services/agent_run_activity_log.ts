@@ -1,4 +1,3 @@
-import QuickChatAgentRunActivity from '#models/quick_chat_agent_run_activity'
 import type { UserStoryAgentActivity } from '#models/user_story'
 import UserStoryAgentRunActivity from '#models/user_story_agent_run_activity'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
@@ -27,35 +26,8 @@ export async function persistUserStoryRunActivity(
   return existing.save()
 }
 
-export async function persistQuickChatRunActivity(
-  runId: string,
-  activity: UserStoryAgentActivity,
-  client?: TransactionClientContract
-) {
-  const existing = await QuickChatAgentRunActivity.query({ client })
-    .where('runId', runId)
-    .where('activityId', activity.id)
-    .first()
-  if (!existing) {
-    return QuickChatAgentRunActivity.create(
-      { runId, activityId: activity.id, activity },
-      { client }
-    )
-  }
-  existing.activity = activityWithDurableDetail(existing.activity, activity)
-  return existing.save()
-}
-
 export async function userStoryRunActivity(runId: string, activityId: string) {
   const record = await UserStoryAgentRunActivity.query()
-    .where('runId', runId)
-    .where('activityId', activityId)
-    .first()
-  return record?.activity ?? undefined
-}
-
-export async function quickChatRunActivity(runId: string, activityId: string) {
-  const record = await QuickChatAgentRunActivity.query()
     .where('runId', runId)
     .where('activityId', activityId)
     .first()
@@ -65,12 +37,6 @@ export async function quickChatRunActivity(runId: string, activityId: string) {
 export async function userStoryRunActivities(runIds: string[]) {
   if (!runIds.length) return []
   const records = await UserStoryAgentRunActivity.query().whereIn('runId', runIds)
-  return records.flatMap((record) => (record.activity ? [record.activity] : []))
-}
-
-export async function quickChatRunActivities(runIds: string[]) {
-  if (!runIds.length) return []
-  const records = await QuickChatAgentRunActivity.query().whereIn('runId', runIds)
   return records.flatMap((record) => (record.activity ? [record.activity] : []))
 }
 
@@ -112,22 +78,6 @@ export async function persistTerminalUserStoryRunActivities(
   )
 }
 
-export async function persistTerminalQuickChatRunActivities(
-  runId: string,
-  activities: UserStoryAgentActivity[],
-  options: TerminalActivityPersistenceOptions = {}
-) {
-  const persisted = await persistedQuickChatRunActivities(runId, options.client)
-  const terminalActivities = reconcileTerminalAgentRunActivities(
-    activities,
-    persisted,
-    options.completedAt
-  )
-  return persistActivities(terminalActivities, (activity) =>
-    persistQuickChatRunActivity(runId, activity, options.client)
-  )
-}
-
 async function persistActivities(
   activities: UserStoryAgentActivity[],
   persist: (activity: UserStoryAgentActivity) => Promise<unknown>
@@ -138,14 +88,6 @@ async function persistActivities(
 
 async function persistedUserStoryRunActivities(runId: string, client?: TransactionClientContract) {
   const records = await UserStoryAgentRunActivity.query({ client })
-    .where('runId', runId)
-    .orderBy('createdAt', 'asc')
-    .orderBy('id', 'asc')
-  return records.flatMap((record) => (record.activity ? [record.activity] : []))
-}
-
-async function persistedQuickChatRunActivities(runId: string, client?: TransactionClientContract) {
-  const records = await QuickChatAgentRunActivity.query({ client })
     .where('runId', runId)
     .orderBy('createdAt', 'asc')
     .orderBy('id', 'asc')
