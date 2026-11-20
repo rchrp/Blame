@@ -18,13 +18,14 @@ import {
   type EngineHostMessage,
   type EngineHostMethod,
 } from "@blame/agent-runtime/engine-protocol";
+import type { BinaryLookup } from "./engine-binary.ts";
 import type { EngineDesktopHandlers } from "./engine-desktop-services.ts";
 import { EngineHostRouter } from "./engine-host-router.ts";
 
 export type EngineHostRegistration = {
   modulePath: string;
-  /** Undefined when no engine binary was found: every call then says so. */
-  binary: string | undefined;
+  /** When no engine binary was found, every call says why. */
+  binary: BinaryLookup;
   dataDir: string;
   clientVersion: string;
   isAppWindow(sender: WebContents): boolean;
@@ -74,10 +75,6 @@ class EngineHostProcess {
   }
 
   async call(method: EngineHostMethod, input: unknown): Promise<unknown> {
-    if (!this.registration.binary)
-      throw new Error(
-        "Blame's agent engine is not available: build it with `cargo build -p blame-engine`, or set BLAME_ENGINE_BIN.",
-      );
     const child = await this.start();
     const id = this.nextId++;
     return new Promise((resolve, reject) => {
@@ -117,11 +114,13 @@ class EngineHostProcess {
 
   private fork(): Promise<UtilityProcess> {
     const { binary, dataDir, clientVersion, modulePath } = this.registration;
+    // Every call fails with the reason; nothing is started.
+    if ("missing" in binary) return Promise.reject(new Error(binary.missing));
     const child = utilityProcess.fork(modulePath, [], {
       env: {
         ...this.registration.environment,
         BLAME_ENGINE_HOST_CONFIG: JSON.stringify({
-          binary,
+          binary: binary.path,
           dataDir,
           clientVersion,
         }),

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawn } from "node:child_process"
+import { spawn, spawnSync } from "node:child_process"
 import { readFile } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -9,6 +9,7 @@ import { prepareNodePtyHelpers } from "./prepare-node-pty.mjs"
 const forceKillDelayMs = 2_000
 const desktopDir = dirname(dirname(fileURLToPath(import.meta.url)))
 await prepareNodePtyHelpers()
+buildEngine()
 const runtimeEnvironment =
   process.platform === "darwin"
     ? await macosRuntimeEnvironment()
@@ -27,6 +28,24 @@ const child = spawn("pnpm", ["exec", "electron-vite", "dev"], {
   env: { ...process.env, ...runtimeEnvironment },
   stdio: "inherit",
 })
+
+// The app runs agents on the checkout's Cargo build of blame-engine
+// (src/main/engine/engine-binary.ts): build it, so a fresh checkout works and
+// the engine always matches the sources. A failed build keeps the last one.
+function buildEngine() {
+  if (process.env.BLAME_ENGINE_BIN?.trim()) return
+  const result = spawnSync("cargo", ["build", "-p", "blame-engine"], {
+    cwd: join(desktopDir, "..", ".."),
+    shell: process.platform === "win32",
+    stdio: "inherit",
+  })
+  if (result.status !== 0)
+    console.warn(
+      result.error
+        ? "cargo is not installed: install Rust (rustup.rs) for Blame's agent engine, or set BLAME_ENGINE_BIN."
+        : "blame-engine did not build: the app keeps the last build, if any.",
+    )
+}
 
 async function macosRuntimeEnvironment() {
   const manifest = JSON.parse(

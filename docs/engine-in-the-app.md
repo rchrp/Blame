@@ -32,10 +32,8 @@ platform.engine.*  ── invoke ─▶ engine-host.ts ─── message ──�
   interrupted, flushes its logs to the database, and exits. Agents stop with
   the app; if the host dies the engine's stdin closes and it exits too.
 - **blame-engine** runs on the user's machine with its data directory at
-  `<userData>/engine` (`sessions.db`, checkpoints). `engineBinaryPath()` in
-  `packages/desktop/src/main/engine/engine-binary.ts` is the one place that finds the
-  binary (`target/{release,debug}/blame-engine` in development,
-  `BLAME_ENGINE_BIN` to override; packaging is a later slice). The harness
+  `<userData>/engine` (`sessions.db`, checkpoints). The app ships it; see
+  "Engine binaries" for where it is found. The harness
   runs inside the engine (`engine_tools: ["harness"]`, `--harness-command`
   pointing at `semantic-harness-runner.js --serve`, run by Electron as Node).
 
@@ -130,6 +128,60 @@ VM on macOS and Windows, so its location is `"vm"` (`storyLocation`). The
 host's `engineAt(location)` is the seam where an engine in the VM plugs in;
 until then such a story fails at start with a message that says to use
 Direct or Cloud Preview. Direct and Cloud Preview worktrees are on the host.
+
+## Engine binaries
+
+The app ships two Rust binaries: `blame-engine`, and `blame-harness` (the
+code harness, which the engine does not call yet).
+
+- **Where they live.** A package carries `resources/engine/<platform>-<arch>/`
+  for itself and `resources/engine/linux-<arch>/`, of the same architecture,
+  for the runtime VM (Lima, WSL) to copy in; on Linux both are one directory.
+  On macOS that is `Blame.app/Contents/Resources/engine/`. Windows carries
+  `blame-engine.exe` only: `blame-harness` does not build for Windows yet (it
+  uses Unix file modes).
+- **Finding them.** `packages/desktop/src/main/engine/engine-binary.ts` is the
+  one place. `engineBinary()` and `harnessBinary()` take `BLAME_ENGINE_BIN`
+  and `BLAME_HARNESS_BIN` first, then the packaged resources, then the newest
+  Cargo build of the checkout (`target/release` or `target/debug`).
+  `vmEngineBinaries(arch)` gives the Linux pair for the VM
+  (`target/engine-binaries/linux-<arch>/` in development). When nothing is
+  found, every engine call fails with the reason: missing from the
+  installation, not built, or a variable pointing at nothing.
+- **Building them.** `node scripts/build-engine-binaries.mjs [target... | all]`
+  builds release binaries into `target/engine-binaries/<platform>-<arch>/`;
+  with no target, what a package for this machine carries. macOS targets
+  (arm64 and x64) build on macOS, `win32-x64` on Windows (MSVC), the Linux
+  ones anywhere `cargo-zigbuild` and `zig` are on `PATH`: static musl builds
+  that run on a Linux desktop and in any runtime image.
+  `pnpm --filter @blame/desktop package` builds them each time (a no-op when
+  Cargo is up to date) unless `BLAME_ENGINE_BINARIES_DIR` names prebuilt ones.
+  The release workflow builds each target in its own job
+  (`.github/workflows/engine-binaries.yml`, Cargo cache kept warm on main by
+  Release cache) and hands them over that way.
+  `pnpm --filter @blame/desktop dev` runs `cargo build -p blame-engine` first,
+  so a fresh checkout answers; a failed build keeps the last one.
+- **Signing.** macOS: `afterPack` signs them with the hardened runtime and no
+  entitlement, like the Lima executables, and they are notarized with the app;
+  the Linux ones are plain sealed resources. Windows: SignPath signs
+  `resources/engine/win32-x64/*.exe` in the same request as `Blame.exe`.
+- **Checks.** `packages/desktop/scripts/package-integrity.mjs` requires
+  exactly those two targets in every package, each binary of the right format
+  and architecture (read from its header), the Linux ones static.
+- **Profile.** `[profile.release]`: fat LTO, one codegen unit, stripped,
+  `opt-level` 3. Panics unwind: tokio keeps the other sessions when one
+  task panics, so `panic = "abort"` is not an option. Fat LTO against thin
+  LTO, same speed (harness `search_code`, `read_code` and `blame-engine
+  catalog` medians within noise):
+
+| Target | `blame-engine` | `blame-harness` |
+| --- | --- | --- |
+| darwin-arm64, thin LTO | 13.1 MB | 20.5 MB |
+| darwin-arm64 | 12.1 MB | 20.3 MB |
+| darwin-x64 | 13.7 MB | 20.4 MB |
+| linux-arm64 (musl, static) | 11.9 MB | 20.2 MB |
+| linux-x64 (musl, static) | 13.9 MB | 20.6 MB |
+| win32-x64 (GNU build; releases use MSVC) | 12.4 MB | does not build |
 
 ## What renders a conversation
 

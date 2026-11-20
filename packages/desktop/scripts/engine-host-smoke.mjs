@@ -67,6 +67,18 @@ void app.whenReady().then(async () => {
   child.on("message", (message) => {
     if (message?.kind === "ready") return ready();
     if (message?.kind === "event") return events.push(message.event);
+    // The host asks main for the conversation's desktop tools; this session
+    // has no GitHub access, and nothing else is served here.
+    if (message?.kind === "desktop-request")
+      return child.postMessage(
+        message.method === "githubMcpTools"
+          ? { kind: "desktop-response", id: message.id, result: [] }
+          : {
+              kind: "desktop-response",
+              id: message.id,
+              error: { message: `No ${message.method} in the smoke test` },
+            },
+      );
     if (message?.kind !== "response") return;
     const waiting = pending.get(message.id);
     pending.delete(message.id);

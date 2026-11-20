@@ -53,9 +53,16 @@ jobs:
         name: Verify published runtime
         run: node scripts/release-preflight.mjs
 
-  # Builds start with the preflight; only the release waits for both.
+  # blame-engine and blame-harness for every target (engine-binaries.yml).
+  engine:
+    name: Engine binaries
+    uses: ./.github/workflows/engine-binaries.yml
+
+  # Builds start with the preflight once the engine binaries exist; only the
+  # release waits for both.
   build:
     name: Build ${{ matrix.name }}
+    needs: engine
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -101,6 +108,16 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           save-cache: "false"
+
+      # Each package takes its own target and the VM's Linux one from here.
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: engine-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/engine-binaries
+      - name: Use the engine binaries
+        shell: bash
+        run: echo "BLAME_ENGINE_BINARIES_DIR=$RUNNER_TEMP/engine-binaries" >> "$GITHUB_ENV"
 
       - name: Test package integrity on target OS
         run: pnpm --filter @blame/desktop test:package
@@ -151,6 +168,8 @@ jobs:
         env:
           BLAME_WINDOWS_PUBLISHER_NAME: SignPath Foundation
 
+      # The artifact keeps the paths below win-unpacked: Blame.exe at its root,
+      # the engine executables under resources/engine/win32-x64/.
       - id: unsigned-app
         if: steps.signing.outputs.enabled == 'true'
         uses: actions/upload-artifact@v7
@@ -158,9 +177,11 @@ jobs:
           name: windows-unsigned-app
           if-no-files-found: error
           retention-days: 1
-          path: packages/desktop/dist/win-unpacked/Blame.exe
+          path: |
+            packages/desktop/dist/win-unpacked/Blame.exe
+            packages/desktop/dist/win-unpacked/resources/engine/win32-x64/*.exe
 
-      - name: Sign Blame.exe with SignPath (approve the request in SignPath)
+      - name: Sign Blame.exe and the engine with SignPath (approve the request in SignPath)
         if: steps.signing.outputs.enabled == 'true'
         uses: signpath/github-action-submit-signing-request@v3
         with:
@@ -180,8 +201,10 @@ jobs:
         if: steps.signing.outputs.enabled == 'true'
         shell: bash
         run: |
-          pwsh -NoProfile -File scripts/windows-signature-check.ps1 "$RUNNER_TEMP/signed-app/Blame.exe"
-          node scripts/windows-signing.mjs installer "$RUNNER_TEMP/signed-app/Blame.exe" "$RUNNER_TEMP/win-unpacked"
+          for file in "$RUNNER_TEMP"/signed-app/Blame.exe "$RUNNER_TEMP"/signed-app/resources/engine/win32-x64/*.exe; do
+            pwsh -NoProfile -File scripts/windows-signature-check.ps1 "$file"
+          done
+          node scripts/windows-signing.mjs installer "$RUNNER_TEMP/signed-app" "$RUNNER_TEMP/win-unpacked"
         env:
           BLAME_WINDOWS_PUBLISHER_NAME: SignPath Foundation
 

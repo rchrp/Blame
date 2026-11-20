@@ -30,7 +30,7 @@ Users never download from GitHub URLs directly. [`download.blame.so`](deploy/dow
    ```
 
 3. The workflow checks that the runtime referenced by `packages/desktop/resources/runtime/*/manifest.json` is published while it builds macOS (x64 and arm64, both packaged on Apple Silicon, signed and notarized), Windows, and Linux, and then creates a draft release.
-   Once Windows signing is configured, **approve two signing requests in SignPath** while the Windows job runs: `Blame.exe` first, then the installer (see [Windows signing](#windows-signing)).
+   Once Windows signing is configured, **approve two signing requests in SignPath** while the Windows job runs: `Blame.exe` and the engine executables first, then the installer (see [Windows signing](#windows-signing)).
 4. **Pre-production test.** Only maintainers can see a draft. Download the installers from the draft on the [releases page](https://github.com/rchrp/Blame/releases) and test them.
 5. Edit the generated notes if needed. **If you edited them, re-run the `GitHub Release` job** of the workflow run (**Re-run jobs → GitHub Release**) so the update metadata carries the edit (see [Release notes in the app](#release-notes-in-the-app)). Then click **Publish release**. From then on, `download.blame.so/latest`, the download page, and the in-app updater serve this version.
 6. Publishing starts **Release packages**, which updates the package managers (see below).
@@ -60,8 +60,8 @@ To test the screen, install a packaged build that already includes it, then upda
 [SignPath Foundation](https://signpath.org) signs the Windows app for free, as an open-source project; the [Code signing policy](CODE_SIGNING_POLICY.md) is the public side of it. Until the `SIGNPATH_API_TOKEN` secret exists, the Windows job builds an unsigned installer and says so in a notice. Once it exists, the Windows job of **Release desktop**:
 
 1. builds the app folder only, with the publisher check on (below);
-2. uploads `Blame.exe` and submits it to SignPath with the `windows-app` artifact configuration;
-3. waits for the request to be approved and signed, checks the signature, and packages the installer around the signed `Blame.exe` (`scripts/windows-signing.mjs installer`);
+2. uploads `Blame.exe` and the engine executables (`resources/engine/win32-x64/*.exe`) and submits them to SignPath with the `windows-app` artifact configuration;
+3. waits for the request to be approved and signed, checks the signature, and packages the installer around the signed files (`scripts/windows-signing.mjs installer`);
 4. uploads the installer and submits it with the `windows-installer` configuration;
 5. waits again, checks the signature, and rebuilds `latest.yml` (sha512, size) and the blockmap for the signed installer (`scripts/windows-signing.mjs update-info`). `SHA256SUMS` is computed afterwards from these files, so the in-app updater, Homebrew and winget all see the signed installer.
 
@@ -75,7 +75,7 @@ To test the screen, install a packaged build that already includes it, then upda
 **Set up once SignPath approves Blame:**
 
 1. In SignPath, enable multi-factor authentication for every member, add the predefined trusted build system **GitHub.com** to the organization and link it to the project, and install the SignPath GitHub App on this repository.
-2. Create the project (slug `blame`) with the signing policy `release-signing`, and two artifact configurations whose slugs and contents come from [`packaging/signpath/`](packaging/signpath): `windows-app` and `windows-installer`. They restrict signing to files whose product name is `Blame` and whose product version is the release's.
+2. Create the project (slug `blame`) with the signing policy `release-signing`, and two artifact configurations whose slugs and contents come from [`packaging/signpath/`](packaging/signpath): `windows-app` and `windows-installer`. They restrict signing to files whose product name is `Blame` and whose product version is the release's; the engine executables carry no version resource, so `windows-app` restricts them by path only.
 3. Create a CI user with the **Submitter** role on that signing policy, and add its API token as the `SIGNPATH_API_TOKEN` secret.
 4. Add the organization ID as the `SIGNPATH_ORGANIZATION_ID` variable. If the project or signing policy slug differs, set `SIGNPATH_PROJECT_SLUG` or `SIGNPATH_SIGNING_POLICY_SLUG`.
 5. Push a beta tag and approve both requests. If SignPath rejects a file over its product version, compare it with the file's properties (`Blame.exe` carries `1.2.0.0`, the installer `1.2.0` or `1.2.0-beta.1`) and adjust the configuration.

@@ -15,7 +15,7 @@ import {
   localAgentOwnsWorkspace,
   registerAgentIpcHandlers,
 } from "./agent-ipc";
-import { engineBinaryPath } from "./engine/engine-binary";
+import { engineBinary } from "./engine/engine-binary";
 import { engineDesktopServices } from "./engine/engine-desktop-services";
 import type { EngineSessionSettings } from "@blame/agent-runtime/engine-protocol";
 import { registerEngineIpcHandlers } from "./engine/engine-host-ipc";
@@ -141,7 +141,11 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerAgentIpcHandlers();
   registerEngineIpcHandlers({
     ...options.engineHost,
-    binary: engineBinaryPath({ applicationPath: app.getAppPath() }),
+    binary: engineBinary({
+      applicationPath: app.getAppPath(),
+      resourcesPath: process.resourcesPath,
+      packaged: app.isPackaged,
+    }),
     clientVersion: app.getVersion(),
     isAppWindow: options.isAppWindow,
     environment: engineHostEnvironment(),
