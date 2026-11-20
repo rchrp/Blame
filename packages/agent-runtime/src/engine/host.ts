@@ -15,6 +15,7 @@ import {
 import type { ApiConnection } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
+import type { DesktopServices } from "./desktop-services.js";
 import type {
   EngineHostEvent,
   EngineHostInput,
@@ -27,6 +28,12 @@ import { quickChatConfig } from "./purposes/quick-chat.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
 import { ToolSet, type ClientTool } from "./tool.js";
+import {
+  ConversationTools,
+  McpConnections,
+  clientToolGuards,
+  clientToolPolicy,
+} from "./tools/index.js";
 import { webResearchClientTools } from "./tools/web-research.js";
 
 export type EngineHostOptions = {
@@ -40,6 +47,8 @@ export type EngineHostOptions = {
   emit(event: EngineHostEvent): void;
   /** Desktop services, served by the main process. */
   renderWebPage?: RenderWebPage;
+  /** The desktop services the conversations' tools use (`desktop-services.ts`). */
+  desktop?: DesktopServices;
   env?: NodeJS.ProcessEnv;
   onLog?(line: EngineLogLine): void;
   /** For tests: replaces parts of how credentials are found. */
@@ -72,18 +81,36 @@ export class EngineHost {
   private readonly supervisor: EngineSupervisor;
   private readonly hub: SessionHub;
   private readonly tools: ToolSet;
+  private readonly mcp = new McpConnections({
+    log: (message, payload) => console.warn(message, payload ?? {}),
+  });
+  /** Each conversation's own client tools, for the purpose builders. */
+  readonly conversationTools: ConversationTools;
   private readonly credentials: CredentialResolver;
   private readonly options: EngineHostOptions;
 
   constructor(options: EngineHostOptions) {
     this.options = options;
-    this.tools = new ToolSet([
-      ...webResearchClientTools({
-        connection: () => this.api,
-        render: options.renderWebPage,
-      }),
-      ...(options.extraTools ?? []),
-    ]);
+    this.tools = new ToolSet(
+      [
+        ...webResearchClientTools({
+          connection: () => this.api,
+          render: options.renderWebPage ?? options.desktop?.renderWebPage,
+        }),
+        ...(options.extraTools ?? []),
+      ],
+      {
+        policy: clientToolPolicy,
+        guards: clientToolGuards,
+        putBlob: async (params, signal) =>
+          (await this.supervisor.client()).putBlob(params, { signal }),
+      },
+    );
+    this.conversationTools = new ConversationTools(this.tools, {
+      ...options.desktop,
+      connection: () => this.api,
+      mcp: this.mcp,
+    });
     this.credentials = new CredentialResolver(
       {
         connection: () => this.api,
@@ -224,6 +251,7 @@ export class EngineHost {
     this.approvals.clear();
     await this.supervisor.stop();
     await this.credentials.close();
+    await this.mcp.close();
   }
 
   /**

@@ -1,5 +1,5 @@
-import type { AgentTool } from "./cline-initialization.js";
-import type { PlannedUserStory, StoryPlanPriority } from "./types.js";
+import type { PlannedUserStory, StoryPlanPriority } from "../../types.js";
+import { defineTool, type ClientTool } from "../tool.js";
 
 // Lets any project conversation (chat, user story, plan mode) suggest user
 // stories. Nothing is created: the app shows them as cards the person can
@@ -8,25 +8,28 @@ import type { PlannedUserStory, StoryPlanPriority } from "./types.js";
 export const storyProposalToolName = "propose_user_stories";
 const maxStories = 12;
 
-export function storyProposalTool(): AgentTool {
-  return {
+export function storyProposalTool(): ClientTool<never> {
+  return defineTool<Record<string, unknown>>({
     name: storyProposalToolName,
     description:
       "Propose user stories the person can add to their backlog. They appear as cards next to your reply; nothing is created until the person adds them. Each story is a self-contained brief for a coding agent that has not seen this conversation. To revise a proposal, call it again with the full revised set and reuse the keys of the stories that keep their meaning. Do not repeat the stories in your reply.",
     inputSchema: storyProposalSchema,
-    execute(value: unknown) {
+    effect: "read_only",
+    run(value) {
       const stories = proposedStories(value);
       if (!stories.length)
         throw new Error(
           "Propose at least one story with a title and a summary.",
         );
       return {
-        shown: stories.length,
-        keys: stories.map((story) => story.key),
-        note: "The person reviews these cards and decides what to add.",
+        json: {
+          shown: stories.length,
+          keys: stories.map((story) => story.key),
+          note: "The person reviews these cards and decides what to add.",
+        },
       };
     },
-  };
+  });
 }
 
 /** The stories of a propose_user_stories call, cleaned and linked. */

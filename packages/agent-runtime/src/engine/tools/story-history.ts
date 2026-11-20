@@ -1,9 +1,9 @@
-import type { CoreSessionConfig } from "@cline/sdk";
-
-import { getProjectUserStory, listProjectUserStories } from "./cloud-api.js";
-import type { ApiConnection } from "./types.js";
-
-type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
+import {
+  getProjectUserStory,
+  listProjectUserStories,
+} from "../../cloud-api.js";
+import type { ApiConnection } from "../../types.js";
+import { defineTool, type ClientTool } from "../tool.js";
 
 // Lets an agent find earlier user stories of its project and load what
 // happened in them, in two cheap steps: a ranked one-line-per-story search,
@@ -28,11 +28,7 @@ export type StoryHistoryOptions = {
 };
 
 export type StorySection =
-  | "request"
-  | "outcome"
-  | "discussion"
-  | "files"
-  | "activity";
+  "request" | "outcome" | "discussion" | "files" | "activity";
 
 export type StoryRecord = {
   id: string;
@@ -73,7 +69,9 @@ const sections: StorySection[] = [
 const defaultSections: StorySection[] = ["request", "outcome", "files"];
 const listCacheMs = 30_000;
 
-export function storyHistoryTools(options: StoryHistoryOptions): AgentTool[] {
+export function storyHistoryTools(
+  options: StoryHistoryOptions,
+): ClientTool<never>[] {
   const listStories =
     options.listStories ??
     (() => listProjectUserStories(options.apiConnection, options.projectId));
@@ -103,7 +101,7 @@ export function storyHistoryTools(options: StoryHistoryOptions): AgentTool[] {
   };
 
   return [
-    {
+    defineTool<Record<string, unknown>>({
       name: "search_user_stories",
       description:
         "Find earlier user stories of this project: past features, fixes and their outcome. Use it when the request mentions a previous story (US-012), continues or repairs earlier work, or when you need to know why existing code was written. Returns one compact line per story, best matches first; then call read_user_story on the one you need. Leave query empty to list the most recent stories.",
@@ -124,9 +122,9 @@ export function storyHistoryTools(options: StoryHistoryOptions): AgentTool[] {
         },
         additionalProperties: false,
       },
-      retryable: true,
+      effect: "read_only",
       timeoutMs: 15_000,
-      execute: async (input: unknown) => {
+      run: async (input) => {
         const request = searchInput(input);
         try {
           const stories = (await summaries()).filter(
@@ -137,8 +135,8 @@ export function storyHistoryTools(options: StoryHistoryOptions): AgentTool[] {
           return `Story history is unavailable: ${errorText(error)}`;
         }
       },
-    },
-    {
+    }),
+    defineTool<Record<string, unknown>>({
       name: "read_user_story",
       description:
         "Load what happened in one earlier user story: the original request, the agent's outcome summary and the files it changed. Ask only for the sections you need: request, outcome, files (default), discussion (comments and change requests), activity (the agent's step-by-step tool trail). Accepts US-012, 12 or the story id.",
@@ -159,9 +157,9 @@ export function storyHistoryTools(options: StoryHistoryOptions): AgentTool[] {
         required: ["story"],
         additionalProperties: false,
       },
-      retryable: true,
+      effect: "read_only",
       timeoutMs: 20_000,
-      execute: async (input: unknown) => {
+      run: async (input) => {
         const request = readInput(input);
         if (!request)
           return "Give a story reference such as US-012. Use search_user_stories to find one.";
@@ -178,7 +176,7 @@ export function storyHistoryTools(options: StoryHistoryOptions): AgentTool[] {
           return `Story history is unavailable: ${errorText(error)}`;
         }
       },
-    },
+    }),
   ];
 }
 
@@ -549,18 +547,17 @@ const stopWords = new Set([
   "be",
 ]);
 
-/** The history tools for an agent session, when it belongs to a project. */
+/** The history tools of a conversation, when it belongs to a project. */
 export function sessionStoryHistoryTools(
   input: {
     apiConnection: ApiConnection;
-    clineDefaultTools?: boolean;
     projectId?: string;
     storyId?: string;
     workspaceRoot: string;
   },
   git?: (cwd: string, args: string[]) => Promise<string>,
 ) {
-  if (input.clineDefaultTools || !input.projectId) return [];
+  if (!input.projectId) return [];
   return storyHistoryTools({
     apiConnection: input.apiConnection,
     projectId: input.projectId,

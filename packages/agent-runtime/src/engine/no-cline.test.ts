@@ -40,6 +40,43 @@ it("the engine host loads nothing of Cline", () => {
   assert.ok(files.size > 5, "the graph was walked");
 });
 
+// Every module of the conversations' client tools, each walked on its own.
+const toolModules = [
+  "tool.js",
+  "desktop-services.js",
+  "tools/index.js",
+  "tools/attachments.js",
+  "tools/component-preview.js",
+  "tools/github.js",
+  "tools/guards.js",
+  "tools/mcp.js",
+  "tools/mcp-oauth.js",
+  "tools/mcp-settings.js",
+  "tools/output.js",
+  "tools/policy.js",
+  "tools/preview.js",
+  "tools/preview-types.js",
+  "tools/skills.js",
+  "tools/story-history.js",
+  "tools/story-proposal.js",
+  "tools/web-research.js",
+];
+
+for (const module of toolModules)
+  it(`${module} loads nothing of Cline`, () => {
+    const { files, packages } = graph(resolve(here, module));
+    const cline = [...packages].filter((name) => name.startsWith("@cline/"));
+    assert.deepEqual(cline, [], `${module} imports ${cline.join(", ")}`);
+    const runtime = [...files].filter((file) => /cline-|cline\//.test(file));
+    assert.deepEqual(runtime, [], `${module} loads ${runtime.join(", ")}`);
+  });
+
+it("the engine host's graph holds every client tool module", () => {
+  const { files } = graph(resolve(here, "index.js"));
+  for (const module of toolModules)
+    assert.ok(files.has(resolve(here, module)), `${module} is not exported`);
+});
+
 it("the protocol module the main process loads imports no code at all", () => {
   const { files, packages } = graph(resolve(here, "protocol.js"));
   assert.deepEqual([...packages], []);

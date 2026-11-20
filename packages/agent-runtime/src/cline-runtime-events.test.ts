@@ -11,7 +11,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
-import { previewInitializationRepairTool } from "./preview-harness-tools.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
@@ -1273,32 +1272,6 @@ test("limits initialization fallback tools to project reads and search", () => {
   assert.deepEqual(policies.run_commands, disabledToolPolicy());
   assert.deepEqual(policies.editor, disabledToolPolicy());
   assert.deepEqual(policies.apply_patch, disabledToolPolicy());
-});
-
-test("exposes one scoped preview initialization repair action", async () => {
-  let worktree = "";
-  const tool = previewInitializationRepairTool(
-    {
-      repairPreviewInitialization: async (input) => {
-        worktree = input.worktree;
-        return {
-          classification: "repairable_initialization",
-          reason: "A database service was introduced.",
-          status: "applied",
-        };
-      },
-    },
-    { worktree: "/tmp/story" },
-  );
-
-  const result = await tool?.execute({}, {} as never);
-
-  assert.equal(worktree, "/tmp/story");
-  assert.deepEqual(result, {
-    classification: "repairable_initialization",
-    reason: "A database service was introduced.",
-    status: "applied",
-  });
 });
 
 test("hides teammate agent content events", () => {

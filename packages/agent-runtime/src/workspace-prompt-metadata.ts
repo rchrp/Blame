@@ -1,13 +1,45 @@
-import { buildWorkspaceMetadata } from "@cline/sdk";
+import { execFile } from "node:child_process";
+import { basename, resolve } from "node:path";
+import { promisify } from "node:util";
+
+const run = promisify(execFile);
 
 /**
- * Workspace metadata for a system prompt, without the latest commit hash.
- * The system prompt is the cache prefix of every request: a commit between
- * two turns would otherwise discard the provider's prompt cache and, with
- * Claude Code, restart its process and replay the whole conversation.
+ * Workspace metadata for a system prompt: the folder, its Git remotes and
+ * branch, without the latest commit hash. The system prompt is the cache
+ * prefix of every request: a commit between two turns would otherwise
+ * discard the provider's prompt cache and, with Claude Code, restart its
+ * process and replay the whole conversation.
  */
 export async function workspacePromptMetadata(cwd: string) {
-  return withoutCommitHash(await buildWorkspaceMetadata(cwd));
+  const root = resolve(cwd);
+  const workspace: Record<string, unknown> = { hint: basename(root) };
+  const git = (args: string[]) =>
+    run("git", args, { cwd: root, timeout: 10_000 }).then(
+      ({ stdout }) => stdout.trim(),
+      () => undefined,
+    );
+  if ((await git(["rev-parse", "--is-inside-work-tree"])) === "true") {
+    const [remotes, branch] = await Promise.all([
+      git(["remote", "-v"]),
+      git(["branch", "--show-current"]),
+    ]);
+    const urls = remoteUrls(remotes ?? "");
+    if (urls.length) workspace.associatedRemoteUrls = urls;
+    if (branch) workspace.latestGitBranchName = branch;
+  }
+  return JSON.stringify({ workspaces: { [root]: workspace } }, null, 2);
+}
+
+// `origin	git@github.com:acme/app.git (fetch)` → `origin: git@github.com:acme/app.git`
+function remoteUrls(output: string) {
+  const urls = new Map<string, string>();
+  for (const line of output.split("\n")) {
+    const match = /^(\S+)\s+(\S+)\s+\((fetch|push)\)$/u.exec(line.trim());
+    if (match && (match[3] === "fetch" || !urls.has(match[1]!)))
+      urls.set(match[1]!, match[2]!);
+  }
+  return [...urls].map(([name, url]) => `${name}: ${url}`);
 }
 
 export function withoutCommitHash(metadata: string) {

@@ -1,7 +1,7 @@
 import { createTool, type AgentTool, type AgentToolContext } from "@cline/sdk";
 import { z } from "zod";
 import { redactSecurityValue } from "../security-secret-redaction.js";
-import type { PreviewDependencyRefreshResult } from "../preview-harness-tools.js";
+import type { PreviewDependencyRefreshResult } from "../engine/tools/preview-types.js";
 import {
   lightEditCodeInputSchema,
   lightReadCodeInputSchema,
