@@ -16,6 +16,9 @@ export type AssistantBlock = { "type": "text", text: string, native?: NativeItem
 text: string, native?: NativeItem, } | { "type": "tool_call", call: ToolCallId, name: string, input: JsonValue, native?: NativeItem, } | { "type": "opaque", native: NativeItem, };
 
 // prettier-ignore
+export type AuthKind = "api_key" | "subscription" | "optional";
+
+// prettier-ignore
 export type BlobPulled = { 
 /**
  * The bytes, base64-encoded; absent when the database has no such blob.
@@ -33,6 +36,9 @@ sha256: string, media_type: string, bytes: number, };
 export type BlockKind = "text" | "reasoning" | "tool_call";
 
 // prettier-ignore
+export type CatalogSource = "snapshot" | "models_dev";
+
+// prettier-ignore
 export type CheckpointId = string;
 
 // prettier-ignore
@@ -45,7 +51,7 @@ remote_log: boolean, } } | { "method": "session/create", "params": { session?: S
 /**
  * The bytes, base64-encoded.
  */
-data: string, } } | { "method": "tool/progress", "params": { call: ToolCallId, text: string, } } | { "method": "shutdown", "params": Record<symbol, never> } | { "method": "$/cancel", "params": { id: number, } };
+data: string, } } | { "method": "tool/progress", "params": { call: ToolCallId, text: string, } } | { "method": "catalog/list", "params": { refresh: boolean, } } | { "method": "shutdown", "params": Record<symbol, never> } | { "method": "$/cancel", "params": { id: number, } };
 
 // prettier-ignore
 export type ContextEdit = { 
@@ -97,7 +103,7 @@ export type ErrorInfo = { kind: ErrorKind, message: string,
 retry_after_ms?: number, };
 
 // prettier-ignore
-export type ErrorKind = "rate_limited" | "overloaded" | "context_overflow" | "authentication" | "billing" | "invalid_request" | "transport" | "stalled" | "cancelled" | "internal";
+export type ErrorKind = "rate_limited" | "overloaded" | "context_overflow" | "authentication" | "billing" | "invalid_request" | "model_unavailable" | "transport" | "stalled" | "cancelled" | "internal";
 
 // prettier-ignore
 export type Initialized = { protocol_version: number, engine_version: string, };
@@ -123,6 +129,46 @@ export type MessageAccepted = { turn: TurnId,
 started: boolean, };
 
 // prettier-ignore
+export type ModelCatalog = { 
+/**
+ * Every provider the engine serves, in the order to show them.
+ */
+providers: Array<ProviderInfo>, source: CatalogSource, 
+/**
+ * When the models.dev data in use was fetched, in milliseconds since
+ * the Unix epoch.
+ */
+fetched_at_ms: number, 
+/**
+ * Why the last refresh failed, when it did. The list is then the last
+ * copy that loaded.
+ */
+refresh_error?: string, };
+
+// prettier-ignore
+export type ModelInfo = { 
+/**
+ * models.dev's id, which the provider's API takes as is.
+ */
+id: string, name: string, family?: string, context_window?: number, 
+/**
+ * When the provider reads less than the context window.
+ */
+max_input_tokens?: number, max_output_tokens?: number, images: boolean, pdf: boolean, reasoning: ReasoningInfo, 
+/**
+ * Absent when unknown or billed by subscription.
+ */
+price?: Price, 
+/**
+ * `YYYY-MM-DD` or `YYYY-MM`, as models.dev gives it.
+ */
+release_date?: string, 
+/**
+ * `alpha` or `beta` while the provider says so.
+ */
+status?: string, };
+
+// prettier-ignore
 export type ModelRef = { 
 /**
  * Provider id as the providers crate knows it, e.g. `anthropic`.
@@ -143,7 +189,46 @@ export type NoticeLevel = "info" | "warning";
 export type Outcome = { "result": JsonValue } | { "error": RpcError };
 
 // prettier-ignore
-export type ReasoningEffort = "minimal" | "low" | "medium" | "high" | "xhigh";
+export type Price = { input: number, output: number, cache_read?: number, cache_write?: number, };
+
+// prettier-ignore
+export type ProviderInfo = { 
+/**
+ * The id `ModelRef::provider` takes.
+ */
+id: string, name: string, auth: AuthKind, 
+/**
+ * Whether the credential must carry a base URL.
+ */
+needs_base_url: boolean, 
+/**
+ * The models.dev providers its models come from; empty when the models
+ * depend on the server (`openai-compatible`: its own `/models`).
+ */
+sources: Array<string>, 
+/**
+ * Newest first. A model missing here can still be used: the provider
+ * decides, and says so when it refuses.
+ */
+models: Array<ModelInfo>, };
+
+// prettier-ignore
+export type ReasoningEffort = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+
+// prettier-ignore
+export type ReasoningInfo = { supported: boolean, 
+/**
+ * The levels the model takes, lowest first. A model that takes a
+ * token budget lists the levels the engine turns into one. Empty when
+ * it reasons but the catalog does not say how it is controlled: any
+ * level is then sent as asked.
+ */
+efforts: Array<ReasoningEffort>, 
+/**
+ * Whether `ReasoningEffort::Off` turns its reasoning off; otherwise
+ * `Off` asks for its lowest level.
+ */
+can_disable: boolean, default?: ReasoningEffort, };
 
 // prettier-ignore
 export type RecordBody = { "type": "session_created", config: SessionConfig, } | { "type": "config_changed", config: SessionConfig, } | { "type": "user_message", turn: TurnId, input: Array<UserBlock>, delivery: Delivery, } | { "type": "checkpoint_created", turn: TurnId, checkpoint: CheckpointId, 

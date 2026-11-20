@@ -8,6 +8,8 @@ export interface ServeOptions {
   harnessCommand?: string;
   /** Seconds without a client before the engine exits by itself. */
   idleTimeoutSeconds?: number;
+  /** Where the models.dev catalog is refreshed from, when not models.dev. */
+  catalogUrl?: string;
 }
 
 export function serveArgs(options: ServeOptions): string[] {
@@ -17,6 +19,9 @@ export function serveArgs(options: ServeOptions): string[] {
   }
   if (options.idleTimeoutSeconds !== undefined) {
     args.push("--idle-timeout", String(options.idleTimeoutSeconds));
+  }
+  if (options.catalogUrl !== undefined) {
+    args.push("--catalog-url", options.catalogUrl);
   }
   return args;
 }
