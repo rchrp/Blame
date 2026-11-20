@@ -48,6 +48,7 @@ jobs:
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/consumer_contracts.spec.ts'
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/story_numbering.spec.ts'
       - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/workspace_transfer.spec.ts'
+      - run: pnpm --filter @blame/api exec node ace.js test --files='tests/functional/engine_sessions.spec.ts'
 
   api-local:
     name: API on SQLite, as the desktop runs it
@@ -68,6 +69,7 @@ jobs:
       - run: >-
           pnpm --filter @blame/api exec node ace.js test
           --files='tests/functional/local_deployment.spec.ts'
+          --files='tests/functional/engine_sessions.spec.ts'
           --files='tests/functional/workspace_transfer.spec.ts'
           --files='tests/functional/projects.spec.ts'
           --files='tests/functional/project_agent_memories.spec.ts'
@@ -77,6 +79,25 @@ jobs:
           --files='tests/functional/story_numbering.spec.ts'
           --files='tests/functional/user_ai_preferences.spec.ts'
           --files='tests/functional/user_mcp_configurations.spec.ts'
+
+  engine:
+    name: Agent engine (Rust)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # Installs the toolchain pinned in rust-toolchain.toml.
+      - run: rustup show
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: engine-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'Cargo.lock') }}
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+      - run: cargo test --workspace --all-features
 
   windows-runtime:
     name: Windows PowerShell runtime tests
