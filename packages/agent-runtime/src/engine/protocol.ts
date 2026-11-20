@@ -25,6 +25,7 @@ import type {
 import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
 
 export type * from "./task-protocol.js";
+export { engineMainOnlyMethods } from "./task-protocol.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
 import type { PreviewInitialization } from "../preview-selection.js";
 

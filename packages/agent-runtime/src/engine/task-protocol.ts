@@ -5,11 +5,18 @@
 import type { SessionId } from "@blame/engine-client";
 import type {
   ApproveAndMergeResult,
+  DirectStoryFilesInput,
+  DirectStoryFilesResult,
   GenerateCommitMessageResult,
+  MapSecurityAuditInput,
   MapSecurityAuditResult,
   OpenPullRequestResult,
   ProjectCodePracticePreference,
   ProjectRunConfiguration,
+  PullRequestAvailability,
+  PullRequestAvailabilityInput,
+  PullRequestState,
+  PullRequestStateInput,
   ResolveMergeConflictsResult,
   SecurityAuditDiscoveryResult,
   SecurityAuditMode,
@@ -27,6 +34,7 @@ import type {
   ProjectInitializationRepairClassification,
 } from "../types.js";
 import type { EngineModelChoice } from "./protocol.js";
+import type { McpOAuthStatus } from "./tools/mcp-oauth.js";
 
 /** The folder a task works in, as the app knows it. */
 export type TaskWorkspace = {
@@ -252,8 +260,37 @@ export type EngineTaskMethods = {
   };
   /** Stops a running task; false when none runs by that id. */
   cancelTask: { input: { session: SessionId }; result: boolean };
-  /** Deletes a session from the engine (a deleted quick chat). */
+  /** Deletes a session from the engine (a deleted quick chat or story). */
   deleteSession: { input: { session: SessionId }; result: null };
+
+  // Work of the host with no agent in it, for the app.
+  /** Whether Open PR can run for a repository (gh, a GitHub origin). */
+  pullRequestAvailability: {
+    input: PullRequestAvailabilityInput;
+    result: PullRequestAvailability;
+  };
+  /** What GitHub says about a story's pull request. */
+  pullRequestState: { input: PullRequestStateInput; result: PullRequestState };
+  /** The files a Direct story wrote in the project folder. */
+  directStoryFiles: {
+    input: DirectStoryFilesInput;
+    result: DirectStoryFilesResult;
+  };
+  /** A security audit's repository map: a scan of the project. */
+  mapSecurityAudit: {
+    input: MapSecurityAuditInput;
+    result: MapSecurityAuditResult;
+  };
+  // The MCP servers' sign-ins, for the main process (`engineMainOnlyMethods`).
+  mcpOAuthStatuses: { input: { filePath: string }; result: McpOAuthStatus[] };
+  mcpOAuthAuthorize: {
+    input: { filePath: string; serverName: string };
+    result: null;
+  };
+  mcpOAuthClear: {
+    input: { filePath: string; serverName: string };
+    result: null;
+  };
 };
 
 export const engineTaskMethods = [
@@ -272,4 +309,18 @@ export const engineTaskMethods = [
   "generateNewProject",
   "cancelTask",
   "deleteSession",
+  "pullRequestAvailability",
+  "pullRequestState",
+  "directStoryFiles",
+  "mapSecurityAudit",
+  "mcpOAuthStatuses",
+  "mcpOAuthAuthorize",
+  "mcpOAuthClear",
+] as const satisfies readonly (keyof EngineTaskMethods)[];
+
+/** Calls only the main process makes: a window cannot. */
+export const engineMainOnlyMethods = [
+  "mcpOAuthStatuses",
+  "mcpOAuthAuthorize",
+  "mcpOAuthClear",
 ] as const satisfies readonly (keyof EngineTaskMethods)[];

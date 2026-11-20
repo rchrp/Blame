@@ -1,7 +1,6 @@
 import { createPreviewTerminalClient } from "./preview-terminal-client";
 import { opaqueWindowArgument } from "../main/window-blur";
 import { contextBridge, ipcRenderer } from "electron";
-import type { AgentEvent } from "@blame/agent-runtime";
 import type { EngineHostEvent } from "@blame/agent-runtime/engine-protocol";
 import type { RuntimeProgress } from "@blame/app";
 import type { BlameDesktopApi } from "./types";
@@ -615,21 +614,8 @@ const api: BlameDesktopApi = {
       return () => engineActivityListeners.delete(callback);
     },
   },
+  // What the app asks besides agents (they are all on platform.engine).
   agent: {
-    // Progress of the one-shot agents; conversations are on platform.engine.
-    sessions: {
-      onEvent: (sessionId, callback) => {
-        const channel = `agent:sessions:event:${sessionId}`;
-        const handler = (_event: unknown, event: AgentEvent) => callback(event);
-        ipcRenderer.on(channel, handler);
-        ipcRenderer.send("agent:sessions:listen", sessionId);
-        return () => {
-          ipcRenderer.removeListener(channel, handler);
-          ipcRenderer.send("agent:sessions:unlisten", sessionId);
-        };
-      },
-    },
-
     pullRequestAvailability: (input) =>
       ipcRenderer.invoke("agent:pull-request-availability", input),
     pullRequestState: (input) =>

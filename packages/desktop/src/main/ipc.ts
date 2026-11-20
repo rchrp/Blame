@@ -41,7 +41,11 @@ import { registerWhatsNewIpcHandlers } from "./whats-new-ipc";
 import { DeployService } from "./deploy/deploy-service";
 import { registerDeployIpcHandlers } from "./ipc/deploy-ipc";
 import { registerMcpIpcHandlers } from "./mcp-ipc";
-import { registerPreviewBrowserIpcHandlers } from "./preview-browser-ipc";
+import { engineHostEnvironment } from "./engine/engine-host-environment";
+import {
+  registerPreviewBrowserIpcHandlers,
+  releaseAgentPreviewSession,
+} from "./preview-browser-ipc";
 import { PreviewService } from "./preview-runtime/preview-service";
 import { registerPreviewRuntimeIpcHandlers } from "./ipc/preview-runtime-ipc";
 import { registerGithubIssueIpcHandlers } from "./github-issue-ipc";
@@ -67,9 +71,6 @@ export type DesktopIpcOptions = {
     preloadPath: string;
     rendererFile: string;
     rendererUrl?: string;
-  };
-  agentRuntime: {
-    modulePath: string;
   };
   // The engine host's utility process and where the engine keeps its data.
   engineHost: {
@@ -137,21 +138,17 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerBacklogStatusPipIpcHandlers({
     ...options.backlogStatusPip,
   });
-  registerAgentIpcHandlers({
-    ...options.agentRuntime,
-    packaged: options.packaged,
-    previewService: previews,
-    beforeWorkspaceWrite: (worktree) => {
-      // A story that changes again needs its development server back.
-      void requestDevelopmentServing(worktree).catch(() => undefined);
-      return previews.syncBarrier(worktree);
-    },
-  });
+  registerAgentIpcHandlers();
   registerEngineIpcHandlers({
     ...options.engineHost,
     binary: engineBinaryPath({ applicationPath: app.getAppPath() }),
     clientVersion: app.getVersion(),
     isAppWindow: options.isAppWindow,
+    environment: engineHostEnvironment(),
+    // A session's preview browsers stay open while it works.
+    onActivity: ({ session, running }) => {
+      if (!running) releaseAgentPreviewSession(session);
+    },
     desktop: engineDesktopServices(previews),
     beforeCall: async (method, input, api) => {
       const story = storyCall(method, input);

@@ -3,8 +3,7 @@
 // variables and screen, the screenshot store, the component preview server,
 // the session's GitHub MCP connection, the project runner and Git. The engine
 // host asks for them with `desktop-request` messages (engine-host-ipc.ts);
-// each answer is plain JSON. The agent runtime process asks for the same ones
-// through agent-runtime-main-host.ts until its conversations move.
+// each answer is plain JSON.
 
 import type {
   EngineDesktopMethod,
@@ -62,11 +61,16 @@ export function engineDesktopServices(
       const { renderResearchPage } = await import("../web-research-browser.ts");
       return renderResearchPage(String(record(input).url ?? ""), signal);
     },
-    // The ChatGPT sign-in page; nothing else asks.
+    // The ChatGPT sign-in page, or an MCP server's; nothing else asks.
     openExternal: async (input) => {
-      const url = String(record(input).url ?? "");
-      if (!/^https:\/\/auth\.openai\.com\//.test(url))
-        throw new Error("Only the ChatGPT sign-in opens from the engine host.");
+      const request = record(input);
+      const url = String(request.url ?? "");
+      if (
+        request.mcpAuthorization === true
+          ? !mcpAuthorizationUrl(url)
+          : !/^https:\/\/auth\.openai\.com\//.test(url)
+      )
+        throw new Error("Only a sign-in page opens from the engine host.");
       const { shell } = await import("electron");
       await shell.openExternal(url);
       return null;
@@ -103,6 +107,23 @@ export function engineDesktopServices(
     git: (input) => agentGit(input),
     applyPreviewInitialization: (input) => applyPreviewInitialization(input),
   };
+}
+
+// An MCP server's sign-in: https, or http on this computer, with no
+// credentials in it.
+function mcpAuthorizationUrl(value: string) {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  const loopback = ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname);
+  return (
+    !url.username &&
+    !url.password &&
+    (url.protocol === "https:" || (url.protocol === "http:" && loopback))
+  );
 }
 
 // A story's repaired preview setup, applied to its managed preview (a

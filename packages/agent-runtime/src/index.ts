@@ -2,7 +2,6 @@ export {
   BlameAgentRuntime,
   createClineBaselineRuntime,
 } from "./cline-runtime.js";
-export { closeClaudeCodeSessions } from "./claude-code/claude-code-provider.js";
 export type {
   LightWorkspaceExecutionRequest,
   LightWorkspaceExecutor,
@@ -27,13 +26,7 @@ export type {
   PreviewEnvironmentToolInput,
   PreviewEnvironmentToolResult,
 } from "./engine/tools/preview-types.js";
-export {
-  authorizeMcpOAuth,
-  clearMcpOAuth,
-  listMcpOAuthStatuses,
-  type McpOAuthStatus,
-} from "./engine/tools/mcp-oauth.js";
-export { mcpSettingsPath } from "./engine/tools/mcp-settings.js";
+export type { McpOAuthStatus } from "./engine/tools/mcp-oauth.js";
 export type {
   AgentEvent,
   AgentApprovalRequest,

@@ -2,7 +2,7 @@
 // (`EngineTaskMethods`): each builds its task from a purpose and runs it.
 
 import { randomUUID } from "node:crypto";
-import type { GhRunner } from "../../pull-request.js";
+import { runHostGh, type GhRunner } from "../../pull-request.js";
 import type { EngineClient, ToolSpec } from "@blame/engine-client";
 import { titleTask } from "../purposes/title.js";
 import { userStoryTask } from "../purposes/user-story.js";
@@ -11,6 +11,7 @@ import { gitTaskHandlers } from "./git.js";
 import { projectTaskHandlers } from "./project.js";
 import type { TaskRunner, TaskSpec } from "./runner.js";
 import { securityAuditTaskHandlers } from "./security-audit.js";
+import { workspaceCallHandlers, type WorkspaceCallHost } from "./workspace.js";
 
 export type TaskHost = {
   runner: TaskRunner;
@@ -26,7 +27,7 @@ export type TaskHost = {
   forget(session: string): void;
   /** gh for Open PR; the person's own, on this machine, by default. */
   gh?: GhRunner;
-};
+} & Omit<WorkspaceCallHost, "gh">;
 
 export type TaskHandlers<
   Methods extends keyof EngineTaskMethods = keyof EngineTaskMethods,
@@ -47,6 +48,7 @@ export function taskHandlers(host: TaskHost): TaskHandlers {
   };
   return {
     ...gitTaskHandlers(host, host.gh),
+    ...workspaceCallHandlers({ ...host, gh: host.gh ?? runHostGh }),
     generateTitle: async (input) => {
       const { session, result } = await run(
         input,

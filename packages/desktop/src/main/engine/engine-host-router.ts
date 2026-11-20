@@ -1,8 +1,9 @@
-import type {
-  EngineHostEvent,
-  EngineHostInput,
-  EngineHostMethod,
-  EngineSessionSettings,
+import {
+  engineMainOnlyMethods,
+  type EngineHostEvent,
+  type EngineHostInput,
+  type EngineHostMethod,
+  type EngineSessionSettings,
 } from "@blame/agent-runtime/engine-protocol";
 
 /** A window that talks to the engine (a WebContents, in the app). */
@@ -37,7 +38,11 @@ export class EngineHostRouter {
     method: M,
     input: EngineHostInput<M>,
   ) {
-    if (method === "shutdown") return false;
+    if (
+      method === "shutdown" ||
+      (engineMainOnlyMethods as readonly string[]).includes(method)
+    )
+      return false;
     this.viewers.set(viewer.id, viewer);
     if (method === "connect")
       this.connection = input as EngineHostInput<"connect">;

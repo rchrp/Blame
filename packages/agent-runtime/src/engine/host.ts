@@ -371,6 +371,12 @@ export class EngineHost {
         this.conversationTools.release(session);
       },
       gh: (cwd, args) => (this.options.gh ?? runHostGh)(cwd, args),
+      openAuthorization: async (url) => {
+        await this.options.desktop?.openExternal?.({
+          url,
+          mcpAuthorization: true,
+        });
+      },
     };
   }
 

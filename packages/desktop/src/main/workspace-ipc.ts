@@ -15,7 +15,6 @@ import { BrowserWindow, ipcMain } from "electron";
 import { createHash, randomUUID } from "node:crypto";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
-import { releaseAgentWorkspaceSessions } from "./agent-ipc";
 import { containerRuntimeEnvironment } from "./container-runtime";
 import {
   assertHostDependencies,
@@ -1162,7 +1161,6 @@ async function removeWorktree(input: RemoveWorktreeInput) {
   try {
     await stopSetupRunsForWorktree(worktree);
     await stopProjectLogStream(worktree);
-    await releaseAgentWorkspaceSessions(worktree);
     await settled;
     // A create or prefetch may have completed while removal was waiting.
     const current = await inspectWorktreeRemoval({

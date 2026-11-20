@@ -55,8 +55,13 @@ export type DesktopServices = {
     sessionId: string;
   }): Promise<readonly GithubMcpToolDescriptor[]>;
   githubMcpCall?(input: GithubMcpCallInput): Promise<unknown>;
-  // Opens a sign-in page in the person's browser.
-  openExternal?(input: { url: string; signal?: AbortSignal }): Promise<null>;
+  // Opens a sign-in page in the person's browser: ChatGPT's, or an MCP
+  // server's (`mcpAuthorization`).
+  openExternal?(input: {
+    url: string;
+    mcpAuthorization?: boolean;
+    signal?: AbortSignal;
+  }): Promise<null>;
   // Git on the computer that holds the worktree (the runtime VM's included).
   git?(input: { cwd: string; args: string[] }): Promise<string>;
   // Applies a repaired preview setup to a story's managed preview.

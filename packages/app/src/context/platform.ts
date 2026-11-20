@@ -5,7 +5,6 @@ import type {
 } from "./platform-runtime-power"
 import * as React from "react"
 import type {
-  AgentEvent,
   ApiConnection,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
@@ -406,15 +405,8 @@ export type DesktopUpdatesClient = {
   setChannel(channel: DesktopUpdateChannel): Promise<DesktopUpdateStatus>
 }
 
+// What the app asks besides agents (they are all on `engine`).
 export type AgentClient = {
-  // Progress of the one-shot agents; conversations are on `engine`.
-  sessions: {
-    onEvent(
-      sessionId: string,
-      callback: (event: AgentEvent) => void
-    ): () => void
-  }
-
   pullRequestAvailability(
     input: PullRequestAvailabilityInput
   ): Promise<PullRequestAvailability>

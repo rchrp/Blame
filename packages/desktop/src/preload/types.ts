@@ -1,6 +1,5 @@
 import type { EnginePlatformClient } from "@blame/agent-runtime/engine-protocol";
 import type {
-  AgentEvent,
   ApiConnection,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
@@ -601,14 +600,8 @@ export type BlameDesktopApi = {
     onEvent(id: string, callback: (event: TerminalEvent) => void): () => void;
   };
   engine: EnginePlatformClient;
+  // What the app asks besides agents (they are all on `engine`).
   agent: {
-    // Progress of the one-shot agents; conversations are on `engine`.
-    sessions: {
-      onEvent(
-        sessionId: string,
-        callback: (event: AgentEvent) => void,
-      ): () => void;
-    };
     pullRequestAvailability(
       input: PullRequestAvailabilityInput,
     ): Promise<PullRequestAvailability>;
