@@ -469,6 +469,11 @@ export class TranscriptReducer {
           text: body.text,
         });
         return;
+      case "turn_continued":
+        // The engine asked the model to carry on after it acknowledged a
+        // message sent mid-turn: plumbing of the loop, not something the
+        // person said or needs to see.
+        return;
       case "contract_correction":
         // The engine told the model it may not stop yet: shown like a
         // notice, so a reader sees why the agent went on.

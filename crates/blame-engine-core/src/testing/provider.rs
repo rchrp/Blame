@@ -61,6 +61,22 @@ impl Script {
         )
     }
 
+    /// A reply that says something, then calls tools (an acknowledgement
+    /// in the same reply as the next call).
+    pub fn text_and_tool_calls(text: &str, calls: &[(&str, Value)]) -> Self {
+        let mut blocks = vec![AssistantBlock::Text {
+            text: text.into(),
+            native: None,
+        }];
+        blocks.extend(calls.iter().map(|(name, input)| AssistantBlock::ToolCall {
+            call: ToolCallId::from("provider-id"),
+            name: (*name).into(),
+            input: input.clone(),
+            native: None,
+        }));
+        Self::reply(blocks, StopReason::ToolUse)
+    }
+
     /// The events a real provider would send for `blocks`.
     pub fn reply(blocks: Vec<AssistantBlock>, stop: StopReason) -> Self {
         let mut steps = Vec::new();

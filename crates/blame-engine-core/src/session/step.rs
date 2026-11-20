@@ -24,6 +24,10 @@ pub(crate) enum Step {
     Compact {
         error: ErrorInfo,
     },
+    /// The model acknowledged a message sent into the running turn with
+    /// text alone while work was under way: ask it to carry on instead of
+    /// ending the turn (or correcting it, under a contract).
+    Continue,
     /// The model stopped without fulfilling the completion contract: tell
     /// it so, and on the `last` correction force the tool it must call.
     Correct {
@@ -33,6 +37,10 @@ pub(crate) enum Step {
     },
     End(TurnOutcome),
 }
+
+/// What the model reads after acknowledging a message sent mid-turn with
+/// text alone (`TurnContinued`).
+pub(crate) const CONTINUE_TEXT: &str = "Carry on with the work you were doing, taking that message into account. If nothing is left to do, say so in one sentence.";
 
 /// Name of the limit on a turn's wall time, as `LimitReached` reports it.
 pub(crate) const MAX_TURN_MS: &str = "max_turn_ms";
@@ -99,13 +107,29 @@ pub(crate) fn next_step(
             if state.pending_calls().next().is_some() {
                 return Step::RunTools;
             }
+            // A text-only reply to a message sent mid-turn is the model
+            // acknowledging it, not the end of the work: once per such
+            // message, it is asked to carry on. A second text-only reply
+            // ends (or is corrected) as any other.
+            if !*has_calls
+                && state.accepted.is_none()
+                && state.steer_in_last_request
+                && state.worked_before_last_request
+                && !state.continue_pending
+            {
+                return Step::Continue;
+            }
             if let Some(contract) = &config.contract {
                 // Only an accepted result ends the turn; a tool marked
                 // `ends_turn` does not, under a contract.
                 if state.accepted.is_some() {
                     return Step::End(TurnOutcome::Completed);
                 }
-                if *has_calls || state.steer_pending || state.correction_pending {
+                if *has_calls
+                    || state.steer_pending
+                    || state.correction_pending
+                    || state.continue_pending
+                {
                     return new_request(state, config);
                 }
                 let unmet = contract::unmet(contract, state.completed.iter().copied());
@@ -126,7 +150,7 @@ pub(crate) fn next_step(
             });
             if ended_by_tool {
                 Step::End(TurnOutcome::Completed)
-            } else if *has_calls || state.steer_pending {
+            } else if *has_calls || state.steer_pending || state.continue_pending {
                 new_request(state, config)
             } else {
                 Step::End(TurnOutcome::Completed)

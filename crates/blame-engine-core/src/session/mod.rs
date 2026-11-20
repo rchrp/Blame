@@ -350,6 +350,57 @@ impl Session {
         Ok(MessageAccepted { turn, started })
     }
 
+    /// Takes back a queued message: its turn ends as `Withdrawn` before it
+    /// ever runs, so the model never reads it and it is never sent twice.
+    pub async fn withdraw(&self, turn: TurnId) -> Result<(), EngineError> {
+        let _control = self.inner.control.lock().await;
+        let mut core = self.inner.core.lock().await;
+        core.usable()?;
+        queued_behind_running(&core.records, &turn)?;
+        self.inner
+            .append_locked(
+                &mut core,
+                vec![RecordBody::TurnEnded {
+                    turn,
+                    outcome: TurnOutcome::Withdrawn,
+                }],
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Sends a queued message into the running turn now. Its turn ends as
+    /// `Withdrawn` and the same input joins the running turn as a steer, in
+    /// one write: the model reads it once, at its next request, and a crash
+    /// leaves either the queued message or the steer, never both.
+    pub async fn promote(&self, turn: TurnId) -> Result<MessageAccepted, EngineError> {
+        let _control = self.inner.control.lock().await;
+        let mut core = self.inner.core.lock().await;
+        core.usable()?;
+        let (running, input) = queued_behind_running(&core.records, &turn)?;
+        self.inner
+            .append_locked(
+                &mut core,
+                vec![
+                    RecordBody::TurnEnded {
+                        turn,
+                        outcome: TurnOutcome::Withdrawn,
+                    },
+                    RecordBody::UserMessage {
+                        turn: running.clone(),
+                        input,
+                        delivery: Delivery::Steer,
+                    },
+                ],
+            )
+            .await?;
+        self.inner.ensure_driver(&mut core);
+        Ok(MessageAccepted {
+            turn: running,
+            started: true,
+        })
+    }
+
     fn new_turn(&self) -> TurnId {
         TurnId(self.inner.ports.ids.next("turn"))
     }
@@ -748,4 +799,33 @@ fn validate(records: &[Record]) -> Result<(), EngineError> {
             "the first record is not SessionCreated".into(),
         )),
     }
+}
+
+/// The running turn and the input of `turn`, when `turn` waits in the queue
+/// behind it; `NotQueued` otherwise.
+fn queued_behind_running(
+    records: &[Record],
+    turn: &TurnId,
+) -> Result<(TurnId, Vec<UserBlock>), EngineError> {
+    let view = View::new(records);
+    let open = view.open_turns();
+    let Some((running, queued)) = open.split_first() else {
+        return Err(EngineError::NotQueued(turn.clone()));
+    };
+    if !queued.contains(&turn) {
+        return Err(EngineError::NotQueued(turn.clone()));
+    }
+    let input = records
+        .iter()
+        .rev()
+        .find_map(|record| match &record.body {
+            RecordBody::UserMessage {
+                turn: t,
+                input,
+                delivery: Delivery::Turn,
+            } if t == turn => Some(input.clone()),
+            _ => None,
+        })
+        .ok_or_else(|| EngineError::NotQueued(turn.clone()))?;
+    Ok(((*running).clone(), input))
 }

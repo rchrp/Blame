@@ -201,7 +201,12 @@ export type TurnStatus =
   | "limit_reached"
   | "failed"
   /** A rewind cut the log while it was open. */
-  | "rewound";
+  | "rewound"
+  /**
+   * A queued message the user took back before it ran (removed, or sent
+   * into the running turn instead): not a turn of the conversation.
+   */
+  | "withdrawn";
 
 export interface TurnView {
   readonly turn: TurnId;

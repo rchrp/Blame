@@ -89,6 +89,7 @@ pub fn kind(body: &RecordBody) -> &'static str {
         RecordBody::ResultAccepted { .. } => "accepted",
         RecordBody::ResultRejected { .. } => "rejected",
         RecordBody::ContractCorrection { .. } => "correction",
+        RecordBody::TurnContinued { .. } => "continued",
     }
 }
 

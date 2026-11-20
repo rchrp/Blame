@@ -47,7 +47,7 @@ export type ClientRequest = { "method": "initialize", "params": { protocol_versi
  * The client answers `host/log/*` and `host/blob/*`: sessions are
  * then copied to Blame's database and can be reopened from it.
  */
-remote_log: boolean, } } | { "method": "session/create", "params": { session?: SessionId, config: SessionConfig, } } | { "method": "session/open", "params": { session: SessionId, } } | { "method": "session/list", "params": Record<symbol, never> } | { "method": "session/read", "params": { session: SessionId, after: number, limit: number, } } | { "method": "session/subscribe", "params": { session: SessionId, after: number, } } | { "method": "session/unsubscribe", "params": { session: SessionId, } } | { "method": "session/send", "params": { session: SessionId, input: Array<UserBlock>, delivery: Delivery, } } | { "method": "session/interrupt", "params": { session: SessionId, } } | { "method": "session/rewind", "params": { session: SessionId, to: number, restore_workspace: boolean, } } | { "method": "session/undo_rewind", "params": { session: SessionId, } } | { "method": "session/fork", "params": { session: SessionId, at: number, workspace_root: string, } } | { "method": "session/compact", "params": { session: SessionId, } } | { "method": "session/configure", "params": { session: SessionId, config: SessionConfig, } } | { "method": "session/close", "params": { session: SessionId, } } | { "method": "session/delete", "params": { session: SessionId, } } | { "method": "task/run", "params": { session?: SessionId, config: SessionConfig, instruction: Array<UserBlock>, } } | { "method": "blob/put", "params": { media_type: string, 
+remote_log: boolean, } } | { "method": "session/create", "params": { session?: SessionId, config: SessionConfig, } } | { "method": "session/open", "params": { session: SessionId, } } | { "method": "session/list", "params": Record<symbol, never> } | { "method": "session/read", "params": { session: SessionId, after: number, limit: number, } } | { "method": "session/subscribe", "params": { session: SessionId, after: number, } } | { "method": "session/unsubscribe", "params": { session: SessionId, } } | { "method": "session/send", "params": { session: SessionId, input: Array<UserBlock>, delivery: Delivery, } } | { "method": "session/withdraw", "params": { session: SessionId, turn: TurnId, } } | { "method": "session/promote", "params": { session: SessionId, turn: TurnId, } } | { "method": "session/interrupt", "params": { session: SessionId, } } | { "method": "session/rewind", "params": { session: SessionId, to: number, restore_workspace: boolean, } } | { "method": "session/undo_rewind", "params": { session: SessionId, } } | { "method": "session/fork", "params": { session: SessionId, at: number, workspace_root: string, } } | { "method": "session/compact", "params": { session: SessionId, } } | { "method": "session/configure", "params": { session: SessionId, config: SessionConfig, } } | { "method": "session/close", "params": { session: SessionId, } } | { "method": "session/delete", "params": { session: SessionId, } } | { "method": "task/run", "params": { session?: SessionId, config: SessionConfig, instruction: Array<UserBlock>, } } | { "method": "blob/put", "params": { media_type: string, 
 /**
  * The bytes, base64-encoded.
  */
@@ -321,7 +321,7 @@ attempt: number, unmet: Array<Obligation>, text: string,
  * The tool the next request forces the model to call, when the
  * provider can force a choice.
  */
-forced_tool?: string, };
+forced_tool?: string, } | { "type": "turn_continued", turn: TurnId, text: string, };
 
 // prettier-ignore
 export type Records = { records: Array<SessionRecord>, head: number, };
@@ -470,7 +470,7 @@ attempt: number, unmet: Array<Obligation>, text: string,
  * The tool the next request forces the model to call, when the
  * provider can force a choice.
  */
-forced_tool?: string, });
+forced_tool?: string, } | { "type": "turn_continued", turn: TurnId, text: string, });
 
 // prettier-ignore
 export type SessionSummary = { session: SessionId, purpose: string, workspace_root: string, head: number, updated_at_ms: number, };
@@ -534,7 +534,7 @@ needs_approval: boolean, };
 export type TurnId = string;
 
 // prettier-ignore
-export type TurnOutcome = { "status": "completed" } | { "status": "interrupted" } | { "status": "limit_reached", limit: string, } | { "status": "failed", error: ErrorInfo, } | { "status": "contract_unmet", unmet: Array<Obligation>, };
+export type TurnOutcome = { "status": "completed" } | { "status": "interrupted" } | { "status": "limit_reached", limit: string, } | { "status": "failed", error: ErrorInfo, } | { "status": "contract_unmet", unmet: Array<Obligation>, } | { "status": "withdrawn" };
 
 // prettier-ignore
 export type Usage = { input_tokens?: number, output_tokens?: number, cache_read_tokens?: number, cache_write_tokens?: number, reasoning_tokens?: number, 

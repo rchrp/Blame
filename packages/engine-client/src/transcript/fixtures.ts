@@ -161,7 +161,7 @@ export class Log {
 
   ended(
     turn: string,
-    outcome: "completed" | "interrupted" = "completed",
+    outcome: "completed" | "interrupted" | "withdrawn" = "completed",
   ): number {
     return this.add({ type: "turn_ended", turn, outcome: { status: outcome } });
   }

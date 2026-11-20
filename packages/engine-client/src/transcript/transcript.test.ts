@@ -749,3 +749,58 @@ describe("applying records one at a time", () => {
     );
   });
 });
+
+describe("messages sent while a turn runs", () => {
+  it("shows a withdrawn queued message as a withdrawn turn, not as a turn to answer", () => {
+    const log = new Log();
+    log.user("t1", "refactor");
+    log.request("t1", "r1");
+    log.user("t2", "then rename it");
+    let transcript = reduceTranscript(log.records);
+    assert.equal(transcript.turns.find((t) => t.turn === "t2")?.status, "queued");
+
+    log.ended("t2", "withdrawn");
+    transcript = reduceTranscript(log.records);
+    assert.equal(transcript.turns.find((t) => t.turn === "t2")?.status, "withdrawn");
+    assert.equal(transcript.runningTurn, "t1", "the running turn goes on");
+  });
+
+  it("shows a promoted message as a steer of the running turn, once", () => {
+    const log = new Log();
+    log.user("t1", "refactor");
+    log.request("t1", "r1");
+    log.user("t2", "keep the tests");
+    // session/promote writes both in one append.
+    log.ended("t2", "withdrawn");
+    log.user("t1", "keep the tests", "steer");
+    log.reply("t1", "r1", [text("Noted, keeping them.")]);
+    log.add({
+      type: "turn_continued",
+      turn: "t1",
+      text: "Carry on with the work you were doing.",
+    });
+    log.request("t1", "r2");
+    log.reply("t1", "r2", [text("Done.")]);
+    log.ended("t1");
+    const transcript = reduceTranscript(log.records);
+    const users = transcript.items.filter(
+      (item): item is UserItem => item.kind === "user",
+    );
+    const live = users.filter(
+      (user) => transcript.turns.find((t) => t.turn === user.turn)?.status !== "withdrawn",
+    );
+    assert.deepEqual(
+      live.map((user) => [user.turn, user.delivery]),
+      [
+        ["t1", "turn"],
+        ["t1", "steer"],
+      ],
+    );
+    assert.equal(
+      transcript.items.filter((item) => item.kind === "notice").length,
+      0,
+      "the engine's nudge to carry on is not shown",
+    );
+    assert.equal(transcript.turns.find((t) => t.turn === "t1")?.status, "completed");
+  });
+});
