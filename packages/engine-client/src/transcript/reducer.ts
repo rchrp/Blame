@@ -467,6 +467,23 @@ export class TranscriptReducer {
           text: body.text,
         });
         return;
+      case "contract_correction":
+        // The engine told the model it may not stop yet: shown like a
+        // notice, so a reader sees why the agent went on.
+        this.append({
+          kind: "notice",
+          key: String(record.seq),
+          seq: record.seq,
+          atMs: at,
+          level: "info",
+          code: "contract_correction",
+          text: body.text,
+        });
+        return;
+      case "result_accepted":
+      case "result_rejected":
+        // The result call shows as completed or failed already.
+        return;
       case "rewind_started":
       case "rewind_finished":
       case "rewind_undone":

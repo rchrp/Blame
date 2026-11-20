@@ -41,11 +41,34 @@ export type ClientRequest = { "method": "initialize", "params": { protocol_versi
  * The client answers `host/log/*` and `host/blob/*`: sessions are
  * then copied to Blame's database and can be reopened from it.
  */
-remote_log: boolean, } } | { "method": "session/create", "params": { session?: SessionId, config: SessionConfig, } } | { "method": "session/open", "params": { session: SessionId, } } | { "method": "session/list", "params": Record<symbol, never> } | { "method": "session/read", "params": { session: SessionId, after: number, limit: number, } } | { "method": "session/subscribe", "params": { session: SessionId, after: number, } } | { "method": "session/unsubscribe", "params": { session: SessionId, } } | { "method": "session/send", "params": { session: SessionId, input: Array<UserBlock>, delivery: Delivery, } } | { "method": "session/interrupt", "params": { session: SessionId, } } | { "method": "session/rewind", "params": { session: SessionId, to: number, restore_workspace: boolean, } } | { "method": "session/undo_rewind", "params": { session: SessionId, } } | { "method": "session/fork", "params": { session: SessionId, at: number, workspace_root: string, } } | { "method": "session/compact", "params": { session: SessionId, } } | { "method": "session/configure", "params": { session: SessionId, config: SessionConfig, } } | { "method": "session/close", "params": { session: SessionId, } } | { "method": "blob/put", "params": { media_type: string, 
+remote_log: boolean, } } | { "method": "session/create", "params": { session?: SessionId, config: SessionConfig, } } | { "method": "session/open", "params": { session: SessionId, } } | { "method": "session/list", "params": Record<symbol, never> } | { "method": "session/read", "params": { session: SessionId, after: number, limit: number, } } | { "method": "session/subscribe", "params": { session: SessionId, after: number, } } | { "method": "session/unsubscribe", "params": { session: SessionId, } } | { "method": "session/send", "params": { session: SessionId, input: Array<UserBlock>, delivery: Delivery, } } | { "method": "session/interrupt", "params": { session: SessionId, } } | { "method": "session/rewind", "params": { session: SessionId, to: number, restore_workspace: boolean, } } | { "method": "session/undo_rewind", "params": { session: SessionId, } } | { "method": "session/fork", "params": { session: SessionId, at: number, workspace_root: string, } } | { "method": "session/compact", "params": { session: SessionId, } } | { "method": "session/configure", "params": { session: SessionId, config: SessionConfig, } } | { "method": "session/close", "params": { session: SessionId, } } | { "method": "session/delete", "params": { session: SessionId, } } | { "method": "task/run", "params": { session?: SessionId, config: SessionConfig, instruction: Array<UserBlock>, } } | { "method": "blob/put", "params": { media_type: string, 
 /**
  * The bytes, base64-encoded.
  */
 data: string, } } | { "method": "tool/progress", "params": { call: ToolCallId, text: string, } } | { "method": "shutdown", "params": Record<symbol, never> } | { "method": "$/cancel", "params": { id: number, } };
+
+// prettier-ignore
+export type CompletionContract = { 
+/**
+ * The call that ends the turn; its input, once accepted, is the result.
+ */
+result: ResultTool, 
+/**
+ * Tools that must have completed in the turn, in a reply before the one
+ * that calls the result tool, for a result to be accepted.
+ */
+required: Array<string>, 
+/**
+ * When set, the only tools the model is offered, besides the result
+ * tool. Absent: every tool of the session.
+ */
+allowed?: Array<string>, 
+/**
+ * Corrective messages sent when the model stops without fulfilling the
+ * contract. The last one also forces the tool choice where the provider
+ * can. Past it the turn fails as `contract_unmet`.
+ */
+max_corrections: number, };
 
 // prettier-ignore
 export type ContextEdit = { 
@@ -106,7 +129,17 @@ export type Initialized = { protocol_version: number, engine_version: string, };
 export type JsonValue = number | string | boolean | Array<JsonValue> | { [key in string]: JsonValue } | null;
 
 // prettier-ignore
-export type Limits = { max_requests_per_turn?: number, max_parallel_tool_calls?: number, max_context_tokens?: number, max_cost_micro_usd?: number, };
+export type Limits = { max_requests_per_turn?: number, max_parallel_tool_calls?: number, max_context_tokens?: number, max_cost_micro_usd?: number, 
+/**
+ * Wall time of one turn, from the message that opened it. A request or
+ * a tool still running then is stopped.
+ */
+max_turn_ms?: number, 
+/**
+ * Tokens of one turn, every request counted (input, cache reads and
+ * writes, output). Checked before each request.
+ */
+max_turn_tokens?: number, };
 
 // prettier-ignore
 export type LogPushed = { 
@@ -138,6 +171,9 @@ wire: string, model: ModelRef, item: JsonValue, };
 
 // prettier-ignore
 export type NoticeLevel = "info" | "warning";
+
+// prettier-ignore
+export type Obligation = { "kind": "call", tool: string, } | { "kind": "result", tool: string, };
 
 // prettier-ignore
 export type Outcome = { "result": JsonValue } | { "error": RpcError };
@@ -181,13 +217,33 @@ unreverted_commands: Array<string>, } | { "type": "rewind_undone", rewind: numbe
 /**
  * Stable identifier for the client to translate or act on.
  */
-code: string, text: string, };
+code: string, text: string, } | { "type": "result_accepted", turn: TurnId, call: ToolCallId, } | { "type": "result_rejected", turn: TurnId, call: ToolCallId, 
+/**
+ * Where the input does not match the result tool's schema.
+ */
+invalid: Array<string>, 
+/**
+ * What the turn still had to do first.
+ */
+unmet: Array<Obligation>, } | { "type": "contract_correction", turn: TurnId, 
+/**
+ * 1 for the first correction of the turn.
+ */
+attempt: number, unmet: Array<Obligation>, text: string, 
+/**
+ * The tool the next request forces the model to call, when the
+ * provider can force a choice.
+ */
+forced_tool?: string, };
 
 // prettier-ignore
 export type Records = { records: Array<SessionRecord>, head: number, };
 
 // prettier-ignore
 export type RequestId = string;
+
+// prettier-ignore
+export type ResultTool = { "source": "submit", name: string, description: string, input_schema: JsonValue, } | { "source": "tool", name: string, };
 
 // prettier-ignore
 export type Rewound = { 
@@ -237,10 +293,28 @@ tool_options: { [key in string]: JsonValue }, limits: Limits,
 /**
  * Whether a workspace checkpoint is taken at the start of each turn.
  */
-checkpoints: boolean, };
+checkpoints: boolean, 
+/**
+ * A conversation, or a task (see `task/run`).
+ */
+kind?: SessionKind, 
+/**
+ * How each turn must end, enforced by the engine. A task always has
+ * one.
+ */
+contract?: CompletionContract, };
 
 // prettier-ignore
 export type SessionId = string;
+
+// prettier-ignore
+export type SessionKind = { "kind": "conversation" } | { "kind": "task", 
+/**
+ * Copy the log to Blame's database, as conversations are. Otherwise
+ * it stays on this machine only, and the engine deletes it a few
+ * days after it ended: long enough to look into a failure.
+ */
+replicate: boolean, };
 
 // prettier-ignore
 export type SessionList = { sessions: Array<SessionSummary>, };
@@ -292,7 +366,24 @@ unreverted_commands: Array<string>, } | { "type": "rewind_undone", rewind: numbe
 /**
  * Stable identifier for the client to translate or act on.
  */
-code: string, text: string, });
+code: string, text: string, } | { "type": "result_accepted", turn: TurnId, call: ToolCallId, } | { "type": "result_rejected", turn: TurnId, call: ToolCallId, 
+/**
+ * Where the input does not match the result tool's schema.
+ */
+invalid: Array<string>, 
+/**
+ * What the turn still had to do first.
+ */
+unmet: Array<Obligation>, } | { "type": "contract_correction", turn: TurnId, 
+/**
+ * 1 for the first correction of the turn.
+ */
+attempt: number, unmet: Array<Obligation>, text: string, 
+/**
+ * The tool the next request forces the model to call, when the
+ * provider can force a choice.
+ */
+forced_tool?: string, });
 
 // prettier-ignore
 export type SessionSummary = { session: SessionId, purpose: string, workspace_root: string, head: number, updated_at_ms: number, };
@@ -307,6 +398,20 @@ export type Subscribed = { head: number, activity: SessionActivity,
  * attaches mid-reply shows it from its first character.
  */
 in_flight: Array<Delta>, };
+
+// prettier-ignore
+export type TaskFailure = { "kind": "contract_unmet", unmet: Array<Obligation>, } | { "kind": "limit_reached", limit: string, } | { "kind": "provider_error", error: ErrorInfo, };
+
+// prettier-ignore
+export type TaskOutcome = { "status": "completed", 
+/**
+ * The accepted call.
+ */
+call: ToolCallId, 
+/**
+ * Its input, which matched the result tool's schema.
+ */
+result: JsonValue, } | { "status": "failed", failure: TaskFailure, } | { "status": "interrupted" };
 
 // prettier-ignore
 export type ToolCallId = string;
@@ -342,7 +447,7 @@ needs_approval: boolean, };
 export type TurnId = string;
 
 // prettier-ignore
-export type TurnOutcome = { "status": "completed" } | { "status": "interrupted" } | { "status": "limit_reached", limit: string, } | { "status": "failed", error: ErrorInfo, };
+export type TurnOutcome = { "status": "completed" } | { "status": "interrupted" } | { "status": "limit_reached", limit: string, } | { "status": "failed", error: ErrorInfo, } | { "status": "contract_unmet", unmet: Array<Obligation>, };
 
 // prettier-ignore
 export type Usage = { input_tokens?: number, output_tokens?: number, cache_read_tokens?: number, cache_write_tokens?: number, reasoning_tokens?: number, 
