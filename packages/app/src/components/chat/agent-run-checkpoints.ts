@@ -6,7 +6,8 @@ export type CheckpointRun = {
 export function checkpointRunTargets(runs: CheckpointRun[]) {
   let checkpointRunCount = 0
   return runs.map((run) => {
-    if (!run.clineSessionId) return undefined
+    // An engine turn says itself whether it can be undone (no Cline session).
+    if (!run.clineSessionId && !run.checkpointRunCount) return undefined
     checkpointRunCount = run.checkpointRunCount ?? checkpointRunCount + 1
     return { checkpointRunCount }
   })

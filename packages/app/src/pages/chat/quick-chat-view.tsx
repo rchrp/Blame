@@ -3,7 +3,6 @@ import {
   AgentConversationComposer,
   AgentConversationTimeline,
 } from "@/components/chat/agent-conversation"
-import type { QuickChat } from "@/components/chat/data/quick-chat-data"
 import { QuickChatEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { ModelSelector } from "@/components/model/model-selector"
 import { ConversationPersonalizationMenu } from "@/components/personalization/personalization-menu"
@@ -37,8 +36,11 @@ type QuickChatViewProps = {
   composer: ComponentProps<typeof AgentConversationComposer>
   onSuggestion: ComponentProps<typeof QuickChatEmptyState>["onSuggestion"]
   preview: ComponentProps<typeof ProjectRunConfigurationPreviewWarmup>
-  // The chat whose agent stats float at the top right, once it has run.
-  stats?: QuickChat
+  // The agent stats floating at the top right, once the chat has run.
+  stats?: Omit<
+    ComponentProps<typeof QuickChatStats>,
+    "expanded" | "onExpandedChange"
+  >
 }
 
 export function QuickChatView({
@@ -137,7 +139,7 @@ export function QuickChatView({
             </div>
             {stats ? (
               <QuickChatStats
-                chat={stats}
+                {...stats}
                 expanded={statsExpanded}
                 onExpandedChange={setStatsExpanded}
               />

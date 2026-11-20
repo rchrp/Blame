@@ -3,7 +3,7 @@ import * as React from "react"
 import { BacklogPage } from "@/pages/backlog/page"
 import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
 import { ChatPage } from "@/pages/chat/page"
-import { QuickChatAgentRunner } from "@/pages/chat/quick-chat-agent-runner"
+import { EngineConnection } from "@/components/chat/engine/engine-connection"
 import { SecurityAuditRecorder } from "@/components/security/security-audit-recorder"
 import { GitPage } from "@/pages/git/page"
 import { PracticesPage } from "@/pages/practices/page"
@@ -203,7 +203,8 @@ export function App() {
     <TooltipProvider>
       <BacklogStoreProvider>
         <QuickChatStoreProvider>
-          <QuickChatAgentRunner>
+          <>
+            <EngineConnection />
             <ProjectInitializationRunner />
             <ProjectCodePracticesRunner />
             <PersonalizationSync />
@@ -222,7 +223,7 @@ export function App() {
             <StarInvite />
             {/* Only once the app itself is up: never over loading or onboarding. */}
             <WhatsNewOnLaunch enabled={!isSecondaryWindow()} />
-          </QuickChatAgentRunner>
+          </>
         </QuickChatStoreProvider>
       </BacklogStoreProvider>
     </TooltipProvider>

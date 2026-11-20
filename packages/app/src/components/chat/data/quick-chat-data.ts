@@ -1,64 +1,16 @@
-import type {
-  AgentPersistenceEvent,
-  UserStoryAgentActivity,
-  UserStoryAgentRunKind,
-  UserStoryAgentRunStatus,
-  UserStoryAgentUsage,
-  UserStoryCodeSelectionAttachment,
-  UserStoryFileAttachment,
-} from "@/components/backlog/data/backlog-data"
+// A quick chat as the API keeps it: product state only. Its conversation is
+// its engine session's records, which the engine keeps and copies to the
+// API itself (docs/engine-in-the-app.md).
 
 export const quickChatSelectedEvent = "quick-chat:selected"
 
-export type QuickChatAgentStatus = "Running" | "Paused"
-
-export type QuickChatMessage = {
-  author: string
-  body: string
-  codeSelectionAttachments?: UserStoryCodeSelectionAttachment[] | null
-  createdAt: string
-  fileAttachments?: UserStoryFileAttachment[] | null
-  id: string
-  quickChatId: string
-  updatedAt?: string | null
-}
-
-export type QuickChatAgentRun = {
-  activities?: UserStoryAgentActivity[] | null
-  checkpointRunCount?: number | null
-  clineSessionId?: string | null
-  diffEndRef?: string | null
-  completedAt?: string | null
-  createdAt: string
-  finalResponse?: string | null
-  id: string
-  kind: UserStoryAgentRunKind
-  messageId?: string | null
-  quickChatId: string
-  sessionSummary?: string | null
-  status: UserStoryAgentRunStatus
-  updatedAt?: string | null
-  usage?: UserStoryAgentUsage | null
-  executionId?: string | null
-  lastSequenceNumber?: number | null
-}
-
 export type QuickChat = {
-  agentActivities?: UserStoryAgentActivity[] | null
-  agentFinalResponse?: string | null
-  agentLastError?: string | null
-  agentLastEvent?: string | null
-  agentModelId?: string | null
-  agentProviderId?: string | null
-  agentSessionSummary?: string | null
-  agentStatus?: QuickChatAgentStatus | null
-  agentUsage?: UserStoryAgentUsage | null
-  clineSessionId?: string | null
   createdAt: string
+  /** The engine session holding the conversation. */
+  engineSessionId: string | null
   id: string
-  messages?: QuickChatMessage[]
-  preview?: string | null
-  agentRuns?: QuickChatAgentRun[]
+  /** The later of the chat's own change and its conversation's last record. */
+  lastActivityAt?: string | null
   projectId: string
   title: string
   updatedAt?: string | null
@@ -66,78 +18,10 @@ export type QuickChat = {
 }
 
 export type QuickChatDraft = {
+  engineSessionId: string
   projectId: string
   title: string
   workspace?: string | null
 }
 
-export type QuickChatUpdate = Partial<
-  Pick<
-    QuickChat,
-    | "agentActivities"
-    | "agentFinalResponse"
-    | "agentLastError"
-    | "agentLastEvent"
-    | "agentModelId"
-    | "agentProviderId"
-    | "agentSessionSummary"
-    | "agentStatus"
-    | "agentUsage"
-    | "clineSessionId"
-    | "title"
-    | "workspace"
-  >
-> & {
-  agentActivity?: UserStoryAgentActivity | null
-  agentActivityUpdates?: UserStoryAgentActivity[]
-}
-
-export type QuickChatMessageDraft = Pick<
-  QuickChatMessage,
-  "body" | "codeSelectionAttachments" | "fileAttachments"
->
-
-export type QuickChatAgentRunDraft = {
-  checkpointRunCount?: number | null
-  clineSessionId?: string | null
-  kind: UserStoryAgentRunKind
-  messageId?: string | null
-  status?: UserStoryAgentRunStatus
-  executionId?: string | null
-}
-
-export type QuickChatAgentRunUpdate = Partial<
-  Pick<
-    QuickChatAgentRun,
-    | "activities"
-    | "checkpointRunCount"
-    | "clineSessionId"
-    | "completedAt"
-    | "diffEndRef"
-    | "finalResponse"
-    | "sessionSummary"
-    | "status"
-    | "usage"
-  >
-> & {
-  agentActivity?: UserStoryAgentActivity | null
-  agentActivityUpdates?: UserStoryAgentActivity[]
-  persistenceEvent?: AgentPersistenceEvent
-}
-
-export type QuickChatAgentRunFinalization = {
-  activities: UserStoryAgentActivity[]
-  agentLastError?: string | null
-  agentLastEvent?: string | null
-  agentStatus?: QuickChatAgentStatus | null
-  completedAt?: string | null
-  finalResponse?: string | null
-  persistenceEvent?: AgentPersistenceEvent
-  sessionSummary?: string | null
-  status: Exclude<UserStoryAgentRunStatus, "pending" | "running">
-  usage?: UserStoryAgentUsage | null
-}
-
-export type QuickChatActivityDetail = {
-  detail: string
-}
+export type QuickChatUpdate = Partial<Pick<QuickChat, "title" | "workspace">>

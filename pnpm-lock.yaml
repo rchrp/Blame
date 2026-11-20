@@ -551,6 +551,9 @@ importers:
       '@blame/deploy-contract':
         specifier: workspace:*
         version: link:../deploy-contract
+      '@blame/engine-client':
+        specifier: workspace:*
+        version: link:../engine-client
       '@blame/hero-scene':
         specifier: workspace:*
         version: link:../hero-scene

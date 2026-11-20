@@ -62,7 +62,7 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     const wasActive = quickChats.activeId === chat.id
     setPending(chat.id, true)
     try {
-      await quickChats.prepareRemove(chat)
+      await quickChats.stopAgent(chat)
     } catch (error) {
       setPending(chat.id, false)
       toast.error("Unable to stop and delete chat", {
@@ -79,7 +79,6 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
     undoable({
       message: `Deleted “${chat.title}”`,
       undo: () => {
-        quickChats.agentOperations.allowStarts(chat.id)
         setPending(chat.id, false)
         if (wasActive) {
           quickChats.setActiveId(chat.id)
@@ -123,10 +122,10 @@ export function QuickChatHistory({ pathname }: { pathname: string }) {
             </SidebarMenuButton>
             <time
               className="pointer-events-none absolute top-1/2 right-2 -translate-y-1/2 text-xs leading-none text-muted-foreground tabular-nums transition-opacity group-focus-within/chat:opacity-0 group-hover/chat:opacity-0"
-              dateTime={chat.updatedAt ?? chat.createdAt}
-              title={exactTimeLabel(chat.updatedAt ?? chat.createdAt)}
+              dateTime={chatActivityAt(chat)}
+              title={exactTimeLabel(chatActivityAt(chat))}
             >
-              {relativeTimeLabel(chat.updatedAt ?? chat.createdAt)}
+              {relativeTimeLabel(chatActivityAt(chat))}
             </time>
             <button
               aria-label={`Delete ${chat.title}`}
@@ -179,7 +178,12 @@ function compareChatsByMostRecent(left: QuickChat, right: QuickChat) {
 }
 
 function chatTimestamp(chat: QuickChat) {
-  return new Date(chat.updatedAt ?? chat.createdAt).getTime() || 0
+  return new Date(chatActivityAt(chat)).getTime() || 0
+}
+
+// When its conversation last moved, or the chat itself changed.
+function chatActivityAt(chat: QuickChat) {
+  return chat.lastActivityAt ?? chat.updatedAt ?? chat.createdAt
 }
 
 function relativeTimeLabel(value: string) {

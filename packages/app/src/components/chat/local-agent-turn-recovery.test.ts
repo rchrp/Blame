@@ -1,12 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import type { QuickChatAgentRun } from "./quick-chat-data.ts"
-import {
-  interruptedQuickChatMessage,
-  interruptedQuickChatRunFinalization,
-  agentTurnRecovery,
-} from "./quick-chat-run-recovery.ts"
+import { agentTurnRecovery } from "./local-agent-turn-recovery.ts"
 
 const first = run("first", "2026-11-04T23:30:51.000Z")
 const second = run("second", "2026-11-04T23:34:13.000Z")
@@ -87,31 +82,8 @@ test("ignores a failed completion line", async () => {
   assert.deepEqual(recovery, { kind: "interrupted" })
 })
 
-test("finalizes an interrupted turn as failed and keeps a reply it already had", () => {
-  const finalization = interruptedQuickChatRunFinalization(
-    { clineSessionId: "session" },
-    { ...first, finalResponse: "Partial reply", lastSequenceNumber: 21 },
-    "2026-11-05T00:00:00.000Z"
-  )
-
-  assert.equal(finalization.status, "failed")
-  assert.equal(finalization.agentStatus, null)
-  assert.equal(finalization.agentLastError, interruptedQuickChatMessage)
-  assert.equal(finalization.finalResponse, "Partial reply")
-  assert.equal(finalization.persistenceEvent?.sequenceNumber, 22)
-  assert.equal(finalization.persistenceEvent?.sessionId, "session")
-})
-
-function run(id: string, createdAt: string): QuickChatAgentRun {
-  return {
-    clineSessionId: "session",
-    createdAt,
-    executionId: `${id}-execution`,
-    id,
-    kind: "change-request",
-    quickChatId: "chat",
-    status: "running",
-  }
+function run(id: string, createdAt: string) {
+  return { createdAt, id }
 }
 
 function logLine(message: string, timestamp: string, payload = {}) {
