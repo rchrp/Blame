@@ -1,7 +1,6 @@
 // Each tool bounds the text it returns, at a size that suits what it is for,
-// and says how to get more where it can. Cline's message builder still cuts
-// the middle out of any text block over 100,000 characters, but only as a
-// backstop (see patches/README.md). The harness tools page their own output.
+// and says how to get more where it can. The harness tools page their own
+// output.
 
 export type TextLimit = {
   characters: number;

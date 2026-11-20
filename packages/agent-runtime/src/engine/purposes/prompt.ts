@@ -1,5 +1,5 @@
 // The system prompt of the agents that work in a project (quick chats,
-// stories, plan mode), from the same templates the Cline runtime used.
+// stories, plan mode), from the prompt templates.
 
 import { basename } from "node:path";
 import {

@@ -148,7 +148,7 @@ ${faqMarkdown(pricingFaq)}
 
 ### How is Blame built?
 
-Blame is a TypeScript monorepo: an Electron desktop app, a React interface, an AdonisJS API, and an agent runtime built on the Cline SDK. Code navigation uses ast-grep and Tree-sitter.
+Blame is a TypeScript monorepo: an Electron desktop app, a React interface, an AdonisJS API, and an agent engine in Rust. Code navigation uses ast-grep and Tree-sitter.
 
 ## License and publisher
 
