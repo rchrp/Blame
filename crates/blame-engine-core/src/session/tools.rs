@@ -9,8 +9,8 @@ use crate::ports::{ApprovalRequest, ToolInvocation, ToolProgress};
 use crate::projection::{ApprovalState, View};
 use crate::race::{BoxFuture, Either, join_limited, race};
 use blame_engine_protocol::{
-    ApprovalDecision, Delta, Obligation, RecordBody, ResultTool, Seq, SessionActivity, SessionConfig,
-    ToolCallId, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
+    ApprovalDecision, Delta, Obligation, RecordBody, ResultTool, Seq, SessionActivity,
+    SessionConfig, ToolCallId, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
 };
 use serde_json::Value;
 use std::sync::Arc;

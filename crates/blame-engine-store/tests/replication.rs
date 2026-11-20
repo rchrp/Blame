@@ -549,3 +549,38 @@ async fn a_task_stays_local_unless_it_asks_to_be_copied_and_can_be_deleted() {
         "the id is free again"
     );
 }
+
+#[tokio::test]
+async fn one_session_can_be_waited_for_while_another_lags() {
+    let dir = TempDir::new("rep-one");
+    let remote = FakeRemote::new();
+    remote.with(|s| s.down = true);
+    let store = open(&dir, &remote);
+    let running = start(&store);
+    let (a, b) = (session("a"), session("b"));
+    store.append(&a, 0, vec![notice("a")]).await.unwrap();
+    assert!(
+        !store
+            .wait_session_flushed(&a, Duration::from_millis(50))
+            .await
+            .unwrap()
+    );
+    remote.with(|s| s.down = false);
+    assert!(
+        store
+            .wait_session_flushed(&a, Duration::from_secs(10))
+            .await
+            .unwrap()
+    );
+    remote.with(|s| s.down = true);
+    store.append(&b, 0, vec![notice("b")]).await.unwrap();
+    assert!(
+        store
+            .wait_session_flushed(&a, Duration::from_millis(50))
+            .await
+            .unwrap(),
+        "another session's lag does not count"
+    );
+    assert!(!store.wait_flushed(Duration::from_millis(50)).await.unwrap());
+    running.stop().await;
+}

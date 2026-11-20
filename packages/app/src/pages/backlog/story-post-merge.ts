@@ -193,7 +193,7 @@ export async function cleanupMergedStory(
   try {
     const [, projectSetupStopped] = await Promise.all([
       measurePerformanceOperation("agent.transition.cleanup.agent_abort", () =>
-        abortStoryAgent(story, platform)
+        abortStoryAgent(story, platform, { remove: true })
       ),
       measurePerformanceOperation("agent.transition.cleanup.runtime_stop", () =>
         stopStoryProjectSetup(story, platform)

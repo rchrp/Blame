@@ -252,6 +252,11 @@ impl Engine {
             let _ = live.session.interrupt().await;
             live.session.close().await?;
         }
+        // A conversation's last records (the interrupt's) reach Blame's
+        // database first: the copy there outlives this one.
+        if self.remote && !self.store.wait_session_flushed(id, FLUSH).await? {
+            log!(Warn, "deleting {id} before all of it was copied");
+        }
         self.store.delete(id).await?;
         Ok(())
     }

@@ -116,7 +116,7 @@ export class EngineHost {
   });
   /**
    * Each conversation's own client tools, for the purpose builders. Deleting
-   * a session (`session/delete`, to come) must `release` its tools.
+   * a session (`deleteSession`) releases its tools.
    */
   readonly conversationTools: ConversationTools;
   private readonly credentials: CredentialResolver;
@@ -357,6 +357,9 @@ export class EngineHost {
       forget: (session) => {
         this.known.delete(session);
         this.current.delete(session);
+        this.locations.delete(session);
+        this.awaitingFirst.delete(session);
+        this.conversationTools.release(session);
       },
       gh: (cwd, args) => (this.options.gh ?? runHostGh)(cwd, args),
     }),
