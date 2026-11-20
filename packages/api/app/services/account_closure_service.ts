@@ -4,6 +4,7 @@ import UserSubscription from '#models/user_subscription'
 import AccountClosureLedgerService from '#services/account_closure_ledger_service'
 import type { AccountClosureLedgerRecord } from '#services/account_closure_ledger_service'
 import BillingService from '#services/billing_service'
+import EngineSessionsService from '#services/engine_sessions_service'
 import FileAttachmentsService from '#services/file_attachments_service'
 import env from '#start/env'
 import logger from '@adonisjs/core/services/logger'
@@ -353,6 +354,7 @@ function ledgerBillingRecord(record: AccountClosureLedgerRecord) {
 
 async function deleteActiveUser(userId: string) {
   await new FileAttachmentsService().deleteAllForUser(userId)
+  await new EngineSessionsService().deleteAllBlobsForUser(userId)
   await db.transaction(async (transaction) => {
     const user = await User.query({ client: transaction }).where('id', userId).forUpdate().first()
     if (!user) return
