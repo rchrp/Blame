@@ -193,3 +193,30 @@ fn binary_files_match_only_before_their_first_nul_when_walked() {
         r#"[{"path":"text.txt","matchingLines":1}]"#
     );
 }
+
+#[test]
+fn a_compiler_that_cannot_start_answers_like_a_failed_worker() {
+    let workspace = Workspace::new(
+        "nocompiler",
+        &[("a.ts", b"export function calculate() {\n  return 1;\n}\n")],
+    );
+    let compiler =
+        blame_harness::compiler::configured(Some(r#"["/nonexistent/node","compiler.js"]"#));
+    let harness = Harness::new(compiler);
+    let search = request(
+        "search_code",
+        &workspace.root(),
+        "nocompiler",
+        obj! { "query" => "a.ts#calculate", "mode" => "references" },
+    );
+    let result = harness.execute(&search, &Signal::default()).unwrap();
+    let data = result.get("data").unwrap();
+    assert_eq!(
+        data.get("engine").and_then(Json::as_str),
+        Some("lexical_fallback")
+    );
+    assert_eq!(
+        data.get("semanticFallback").and_then(Json::as_str),
+        Some("worker_failed")
+    );
+}

@@ -10,14 +10,34 @@ use blame_harness::validate::{
 
 #[test]
 fn inputs_validate_as_zod_validates_them() {
-    let fixture = include_str!("fixtures/input-validation.jsonl");
+    let fixture = [
+        include_str!("fixtures/input-validation.jsonl"),
+        include_str!("fixtures/edit-input-validation.jsonl"),
+    ]
+    .concat();
     let mut checked = 0;
     for line in fixture.lines().filter(|line| !line.is_empty()) {
         let case = Json::parse(line).expect("fixture line");
         let tool = case.get("tool").and_then(Json::as_str).expect("tool");
-        let input = case.get("input").cloned().unwrap_or(Json::Null);
+        // The two oversized inputs are rebuilt rather than stored.
+        let input = match (
+            case.get("input"),
+            case.get("message").and_then(Json::as_str),
+        ) {
+            (Some(input), _) => input.clone(),
+            (None, Some(message)) if message.starts_with("operations: Too big") => {
+                let operation = blame_harness::obj! { "kind" => "patch", "patch" => "p" };
+                blame_harness::obj! { "operations" => Json::Arr(vec![operation; 51]) }
+            }
+            (None, _) => {
+                let operation =
+                    blame_harness::obj! { "kind" => "patch", "patch" => "x".repeat(2_097_153) };
+                blame_harness::obj! { "operations" => Json::Arr(vec![operation]) }
+            }
+        };
         let (schema, value) = match tool {
             "search_code" => (search_code_schema(), normalize_search_input(&input)),
+            "edit_code" => (blame_harness::validate::edit_code_schema(), input.clone()),
             _ => (read_code_schema(), input.clone()),
         };
         let outcome = parse_leniently(&schema, &value);
@@ -39,5 +59,5 @@ fn inputs_validate_as_zod_validates_them() {
         }
         checked += 1;
     }
-    assert!(checked > 40);
+    assert!(checked > 70);
 }

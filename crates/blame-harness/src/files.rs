@@ -139,6 +139,13 @@ impl WorkspaceFiles {
         }
     }
 
+    /// `resolveForWrite(path).absolute`: a mutable workspace path, absolute.
+    pub fn resolve_for_write(&self, path: &str) -> Outcome<String> {
+        let normalized = self.normalize_path(path)?;
+        assert_mutable_workspace_path(&normalized)?;
+        Ok(pathx::resolve(&self.root, &normalized))
+    }
+
     pub fn absolute(&self, normalized: &str) -> String {
         pathx::resolve(&self.root, normalized)
     }
