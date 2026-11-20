@@ -10,7 +10,8 @@ export type ParsedRecord = {
   value: Record<string, unknown>
 }
 
-const sessionIdPattern = /^[A-Za-z0-9._:-]{1,64}$/
+/** The engine's rule for session ids, which it chooses itself. */
+export const sessionIdPattern = /^[A-Za-z0-9._:-]{1,64}$/
 const sha256Pattern = /^[0-9a-f]{64}$/
 export const maxSafeSeq = Number.MAX_SAFE_INTEGER
 

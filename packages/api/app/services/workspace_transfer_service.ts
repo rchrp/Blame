@@ -41,9 +41,6 @@ export const workspaceTables = [
   'user_story_agent_runs',
   'user_story_agent_run_activities',
   'quick_chats',
-  'quick_chat_messages',
-  'quick_chat_agent_runs',
-  'quick_chat_agent_run_activities',
 ] as const
 
 export type WorkspaceTable = (typeof workspaceTables)[number]
@@ -75,9 +72,6 @@ const tables: Record<WorkspaceTable, TableSpec> = {
   user_story_agent_runs: { owner: 'user_story_id', parent: 'user_stories' },
   user_story_agent_run_activities: { owner: 'run_id', parent: 'user_story_agent_runs' },
   quick_chats: { owner: 'project_id', parent: 'projects' },
-  quick_chat_messages: { owner: 'quick_chat_id', parent: 'quick_chats' },
-  quick_chat_agent_runs: { owner: 'quick_chat_id', parent: 'quick_chats' },
-  quick_chat_agent_run_activities: { owner: 'run_id', parent: 'quick_chat_agent_runs' },
 }
 
 export type WorkspaceImportResult = Partial<Record<WorkspaceTable, number>>

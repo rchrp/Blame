@@ -153,16 +153,7 @@ const quickChatColumns = [
   'project_id',
   'title',
   'workspace',
-  'agent_status',
-  'cline_session_id',
-  'agent_provider_id',
-  'agent_model_id',
-  'agent_last_event',
-  'agent_last_error',
-  'agent_activities',
-  'agent_final_response',
-  'agent_usage',
-  'agent_session_summary',
+  'engine_session_id',
   'created_at',
   'updated_at',
 ]
@@ -341,33 +332,6 @@ export default class AccountExportQueries {
     return this.ownedRows('quick_chats', quickChatColumns, 'project_id', projectIds)
   }
 
-  quickChatMessages(chatIds: string[]) {
-    return this.ownedRows(
-      'quick_chat_messages',
-      ['quick_chat_id', ...messageColumns],
-      'quick_chat_id',
-      chatIds
-    )
-  }
-
-  quickChatAgentRuns(chatIds: string[]) {
-    return this.ownedRows(
-      'quick_chat_agent_runs',
-      ['quick_chat_id', 'message_id', ...agentRunColumns],
-      'quick_chat_id',
-      chatIds
-    )
-  }
-
-  quickChatAgentRunActivities(runIds: string[]) {
-    return this.ownedRows(
-      'quick_chat_agent_run_activities',
-      agentRunActivityColumns,
-      'run_id',
-      runIds
-    )
-  }
-
   providerConnections(userId: string) {
     return this.client
       .from('provider_credentials')
@@ -418,14 +382,6 @@ export default class AccountExportQueries {
       'user_story_comment_file_attachments',
       'user_story_comment_id',
       commentIds
-    )
-  }
-
-  quickChatMessageFileAttachmentLinks(messageIds: string[]) {
-    return this.attachmentLinks(
-      'quick_chat_message_file_attachments',
-      'quick_chat_message_id',
-      messageIds
     )
   }
 

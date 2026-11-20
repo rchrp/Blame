@@ -43,17 +43,9 @@ test.group('Premium access', (group) => {
     const chat = await client.post('/api/v1/projects/quick-chats').loginAs(user).json({
       projectId,
       title: 'Free conversation',
+      engineSessionId: 'free-conversation-session',
     })
     chat.assertStatus(200)
-    const message = await client
-      .post(
-        '/api/v1/projects/quick-chats/' +
-          (chat.body() as { data: { id: string } }).data.id +
-          '/messages'
-      )
-      .loginAs(user)
-      .json({ body: 'Hello' })
-    message.assertStatus(200)
     const credential = await client.post('/api/v1/providers/credentials').loginAs(user).json({
       providerId: 'anthropic',
       label: 'Personal',

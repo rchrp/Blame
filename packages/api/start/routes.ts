@@ -25,8 +25,6 @@ const ProjectCodePracticeAnalysesController = () =>
 const ProjectInitializationsController = () =>
   import('#controllers/project_initializations_controller')
 const SecurityAuditsController = () => import('#controllers/security_audits_controller')
-const QuickChatAgentRunsController = () => import('#controllers/quick_chat_agent_runs_controller')
-const QuickChatMessagesController = () => import('#controllers/quick_chat_messages_controller')
 const QuickChatsController = () => import('#controllers/quick_chats_controller')
 const UserAiPreferencesController = () => import('#controllers/user_ai_preferences_controller')
 const UserMcpConfigurationsController = () =>
@@ -165,24 +163,6 @@ router
         router.get('/:id', [QuickChatsController, 'show'])
         router.patch('/:id', [QuickChatsController, 'update'])
         router.delete('/:id', [QuickChatsController, 'destroy'])
-        router.post('/:id/messages', [QuickChatMessagesController, 'store'])
-        router.post('/:id/messages/:messageId/undo', [QuickChatMessagesController, 'undo'])
-        router.post('/:id/messages/:messageId/undo-validation', [
-          QuickChatMessagesController,
-          'validateUndo',
-        ])
-        router.post('/:id/agent-runs', [QuickChatAgentRunsController, 'store'])
-        router.patch('/:id/agent-runs/:runId', [QuickChatAgentRunsController, 'update'])
-        router.post('/:id/agent-runs/:runId/finalize', [QuickChatAgentRunsController, 'finalize'])
-        router.get('/:id/agent-runs/:runId/activities/:activityId', [
-          QuickChatAgentRunsController,
-          'activityDetail',
-        ])
-        router.put('/:id/agent-screenshots/:screenshotId', [
-          QuickChatsController,
-          'storeScreenshot',
-        ])
-        router.get('/:id/agent-screenshots/:screenshotId', [QuickChatsController, 'showScreenshot'])
       })
       .prefix('projects/quick-chats')
       .as('projects.quick_chats')

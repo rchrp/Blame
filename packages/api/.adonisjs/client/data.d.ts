@@ -11,8 +11,6 @@ import type ProjectCodePracticeTransformer from '#transformers/project_code_prac
 import type ProjectInitializationTransformer from '#transformers/project_initialization_transformer'
 import type ProjectTransformer from '#transformers/project_transformer'
 import type ProviderCredentialTransformer from '#transformers/provider_credential_transformer'
-import type QuickChatAgentRunTransformer from '#transformers/quick_chat_agent_run_transformer'
-import type QuickChatMessageTransformer from '#transformers/quick_chat_message_transformer'
 import type QuickChatTransformer from '#transformers/quick_chat_transformer'
 import type UserAiPreferenceTransformer from '#transformers/user_ai_preference_transformer'
 import type UserMcpConfigurationTransformer from '#transformers/user_mcp_configuration_transformer'
@@ -45,14 +43,6 @@ export namespace Data {
   export type ProviderCredential = InferData<ProviderCredentialTransformer>
   export namespace ProviderCredential {
     export type Variants = InferVariants<ProviderCredentialTransformer>
-  }
-  export type QuickChatAgentRun = InferData<QuickChatAgentRunTransformer>
-  export namespace QuickChatAgentRun {
-    export type Variants = InferVariants<QuickChatAgentRunTransformer>
-  }
-  export type QuickChatMessage = InferData<QuickChatMessageTransformer>
-  export namespace QuickChatMessage {
-    export type Variants = InferVariants<QuickChatMessageTransformer>
   }
   export type QuickChat = InferData<QuickChatTransformer>
   export namespace QuickChat {

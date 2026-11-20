@@ -895,125 +895,13 @@ export class ProviderCredentialSchema extends BaseModel {
   declare userId: string
 }
 
-export class QuickChatAgentRunActivitySchema extends BaseModel {
-  static $columns = ['activity', 'activityId', 'createdAt', 'id', 'runId', 'updatedAt'] as const
-  $columns = QuickChatAgentRunActivitySchema.$columns
-  @column()
-  declare activity: any
-  @column()
-  declare activityId: string
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare runId: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
-}
-
-export class QuickChatAgentRunSchema extends BaseModel {
-  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'completedAt', 'createdAt', 'diffEndRef', 'executionId', 'finalResponse', 'id', 'kind', 'lastEventCreatedAt', 'lastEventId', 'lastEventType', 'lastSequenceNumber', 'messageId', 'quickChatId', 'sessionSummary', 'status', 'updatedAt', 'usage'] as const
-  $columns = QuickChatAgentRunSchema.$columns
-  @column()
-  declare activities: any | null
-  @column()
-  declare checkpointRunCount: number | null
-  @column()
-  declare clineSessionId: string | null
-  @column.dateTime()
-  declare completedAt: DateTime | null
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column()
-  declare diffEndRef: string | null
-  @column()
-  declare executionId: string | null
-  @column()
-  declare finalResponse: string | null
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare kind: string
-  @column.dateTime()
-  declare lastEventCreatedAt: DateTime | null
-  @column()
-  declare lastEventId: string | null
-  @column()
-  declare lastEventType: string | null
-  @column()
-  declare lastSequenceNumber: bigint | number
-  @column()
-  declare messageId: string | null
-  @column()
-  declare quickChatId: string
-  @column()
-  declare sessionSummary: string | null
-  @column()
-  declare status: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
-  @column()
-  declare usage: any | null
-}
-
-export class QuickChatMessageFileAttachmentSchema extends BaseModel {
-  static $columns = ['fileAttachmentId', 'position', 'quickChatMessageId'] as const
-  $columns = QuickChatMessageFileAttachmentSchema.$columns
-  @column()
-  declare fileAttachmentId: string
-  @column()
-  declare position: number
-  @column({ isPrimary: true })
-  declare quickChatMessageId: string
-}
-
-export class QuickChatMessageSchema extends BaseModel {
-  static $columns = ['author', 'body', 'codeSelectionAttachments', 'createdAt', 'fileAttachments', 'id', 'quickChatId', 'updatedAt'] as const
-  $columns = QuickChatMessageSchema.$columns
-  @column()
-  declare author: string
-  @column()
-  declare body: string
-  @column()
-  declare codeSelectionAttachments: any | null
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column()
-  declare fileAttachments: any | null
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare quickChatId: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
-}
-
 export class QuickChatSchema extends BaseModel {
-  static $columns = ['agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'clineSessionId', 'createdAt', 'id', 'projectId', 'title', 'updatedAt', 'workspace'] as const
+  static $columns = ['createdAt', 'engineSessionId', 'id', 'projectId', 'title', 'updatedAt', 'workspace'] as const
   $columns = QuickChatSchema.$columns
-  @column()
-  declare agentActivities: any | null
-  @column()
-  declare agentFinalResponse: string | null
-  @column()
-  declare agentLastError: string | null
-  @column()
-  declare agentLastEvent: string | null
-  @column()
-  declare agentModelId: string | null
-  @column()
-  declare agentProviderId: string | null
-  @column()
-  declare agentSessionSummary: string | null
-  @column()
-  declare agentStatus: string | null
-  @column()
-  declare agentUsage: any | null
-  @column()
-  declare clineSessionId: string | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare engineSessionId: string | null
   @column({ isPrimary: true })
   declare id: string
   @column()
