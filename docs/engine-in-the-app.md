@@ -54,6 +54,11 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
+| `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
+| `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
+| `signInChatGpt({ label })` | `blame-engine auth chatgpt login`: opens the sign-in in the browser (`openExternal`, served by main) and keeps the tokens in the API. |
+| `claudeCodeStatus()`, `connectClaudeCode({ label })` | Whether Claude Code is installed and signed in here; saves the connection. |
+| `planUsage({ providerId, credentialLabel })` | How much of the ChatGPT or Claude plan is used. |
 
 Host → renderer, on `engine:event`:
 
@@ -97,23 +102,40 @@ later day does not rewrite it and the provider's prompt cache holds.
 - **The renderer** writes product state (create, rename, delete a chat) and
   nothing about runs: no run rows, no activities, no outboxes.
 
+## Providers and models
+
+The engine's providers are the product's: the app, the API (credentials,
+preferences, validators) and the engine all say `anthropic`, `claude-code`,
+`openai`, `chatgpt`, `gemini`, `openrouter` and `openai-compatible`
+(`packages/api/app/validators/provider_id.ts`). There is no other provider.
+
+The models come from models.dev, through the engine (`crates/README.md`,
+"The model catalog"): `catalog/list` gives every client the same list, a
+model published there shows in the pickers the next time one opens, and a
+model the provider refuses fails the turn as `model_unavailable` with a
+message that names the model and the provider and quotes the provider. The
+host shapes the list for the pickers (`engine/provider-list.ts`); the API
+keeps no catalog and only ranks what it is sent
+(`POST /providers/recommendations`: OpenRouter's benchmarks and the
+person's usage). Reasoning: the selector's `none` is the engine's `off`,
+`max` is `max`, and a model is offered only the levels models.dev lists for
+it.
+
 ## Credentials
 
 `host/credential { provider, session }` is answered from the user's provider
 credentials in the API (`/providers/credentials/resolve`):
 
-| engine id | app (API) id | answer |
-| --- | --- | --- |
-| `anthropic` | `anthropic` | `api_key` |
-| `openai` | `openai-native` | `api_key` |
-| `chatgpt` | `openai-codex` | `bearer` with the account id; refreshed with `blame-engine auth chatgpt refresh` and saved back to the API |
-| `gemini` | `gemini` | `api_key` |
-| `openrouter` | `openrouter` | `api_key` |
-| `openai-compatible` | `openai` | `api_key` with its base URL |
-| `claude-code` | `claude-code` | the shared Claude Code bridge: a key scoped to the session and the bridge URL |
+| provider | answer |
+| --- | --- |
+| `anthropic`, `openai`, `gemini`, `openrouter` | `api_key` |
+| `chatgpt` | `bearer` with the account id; signed in with `blame-engine auth chatgpt login`, refreshed with `blame-engine auth chatgpt refresh` and saved back to the API |
+| `openai-compatible` | `api_key` with its base URL |
+| `claude-code` | the shared Claude Code bridge: a key scoped to the session and the bridge URL |
 
-Other app providers have no engine provider yet: such a model cannot start a
-conversation on the engine.
+The Cline story path, until it moves to the engine, maps `openai` and
+`chatgpt` to Cline's own ids in one place
+(`agent-runtime/src/supplemental-model-config.ts`).
 
 ## Tools
 
