@@ -8,8 +8,8 @@ use crate::ports::{ApprovalRequest, ToolInvocation, ToolProgress};
 use crate::projection::{ApprovalState, View};
 use crate::race::{BoxFuture, Either, join_limited, race};
 use blame_engine_protocol::{
-    ApprovalDecision, Delta, RecordBody, SessionActivity, SessionConfig, ToolCallId, ToolEffect,
-    ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
+    ApprovalDecision, Delta, RecordBody, Seq, SessionActivity, SessionConfig, ToolCallId,
+    ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
 };
 use serde_json::Value;
 use std::sync::Arc;
@@ -34,7 +34,7 @@ pub(super) async fn run(
     turn: &TurnId,
     cancel: &CancellationToken,
 ) -> Result<(), EngineError> {
-    let (pending, specs, config) = {
+    let (pending, specs, config, compacted_through) = {
         let mut core = inner.core.lock().await;
         let config = View::new(&core.records)
             .config()
@@ -42,6 +42,8 @@ pub(super) async fn run(
             .ok_or_else(|| EngineError::InvalidLog("no configuration".into()))?;
         let specs = inner.specs_locked(&mut core, &config).await;
         let view = View::new(&core.records);
+        // No compaction runs while tools do, so this holds for every call.
+        let compacted_through = view.compacted_through();
         let pending: Vec<Pending> = view
             .turn_state(turn)
             .pending_calls()
@@ -52,7 +54,7 @@ pub(super) async fn run(
                 approval: call.approval,
             })
             .collect();
-        (pending, specs, config)
+        (pending, specs, config, compacted_through)
     };
     let parallel = config
         .limits
@@ -77,15 +79,22 @@ pub(super) async fn run(
         match group {
             Group::Alone(call) => {
                 let spec = spec_of(&call.name);
-                run_one(inner, turn, call, spec, &config, cancel).await?;
+                run_one(inner, turn, call, spec, &config, compacted_through, cancel).await?;
             }
             Group::Together(calls) => {
                 let futures: Vec<BoxFuture<'_, Result<(), EngineError>>> = calls
                     .into_iter()
                     .map(|call| {
                         let spec = spec_of(&call.name);
-                        Box::pin(run_one(inner, turn, call, spec, &config, cancel))
-                            as BoxFuture<'_, _>
+                        Box::pin(run_one(
+                            inner,
+                            turn,
+                            call,
+                            spec,
+                            &config,
+                            compacted_through,
+                            cancel,
+                        )) as BoxFuture<'_, _>
                     })
                     .collect();
                 join_limited(futures, parallel).await?;
@@ -101,6 +110,7 @@ async fn run_one(
     call: Pending,
     spec: Option<&ToolSpec>,
     config: &SessionConfig,
+    compacted_through: Option<Seq>,
     cancel: &CancellationToken,
 ) -> Result<(), EngineError> {
     let finished = |outcome, text: String| RecordBody::ToolCallFinished {
@@ -195,6 +205,7 @@ async fn run_one(
         name: call.name.clone(),
         input: call.input.clone(),
         workspace_root: config.workspace_root.clone(),
+        compacted_through,
     };
     let output = inner
         .ports

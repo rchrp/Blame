@@ -6,12 +6,13 @@
 //! again from the log on demand, which costs a read of its records.
 
 use crate::connection::{ConnectionId, Host};
+use crate::context::HarnessContextPolicy;
 use crate::log::log;
 use crate::ports::{ClientApprover, ClientRemoteLog, ProviderRouter, RandomIds, RealClock};
 use crate::tools::{Harness, SessionTools, ToolShared};
 use blame_engine_checkpoint::{BLAME_WORKSPACE_EXCLUDES, GitCheckpointer};
 use blame_engine_core::ports::{Clock, IdSource, SessionStore, StoreError};
-use blame_engine_core::{EngineError, EngineOptions, NoContextEdits, Ports, Session};
+use blame_engine_core::{EngineError, EngineOptions, Ports, Session};
 use blame_engine_protocol::{RecordBody, Seq, SessionConfig, SessionId};
 use blame_engine_store::{Durability, SqliteStore, StoreOptions};
 use std::collections::HashMap;
@@ -167,7 +168,9 @@ impl Engine {
             approver: template.approver,
             clock: template.clock,
             ids: template.ids,
-            context_policy: Arc::new(NoContextEdits),
+            // Reads only harness results, so a session without the harness
+            // gets no edits but its image budget.
+            context_policy: Arc::new(HarnessContextPolicy),
         }
     }
 

@@ -482,6 +482,53 @@ fn edits_change_how_blocks_are_shown_until_rewound() {
 }
 
 #[test]
+fn an_empty_edit_removes_a_block_and_the_latest_edit_wins() {
+    let multipart = RecordBody::ToolCallFinished {
+        turn: t("t1"),
+        call: ToolCallId::from("c1"),
+        outcome: ToolOutcome::Completed,
+        content: vec![
+            ToolResultBlock::Text {
+                text: "header".into(),
+            },
+            ToolResultBlock::Text {
+                text: "section".into(),
+            },
+        ],
+    };
+    let edit = |block, replacement: &str| ContextEdit {
+        target: 5,
+        block,
+        replacement: replacement.into(),
+    };
+    let records = log(vec![
+        user("t1", "first"),                               // 2
+        started("t1", "r1", 1),                            // 3
+        reply("t1", "r1", vec![call_block("c1", "read")]), // 4
+        multipart,                                         // 5
+        RecordBody::ContextEdited {
+            edits: vec![edit(0, "stub one")],
+        }, // 6
+        RecordBody::ContextEdited {
+            edits: vec![edit(0, "stub two"), edit(1, "")],
+        }, // 7
+    ]);
+    let view = View::new(&records);
+    assert_eq!(view.edit_of(5, 0), Some("stub two"));
+    assert_eq!(view.edit_of(5, 1), Some(""));
+    assert_eq!(view.edit_of(4, 0), None);
+    assert_eq!(
+        view.result_record(&ToolCallId::from("c1")).map(|r| r.seq),
+        Some(5)
+    );
+    assert_eq!(view.result_record(&ToolCallId::from("c2")), None);
+    assert_eq!(
+        view.messages()[2],
+        ModelMessage::ToolResults(vec![result("c1", ToolOutcome::Completed, "stub two")])
+    );
+}
+
+#[test]
 fn the_configuration_follows_changes_and_rewinds() {
     let mut changed = config();
     changed.system_prompt = "other".into();

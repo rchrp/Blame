@@ -720,6 +720,32 @@ async fn compaction_can_be_asked_for() {
     assert_eq!(session.activity(), SessionActivity::Idle);
 }
 
+#[tokio::test]
+async fn tools_are_told_the_compaction_in_effect() {
+    let world = fresh();
+    world
+        .provider
+        .push(Script::tool_calls(&[("run", json!({ "command": "ls" }))]))
+        .push(Script::text("one"))
+        .push(Script::text("summary"))
+        .push(Script::tool_calls(&[("run", json!({ "command": "ls" }))]))
+        .push(Script::text("two"));
+    let session = create(&world).await;
+    turn(&session, "first").await;
+    session.compact().await.unwrap();
+    turn(&session, "second").await;
+    let through = View::new(&session.records().await).compacted_through();
+    assert!(through.is_some());
+    let seen: Vec<_> = world
+        .tools
+        .log()
+        .executions
+        .iter()
+        .map(|invocation| invocation.compacted_through)
+        .collect();
+    assert_eq!(seen, [None, through]);
+}
+
 /// Turn one writes `f = 1`, turn two writes `f = 2` and runs a command.
 async fn two_turns(world: &World) -> Session {
     world
@@ -1111,6 +1137,102 @@ async fn context_edits_are_stored_before_the_request_that_uses_them() {
         }]
     );
     check_invariants(&records, &sorted_specs());
+}
+
+/// Rewrites every tool result with a new text on each call, so a call that
+/// should not have happened shows in the records.
+#[derive(Default)]
+struct RestlessPolicy {
+    calls: std::sync::atomic::AtomicU32,
+}
+
+impl ContextPolicy for RestlessPolicy {
+    fn edits(&self, view: &View<'_>, _tools: &[ToolSpec]) -> Vec<ContextEdit> {
+        let call = self
+            .calls
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            + 1;
+        view.items()
+            .iter()
+            .filter_map(|item| item.record())
+            .filter(|r| matches!(r.body, RecordBody::ToolCallFinished { .. }))
+            .map(|r| ContextEdit {
+                target: r.seq,
+                block: 0,
+                replacement: format!("[edit {call}]"),
+            })
+            .collect()
+    }
+}
+
+#[tokio::test]
+async fn the_context_policy_is_not_asked_again_for_a_retry() {
+    let world = fresh();
+    world
+        .provider
+        .push(Script::tool_calls(&[("run", json!({ "command": "ls" }))]))
+        .push(Script::error(ErrorKind::Overloaded))
+        .push(Script::text("done"));
+    let policy = Arc::new(RestlessPolicy::default());
+    let mut ports = world.ports();
+    ports.context_policy = policy.clone();
+    let session = Session::create(ports, Default::default(), sid(), config())
+        .await
+        .unwrap();
+    turn(&session, "go").await;
+    let records = session.records().await;
+    assert_eq!(
+        kinds(&records),
+        [
+            "created",
+            "user",
+            "checkpoint",
+            "request",
+            "reply",
+            "tool",
+            "result",
+            "edited",
+            "request",
+            "failed",
+            "request",
+            "reply",
+            "ended"
+        ]
+    );
+    assert_eq!(
+        policy.calls.load(std::sync::atomic::Ordering::Relaxed),
+        2,
+        "once per new request"
+    );
+    let digests: Vec<&str> = records
+        .iter()
+        .filter_map(|r| match &r.body {
+            RecordBody::RequestStarted { prefix_digest, .. } => Some(prefix_digest.as_str()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(digests[1], digests[2], "the retry sends the same prefix");
+}
+
+#[tokio::test]
+async fn the_retry_after_an_overflow_compaction_asks_the_policy() {
+    let world = fresh();
+    world
+        .provider
+        .push(Script::text("first answer"))
+        .push(Script::error(ErrorKind::ContextOverflow))
+        .push(Script::text("summary"))
+        .push(Script::text("fits now"));
+    let policy = Arc::new(RestlessPolicy::default());
+    let mut ports = world.ports();
+    ports.context_policy = policy.clone();
+    let session = Session::create(ports, Default::default(), sid(), config())
+        .await
+        .unwrap();
+    turn(&session, "first").await;
+    turn(&session, "second").await;
+    // Two new requests, and the retry whose prefix the compaction changed.
+    assert_eq!(policy.calls.load(std::sync::atomic::Ordering::Relaxed), 3);
 }
 
 #[tokio::test]
