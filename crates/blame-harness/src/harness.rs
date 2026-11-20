@@ -317,6 +317,13 @@ impl Harness {
                 }
             }
         }
+        if input.get("kind").and_then(Json::as_str) == Some("analyze") {
+            let mut workspace = workspace
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let result = workspace.analyze(input, signal)?;
+            return workspace.after_run_task(input, result, context, signal);
+        }
         let replace = |replacements: &crate::run::formatter::Replacements, signal: &Signal| {
             workspace
                 .lock()

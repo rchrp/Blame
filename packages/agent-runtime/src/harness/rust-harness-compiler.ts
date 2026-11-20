@@ -20,6 +20,10 @@ import { WorkspaceFiles, type WorkspaceSnapshot } from "./workspace-files.js";
 // - `links`: `{ key, root, path, content (base64), focus, snapshot }`, one
 //   import index per `key` (one Rust workspace);
 // - `validate`: `{ path, content (base64 or null), workspaceRoot, externalValidation? }`;
+// - `symbolicHints`: `{ path, text, target? }`, read hints of the opt-in
+//   symbolic analysis (`symbolicReadHints`);
+// - `symbolicAnalysis`: an `analyzeSymbolicSource` input, run_task kind
+//   analyze (the TypeScript AST compiled for Z3);
 // - `cancel`: aborts the message with that id.
 // The process exits once idle for BLAME_HARNESS_COMPILER_IDLE_MS (60 s): a
 // worker stopped after its 30 s idle leaves its memory in the process
@@ -32,6 +36,8 @@ type Message = {
   declaration?: DependencyDeclarationRequest;
   links?: { key: string; root: string; path: string; content: string; focus: string[]; snapshot: WorkspaceSnapshot };
   validate?: { path: string; content: string | null; workspaceRoot: string; externalValidation?: "enabled" | "unsupported" };
+  symbolicHints?: { path: string; text: string; target?: string };
+  symbolicAnalysis?: Omit<Parameters<typeof import("./symbolic-analysis.js").analyzeSymbolicSource>[0], "signal">;
 };
 
 const services = new CompilerServices();
@@ -78,6 +84,15 @@ async function answer(message: Message, signal: AbortSignal): Promise<unknown> {
   if (message.validate) {
     const { content, ...input } = message.validate;
     return validateContent({ ...input, content: content === null ? null : Buffer.from(content, "base64") });
+  }
+  if (message.symbolicHints) {
+    const { symbolicReadHints } = await import("./light-symbolic-hint.js");
+    const { path, text, target } = message.symbolicHints;
+    return symbolicReadHints(path, text, target);
+  }
+  if (message.symbolicAnalysis) {
+    const { analyzeSymbolicSource } = await import("./symbolic-analysis.js");
+    return analyzeSymbolicSource({ ...message.symbolicAnalysis, signal });
   }
   throw new Error("A compiler request is required.");
 }

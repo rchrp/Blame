@@ -201,6 +201,95 @@ impl Workspace {
         self.edits.edit(&operations, &mut context)
     }
 
+    /// The opt-in symbolic analysis's read hints (BLAME_AGENT_SYMBOLIC_ANALYSIS,
+    /// unless BLAME_AGENT_SYMBOLIC_HINTS is false), from the side process.
+    fn symbolic_hints(&self, path: &str, content: &[u8], target: Option<&str>) -> Option<Json> {
+        if std::env::var("BLAME_AGENT_SYMBOLIC_ANALYSIS").as_deref() != Ok("true")
+            || std::env::var("BLAME_AGENT_SYMBOLIC_HINTS").as_deref() == Ok("false")
+        {
+            return None;
+        }
+        let body = obj! { "path" => path, "text" => String::from_utf8_lossy(content).into_owned() }
+            .with_opt("target", target);
+        let hints = self
+            .compiler
+            .symbolic("symbolicHints", body, &Signal::default())
+            .ok()
+            .flatten()?;
+        hints
+            .as_array()
+            .is_some_and(|hints| !hints.is_empty())
+            .then_some(hints)
+    }
+
+    /// run_task kind analyze (`analyzeWorkspaceSymbol`): read-only reasoning
+    /// evidence on one function, outside validation admission.
+    pub fn analyze(&mut self, input: &Json, signal: &Signal) -> Outcome<Json> {
+        let outcome = (|| -> Outcome<Json> {
+            signal.check()?;
+            let revision = self.files.snapshot(signal)?.revision.source_revision_id;
+            let resolved = self.aliases.resolve_symbol(
+                input.get("target").and_then(Json::as_str).unwrap_or(""),
+                &self.files,
+            )?;
+            static TYPED: LazyLock<regex::Regex> =
+                LazyLock::new(|| regex::Regex::new(r"(?i)\.(?:[cm]?ts|tsx)$").expect("pattern"));
+            if !TYPED.is_match(&resolved.path) || resolved.content.len() > 256 * 1024 {
+                return Ok(
+                    obj! { "status" => "blocked", "category" => "input", "message" => "Symbolic analysis needs a typed TypeScript file no larger than 256 KiB." },
+                );
+            }
+            let hash = crate::identity::sha256_hex(&resolved.content);
+            let request = obj! {
+                "source" => String::from_utf8_lossy(&resolved.content).into_owned(),
+                "functionName" => resolved.symbol.qualified_name.as_str(),
+                "inputs" => input.get("inputs").cloned().unwrap_or(Json::obj()),
+                "assertion" => input.get("assertion").cloned().unwrap_or(Json::Null),
+            }
+            .with_opt("timeoutMs", input.get("timeoutMs").cloned())
+            .with_opt("solverPath", std::env::var("BLAME_Z3_PATH").ok());
+            let analysis = self
+                .compiler
+                .symbolic("symbolicAnalysis", request, signal)?
+                .ok_or_else(|| {
+                    Failure::new("Symbolic analysis needs the compiler side process.")
+                })?;
+            signal.check()?;
+            let target = format!("{}#{}", resolved.path, resolved.symbol.qualified_name);
+            let current = self.files.snapshot(signal)?.revision.source_revision_id == revision
+                && self
+                    .files
+                    .read(&resolved.path)
+                    .is_ok_and(|file| crate::identity::sha256_hex(&file.content) == hash);
+            if !current {
+                return Ok(obj! { "status" => "ok", "data" => obj! {
+                    "status" => "unknown",
+                    "reason" => "source_changed",
+                    "sourceRevisionId" => revision.as_str(),
+                    "sourceSha256" => hash.as_str(),
+                    "target" => target.as_str(),
+                    "validationAdmission" => false,
+                    "guidance" => "Source changed during analysis. Repeat on current source; the previous result is not current evidence.",
+                } });
+            }
+            let mut data = analysis;
+            data.set("sourceRevisionId", revision.as_str());
+            data.set("target", target.as_str());
+            data.set("guidance", "Analysis applies only to this function, input domain and supplied assertion. A witness is reproduced by the supported source interpreter. Run a real regression test before treating it as a project defect. No edit coverage or source verification is granted.");
+            Ok(obj! { "status" => "ok", "data" => data })
+        })();
+        match outcome {
+            Err(failure) if failure.cancelled || signal.aborted() => Err(failure),
+            Err(failure) => Ok(obj! {
+                "status" => "blocked",
+                "category" => "input",
+                "message" => failure.message,
+                "recovery" => "Choose a current function alias or path#functionName and explicit bounded scalar inputs. Unsupported code remains unknown.",
+            }),
+            Ok(result) => Ok(result),
+        }
+    }
+
     /// How long run_task waits for a command before it becomes a managed run.
     pub fn set_initial_command_wait(&mut self, wait: std::time::Duration) {
         self.tasks = Arc::new(
@@ -685,11 +774,25 @@ impl Workspace {
         signal: &Signal,
     ) -> Outcome<Json> {
         let outcome = self.ensure_ready().and_then(|()| {
-            let result = {
+            let mut result = {
                 let _turn = crate::turn::acquire_for_read(&self.files.root, &self.session)?;
                 let _lock = crate::commit::locked(&self.files)?;
                 self.read_current_workspace(input, context, signal)?
             };
+            // Opt-in symbolic analysis: a whole raw TypeScript file gets its hints.
+            let data = result.get("data").cloned().unwrap_or(Json::obj());
+            if is_ok(&result)
+                && data.get("view").and_then(Json::as_str) == Some("raw")
+                && data.get("complete") == Some(&Json::Bool(true))
+                && let (Some(path), Some(content)) = (
+                    data.get("path").and_then(Json::as_str),
+                    data.get("content").and_then(Json::as_str),
+                )
+                && let Some(hints) = self.symbolic_hints(path, content.as_bytes(), None)
+                && let Some(data) = result.get_mut("data")
+            {
+                data.set("symbolicAnalysis", hints);
+            }
             self.record_observation_audit(
                 "read_code",
                 input.view.as_deref().unwrap_or("auto"),
@@ -1326,6 +1429,15 @@ impl Workspace {
             && has_delta(range, &deltas)
         {
             data.set("imports", block);
+        }
+        if data.get("body").is_some()
+            && let Some(hints) = self.symbolic_hints(
+                &resolved.path,
+                &content,
+                Some(&resolved.symbol.qualified_name),
+            )
+        {
+            data.set("symbolicAnalysis", hints);
         }
         Ok(obj! { "status" => "ok", "receipt" => coverage.receipt.as_str(), "data" => data })
     }

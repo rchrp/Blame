@@ -58,6 +58,12 @@ pub enum Schema {
     Argument {
         max: usize,
     },
+    /// `z.record(z.string().regex(key), value)` with a refinement on the whole record.
+    Record {
+        key: &'static str,
+        value: Box<Schema>,
+        refine: Option<Refinement>,
+    },
     /// `z.discriminatedUnion(key, options)`, each option keyed by its literal.
     Discriminated {
         key: &'static str,
@@ -361,6 +367,41 @@ impl Schema {
                         )],
                     )
                 }
+            }
+            Schema::Record {
+                key,
+                value: item,
+                refine,
+            } => {
+                let Some(Json::Obj(entries)) = value else {
+                    return (value.cloned(), vec![invalid_type("record", value, None)]);
+                };
+                let pattern = regex::Regex::new(key).expect("record key pattern");
+                let mut issues = Vec::new();
+                let mut output = Json::obj();
+                for (name, element) in entries {
+                    if !pattern.is_match(name) {
+                        let mut issue = Issue::new("Invalid key in record".into(), Some(true));
+                        issue.path.push(Json::from(name.as_str()));
+                        issues.push(issue);
+                        continue;
+                    }
+                    let (parsed, element_issues) = item.run(Some(element));
+                    issues.extend(element_issues.into_iter().map(|mut issue| {
+                        issue.path.insert(0, Json::from(name.as_str()));
+                        issue
+                    }));
+                    if let Some(parsed) = parsed {
+                        output.set(name, parsed);
+                    }
+                }
+                if let Some((refine, message)) = refine
+                    && !aborted(&issues)
+                    && !refine(&output)
+                {
+                    issues.push(Issue::new((*message).into(), Some(true)));
+                }
+                (Some(output), issues)
             }
             Schema::Defaulted(schema, default) => match value {
                 None => (Some(Json::from(*default)), Vec::new()),
@@ -699,8 +740,87 @@ pub fn edit_code_schema() -> Schema {
     }
 }
 
-/// `lightDefaultRunTaskInputSchema`: run_task without symbolic analysis.
+/// `lightRunTaskInputSchema`'s analyze option (symbolic analysis enabled).
+fn analyze_task_schema() -> Schema {
+    let bounds = Schema::Object {
+        fields: vec![
+            (
+                "min",
+                Schema::Int {
+                    min: None,
+                    max: None,
+                },
+                false,
+            ),
+            (
+                "max",
+                Schema::Int {
+                    min: None,
+                    max: None,
+                },
+                false,
+            ),
+        ],
+        refine: Some((
+            |value| {
+                value.get("min").and_then(Json::as_f64).unwrap_or(0.0)
+                    <= value.get("max").and_then(Json::as_f64).unwrap_or(0.0)
+            },
+            "min must not exceed max",
+        )),
+    };
+    let boolean = Schema::Object {
+        fields: vec![("type", Schema::Literal("boolean"), false)],
+        refine: None,
+    };
+    Schema::Object {
+        fields: vec![
+            ("kind", Schema::Literal("analyze"), false),
+            ("target", Schema::Str { min: 1, max: 4_096 }, false),
+            (
+                "inputs",
+                Schema::Record {
+                    key: r"^[A-Za-z_$][A-Za-z0-9_$]*$",
+                    value: Box::new(Schema::Union(vec![bounds, boolean])),
+                    refine: Some((
+                        |value| value.as_object().is_some_and(|entries| entries.len() <= 8),
+                        "At most eight inputs",
+                    )),
+                },
+                false,
+            ),
+            ("assertion", Schema::Str { min: 1, max: 2_000 }, false),
+            (
+                "timeoutMs",
+                Schema::Int {
+                    min: Some((100, true)),
+                    max: Some(10_000),
+                },
+                true,
+            ),
+        ],
+        refine: None,
+    }
+}
+
+/// run_task's input schema: `lightRunTaskInputSchema` when symbolic
+/// analysis is enabled, else `lightDefaultRunTaskInputSchema`.
 pub fn run_task_schema() -> Schema {
+    let schema = default_run_task_schema();
+    if std::env::var("BLAME_AGENT_SYMBOLIC_ANALYSIS").as_deref() != Ok("true") {
+        return schema;
+    }
+    match schema {
+        Schema::Discriminated { key, mut options } => {
+            options.insert(0, ("analyze", analyze_task_schema()));
+            Schema::Discriminated { key, options }
+        }
+        other => other,
+    }
+}
+
+/// `lightDefaultRunTaskInputSchema`: run_task without symbolic analysis.
+fn default_run_task_schema() -> Schema {
     let inspect = Schema::Object {
         fields: vec![
             ("kind", Schema::Literal("inspect"), false),
