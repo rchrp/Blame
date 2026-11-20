@@ -77,8 +77,8 @@ const watchIntervalMs = 5_000;
 const sleepGapMs = 15_000;
 
 /**
- * A loopback server that lets Cline use the user's own Claude Code login.
- * Cline talks to it as an Anthropic Messages endpoint; Claude Code reaches
+ * A loopback server that lets Blame's engine use the user's own Claude Code login.
+ * The engine talks to it as an Anthropic Messages endpoint; Claude Code reaches
  * Blame's tools through its MCP endpoint. The first agent worker to need it
  * hosts it; the others reach it through its saved port and secret.
  */
@@ -183,7 +183,7 @@ export class ClaudeCodeBridge implements ClaudeCodeBridgeHandle {
     return bridgeToken(this.secret, scope);
   }
 
-  /** The endpoint Cline calls; an effort picked in Blame rides in the path. */
+  /** The endpoint the client calls; an effort picked in Blame rides in the path. */
   baseUrl(host: string, effort?: ClaudeCodeEffort) {
     const prefix = effort ? `/effort/${effort}` : "";
     return `http://${host}:${this.port}${prefix}/v1`;
@@ -272,7 +272,7 @@ export class ClaudeCodeBridge implements ClaudeCodeBridgeHandle {
       active = lane;
     } else {
       // An idle conversation of this scope that does not continue here is
-      // over: a finished subagent, or history Cline rewrote.
+      // over: a finished subagent, or history the client rewrote.
       for (const old of lanes)
         if (old.idle) old.close("Superseded by a newer conversation of the same session.");
       active = new ClaudeCodeLane(parsed, sink, {

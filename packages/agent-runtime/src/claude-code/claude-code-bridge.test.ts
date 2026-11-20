@@ -83,7 +83,7 @@ const toolUse = {
   ],
 };
 
-/** What Cline sends after finish_task: the tool result, the user's words and a screenshot. */
+/** What the client sends after finish_task: the tool result, the user's words and a screenshot. */
 const followUpWithScreenshot = {
   role: "user",
   content: [
@@ -187,7 +187,7 @@ const reminder = {
 const partialAnswer = { role: "assistant", content: [{ type: "text", text: "partial" }] };
 
 for (const timing of ["before", "after"]) {
-  test(`keeps the process when Claude Code retries a dropped stream (${timing} Cline asks again)`, async () => {
+  test(`keeps the process when Claude Code retries a dropped stream (${timing} the client asks again)`, async () => {
     await withBridge(async (bridge, stateDirectory) => {
       const key = bridge.token(`session-cut-${timing}`);
       const first = { role: "user", content: timing === "before" ? "please cut" : "please cut later" };
@@ -208,7 +208,7 @@ for (const timing of ["before", "after"]) {
 }
 
 for (const timing of ["before", "after"] as const) {
-  test(`hands Claude Code Cline's reminder when it gave up after a drop (${timing} Cline asks again)`, async () => {
+  test(`hands Claude Code the client's reminder when it gave up after a drop (${timing} the client asks again)`, async () => {
     await withBridge(async (bridge) => {
       const key = bridge.token(`session-drop-${timing}`);
       const first = { role: "user", content: timing === "before" ? "please drop" : "please drop later" };

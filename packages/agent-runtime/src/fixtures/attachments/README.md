@@ -5,5 +5,4 @@ Synthetic documents for attachment regression tests, with no user data:
 - `report.xlsx`: Budget and Schedule worksheets containing Travel / 42 and Deadline / Friday (openpyxl).
 
 Tests verify the original bytes remain unchanged, local and remote tool reads,
-pagination, sheet selection, and the PDF tool result in a real Cline SDK request
-to an offline model endpoint.
+pagination and sheet selection.

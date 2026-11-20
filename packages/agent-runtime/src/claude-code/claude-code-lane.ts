@@ -31,7 +31,7 @@ import {
   type MessagesRequest,
 } from "./claude-code-protocol.js";
 
-/** Where one model turn is written: an HTTP response to Cline. */
+/** Where one model turn is written: an HTTP response to the client. */
 export type BridgeSink = {
   event(event: AnthropicBlock): void;
   fail(status: number, type: string, message: string): void;
@@ -59,7 +59,7 @@ export type LaneOptions = {
 
 /**
  * `cut`: Claude Code ended an answer without a stop reason (its connection
- * dropped, or Blame interrupted a silent stream). Cline got the partial
+ * dropped, or Blame interrupted a silent stream). The client got the partial
  * answer and will ask again; the process keeps the conversation meanwhile.
  */
 type LaneState = "streaming" | "awaiting-tools" | "idle" | "cut" | "closed";
@@ -98,9 +98,9 @@ export class ClaudeCodeLane {
   private readonly results = new Map<string, McpToolResult>();
   /** Claude Code is inside one of its own turns: from a user message to its result. */
   private claudeTurnOpen = false;
-  /** Events Claude Code streamed while the turn was cut and Cline had not asked again. */
+  /** Events Claude Code streamed while the turn was cut and the client had not asked again. */
   private held: AnthropicBlock[] = [];
-  /** Cline's reminder, for when Claude Code gives up instead of retrying. */
+  /** The client's reminder, for when Claude Code gives up instead of retrying. */
   private awaitedReminder?: AnthropicBlock[];
   private lastOutputAt = performance.now();
   private wokeAt?: number;
@@ -350,7 +350,7 @@ export class ClaudeCodeLane {
   }
 
   /**
-   * After a cut, Cline either keeps the partial answer and adds a reminder
+   * After a cut, the client either keeps the partial answer and adds a reminder
    * (two more messages) or resends the request with the reminder merged into
    * its last user turn.
    */
@@ -371,7 +371,7 @@ export class ClaudeCodeLane {
     );
   }
 
-  /** What Cline added after the cut: its reminder, as a whole message or merged into the last one. */
+  /** What the client added after the cut: its reminder, as a whole message or merged into the last one. */
   private cutReminder(messages: AnthropicMessage[]): AnthropicBlock[] {
     const last = messages.at(-1)!;
     if (messages.length !== this.requestLength) return userContent(last);
@@ -385,7 +385,7 @@ export class ClaudeCodeLane {
     );
   }
 
-  /** Relays what Claude Code regenerated meanwhile, or hands it Cline's reminder if it gave up. */
+  /** Relays what Claude Code regenerated meanwhile, or hands it the client's reminder if it gave up. */
   private resumeAfterCut(reminder: AnthropicBlock[]) {
     const held = this.held;
     this.held = [];
@@ -394,7 +394,7 @@ export class ClaudeCodeLane {
     if (this.state !== "streaming" || this.sinkHasEvents) return;
     const next = reminder.length ? reminder : [{ type: "text", text: recoveryPrompt }];
     // Claude Code may still retry on its own; if it gives up, its result
-    // line can arrive after Cline asked again (US-045, on a loaded VM).
+    // line can arrive after the client asked again (US-045, on a loaded VM).
     if (this.claudeTurnOpen) this.awaitedReminder = next;
     else this.writeUser(next);
   }
@@ -471,7 +471,7 @@ export class ClaudeCodeLane {
     const sink = this.sink;
     if (!sink) {
       // Claude Code moved on without Blame (for example it rejected a tool
-      // call itself). This conversation can no longer follow Cline's.
+      // call itself). This conversation can no longer follow the client's.
       if (event.type === "message_start")
         this.close("Claude Code continued without Blame's tool results.");
       return;
@@ -519,7 +519,7 @@ export class ClaudeCodeLane {
     sink.event({ type: "message_stop" });
     sink.done();
     this.lastUsedAt = Date.now();
-    // Cline may run the partial answer's tool calls; Claude Code will not.
+    // The client may run the partial answer's tool calls; Claude Code will not.
     if (this.turnTools.size) {
       this.close("Claude Code's answer was cut during a tool call.");
       return;
@@ -581,11 +581,11 @@ export class ClaudeCodeLane {
     const sink = this.sink;
     this.sink = undefined;
     sink.fail(status, type, text);
-    // A failed turn leaves Claude Code's context ahead of Cline's.
+    // A failed turn leaves Claude Code's context ahead of the client's.
     this.close(text);
   }
 
-  /** Nothing reached Cline yet, and the failure is a dropped or stalled connection. */
+  /** Nothing reached the client yet, and the failure is a dropped or stalled connection. */
   private recoverable(text: string, interrupted: boolean) {
     if (this.recoveries >= maxRecoveries) return false;
     return interrupted || classifyClaudeCodeError(text).status >= 500;

@@ -386,7 +386,7 @@ one cache miss).
 | `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | no | yes |
 | `github__*` | `githubMcpTools`, `githubMcpCall`: read-only GitHub access for the session id | yes | yes | no | no |
 | `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | no | yes |
-| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.cline/skills`… and Blame's own) | yes | yes | no | yes |
+| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.agents/skills`… and Blame's own) | yes | yes | no | yes |
 
 Not yet client tools: `consult_specialist` and spawned agents (engine tasks),
 `finish_task` and the harness (Rust harness), project memory.
@@ -411,15 +411,12 @@ Streamable HTTP, SSE), one connection per server for the whole host, closed
 when it shuts down. OAuth state stays in that file next to the server
 (`mcp-oauth.ts`); authorizing opens the server's sign-in page and waits for
 the loopback redirect. Skills are `SKILL.md` folders read from the
-workspace (`.clinerules`, `.cline`, `.claude`, `.agents` `/skills`), the
-user's home (`~/.cline/skills`, `~/.agents/skills`) and Blame's own
+workspace (`.clinerules` and `.cline` for projects that also use Cline,
+`.claude`, `.agents` `/skills`), the user's home (`~/.agents/skills`) and
+Blame's own
 (`plugins/blame-native/skills`); the prompt lists their scopes as they were
 when the conversation started and the `skills` tool reads the current files.
 A plugin folder (`BLAME_AGENT_PLUGIN_PATHS`) adds its skills only.
-
-Until stories move to the engine, the conversations on Cline get these same
-tools through one adapter (`cline-client-tools.ts`): Cline's own MCP loading
-and skill service are off, so each tool has one implementation.
 
 ## Approvals
 
@@ -434,7 +431,7 @@ surface wraps its timeline in `EngineApprovalProvider`).
 The engine shapes old tool results in the model's context
 (`crates/blame-engine/src/context/`, a `ContextPolicy`): command echoes,
 repeated advice and repair plans, stale or partly repeated reads, completed
-edits and the image budget, as the Cline runtime did. Targets come from the
+edits and the image budget. Targets come from the
 stored records only, so the same records give the same request bytes after
 a reopen. Results already sent change only in large batches or after a
 compaction, so the prompt cache holds. Harness tools get the compaction in
@@ -526,8 +523,8 @@ project folders are on this computer.
 ### Git flows
 
 Approve & Merge, Open PR, the Git page's commit message and conflict
-resolution run in the engine host (`engine/git/`), not in a renderer or the
-Cline runtime: a flow is git work with agent steps in it, and each step is
+resolution run in the engine host (`engine/git/`), not in a renderer: a flow
+is git work with agent steps in it, and each step is
 an engine task (`GitAgent`). Main adds what only it knows to these calls
 (`engineGitFlowCall` in `agent-ipc.ts`): whether the worktree is in the
 runtime VM (`inVm`), the worktrees where an agent runs (`activeWorktrees`,
@@ -582,11 +579,9 @@ story's config and brief, then runs it as a task with no person in it.
 
 ## Rules for the next slices
 
-1. A conversation that moves to the engine loses its Cline path in the same
-   change: runtime methods, IPC, renderer persistence, API tables and tests.
-2. Purposes are built in the host (`engine/purposes/`), from settings the
+1. Purposes are built in the host (`engine/purposes/`), from settings the
    renderer sends. A new purpose adds a builder there, never a config in the
    renderer.
-3. The renderer renders from records only. It persists no agent event.
-4. Every engine call from the renderer goes through `platform.engine`; no
+2. The renderer renders from records only. It persists no agent event.
+3. Every engine call from the renderer goes through `platform.engine`; no
    other process holds an `EngineClient`.

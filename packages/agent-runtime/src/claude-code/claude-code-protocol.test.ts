@@ -17,7 +17,7 @@ import {
   systemPromptForClaudeCode,
 } from "./claude-code-protocol.js";
 
-test("parses the Messages request Cline sends and keeps custom tools only", () => {
+test("parses the Messages request the client sends and keeps custom tools only", () => {
   const request = parseMessagesRequest({
     model: "sonnet",
     stream: true,

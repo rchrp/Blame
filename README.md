@@ -279,7 +279,7 @@ If Blame is useful to you, a star helps other developers find it.
 
 ## Acknowledgements
 
-Blame's agent runtime is built on the [Cline SDK](https://github.com/cline/cline). Its macOS runtime uses [Lima](https://lima-vm.io), and code navigation uses [ast-grep](https://ast-grep.github.io) and [Tree-sitter](https://tree-sitter.github.io).
+Blame's agent engine reaches model providers through [Rig](https://github.com/0xPlaygrounds/rig), and its patch format is [Cline](https://github.com/cline/cline)'s. Its macOS runtime uses [Lima](https://lima-vm.io), and code navigation uses [ast-grep](https://ast-grep.github.io) and [Tree-sitter](https://tree-sitter.github.io).
 
 ## License
 

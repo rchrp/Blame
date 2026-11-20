@@ -42,13 +42,14 @@ export type McpOAuthState = {
 
 type Settings = { mcpServers: Record<string, Record<string, unknown>> };
 
-/** Where the file is: `CLINE_MCP_SETTINGS_PATH`, else in the agents' data folder. */
+/**
+ * Where the file is: `BLAME_MCP_SETTINGS_PATH` (the desktop app sets it to
+ * its data folder's `mcp-settings.json`), else `~/.blame/mcp-settings.json`.
+ */
 export function mcpSettingsPath() {
-  const explicit = process.env.CLINE_MCP_SETTINGS_PATH?.trim();
+  const explicit = process.env.BLAME_MCP_SETTINGS_PATH?.trim();
   if (explicit) return explicit;
-  const dataDir =
-    process.env.CLINE_DATA_DIR?.trim() || join(homedir(), ".cline", "data");
-  return join(dataDir, "settings", "cline_mcp_settings.json");
+  return join(homedir(), ".blame", "mcp-settings.json");
 }
 
 async function readSettings(path: string): Promise<Settings> {

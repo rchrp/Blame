@@ -1,6 +1,6 @@
 // Blame's local run logs (`<worktree>/.blame/logs`): one JSON record per
 // line, with only the attributes known to be safe. No runtime import: the
-// engine host's git flows write them as the Cline runtime does.
+// engine host's git flows write them.
 
 import { appendFile, mkdir } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -98,14 +98,6 @@ export function mergeConflictLogPath(worktree: string) {
 
 export function pullRequestLogPath(worktree: string) {
   return join(worktree, ".blame", "logs", "pull-request.log");
-}
-
-export function startLogPath(cwd: string) {
-  return join(cwd, ".blame", "logs", "cline-start.log");
-}
-
-export function sessionLogPath(cwd: string, sessionId: string) {
-  return join(cwd, ".blame", "logs", `cline-${sessionId}.log`);
 }
 
 export async function appendLog(

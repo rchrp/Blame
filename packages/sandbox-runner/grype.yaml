@@ -23,17 +23,3 @@ ignore:
     reason: Windows-only vulnerability in a Linux image.
     package:
       location: /usr/local/lib/docker/cli-plugins/*
-  # simple-git unsafe-option guard bypasses. @cline/core pins simple-git 3.36.0
-  # and imports its default export, which simple-git 4 removed. The workspace
-  # patch fixes that, but this image installs the unpatched npm release.
-  # Remove when Cline moves to simple-git >= 4.0.1.
-  - vulnerability: GHSA-x6jw-m9v5-85vh
-    reason: Pinned by @cline/core; simple-git 4 breaks Cline's import.
-    package:
-      name: simple-git
-      location: /opt/blame/cline/**
-  - vulnerability: GHSA-v5rq-49vh-5v5c
-    reason: Pinned by @cline/core through simple-git 3.36.0.
-    package:
-      name: "@simple-git/argv-parser"
-      location: /opt/blame/cline/**

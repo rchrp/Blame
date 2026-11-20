@@ -48,8 +48,6 @@ const managedManifestPaths = [
   path.resolve("resources/runtime/macos/manifest.json"),
   manifestPath,
 ];
-const agentRuntimePackagePath = path.resolve("../agent-runtime/package.json");
-const cloudRunnerDockerfilePath = path.resolve("../sandbox-runner/Dockerfile");
 
 test("accepts Windows runtime rootfs specs with optional prebaked metadata", async () => {
   const manifest = JSON.parse(
@@ -74,28 +72,6 @@ test("pipes multiline Windows runtime probes through WSL standard input", async 
   );
   assert.match(source, /Write-Host "BLAME_RUNTIME_PROGRESS /);
   assert.doesNotMatch(source, /\$result = Invoke-Distro \$command/);
-});
-
-test("keeps the cloud runner Cline SDK version aligned with agent runtime", async () => {
-  const packageJson = JSON.parse(
-    await readFile(agentRuntimePackagePath, "utf8"),
-  );
-  const expectedVersion = normalizePackageVersion(
-    packageJson.dependencies?.["@cline/sdk"],
-  );
-  const dockerfile = await readFile(cloudRunnerDockerfilePath, "utf8");
-
-  assert.ok(expectedVersion);
-  assert.match(
-    dockerfile,
-    new RegExp(`ARG BLAME_CLINE_SDK_VERSION=${expectedVersion}`),
-  );
-  assert.match(dockerfile, /"@cline\/sdk@\$\{BLAME_CLINE_SDK_VERSION\}"/);
-  assert.match(dockerfile, /"@cline\/core@\$\{BLAME_CLINE_SDK_VERSION\}"/);
-  assert.match(
-    dockerfile,
-    /BLAME_CLINE_SDK_VERSION=\$\{BLAME_CLINE_SDK_VERSION\}/,
-  );
 });
 
 test("keeps managed runtime agent revisions aligned", async () => {
@@ -458,12 +434,6 @@ async function readRuntimeManifest(runtimeRoot: string, platform: string) {
   return JSON.parse(
     await readFile(path.join(runtimeRoot, platform, "manifest.json"), "utf8"),
   ) as MacosRuntimeManifest;
-}
-
-function normalizePackageVersion(value: unknown) {
-  return typeof value === "string"
-    ? value.trim().match(/\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?/)?.[0]
-    : undefined;
 }
 
 test(

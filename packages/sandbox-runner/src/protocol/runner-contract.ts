@@ -128,13 +128,11 @@ export type RunnerFailure = {
 export type RunnerResponse<T = unknown> = RunnerSuccess<T> | RunnerFailure;
 
 export function runnerHandshake(input: {
-  clineSdkVersion: string;
   runnerVersion: string;
   imageDigest: string;
   capabilities: RuntimeProtocolHandshake["capabilities"];
 }): RuntimeProtocolHandshake {
   return {
-    clineSdkVersion: input.clineSdkVersion,
     protocolVersion: runnerProtocolVersion,
     runnerVersion: input.runnerVersion,
     imageDigest: input.imageDigest,

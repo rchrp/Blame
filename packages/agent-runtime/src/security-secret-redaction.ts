@@ -76,7 +76,7 @@ export function redactSecurityValue<T>(value: T): T {
   ) as T;
 }
 
-// Images, audio and binary resources (MCP and Cline content parts) carry
+// Images, audio and binary resources (MCP and model content parts) carry
 // base64 data, not text: masking could only corrupt them.
 function binaryContent(value: object) {
   const record = value as Record<string, unknown>;

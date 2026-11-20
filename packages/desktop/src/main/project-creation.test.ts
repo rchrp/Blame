@@ -213,7 +213,7 @@ test("initial repository commit excludes generated runtime artifacts", async () 
     "utf8",
   );
   await writeFile(
-    join(target, ".blame", "logs", "cline.log"),
+    join(target, ".blame", "logs", "agent.log"),
     "debug\n",
     "utf8",
   );

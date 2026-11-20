@@ -94,7 +94,7 @@ export const privacySections = [
         "Agent and AI activity: system and user instructions, model requests and responses, reasoning or activity summaries, source and file context, diffs, terminal commands and output, tool calls and results, container or service logs, web or MCP results, errors, final responses, provider and model identifiers, session identifiers, token usage, and estimated cost.",
         "AI connection data: provider and model selection, credential label, authentication method, custom base URL, OAuth provider account identifier and email, access and refresh credentials, API key, credential expiry, reasoning settings, and connection status.",
         "MCP and integration data: server name, enabled status, transport, executable command or credential-free URL synchronised to Blame cloud, plus local arguments, working directories, environment variables, HTTP headers, OAuth tokens, tool inputs, tool results, and connection events.",
-        "Local application data: Account token and profile, up to ten recent project records, unsent prompts, selected code and complete draft attachments, model choices, theme, notification and sidebar preferences, window state, Cline session data, local runtime state, and functional interface storage.",
+        "Local application data: Account token and profile, up to ten recent project records, unsent prompts, selected code and complete draft attachments, model choices, theme, notification and sidebar preferences, window state, agent session data, local runtime state, and functional interface storage.",
         "Service monitoring data: technical events, metrics and traces that Blame's cloud services record about their own operation, such as request method, route, status and duration, masked database operations, server runtime measurements, and bounded error types.",
         "Diagnostics and support data: local application, renderer, agent, setup, command, model-request, service, container, performance and error logs; crash or stack information; file paths; configuration; support messages; screenshots; attachments; and any issue or diagnostic you choose to submit.",
         "Derived data: repository fingerprints, initials, session summaries, status and usage totals, estimated cost, aggregated service-reliability statistics, and inferences needed to detect fraud, abuse, or security incidents.",
@@ -160,13 +160,13 @@ export const privacySections = [
     title: "8. Desktop and local-device processing",
     blocks: [
       paragraph(
-        "Blame Desktop stores data in browser-like application storage, the Electron user-data directory, project and worktree directories, local runtime or virtualisation storage, and Cline data directories. This can include the bearer token and Account profile, recent absolute project paths, unsent drafts with full code and attachments, provider choices, sessions, settings, OAuth credentials, MCP secrets, logs, agent artifacts, and runtime state.",
+        "Blame Desktop stores data in browser-like application storage, the Electron user-data directory, project and worktree directories, local runtime or virtualisation storage, and the agent engine's data directories. This can include the bearer token and Account profile, recent absolute project paths, unsent drafts with full code and attachments, provider choices, sessions, settings, OAuth credentials, MCP secrets, logs, agent artifacts, and runtime state.",
       ),
       paragraph(
         "Some local credential and session files are protected by operating-system file permissions but are not necessarily encrypted by Blame. Anyone with access to your operating-system account or files may be able to read local data. Secure your device, use full-disk encryption, restrict access to your account, and do not share local application directories.",
       ),
       paragraph(
-        "Signing out removes the active Blame cloud session from application storage but does not necessarily delete drafts, logs, repositories, worktrees, Cline sessions, provider settings, MCP configuration, or runtime data. Uninstalling the Desktop App may also leave these files behind. You are responsible for deleting local copies that you no longer need; contact support@blame.so for current operating-system-specific locations and cleanup instructions.",
+        "Signing out removes the active Blame cloud session from application storage but does not necessarily delete drafts, logs, repositories, worktrees, agent sessions, provider settings, MCP configuration, or runtime data. Uninstalling the Desktop App may also leave these files behind. You are responsible for deleting local copies that you no longer need; contact support@blame.so for current operating-system-specific locations and cleanup instructions.",
       ),
     ],
   },
@@ -374,7 +374,7 @@ export const privacySections = [
         "Delete individual stories, Quick Chats, or connected provider credentials where the relevant interface offers deletion, and use available undo actions for eligible messages or comments.",
         "Disconnect an AI provider or MCP server, revoke credentials with the provider, and remove local credential copies that are no longer needed.",
         "Avoid attaching a file or selected code, review project-initialisation files, limit the repositories and permissions exposed to the agent, and choose a provider with suitable privacy terms.",
-        "Review and delete local drafts, logs, Cline sessions, runtime data, worktrees, and application storage. Contact support@blame.so for current cleanup locations.",
+        "Review and delete local drafts, logs, agent sessions, runtime data, worktrees, and application storage. Contact support@blame.so for current cleanup locations.",
         "Sign out to remove and revoke the current Blame cloud session. If another token or device may be compromised, contact security@blame.so so that additional Account access can be investigated and revoked.",
         "Use Data and account closure in Blame Desktop for a verified export or Account closure. If you cannot sign in or need a broader privacy request, email privacy@blame.so from the Account email address. Subscription cancellation does not automatically erase Account data.",
         "Withdraw an optional consent through the setting presented with the feature or by contacting privacy@blame.so.",

@@ -73,7 +73,7 @@ jobs:
       - name: Open the pin pull request
         env:
           # Pull requests opened with the default token do not start CI.
-          GH_TOKEN: ${{ secrets.CLINE_SDK_UPDATE_TOKEN || github.token }}
+          GH_TOKEN: ${{ secrets.AUTOMATION_PR_TOKEN || github.token }}
           IMAGE: ${{ steps.release.outputs.image }}
           VERSION: ${{ steps.release.outputs.version }}
         run: |
