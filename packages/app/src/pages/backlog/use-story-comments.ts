@@ -90,9 +90,12 @@ export function useStoryComments({
       }
     }
   )
-  return React.useCallback(
+  const requestChanges = React.useCallback(
     (story: UserStory, input: StoryMessageInput) =>
       withStoryTransition(story.id, () => send(story, input)),
     [send]
   )
+  // `send` is for a caller already inside the story's transition (resume):
+  // a second transition on the same story would be refused.
+  return { requestChanges, send }
 }

@@ -433,17 +433,18 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       platformName: platform.platform,
     })
   })
-  const requestChanges = useStoryComments({
+  const { requestChanges, send: sendStoryMessage } = useStoryComments({
     backlog,
     settingsFor: storyTurnSettings,
   })
   // A paused agent picks its conversation back up.
   const resumeStoryAgent = React.useCallback(
     async (story: UserStory) =>
-      (await requestChanges(await detailedStory(story, backlog), {
+      // Inside the resume's transition already (resumeInSlot).
+      (await sendStoryMessage(await detailedStory(story, backlog), {
         text: storyResumeMessage,
       })) ?? story,
-    [backlog, requestChanges]
+    [backlog, sendStoryMessage]
   )
   // One resume at a time per story; failures say so instead of vanishing.
   const resumeInSlot = useLatestCallback(async (story: UserStory) => {
