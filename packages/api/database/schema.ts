@@ -995,28 +995,14 @@ export class UserMcpConfigurationSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['activeAgentRunId', 'agentActivities', 'agentFinalResponse', 'agentLastError', 'agentLastEvent', 'agentModelId', 'agentProviderId', 'agentSessionSummary', 'agentStatus', 'agentUsage', 'ambition', 'baseCommit', 'branch', 'clineSessionId', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'pullRequestUrl', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'targetBranch', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
+  static $columns = ['agentLastError', 'agentModels', 'agentStatus', 'ambition', 'baseCommit', 'branch', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'engineSessionId', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'pullRequestUrl', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'targetBranch', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
   $columns = UserStorySchema.$columns
-  @column()
-  declare activeAgentRunId: string | null
-  @column()
-  declare agentActivities: any | null
-  @column()
-  declare agentFinalResponse: string | null
   @column()
   declare agentLastError: string | null
   @column()
-  declare agentLastEvent: string | null
-  @column()
-  declare agentModelId: string | null
-  @column()
-  declare agentProviderId: string | null
-  @column()
-  declare agentSessionSummary: string | null
+  declare agentModels: any | null
   @column()
   declare agentStatus: string | null
-  @column()
-  declare agentUsage: any | null
   @column()
   declare ambition: string | null
   @column()
@@ -1024,13 +1010,13 @@ export class UserStorySchema extends BaseModel {
   @column()
   declare branch: string | null
   @column()
-  declare clineSessionId: string | null
-  @column()
   declare codeSelectionAttachments: any | null
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
   @column()
   declare discardedReason: string | null
+  @column()
+  declare engineSessionId: string | null
   @column()
   declare fileAttachmentUploadPending: boolean
   @column()
@@ -1071,106 +1057,6 @@ export class UserStorySchema extends BaseModel {
   declare workspaceMode: string | null
   @column()
   declare worktree: string | null
-}
-
-export class UserStoryAgentRunActivitySchema extends BaseModel {
-  static $columns = ['activity', 'activityId', 'createdAt', 'id', 'runId', 'updatedAt'] as const
-  $columns = UserStoryAgentRunActivitySchema.$columns
-  @column()
-  declare activity: any
-  @column()
-  declare activityId: string
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare runId: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
-}
-
-export class UserStoryAgentRunSchema extends BaseModel {
-  static $columns = ['activities', 'checkpointRunCount', 'clineSessionId', 'commentId', 'completedAt', 'createdAt', 'diffEndRef', 'executionId', 'finalResponse', 'id', 'kind', 'lastEventCreatedAt', 'lastEventId', 'lastEventType', 'lastSequenceNumber', 'modelId', 'providerId', 'reasoningEffort', 'sessionSummary', 'status', 'updatedAt', 'usage', 'userStoryId'] as const
-  $columns = UserStoryAgentRunSchema.$columns
-  @column()
-  declare activities: any | null
-  @column()
-  declare checkpointRunCount: number | null
-  @column()
-  declare clineSessionId: string | null
-  @column()
-  declare commentId: string | null
-  @column.dateTime()
-  declare completedAt: DateTime | null
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column()
-  declare diffEndRef: string | null
-  @column()
-  declare executionId: string | null
-  @column()
-  declare finalResponse: string | null
-  @column({ isPrimary: true })
-  declare id: string
-  @column()
-  declare kind: string
-  @column.dateTime()
-  declare lastEventCreatedAt: DateTime | null
-  @column()
-  declare lastEventId: string | null
-  @column()
-  declare lastEventType: string | null
-  @column()
-  declare lastSequenceNumber: bigint | number
-  @column()
-  declare modelId: string | null
-  @column()
-  declare providerId: string | null
-  @column()
-  declare reasoningEffort: string | null
-  @column()
-  declare sessionSummary: string | null
-  @column()
-  declare status: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
-  @column()
-  declare usage: any | null
-  @column()
-  declare userStoryId: string
-}
-
-export class UserStoryCommentFileAttachmentSchema extends BaseModel {
-  static $columns = ['fileAttachmentId', 'position', 'userStoryCommentId'] as const
-  $columns = UserStoryCommentFileAttachmentSchema.$columns
-  @column()
-  declare fileAttachmentId: string
-  @column()
-  declare position: number
-  @column({ isPrimary: true })
-  declare userStoryCommentId: string
-}
-
-export class UserStoryCommentSchema extends BaseModel {
-  static $columns = ['author', 'body', 'codeSelectionAttachments', 'createdAt', 'fileAttachments', 'id', 'updatedAt', 'userStoryId'] as const
-  $columns = UserStoryCommentSchema.$columns
-  @column()
-  declare author: string
-  @column()
-  declare body: string
-  @column()
-  declare codeSelectionAttachments: any | null
-  @column.dateTime({ autoCreate: true })
-  declare createdAt: DateTime
-  @column()
-  declare fileAttachments: any | null
-  @column({ isPrimary: true })
-  declare id: string
-  @column.dateTime({ autoCreate: true, autoUpdate: true })
-  declare updatedAt: DateTime | null
-  @column()
-  declare userStoryId: string
 }
 
 export class UserStoryFileAttachmentSchema extends BaseModel {

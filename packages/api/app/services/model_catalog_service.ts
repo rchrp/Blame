@@ -4,6 +4,7 @@ import {
   type CatalogModel,
   type CatalogProvider,
   type CatalogSnapshotPayload,
+  type ModelRecommendationProfile,
   type OpenRouterModel,
 } from '#services/model_catalog_contract'
 import {
@@ -12,7 +13,6 @@ import {
 } from '#services/cline_catalog_client'
 import { ModelCatalogMatcher } from '#services/model_catalog_matcher'
 import { buildModelRecommendations } from '#services/model_recommendation_service'
-import ModelUsageProfileService from '#services/model_usage_profile_service'
 import { fetchOpenRouterCatalog } from '#services/openrouter_catalog_client'
 import { credentialModelIds } from '#services/provider_credentials_service'
 import {
@@ -43,13 +43,17 @@ let refreshPromise: Promise<ModelCatalogSnapshot> | undefined
 const snapshotCacheMs = 60_000
 let cachedSnapshot: { expiresAt: number; snapshot: ModelCatalogSnapshot } | undefined
 let parsedSnapshot: { key: string; payload: CatalogSnapshotPayload } | undefined
+// The conversation the recommendations price: no account's own usage is kept
+// here, since an agent's usage is in the records of its engine sessions.
+const usageProfile: ModelRecommendationProfile = {
+  inputTokens: 50_000,
+  outputTokens: 5_000,
+  cacheReadTokens: 0,
+  sampleCount: 0,
+}
 
 export default class ModelCatalogService {
-  async catalog(
-    userId: string,
-    credentials: ProviderCredential[],
-    options: { connectedOnly?: boolean } = {}
-  ) {
+  async catalog(credentials: ProviderCredential[], options: { connectedOnly?: boolean } = {}) {
     const snapshot = await this.snapshot()
     const payload = parseSnapshot(snapshot)
     const providers = addCredentialModels(
@@ -58,7 +62,6 @@ export default class ModelCatalogService {
       payload.openRouterModels ?? []
     )
     const connected = Array.from(new Set(credentials.map((credential) => credential.providerId)))
-    const profile = await new ModelUsageProfileService().forUser(userId)
     return {
       // Connecting a provider needs its metadata, not thousands of unused models.
       all: options.connectedOnly
@@ -70,7 +73,7 @@ export default class ModelCatalogService {
       recommendations: buildModelRecommendations(
         providers,
         connected,
-        profile,
+        usageProfile,
         payload.generatedAt
       ),
     }

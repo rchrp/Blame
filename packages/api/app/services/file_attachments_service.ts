@@ -24,10 +24,6 @@ const ownerConfigs = {
     column: 'user_story_id',
     table: 'user_story_file_attachments',
   },
-  userStoryComment: {
-    column: 'user_story_comment_id',
-    table: 'user_story_comment_file_attachments',
-  },
 } as const
 
 export default class FileAttachmentsService {

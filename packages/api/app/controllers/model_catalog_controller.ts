@@ -7,7 +7,7 @@ export default class ModelCatalogController {
     const userId = auth.getUserOrFail().id
     const credentials = await new ProviderCredentialsService().list(userId)
     return serialize(
-      await new ModelCatalogService().catalog(userId, credentials, {
+      await new ModelCatalogService().catalog(credentials, {
         connectedOnly: request.input('view') === 'selector',
       })
     )

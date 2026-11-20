@@ -109,16 +109,8 @@ export type ScannedRoutes = {
     'projects.user_stories.user_stories.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_stories.activity_detail': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'activityId': ParamValue} }
     'projects.user_stories.user_stories.store_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
     'projects.user_stories.user_stories.show_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.finalize': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
-    'projects.user_stories.user_story_comments.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_story_comments.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
-    'projects.user_stories.user_story_comments.validate_undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
     'preview_edge_internal.resolve': { paramsTuple?: []; params?: {} }
     'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
   }
@@ -163,9 +155,7 @@ export type ScannedRoutes = {
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.index': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_stories.activity_detail': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'activityId': ParamValue} }
     'projects.user_stories.user_stories.show_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   HEAD: {
     'vercel_connections.callback': { paramsTuple?: []; params?: {} }
@@ -208,9 +198,7 @@ export type ScannedRoutes = {
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.index': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_stories.activity_detail': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'activityId': ParamValue} }
     'projects.user_stories.user_stories.show_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.activity_detail': { paramsTuple: [ParamValue,ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue,'activityId': ParamValue} }
   }
   POST: {
     'web_search.search': { paramsTuple?: []; params?: {} }
@@ -262,11 +250,6 @@ export type ScannedRoutes = {
     'engine.engine_sessions.push': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.store': { paramsTuple?: []; params?: {} }
-    'projects.user_stories.user_story_agent_runs.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.finalize': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
-    'projects.user_stories.user_story_comments.store': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_story_comments.undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
-    'projects.user_stories.user_story_comments.validate_undo': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'commentId': ParamValue} }
     'preview_edge_internal.resolve': { paramsTuple?: []; params?: {} }
     'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
   }
@@ -299,7 +282,6 @@ export type ScannedRoutes = {
     'projects.project_code_practices.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'practice': ParamValue} }
     'projects.quick_chats.quick_chats.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
-    'projects.user_stories.user_story_agent_runs.update': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'runId': ParamValue} }
   }
 }
 declare module '@adonisjs/core/types/http' {

@@ -1,11 +1,9 @@
 import { assignUuidV7Id } from '#lib/uuid_v7_model'
 import { orderedFileAttachments, type FileAttachmentReference } from '#lib/file_attachment'
 import FileAttachment from '#models/file_attachment'
-import { BaseModel, beforeCreate, column, computed, hasMany, manyToMany } from '@adonisjs/lucid/orm'
+import { BaseModel, beforeCreate, column, computed, manyToMany } from '@adonisjs/lucid/orm'
 import { DateTime } from 'luxon'
-import UserStoryAgentRun from '#models/user_story_agent_run'
-import UserStoryComment from '#models/user_story_comment'
-import type { HasMany, ManyToMany } from '@adonisjs/lucid/types/relations'
+import type { ManyToMany } from '@adonisjs/lucid/types/relations'
 
 export type UserStoryStatus =
   'backlog' | 'ready' | 'in-progress' | 'in-review' | 'done' | 'discarded'
@@ -16,34 +14,11 @@ export type UserStoryRunMode = 'local-container' | 'vercel-compose' | 'direct'
 // How far the agent goes on this story; null follows the account's ambition.
 export type UserStoryAmbition = 'quick' | 'standard' | 'ambitious'
 export type UserStoryAgentStatus = 'Running' | 'Paused'
-export type UserStoryAgentErrorCode =
-  | 'cline_not_subscribed'
-  | 'cline_org_subscription_unsupported'
-  | 'cline_pass_limit'
-  | 'cline_free_model_limit'
-  | 'cline_model_not_found'
-export type UserStoryAgentActivity = {
-  id: string
-  kind: 'reasoning' | 'message' | 'tool' | 'approval' | 'notice' | 'error'
-  title: string
-  detail: string
-  actionUrl?: string
-  errorCode?: UserStoryAgentErrorCode
-  resetAt?: string
-  status?: 'running' | 'completed' | 'failed'
-  iteration?: number
-  messageKind?: 'intermediate' | 'final'
-  agentName?: string
-  agentAvatar?: string
-  toolCallId?: string
-  parentToolCallId?: string
-  toolName?: string
-  detailArtifact?: string
-  detailTruncated?: boolean
-  originalDetailLength?: number
-  images?: Array<{ caption: string; id: string }>
-  createdAt: string
-  updatedAt?: string
+// A model that worked on the story, shown on its board card.
+export type UserStoryAgentModel = {
+  providerId: string
+  modelId: string
+  reasoningEffort?: string | null
 }
 
 export type UserStoryCodeSelectionAttachment = {
@@ -56,74 +31,26 @@ export type UserStoryCodeSelectionAttachment = {
 
 export type UserStoryFileAttachment = FileAttachmentReference
 
-export type UserStoryAgentUsage = {
-  cacheReadTokens?: number
-  cacheWriteTokens?: number
-  cost?: number
-  inputTokens: number
-  outputTokens: number
-  totalCacheReadTokens?: number
-  totalCacheWriteTokens?: number
-  totalCost?: number
-  totalInputTokens: number
-  totalOutputTokens: number
-}
-
-export function prepareAgentActivities(value: UserStoryAgentActivity[] | null) {
+function prepareAgentModels(value: UserStoryAgentModel[] | null) {
   return value ? JSON.stringify(value) : null
 }
 
-export function consumeAgentActivities(value: unknown) {
-  if (Array.isArray(value)) return value as UserStoryAgentActivity[]
+function consumeAgentModels(value: unknown) {
+  if (Array.isArray(value)) return value as UserStoryAgentModel[]
   if (typeof value !== 'string') return null
   try {
     const parsed = JSON.parse(value)
-    return Array.isArray(parsed) ? (parsed as UserStoryAgentActivity[]) : null
+    return Array.isArray(parsed) ? (parsed as UserStoryAgentModel[]) : null
   } catch {
     return null
   }
 }
 
-export function prepareAgentActivity(value: UserStoryAgentActivity | null) {
+function prepareCodeSelectionAttachments(value: UserStoryCodeSelectionAttachment[] | null) {
   return value ? JSON.stringify(value) : null
 }
 
-export function consumeAgentActivity(value: unknown) {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return value as UserStoryAgentActivity
-  }
-  if (typeof value !== 'string') return null
-  try {
-    const parsed = JSON.parse(value)
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
-      ? (parsed as UserStoryAgentActivity)
-      : null
-  } catch {
-    return null
-  }
-}
-
-export function prepareAgentUsage(value: UserStoryAgentUsage | null) {
-  return value ? JSON.stringify(value) : null
-}
-
-export function consumeAgentUsage(value: unknown) {
-  if (!value) return null
-  if (typeof value === 'object') return value as UserStoryAgentUsage
-  if (typeof value !== 'string') return null
-  try {
-    const parsed = JSON.parse(value)
-    return parsed && typeof parsed === 'object' ? (parsed as UserStoryAgentUsage) : null
-  } catch {
-    return null
-  }
-}
-
-export function prepareCodeSelectionAttachments(value: UserStoryCodeSelectionAttachment[] | null) {
-  return value ? JSON.stringify(value) : null
-}
-
-export function consumeCodeSelectionAttachments(value: unknown) {
+function consumeCodeSelectionAttachments(value: unknown) {
   if (Array.isArray(value)) return value as UserStoryCodeSelectionAttachment[]
   if (typeof value !== 'string') return null
   try {
@@ -134,11 +61,11 @@ export function consumeCodeSelectionAttachments(value: unknown) {
   }
 }
 
-export function prepareFileAttachments(value: UserStoryFileAttachment[] | null) {
+function prepareFileAttachments(value: UserStoryFileAttachment[] | null) {
   return value ? JSON.stringify(value) : null
 }
 
-export function consumeFileAttachments(value: unknown) {
+function consumeFileAttachments(value: unknown) {
   if (Array.isArray(value)) return value as UserStoryFileAttachment[]
   if (typeof value !== 'string') return null
   try {
@@ -242,44 +169,19 @@ export default class UserStory extends BaseModel {
   @column()
   declare ambition: UserStoryAmbition | null
 
+  // The agent engine's session holding the story's conversation, kept in
+  // `engine_sessions`; the desktop names it when the story's agent starts.
+  @column()
+  declare engineSessionId: string | null
+
   @column()
   declare agentStatus: UserStoryAgentStatus | null
 
   @column()
-  declare clineSessionId: string | null
-
-  @column()
-  declare agentProviderId: string | null
-
-  @column()
-  declare agentModelId: string | null
-
-  @column()
-  declare agentLastEvent: string | null
-
-  @column()
   declare agentLastError: string | null
 
-  @column({
-    consume: consumeAgentActivities,
-    prepare: prepareAgentActivities,
-  })
-  declare agentActivities: UserStoryAgentActivity[] | null
-
-  @column()
-  declare agentFinalResponse: string | null
-
-  @column({
-    consume: consumeAgentUsage,
-    prepare: prepareAgentUsage,
-  })
-  declare agentUsage: UserStoryAgentUsage | null
-
-  @column()
-  declare agentSessionSummary: string | null
-
-  @column()
-  declare activeAgentRunId: string | null
+  @column({ consume: consumeAgentModels, prepare: prepareAgentModels })
+  declare agentModels: UserStoryAgentModel[] | null
 
   @column.dateTime()
   declare mergedAt: DateTime | null
@@ -292,12 +194,6 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare discardedReason: string | null
-
-  @hasMany(() => UserStoryComment)
-  declare comments: HasMany<typeof UserStoryComment>
-
-  @hasMany(() => UserStoryAgentRun)
-  declare agentRuns: HasMany<typeof UserStoryAgentRun>
 
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
