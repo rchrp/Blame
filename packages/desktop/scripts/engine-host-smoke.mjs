@@ -1,9 +1,10 @@
 // Runs in Electron: forks the built engine host (out/main/engine-host-process.js)
 // as the app does, and drives one quick chat turn through it against a
 // scripted model server and a stand-in for Blame's API. It proves the
-// utility process starts blame-engine, that the engine starts the harness
-// with Electron as Node, and that records and activity come back over the
-// port. Needs `electron-vite build` and `cargo build -p blame-engine`.
+// utility process starts blame-engine, that the engine starts blame-harness
+// (its compiler side process being Electron as Node), and that records and
+// activity come back over the port. Needs `electron-vite build` and
+// `cargo build -p blame-engine -p blame-harness`.
 
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,6 +23,9 @@ const repository = join(import.meta.dirname, "..", "..", "..");
 const binary =
   process.env.BLAME_ENGINE_BIN ??
   join(repository, "target", "debug", "blame-engine");
+const harness =
+  process.env.BLAME_HARNESS_BIN ??
+  join(repository, "target", "debug", "blame-harness");
 const engineEntry = fileURLToPath(
   import.meta.resolve("@blame/agent-runtime/engine"),
 );
@@ -46,6 +50,7 @@ void app.whenReady().then(async () => {
       ...process.env,
       BLAME_ENGINE_HOST_CONFIG: JSON.stringify({
         binary,
+        harness,
         dataDir,
         clientVersion: "smoke",
       }),
@@ -116,6 +121,7 @@ void app.whenReady().then(async () => {
 
   try {
     if (!existsSync(binary)) throw new Error(`No engine binary at ${binary}`);
+    if (!existsSync(harness)) throw new Error(`No harness binary at ${harness}`);
     await started;
     await call("connect", { api: api.connection() });
     await call("createSession", {

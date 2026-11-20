@@ -2,7 +2,7 @@ import { execFile } from "node:child_process";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { promisify } from "node:util";
-import { withGithubCli } from "@blame/agent-runtime";
+import { withGithubCli } from "@blame/agent-runtime/github-cli";
 import { setupPath } from "../host-tool-path.ts";
 import { allowedCloudApiBaseUrl } from "../preview-runtime/cloud-preview-client.ts";
 

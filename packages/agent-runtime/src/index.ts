@@ -1,7 +1,6 @@
 export * from "./harness/light-contracts.js";
 export * from "./harness/project-memory.js";
 export * from "./harness/session-journal.js";
-export { withGithubCli } from "./github-cli.js";
 export type {
   AgentPersonalization,
   Ambition,

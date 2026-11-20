@@ -33,6 +33,10 @@
       "types": "./src/tool-result-envelope.ts",
       "default": "./dist/tool-result-envelope.js"
     },
+    "./github-cli": {
+      "types": "./src/github-cli.ts",
+      "default": "./dist/github-cli.js"
+    },
     "./component-preview-request": {
       "types": "./src/component-preview-request.ts",
       "default": "./dist/component-preview-request.js"
