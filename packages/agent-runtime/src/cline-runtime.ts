@@ -92,7 +92,6 @@ import {
   newProjectGenerationToolPolicies,
   productionLogger,
   toolPolicies,
-  withConfigExtensions,
   type CommitMessageRuntimeInput,
   type MergeConflictRuntimeInput,
 } from "./cline-runtime-configuration.js";
@@ -245,11 +244,16 @@ import {
   type RunTerminalState,
 } from "./harness/run-lifecycle.js";
 import {
+  githubMcpTools,
   previewDevtoolsMcpTools,
+  sessionStoryHistoryTools,
+  userMcpTools,
+} from "./cline-runtime-tools.js";
+import { McpConnections } from "./engine/tools/mcp.js";
+import {
   previewRuntimeContext,
   type PreviewRuntimeContext,
-} from "./preview-harness-tools.js";
-import { githubMcpTools } from "./github-mcp-tools.js";
+} from "./engine/tools/preview-types.js";
 import type { ProductionSessionContext } from "./production.js";
 import {
   appendProductionConfig,
@@ -293,7 +297,6 @@ import {
 import { scanSecurityAuditRepository } from "./security-audit-scan.js";
 import { developmentSpecialistConsultEnabled } from "./specialist-agents.js";
 import { generateTitle } from "./title-generation.js";
-import { sessionStoryHistoryTools } from "./story-history-tools.js";
 import type { RuntimeCredentialInput } from "./runtime-credential.js";
 import {
   conversationSessionOptions,
@@ -352,7 +355,7 @@ import type {
   StartSessionInput,
   ValidateSecurityAuditInput,
 } from "./types.js";
-import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
+import { BlameUserInstructionServices, skillScopeSystemPrompt, skillsClineTool } from "./user-instruction-services.js";
 import { webResearchTools, webResearchGuidance } from './web-research-tools.js';
 import {
   advanceTargetBranch,
@@ -546,6 +549,9 @@ export class BlameAgentRuntime {
   private sessionUsageSignatures = new Map<string, string>();
   private readonly runLifecycles = new RunLifecycleRegistry();
   private readonly userInstructionServices = new BlameUserInstructionServices();
+  // The user's MCP servers, through the engine's MCP client; none unless
+  // the desktop names their settings file.
+  private readonly mcpConnections: McpConnections | undefined;
   private structuredEventSessions = new Set<string>();
   private readonly productionConfig = loadProductionConfig();
   private readonly events?: AgentRuntimeEvents;
@@ -554,6 +560,13 @@ export class BlameAgentRuntime {
   constructor(events?: AgentRuntimeEvents, options: RuntimeOptions = {}) {
     this.events = events;
     this.options = options;
+    const mcpSettingsPath = options.mcpSettingsPath;
+    this.mcpConnections = mcpSettingsPath
+      ? new McpConnections({
+          settingsPath: () => mcpSettingsPath,
+          log: (message, payload) => productionLogger.log(message, payload),
+        })
+      : undefined;
     if (options.git) {
       setGitRunner(options.git);
     }
@@ -698,6 +711,7 @@ export class BlameAgentRuntime {
     await this.disposeCore();
     await closeClaudeCodeBridge();
     this.userInstructionServices.stopAll();
+    await this.mcpConnections?.close();
   }
 
   private async core(backend?: AgentBackendConfig) {
@@ -871,12 +885,11 @@ export class BlameAgentRuntime {
             workspaceRoot: input.workspaceRoot,
           })
         : undefined;
-      const requestedConfigExtensions =
+      // Skills come from the engine's loader (skillsClineTool), not Cline's.
+      const configExtensions = (
         input.configExtensions ??
-        runtimeConfigExtensions(this.productionConfig);
-      const configExtensions = input.enableBuiltInSkills
-        ? withConfigExtensions(requestedConfigExtensions, "skills", "plugins")
-        : requestedConfigExtensions;
+        runtimeConfigExtensions(this.productionConfig)
+      )?.filter((extension) => extension !== "skills" && extension !== "plugins");
       const taskObjective = input.taskObjective ?? input.prompt;
       const taskContract = {
         environment: {
@@ -936,6 +949,13 @@ export class BlameAgentRuntime {
       const githubTools = input.clineDefaultTools
         ? []
         : await githubMcpTools(this.options, sessionId, productionLogger);
+      const mcpSettingsDisabled =
+        input.disableMcpSettingsTools ??
+        this.productionConfig.disableMcpSettingsTools;
+      const mcpTools =
+        input.clineDefaultTools || mcpSettingsDisabled || !this.mcpConnections
+          ? []
+          : await userMcpTools(this.mcpConnections);
       const standardTools = input.clineDefaultTools
         ? undefined
         : runtimeTools(
@@ -989,17 +1009,18 @@ export class BlameAgentRuntime {
         ...webResearchTools(input.apiConnection, this.options.renderWebPage),
         ...(standardTools ?? []),
         ...githubTools,
+        ...mcpTools,
         ...(specialistTool ? [specialistTool] : []),
         ...sessionStoryHistoryTools(input, this.options.git),
         ...(input.conversationTools ?? []),
       ].filter((tool) => input.toolFilter?.(tool.name) ?? true);
+      const toolNames = extraTools.map((tool) => tool.name);
+      if (!input.clineDefaultTools)
+        extraTools.push(...skillsClineTool(userInstructionService, toolNames));
       const systemPrompt =
         (input.systemPrompt ?? loadPrompt("default-agent-system")) + webResearchGuidance +
         (input.nativeCompletion && !input.clineDefaultTools
-          ? skillScopeSystemPrompt(
-              userInstructionService,
-              extraTools.map((tool) => tool.name),
-            )
+          ? skillScopeSystemPrompt(userInstructionService, toolNames)
           : "");
       const requestedCompaction =
         input.compaction ?? blameCompactionConfig(this.productionConfig);
@@ -1066,10 +1087,10 @@ export class BlameAgentRuntime {
             },
             mode: input.mode ?? "act",
             maxIterations: input.maxIterations,
-            disableMcpSettingsTools:
-              input.disableMcpSettingsTools ??
-              this.productionConfig.disableMcpSettingsTools,
-            ...(pluginPaths ? { pluginPaths } : {}),
+            // Blame connects the user's MCP servers itself (mcpTools).
+            disableMcpSettingsTools: input.clineDefaultTools
+              ? mcpSettingsDisabled
+              : true,
             ...(contextProjectionExtension
               ? { extensions: [contextProjectionExtension] }
               : {}),
@@ -1083,8 +1104,6 @@ export class BlameAgentRuntime {
         },
         localRuntime: {
           ...(configExtensions ? { configExtensions } : {}),
-          ...(userInstructionService ? { userInstructionService } : {}),
-          ...(pluginPaths ? { pluginPaths } : {}),
         },
         interactive: !autoSendPrompt,
         source: "blame-desktop",

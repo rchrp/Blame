@@ -19,23 +19,8 @@ const pluginSkillsTarget = join(
   "blame-native",
   "skills",
 );
-const pluginManifestSource = join(
-  packageRoot,
-  "src",
-  "plugins",
-  "blame-native",
-  "package.json",
-);
-const pluginManifestTarget = join(
-  packageRoot,
-  "dist",
-  "plugins",
-  "blame-native",
-  "package.json",
-);
 
 rmSync(target, { force: true, recursive: true });
 cpSync(source, target, { recursive: true });
 rmSync(pluginSkillsTarget, { force: true, recursive: true });
 cpSync(pluginSkillsSource, pluginSkillsTarget, { recursive: true });
-cpSync(pluginManifestSource, pluginManifestTarget);

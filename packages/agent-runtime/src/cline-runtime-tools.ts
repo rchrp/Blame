@@ -1,6 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { previewEnvironmentTool } from "./preview-environment-tool.js";
-import { attachmentTools } from "./attachment-tools.js";
 
 import type { ClineCore, CoreCompactionConfig } from "@cline/sdk";
 
@@ -8,6 +6,8 @@ import {
   createDelegatedAgentConfigProvider,
   createSpawnAgentTool,
 } from "@cline/sdk";
+
+import { clineTool, clineTools } from "./cline-client-tools.js";
 
 import { type AgentTool } from "./cline-initialization.js";
 
@@ -17,16 +17,35 @@ import { asRecord, stringValue } from "./cline-runtime-events.js";
 
 import { blockedCommandParts } from "./cline-tool-policy.js";
 
+import { attachmentTool } from "./engine/tools/attachments.js";
+import {
+  componentPreviewFilePatterns,
+  componentPreviewPathspecs,
+  componentPreviewTool,
+} from "./engine/tools/component-preview.js";
+import { githubClientTools } from "./engine/tools/github.js";
+import type { McpConnections } from "./engine/tools/mcp.js";
+import {
+  previewContainerLogsTool,
+  previewDevtoolsTool,
+  previewEnvironmentTool,
+  previewInitializationRepairTool,
+  previewScreenTools,
+  projectAppTool,
+  type PreviewToolServices,
+} from "./engine/tools/preview.js";
+import type {
+  PreviewDependencyRefreshResult,
+  PreviewDevtoolsProviderInput,
+  PreviewRuntimeContext,
+} from "./engine/tools/preview-types.js";
+import { sessionStoryHistoryTools as storyHistoryClientTools } from "./engine/tools/story-history.js";
+
 import {
   createFinishTaskTool,
   type FinishTaskScreenshots,
 } from "./harness/finish-task.js";
 import { sessionScreenshotIds } from "./preview-screenshots.js";
-import {
-  componentPreviewFilePatterns,
-  componentPreviewPathspecs,
-  componentPreviewTool,
-} from "./component-preview-tool.js";
 
 import {
   type LightCompletionNotification,
@@ -49,16 +68,6 @@ import {
 } from "./harness/light-tools.js";
 
 import { type ProjectMemoryPersistence } from "./harness/project-memory.js";
-import type { GithubMcpToolOptions } from "./github-mcp-tools.js";
-
-import {
-  previewContainerLogsTool,
-  previewDevtoolsTool,
-  previewInitializationRepairTool,
-  projectAppTool,
-  type PreviewRuntimeContext,
-  type PreviewToolRuntimeOptions,
-} from "./preview-harness-tools.js";
 
 import { reasoningConfig } from "./reasoning.js";
 
@@ -69,6 +78,7 @@ import { supplementalModelConfig } from "./supplemental-model-config.js";
 import type {
   AgentApprovalRequest,
   AgentBackendConfig,
+  ApiConnection,
   PreviewManifest,
   ProjectInitializationDatabaseMode,
   ProjectRunConfiguration,
@@ -102,7 +112,14 @@ export type RuntimeStartSessionInput = StartSessionInput & {
   projectInitialization?: StartDevelopmentSessionInput["projectInitialization"];
 };
 
-export type RuntimeOptions = PreviewToolRuntimeOptions & GithubMcpToolOptions & {
+/** The desktop services the tools use (engine/desktop-services.ts) and the harness's refresh. */
+export type PreviewToolRuntimeOptions = Omit<PreviewToolServices, "git"> & {
+  refreshPreviewDependencies?(
+    input: PreviewDevtoolsProviderInput,
+  ): Promise<PreviewDependencyRefreshResult> | PreviewDependencyRefreshResult;
+};
+
+export type RuntimeOptions = PreviewToolRuntimeOptions & {
   renderWebPage?: import('./web-research-types.js').RenderWebPage;
   // A readable copy of a workspace the runtime cannot read directly.
   projectScanRoot?: import("./project-initialization.js").ProjectScanRootProvider;
@@ -132,7 +149,61 @@ export type RuntimeOptions = PreviewToolRuntimeOptions & GithubMcpToolOptions & 
   commandCredentials?(sessionId: string): Promise<LightCommandCredentials>;
   modelInactivityTimeoutMs?: number;
   projectMemoryPersistence?: ProjectMemoryPersistence;
+  /** The user's MCP settings file (Settings → MCP); no MCP servers without it. */
+  mcpSettingsPath?: string;
 };
+
+type ToolsLogger = {
+  log(message: string, payload?: Record<string, unknown>): void;
+};
+
+/** The preview's screen tools (a surface, else its DevTools tools), as Cline tools. */
+export async function previewDevtoolsMcpTools(
+  options: RuntimeOptions,
+  preview: PreviewRuntimeContext,
+  logger: ToolsLogger,
+): Promise<AgentTool[]> {
+  return clineTools(
+    await previewScreenTools(
+      { ...options, log: (message, payload) => logger.log(message, payload) },
+      preview,
+    ),
+  );
+}
+
+/** The session's GitHub tools, as Cline tools. */
+export async function githubMcpTools(
+  options: RuntimeOptions,
+  sessionId: string,
+  logger: ToolsLogger,
+): Promise<AgentTool[]> {
+  return clineTools(
+    await githubClientTools(
+      { ...options, log: (message, payload) => logger.log(message, payload) },
+      sessionId,
+    ),
+  );
+}
+
+/** The user's own MCP servers' tools, as Cline tools. */
+export async function userMcpTools(mcp: McpConnections): Promise<AgentTool[]> {
+  return clineTools(await mcp.clientTools());
+}
+
+/** The project's story history tools, as Cline tools. */
+export function sessionStoryHistoryTools(
+  input: {
+    apiConnection: ApiConnection;
+    clineDefaultTools?: boolean;
+    projectId?: string;
+    storyId?: string;
+    workspaceRoot: string;
+  },
+  git?: (cwd: string, args: string[]) => Promise<string>,
+): AgentTool[] {
+  if (input.clineDefaultTools) return [];
+  return clineTools(storyHistoryClientTools(input, git));
+}
 
 export function runtimeTools(
   options: RuntimeOptions,
@@ -151,8 +222,9 @@ export function runtimeTools(
 ) {
   void initialTaskBriefing;
   const componentPreview = componentPreviewTool(options, previewContext);
+  const attachment = attachmentTool(worktree, executor);
   const tools = [
-    ...attachmentTools(worktree, executor),
+    ...(attachment ? [clineTool(attachment)] : []),
     ...lightSemanticHarnessTools(worktree, {
       executor,
       taskContract,
@@ -194,16 +266,22 @@ export function runtimeTools(
           }),
         ]
       : []),
-    previewDevtoolsTool(options, previewContext),
-    componentPreview,
-    ...(previewContext?.workspaceMode === "direct"
-      ? // The project's own app: no managed container to repair or read.
-        [projectAppTool(options, previewContext)]
-      : [
-          previewInitializationRepairTool(options, previewContext),
-          previewContainerLogsTool(options, previewContext),
-          previewEnvironmentTool(options, previewContext),
-        ]),
+    ...clineTools(
+      previewContext
+        ? [
+            previewDevtoolsTool(options, previewContext),
+            componentPreview,
+            ...(previewContext.workspaceMode === "direct"
+              ? // The project's own app: no managed container to repair or read.
+                [projectAppTool(options, previewContext)]
+              : [
+                  previewInitializationRepairTool(options, previewContext),
+                  previewContainerLogsTool(options, previewContext),
+                  previewEnvironmentTool(options, previewContext),
+                ]),
+          ]
+        : [],
+    ),
     ...previewMcpTools,
   ].filter((tool): tool is AgentTool => Boolean(tool));
   return tools.length ? tools : undefined;

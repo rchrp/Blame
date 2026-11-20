@@ -19,7 +19,8 @@ const { createProviderCompatibleFetch } = await import(
 );
 const { listClineProviders } = await import("./provider-catalog.js");
 const { toolPolicies } = await import("./cline-runtime-configuration.js");
-const { attachmentTools } = await import("./attachment-tools.js");
+const { attachmentTool } = await import("./engine/tools/attachments.js");
+const { clineTool } = await import("./cline-client-tools.js");
 const { reasoningConfig } = await import("./reasoning.js");
 const { developmentUserInput, newAttachmentDirectory } = await import("./cline-runtime-prompts.js");
 
@@ -203,7 +204,7 @@ test("an attached PDF reaches the model through the real SDK read tool", async (
         sessionId: "attachment-smoke", providerId: "openai-compatible", modelId: "smoke-model", apiKey: "offline",
         baseUrl: `http://127.0.0.1:${address.port}/v1`, cwd: workspace, workspaceRoot: workspace,
         checkpoint: { enabled: false }, enableAgentTeams: false, enableSpawnAgent: false,
-        enableTools: true, extraTools: attachmentTools(workspace), maxIterations: 3, mode: "act", systemPrompt: "Read the attachment and answer.",
+        enableTools: true, extraTools: [clineTool(attachmentTool(workspace)!)], maxIterations: 3, mode: "act", systemPrompt: "Read the attachment and answer.",
       }),
       interactive: false, source: "attachment-smoke",
     });

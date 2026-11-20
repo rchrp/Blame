@@ -10,6 +10,7 @@ import {
   closeClaudeCodeSessions,
   executeLightWorkspaceRequest,
   listMcpOAuthStatuses,
+  mcpSettingsPath,
   type AgentEvent,
   type LightCommandCredentials,
   type LightWorkspaceExecutionRequest,
@@ -65,6 +66,7 @@ function createAgentRuntime(hostClient: AgentRuntimeHostClient) {
   return new BlameAgentRuntime(
     { emit: (event) => events.push(serializableAgentEvent(event)) },
     {
+      mcpSettingsPath: mcpSettingsPath(),
       git: (cwd, args) => hostClient.request<string>("git", { args, cwd }),
       renderWebPage: (input) => hostRequest<{ url: string; html: string }>(hostClient, 'renderWebPage', input),
       openExternalUrl: (url) => {

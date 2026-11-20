@@ -7,7 +7,8 @@ import {
   rankStories,
   storyHistoryTools,
   type StoryRecord,
-} from "./story-history-tools.js";
+} from "./story-history.js";
+import { toolContext } from "./testing.js";
 
 const stories: StoryRecord[] = [
   story(1, "Add GitHub OAuth login", "Users sign in with GitHub.", "done", {
@@ -54,7 +55,9 @@ test("search returns one compact line per story and skips the current story", as
     storyId: "story-3",
     listStories: async () => stories,
   });
-  const output = String(await search!.execute({ query: "login" }, {} as never));
+  const output = String(
+    await search!.run({ query: "login" } as never, toolContext()),
+  );
   assert.match(
     output,
     /US-001 · done · merged 2026-10-01 · "Add GitHub OAuth login"/u,
@@ -62,7 +65,7 @@ test("search returns one compact line per story and skips the current story", as
   assert.doesNotMatch(output, /US-003/u);
   assert.match(output, /read_user_story/u);
   const filtered = String(
-    await search!.execute({ status: "backlog" }, {} as never),
+    await search!.run({ status: "backlog" } as never, toolContext()),
   );
   assert.match(filtered, /US-004/u);
   assert.doesNotMatch(filtered, /US-001/u);
@@ -111,7 +114,9 @@ test("reading a story loads its digest once and lists changed files from Git", a
       return "M\tsrc/auth.ts\nA\tsrc/routes/callback.ts\n";
     },
   });
-  const first = String(await read!.execute({ story: "US-001" }, {} as never));
+  const first = String(
+    await read!.run({ story: "US-001" } as never, toolContext()),
+  );
   assert.match(first, /# US-001 · Add GitHub OAuth login/u);
   assert.match(first, /## Outcome\nAdded a GitHub provider/u);
   assert.match(first, /M src\/auth.ts\nA src\/routes\/callback.ts/u);
@@ -127,9 +132,9 @@ test("reading a story loads its digest once and lists changed files from Git", a
   ]);
 
   const second = String(
-    await read!.execute(
-      { story: "1", include: ["discussion", "activity"] },
-      {} as never,
+    await read!.run(
+      { story: "1", include: ["discussion", "activity"] } as never,
+      toolContext(),
     ),
   );
   assert.match(
@@ -141,7 +146,9 @@ test("reading a story loads its digest once and lists changed files from Git", a
   assert.equal(listCalls, 1);
   assert.equal(detailCalls, 1);
 
-  const missing = String(await read!.execute({ story: "US-099" }, {} as never));
+  const missing = String(
+    await read!.run({ story: "US-099" } as never, toolContext()),
+  );
   assert.match(missing, /No story matches "US-099"/u);
 });
 

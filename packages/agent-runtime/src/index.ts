@@ -29,14 +29,15 @@ export type * from "./preview-environment-types.js";
 export type {
   PreviewEnvironmentToolInput,
   PreviewEnvironmentToolResult,
-} from "./preview-environment-tool.js";
+} from "./engine/tools/preview-types.js";
 export type { InitializationProgress } from "./initialization-progress.js";
 export {
   authorizeMcpOAuth,
   clearMcpOAuth,
   listMcpOAuthStatuses,
   type McpOAuthStatus,
-} from "./mcp-oauth.js";
+} from "./engine/tools/mcp-oauth.js";
+export { mcpSettingsPath } from "./engine/tools/mcp-settings.js";
 export type {
   AgentEvent,
   AgentApprovalRequest,

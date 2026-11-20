@@ -1,26 +1,3 @@
-import type { CoreSessionConfig } from "@cline/sdk";
-import {
-  componentPreviewDefaultWidth,
-  componentPreviewFilePattern,
-  componentPreviewMaximumRenders,
-  componentPreviewWidthRange,
-  parseComponentPreviewRequest,
-  type ComponentPreviewRequest,
-} from "./component-preview-request.js";
-import type {
-  PreviewRuntimeContext,
-  PreviewToolRuntimeOptions,
-} from "./preview-harness-tools.js";
-import {
-  previewToolModelOutput,
-  recordSessionScreenshots,
-} from "./preview-screenshots.js";
-import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
-import { limitToolText, toolOutputLimits } from "./tool-output-limit.js";
-
-type AgentTool = NonNullable<CoreSessionConfig["extraTools"]>[number];
-type ToolContext = Parameters<AgentTool["execute"]>[1];
-
 // Shows one component on its own. The agent writes one preview file that
 // exports its states; the desktop starts a temporary Vite server for the
 // story, renders each state, theme and width in a page of its own and
@@ -30,35 +7,26 @@ type ToolContext = Parameters<AgentTool["execute"]>[1];
 // Preview files are ignored by Git and finish_task removes them and stops
 // the server.
 
+import {
+  componentPreviewDefaultWidth,
+  componentPreviewFilePattern,
+  componentPreviewMaximumRenders,
+  componentPreviewWidthRange,
+  parseComponentPreviewRequest,
+} from "../../component-preview-request.js";
+import { previewDevtoolsAgentTimeoutMs } from "../../preview-devtools-policy.js";
+import { toolOutputLimits } from "../../tool-output-limit.js";
+import type { DesktopServices } from "../desktop-services.js";
+import { defineTool, type ClientTool } from "../tool.js";
+import { previewOutput } from "./output.js";
+import type { PreviewRuntimeContext } from "./preview-types.js";
+
+export const componentPreviewToolName = "open_component_preview";
 export const componentPreviewFilePatterns = [componentPreviewFilePattern];
 export const componentPreviewPathspecs = [
   ":(glob)**/*.blame-preview.*",
   ":(exclude,glob)**/node_modules/**",
 ];
-
-type ComponentPreviewTarget = {
-  projectId?: string;
-  scope?: string;
-  storyId?: string;
-  workspaceMode?: PreviewRuntimeContext["workspaceMode"];
-  worktree: string;
-};
-
-export type ComponentPreviewHostInput =
-  | (ComponentPreviewTarget & {
-      action: "render";
-      request: ComponentPreviewRequest;
-      runId?: string;
-      sessionId?: string;
-      signal?: AbortSignal;
-      toolCallId?: string;
-    })
-  | {
-      action: "stop";
-      sessionId?: string;
-      signal?: AbortSignal;
-      worktree: string;
-    };
 
 const description = [
   "Render one component or screen on its own, with made-up data, and get one screenshot per render with its Vite error overlay and console errors.",
@@ -74,13 +42,14 @@ const description = [
 ].join(" ");
 
 export function componentPreviewTool(
-  options: PreviewToolRuntimeOptions,
+  services: Pick<DesktopServices, "componentPreview">,
   preview: PreviewRuntimeContext | undefined,
-): AgentTool | undefined {
-  if (!options.componentPreview || !preview?.componentPreview) return undefined;
+): ClientTool<never> | undefined {
+  const render = services.componentPreview;
+  if (!render || !preview?.componentPreview) return undefined;
   const { maximum, minimum } = componentPreviewWidthRange;
-  return {
-    name: "open_component_preview",
+  return defineTool<Record<string, unknown>>({
+    name: componentPreviewToolName,
     description,
     inputSchema: {
       type: "object",
@@ -119,47 +88,37 @@ export function componentPreviewTool(
       required: ["file"],
       additionalProperties: false,
     },
+    effect: "command",
     // The first call starts the server and pre-bundles the preview's
     // dependencies; the desktop bounds each step itself.
-    retryable: false,
     timeoutMs: previewDevtoolsAgentTimeoutMs(),
-    execute: async (input: unknown, context: ToolContext) =>
-      limitToolText(
-        await renderComponentPreview(options, preview, input, context),
+    async run(input, context) {
+      const request = parseComponentPreviewRequest(input);
+      if (!request.ok)
+        return {
+          ok: false,
+          content: [{ type: "text", text: request.message }],
+        };
+      const result = await render({
+        action: "render",
+        request: request.value,
+        signal: context.signal,
+        worktree: preview.worktree,
+        ...(preview.workspaceMode
+          ? { workspaceMode: preview.workspaceMode }
+          : {}),
+        ...(preview.scope ? { scope: preview.scope } : {}),
+        ...(preview.storyId ? { storyId: preview.storyId } : {}),
+        ...(preview.projectId ? { projectId: preview.projectId } : {}),
+        runId: context.turn,
+        sessionId: context.session,
+        toolCallId: context.call,
+      });
+      return previewOutput(
+        context.session,
+        result,
         toolOutputLimits.componentPreview,
-      ),
-  };
-}
-
-async function renderComponentPreview(
-  options: PreviewToolRuntimeOptions,
-  preview: PreviewRuntimeContext,
-  value: unknown,
-  context: ToolContext,
-) {
-  const request = parseComponentPreviewRequest(value);
-  if (!request.ok)
-    return {
-      content: [{ type: "text", text: request.message }],
-      isError: true,
-    };
-  const sessionId = context.sessionId ?? context.conversationId;
-  const result = await options.componentPreview!({
-    action: "render",
-    request: request.value,
-    signal: context.signal,
-    worktree: preview.worktree,
-    ...(preview.workspaceMode ? { workspaceMode: preview.workspaceMode } : {}),
-    ...(preview.scope ? { scope: preview.scope } : {}),
-    ...(preview.storyId ? { storyId: preview.storyId } : {}),
-    ...(preview.projectId ? { projectId: preview.projectId } : {}),
-    ...(context.runId || sessionId
-      ? { runId: context.runId ?? sessionId }
-      : {}),
-    ...(sessionId ? { sessionId } : {}),
-    ...(context.toolCallId ? { toolCallId: context.toolCallId } : {}),
+      );
+    },
   });
-  const output = previewToolModelOutput(result);
-  recordSessionScreenshots(sessionId, output);
-  return output;
 }

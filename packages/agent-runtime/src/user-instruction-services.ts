@@ -1,8 +1,16 @@
-import type { UserInstructionConfigService } from "@cline/sdk";
+// The skills of a conversation that still runs on Cline, from the engine's
+// skill loader (engine/tools/skills.ts): the same folders, prompt section and
+// `skills` tool, given to Cline through the client tool adapter.
+
+import { clineTool } from "./cline-client-tools.js";
 import {
-  createUserInstructionConfigService,
-  resolvePluginSkillDirectoriesFromPaths,
-} from "@cline/sdk";
+  loadSkills,
+  skillDirectories,
+  skillScopeSection,
+  skillsTool,
+  usableSkills,
+  type Skill,
+} from "./engine/tools/skills.js";
 
 type StartUserInstructionServiceInput = {
   cwd: string;
@@ -11,86 +19,50 @@ type StartUserInstructionServiceInput = {
   workspaceRoot: string;
 };
 
-type UserInstructionServiceFactory = typeof createUserInstructionConfigService;
-
-// Skills that only apply through a tool the session may not register.
-const skillRequiredTools: ReadonlyMap<string, string> = new Map([
-  ["component-preview", "open_component_preview"],
-]);
-
-export function skillScopeSystemPrompt(
-  service?: UserInstructionConfigService,
-  toolNames: readonly string[] = [],
-) {
-  const configured: Array<{ name: string; description?: string; disabled?: boolean }> =
-    service?.createSkillsExecutor?.().configuredSkills ?? [];
-  const skills = configured.filter(
-    (skill) => !skill.disabled && hasRequiredTool(skill.name, toolNames),
-  );
-  if (!skills.length) return "";
-  const descriptions: string[] = [];
-  let remaining = 16_384;
-  for (const skill of skills) {
-    const description = JSON.stringify({
-      name: skill.name,
-      description: skill.description?.trim() || "Scope unavailable; inspect the skill when relevance is uncertain.",
-    });
-    if (description.length > remaining) {
-      descriptions.push("Further descriptions exceed this snapshot's limit; the skills tool remains available.");
-      break;
-    }
-    descriptions.push(description);
-    remaining -= description.length + 1;
-  }
-  return "\n\n## Skill selection\n" +
-    "Invoke explicitly requested skills. Otherwise load a skill when its described scope applies to the current request; frontend files elsewhere in the workspace do not make a backend or mechanical task frontend design work. These descriptions are a startup snapshot; the skills tool loads current instructions. Inspect the skill if relevance is uncertain.\n" +
-    descriptions.join("\n");
-}
-
-function hasRequiredTool(skillName: string, toolNames: readonly string[]) {
-  const tool = skillRequiredTools.get(skillName.trim());
-  return !tool || toolNames.includes(tool);
-}
+/** The skill folders of a session and the skills they held when it started. */
+export type SkillCatalog = { directories: string[]; snapshot: Skill[] };
 
 export class BlameUserInstructionServices {
-  private readonly createService: UserInstructionServiceFactory;
-  private readonly services = new Map<string, UserInstructionConfigService>();
-
-  constructor(
-    createService: UserInstructionServiceFactory = createUserInstructionConfigService,
-  ) {
-    this.createService = createService;
-  }
-
-  async start(input: StartUserInstructionServiceInput) {
-    const service = this.createService({
-      skills: {
-        workspacePath: input.workspaceRoot,
-        pluginSkillDirectories: resolvePluginSkillDirectoriesFromPaths(
-          input.pluginPaths,
-        ),
-      },
-      rules: { workspacePath: input.cwd },
-      workflows: { workspacePath: input.cwd },
+  async start(
+    input: StartUserInstructionServiceInput,
+  ): Promise<SkillCatalog | undefined> {
+    const directories = skillDirectories({
+      workspaceRoot: input.workspaceRoot,
+      pluginPaths: input.pluginPaths,
     });
     try {
-      await service.start();
+      return { directories, snapshot: await loadSkills(directories) };
     } catch {
-      service.stop();
       return undefined;
     }
-    this.stop(input.sessionId);
-    this.services.set(input.sessionId, service);
-    return service;
   }
 
+  // Nothing runs between calls: the skills tool reads the folders when called.
   stop(sessionId: string) {
-    this.services.get(sessionId)?.stop();
-    this.services.delete(sessionId);
+    void sessionId;
   }
 
-  stopAll() {
-    this.services.forEach((service) => service.stop());
-    this.services.clear();
-  }
+  stopAll() {}
+}
+
+/** The skills prompt section for a session with these tools. */
+export function skillScopeSystemPrompt(
+  catalog?: SkillCatalog,
+  toolNames: readonly string[] = [],
+) {
+  return catalog
+    ? skillScopeSection(usableSkills(catalog.snapshot, toolNames))
+    : "";
+}
+
+/** The `skills` tool for a session with these tools, as a Cline tool. */
+export function skillsClineTool(
+  catalog: SkillCatalog | undefined,
+  toolNames: readonly string[],
+) {
+  if (!catalog) return [];
+  const tool = skillsTool(usableSkills(catalog.snapshot, toolNames), async () =>
+    usableSkills(await loadSkills(catalog.directories), toolNames),
+  );
+  return tool ? [clineTool(tool)] : [];
 }

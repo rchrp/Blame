@@ -4,6 +4,7 @@
 
 import {
   EngineHost,
+  desktopServices,
   harnessRunnerPath,
   isEngineHostMessage,
   type EngineDesktopMethod,
@@ -42,7 +43,8 @@ function desktop<Result>(
       reject,
     });
     signal?.addEventListener("abort", () => {
-      desktopPending.delete(id);
+      if (!desktopPending.delete(id)) return;
+      post({ kind: "desktop-cancel", id });
       reject(signal.reason);
     });
     post({ kind: "desktop-request", id, method, input });
@@ -61,7 +63,7 @@ const host = new EngineHost({
     BLAME_ENGINE_HOST_CONFIG: undefined,
   },
   emit: (event) => post({ kind: "event", event }),
-  renderWebPage: ({ url, signal }) => desktop("renderWebPage", { url }, signal),
+  desktop: desktopServices(desktop),
   onLog: ({ source, text }) => {
     if (source === "engine-stderr" || /threw|ignored/.test(text))
       console.error(`[engine] ${text}`);

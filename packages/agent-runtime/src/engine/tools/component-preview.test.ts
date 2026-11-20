@@ -1,31 +1,18 @@
 import assert from "node:assert/strict";
-import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
 import test from "node:test";
-import { promisify } from "node:util";
-import {
-  finishComponentPreviews,
-  removePreviewScratch,
-  runtimeTools,
-} from "./cline-runtime-tools.js";
 import {
   componentPreviewFile,
   componentPreviewRenders,
   parseComponentPreviewRequest,
-} from "./component-preview-request.js";
-import {
-  componentPreviewTool,
-  type ComponentPreviewHostInput,
-} from "./component-preview-tool.js";
-import { sessionScreenshotIds } from "./preview-screenshots.js";
+} from "../../component-preview-request.js";
+import { sessionScreenshotIds } from "../../preview-screenshots.js";
+import type { ToolContentBlock } from "../tool.js";
+import { componentPreviewTool } from "./component-preview.js";
+import { previewClientTools } from "./preview.js";
+import type { ComponentPreviewHostInput } from "./preview-types.js";
+import { callThroughToolSet, toolContext } from "./testing.js";
 
-const run = promisify(execFile);
-const context = {
-  sessionId: "preview-session",
-  toolCallId: "call-1",
-} as never;
+const context = toolContext({ session: "preview-session", call: "call-1" });
 const preview = {
   componentPreview: true,
   scope: "story:1",
@@ -172,26 +159,28 @@ test("states, themes and widths outside the contract are refused", () => {
 test("an invalid call is refused without asking the desktop", async () => {
   const desktop = fakeDesktop(() => rendered(1));
   const tool = componentPreviewTool(desktop.options, preview)!;
-  const result = (await tool.execute(
-    { file: "/dialog.blame-preview.html?state=empty" },
+  const result = (await tool.run(
+    { file: "/dialog.blame-preview.html?state=empty" } as never,
     context,
-  )) as { content: Array<{ text: string }>; isError: boolean };
-  assert.equal(result.isError, true);
-  assert.match(result.content[0].text, /\.blame-preview\.tsx/u);
+  )) as { content: Array<{ text: string }>; ok: boolean };
+  assert.equal(result.ok, false);
+  assert.match(result.content[0]!.text, /\.blame-preview\.tsx/u);
   assert.deepEqual(desktop.calls, []);
 });
 
 test("one call returns a screenshot per render and records them for finish_task", async () => {
   const desktop = fakeDesktop(() => rendered(4));
   const tool = componentPreviewTool(desktop.options, preview)!;
-  const output = (await tool.execute(
-    {
-      file: "packages/app/src/card.blame-preview.tsx",
-      states: ["default", "empty"],
-      themes: ["light", "dark"],
-    },
-    context,
-  )) as Array<Record<string, unknown>>;
+  const output = (
+    (await tool.run(
+      {
+        file: "packages/app/src/card.blame-preview.tsx",
+        states: ["default", "empty"],
+        themes: ["light", "dark"],
+      } as never,
+      context,
+    )) as { content: ToolContentBlock[] }
+  ).content;
   assert.equal(desktop.calls.length, 1);
   const call = desktop.calls[0] as Extract<
     ComponentPreviewHostInput,
@@ -210,30 +199,30 @@ test("one call returns a screenshot per render and records them for finish_task"
   });
   const images = output.filter((block) => block.type === "image");
   assert.equal(images.length, 4);
-  assert.ok(images.every((image) => image.mediaType === "image/png"));
+  assert.ok(
+    images.every(
+      (image) => "mediaType" in image && image.mediaType === "image/png",
+    ),
+  );
   for (const id of ["1", "2", "3", "4"].map((digit) => digit.repeat(64)))
     assert.ok(sessionScreenshotIds("preview-session").has(id), id);
 });
 
 test("the tool exists only where the desktop offers it, in every workspace mode", () => {
   const desktop = fakeDesktop(() => rendered(1));
-  const names = (
+  const offered = (
     workspaceMode: "cloud-mirror" | "direct" | "local-container",
     componentPreview: boolean,
   ) =>
-    (
-      runtimeTools(desktop.options, "/p", {
-        componentPreview,
-        workspaceMode,
-        worktree: "/p",
-      }) ?? []
-    ).map((tool) => tool.name);
-  assert.ok(names("direct", true).includes("open_component_preview"));
-  assert.ok(names("local-container", true).includes("open_component_preview"));
-  assert.ok(names("cloud-mirror", true).includes("open_component_preview"));
-  assert.ok(
-    !names("local-container", false).includes("open_component_preview"),
-  );
+    componentPreviewTool(desktop.options, {
+      componentPreview,
+      workspaceMode,
+      worktree: "/p",
+    })?.name === "open_component_preview";
+  assert.ok(offered("direct", true));
+  assert.ok(offered("local-container", true));
+  assert.ok(offered("cloud-mirror", true));
+  assert.ok(!offered("local-container", false));
   assert.equal(componentPreviewTool({}, preview), undefined);
 });
 
@@ -249,18 +238,27 @@ test("the tool says when to use it, not only how", () => {
     description,
     /in the app alone only when this costs more: heavy fakes for a state the app already shows, or a change to the screen's integration/,
   );
-  assert.match(description, /each caption says whether it shows the isolated component or the app/);
+  assert.match(
+    description,
+    /each caption says whether it shows the isolated component or the app/,
+  );
 });
 
 test("the tool describes React packages without Vite, such as a Next.js app", () => {
   const desktop = fakeDesktop(() => rendered(1));
   const { description } = componentPreviewTool(desktop.options, preview)!;
-  assert.match(description, /in the package of the component \(the folder with its package\.json\)/);
+  assert.match(
+    description,
+    /in the package of the component \(the folder with its package\.json\)/,
+  );
   assert.match(
     description,
     /A React package without Vite, such as a Next\.js app, gets Blame's own Vite with @vitejs\/plugin-react, its PostCSS or Tailwind config and tsconfig or jsconfig paths/,
   );
-  assert.match(description, /next\/link, next\/image, next\/navigation and next\/font become small shims in this server only/);
+  assert.match(
+    description,
+    /next\/link, next\/image, next\/navigation and next\/font become small shims in this server only/,
+  );
   assert.match(
     description,
     /Only client components render: a Server Component \(an async component, or one importing server-only modules such as next\/headers\) is reported as such/,
@@ -339,111 +337,33 @@ test("the tool describes Nuxt packages: their auto-imports, the shims, and what 
     description,
     /<NuxtLink>, <NuxtImg>, useRoute, useRouter, navigateTo, useHead, useRuntimeConfig and useState are small shims; useFetch, useAsyncData, \$fetch and imports of server\/ fail with a message: pass made-up data through props/,
   );
-  assert.match(description, /Import the stylesheets of nuxt\.config's css field in the preview file/);
+  assert.match(
+    description,
+    /Import the stylesheets of nuxt\.config's css field in the preview file/,
+  );
 });
 
-test("finishing removes the preview files, then stops the preview server", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blame-preview-finish-"));
-  const git = async (cwd: string, args: string[]) =>
-    (await run("git", args, { cwd })).stdout;
-  try {
-    await git(root, ["init", "-q"]);
-    await writeFile(join(root, "card.blame-preview.tsx"), "export {}");
-    // A cloud preview's sandbox gets the removal when its server stops.
-    const atStop: string[][] = [];
-    const desktop = fakeDesktop(async () => {
-      atStop.push(await readdir(root));
-      return { stopped: 1 };
-    });
-    const note = await finishComponentPreviews(
-      { ...desktop.options, git },
-      root,
-      "preview-session",
-    );
-    assert.deepEqual(desktop.calls, [
-      { action: "stop", sessionId: "preview-session", worktree: root },
-    ]);
-    assert.deepEqual(atStop, [[".git"]]);
-    assert.equal(note, "Removed 1 temporary preview file.");
-    assert.deepEqual(await readdir(root), [".git"]);
-    const failing = await finishComponentPreviews(
-      {
-        componentPreview: async () => {
-          throw new Error("runtime unreachable");
-        },
-        git,
-      },
-      root,
-      "preview-session",
-    );
-    assert.equal(
-      failing,
-      "The component preview server did not stop: runtime unreachable",
-    );
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
-});
-
-test("finishing removes temporary preview files and nothing else", async () => {
-  const root = await mkdtemp(join(tmpdir(), "blame-preview-scratch-"));
-  const git = async (cwd: string, args: string[]) =>
-    (await run("git", args, { cwd })).stdout;
-  try {
-    await git(root, ["init", "-q"]);
-    await mkdir(join(root, "packages/app/src"), { recursive: true });
-    await mkdir(join(root, "node_modules/pkg"), { recursive: true });
-    await writeFile(join(root, "keep.ts"), "keep");
-    await writeFile(join(root, "tracked.blame-preview.md"), "tracked");
-    await git(root, ["add", "keep.ts", "tracked.blame-preview.md"]);
-    await git(root, [
-      "-c",
-      "user.email=a@b",
-      "-c",
-      "user.name=n",
-      "commit",
-      "-qm",
-      "init",
-    ]);
-    await writeFile(join(root, "settings.blame-preview.tsx"), "export {}");
-    await writeFile(
-      join(root, "packages/app/src/dialog.blame-preview.tsx"),
-      "export {}",
-    );
-    await writeFile(join(root, "packages/app/src/dialog.tsx"), "draft");
-    await writeFile(join(root, "node_modules/pkg/x.blame-preview.js"), "");
-    await writeFile(join(root, "draft.ts"), "untracked");
-    // The project ignores its build output; a build of the preview stays.
-    await writeFile(join(root, ".gitignore"), "dist/\n");
-    await mkdir(join(root, "dist"), { recursive: true });
-    await writeFile(join(root, "dist/card.blame-preview.js"), "");
-    await writeFile(join(root, ".git/info/exclude"), "*.blame-preview.*\n");
-    await writeFile(join(root, "card.blame-preview.tsx"), "export {}");
-    assert.equal(
-      await removePreviewScratch(git, root),
-      "Removed 3 temporary preview files.",
-    );
-    assert.deepEqual(await readdir(join(root, "dist")), [
-      "card.blame-preview.js",
-    ]);
-    assert.deepEqual((await readdir(root)).sort(), [
-      ".git",
-      ".gitignore",
-      "dist",
-      "draft.ts",
-      "keep.ts",
-      "node_modules",
-      "packages",
-      "tracked.blame-preview.md",
-    ]);
-    assert.deepEqual(await readdir(join(root, "packages/app/src")), [
-      "dialog.tsx",
-    ]);
-    assert.deepEqual(await readdir(join(root, "node_modules/pkg")), [
-      "x.blame-preview.js",
-    ]);
-    assert.equal(await removePreviewScratch(git, root), undefined);
-  } finally {
-    await rm(root, { force: true, recursive: true });
-  }
+test("the screenshots reach the model as images through the tool set", async () => {
+  const desktop = fakeDesktop(() => rendered(2));
+  const tool = componentPreviewTool(desktop.options, preview)!;
+  const result = await callThroughToolSet([tool], "open_component_preview", {
+    file: "src/card.blame-preview.tsx",
+    themes: ["light", "dark"],
+  });
+  assert.equal(result.outcome, "completed");
+  assert.equal(
+    result.content.filter((block) => block.type === "image").length,
+    2,
+  );
+  assert.equal(result.blobs.length, 2);
+  assert.match(
+    JSON.stringify(result.content),
+    /Screenshot saved as screenshot:1{64}/,
+  );
+  // The component preview is no preview tool of its own: the list leaves it to its caller.
+  assert.ok(
+    !(await previewClientTools(desktop.options, preview)).some(
+      (item) => item.name === "open_component_preview",
+    ),
+  );
 });

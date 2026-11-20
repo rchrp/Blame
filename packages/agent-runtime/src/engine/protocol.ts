@@ -17,6 +17,7 @@ import type {
   ProjectCodePracticePreference,
   ReasoningSelection,
 } from "../types.js";
+import type { DesktopServiceMethods } from "./desktop-services.js";
 
 /** What a conversation is for; each has its own config builder in the host. */
 export type EnginePurpose = "quick-chat";
@@ -141,12 +142,7 @@ export type EngineHostEvent =
     };
 
 /** What the host asks of the main process: desktop services its tools use. */
-export type EngineDesktopMethods = {
-  renderWebPage: {
-    input: { url: string; timeoutMs?: number };
-    result: { url: string; html: string };
-  };
-};
+export type EngineDesktopMethods = DesktopServiceMethods;
 
 export type EngineDesktopMethod = keyof EngineDesktopMethods;
 
@@ -172,6 +168,8 @@ export type EngineHostMessage =
       result?: unknown;
       error?: { message: string };
     }
+  /** The host no longer waits for this desktop request: stop its work. */
+  | { kind: "desktop-cancel"; id: number }
   | { kind: "ready" };
 
 export function isEngineHostMessage(
@@ -185,6 +183,7 @@ export function isEngineHostMessage(
     kind === "event" ||
     kind === "desktop-request" ||
     kind === "desktop-response" ||
+    kind === "desktop-cancel" ||
     kind === "ready"
   );
 }

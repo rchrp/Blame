@@ -11,7 +11,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { currentWorkspaceRevisionState } from "./harness/workspace-revisions.js";
-import { previewInitializationRepairTool } from "./preview-harness-tools.js";
 import { previewDevtoolsAgentTimeoutMs } from "./preview-devtools-policy.js";
 
 import type { ClineCoreStartInput, CoreSessionEvent } from "@cline/sdk";
@@ -563,19 +562,24 @@ test("starts development sessions with native skills and private specialist cons
     assert.equal(capturedStart.localRuntime?.hooks?.beforeModel, undefined);
     assert.equal(capturedStart.config.maxIterations, undefined, "A story run has no turn limit");
     assert.equal(capturedStart.config.enableSpawnAgent, false);
-    assert.ok(capturedStart.localRuntime?.configExtensions?.includes("skills"));
-    assert.ok(
-      capturedStart.localRuntime?.configExtensions?.includes("plugins"),
+    // Skills come from the engine's loader, as a client tool: not Cline's.
+    assert.equal(
+      capturedStart.localRuntime?.configExtensions?.includes("skills"),
+      undefined,
     );
     assert.equal(capturedStart.config.pluginPaths, undefined);
     assert.equal("pluginPaths" in (capturedStart.localRuntime ?? {}), false);
-    const skillService = capturedStart.localRuntime?.userInstructionService;
-    assert.ok(skillService);
-    const skillNames = skillService
-      .listRecords("skill")
-      .map((record: { item: { name: string } }) => record.item.name);
-    assert.ok(skillNames.includes("impeccable"));
-    assert.ok(skillNames.includes("workspace-skill"));
+    assert.equal(capturedStart.localRuntime?.userInstructionService, undefined);
+    // The user's MCP servers come from the engine's MCP client, not Cline's.
+    assert.equal(capturedStart.config.disableMcpSettingsTools, true);
+    const skills = capturedStart.config.extraTools?.find(
+      (tool: { name: string }) => tool.name === "skills",
+    );
+    assert.ok(skills);
+    assert.match(skills.description, /Available skills: .*\bworkspace-skill\b/);
+    assert.match(skills.description, /\bimpeccable\b/);
+    const loaded = await skills.execute({ skill: "workspace-skill" }, {} as never);
+    assert.match(String(loaded), /<command-name>workspace-skill<\/command-name>/);
     assert.match(capturedStart.config.systemPrompt ?? "", /## Skill selection/);
     assert.match(capturedStart.config.systemPrompt ?? "", /Workspace-owned regression fixture/);
     assert.match(capturedStart.config.systemPrompt ?? "", /Not for backend-only/);
@@ -1273,32 +1277,6 @@ test("limits initialization fallback tools to project reads and search", () => {
   assert.deepEqual(policies.run_commands, disabledToolPolicy());
   assert.deepEqual(policies.editor, disabledToolPolicy());
   assert.deepEqual(policies.apply_patch, disabledToolPolicy());
-});
-
-test("exposes one scoped preview initialization repair action", async () => {
-  let worktree = "";
-  const tool = previewInitializationRepairTool(
-    {
-      repairPreviewInitialization: async (input) => {
-        worktree = input.worktree;
-        return {
-          classification: "repairable_initialization",
-          reason: "A database service was introduced.",
-          status: "applied",
-        };
-      },
-    },
-    { worktree: "/tmp/story" },
-  );
-
-  const result = await tool?.execute({}, {} as never);
-
-  assert.equal(worktree, "/tmp/story");
-  assert.deepEqual(result, {
-    classification: "repairable_initialization",
-    reason: "A database service was introduced.",
-    status: "applied",
-  });
 });
 
 test("hides teammate agent content events", () => {
