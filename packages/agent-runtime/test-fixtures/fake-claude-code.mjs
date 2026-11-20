@@ -72,7 +72,7 @@ for await (const line of lines) {
     streamText("retried answer");
   } else if (text.includes("please drop")) {
     streamPartial("partial");
-    // "later": Cline asks again before Claude Code reports that it gave up.
+    // "later": the client asks again before Claude Code reports that it gave up.
     if (text.includes("later")) await new Promise((resolve) => setTimeout(resolve, 300));
     write({ type: "result", subtype: "success", is_error: true, result: "API Error: Connection error." });
     continue;

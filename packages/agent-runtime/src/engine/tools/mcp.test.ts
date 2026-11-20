@@ -22,7 +22,7 @@ describe("the user's MCP servers", () => {
 
   before(async () => {
     folder = await mkdtemp(join(tmpdir(), "blame-mcp-"));
-    settings = join(folder, "cline_mcp_settings.json");
+    settings = join(folder, "mcp-settings.json");
     await writeFile(
       settings,
       JSON.stringify({

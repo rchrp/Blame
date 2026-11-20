@@ -152,7 +152,7 @@ The development setup is not yet a turnkey self-hosted distribution. Desktop bac
 | [`packages/app`](packages/app)                                                                                   | React and Vite interface shared with the desktop app                                  |
 | [`packages/desktop`](packages/desktop)                                                                           | Electron host, preload bridge, Git, filesystem, and runtime integration               |
 | [`packages/api`](packages/api)                                                                                   | AdonisJS API, authentication, persistence, encrypted credentials, and hosted services |
-| [`packages/agent-runtime`](packages/agent-runtime)                                                               | Cline SDK integration, agent sessions, and the Light Semantic Harness                 |
+| [`packages/agent-runtime`](packages/agent-runtime)                                                               | the engine host (purposes, tasks, client tools) and the Light Semantic Harness                 |
 | [`packages/harness-core`](packages/harness-core)                                                                 | Framework-independent harness contracts and reference implementations                 |
 | [`packages/preview-contract`](packages/preview-contract), [`packages/preview-runtime`](packages/preview-runtime) | Shared preview contracts and lifecycle coordination                                   |
 | [`packages/sandbox-runner`](packages/sandbox-runner), [`packages/preview-edge`](packages/preview-edge)           | Managed sandbox execution and preview gateway                                         |

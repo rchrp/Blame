@@ -6,7 +6,6 @@ test("advertises the atomic preview startup runner protocol", () => {
   assert.equal(runnerProtocolVersion, 3);
   assert.deepEqual(
     runnerHandshake({
-      clineSdkVersion: "0.0.81",
       runnerVersion: "0.2.13",
       imageDigest: "sha256:test",
       capabilities: {
@@ -25,7 +24,6 @@ test("advertises the atomic preview startup runner protocol", () => {
       },
     }),
     {
-      clineSdkVersion: "0.0.81",
       protocolVersion: 3,
       runnerVersion: "0.2.13",
       imageDigest: "sha256:test",

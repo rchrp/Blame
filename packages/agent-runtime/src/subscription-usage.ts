@@ -107,7 +107,7 @@ export async function readCodexUsage(
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${credentials.access}`,
-      originator: "cline",
+      originator: "blame",
       ...(accountId ? { "ChatGPT-Account-Id": accountId } : {}),
     },
     signal: AbortSignal.timeout(15_000),

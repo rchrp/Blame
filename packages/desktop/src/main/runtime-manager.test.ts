@@ -144,7 +144,7 @@ test("reports missing managed runtime Git as repairable", async () => {
   assert.equal(status.issues[0]?.status, "missing");
 });
 
-test("reports missing Windows runtime Cline SDK as repairable", async () => {
+test("reports a missing Windows runtime dependency as repairable", async () => {
   const manager = createRuntimeManager(
     { platform: "win32" },
     async (_command, args) => {

@@ -118,7 +118,7 @@ test("the user's own skill folders are found, and the workspace's win over their
     await write(
       join(workspace, ".clinerules", "skills"),
       "legacy",
-      "Old folder",
+      "A project that also uses Cline",
     );
     const directories = skillDirectories({
       workspaceRoot: workspace,

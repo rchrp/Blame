@@ -43,7 +43,7 @@ export type BenchmarkResult = {
   error?: string;
   eventCount: number;
   finishedAt: string;
-  /** Blame's harness: the only one since the Cline runtime left. */
+  /** Blame's harness, the only one. */
   harness: "blame";
   metrics: BenchmarkMetrics;
   modelId: string;

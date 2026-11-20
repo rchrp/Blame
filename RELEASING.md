@@ -9,7 +9,6 @@ Everything is built on GitHub-hosted runners and published as a GitHub Release. 
 | [Release cache](.github/workflows/release-cache.yml)       | Lockfile changes, twice a week  | pnpm store caches on `main` for the macOS and Windows release runners    |
 | [Release packages](.github/workflows/release-packages.yml) | Stable release published        | Homebrew tap commit, winget-pkgs pull request, and AUR push              |
 | [Release runtime](.github/workflows/release-runtime.yml)   | Tag `runtime-v<version>`        | Published release with the four runtime images and their `manifest.json` |
-| [Update Cline SDK](.github/workflows/cline-sdk-update.yml) | Every Monday, or manually       | Pull request updating every `@cline/*` package and the runtime version   |
 
 Users never download from GitHub URLs directly. [`download.blame.so`](deploy/downloads) is a stable redirector, so you can change the hosting later without breaking installed apps:
 
@@ -141,23 +140,6 @@ The macOS images are provisioned natively in a chroot on runners of their archit
 
 Never delete a runtime release that a published desktop version still references.
 
-## Cline SDK updates
-
-Blame pins every `@cline/*` package to one exact version. The runtime images do not carry it: the VM runs Blame's own engine. Every Monday, the **Update Cline SDK** workflow compares that version with npm's latest release. When a newer one exists, it opens a pull request (or refreshes the open one) that:
-
-- pins every `@cline/*` dependency to the new version and updates `pnpm-lock.yaml`,
-- updates the version pinned by the sandbox runner image,
-- regenerates Blame's `@cline/core` patch with `scripts/patch-cline-core.mjs` (see `patches/README.md`),
-- lists the releases and SDK commits since the current version.
-
-When the patch cannot be regenerated, the pull request opens as a draft that names it. Once a maintainer has pushed commits to the pull request, the workflow no longer overwrites it and comments when a newer Cline release appears.
-
-The pull request is never merged automatically. CI runs the **Agent runtime tests**, which include a smoke test that drives a real Cline session through Blame's configuration. After merging, release the desktop app, as the pull request describes.
-
-To check by hand: `pnpm update:cline-sdk check`.
-
-New models do not wait for an SDK update. The API refreshes its catalog from the live Cline catalog every few hours, and desktop sessions fetch the metadata of a model their bundled SDK does not know yet from `GET /api/v1/providers/catalog/model`.
-
 ## Local builds
 
 Use local builds to try a change before you tag it. They never publish anything.
@@ -190,10 +172,10 @@ MAC_CSC_LINK
 
 Optional variables: `BLAME_HOMEPAGE`, `BLAME_MAINTAINER_EMAIL`, `BLAME_MAINTAINER_NAME`.
 
-For Cline SDK update pull requests:
+For pull requests that workflows open (the sandbox runner pin):
 
 - Allow GitHub Actions to open pull requests: **Settings → Actions → General → Allow GitHub Actions to create and approve pull requests**.
-- Optional secret `CLINE_SDK_UPDATE_TOKEN`: a fine-grained token with **Contents** and **Pull requests** write access on this repository. Pull requests opened with the default token do not trigger CI. Without this secret, close and reopen the pull request to start CI.
+- Optional secret `AUTOMATION_PR_TOKEN`: a fine-grained token with **Contents** and **Pull requests** write access on this repository. Pull requests opened with the default token do not trigger CI. Without this secret, close and reopen the pull request to start CI.
 
 For the package managers (each one is optional):
 
@@ -213,7 +195,7 @@ Setup, once:
 
 - A GitHub environment `sandbox-runner-release`, with required reviewers, holding the secret `VERCEL_TOKEN` (a Vercel token that can read the `blame-sandbox-runtime` project's environment).
 - Repository variables `VERCEL_TEAM_ID`, `VERCEL_RUNNER_PROJECT_ID` (the `blame-sandbox-runtime` project) and `BLAME_SANDBOX_RUNNER_REPOSITORY` (for example `vcr.vercel.com/<team>/<project>/blame-runner`).
-- GitHub Actions allowed to open pull requests, as for the Cline SDK update. The optional `CLINE_SDK_UPDATE_TOKEN` also lets the pin pull request start CI.
+- GitHub Actions allowed to open pull requests (see above). The optional `AUTOMATION_PR_TOKEN` also lets the pin pull request start CI.
 - Remove `BLAME_SANDBOX_RUNNER_IMAGE` and `BLAME_SANDBOX_RUNNER_VERSION` from the production API environment once the first pin is merged: when set, they override the pin. Self-hosted deployments that publish their own runner set both instead.
 
 The workflow's signature is verifiable by anyone: `cosign verify-blob` with the bundle from the `-signatures` image, `--certificate-identity-regexp 'https://github.com/rchrp/Blame/.github/workflows/release-sandbox-runner.yml@.*'` and `--certificate-oidc-issuer https://token.actions.githubusercontent.com`.

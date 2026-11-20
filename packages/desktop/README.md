@@ -1,6 +1,6 @@
 # Blame Desktop
 
-Electron shell for the Blame app and Cline SDK runtime IPC.
+Electron shell for the Blame app and its agent engine host.
 
 ## Development runtime
 
@@ -47,9 +47,7 @@ Releases are built and published by GitHub Actions from git tags. See [RELEASING
 
 ## Prebuilt Desktop Runtimes
 
-Windows and macOS installers use versioned runtime images so first setup only imports an image instead of installing Node, the Cline SDK, and Docker Engine with Compose.
-
-The base images keep Cline's cloud providers, including OpenAI Codex OAuth and the Anthropic API. They exclude the native Codex and Claude CLI payloads because those binaries are only required by the dedicated local CLI providers. Enabling either local CLI provider later must include its authentication and executable-path setup.
+Windows and macOS installers use versioned runtime images so first setup only imports an image instead of installing Node and Docker Engine with Compose.
 
 On Arch Linux, start Docker and install `qemu-img` plus `qemu-system-x86_64`, and make sure `sudo` works (the macOS image is mounted through a loop device). Then set `BLAME_RUNTIME_VERSION` in `.env.local` and build both runtimes for the host architecture:
 

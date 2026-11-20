@@ -464,7 +464,6 @@ export type HostDependencyIssue = {
   name:
     | "git"
     | "blame-runtime"
-    | "cline-sdk"
     | "docker"
     | "docker-compose"
     | "node"

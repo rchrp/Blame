@@ -53,7 +53,7 @@ test("earlier v1 envelopes still decode", () => {
   assert.deepEqual(unwrapFeedbackEnvelope(feedbackEnvelope(nested)), nested);
 });
 
-test("Cline's middle cut of a section keeps the result decodable", () => {
+test("a middle cut of a section keeps the result decodable", () => {
   const output = "line\n".repeat(30_000);
   const encoded = encodeToolResult({ status: "ok", data: { output, exitCode: 0 } }) as Part[];
   const text = encoded[1]!.text!;

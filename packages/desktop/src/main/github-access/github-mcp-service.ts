@@ -7,8 +7,8 @@ import {
 
 // The agent's GitHub MCP server for a session with read-only GitHub access:
 // a client kept in memory in this process, connected to GitHub's remote MCP
-// server with the session's token. It is never registered in
-// cline_mcp_settings.json, so it is not listed in Settings → MCP, and the
+// server with the session's token. It is never registered in the MCP
+// settings file, so it is not listed in Settings → MCP, and the
 // token never reaches the agent process or its commands.
 
 export type GithubMcpTool = {
