@@ -8,7 +8,7 @@
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { createReadStream, existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { delimiter, join } from "node:path";
 import { runtimeDistroName } from "../desktop-runtime-environment.ts";
 import { setupPath } from "../host-tool-path.ts";
@@ -36,12 +36,26 @@ export const vmEngineInstallRoot = "/usr/local/lib/blame/engine";
 export const vmEngineDataDir = "/home/blame/.local/share/blame/engine";
 
 /**
- * How the VM's engine starts its harness: the TypeScript runner the runtime
- * installs today. The Rust `blame-harness` replaces it here, and only here.
+ * How the VM's engine starts its harness: the `blame-harness` installed
+ * next to it, with its Node side from the runtime's payload
+ * (`@blame/semantic-harness-runtime`, whose command is the compiler side
+ * process): the test reporter and preload hook beside it, the bundled
+ * package managers and ripgrep in its node_modules. Without the payload the
+ * harness runs without its compiler tier.
  */
 export const vmHarnessLauncher = `#!/bin/sh
 # The harness of the VM's agent engine (--harness-command).
-exec blame-semantic-harness --serve "$@"
+here="$(dirname "$0")"
+if compiler="$(command -v blame-semantic-harness)"; then
+  compiler="$(readlink -f "$compiler")"
+  files="$(dirname "$compiler")"
+  modules="$(dirname "$files")/node_modules"
+  export BLAME_HARNESS_COMPILER="[\\"node\\",\\"$compiler\\"]"
+  export BLAME_HARNESS_NODE_ASSETS="$files"
+  export BLAME_HARNESS_NODE_MODULES="$modules"
+  export BLAME_HARNESS_RIPGREP_DIRECTORY="$modules/@vscode/ripgrep/bin"
+fi
+exec "$here/blame-harness" serve --asks "$@"
 `;
 
 /** What the VM's engine needs from this computer, per platform. */
@@ -49,10 +63,11 @@ export type VmEngineTarget =
   | { platform: "darwin"; wrapper: string; env: NodeJS.ProcessEnv }
   | { platform: "win32"; distro: string; wsl: string; env: NodeJS.ProcessEnv };
 
-/** The engine install folder for a build: its hash, the launcher's included. */
-export function vmEngineInstallDir(engineSha256: string) {
+/** The engine install folder for a build: its hash, the harness's and the launcher's included. */
+export function vmEngineInstallDir(engineSha256: string, harnessSha256: string) {
   const digest = createHash("sha256")
     .update(engineSha256)
+    .update(harnessSha256)
     .update(vmHarnessLauncher)
     .digest("hex");
   return `${vmEngineInstallRoot}/${digest.slice(0, 16)}`;
@@ -64,17 +79,35 @@ export function vmEngineInstallDir(engineSha256: string) {
  * first if it is stopped.
  */
 export async function prepareVmEngine(input: {
-  /** The Linux engine binary for the VM's architecture (`vmEngineBinaries`). */
+  /** The Linux binaries for the VM's architecture (`vmEngineBinaries`). */
   engine: string;
+  harness: string;
   target: VmEngineTarget;
 }): Promise<EngineCommand> {
   await ensureRuntimeRunning();
-  const sha = await fileSha256(input.engine);
-  const dir = vmEngineInstallDir(sha);
-  if (!(await runInVm(input.target, ["test", "-x", `${dir}/blame-engine`])))
-    await installInVm(input.target, input.engine, sha, dir);
+  const binaries = await Promise.all(
+    [input.engine, input.harness].map(async (path) => ({
+      path,
+      sha: await fileSha256(path),
+      size: (await stat(path)).size,
+    })),
+  );
+  const [engine, harness] = binaries as [VmBinary, VmBinary];
+  const dir = vmEngineInstallDir(engine.sha, harness.sha);
+  if (
+    !(await runInVm(input.target, [
+      "sh",
+      "-c",
+      'test -x "$1/blame-engine" && test -x "$1/blame-harness"',
+      "sh",
+      dir,
+    ]))
+  )
+    await installInVm(input.target, engine, harness, dir);
   return vmServeCommand(input.target, dir);
 }
+
+type VmBinary = { path: string; sha: string; size: number };
 
 /** `blame-engine serve` in the VM, as the `blame` user that owns the worktrees. */
 export function vmServeCommand(
@@ -100,20 +133,25 @@ export function vmServeCommand(
 }
 
 /**
- * Copies the engine in through stdin, checks its hash, and publishes the
- * folder whole: a cut copy never runs. Older builds are removed; one still
- * running keeps its open file until it exits.
+ * Copies the engine then the harness in through stdin (the engine's size
+ * splits them), checks their hashes, and publishes the folder whole: a cut
+ * copy never runs. Older builds are removed; one still running keeps its
+ * open files until it exits.
  */
 export const installScript = `set -eu
 sha="$1"
 dir="$2"
+engine_size="$4"
+harness_sha="$5"
 root="$(dirname "$dir")"
 mkdir -p "$root"
 staging="$(mktemp -d "$root/.install.XXXXXX")"
 trap 'rm -rf "$staging"' EXIT
-cat > "$staging/blame-engine"
+head -c "$engine_size" > "$staging/blame-engine"
+cat > "$staging/blame-harness"
 printf '%s  %s\\n' "$sha" "$staging/blame-engine" | sha256sum -c - >/dev/null
-chmod 755 "$staging/blame-engine"
+printf '%s  %s\\n' "$harness_sha" "$staging/blame-harness" | sha256sum -c - >/dev/null
+chmod 755 "$staging/blame-engine" "$staging/blame-harness"
 printf '%s' "$3" > "$staging/harness"
 chmod 755 "$staging/harness"
 chmod 755 "$staging"
@@ -129,14 +167,24 @@ chown blame ${vmEngineDataDir}
 
 async function installInVm(
   target: VmEngineTarget,
-  engine: string,
-  sha: string,
+  engine: VmBinary,
+  harness: VmBinary,
   dir: string,
 ) {
   const ok = await runInVm(
     target,
-    ["sh", "-c", installScript, "sh", sha, dir, vmHarnessLauncher],
-    { root: true, stdin: engine },
+    [
+      "sh",
+      "-c",
+      installScript,
+      "sh",
+      engine.sha,
+      dir,
+      vmHarnessLauncher,
+      String(engine.size),
+      harness.sha,
+    ],
+    { root: true, stdin: [engine.path, harness.path] },
   );
   if (!ok)
     throw new Error(
@@ -148,7 +196,7 @@ async function installInVm(
 function runInVm(
   target: VmEngineTarget,
   command: string[],
-  options: { root?: boolean; stdin?: string } = {},
+  options: { root?: boolean; stdin?: string[] } = {},
 ) {
   const user = options.root ? "root" : "blame";
   const spec =
@@ -177,8 +225,20 @@ function runInVm(
         console.warn(`Engine install in the VM failed: ${stderr.trim()}`);
       resolve(code === 0);
     });
-    if (options.stdin) createReadStream(options.stdin).pipe(child.stdin!);
+    if (options.stdin) void pipeFiles(options.stdin, child.stdin!).catch(reject);
   });
+}
+
+/** The files one after the other into `into`, which then closes. */
+async function pipeFiles(paths: string[], into: NodeJS.WritableStream) {
+  for (const path of paths)
+    await new Promise<void>((resolve, reject) => {
+      const file = createReadStream(path);
+      file.once("error", reject);
+      file.once("end", resolve);
+      file.pipe(into, { end: false });
+    });
+  into.end();
 }
 
 const hashes = new Map<string, Promise<string>>();

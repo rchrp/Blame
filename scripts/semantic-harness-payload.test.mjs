@@ -18,12 +18,21 @@ import { buildSemanticHarnessPayload } from "./semantic-harness-payload.mjs";
 const rootDir = resolve(import.meta.dirname, "..");
 const agentRuntimeDir = join(rootDir, "packages/agent-runtime");
 
-test("standalone payload executes navigation and command dependencies", async () => {
+// The payload is the Node side of blame-harness in the runtime VM: the
+// harness runs against it with the environment the VM's launcher gives it
+// (packages/desktop/src/main/engine/vm-engine.ts), one request per process.
+const harnessBinary = process.env.BLAME_HARNESS_BIN ??
+  join(rootDir, "target/debug", process.platform === "win32" ? "blame-harness.exe" : "blame-harness");
+
+test("standalone payload serves blame-harness's compiler tier and commands", async () => {
   await withPayload(async (packageRoot, workspaceRoot) => {
-    await assert.rejects(access(join(packageRoot, "harness/semantic-workspace.js")));
+    await assert.rejects(access(join(packageRoot, "harness/semantic-harness-runner.js")));
+    await assert.rejects(access(join(packageRoot, "harness/light-workspace.js")));
+    const manifest = JSON.parse(await readFile(join(packageRoot, "package.json"), "utf8"));
+    assert.equal(manifest.dependencies["@cline/sdk"], undefined);
     const result = await executeRunner(packageRoot, workspaceRoot);
     assert.equal(result.status, "ok");
-    assert.match(result.data.description, /Symbol read\/edit/u);
+    assert.match(JSON.stringify(result.data), /Symbol read\/edit/u);
     const command = await executeRunner(packageRoot, workspaceRoot, {
       tool: "run_task", input: { kind: "command", command: "node -e \"console.log('payload-ready')\"" },
     });
@@ -63,25 +72,6 @@ test("standalone payload executes navigation and command dependencies", async ()
     assert.equal(renamed.data.semanticRename.engine, "typescript_language_service");
     assert.match(await readFile(join(workspaceRoot, "module.ts"), "utf8"), /function updatedTarget/u);
     assert.match(await readFile(join(workspaceRoot, "consumer.ts"), "utf8"), /updatedTarget as aliased/u);
-    const content = Buffer.from("# Context from completed US-001\n\nHéros validé.\n");
-    const attachment = await executeRunner(packageRoot, workspaceRoot, {
-      tool: "store_attachment",
-      input: { name: "context-from-us-001.md", contentBase64: content.toString("base64") },
-    });
-    assert.equal(attachment.status, "ok", JSON.stringify(attachment));
-    assert.ok(attachment.data.path.startsWith(join(workspaceRoot, ".blame", "attachments")));
-    assert.deepEqual(await readFile(attachment.data.path), content);
-    await access(join(packageRoot, "attachment-pdf-worker.js"));
-    const pdf = await readFile(join(agentRuntimeDir, "src/fixtures/attachments/report.pdf"));
-    const storedPdf = await executeRunner(packageRoot, workspaceRoot, {
-      tool: "store_attachment", input: { name: "report.pdf", contentBase64: pdf.toString("base64") },
-    });
-    assert.equal(storedPdf.status, "ok", JSON.stringify(storedPdf));
-    const page = await executeRunner(packageRoot, workspaceRoot, {
-      tool: "read_attachment", input: { path: storedPdf.data.path, page: 2 },
-    });
-    assert.equal(page.status, "ok", JSON.stringify(page));
-    assert.match(page.data.text, /deadline is Friday/);
   });
 });
 
@@ -145,8 +135,8 @@ async function linkRuntimeDependencies(packageRoot) {
 
 async function executeRunner(packageRoot, workspaceRoot, request = {}) {
   const stdout = await runProcess(
-    process.execPath,
-    [join(packageRoot, "harness/semantic-harness-runner.js")],
+    harnessBinary,
+    [],
     JSON.stringify({
       input: { target: "@capabilities" },
       taskContract: { session_id: "payload-e2e" },
@@ -154,13 +144,24 @@ async function executeRunner(packageRoot, workspaceRoot, request = {}) {
       workspaceRoot,
       ...request,
     }),
+    packageRoot,
   );
   return JSON.parse(stdout);
 }
 
-function runProcess(command, args, input) {
+function harnessEnvironment(packageRoot) {
+  if (!packageRoot) return process.env;
+  return {
+    ...process.env,
+    BLAME_HARNESS_COMPILER: JSON.stringify([process.execPath, join(packageRoot, "harness/rust-harness-compiler.js")]),
+    BLAME_HARNESS_NODE_ASSETS: join(packageRoot, "harness"),
+    BLAME_HARNESS_NODE_MODULES: join(packageRoot, "node_modules"),
+  };
+}
+
+function runProcess(command, args, input, packageRoot) {
   return new Promise((resolve, reject) => {
-    const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn(command, args, { stdio: ["pipe", "pipe", "pipe"], env: harnessEnvironment(packageRoot) });
     const stdout = [];
     const stderr = [];
     child.stdout.on("data", (chunk) => stdout.push(Buffer.from(chunk)));

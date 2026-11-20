@@ -186,7 +186,11 @@ async function prepareThisVmEngine() {
     arch: process.arch === "arm64" ? "arm64" : "x64",
   });
   if ("missing" in binaries) throw new Error(binaries.missing);
-  return prepareVmEngine({ engine: binaries.engine, target });
+  return prepareVmEngine({
+    engine: binaries.engine,
+    harness: binaries.harness,
+    target,
+  });
 }
 
 // An MCP server's sign-in: https, or http on this computer, with no
