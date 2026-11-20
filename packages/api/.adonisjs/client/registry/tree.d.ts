@@ -222,6 +222,18 @@ export interface ApiDefinition {
       show: typeof routes['attachments.file_attachments.show']
     }
   }
+  engine: {
+    engineSessions: {
+      index: typeof routes['engine.engine_sessions.index']
+      pull: typeof routes['engine.engine_sessions.pull']
+      push: typeof routes['engine.engine_sessions.push']
+      destroy: typeof routes['engine.engine_sessions.destroy']
+    }
+    engineBlobs: {
+      show: typeof routes['engine.engine_blobs.show']
+      store: typeof routes['engine.engine_blobs.store']
+    }
+  }
   previewEdgeInternal: {
     resolve: typeof routes['preview_edge_internal.resolve']
     consumeTicket: typeof routes['preview_edge_internal.consume_ticket']

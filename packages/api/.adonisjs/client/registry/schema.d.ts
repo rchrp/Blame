@@ -1164,6 +1164,84 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/file_attachments_controller').default['show']>>>
     }
   }
+  'engine.engine_sessions.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/engine/sessions'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/engine_session').listEngineSessionsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'engine.engine_sessions.pull': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/engine/sessions/:id/records'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/engine_session').pullEngineRecordsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['pull']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['pull']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['pull']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'engine.engine_sessions.push': {
+    methods: ["POST"]
+    pattern: '/api/v1/engine/sessions/:id/records'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['push']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['push']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['push']>>>
+    }
+  }
+  'engine.engine_sessions.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/engine/sessions/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['destroy']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/engine_sessions_controller').default['destroy']>>>
+    }
+  }
+  'engine.engine_blobs.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/engine/blobs/:sha256'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { sha256: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/engine_blobs_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/engine_blobs_controller').default['show']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/engine_blobs_controller').default['show']>>>
+    }
+  }
+  'engine.engine_blobs.store': {
+    methods: ["PUT"]
+    pattern: '/api/v1/engine/blobs/:sha256'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/engine_session').storeEngineBlobValidator)>>
+      paramsTuple: [ParamValue]
+      params: { sha256: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/engine_session').storeEngineBlobValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/engine_blobs_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/engine_blobs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/engine_blobs_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
   'projects.quick_chats.quick_chats.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/quick-chats'

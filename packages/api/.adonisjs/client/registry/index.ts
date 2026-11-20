@@ -540,6 +540,42 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"attachments"],[1,"id"]],
     types: placeholder as Registry['attachments.file_attachments.show']['types'],
   },
+  'engine.engine_sessions.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/engine/sessions',
+    tokens: [[0,"api"],[0,"v1"],[0,"engine"],[0,"sessions"]],
+    types: placeholder as Registry['engine.engine_sessions.index']['types'],
+  },
+  'engine.engine_sessions.pull': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/engine/sessions/:id/records',
+    tokens: [[0,"api"],[0,"v1"],[0,"engine"],[0,"sessions"],[1,"id"],[0,"records"]],
+    types: placeholder as Registry['engine.engine_sessions.pull']['types'],
+  },
+  'engine.engine_sessions.push': {
+    methods: ["POST"],
+    pattern: '/api/v1/engine/sessions/:id/records',
+    tokens: [[0,"api"],[0,"v1"],[0,"engine"],[0,"sessions"],[1,"id"],[0,"records"]],
+    types: placeholder as Registry['engine.engine_sessions.push']['types'],
+  },
+  'engine.engine_sessions.destroy': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/engine/sessions/:id',
+    tokens: [[0,"api"],[0,"v1"],[0,"engine"],[0,"sessions"],[1,"id"]],
+    types: placeholder as Registry['engine.engine_sessions.destroy']['types'],
+  },
+  'engine.engine_blobs.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/engine/blobs/:sha256',
+    tokens: [[0,"api"],[0,"v1"],[0,"engine"],[0,"blobs"],[1,"sha256"]],
+    types: placeholder as Registry['engine.engine_blobs.show']['types'],
+  },
+  'engine.engine_blobs.store': {
+    methods: ["PUT"],
+    pattern: '/api/v1/engine/blobs/:sha256',
+    tokens: [[0,"api"],[0,"v1"],[0,"engine"],[0,"blobs"],[1,"sha256"]],
+    types: placeholder as Registry['engine.engine_blobs.store']['types'],
+  },
   'projects.quick_chats.quick_chats.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/quick-chats',
