@@ -111,7 +111,6 @@ test.group('project code practices', (group) => {
       .post(`/api/v1/projects/${project.id}/code-practice-analysis/complete`)
       .loginAs(user)
       .json({
-        clineSessionId: 'practices-session',
         practices: analyzedPractices(),
       })
 

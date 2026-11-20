@@ -521,40 +521,6 @@ export type ProjectInitializationPreferences = {
   };
 };
 
-export type InitializeProjectInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  preferences?: ProjectInitializationPreferences;
-  validationFeedback?: {
-    validationError: string;
-    previousResult: string;
-  };
-  backend?: AgentBackendConfig;
-  /** Channel of `initialization_progress` notices, see initialization-progress.ts. */
-  progressId?: string;
-};
-
-export type InitializeProjectResult = {
-  sessionId: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-};
-
-export type AnalyzeProjectCodePracticesInput = Omit<
-  InitializeProjectInput,
-  "preferences"
->;
-
-export type AnalyzeProjectCodePracticesResult = {
-  sessionId: string;
-  practices: ProjectCodePracticeResult[];
-};
-
 export type {
   MapSecurityAuditInput,
   MapSecurityAuditResult,
@@ -618,61 +584,6 @@ export type ProjectInitializationImpactDiagnostics = {
   strategicFilesBefore: Record<string, string>;
   strategicFilesAfter: Record<string, string>;
 };
-
-export type AssessProjectInitializationImpactInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  baseCommit: string;
-  mergeCommit: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-  backend?: AgentBackendConfig;
-};
-
-export type AssessProjectInitializationImpactResult = {
-  sessionId?: string;
-  classification: ProjectInitializationImpactClassification;
-  reason: string;
-  repairInstruction?: string;
-  diagnostics?: ProjectInitializationImpactDiagnostics;
-};
-
-export type RepairProjectInitializationInput = {
-  apiConnection: ApiConnection;
-  providerId: string;
-  modelId: string;
-  reasoningEffort?: ReasoningSelection;
-  cwd: string;
-  workspaceRoot: string;
-  credentialLabel?: string;
-  previewManifest: PreviewManifest;
-  runConfigurations: ProjectRunConfiguration[];
-  preferences?: ProjectInitializationPreferences;
-  diagnostics:
-    | ProjectInitializationDiagnostics
-    | ProjectInitializationImpactDiagnostics;
-  backend?: AgentBackendConfig;
-};
-
-export type RepairProjectInitializationResult = {
-  sessionId: string;
-  classification: ProjectInitializationRepairClassification;
-  reason: string;
-  previewManifest?: PreviewManifest;
-  runConfigurations?: ProjectRunConfiguration[];
-};
-
-export type {
-  NewProjectGenerationConfiguration,
-  StartNewProjectGenerationInput,
-  NewProjectGenerationResult,
-  NewProjectsClient,
-} from "./new-project-types.js";
 
 export type StoryPlanPriority = "Low" | "Medium" | "High";
 

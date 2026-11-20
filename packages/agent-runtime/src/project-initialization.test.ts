@@ -607,15 +607,17 @@ test("includes the selected database mode in the initialization prompt", () => {
   assert.match(prompt, /fixed public throwaway value "blame"/);
 });
 
-test("gives the agent the workspace root for absolute file reads", () => {
-  const prompt = projectInitializationPrompt(
-    { rootName: "project", topLevelEntries: [], files: {}, gitLog: [] },
-    undefined,
-    "/Users/dev/project/",
-  );
+test("points the agent at the harness's read tools, with project paths", () => {
+  const prompt = projectInitializationPrompt({
+    rootName: "project",
+    topLevelEntries: [],
+    files: {},
+    gitLog: [],
+  });
 
-  assert.match(prompt, /Workspace root: "\/Users\/dev\/project"/);
-  assert.match(prompt, /"\/Users\/dev\/project\/package.json"/);
+  assert.match(prompt, /read_code or search_code/);
+  assert.match(prompt, /relative to the project root/);
+  assert.doesNotMatch(prompt, /read_files|search_codebase/);
 });
 
 test("rejects unsafe commands and invalid run topology", () => {

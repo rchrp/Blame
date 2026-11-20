@@ -9,9 +9,12 @@ import { tmpdir } from "node:os";
 import type {
   CompletionContract,
   EngineClient,
+  HostParamsOf,
   Limits,
   SessionConfig,
   TaskOutcome,
+  ToolHostContext,
+  ToolResult,
   ToolSpec,
 } from "@blame/engine-client";
 import {
@@ -20,6 +23,7 @@ import {
   type EngineModelChoice,
 } from "../protocol.js";
 import type { TaskWorkspace } from "../task-protocol.js";
+import { ToolSet, type ClientTool } from "../tool.js";
 
 /** A task as a purpose describes it. */
 export type TaskSpec<R> = {
@@ -28,6 +32,12 @@ export type TaskSpec<R> = {
   instruction: string;
   /** The typed result, from the input the engine validated against the result schema. */
   result(value: unknown): R;
+  /**
+   * Client tools of this task alone, served while it runs: a result tool
+   * the host checks itself (`{ source: "tool" }`), with state of its own.
+   * Their specs go in the config's `client_tools` (`toolSpec`).
+   */
+  tools?: ClientTool<never>[];
 };
 
 type Failure = Exclude<TaskOutcome, { status: "completed" }>;
@@ -79,6 +89,7 @@ export type TaskRunOptions = {
  */
 export class TaskRunner {
   private readonly running = new Map<string, AbortController>();
+  private readonly tools = new Map<string, ToolSet>();
   private readonly client: () => Promise<EngineClient>;
   private readonly started: (session: string) => void;
 
@@ -102,6 +113,7 @@ export class TaskRunner {
     if (options.signal?.aborted) forward();
     options.signal?.addEventListener("abort", forward, { once: true });
     this.running.set(session, controller);
+    if (spec.tools?.length) this.tools.set(session, new ToolSet(spec.tools));
     try {
       const client = await this.client();
       const pending = client.runTask(
@@ -127,7 +139,16 @@ export class TaskRunner {
     } finally {
       options.signal?.removeEventListener("abort", forward);
       this.running.delete(session);
+      this.tools.delete(session);
     }
+  }
+
+  /** Answers `host/tool` for a running task's own tool; undefined otherwise. */
+  handleTool(
+    params: HostParamsOf<"host/tool">,
+    host: ToolHostContext,
+  ): Promise<ToolResult> | undefined {
+    return this.tools.get(params.session)?.handle(params, host);
   }
 
   /** Stops a running task; false when none runs by that id. */

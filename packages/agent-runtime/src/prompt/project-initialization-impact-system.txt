@@ -31,7 +31,7 @@ Classify the result as exactly one of:
 </classification_contract>
 
 <output_contract>
-Return strict JSON only with `classification` and `reason`.
+Call `submit_initialization_impact` with `classification` and `reason`. Do not answer with JSON text.
 
 For `initialization_update_required`, also include `repairInstruction` describing what the existing repair agent should regenerate in `previewManifest`.
 

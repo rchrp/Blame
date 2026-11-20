@@ -238,6 +238,11 @@ what is still conflicted, as before.
 | `resolveMergeConflicts`, and in `approveAndMerge` | `merge-conflict-resolution` | `submit_merge_resolution` (`resolved`, `reason`) | harness: `search_code`, `read_code`, `edit_code`, `run_task`; `required: ["read_code"]`; `VM_WORKSPACE_UNSUPPORTED` in the VM |
 | `discoverSecurityAudit` | `security-discovery` | `submit_security_discovery` | harness, `allowed: search_code, read_code`, `required: read_code` |
 | `validateSecurityAudit` | `security-validation` | `submit_security_validation` (the given candidate ids in the schema) | harness, `allowed: search_code, read_code`, `required: read_code` |
+| `initializeProject` | `project-initialization` | `submit_project_initialization`, a host client tool that checks each setup (or takes only `blocked`) | harness `read_code` (required), `search_code` |
+| `repairProjectInitialization` | `project-initialization-repair` | `submit_project_initialization_repair`, a host client tool that checks a repaired setup | harness `read_code`, `search_code` |
+| `assessInitializationImpact` | `initialization-impact` | `submit_initialization_impact` (the host reads the diff; a diff touching nothing the setup needs ends without an agent) | none |
+| `analyzeCodePractices` | `code-practices` | `submit_project_code_practices` (each practice once; a starter's defaults in the schema) | harness `read_code` (required), `search_code` |
+| `generateNewProject` | `new-project-generation` | `submit_new_project` | harness `search_code`, `read_code`, `edit_code`, `run_task`; `search_web`, `read_web_page` |
 
 ## Rules for the next slices
 

@@ -2,17 +2,20 @@
 // (`EngineTaskMethods`): each builds its task from a purpose and runs it.
 
 import { randomUUID } from "node:crypto";
-import type { EngineClient } from "@blame/engine-client";
 import type { GhRunner } from "../../pull-request.js";
+import type { EngineClient, ToolSpec } from "@blame/engine-client";
 import { titleTask } from "../purposes/title.js";
 import { userStoryTask } from "../purposes/user-story.js";
 import type { EngineTaskMethods, TaskCall } from "../task-protocol.js";
 import { gitTaskHandlers } from "./git.js";
+import { projectTaskHandlers } from "./project.js";
 import type { TaskRunner, TaskSpec } from "./runner.js";
 import { securityAuditTaskHandlers } from "./security-audit.js";
 
 export type TaskHost = {
   runner: TaskRunner;
+  /** Specs of the app's own client tools (web research), by name. */
+  clientTools(names: readonly string[]): ToolSpec[];
   client(): Promise<EngineClient>;
   /** What the credential and log handlers need to know of a session. */
   register(
@@ -25,13 +28,15 @@ export type TaskHost = {
   gh?: GhRunner;
 };
 
-type Handlers = {
-  [M in keyof EngineTaskMethods]: (
+export type TaskHandlers<
+  Methods extends keyof EngineTaskMethods = keyof EngineTaskMethods,
+> = {
+  [M in Methods]: (
     input: EngineTaskMethods[M]["input"],
   ) => Promise<EngineTaskMethods[M]["result"]>;
 };
 
-export function taskHandlers(host: TaskHost): Handlers {
+export function taskHandlers(host: TaskHost): TaskHandlers {
   const run = <R>(call: TaskCall, spec: TaskSpec<R>, what: string) => {
     const session = call.task ?? `task-${randomUUID()}`;
     host.register(session, {
@@ -59,6 +64,7 @@ export function taskHandlers(host: TaskHost): Handlers {
       return { session, ...result };
     },
     ...securityAuditTaskHandlers(run),
+    ...projectTaskHandlers(host),
     cancelTask: async ({ session }) => host.runner.cancel(session),
     deleteSession: async ({ session }) => {
       await (await host.client()).deleteSession({ session });

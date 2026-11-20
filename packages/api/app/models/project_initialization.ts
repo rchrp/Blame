@@ -54,9 +54,6 @@ export default class ProjectInitialization extends BaseModel {
   declare step: string
 
   @column()
-  declare clineSessionId: string | null
-
-  @column()
   declare agentProviderId: string | null
 
   @column()

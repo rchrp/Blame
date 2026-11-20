@@ -1,8 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { access, readFile } from "node:fs/promises";
 import {
   isAbsolute,
-  join,
   relative,
   resolve,
   sep,
@@ -42,50 +40,19 @@ import type {
   OAuthServerListeningInfo,
 } from "@cline/sdk";
 
+import type { RepairProjectInitializationTask } from "./engine/task-protocol.js";
 import {
-  codePracticesConfig,
-  codePracticesPrompt,
-  collectProjectInitializationRepairAttempt,
   combinedTaskBriefing,
-  initializationConfig,
-  initializationCorrection,
-  initializationPrompt,
-  parseProjectInitializationAttempt,
-  saveProjectInitialization,
-  parseProjectInitializationRepairAttempt,
-  parsedCodePracticesAttempt,
-  projectCodePracticesSubmitTool,
-  projectInitializationRepairSubmitTool,
   type AgentTool,
-  type CodePracticesAttemptOutcome,
-  type InitializationCorrection,
-  type ProjectCodePracticesAttempt,
-  type ProjectInitializationRepairAttempt,
   type RuntimeClineResult,
   type RuntimeSessionSummary,
 } from "./cline-initialization.js";
-import { initializationProgress } from "./initialization-progress.js";
-import {
-  InitializationCancellations,
-  initializationResponseLimitMs,
-  runInitializationSessions,
-} from "./initialization-runs.js";
-import {
-  InitializationSession,
-  maxInitializationSubmissions,
-} from "./initialization-session.js";
 import {
   backendKey,
   blameNativePluginPath,
   clineDefaultToolPolicies,
-  codePracticesToolPolicies,
   coreBackendOptions,
   extensionContext,
-  initializationImpactConfig,
-  initializationRepairConfig,
-  initializationToolPolicies,
-  newProjectGenerationConfig,
-  newProjectGenerationToolPolicies,
   productionLogger,
   toolPolicies,
   withConfigExtensions,
@@ -137,8 +104,6 @@ import {
   clineDefaultSystemPrompt,
   developmentUserInput,
   newAttachmentDirectory,
-  newProjectGenerationMaxIterations,
-  newProjectGenerationPrompt,
 } from "./cline-runtime-prompts.js";
 import {
   blockedToolReason,
@@ -178,7 +143,6 @@ import {
   claudeCodeCredential,
   claudeCodeStatus,
   closeClaudeCodeBridge,
-  closeClaudeCodeSessions,
   connectClaudeCode,
 } from "./claude-code/claude-code-provider.js";
 import { readClaudeCodeUsage, readCodexUsage } from "./subscription-usage.js";
@@ -231,22 +195,6 @@ import {
   summarizeUsage,
   usageLimitMessage,
 } from "./production.js";
-import {
-  scanProjectCodePractices,
-  type ProjectCodePracticesScan,
-} from "./project-code-practices-scan.js";
-import {
-  collectProjectInitializationImpactDiagnostics,
-  deterministicInitializationImpact,
-  parseProjectInitializationImpactResult,
-  projectInitializationImpactPrompt,
-} from "./project-initialization-impact.js";
-import { projectInitializationRepairPrompt } from "./project-initialization-repair.js";
-import type { ProjectInitializationScan } from "./project-initialization.js";
-import {
-  scanProjectForInitialization,
-  scanProjectWorkspace,
-} from "./project-initialization.js";
 import { loadPrompt } from "./prompt-loader.js";
 import { createProviderCompatibleFetch } from "./provider-schema-compatibility.js";
 import { reasoningConfig } from "./reasoning.js";
@@ -267,25 +215,16 @@ import type {
   AgentUsageSummary,
   CompactSessionInput,
   CompactSessionResult,
-  AnalyzeProjectCodePracticesInput,
-  AnalyzeProjectCodePracticesResult,
   ApiConnection,
-  AssessProjectInitializationImpactInput,
-  AssessProjectInitializationImpactResult,
   CompareCheckpointInput,
   CompareCheckpointResult,
   DirectStoryFilesInput,
-  InitializeProjectInput,
-  InitializeProjectResult,
   ConnectClaudeCodeInput,
   SubscriptionUsageInput,
   LoginOAuthProviderInput,
   MapSecurityAuditInput,
-  NewProjectGenerationResult,
   PullRequestAvailabilityInput,
   PullRequestStateInput,
-  RepairProjectInitializationInput,
-  RepairProjectInitializationResult,
   ResolveApprovalInput,
   RestoreCheckpointInput,
   RestoreCheckpointResult,
@@ -293,7 +232,6 @@ import type {
   SendDevelopmentSessionInput,
   SendSessionInput,
   StartDevelopmentSessionInput,
-  StartNewProjectGenerationInput,
   StartSessionInput,
 } from "./types.js";
 import { BlameUserInstructionServices, skillScopeSystemPrompt } from "./user-instruction-services.js";
@@ -305,8 +243,6 @@ export {
   blameNativePluginPath,
   clineDefaultToolPolicies,
   coreBackendOptions,
-  initializationToolPolicies,
-  newProjectGenerationToolPolicies,
 } from "./cline-runtime-configuration.js";
 
 export {
@@ -322,7 +258,6 @@ export {
   shouldDisplayClineSessionEvent,
   terminalToolEvent,
 } from "./cline-runtime-events.js";
-const maxInitializationAttempts = 3;
 const openAICompatibleProviderID = "openai-compatible";
 const runtimePrewarmSessionId = "blame-runtime-prewarm";
 const stoppedApprovalReason =
@@ -349,12 +284,6 @@ type DevelopmentPreviewInitialization = NonNullable<
 
 type DevelopmentPreviewState = {
   initialization: DevelopmentPreviewInitialization;
-};
-
-type InitializationCredential = {
-  apiKey: string;
-  authMethod?: string;
-  baseUrl: string | null;
 };
 
 type SessionTermination = {
@@ -394,8 +323,6 @@ const transportRecoveryPrompt =
 
 export class BlameAgentRuntime {
   private clines = new Map<string, Promise<ClineCore>>();
-  private readonly initializationCancellations =
-    new InitializationCancellations();
   private sessionBackendKeys = new Map<string, string>();
   private unsubscribers = new Map<string, () => void>();
   private pendingApprovals = new Map<string, PendingApproval>();
@@ -507,29 +434,8 @@ export class BlameAgentRuntime {
     resolve: (input: ResolveApprovalInput) => this.resolveApproval(input),
   };
 
-  initializations = {
-    run: (input: InitializeProjectInput) => this.initializeProject(input),
-    /** Stops the run started with this progress id; false once it ended. */
-    cancel: (progressId: string) =>
-      this.initializationCancellations.cancel(progressId),
-    repair: (input: RepairProjectInitializationInput) =>
-      this.repairProjectInitialization(input),
-    assessImpact: (input: AssessProjectInitializationImpactInput) =>
-      this.assessProjectInitializationImpact(input),
-  };
-
-  codePractices = {
-    run: (input: AnalyzeProjectCodePracticesInput) =>
-      this.analyzeProjectCodePractices(input),
-  };
-
   securityAudits = {
     map: (input: MapSecurityAuditInput) => this.mapSecurityAudit(input),
-  };
-
-  newProjects = {
-    generate: (input: StartNewProjectGenerationInput) =>
-      this.generateNewProject(input),
   };
 
   pullRequestAvailability = (input: PullRequestAvailabilityInput) => {
@@ -1777,336 +1683,6 @@ export class BlameAgentRuntime {
     return scanSecurityAuditRepository(input.workspaceRoot, this.options.git);
   }
 
-  private async initializeProject(
-    input: InitializeProjectInput,
-  ): Promise<InitializeProjectResult> {
-    // Tracked before anything is awaited: once the app receives the run's
-    // first progress notice, it can cancel the run by its progress id.
-    const run = this.initializationCancellations.track(input.progressId);
-    try {
-      return await this.initializeProjectWorkflow(input, run.signal);
-    } finally {
-      run.release();
-    }
-  }
-
-  private async analyzeProjectCodePractices(
-    input: AnalyzeProjectCodePracticesInput,
-  ): Promise<AnalyzeProjectCodePracticesResult> {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    const credential = await this.initializationCredential(input);
-    const scan = await scanProjectCodePractices(input.workspaceRoot);
-    const cline = await this.core(input.backend);
-    return this.runCodePracticesAttempts(cline, input, scan, credential);
-  }
-
-  private async runCodePracticesAttempts(
-    cline: ClineCore,
-    input: AnalyzeProjectCodePracticesInput,
-    scan: ProjectCodePracticesScan,
-    credential: InitializationCredential,
-  ): Promise<AnalyzeProjectCodePracticesResult> {
-    let correction = input.validationFeedback;
-    for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
-      const result = await this.startCodePracticesAttempt(
-        cline,
-        input,
-        scan,
-        credential,
-        correction,
-      );
-      const outcome = this.codePracticesAttemptOutcome(result, scan, attempt);
-      if (outcome.complete) return outcome.result;
-      correction = outcome.correction;
-    }
-    throw new Error("Code practice analysis did not return a valid result");
-  }
-
-  private codePracticesAttemptOutcome(
-    result: ProjectCodePracticesAttempt,
-    scan: ProjectCodePracticesScan,
-    attempt: number,
-  ): CodePracticesAttemptOutcome {
-    try {
-      return {
-        complete: true,
-        result: parsedCodePracticesAttempt(result, scan),
-      };
-    } catch (error) {
-      if (attempt === maxInitializationAttempts) throw error;
-      const correction = initializationCorrection(result.input, error);
-      return { complete: false, correction };
-    }
-  }
-
-  private async startCodePracticesAttempt(
-    cline: ClineCore,
-    input: AnalyzeProjectCodePracticesInput,
-    scan: ProjectCodePracticesScan,
-    credential: InitializationCredential,
-    correction?: InitializationCorrection,
-  ) {
-    const submit = projectCodePracticesSubmitTool();
-    const session = await this.startCodePracticesAgent(
-      cline,
-      input,
-      scan,
-      credential,
-      submit.tool,
-      correction,
-    );
-    if (!submit.input) {
-      throw new Error("Code practice analysis agent did not return a result");
-    }
-    return { input: submit.input, sessionId: session.sessionId };
-  }
-
-  private startCodePracticesAgent(
-    cline: ClineCore,
-    input: AnalyzeProjectCodePracticesInput,
-    scan: ProjectCodePracticesScan,
-    credential: InitializationCredential,
-    submitTool: AgentTool,
-    correction?: InitializationCorrection,
-  ) {
-    return cline.start({
-      prompt: codePracticesPrompt(scan, correction),
-      config: codePracticesConfig(input, credential, submitTool),
-      interactive: false,
-      source: "blame-project-code-practices",
-      toolPolicies: codePracticesToolPolicies(),
-    }) as Promise<RuntimeClineResult>;
-  }
-
-  private async initializeProjectWorkflow(
-    input: InitializeProjectInput,
-    signal: AbortSignal,
-  ): Promise<InitializeProjectResult> {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    const resolvedCredential = await this.initializationCredential(input);
-    const progress = initializationProgress(
-      this.events,
-      input,
-      maxInitializationSubmissions,
-    );
-    progress.scanning();
-    const scan = await scanProjectForInitialization(input.workspaceRoot);
-    const cline = await this.core(input.backend);
-    const session = new InitializationSession(
-      (submitted, options) =>
-        parseProjectInitializationAttempt(
-          { result: submitted, sessionId: "", submittedInput: submitted },
-          scan,
-          input,
-          options,
-        ),
-      {
-        onChecking: (submission) => progress.checking(submission),
-        onRejected: (submission, error) => progress.rejected(submission, error),
-      },
-    );
-    progress.analyzing();
-    const { result, sessionId } = await runInitializationSessions({
-      cline,
-      session,
-      progress,
-      correction: input.validationFeedback,
-      responseLimitMs: initializationResponseLimitMs(input.reasoningEffort),
-      signal,
-      start: (sessionId, correction) =>
-        this.startProjectInitializationAgent(
-          cline,
-          input,
-          scan,
-          resolvedCredential,
-          session.tools(),
-          correction,
-          sessionId,
-        ),
-    });
-    return saveProjectInitialization(input.workspaceRoot, result, sessionId);
-  }
-
-  private startProjectInitializationAgent(
-    cline: ClineCore,
-    input: InitializeProjectInput,
-    scan: ProjectInitializationScan,
-    credential: InitializationCredential,
-    tools: AgentTool[],
-    correction: InitializationCorrection | undefined,
-    sessionId?: string,
-  ) {
-    return cline.start({
-      prompt: initializationPrompt(scan, correction, input.preferences, input.workspaceRoot),
-      config: initializationConfig(input, credential, tools, sessionId),
-      interactive: false,
-      source: "blame-project-initialization",
-      toolPolicies: initializationToolPolicies(),
-    }) as Promise<RuntimeClineResult>;
-  }
-
-  private async repairProjectInitialization(
-    input: RepairProjectInitializationInput,
-  ): Promise<RepairProjectInitializationResult> {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    const credential = await this.runtimeCredential(input);
-    const scan = await scanProjectWorkspace(
-      input.workspaceRoot,
-      this.options.projectScanRoot,
-    );
-    const cline = await this.core(input.backend);
-    let correction: InitializationCorrection | undefined;
-    for (let attempt = 1; attempt <= maxInitializationAttempts; attempt += 1) {
-      const result = await this.startProjectInitializationRepairAttempt(
-        cline,
-        input,
-        scan,
-        credential,
-        correction,
-      );
-      try {
-        return parseProjectInitializationRepairAttempt(result, scan, input);
-      } catch (error) {
-        if (attempt === maxInitializationAttempts) throw error;
-        correction = initializationCorrection(result.result, error);
-      }
-    }
-    throw new Error(
-      "Project initialization repair agent did not return a valid result",
-    );
-  }
-
-  private async startProjectInitializationRepairAttempt(
-    cline: ClineCore,
-    input: RepairProjectInitializationInput,
-    scan: ProjectInitializationScan,
-    credential: InitializationCredential,
-    correction?: InitializationCorrection,
-  ): Promise<ProjectInitializationRepairAttempt> {
-    const submitTool = projectInitializationRepairSubmitTool();
-    const session = (await cline.start({
-      prompt: projectInitializationRepairPrompt(input, scan, correction),
-      config: initializationRepairConfig(input, credential, submitTool.tool),
-      interactive: false,
-      source: "blame-project-initialization-repair",
-      toolPolicies: initializationToolPolicies(),
-    })) as RuntimeClineResult;
-    return collectProjectInitializationRepairAttempt(session, submitTool);
-  }
-
-  private async assessProjectInitializationImpact(
-    input: AssessProjectInitializationImpactInput,
-  ): Promise<AssessProjectInitializationImpactResult> {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    const diagnostics =
-      await collectProjectInitializationImpactDiagnostics(input);
-    const deterministic = deterministicInitializationImpact(diagnostics);
-    if (deterministic) return { ...deterministic, diagnostics };
-    const credential = await this.runtimeCredential(input);
-    const cline = await this.core(input.backend);
-    const session = await this.startProjectInitializationImpactAgent(
-      input,
-      diagnostics,
-      credential,
-      cline,
-    );
-    const text = session.result?.text;
-    if (!text)
-      throw new Error(
-        "Project initialization impact agent did not return a result",
-      );
-    return {
-      sessionId: session.sessionId,
-      ...parseProjectInitializationImpactResult(text),
-      diagnostics,
-    };
-  }
-
-  private startProjectInitializationImpactAgent(
-    input: AssessProjectInitializationImpactInput,
-    diagnostics: Awaited<
-      ReturnType<typeof collectProjectInitializationImpactDiagnostics>
-    >,
-    credential: InitializationCredential,
-    cline: ClineCore,
-  ) {
-    return cline.start({
-      prompt: projectInitializationImpactPrompt(diagnostics),
-      config: initializationImpactConfig(input, credential),
-      interactive: false,
-      source: "blame-project-initialization-impact",
-      toolPolicies: initializationToolPolicies(),
-    }) as Promise<RuntimeClineResult>;
-  }
-
-  private async generateNewProject(
-    input: StartNewProjectGenerationInput,
-  ): Promise<NewProjectGenerationResult> {
-    assertWorkspacePath(input.cwd, input.workspaceRoot, "cwd");
-    const credential = await this.runtimeCredential(input);
-    const cline = await this.core(input.backend);
-    const sessionId = input.sessionId ?? createBlameSessionId();
-    const sessionLogFile = sessionLogPath(input.cwd, sessionId);
-    await this.subscribeSession(sessionId, input.backend);
-    this.sessionBackendKeys.set(sessionId, backendKey(input.backend));
-    this.sessionLogFiles.set(sessionId, sessionLogFile);
-    this.sessionContexts.set(sessionId, {
-      maxIterations: newProjectGenerationMaxIterations(),
-      mode: "yolo",
-      modelId: input.modelId,
-      providerId: input.providerId,
-      sessionId,
-    });
-    this.autoApprovedWriteToolSessions.add(sessionId);
-    this.emitSessionNotice(sessionId, "New project generation agent started.");
-    this.emitSessionNotice(sessionId, `Cline debug log: ${sessionLogFile}`);
-
-    try {
-      const config = await newProjectGenerationConfig(
-        input,
-        credential,
-        sessionId,
-        this.productionConfig,
-      );
-      const session = (await cline.start({
-        prompt: newProjectGenerationPrompt(input),
-        config: { ...config, systemPrompt: `${config.systemPrompt ?? ''}${webResearchGuidance}`,
-          extraTools: webResearchTools(input.apiConnection, this.options.renderWebPage) },
-        interactive: false,
-        localRuntime: { configExtensions: ["rules"] },
-        source: "blame-new-project-generation",
-        toolPolicies: newProjectGenerationToolPolicies(),
-      })) as RuntimeClineResult;
-      const failure = resultFailureMessage(session.result);
-      const readinessError = await generatedProjectReadinessError(input.cwd);
-      if (readinessError) throw new Error(failure ?? readinessError);
-      if (failure) {
-        this.emitSessionNotice(
-          sessionId,
-          `New project generation agent ended after scaffold: ${failure}`,
-        );
-      }
-      this.emitSessionNotice(
-        sessionId,
-        "New project generation agent finished.",
-      );
-      return {
-        path: input.cwd,
-        sessionId,
-      };
-    } finally {
-      await this.unsubscribeSession(sessionId);
-      // Nothing continues a generation: its Claude Code process can go.
-      await closeClaudeCodeSessions([sessionId]).catch(() => undefined);
-    }
-  }
-
-  private async initializationCredential(input: RuntimeCredentialInput) {
-    const credential = await this.runtimeCredential(input);
-    await this.syncClineOAuthProviderSettings(credential);
-    return credential;
-  }
-
   private async runtimeCredential(input: RuntimeCredentialInput) {
     const credential = await resolveProviderCredential(input.apiConnection, {
       providerId: input.providerId,
@@ -3164,7 +2740,8 @@ export class BlameAgentRuntime {
   ): RuntimeOptions {
     if (
       !input.projectInitialization ||
-      !this.options.applyPreviewInitialization
+      !this.options.applyPreviewInitialization ||
+      !this.options.repairProjectInitialization
     ) {
       return this.options;
     }
@@ -3181,7 +2758,7 @@ export class BlameAgentRuntime {
     preview: PreviewRuntimeContext,
     state: DevelopmentPreviewState,
   ) {
-    const repair = await this.repairProjectInitialization(
+    const repair = await this.options.repairProjectInitialization!(
       await this.developmentPreviewRepairInput(input, preview, state),
     );
     if (!repair.previewManifest || !repair.runConfigurations) {
@@ -3196,7 +2773,7 @@ export class BlameAgentRuntime {
       databaseMode: state.initialization.databaseMode ?? "compose",
       previewManifest: repair.previewManifest,
       reason: repair.reason,
-      repairSessionId: repair.sessionId,
+      repairSessionId: repair.session,
       runConfigurations: repair.runConfigurations,
     });
     if (applied.status === "applied") {
@@ -3217,22 +2794,22 @@ export class BlameAgentRuntime {
     input: RuntimeStartSessionInput,
     preview: PreviewRuntimeContext,
     state: DevelopmentPreviewState,
-  ): Promise<RepairProjectInitializationInput> {
+  ): Promise<RepairProjectInitializationTask> {
     return {
-      apiConnection: input.apiConnection,
-      providerId: input.providerId,
-      modelId: input.modelId,
-      credentialLabel: input.credentialLabel,
-      reasoningEffort: input.reasoningEffort,
-      cwd: input.cwd,
-      workspaceRoot: input.workspaceRoot,
+      model: {
+        providerId: input.providerId,
+        modelId: input.modelId,
+        credentialLabel: input.credentialLabel,
+        reasoning: input.reasoningEffort,
+      },
+      projectId: input.projectId,
+      workspace: { root: input.workspaceRoot },
       previewManifest: state.initialization.previewManifest,
       runConfigurations: state.initialization.runConfigurations,
       preferences: {
         database: { mode: state.initialization.databaseMode ?? "compose" },
       },
       diagnostics: await this.previewInitializationDiagnostics(preview),
-      backend: input.backend,
     };
   }
 
@@ -3463,43 +3040,6 @@ export class BlameAgentRuntime {
 
 export function createClineBaselineRuntime(events?: AgentRuntimeEvents) {
   return new BlameAgentRuntime(events, { developmentHarness: "cline" });
-}
-
-async function generatedProjectReadinessError(cwd: string) {
-  const paths = [
-    join(cwd, "package.json"),
-    join(cwd, "apps", "web", "package.json"),
-  ];
-  for (const path of paths) {
-    if (!(await fileExists(path))) continue;
-    return projectManifestReadinessError(path);
-  }
-  return "Project generation agent completed without creating a package.json.";
-}
-
-async function projectManifestReadinessError(path: string) {
-  try {
-    const manifest = JSON.parse(await readFile(path, "utf8")) as {
-      scripts?: Record<string, unknown>;
-    };
-    const missing = ["dev", "build"].filter(
-      (name) => typeof manifest.scripts?.[name] !== "string",
-    );
-    return missing.length
-      ? `Generated package.json is missing required scripts: ${missing.join(", ")}.`
-      : undefined;
-  } catch {
-    return "Project generation agent created an invalid package.json.";
-  }
-}
-
-async function fileExists(path: string) {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 function createBlameSessionId() {

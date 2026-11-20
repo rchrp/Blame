@@ -23,7 +23,6 @@ const projectInitializationColumns = [
   'project_id',
   'status',
   'step',
-  'cline_session_id',
   'agent_provider_id',
   'agent_model_id',
   'preview_manifest',
@@ -48,7 +47,6 @@ const projectCodePracticeColumns = [
 const projectCodePracticeAnalysisColumns = [
   'project_id',
   'status',
-  'cline_session_id',
   'agent_provider_id',
   'agent_model_id',
   'error',

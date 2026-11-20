@@ -15,7 +15,6 @@ import {
   normalizePreviewManifestWithPreferences,
   validatePreviewManifest,
 } from "./preview-manifest.js";
-import { jsonPayload } from "./json-payload.js";
 import {
   assertOnlyKeys,
   parseRunConfigurations,
@@ -55,11 +54,12 @@ type ProjectInitializationCorrection = {
   previousResult: string;
 };
 
+// An image or a build, in the subset of JSON Schema the engine checks (no
+// minProperties); parsePreviewManifest refuses both at once.
 const previewManifestContainerSchema = {
   type: "object",
   additionalProperties: false,
-  minProperties: 1,
-  maxProperties: 1,
+  anyOf: [{ required: ["image"] }, { required: ["build"] }],
   properties: {
     image: { type: "string" },
     build: {
@@ -353,14 +353,12 @@ export const projectInitializationResultSchema = {
 export function projectInitializationPrompt(
   scan: ProjectInitializationScan,
   preferences?: ProjectInitializationPreferences,
-  workspaceRoot?: string,
 ) {
   return [
     "Analyze this project scan according to your system instructions.",
     "Call submit_project_initialization with the complete result. Blame checks it immediately; fix any rejected problems and submit again.",
     "Do not answer with JSON text.",
-    "Use read_files or search_codebase when a runtime fact the setup depends on is absent from this evidence.",
-    ...workspaceRootPrompt(workspaceRoot),
+    "Use read_code or search_code, with paths relative to the project root as in the scan, to confirm what the setup depends on and for any runtime fact absent from this evidence.",
     ...databasePreferencePrompt(preferences),
     `Project evidence: ${JSON.stringify(scan)}`,
   ].join("\n");
@@ -370,10 +368,9 @@ export function projectInitializationCorrectionPrompt(
   scan: ProjectInitializationScan,
   correction: ProjectInitializationCorrection,
   preferences?: ProjectInitializationPreferences,
-  workspaceRoot?: string,
 ) {
   return [
-    projectInitializationPrompt(scan, preferences, workspaceRoot),
+    projectInitializationPrompt(scan, preferences),
     "A previous result for this project was not accepted.",
     "Call submit_project_initialization with a complete corrected input.",
     "Read more files only when the problem below needs a fact you do not have.",
@@ -386,16 +383,6 @@ export type ProjectInitializationParseOptions = {
   /** Save a setup that keeps heuristic warnings, listing them as risks. */
   acceptWarnings?: boolean;
 };
-
-export function parseProjectInitializationResult(
-  text: string,
-  scan?: ProjectInitializationScan,
-  preferences?: ProjectInitializationPreferences,
-  options: ProjectInitializationParseOptions = {},
-): ParsedProjectInitialization {
-  const parsed = JSON.parse(jsonPayload(text)) as unknown;
-  return parseProjectInitializationPayload(parsed, scan, preferences, options);
-}
 
 export function parseProjectInitializationPayload(
   payload: unknown,
@@ -552,16 +539,6 @@ export function validateProjectInitializationOutput(
 function truncateCorrectionPayload(value: string) {
   if (value.length <= maxCorrectionPayloadLength) return value;
   return value.slice(0, maxCorrectionPayloadLength);
-}
-
-// read_files resolves a relative path against the app's own working
-// directory, not the project, so the agent needs absolute paths.
-function workspaceRootPrompt(workspaceRoot: string | undefined) {
-  if (!workspaceRoot) return [];
-  const root = workspaceRoot.replace(/\/+$/, "");
-  return [
-    `Workspace root: ${JSON.stringify(root)}. Pass read_files absolute paths under it, such as ${JSON.stringify(`${root}/package.json`)}.`,
-  ];
 }
 
 function databasePreferencePrompt(

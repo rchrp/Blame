@@ -472,8 +472,10 @@ const api: BlameDesktopApi = {
       ipcRenderer.invoke("workspace:git-repository-fingerprint", input),
     ensureGitRepository: (input) =>
       ipcRenderer.invoke("workspace:ensure-git-repository", input),
-    createProject: (input) =>
-      ipcRenderer.invoke("workspace:create-project", input),
+    prepareNewProject: (input) =>
+      ipcRenderer.invoke("workspace:prepare-new-project", input),
+    finishNewProject: (input) =>
+      ipcRenderer.invoke("workspace:finish-new-project", input),
     createWorktree: (input) =>
       ipcRenderer.invoke("workspace:create-worktree", input),
     checkHostDependencies: (input) =>
@@ -675,22 +677,6 @@ const api: BlameDesktopApi = {
         return () =>
           ipcRenderer.removeListener("agent:approvals:event", handler);
       },
-    },
-    initializations: {
-      run: (input) => ipcRenderer.invoke("agent:initializations:run", input),
-      cancel: (progressId) =>
-        ipcRenderer.invoke("agent:initializations:cancel", progressId),
-      repair: (input) =>
-        ipcRenderer.invoke("agent:initializations:repair", input),
-      assessImpact: (input) =>
-        ipcRenderer.invoke("agent:initializations:assess-impact", input),
-    },
-    codePractices: {
-      run: (input) => ipcRenderer.invoke("agent:code-practices:run", input),
-    },
-    newProjects: {
-      generate: (input) =>
-        ipcRenderer.invoke("agent:new-projects:generate", input),
     },
     pullRequestAvailability: (input) =>
       ipcRenderer.invoke("agent:pull-request-availability", input),

@@ -1,7 +1,6 @@
 import ProjectInitializationsService from '#services/project_initializations_service'
 import ProjectInitializationTransformer from '#transformers/project_initialization_transformer'
 import {
-  cancelProjectInitializationValidator,
   checkProjectInitializationValidator,
   completeProjectInitializationValidator,
   failProjectInitializationValidator,
@@ -55,14 +54,10 @@ export default class ProjectInitializationsController {
     )
   }
 
-  async cancel({ auth, params, request, serialize }: HttpContext) {
+  async cancel({ auth, params, serialize }: HttpContext) {
     return serialize(
       ProjectInitializationTransformer.transform(
-        await new ProjectInitializationsService().cancel(
-          auth.getUserOrFail().id,
-          params.projectId,
-          await request.validateUsing(cancelProjectInitializationValidator)
-        )
+        await new ProjectInitializationsService().cancel(auth.getUserOrFail().id, params.projectId)
       )
     )
   }

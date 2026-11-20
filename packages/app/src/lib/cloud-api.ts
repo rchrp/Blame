@@ -389,7 +389,6 @@ export function createCloudApi(connection: CloudApiConnection) {
     completeProjectCodePracticeAnalysis(
       projectId: string,
       input: {
-        clineSessionId?: string | null
         practices: ProjectCodePracticeResult[]
       }
     ) {
@@ -403,7 +402,7 @@ export function createCloudApi(connection: CloudApiConnection) {
     },
     failProjectCodePracticeAnalysis(
       projectId: string,
-      input: { clineSessionId?: string | null; error: string }
+      input: { error: string }
     ) {
       return projectCodePracticeAnalysisRequest(
         connection,
@@ -427,7 +426,6 @@ export function createCloudApi(connection: CloudApiConnection) {
       input: {
         providerId: string
         modelId: string
-        clineSessionId?: string | null
       }
     ) {
       return request<unknown>(
@@ -440,7 +438,6 @@ export function createCloudApi(connection: CloudApiConnection) {
     completeProjectInitialization(
       projectId: string,
       input: {
-        clineSessionId?: string | null
         previewManifest: PreviewManifest
         runConfigurations: ProjectRunConfiguration[]
         databaseMode?: "existing" | "compose" | null
@@ -454,10 +451,7 @@ export function createCloudApi(connection: CloudApiConnection) {
         { body: JSON.stringify(input), method: "POST" }
       ).then(cloudProjectInitializationSnapshot)
     },
-    failProjectInitialization(
-      projectId: string,
-      input: { clineSessionId?: string | null; error: string }
-    ) {
+    failProjectInitialization(projectId: string, input: { error: string }) {
       return request<unknown>(
         connection,
         baseUrl,
@@ -465,21 +459,17 @@ export function createCloudApi(connection: CloudApiConnection) {
         { body: JSON.stringify(input), method: "POST" }
       ).then(cloudProjectInitializationSnapshot)
     },
-    cancelProjectInitialization(
-      projectId: string,
-      input: { clineSessionId?: string | null } = {}
-    ) {
+    cancelProjectInitialization(projectId: string) {
       return request<unknown>(
         connection,
         baseUrl,
         `/projects/${encodeURIComponent(projectId)}/initialization/cancel`,
-        { body: JSON.stringify(input), method: "POST" }
+        { body: JSON.stringify({}), method: "POST" }
       ).then(cloudProjectInitializationSnapshot)
     },
     repairProjectInitialization(
       projectId: string,
       input: {
-        clineSessionId?: string | null
         previewManifest: PreviewManifest
         runConfigurations: ProjectRunConfiguration[]
         databaseMode?: "existing" | "compose" | null

@@ -24,7 +24,7 @@
     "test:attachments": "node --test --experimental-strip-types src/components/attachments/annotation-model.test.ts src/components/backlog/drawer/user-story-attachment-files.test.ts src/lib/file-attachment-api.test.ts src/components/attachments/attachment-format.test.ts src/components/attachments/attachment-file.test.ts src/components/attachments/stored-attachment-url.test.ts",
     "test:initialization-impact": "node --test --experimental-strip-types src/pages/backlog/project-initialization-impact.test.ts",
     "test:security": "node --test --experimental-strip-types src/components/security/data/security-remediation.test.ts",
-    "test:performance": "node --test --experimental-strip-types src/components/backlog/data/agent-stream-performance.test.ts",
+    "test:performance": "node --test --experimental-strip-types src/components/backlog/data/agent-stream-performance.test.ts src/components/project-initialization/project-initialization-progress.test.ts",
     "typecheck": "tsc -b",
     "preview": "vite preview"
   },

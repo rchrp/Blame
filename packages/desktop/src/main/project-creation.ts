@@ -20,7 +20,6 @@ import {
 } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
 import { promisify } from "node:util";
-import type { ApiConnection, ReasoningSelection } from "@blame/agent-runtime";
 import { hostGitCommand } from "./host-git.ts";
 import { projectNameError } from "@blame/agent-runtime/project-name";
 import {
@@ -79,34 +78,18 @@ export type {
   NewProjectConfiguration,
 } from "@blame/agent-runtime/new-project-options";
 
-export type CreateProjectInput = {
-  apiConnection: ApiConnection;
-  configuration: NewProjectConfiguration;
-  credentialLabel?: string;
-  modelId: string;
+/** The folder of a new project, before the agent generates it. */
+export type PrepareNewProjectInput = {
   parentPath: string;
   projectName: string;
-  providerId: string;
-  reasoningEffort?: ReasoningSelection;
   runId: string;
 };
 
-export type NewProjectAgentRuntime = {
-  generate(input: {
-    apiConnection: ApiConnection;
-    configuration: NewProjectConfiguration;
-    credentialLabel?: string;
-    cwd: string;
-    modelId: string;
-    projectName: string;
-    providerId: string;
-    reasoningEffort?: ReasoningSelection;
-    sessionId?: string;
-    workspaceRoot: string;
-  }): Promise<{
-    path: string;
-    sessionId: string;
-  }>;
+/** A generated project, made installable and a Git repository. */
+export type FinishNewProjectInput = {
+  path: string;
+  configuration: NewProjectConfiguration;
+  runId: string;
 };
 
 export type CommandRecipe = {
@@ -129,9 +112,6 @@ type ProjectCreationWindow = {
 };
 
 let projectCreationWindowsProvider = () => [] as ProjectCreationWindow[];
-let newProjectAgentRuntime: NewProjectAgentRuntime | undefined;
-// A failed installation can be retried in this wizard without regenerating files.
-const generatedProjects = new Map<string, { key: string; target: string }>();
 
 export function setProjectCreationWindowsProvider(
   provider: () => ProjectCreationWindow[],
@@ -139,57 +119,28 @@ export function setProjectCreationWindowsProvider(
   projectCreationWindowsProvider = provider;
 }
 
-export function setNewProjectAgentRuntime(
-  runtime: NewProjectAgentRuntime | undefined,
-) {
-  newProjectAgentRuntime = runtime;
+// A new project is made in three steps: this empty folder, the agent's
+// scaffold (an engine task the renderer runs, `generateNewProject`), then
+// `finishNewProject`. A failed installation is retried with the last step
+// alone, without generating the project again.
+export async function prepareNewProject(input: PrepareNewProjectInput) {
+  const target = await validateProjectTarget(
+    input.parentPath,
+    input.projectName,
+  );
+  const emit = projectCreationEmitter(input.runId);
+  await mkdir(target);
+  emit({ type: "stdout", data: `Preparing empty project folder: ${target}\n` });
+  emit({ type: "stdout", data: "Starting AI project generation agent...\n" });
+  return { path: target, projectName: basename(target) };
 }
 
-export async function createProject(
-  input: CreateProjectInput,
+export async function finishNewProject(
+  input: FinishNewProjectInput,
   options: { runCommand?: ProjectCommandRunner } = {},
 ) {
-  const key = JSON.stringify([
-    input.parentPath.trim(),
-    input.projectName.trim(),
-    input.configuration,
-  ]);
-  const previous = generatedProjects.get(input.runId);
-  const resume = previous?.key === key ? previous : undefined;
-  const target =
-    resume?.target ??
-    (await validateProjectTarget(input.parentPath, input.projectName));
+  const target = resolve(input.path);
   const emit = projectCreationEmitter(input.runId);
-
-  if (!newProjectAgentRuntime) {
-    throw new Error("New project agent runtime is not available.");
-  }
-
-  if (!resume) {
-    await mkdir(target);
-    emit({
-      type: "stdout",
-      data: `Preparing empty project folder: ${target}\n`,
-    });
-    emit({ type: "stdout", data: "Starting AI project generation agent...\n" });
-
-    await newProjectAgentRuntime.generate({
-      apiConnection: input.apiConnection,
-      configuration: input.configuration,
-      credentialLabel: input.credentialLabel,
-      cwd: target,
-      modelId: input.modelId,
-      projectName: basename(target),
-      providerId: input.providerId,
-      reasoningEffort: input.reasoningEffort,
-      sessionId: input.runId,
-      workspaceRoot: target,
-    });
-    if (generatedProjects.size >= 20)
-      generatedProjects.delete(generatedProjects.keys().next().value!);
-    generatedProjects.set(input.runId, { key, target });
-  }
-
   await sanitizeWorkspaceConfigFiles(target);
   await installGeneratedProjectDependencies(
     target,
@@ -199,7 +150,6 @@ export async function createProject(
   );
 
   await initializeGeneratedRepository(target, emit);
-  generatedProjects.delete(input.runId);
 
   emit({ type: "exit", data: "0" });
   return {

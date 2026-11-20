@@ -973,13 +973,13 @@ export interface Registry {
     methods: ["POST"]
     pattern: '/api/v1/projects/:projectId/initialization/cancel'
     types: {
-      body: ExtractBody<InferInput<(typeof import('#validators/project_initialization').cancelProjectInitializationValidator)>>
+      body: {}
       paramsTuple: [ParamValue]
       params: { projectId: ParamValue }
-      query: ExtractQuery<InferInput<(typeof import('#validators/project_initialization').cancelProjectInitializationValidator)>>
+      query: {}
       response: ExtractResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>>
-      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>> | { status: 422; response: { errors: SimpleError[] } }
-      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>> | { status: 422; response: { errors: SimpleError[] } }
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/project_initializations_controller').default['cancel']>>>
     }
   }
   'projects.project_initializations.repair': {
