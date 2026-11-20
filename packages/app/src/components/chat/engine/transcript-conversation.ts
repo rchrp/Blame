@@ -2,7 +2,7 @@
 // transcript (TranscriptReducer of @blame/engine-client), in the runs and
 // activities the timeline components take.
 
-import { turnReply } from "@blame/engine-client/transcript"
+import { turnReply, turnReplyImages } from "@blame/engine-client/transcript"
 import type {
   ToolCallItem,
   Transcript,
@@ -72,6 +72,10 @@ export function transcriptConversation(
     }
     const reply = turnReply(turn, items)
     const activities = turnActivities(transcript, turn, items, author, reply)
+    // The screenshots finish_task attached go above the final reply.
+    const images = turnReplyImages(turn, items)
+    const final = activities.find((activity) => activity.messageKind === "final")
+    if (final && images.length) final.images = images
     const model = items.find(
       (item) => (item.kind === "text" || item.kind === "tool_call") && item.message?.model
     )
