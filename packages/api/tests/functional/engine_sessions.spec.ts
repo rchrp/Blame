@@ -258,21 +258,26 @@ test.group('engine session log', (group) => {
 
   test('requires authentication', async ({ assert }) => {
     const id = sessionId()
-    const calls = await Promise.all([
-      fetch(`${base()}/sessions`),
-      fetch(`${base()}/sessions/${id}/records`),
-      fetch(`${base()}/sessions/${id}/records`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/octet-stream' },
-        body: '{"records":[]}',
-      }),
-      fetch(`${base()}/sessions/${id}`, { method: 'DELETE' }),
-      fetch(`${base()}/blobs/${sha256(Buffer.from('a'))}`),
-    ])
-    assert.deepEqual(
-      calls.map((response) => response.status),
-      [401, 401, 401, 401, 401]
-    )
+    const requests: [string, RequestInit?][] = [
+      [`${base()}/sessions`],
+      [`${base()}/sessions/${id}/records`],
+      [
+        `${base()}/sessions/${id}/records`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/octet-stream' },
+          body: '{"records":[]}',
+        },
+      ],
+      [`${base()}/sessions/${id}`, { method: 'DELETE' }],
+      [`${base()}/blobs/${sha256(Buffer.from('a'))}`],
+    ]
+    // One after another: the server runs in this process, and the first
+    // call without a session keeps it busy long enough for connections
+    // opened at the same moment to time out.
+    const statuses: number[] = []
+    for (const [url, init] of requests) statuses.push((await fetch(url, init)).status)
+    assert.deepEqual(statuses, [401, 401, 401, 401, 401])
   })
 
   test('lists the sessions of the user, newest activity first', async ({ assert }) => {
