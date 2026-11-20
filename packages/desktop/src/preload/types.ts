@@ -2,9 +2,6 @@ import type { EnginePlatformClient } from "@blame/agent-runtime/engine-protocol"
 import type {
   AgentEvent,
   NewProjectsClient,
-  AgentUsageSummary,
-  CompactSessionInput,
-  CompactSessionResult,
   AnalyzeProjectCodePracticesInput,
   AnalyzeProjectCodePracticesResult,
   ApiConnection,
@@ -12,8 +9,6 @@ import type {
   ApproveAndMergeResult,
   AssessProjectInitializationImpactInput,
   AssessProjectInitializationImpactResult,
-  CompareCheckpointInput,
-  CompareCheckpointResult,
   DirectStoryFilesInput,
   DirectStoryFilesResult,
   GenerateCommitMessageInput,
@@ -43,16 +38,9 @@ import type {
   PullRequestStateInput,
   RepairProjectInitializationInput,
   RepairProjectInitializationResult,
-  ResolveApprovalInput,
   ResolveMergeConflictsInput,
   ResolveMergeConflictsResult,
-  RestoreCheckpointInput,
-  RestoreCheckpointResult,
   SaveProviderCredentialInput,
-  SendDevelopmentSessionInput,
-  SendSessionInput,
-  StartDevelopmentSessionInput,
-  StartSessionInput,
 } from "@blame/agent-runtime";
 import type {
   BacklogStatusPipRequest,
@@ -652,35 +640,12 @@ export type BlameDesktopApi = {
         input: SubscriptionUsageInput,
       ): Promise<SubscriptionUsage | null>;
     };
+    // Progress of the one-shot agents; conversations are on `engine`.
     sessions: {
-      start(input: StartSessionInput): Promise<{ sessionId: string }>;
-      startDevelopment(
-        input: StartDevelopmentSessionInput,
-      ): Promise<{ sessionId: string }>;
-      send(input: SendSessionInput): Promise<unknown>;
-      sendDevelopment(input: SendDevelopmentSessionInput): Promise<unknown>;
-      abort(sessionId: string): Promise<void>;
-      // Whether this session is still executing in the desktop app.
-      live(sessionId: string): Promise<boolean>;
-      compareCheckpoint(
-        input: CompareCheckpointInput,
-      ): Promise<CompareCheckpointResult>;
-      list(): Promise<unknown>;
-      messages(sessionId: string): Promise<unknown>;
-      restoreCheckpoint(
-        input: RestoreCheckpointInput,
-      ): Promise<RestoreCheckpointResult>;
-      usage(sessionId: string): Promise<AgentUsageSummary | undefined>;
-      compact(input: CompactSessionInput): Promise<CompactSessionResult>;
-      eventStreamUrl(sessionId: string): Promise<string | null>;
       onEvent(
         sessionId: string,
         callback: (event: AgentEvent) => void,
       ): () => void;
-    };
-    approvals: {
-      resolve(input: ResolveApprovalInput): Promise<boolean>;
-      onRequest(callback: (event: AgentEvent) => void): () => void;
     };
     initializations: {
       run(input: InitializeProjectInput): Promise<InitializeProjectResult>;

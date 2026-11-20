@@ -185,6 +185,8 @@ class EngineHostProcess {
         new Error(`The engine host stopped (${code}); try again.`),
       );
     this.pending.clear();
+    // Its turns ended with it.
+    this.router.hostStopped();
     if (this.stopping) return;
     // Started again at once if a window follows a session, after a pause
     // that grows with each crash in a row so a crash loop cannot spin.
@@ -227,6 +229,11 @@ export function registerEngineIpcHandlers(
     }
     return engine.call(method as EngineHostMethod, input);
   });
+}
+
+/** Folders an engine turn is writing in right now. */
+export function engineActiveWorkspaces(): string[] {
+  return host?.router.activeWorkspaces() ?? [];
 }
 
 export async function shutdownEngineHost() {

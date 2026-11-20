@@ -122,17 +122,6 @@ export async function closeClaudeCodeBridge() {
   await (await current?.catch(() => undefined))?.close();
 }
 
-/**
- * Whether this worker can stop without cutting a Claude Code conversation:
- * it does not host the bridge, or the bridge has no process left and no
- * other worker is working (its sessions may reach the bridge any time).
- */
-export async function claudeCodeBridgeIdle(busyElsewhere: boolean) {
-  const active = await bridge?.catch(() => undefined);
-  if (!active?.hosting) return true;
-  return active.lanes === 0 && !busyElsewhere;
-}
-
 /** Closes the Claude Code processes of sessions that ended for good. */
 export async function closeClaudeCodeSessions(sessionIds: string[]) {
   const active =

@@ -645,28 +645,8 @@ const api: BlameDesktopApi = {
       subscriptionUsage: (input) =>
         ipcRenderer.invoke("agent:providers:subscription-usage", input),
     },
+    // Progress of the one-shot agents; conversations are on platform.engine.
     sessions: {
-      start: (input) => ipcRenderer.invoke("agent:sessions:start", input),
-      startDevelopment: (input) =>
-        ipcRenderer.invoke("agent:sessions:start-development", input),
-      live: (sessionId) => ipcRenderer.invoke("agent:sessions:live", sessionId),
-      send: (input) => ipcRenderer.invoke("agent:sessions:send", input),
-      sendDevelopment: (input) =>
-        ipcRenderer.invoke("agent:sessions:send-development", input),
-      abort: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:abort", sessionId),
-      compareCheckpoint: (input) =>
-        ipcRenderer.invoke("agent:sessions:compare-checkpoint", input),
-      list: () => ipcRenderer.invoke("agent:sessions:list"),
-      messages: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:messages", sessionId),
-      restoreCheckpoint: (input) =>
-        ipcRenderer.invoke("agent:sessions:restore-checkpoint", input),
-      usage: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:usage", sessionId),
-      compact: (input) => ipcRenderer.invoke("agent:sessions:compact", input),
-      eventStreamUrl: (sessionId) =>
-        ipcRenderer.invoke("agent:sessions:event-stream-url", sessionId),
       onEvent: (sessionId, callback) => {
         const channel = `agent:sessions:event:${sessionId}`;
         const handler = (_event: unknown, event: AgentEvent) => callback(event);
@@ -676,15 +656,6 @@ const api: BlameDesktopApi = {
           ipcRenderer.removeListener(channel, handler);
           ipcRenderer.send("agent:sessions:unlisten", sessionId);
         };
-      },
-    },
-    approvals: {
-      resolve: (input) => ipcRenderer.invoke("agent:approvals:resolve", input),
-      onRequest: (callback) => {
-        const handler = (_event: unknown, event: AgentEvent) => callback(event);
-        ipcRenderer.on("agent:approvals:event", handler);
-        return () =>
-          ipcRenderer.removeListener("agent:approvals:event", handler);
       },
     },
     initializations: {
