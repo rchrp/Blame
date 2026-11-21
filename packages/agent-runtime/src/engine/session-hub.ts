@@ -36,6 +36,8 @@ type Followed = {
   sent: boolean;
   /** How the last turn ended, reported once the session goes idle. */
   lastOutcome: TurnOutcome | undefined;
+  /** The turns its records opened and did not end yet. */
+  open: Set<string>;
   /** The calls that set the agent's plan, and how far the plan is now. */
   planCalls: Set<string>;
   plan: PlanProgress | undefined;
@@ -119,6 +121,7 @@ export class SessionHub {
       running: false,
       sent: false,
       lastOutcome: undefined,
+      open: new Set(),
       planCalls: new Set(),
       plan: undefined,
       follower: undefined as unknown as SessionFollower,
@@ -135,14 +138,31 @@ export class SessionHub {
   private onEvent(session: SessionId, followed: Followed, event: FollowEvent) {
     if (this.followed.get(session) !== followed) return;
     switch (event.type) {
-      case "records":
+      case "records": {
         followed.records.push(...event.records);
         followed.streaming = [];
+        let ended = false;
         for (const record of event.records)
-          if (record.type === "turn_ended")
+          if (record.type === "user_message" && record.delivery === "turn")
+            followed.open.add(record.turn);
+          else if (record.type === "turn_ended") {
+            followed.open.delete(record.turn);
             followed.lastOutcome = record.outcome;
+            ended = true;
+          }
         this.trackPlan(session, followed, event.records);
+        // A turn the engine ended before its driver ran (an interrupt at
+        // once) never makes the activity busy, so no idle delta comes: the
+        // records saying every turn ended is the end.
+        if (ended && !followed.open.size && followed.running)
+          queueMicrotask(() => {
+            if (followed.open.size || followed.activity.state !== "idle")
+              return;
+            followed.sent = false;
+            this.setRunning(session, followed, false);
+          });
         break;
+      }
       case "delta":
         if (event.delta.type === "activity") {
           followed.activity = event.delta.activity;

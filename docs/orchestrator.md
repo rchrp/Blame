@@ -56,23 +56,41 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
   starts from what was merged.
   - The slug is the title's words, lowercase, joined by dashes (40
     characters at most); a name another branch or epic of the project
-    already has gets `-2`, `-3`… (`orchestrator/branch.ts`).
+    already has, or one git cannot make beside an existing branch (`epic`
+    leaves no room for `epic/…`, `epic/x/y` none for `epic/x`), gets
+    `-2`, `-3`…, and `epic-<slug>` when a branch is named `epic`
+    (`orchestrator/branch.ts`). Two epics made at once in one folder take
+    turns, so they never share a name.
   - `git branch <branch> <targetBranch>`: nothing is checked out, so the
     project folder and its branch never move. A folder on no branch (a
-    detached HEAD) is refused. The epic is written (branch, target,
-    session) before the branch is made, and a missing branch is made
-    again before stories are created: a quit between the two leaves a name
-    the next call makes, never a branch no epic names.
+    detached HEAD) is refused. The name is kept on this computer first,
+    then written to the epic (branch, target, session), then made; a
+    missing branch is made again before stories are created or queued: a
+    quit between two steps leaves a name the next call makes, never a
+    branch no epic names.
+  - **The branch is the one this host made.** A branch the API names that
+    this computer did not keep is refused (at `createSession`), and so is
+    one equal to the target. Nothing starts or merges once the API's
+    branch differs from the kept one.
   - `createSession` is refused when the epic already names a session the
-    engine has; a session it names that was never created is replaced.
+    engine has; a session it names that was never created is replaced. A
+    config is built only for the epic's own session.
 - `status`: `active` while the conversation can go on; `paused` after Pause
-  all (no story starts, the orchestrator is not woken); `completed` once the
-  epic's branch is merged into `targetBranch`; `discarded`. Pause all stops
-  nothing that runs: agents at work finish their turn, the queue holds the
-  epic's queued stories (no wait reason shows: the screen shows the pause),
-  and what ends meanwhile is kept for the wake after the epic resumes. The
-  screen writes the status to the API, then calls `epicChanged` so the host
-  reads it at once (it also reads every epic it runs each minute).
+  all; `completed` once the epic's branch is merged into `targetBranch`;
+  `discarded`. A status this build does not know is read as `paused`: never
+  free to run.
+- **Pause all is the host's** (`orchestrator/pause.ts`). The screen writes
+  the status to the API and calls `epicChanged` (the host also reads every
+  epic it runs each minute). When it reads `paused`, the host pauses the
+  agents of the epic's stories at work (and one whose start was in flight,
+  once it runs) and cuts the orchestrator's own turn, and keeps which;
+  nothing starts and nothing wakes it meanwhile. When it reads `active`
+  again, exactly those agents resume (each still paused where the pause
+  left it) and the orchestrator's cut turn goes on (a `resumed` wake). The
+  turns the pause cut are not news: no wake tells them. A story the person
+  paused by hand, or a turn the person stopped, stays as it is through a
+  pause and a resume. A story that ends otherwise meanwhile is told once
+  the epic resumes.
 - `settings` (a JSON object the screen writes, the host reads on every turn):
 
 | key | meaning |
@@ -123,10 +141,25 @@ uses them (the screen slice removes Plan Mode's interface first).
   `contract_unmet`, and the epic shows `failed` (see "What the screen
   reads").
 - **Where it runs**: on the computer that created its session (the host
-  keeps the epics it runs in `<userData>/orchestrator-epics.json`). The
-  epic's queued stories start only there: the computer that runs a story is
-  the one told of its turns. A queued story of an epic run elsewhere is
-  held, silently.
+  keeps the epics it runs in `<userData>/orchestrator-epics.json`, each with
+  the API it was created through). The epic's queued stories start only
+  there: the computer that runs a story is the one told of its turns.
+- **What is kept is never dropped because the API does not show the
+  epic** (a 404: another account, another deployment): the pending turns,
+  what was heard, the counts, the merged stories' cost, the settings and
+  the branch stay, the epic's stories are held, and all of it applies again
+  once that account shows the epic. An epic is forgotten only once the API
+  reads it `discarded`. Another API's epics are not looked at.
+- **The queue's gate** (`orchestrator/gate.ts`): a queued story of an epic
+  waits with the reason `{ kind: "epic", epicId, hold }`, `hold` being
+  `paused` (paused or over), `budget` (spent, from the spend kept on disk,
+  so from the first start after a launch), `elsewhere` (its conversation
+  runs on another computer), `direct` (no working preview environment) or
+  `unknown` (not read yet). Its card says so.
+- **An epic's story never runs Direct**: when the project's preview
+  environment broke after the story was created (or Direct is its run
+  mode), `stories/start.ts` makes it wait with `hold: "direct"` instead of
+  running in the person's folder on its branch.
 
 ### Tools
 
@@ -138,20 +171,21 @@ or none is refused by every tool. The inputs are `OrchestratorToolInputs`
 
 | tool | input | does | the host refuses when |
 | --- | --- | --- | --- |
-| `epic_board` | none | The epic (title, status, branch, target), each story (id, number, title, status or `working`, `paused`, what it waits for, `held` by a pause or the budget, intent, model, turns, last turn's outcome and verdict, cost, changes requested), the board's counts and the spend. | |
-| `create_stories` | `reason`, `stories: [{ key, title, brief, startsAfter?, intent, hold? }]` | Creates the stories with the epic's id, its branch as their target, `modelIntent`, the `requestedModel` its intent resolves to (`resolveModelIntent` with the epic's range, providers and hidden models, the account's agent model as fallback) and the person's run mode (Local Container when it is Direct); queued unless `hold`. Ordered so a story comes after those of the call it starts after. Answers each story's key, id, number, model and whether it is queued or held. | the budget is spent; a key is missing or repeated; a dependency is neither a key of the call nor a story of the epic, or is rejected; the keys close a cycle; the project has no working preview environment (its stories would run Direct, in the project folder on its branch, not on the epic's branch) unless every story is held; no model can be chosen |
+| `epic_board` | none | The epic (title, status, branch, target), each story (id, number, title, status or `working`, `paused`, what a queued one waits for in words and `needsPerson` when only the person can start it, intent, model, turns, last turn's outcome and verdict, cost, changes requested), the board's counts and the spend. Its last ended turn counts as heard. | |
+| `create_stories` | `reason`, `stories: [{ key, title, brief, startsAfter?, intent, hold? }]` | Creates the stories with the epic's id, its branch as their target, `modelIntent`, the `requestedModel` its intent resolves to (`resolveModelIntent` with the epic's range, providers and hidden models, the account's agent model as fallback) and the person's run mode (Local Container when it is Direct); queued unless `hold`. Ordered so a story comes after those of the call it starts after. Answers each story's key, id, number, model and whether it is queued or held. | the budget is spent; a key is missing or repeated; a dependency is neither a key of the call nor a story of the epic, or is rejected; the keys close a cycle; the project has no working preview environment (its stories would run Direct, in the project folder on its branch, not on the epic's branch) unless every story is held; no model can be chosen; nothing ranks in the epic's range and the account's agent model is on a provider the epic does not allow, or hidden |
 | `update_story` | `reason`, `storyId`, `title?`, `brief?`, `startsAfter?` (ids, replaces the list), `intent?`, `queue?` | Changes a story not started (in the backlog or queued); a new intent resolves its model again; `queue` queues a held one. | the story started; a dependency is not another story of the epic; `queue` with the budget spent or no working preview environment |
-| `story_report` | `storyId` | The last turn's outcome, `verified` (its `finish_task` was accepted) or the `failingChecks`, the error, the agent's whole reply, the files changed against its base (`git diff --name-status` in its worktree plus untracked files, or base to merge once merged), turns, model, cost, changes requested. A story this computer does not run says its outcome is unknown here. | |
-| `message_story` | `reason`, `storyId`, `kind: "answer" \| "changes"`, `message`, `escalate?` | Sends the agent the message (a paused or reviewed story works again). `escalate` runs the turn on the next model up (`escalateModel` from its last model, in the epic's range); the story keeps it. | the budget is spent; a fourth `changes` on the story (the count is kept on this computer); `escalate` when it already runs on the top of the range |
-| `approve_story` | `reason`, `storyId` | Approve & Merge into the epic's branch, with the orchestrator's model for the commit message; the stories that start after it can start. | the story is not in review; its agent works; this computer has not its records; its last turn did not end `completed` (the harness did not accept its `finish_task`), whatever the prompt says |
+| `story_report` | `storyId` | The last turn's outcome, `verified` (its `finish_task` was accepted) or the `failingChecks`, the error, the agent's whole reply, the files changed against its base (`git diff --name-status` in its worktree plus untracked files, or base to merge once merged), turns, model, cost, changes requested. A story this computer does not run says its outcome is unknown here. The turn it shows counts as heard. | |
+| `message_story` | `reason`, `storyId`, `kind: "answer" \| "changes"`, `message`, `escalate?` | Sends the agent the message (a paused or reviewed story works again). A message to a story in review is a request for changes whatever its `kind`. `escalate` runs the turn on the next model up (`escalateModel` from its last model, in the epic's range); the story keeps it. Answers the requests and messages left. | the budget is spent; a fourth request for changes on the story; a seventh message of any kind to it (the counts are kept on this computer, counted before the message goes); `escalate` when it already runs on the top of the range |
+| `approve_story` | `reason`, `storyId` | Approve & Merge into the epic's branch, with the orchestrator's model for the commit message; the stories that start after it can start. | the story is not in review; its agent works; this computer has not its records; its last turn did not end `completed` (the harness did not accept its `finish_task`), whatever the prompt says; its target is not the epic's branch as this host made and kept it, or that branch is the target branch, or the API names another; it ran Direct; the merge of the epic's branch into it conflicts (aborted, never resolved by the merge agent: ask for changes, its agent merges the epic's branch in and passes its checks again) |
 | `reject_story` | `reason`, `storyId` | Discards the story; its worktree goes. | the story is merged |
-| `end_turn` | `action: "wait" \| "ask" \| "finish"`, `reason`, `question?` and `options?` (ask), `summary?` (finish) | Ends the turn: `wait` sleeps until woken, `ask` puts a question to the person, `finish` gives the epic's summary for the person's review. | `wait` while no story of the epic works or will start by itself (a queued story waiting for a story in review, paused, held or rejected, held by the epic, or waiting for the person: no model, a missing tool, Git without a name, the runtime to install); `ask` without a question; `finish` while a story is neither merged (`done`) nor rejected, or without a summary |
+| `end_turn` | `action: "wait" \| "ask" \| "finish"`, `reason`, `question?` and `options?` (ask), `summary?` (finish) | Ends the turn, whoever wrote last: `wait` sleeps until woken (also after answering the person mid-epic while stories work); `ask` hands the turn back to the person with a question (also when nothing works yet: chatting before any story, a plan to show first); `finish` gives the epic's summary for the person's review. | `wait` while no story of the epic works or will start by itself (a queued story waiting for a story in review, paused, held or rejected, held by the epic, waiting for the person (no model, a missing tool, Git without a name, the runtime to install), or whose start has kept failing for 90 s); `ask` without a question; `finish` while a story is neither merged (`done`) nor rejected, or without a summary |
 
 With `askBeforeLaunch`, `create_stories` (unless every story is held),
 `update_story` when it queues, and `approve_story` need the person's
 approval through the engine's approval request. The three tools always
 declare `needs_approval`; the host answers the request at once when the
-epic does not ask (`Orchestrator.approval`). So the tool list, part of the
+epic does not ask (`Orchestrator.approval`); any other tool's approval
+request is the person's. So the tool list, part of the
 provider's cached prompt, never changes with the setting, which applies
 from the next call; the transcript records each call's approval as
 requested and resolved, an instant apart when it was not asked.
@@ -172,22 +206,29 @@ It also writes to the conversation when its last turn was cut by a quit or
 a crash (`resumed`: it goes on from the board), and when it waits while
 nothing of the epic works or will start by itself and no ended turn is left
 to tell (`idle`: a story deleted from the board, the budget spent, a story
-waiting for the person). A message that waited behind a turn through a quit
-is sent on (`promote`).
+waiting for the person, a start that keeps failing). A message that waited
+behind a turn through a quit is sent on (`promote`). A conversation cut
+again and again is resumed three times in a row, then left to the person
+(it shows `failed`).
 
 Nothing is sent while the epic is not `active`, while a turn runs or a
 message waits behind one, before its first turn, after `ask`, or after the
 person stopped its turn (the host's `interrupt`): it is sent when the epic
-resumes, the person answers or writes, once that turn ends.
+resumes, the person answers or writes, once that turn ends. When the
+person writes while stories work, the orchestrator answers and ends with
+`wait`, and the stories' wake still comes; before any story exists it hands
+the turn back with `ask` (the prompt and `end_turn` say so).
 
 **The message** is the host's, never the person's: a user message of one
 `context` block, no `text` block, whose text is `<orchestrator_wake>`, a
 line for the model, a JSON line (`OrchestratorWake`), `</orchestrator_wake>`.
 The model reads it as text; the transcript keeps it as a user item whose
 blocks are that one context block. `parseOrchestratorWake(blocks)` (in
-`engine-protocol`) gives the wake or `undefined`: a message the person
-wrote always has a text block, so it is never read as one. The screen shows
-it as an event row, never as something the person wrote. It carries:
+`engine-protocol`) gives the wake or `undefined`. Only the host writes one:
+`send` refuses a window's message whose context reads as a wake ("Only
+Blame writes the orchestrator's wake"), so a window can neither show one
+nor make a turn count as told. The screen shows it as an event row, never
+as something the person wrote. It carries:
 
 - `reason`: `stories`, `resumed` or `idle`;
 - `stories`: each story turn that ended since the orchestrator last heard of
@@ -196,6 +237,9 @@ it as an event row, never as something the person wrote. It carries:
   once the end was applied), `reply?` (its first six lines);
 - `board`: the counts (`working`, `queued`, `held`, `inReview`, `paused`,
   `merged`, `rejected`);
+- `blocked?`: the queued stories only the person can start, each with
+  `storyId`, `number`, `title`, `reason` in words (a start that keeps
+  failing gives its error);
 - `budget?`: `spent`, `remainingMicroUsd`, with a budget.
 
 The orchestrator calls `story_report` for more.
@@ -208,9 +252,11 @@ told, kept here before the wake goes and dropped once the records have
 them, and the ended turns of the sessions of the epic's stories this
 computer runs (`status`), read again on every look, so a telling lost in a
 crash (between the story service's ledger and this file) is found there.
-What the orchestrator's own `epic_board` (every story) or `story_report`
-(that story) showed it counts as heard: no wake repeats it (kept in the
-same file, the last 500). A
+What the orchestrator's own `epic_board` or `story_report` showed it counts
+as heard, exactly the turns the answer showed (each story's last ended
+turn): no wake repeats them (kept in the same file, the last 500). The
+message is in the engine's records by the time `send` answers (the engine
+appends it before it accepts the message), so the next look reads it. A
 story whose agent still works is left until its end is settled. The host
 looks at an epic on each ended story turn, each end of an orchestrator
 turn, `epicChanged`, `epicState`, sign-in and every minute, one look at a
@@ -225,8 +271,12 @@ Computed by the host from the records, never stored by the API:
   for the stories this computer runs and at work, and kept per story and
   session in `<userData>/orchestrator-epics.json`, since a merged story's
   session is deleted from this computer;
-- the orchestrator's cost is its own session's, read the same way;
-- the epic's total is both; `spent` once it reaches `budgetMicroUsd`.
+- the orchestrator's cost is its own session's, read the same way and kept
+  there too;
+- the epic's total is both; `spent` once it reaches `budgetMicroUsd`. The
+  queue's gate reads the kept amounts, never a flag held in memory, so a
+  spent epic's stories stay held from the first start after a launch, and
+  what a story's ended turn spent is kept before its dependents can start.
   `unpricedRequests` counts requests the catalog had no price for: the
   totals are then a floor.
 
@@ -247,9 +297,13 @@ on, and the orchestrator is woken (`idle`) to wrap up.
   `conversation` (`idle`, `working`, `waiting`, `asking`, `finished`,
   `stopped`, `failed`), `error` (why it failed, or why a wake could not be
   sent), `question` (`text`, `options`) of an `ask`, `summary` of a
-  `finish`, `unreported` (ended turns not told yet) and `spend`. The
-  sidebar's dot: working for `working`/`waiting`, needs you for `asking`,
-  `stopped` and `failed`, done for `finished`.
+  `finish`, `unreported` (ended turns not told yet), `blocked` (the queued
+  stories only the person can start, with why) and `spend`. The sidebar's
+  dot: working for `working`/`waiting`, needs you for `asking`, `stopped`,
+  `failed` or any `blocked`, done for `finished`.
+- A queued story's card reads the `epic` wait reason (`storyWaitText`).
+- `resolveModelIntent` and `escalateModel` come from `engine-protocol`, so
+  the screen shows the same choice the host makes.
 - `epicChanged({ epicId })` after writing an epic's settings or status.
 - `createSession({ session, purpose: "orchestrator", settings })` creates
   the conversation and the epic's branch; `send` with the same settings for
@@ -297,8 +351,4 @@ on, and the orchestrator is woken (`idle`) to wrap up.
    (or a pull request).
 4. **Later**: agent checks admitted by free memory, an atomic claim so two
    computers never start the same story, previews prepared without a window
-   showing the project, a structured question in `finish_task`, a wait
-   reason for a story held by its epic (paused, spent, run elsewhere), and
-   epic stories that wait rather than run Direct when the preview
-   environment breaks after they were created (`stories/start.ts` falls
-   back to Direct today).
+   showing the project, a structured question in `finish_task`.

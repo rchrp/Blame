@@ -39,6 +39,17 @@ export {
   orchestratorWakeText,
   parseOrchestratorWake,
 } from "./orchestrator-protocol.js";
+// The orchestrator's choice of a story's model, for the screen too (pure).
+export { escalateModel, resolveModelIntent } from "./model-intent.js";
+export type {
+  ModelEscalationInput,
+  ModelIntentInput,
+  ModelIntentResolution,
+  ModelKey,
+  ModelPool,
+  ModelRange,
+  ModelResolution,
+} from "./model-intent.js";
 export { engineMainOnlyMethods } from "./task-protocol.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
 import type { PreviewInitialization } from "../preview-selection.js";

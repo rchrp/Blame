@@ -67,6 +67,7 @@ const personWaits = new Set<StoryWaitReason["kind"]>([
 
 /** The queue says the story waits for the person: it does not start by itself. */
 export function waitsForPerson(reason: StoryWaitReason | undefined) {
+  if (reason?.kind === "epic") return reason.hold !== "unknown";
   return reason !== undefined && personWaits.has(reason.kind);
 }
 

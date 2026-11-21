@@ -90,6 +90,13 @@ export type ApproveAndMergeTask = GitFlowCall & {
   activeWorktrees?: string[];
   /** Only true also pushes the target branch to its upstream. */
   push?: boolean;
+  /**
+   * `refuse`: a merge of the target into the story that conflicts is
+   * aborted and the approval fails (`StoryMergeConflictError`), never
+   * resolved by the merge agent (an epic's story: its agent brings the
+   * target in and passes its checks again). Default `resolve`.
+   */
+  conflicts?: "resolve" | "refuse";
   title: string;
   summary: string;
 };
@@ -97,7 +104,7 @@ export type ApproveAndMergeTask = GitFlowCall & {
 /** Commits the story's remaining work, pushes its branch, and opens (or finds) its pull request. */
 export type OpenPullRequestTask = Omit<
   ApproveAndMergeTask,
-  "activeWorktrees" | "push"
+  "activeWorktrees" | "push" | "conflicts"
 > & {
   /** The agent's final summary of the story, quoted in the pull request body. */
   agentSummary?: string;

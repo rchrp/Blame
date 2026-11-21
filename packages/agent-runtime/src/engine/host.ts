@@ -59,6 +59,7 @@ import { Orchestrator } from "./orchestrator/service.js";
 import { developmentStoryPurpose } from "./purposes/development-story.js";
 import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
 import { purposeClientTools } from "./purposes/tool-sets.js";
+import { parseOrchestratorWake } from "./orchestrator-protocol.js";
 import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
@@ -249,6 +250,12 @@ export class EngineHost {
         stories: this.stories,
         call: (method, input) => this.handlers[method](input),
         client: () => this.engineAt("host").supervisor.client(),
+        write: async (input) => {
+          await this.sendMessage({ ...input, delivery: "turn" });
+        },
+        interrupt: async (session) => {
+          await (await this.clientFor({ session })).interrupt({ session });
+        },
         ...(git
           ? { git: (cwd: string, args: string[]) => git({ cwd, args }) }
           : {}),
@@ -526,20 +533,11 @@ export class EngineHost {
       const client = await this.clientFor({ session, settings });
       return { changed: await this.applySettings(client, session, settings) };
     },
-    send: async ({ session, location, message, delivery, settings }) => {
-      const engine = this.engineFor({ session, location, settings });
-      const client = await engine.supervisor.client();
-      if (settings) await this.applySettings(client, session, settings);
-      const first = this.awaitingFirst.get(session);
-      const decorate = first && purposeOf(first).firstMessage;
-      const text = decorate
-        ? await decorate(first.settings, message, this.firstMessageServices)
-        : message;
-      const input = await this.userInput(client, text);
-      const accepted = await client.sendMessage({ session, input, delivery });
-      this.awaitingFirst.delete(session);
-      engine.hub.watch(session);
-      return { turn: accepted.turn, started: accepted.started };
+    send: async (input) => {
+      // A wake is the host's alone: a window never writes one.
+      if (isWake(input.message))
+        throw new Error("Only Blame writes the orchestrator's wake.");
+      return this.sendMessage(input);
     },
     withdraw: async ({ turn, ...ref }) => {
       await (
@@ -634,6 +632,29 @@ export class EngineHost {
     ...storyHandlers(() => this.stories),
     ...taskHandlers(this.taskHost()),
   };
+
+  /** `send`, for a window or the host itself; resolves once the message is in the records. */
+  private async sendMessage({
+    session,
+    location,
+    message,
+    delivery,
+    settings,
+  }: EngineHostInput<"send">) {
+    const engine = this.engineFor({ session, location, settings });
+    const client = await engine.supervisor.client();
+    if (settings) await this.applySettings(client, session, settings);
+    const first = this.awaitingFirst.get(session);
+    const decorate = first && purposeOf(first).firstMessage;
+    const text = decorate
+      ? await decorate(first.settings, message, this.firstMessageServices)
+      : message;
+    const input = await this.userInput(client, text);
+    const accepted = await client.sendMessage({ session, input, delivery });
+    this.awaitingFirst.delete(session);
+    engine.hub.watch(session);
+    return { turn: accepted.turn, started: accepted.started };
+  }
 
   /** What the task handlers use of the host. */
   private taskHost(): TaskHost {
@@ -887,3 +908,12 @@ export class EngineHost {
 }
 
 type Engine = { supervisor: EngineSupervisor; hub: SessionHub };
+
+/** A message that reads as the orchestrator's wake. */
+function isWake(message: EngineMessage) {
+  return (
+    message.context !== undefined &&
+    parseOrchestratorWake([{ type: "context", text: message.context }]) !==
+      undefined
+  );
+}

@@ -91,6 +91,12 @@ async function approveAndMergeOperation(
   try {
     // A previous approval may have stopped with an unresolved merge. Resolve
     // its index before the ordinary commit path can stage conflict markers.
+    if (input.conflicts === "refuse" && (await hasPendingMerge(input.worktree)))
+      throw new StoryMergeConflictError(
+        preparation.targetBranch,
+        await mergeConflictFiles(input.worktree),
+        "its worktree holds a merge that was not finished",
+      );
     await completePendingStoryMerge(input, preparation.targetBranch, agent);
     await commitStoryWork(input, agent);
     await mergeTargetIntoStory(
@@ -270,6 +276,11 @@ async function mergeTargetIntoStory(
   } catch (error) {
     if (!(await hasMergeConflicts(input.worktree))) throw error;
   }
+  if (input.conflicts === "refuse") {
+    const files = await mergeConflictFiles(input.worktree);
+    await git(input.worktree, ["merge", "--abort"]);
+    throw new StoryMergeConflictError(targetBranch, files);
+  }
   try {
     await completePendingStoryMerge(input, targetBranch, agent);
   } catch (error) {
@@ -285,6 +296,21 @@ async function mergeTargetIntoStory(
       );
     }
     throw error;
+  }
+}
+
+/** A merge of the target into the story conflicts, and the caller refuses to have an agent resolve it. */
+export class StoryMergeConflictError extends Error {
+  readonly targetBranch: string;
+  readonly files: string[];
+
+  constructor(targetBranch: string, files: string[], why?: string) {
+    super(
+      `Merging ${targetBranch} into the story conflicts${files.length ? ` in ${files.join(", ")}` : ""}${why ? `: ${why}` : ""}.`,
+    );
+    this.name = "StoryMergeConflictError";
+    this.targetBranch = targetBranch;
+    this.files = files;
   }
 }
 
