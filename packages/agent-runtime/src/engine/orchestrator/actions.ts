@@ -38,7 +38,8 @@ export type EpicDesk = {
   stories: StoryService;
   state: OrchestratorState;
   git?: GitRun;
-  starting(): ReadonlySet<string>;
+  /** The epic's stories being started that will run (a blocked story's attempt is not work). */
+  starting(stories: readonly HostStory[]): ReadonlySet<string>;
   /** The queue's gate holds it (its epic paused or spent, or run elsewhere). */
   holds(story: HostStory): StoryWaitReason | undefined;
   /** It will not start by itself: held, or its wait needs the person. */
@@ -57,7 +58,7 @@ export const maxMessages = 6;
 export async function epicBoard(desk: EpicDesk) {
   const look = await fresh(desk);
   const stories = look.epicStories();
-  const starting = desk.starting();
+  const starting = desk.starting(stories);
   const waiting = new Map(
     desk.stories.queueState().waiting.map((wait) => [wait.storyId, wait]),
   );
@@ -496,7 +497,7 @@ export async function rejectStory(
 export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
   const look = await fresh(desk);
   const stories = look.epicStories();
-  const starting = desk.starting();
+  const starting = desk.starting(stories);
   if (input.action === "wait") {
     if (
       !epicHasWork(stories, starting, (story) =>

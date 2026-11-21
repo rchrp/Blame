@@ -22,7 +22,7 @@ import {
   type Row,
   type Status,
 } from "../stories/stories-fakes.test.js";
-import { idleSignature } from "./board.js";
+import { idleSignature, idleTold } from "./board.js";
 import { parseEpic } from "./epics.js";
 import { Orchestrator } from "./service.js";
 
@@ -171,10 +171,12 @@ async function desk(setup: Setup = {}) {
       models: [],
       ...status,
     } as Status);
-  const starts = { count: 0 };
+  // `gate`, while set, holds each attempt open until it settles.
+  const starts: { count: number; gate?: Promise<void> } = { count: 0 };
   if (setup.failStart)
     fake.host.desktop.createStoryWorktree = async () => {
       starts.count += 1;
+      await starts.gate;
       throw new Error("the epic's branch is gone");
     };
   const failInterrupt = new Set(setup.failInterrupt ?? []);
@@ -1426,6 +1428,54 @@ describe("what holds when things go wrong", () => {
     assert.equal((await orchestrator.epicState(epicId)).blocked?.length, 1);
     const story = stories.epicStories(epicId)[0]!;
     assert.equal(orchestrator.blocked(story), true);
+  });
+
+  it("never counts a blocked story's start attempt as work, so wait is refused through it", async () => {
+    const { orchestrator, report, run, stories, starts } = await desk({
+      rows: [
+        row("s1", "a", { epicId, status: "ready", runMode: "local-container" }),
+      ],
+      failStart: true,
+      stuckStartMs: 0,
+    });
+    const failed = () =>
+      stories.queueState().waiting.some((wait) => wait.reason.kind === "error");
+    await settle(failed, "the start to fail");
+    assert.equal((await orchestrator.epicState(epicId)).blocked?.length, 1);
+    let release = () => {};
+    starts.gate = new Promise((resolve) => (release = resolve));
+    try {
+      stories.retry(["s1"]);
+      await settle(
+        () => stories.queueState().starting.includes("s1"),
+        "another attempt",
+      );
+      await assert.rejects(
+        run("end_turn", { action: "wait" }),
+        /The orchestrator cannot sleep: nothing of the epic is working/,
+      );
+      const board = await report("epic_board", {});
+      assert.equal((board.counts as { working: number }).working, 0);
+      assert.equal(
+        (board.stories as Array<{ status: string }>)[0]!.status,
+        "ready",
+      );
+    } finally {
+      starts.gate = undefined;
+      release();
+    }
+  });
+
+  it("tells an idle epic once for each wait it ended with", () => {
+    const stories = [{ id: "s1", status: "ready" as const, agentStatus: null }];
+    const failing = [
+      { storyId: "s1", reason: "its start keeps failing: gone" },
+    ];
+    const signature = idleSignature(stories, failing);
+    assert.equal(idleTold("t1", signature), idleTold("t1", signature));
+    // A wait accepted after the idle wake (something worked then) is
+    // answered again once nothing does, whatever the stories look like.
+    assert.notEqual(idleTold("t2", signature), idleTold("t1", signature));
   });
 
   it("tells a blocked story once: the same states and reasons are not news", () => {

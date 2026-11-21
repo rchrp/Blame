@@ -43,6 +43,7 @@ import {
   epicCounts,
   epicHasWork,
   idleSignature,
+  idleTold,
   wakeDue,
   waitsForPerson,
   wakeStory,
@@ -587,7 +588,7 @@ export class Orchestrator {
     if (state === "idle" || state === "asking" || state === "stopped") return;
     const unreported = await reading.unreported();
     const stories = reading.epicStories();
-    const starting = this.starting();
+    const starting = this.starting(stories);
     if (conversation.last?.endTurn) this.resumes.delete(epicId);
     const interrupted =
       conversation.last?.outcome.status === "interrupted" && !entry.stopped;
@@ -598,9 +599,14 @@ export class Orchestrator {
     const cut =
       interrupted && (pauseCut || (this.resumes.get(epicId) ?? 0) < maxResumes);
     const blocked = this.blockedOf(stories);
-    // Told once: nothing about the epic's stories changed since the last
-    // `idle` wake (none started, the person did nothing, no other error).
-    const told = idleSignature(stories, blocked);
+    // Told once for each `wait` it ended with: the same wait, with nothing
+    // about the epic's stories changed since (none started, the person did
+    // nothing, no other error), is not news. A wait accepted after it (so
+    // something worked then) is answered again once nothing does.
+    const told = idleTold(
+      conversation.last?.turn,
+      idleSignature(stories, blocked),
+    );
     const reason: OrchestratorWake["reason"] | undefined = cut
       ? "resumed"
       : wakeDue(stories, starting, unreported)
@@ -907,8 +913,20 @@ export class Orchestrator {
     void this.adopt(epicId).catch(() => undefined);
   }
 
-  private starting() {
-    return new Set(this.host.stories.queueState().starting);
+  /**
+   * The epic's stories being started that will run. A blocked story's
+   * attempt (its wait needs the person, or its start keeps failing) keeps
+   * its wait and ends with it: it is not work, and nothing it does wakes.
+   */
+  private starting(stories: readonly HostStory[]) {
+    const blocked = new Set(
+      stories
+        .filter((story) => story.status === "ready" && this.blocked(story))
+        .map((story) => story.id),
+    );
+    return new Set(
+      this.host.stories.queueState().starting.filter((id) => !blocked.has(id)),
+    );
   }
 
   /** The epic's model, else the one a window sent, else the account's agent model. */
@@ -942,7 +960,7 @@ export class Orchestrator {
       stories: this.host.stories,
       state: this.state,
       git: this.host.git,
-      starting: () => this.starting(),
+      starting: (stories) => this.starting(stories),
       holds: (story) => this.holds(story),
       blocked: (story) => this.blocked(story),
     };
