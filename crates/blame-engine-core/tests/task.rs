@@ -711,3 +711,65 @@ async fn a_conversation_turn_ends_only_through_its_contract() {
     ));
     check_invariants(&records, &sorted_specs());
 }
+
+/// A finish the tool itself refuses (its checks still fail) is recorded with
+/// why, typed, so the client can keep the agent's last reply as unverified.
+#[tokio::test]
+async fn a_finish_the_tool_refuses_is_recorded_with_its_typed_reason() {
+    let refusal = blame_engine_protocol::Refusal::FailingChecks {
+        tasks: vec!["test".into()],
+    };
+    let refused = refusal.clone();
+    let tools = ScriptedTools::new(standard_specs(), move |invocation, _| {
+        let mut output = blame_engine_core::ports::ToolOutput::text(
+            if invocation.name == "finish" {
+                ToolOutcome::Failed
+            } else {
+                ToolOutcome::Completed
+            },
+            "Current validation is still failing: test.",
+        );
+        if invocation.name == "finish" {
+            output.refusal = Some(refused.clone());
+        }
+        Behavior::Output(output)
+    });
+    let world = World::new(ScriptedProvider::new()).with_tools(tools);
+    world
+        .provider
+        .push(Script::tool_calls(&[("finish", json!({}))]))
+        .push(Script::text("The GPU test cannot run here."))
+        .push(Script::text("It still cannot."));
+    let config = SessionConfig {
+        contract: Some(CompletionContract {
+            result: ResultTool::Tool {
+                name: "finish".into(),
+            },
+            required: Vec::new(),
+            allowed: None,
+            max_corrections: 1,
+        }),
+        ..config()
+    };
+    let session = Session::create(world.ports(), EngineOptions::default(), sid(), config)
+        .await
+        .expect("creates");
+    turn(&session, "Fix the GPU test").await;
+    let records = session.records().await;
+    let reasons: Vec<_> = records
+        .iter()
+        .filter_map(|record| match &record.body {
+            RecordBody::ResultRejected { refusal, .. } => Some(refusal.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(reasons, vec![Some(refusal)]);
+    // The turn's outcome says why the last finish was refused.
+    assert!(matches!(
+        records.last().map(|r| &r.body),
+        Some(RecordBody::TurnEnded {
+            outcome: TurnOutcome::ContractUnmet { refused: Some(why), .. },
+            ..
+        }) if why == &reasons[0].clone().unwrap()
+    ));
+}

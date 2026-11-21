@@ -175,6 +175,7 @@ async fn run_one(
                     RecordBody::ResultRejected {
                         turn: turn.clone(),
                         call: call.call.clone(),
+                        refusal: None,
                         invalid,
                         unmet,
                     },
@@ -291,6 +292,7 @@ async fn run_one(
     // A session tool that is the result tool (`finish_task`) makes the
     // result by completing; one that fails refused it itself.
     let accepted = contract.is_some() && output.outcome == ToolOutcome::Completed;
+    let refusal = output.refusal.filter(|_| contract.is_some() && !accepted);
     let mut bodies = vec![RecordBody::ToolCallFinished {
         turn: turn.clone(),
         call: call.call.clone(),
@@ -301,6 +303,15 @@ async fn run_one(
         bodies.push(RecordBody::ResultAccepted {
             turn: turn.clone(),
             call: call.call,
+        });
+    } else if let Some(refusal) = refusal {
+        // Why the result tool refused, typed, for the client.
+        bodies.push(RecordBody::ResultRejected {
+            turn: turn.clone(),
+            call: call.call,
+            refusal: Some(refusal),
+            invalid: Vec::new(),
+            unmet: Vec::new(),
         });
     }
     inner.append(bodies).await?;

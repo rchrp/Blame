@@ -1,7 +1,31 @@
 import type { TranscriptItem, TurnView } from "./model.js";
 
-/** The accepted finish summary takes precedence over the turn's last assistant text. */
+/**
+ * The turn's reply: its accepted finish summary, else its last assistant
+ * text. A turn that stopped after the finish was refused because checks
+ * still fail keeps that text as its reply, unverified, with a note naming
+ * the checks.
+ */
 export function turnReply(turn: TurnView, items: readonly TranscriptItem[]): string | undefined {
+  const reply = replyOf(turn, items);
+  const failing = unverifiedChecks(turn);
+  if (reply === undefined || !failing) return reply;
+  return `${reply.trimEnd()}\n\n> **Not verified:** the last run of \`${failing}\` failed.`;
+}
+
+/**
+ * The checks a turn ended with still failing, when it stopped without an
+ * accepted finish because they failed: its reply is not verified.
+ */
+export function unverifiedChecks(turn: Pick<TurnView, "outcome">): string | undefined {
+  const outcome = turn.outcome;
+  if (outcome?.status !== "contract_unmet") return undefined;
+  const refused = outcome.refused;
+  if (refused?.kind !== "failing_checks" || !refused.tasks.length) return undefined;
+  return refused.tasks.join(", ");
+}
+
+function replyOf(turn: TurnView, items: readonly TranscriptItem[]): string | undefined {
   if (!turn.outcome) return undefined;
 
   let text: string | undefined;

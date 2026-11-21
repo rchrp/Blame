@@ -127,3 +127,22 @@ test("a turn the agent did not finish pauses the story with why", () => {
     agentStatus: "Paused",
   })
 })
+
+test("a reply the checks refused sends the story to review; a turn that never finished pauses it", () => {
+  const refused = {
+    status: "contract_unmet",
+    unmet: [{ kind: "result", tool: "finish_task" }],
+    refused: { kind: "failing_checks", tasks: ["test:gpu"] },
+  }
+  assert.deepEqual(storyOutcomeUpdate(inProgress, refused as never), {
+    agentStatus: null,
+    status: "in-review",
+  })
+  const { refused: _, ...stopped } = refused
+  void _
+  assert.deepEqual(storyOutcomeUpdate(inProgress, stopped as never), {
+    agentStatus: "Paused",
+    agentLastError:
+      "The agent stopped without finishing: its work was not checked with finish_task.",
+  })
+})

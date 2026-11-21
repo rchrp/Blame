@@ -2,7 +2,7 @@
 // transcript (TranscriptReducer of @blame/engine-client), in the runs and
 // activities the timeline components take.
 
-import { turnReply, turnReplyImages } from "@blame/engine-client/transcript"
+import { turnReply, turnReplyImages, unverifiedChecks } from "@blame/engine-client/transcript"
 import type {
   ToolCallItem,
   Transcript,
@@ -258,7 +258,8 @@ function itemActivity(
         return errorActivity(base, item.outcome.error, item.atMs)
       if (item.outcome.status === "limit_reached")
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
-      if (item.outcome.status === "contract_unmet")
+      // A reply the checks refused stands with its note (turnReply).
+      if (item.outcome.status === "contract_unmet" && !unverifiedChecks(item))
         return { ...base, kind: "error", title: "Not finished", detail: unfinishedTurnText, status: "failed" }
       return undefined
     default:

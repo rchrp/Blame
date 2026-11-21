@@ -474,3 +474,82 @@ fn keeps_the_most_recently_used_workspaces_up_to_the_limit() {
     assert!(!run_known(&harness, &root, "a"));
     assert!(run_known(&harness, &root, "c"));
 }
+
+#[test]
+fn a_finish_refused_for_a_failing_check_says_which_check_typed() {
+    let workspace = Workspace::new(
+        "finish-refused",
+        &[
+            ("index.js", b"process.exit(1);\n"),
+            (
+                "package.json",
+                br#"{"name":"m","private":true,"scripts":{"build":"node index.js"}}"#,
+            ),
+        ],
+    );
+    let root = workspace.root();
+    for args in [
+        &["init", "-q"][..],
+        &["add", "."],
+        &[
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@example.invalid",
+            "commit",
+            "-qm",
+            "init",
+        ],
+    ] {
+        std::process::Command::new("git")
+            .args(args)
+            .current_dir(&workspace.0)
+            .output()
+            .unwrap();
+    }
+    let session = "finish-refused";
+    let call = |id: &str, tool: &str, input: Json| {
+        obj! { "id" => id, "call" => obj! {
+            "tool" => tool, "workspaceRoot" => root.as_str(), "input" => input,
+            "taskContract" => obj! { "session_id" => session, "objective" => "Fix the build" },
+            "toolContext" => obj! { "sessionId" => session, "toolCallId" => id },
+        } }
+    };
+    let answers = serve_in_order(&[
+        call(
+            "1",
+            "edit_code",
+            obj! { "operations" => Json::Arr(vec![obj! { "kind" => "patch", "patch" => "*** Begin Patch\n*** Update File: index.js\n@@\n-process.exit(1);\n+process.exit(2);\n*** End Patch" }]) },
+        ),
+        call(
+            "2",
+            "run_task",
+            obj! { "kind" => "project", "task" => "build" },
+        ),
+        call(
+            "3",
+            "finish_task",
+            obj! { "summary" => "Changed the exit code." },
+        ),
+    ]);
+    let refused = answers
+        .iter()
+        .find(|answer| answer.get("id").and_then(Json::as_str) == Some("3"))
+        .and_then(|answer| answer.get("presented"))
+        .cloned()
+        .unwrap();
+    assert_eq!(refused.get("ok"), Some(&Json::Bool(false)));
+    assert!(
+        refused
+            .get("content")
+            .and_then(Json::as_str)
+            .unwrap()
+            .starts_with("Current validation is still failing: build."),
+        "{}",
+        refused.stringify()
+    );
+    assert_eq!(
+        refused.get("refusal").map(Json::stringify).as_deref(),
+        Some(r#"{"kind":"failing_checks","tasks":["build"]}"#)
+    );
+}

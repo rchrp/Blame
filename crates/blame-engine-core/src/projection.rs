@@ -10,8 +10,8 @@ use crate::digest::Sha256;
 use crate::ports::{ModelMessage, ToolResultMessage};
 use blame_engine_protocol::{
     AssistantBlock, ErrorInfo, ErrorKind, ModelRef, Obligation, ReasoningEffort, Record,
-    RecordBody, RequestId, Seq, SessionConfig, StopReason, TaskFailure, TaskOutcome, ToolCallId,
-    ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec, TurnId, TurnOutcome, UserBlock,
+    RecordBody, Refusal, RequestId, Seq, SessionConfig, StopReason, TaskFailure, TaskOutcome,
+    ToolCallId, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec, TurnId, TurnOutcome, UserBlock,
 };
 use serde_json::{Value, json};
 use std::collections::{HashMap, VecDeque};
@@ -150,6 +150,8 @@ pub struct TurnState<'a> {
     pub completed_before_reply: Vec<&'a str>,
     /// The call accepted as the turn's result.
     pub accepted: Option<&'a ToolCallId>,
+    /// Why the result tool refused the turn's latest finish, when it said so.
+    pub refused: Option<&'a Refusal>,
     /// Contract corrections sent in this turn.
     pub corrections: u32,
     /// A correction was stored after the latest request was sent.
@@ -508,6 +510,7 @@ impl<'a> View<'a> {
             completed: Vec::new(),
             completed_before_reply: Vec::new(),
             accepted: None,
+            refused: None,
             corrections: 0,
             correction_pending: false,
             forced_tool: None,
@@ -695,6 +698,13 @@ impl<'a> View<'a> {
                 }
                 RecordBody::ResultAccepted { turn: t, call } if t == turn => {
                     state.accepted = Some(call);
+                }
+                RecordBody::ResultRejected {
+                    turn: t,
+                    refusal: Some(refusal),
+                    ..
+                } if t == turn => {
+                    state.refused = Some(refusal);
                 }
                 RecordBody::ContractCorrection {
                     turn: t,
@@ -984,7 +994,7 @@ pub fn task_outcome(records: &[Record]) -> Option<TaskOutcome> {
         TurnOutcome::Failed { error } => failed(TaskFailure::ProviderError {
             error: error.clone(),
         }),
-        TurnOutcome::ContractUnmet { unmet } => failed(TaskFailure::ContractUnmet {
+        TurnOutcome::ContractUnmet { unmet, .. } => failed(TaskFailure::ContractUnmet {
             unmet: unmet.clone(),
         }),
     })

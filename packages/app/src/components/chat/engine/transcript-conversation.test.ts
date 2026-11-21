@@ -438,3 +438,27 @@ test("what only the model reads with a message never shows in the conversation",
   assert.deepEqual(result.comments[0]!.fileAttachments ?? [], [])
   assert.doesNotMatch(JSON.stringify(result), /proposal_decisions/)
 })
+
+test("a reply the checks refused stays, unverified, with the check it names", () => {
+  seq = 0
+  const turnRecords = (outcome: Record<string, unknown>) => [
+    record({ type: "session_created", config: { ...config, purpose: "development-story" } }),
+    record({ type: "user_message", turn: "t", delivery: "turn", input: [{ type: "text", text: "Fix the GPU test" }] }),
+    record({ type: "request_started", turn: "t", request: "r", model, attempt: 1, prefix_digest: "d" }),
+    record({ type: "assistant_message", turn: "t", request: "r", stop: "end_turn", usage, blocks: [{ type: "text", text: "The GPU test needs a host package I cannot install." }] }),
+    record({ type: "turn_ended", turn: "t", outcome }),
+  ]
+  const unmet = [{ kind: "result", tool: "finish_task" }]
+  const refused = conversation(
+    turnRecords({ status: "contract_unmet", unmet, refused: { kind: "failing_checks", tasks: ["test:gpu"] } })
+  ).runs[0]!
+  assert.equal(
+    refused.finalResponse,
+    "The GPU test needs a host package I cannot install.\n\n> **Not verified:** the last run of `test:gpu` failed."
+  )
+  assert.ok(!refused.activities?.some((activity) => activity.title === "Not finished"))
+  seq = 0
+  const stopped = conversation(turnRecords({ status: "contract_unmet", unmet })).runs[0]!
+  assert.equal(stopped.finalResponse, "The GPU test needs a host package I cannot install.")
+  assert.ok(stopped.activities?.some((activity) => activity.title === "Not finished"))
+})

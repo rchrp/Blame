@@ -17,7 +17,9 @@ use crate::log::log;
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use blame_engine_core::ports::{InterruptedCall, SessionStore, ToolInvocation, ToolOutput};
-use blame_engine_protocol::{RecordBody, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec};
+use blame_engine_protocol::{
+    RecordBody, Refusal, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec,
+};
 use serde_json::{Value, json};
 use std::collections::HashMap;
 use std::process::Stdio;
@@ -190,6 +192,7 @@ took effect is unknown. Check before relying on it or running it again.",
         ToolOutput {
             outcome,
             content: blocks(presented.get("content"), store).await,
+            refusal: refusal(presented.get("refusal")),
         }
     }
 
@@ -439,6 +442,22 @@ pub fn interrupted(name: &str) -> InterruptedCall {
         // Reads change nothing: running them again is safe.
         "search_code" | "read_code" => InterruptedCall::NotApplied,
         _ => InterruptedCall::Unknown,
+    }
+}
+
+/// A refused finish's reason, as the harness types it.
+fn refusal(value: Option<&Value>) -> Option<Refusal> {
+    let value = value?;
+    match value.get("kind").and_then(Value::as_str) {
+        Some("failing_checks") => Some(Refusal::FailingChecks {
+            tasks: value
+                .get("tasks")?
+                .as_array()?
+                .iter()
+                .filter_map(|task| task.as_str().map(str::to_owned))
+                .collect(),
+        }),
+        _ => None,
     }
 }
 

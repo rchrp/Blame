@@ -21,6 +21,7 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import { codeSelectionLineLabel } from "../../components/backlog/shared/comment-attachment-events.ts"
+import { unverifiedChecks } from "@blame/engine-client/transcript"
 import { unfinishedTurnText } from "../../components/chat/engine/transcript-conversation.ts"
 
 /**
@@ -166,9 +167,13 @@ export function storyOutcomeUpdate(
     // the person, with the reason, and resumes from its records.
     case "failed":
       return { agentStatus: "Paused", agentLastError: outcome.error.message }
-    // The agent stopped without a finish the checks accepted.
+    // The agent stopped without a finish the checks accepted. When they
+    // refused it because a check still fails, its reply stands, unverified,
+    // and the story waits for review as before; otherwise it is paused.
     case "contract_unmet":
-      return { agentStatus: "Paused", agentLastError: unfinishedTurnText }
+      return unverifiedChecks({ outcome })
+        ? { agentStatus: null, status: "in-review" }
+        : { agentStatus: "Paused", agentLastError: unfinishedTurnText }
     default:
       return { agentStatus: "Paused" }
   }

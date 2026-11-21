@@ -579,6 +579,7 @@ async fn a_reopened_session_sends_the_prefix_it_sent_before() {
             Behavior::Output(ToolOutput {
                 outcome: ToolOutcome::Completed,
                 content: stored(&whole_read(&big), &[]),
+                refusal: None,
             })
         },
     );

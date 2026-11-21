@@ -134,7 +134,10 @@ pub(crate) fn next_step(
                 }
                 let unmet = contract::unmet(contract, state.completed.iter().copied());
                 if state.corrections >= contract.max_corrections {
-                    return Step::End(TurnOutcome::ContractUnmet { unmet });
+                    return Step::End(TurnOutcome::ContractUnmet {
+                        unmet,
+                        refused: state.refused.cloned(),
+                    });
                 }
                 return Step::Correct {
                     attempt: state.corrections + 1,
