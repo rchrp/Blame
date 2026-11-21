@@ -381,7 +381,7 @@ test("a conversation gets the tool once, when its workspace holds a project it r
     },
   });
   const names = async (
-    kind: "story" | "plan" | "quick-chat" | "new-project",
+    kind: "story" | "orchestrator" | "quick-chat" | "new-project",
     supported: boolean | Error = true,
     preview?: {
       worktree: string;
@@ -413,7 +413,7 @@ test("a conversation gets the tool once, when its workspace holds a project it r
     "a story without a preview",
   );
   assert.ok((await names("quick-chat")).includes("open_component_preview"));
-  assert.ok(!(await names("plan")).includes("open_component_preview"));
+  assert.ok(!(await names("orchestrator")).includes("open_component_preview"));
   assert.ok(!(await names("new-project")).includes("open_component_preview"));
   assert.ok(
     !(await names("quick-chat", false)).includes("open_component_preview"),

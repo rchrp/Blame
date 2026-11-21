@@ -1,7 +1,7 @@
 import { normalize, resolve } from "node:path";
 
 // Which local agent sessions are writing in which folder. Several may share
-// one: Direct stories, chats and plan mode all work in the project folder,
+// one: Direct stories and chats both work in the project folder,
 // and the harness checks each file again when it writes it.
 export class WorkspaceWriterRegistry {
   private readonly activeSessions = new Set<string>();

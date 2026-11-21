@@ -13,7 +13,7 @@ import type {
 } from "./types.js";
 
 // The files of a Direct story, in a folder it shares with the person, other
-// Direct stories, chats and Plan Mode.
+// Direct stories and chats.
 //
 // The agent's journal records the file's hash before and after each of the
 // story's writes, so the story needs no snapshot of the files that were

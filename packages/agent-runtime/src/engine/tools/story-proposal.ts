@@ -1,7 +1,7 @@
 import type { PlannedUserStory, StoryPlanPriority } from "../../types.js";
 import { defineTool, type ClientTool } from "../tool.js";
 
-// Lets any project conversation (chat, user story, plan mode) suggest user
+// Lets a project conversation (a chat, a user story) suggest user
 // stories. Nothing is created: the app shows them as cards the person can
 // edit and add to the backlog.
 

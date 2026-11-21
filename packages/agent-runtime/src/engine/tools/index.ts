@@ -34,13 +34,12 @@ export type { PreviewRuntimeContext } from "./preview-types.js";
 
 /**
  * - story: a development story (its own worktree or the project folder);
- * - plan: plan mode, which reads and proposes but never edits;
  * - new-project: the assistant that picks a new project's stack;
  * - quick-chat: a chat in the project folder;
  * - orchestrator: an epic's conversation, which reads and never edits.
  */
 export type ConversationKind =
-  "story" | "plan" | "new-project" | "quick-chat" | "orchestrator";
+  "story" | "new-project" | "quick-chat" | "orchestrator";
 
 /** What the tools need from the app; a missing service leaves its tools out. */
 export type ConversationToolServices = PreviewToolServices &
@@ -81,14 +80,11 @@ export type ConversationClientTools = {
   prompt: string;
 };
 
-// Plan mode reads code, history, the web and the computer; it never edits.
-const planModeExcluded = new Set([
+// The orchestrator reads code, history, the web and the computer; it never
+// edits, has no preview, and creates stories itself: it proposes none.
+const orchestratorExcluded = new Set([
   componentPreviewToolName,
   "repair_preview_initialization",
-]);
-// The orchestrator creates stories itself: it proposes none.
-const orchestratorExcluded = new Set([
-  ...planModeExcluded,
   "propose_user_stories",
 ]);
 
@@ -145,9 +141,7 @@ export async function conversationClientTools(
     .filter(present)
     .filter(
       (tool) =>
-        (session.kind !== "plan" || !planModeExcluded.has(tool.name)) &&
-        (session.kind !== "orchestrator" ||
-          !orchestratorExcluded.has(tool.name)),
+        session.kind !== "orchestrator" || !orchestratorExcluded.has(tool.name),
     );
   if (session.skills === false) return { tools, prompt: "" };
   const skills = await conversationSkills(

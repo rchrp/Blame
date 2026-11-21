@@ -21,14 +21,13 @@ const todaysFinishDescription =
 
 const base = {};
 
-// A project agent's system prompt (engine/purposes/prompt.ts), for a story
-// (development) or plan mode.
+// A project agent's system prompt (engine/purposes/prompt.ts): a story's.
 async function buildDevelopmentSystemPrompt(input: {
   personalization?: Partial<AgentPersonalization>;
-  purpose?: "development" | "plan";
+  purpose?: "development";
 }) {
   return projectPrompt({
-    template: input.purpose === "plan" ? "plan-agent-system" : "code-agent-system",
+    template: "code-agent-system",
     workspaceRoot: process.cwd(),
     environment: worktreeEnvironment,
     personalization: input.personalization,
@@ -44,7 +43,7 @@ function personalized(
 }
 
 test("the default settings leave the system prompts and finish_task exactly as they were", async () => {
-  for (const purpose of ["development", "plan"] as const) {
+  for (const purpose of ["development"] as const) {
     const withoutSettings = await buildDevelopmentSystemPrompt({
       ...base,
       purpose,
@@ -66,7 +65,7 @@ test("the default settings leave the system prompts and finish_task exactly as t
   );
 });
 
-for (const purpose of ["development", "plan"] as const) {
+for (const purpose of ["development"] as const) {
   test(`adds the work style blocks to the ${purpose} system prompt`, async () => {
     const cases = [
       [{ experience: "new" }, "experience-new"],

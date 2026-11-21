@@ -109,15 +109,15 @@ the next call on.
 ## The conversation
 
 An `orchestrator` purpose (`engine/purposes/orchestrator.ts`), one session
-per epic, its id in `epic.engineSessionId`. The `plan` purpose, its prompt,
-`PlanSettings` and what only it used are deleted once the screen no longer
-uses them (the screen slice removes Plan Mode's interface first).
+per epic, its id in `epic.engineSessionId`. Plan Mode's `plan` purpose, its
+prompt and `PlanSettings` are deleted; a `plan` session still in an engine
+store is listed, followed and deleted like any other.
 
 - **Workspace**: the project folder, read only. Harness tools `search_code`
   and `read_code` only: no `edit_code`, no `run_task`. It also gets the
-  conversation tools Plan Mode had (web research, story history, attachments,
+  project conversation tools (web research, story history, attachments,
   read-only GitHub, the person's MCP servers and skills), and not
-  `propose_user_stories`.
+  `propose_user_stories` or a preview.
 - **Settings** the renderer sends with each message (`OrchestratorSettings`
   in `engine/orchestrator-protocol.ts`): the workspace, `projectId`,
   `epicId`, `model`, the context cap and the personalization. The host reads
@@ -319,9 +319,9 @@ on, and the orchestrator is woken (`idle`) to wrap up.
 
 - **Sidebar**: an Orchestrator entry at the top of the main navigation,
   above Backlog, with the project's epics under it (a dot for its state:
-  working, needs you, done) and New epic. The Plan Mode button, its dialog
-  and `use-plan-mode.ts` are deleted; `propose_user_stories` and its cards
-  stay for stories and quick chats.
+  working, needs you, done) and New epic (⌘8). Plan Mode's interface is
+  deleted; `propose_user_stories` and its cards stay for stories and quick
+  chats.
 - **An epic's page**: the conversation on one side (the engine transcript,
   with each tool call as a decision row: what, on which story, the reason)
   and the epic's board on the other, grouped by what the person owes: Needs
@@ -344,8 +344,8 @@ on, and the orchestrator is woken (`idle`) to wrap up.
    approval, Pause all and resume, the `epic` event reaching a window, and a
    Local Container (runtime VM) or real Cloud Preview story in an epic.
 2. **Screen**: the sidebar entry, the epic page with its board and
-   settings, the removal of Plan Mode's interface; then, once the engine
-   slice is merged, the conversation and the removal of the `plan` purpose.
+   settings, the removal of Plan Mode's interface, the conversation and the
+   removal of the `plan` purpose (done on `feat/orchestrator-screen`).
 3. **Epic review**: checks on the epic's branch after each merge, a preview
    of the epic's branch, and the person's merge of the epic into its target
    (or a pull request).
