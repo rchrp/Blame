@@ -36,6 +36,7 @@ export const workspaceTables = [
   'project_code_practice_analyses',
   'project_agent_memories',
   'security_audits',
+  'epics',
   'user_stories',
   'quick_chats',
 ] as const
@@ -64,6 +65,7 @@ const tables: Record<WorkspaceTable, TableSpec> = {
     key: ['project_id', 'fingerprint'],
   },
   security_audits: { owner: 'project_id', parent: 'projects' },
+  epics: { owner: 'project_id', parent: 'projects' },
   user_stories: { owner: 'project_id', parent: 'projects' },
   quick_chats: { owner: 'project_id', parent: 'projects' },
 }
@@ -177,6 +179,7 @@ class WorkspaceImporter {
   ) {
     const row = pick(table === 'provider_credentials' ? await sealSecrets(source) : source, columns)
     readDates(row, columns)
+    writeJson(row)
     if (spec.parent === 'users') row[spec.owner] = this.userId
     else if (spec.parent === 'projects') {
       const projectId = this.projects.get(String(row[spec.owner]))
@@ -279,6 +282,18 @@ function readDates(row: WorkspaceRow, columns: ReadonlyMap<string, string>) {
     const type = columns.get(column)?.toLowerCase() ?? ''
     if (typeof value !== 'string' || !/datetime|timestamp/.test(type)) continue
     if (isoDateTime.test(value)) row[column] = new Date(value)
+  }
+}
+
+/**
+ * MySQL hands a JSON column back as an object, and neither driver takes an
+ * object for a column: the bundle's JSON values go in as text.
+ */
+function writeJson(row: WorkspaceRow) {
+  for (const [column, value] of Object.entries(row)) {
+    if (value !== null && typeof value === 'object' && !(value instanceof Date)) {
+      row[column] = JSON.stringify(value)
+    }
   }
 }
 

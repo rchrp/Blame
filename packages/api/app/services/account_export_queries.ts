@@ -97,6 +97,10 @@ const userStoryColumns = [
   'workspace_mode',
   'run_mode',
   'ambition',
+  'starts_after',
+  'model_intent',
+  'requested_model',
+  'epic_id',
   'engine_session_id',
   'agent_status',
   'agent_last_error',
@@ -105,6 +109,21 @@ const userStoryColumns = [
   'merge_commit',
   'base_commit',
   'discarded_reason',
+  'created_at',
+  'updated_at',
+]
+const epicColumns = [
+  'id',
+  'project_id',
+  'title',
+  'goal',
+  'status',
+  'branch',
+  'target_branch',
+  'engine_session_id',
+  'settings',
+  'merged_at',
+  'merge_commit',
   'created_at',
   'updated_at',
 ]
@@ -259,6 +278,10 @@ export default class AccountExportQueries {
 
   userStories(projectIds: string[]) {
     return this.ownedRows('user_stories', userStoryColumns, 'project_id', projectIds)
+  }
+
+  epics(projectIds: string[]) {
+    return this.ownedRows('epics', epicColumns, 'project_id', projectIds)
   }
 
   quickChats(projectIds: string[]) {

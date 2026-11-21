@@ -1,5 +1,7 @@
+import Epic from '#models/epic'
 import Project from '#models/project'
 import User from '#models/user'
+import UserStory from '#models/user_story'
 import ProviderCredentialsService from '#services/provider_credentials_service'
 import UserStoriesService from '#services/user_stories_service'
 import WorkspaceTransferService, {
@@ -79,6 +81,64 @@ test.group('workspace transfer', (group) => {
       label: 'Default',
     })
     assert.equal(credential?.apiKey, 'sk-local-secret')
+  })
+
+  test('moves epics and the new fields of stories', async ({ assert }) => {
+    const local = await createUser()
+    const project = await Project.create({
+      name: 'Shop',
+      userId: local.id,
+      repositoryFingerprint: 'fingerprint-shop',
+    })
+    const epic = await Epic.create({
+      projectId: project.id,
+      title: 'Checkout',
+      goal: 'Pay',
+      branch: 'epic/checkout',
+      engineSessionId: 'orchestrator-session',
+      settings: { modelRange: { min: 0.1, max: 0.9 }, askBeforeLaunch: true },
+    })
+    const stories = new UserStoriesService()
+    const first = await stories.create(local.id, {
+      projectId: project.id,
+      title: 'Cart',
+      summary: 'Keep items',
+      epicId: epic.id,
+    })
+    const second = await stories.create(local.id, {
+      projectId: project.id,
+      title: 'Pay',
+      summary: 'Charge',
+      epicId: epic.id,
+      modelIntent: 'smarter',
+      requestedModel: { providerId: 'openai', modelId: 'gpt', reasoningEffort: 'high' },
+      startsAfter: [first.id],
+    })
+    const account = await createUser()
+    const transfer = new WorkspaceTransferService()
+    const bundle = await handOver(local.id)
+    // MySQL hands JSON columns back as objects, SQLite as text: take both.
+    const row = bundle.tables.epics?.[0]
+    row!.settings = JSON.parse(String(row!.settings))
+
+    const imported = await transfer.import(account.id, bundle)
+    const again = await transfer.import(account.id, bundle)
+
+    assert.equal(imported.epics, 1)
+    assert.equal(again.epics, 0)
+    const moved = await Epic.findOrFail(epic.id)
+    assert.equal(moved.title, 'Checkout')
+    assert.equal(moved.engineSessionId, 'orchestrator-session')
+    assert.deepEqual(moved.settings, { modelRange: { min: 0.1, max: 0.9 }, askBeforeLaunch: true })
+    const story = await UserStory.findOrFail(second.id)
+    assert.equal(story.epicId, epic.id)
+    assert.equal(story.modelIntent, 'smarter')
+    assert.deepEqual(story.requestedModel, {
+      providerId: 'openai',
+      modelId: 'gpt',
+      reasoningEffort: 'high',
+    })
+    assert.deepEqual(story.startsAfter, [first.id])
   })
 
   test('merges into the project the account has for the same repository', async ({ assert }) => {
