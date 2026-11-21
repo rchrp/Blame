@@ -23,6 +23,13 @@ import type {
   TurnView,
   UsageTotals,
 } from "./model.js";
+import {
+  PLAN_TOOL,
+  parsePlan,
+  planChange,
+  type PlanChange,
+  type PlanView,
+} from "./plan.js";
 import { NO_USAGE, addUsage } from "./usage.js";
 
 type Undo = () => void;
@@ -57,6 +64,12 @@ interface Scalars {
   readonly retry: { request: RequestId; index: number } | undefined;
   /** Steer messages the model has not been given yet, as item indexes. */
   readonly steers: readonly number[];
+  /**
+   * The plan in effect, with the place of the call that set it (its reply
+   * and its block in that reply): of two calls, the later one in the reply
+   * stands, whichever answered first.
+   */
+  readonly plan: { view: PlanView; at: readonly [Seq, number] } | undefined;
 }
 
 const INITIAL: Scalars = {
@@ -67,6 +80,7 @@ const INITIAL: Scalars = {
   current: undefined,
   retry: undefined,
   steers: [],
+  plan: undefined,
 };
 
 /**
@@ -98,6 +112,7 @@ export class TranscriptReducer {
   private turnOrder: TurnId[] = [];
   private userIndex = new Map<TurnId, number>();
   private awaiting: ToolCallId[] = [];
+  private planChanges = new Map<ToolCallId, PlanChange>();
   private checkpoints: CheckpointView[] = [];
   private s: Scalars = INITIAL;
   private spent: UsageTotals = NO_USAGE;
@@ -206,6 +221,8 @@ export class TranscriptReducer {
       activity: this.live.activity,
       live: this.live.reply(),
       toolProgress: this.live.toolProgress(),
+      plan: this.s.plan?.view,
+      planChanges: stored ? new Map(this.planChanges) : previous.planChanges,
     };
     this.dirty = false;
     this.snapshotLiveVersion = this.liveVersion;
@@ -434,6 +451,8 @@ export class TranscriptReducer {
         );
         return;
       case "tool_call_finished": {
+        const prior = this.items[this.callIndex.get(body.call) ?? -1];
+        const answered = prior?.kind === "tool_call" && prior.result;
         this.updateTool(body.call, record, body.turn, (tool) =>
           // The call's single result is the first one stored.
           tool.result
@@ -447,6 +466,8 @@ export class TranscriptReducer {
         );
         this.removeAwaiting(body.call);
         this.live.toolFinished(body.call);
+        if (!answered && body.outcome === "completed")
+          this.planUpdated(record, body.call);
         return;
       }
       case "turn_ended":
@@ -673,6 +694,32 @@ export class TranscriptReducer {
       ...view,
       usage: addUsage(view.usage, body.usage),
     }));
+  }
+
+  /** A call completed: when it is an `update_plan`, the plan is what it said. */
+  private planUpdated(record: SessionRecord, call: ToolCallId): void {
+    const tool = this.items[this.callIndex.get(call) ?? -1];
+    if (tool?.kind !== "tool_call" || tool.name !== PLAN_TOOL) return;
+    const steps = parsePlan(tool.input);
+    if (!steps) return;
+    this.put(
+      this.planChanges,
+      call,
+      planChange(this.s.plan?.view.steps, steps),
+    );
+    const at: readonly [Seq, number] = [tool.seq, tool.block];
+    const current = this.s.plan?.at;
+    if (
+      current &&
+      (current[0] > at[0] || (current[0] === at[0] && current[1] > at[1]))
+    )
+      return;
+    this.setScalars({
+      plan: {
+        view: { steps, turn: tool.turn, call, seq: record.seq },
+        at,
+      },
+    });
   }
 
   private turnEnded(
