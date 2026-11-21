@@ -63,13 +63,17 @@ export async function epicBoard(desk: EpicDesk) {
   );
   const spend = await look.spend();
   const entry = await desk.state.get(desk.epicId);
-  const shown: Array<{ session: string; turn: string }> = [];
+  const shown: Array<{ storyId: string; session: string; turn: string }> = [];
   const rows = await Promise.all(
     stories.map(async (story) => {
       const status = await look.status(story.id);
       const last = status?.endedTurns?.at(-1);
       if (status && last)
-        shown.push({ session: status.session, turn: last.turn });
+        shown.push({
+          storyId: story.id,
+          session: status.session,
+          turn: last.turn,
+        });
       const wait = waiting.get(story.id)?.reason;
       return {
         id: story.id,
@@ -129,39 +133,49 @@ export async function createStories(
   const epic = look.epic;
   assertBudget(await look.spend());
   if (!epic.branch || !epic.targetBranch)
-    throw new Error(
-      "The epic has no branch yet: its conversation was not created here.",
+    throw refused(
+      "The epic has no branch yet.",
+      "Its conversation must be created on this computer first.",
     );
   const batch = input.stories ?? [];
-  if (!batch.length) throw new Error("Give at least one story.");
+  if (!batch.length) throw refused("No story was given.", "Give at least one.");
   const known = new Map(look.epicStories().map((story) => [story.id, story]));
   const keys = new Set<string>();
   for (const story of batch) {
-    if (!story.key?.trim()) throw new Error("Every story needs a key.");
+    if (!story.key?.trim())
+      throw refused("A story has no key.", "Give each story a key.");
     if (keys.has(story.key))
-      throw new Error(`Two stories use the key ${story.key}.`);
+      throw refused(
+        `Two stories use the key ${story.key}.`,
+        "Give each its own key.",
+      );
     keys.add(story.key);
     if (!story.title?.trim() || !story.brief?.trim())
-      throw new Error(`Story ${story.key} needs a title and a brief.`);
+      throw refused(
+        `Story ${story.key} has no title or no brief.`,
+        "Give both.",
+      );
   }
   for (const story of batch)
     for (const dependency of story.startsAfter ?? []) {
       if (keys.has(dependency)) continue;
       const other = known.get(dependency);
       if (!other)
-        throw new Error(
+        throw refused(
           `Story ${story.key} starts after ${dependency}, which is neither a key of this call nor a story of the epic.`,
+          "Name a key of this call or the id of one of the epic's stories.",
         );
       if (other.status === "discarded")
-        throw new Error(
-          `Story ${story.key} starts after ${storyDisplayId(other)}, which was rejected: it would never start.`,
+        throw refused(
+          `Story ${story.key} starts after ${storyDisplayId(other)}, which was rejected, so it would never start.`,
+          "Drop that dependency, or write that work again.",
         );
     }
   const order = dependencyOrder(batch);
   const runMode = batch.some((story) => !story.hold)
     ? await isolatedRunMode(desk, epic)
     : await isolatedRunMode(desk, epic).catch(() => undefined);
-  await epicBranchReady(desk, epic);
+  await epicBranchReady(desk, look);
   const pool = await modelPool(desk, epic);
   const created = new Map<string, HostStory>();
   const answers: Array<Record<string, unknown>> = [];
@@ -206,15 +220,19 @@ export async function updateStory(
   const look = await fresh(desk);
   const story = epicStory(look, input.storyId);
   if (story.status !== "backlog" && story.status !== "ready")
-    throw new Error(
-      `${storyDisplayId(story)} has started: talk to its agent with message_story, or reject it.`,
+    throw refused(
+      `${storyDisplayId(story)} has already started, so it no longer changes.`,
+      "Talk to its agent with message_story, or reject it.",
     );
   const queue = input.queue === true && story.status === "backlog";
-  if (queue) assertBudget(await look.spend());
+  if (input.queue) assertBudget(await look.spend());
   const known = new Set(look.epicStories().map(({ id }) => id));
   for (const dependency of input.startsAfter ?? [])
     if (!known.has(dependency) || dependency === story.id)
-      throw new Error(`${dependency} is not another story of the epic.`);
+      throw refused(
+        `${dependency} is not another story of the epic.`,
+        "Name the id of one of its stories.",
+      );
   const update: Parameters<StoryService["edit"]>[1] = {};
   if (input.title?.trim()) update.title = input.title.trim();
   if (input.brief?.trim()) update.summary = input.brief.trim();
@@ -228,9 +246,10 @@ export async function updateStory(
     update.modelIntent = input.intent;
     update.requestedModel = choice.requested;
   }
-  if (queue) {
+  // A held story to queue, or a queued one waiting on a branch made again.
+  if (input.queue) {
     update.runMode = await isolatedRunMode(desk, look.epic);
-    await epicBranchReady(desk, look.epic);
+    await epicBranchReady(desk, look);
   }
   let edited = story;
   if (Object.keys(update).length)
@@ -262,7 +281,9 @@ export async function storyReport(
   const entry = await desk.state.get(desk.epicId);
   const last = status?.endedTurns?.at(-1);
   if (status && last)
-    await look.markHeard([{ session: status.session, turn: last.turn }]);
+    await look.markHeard([
+      { storyId: story.id, session: status.session, turn: last.turn },
+    ]);
   return {
     id: story.id,
     number: storyDisplayId(story),
@@ -302,35 +323,40 @@ export async function messageStory(
 ) {
   const look = await fresh(desk);
   const story = epicStory(look, input.storyId);
-  if (!input.message?.trim()) throw new Error("The message is empty.");
+  if (!input.message?.trim())
+    throw refused("The message is empty.", "Write what the agent should read.");
   if (input.kind !== "answer" && input.kind !== "changes")
-    throw new Error("kind is answer or changes.");
+    throw refused("The message has no kind.", "Use answer or changes.");
   assertBudget(await look.spend());
   const entry = await desk.state.get(desk.epicId);
   const sent = entry?.messages?.[story.id] ?? 0;
   if (sent >= maxMessages)
-    throw new Error(
-      `${storyDisplayId(story)} already had ${sent} messages from you: reject it and write a better story, or ask the person.`,
+    throw refused(
+      `${storyDisplayId(story)} has had its ${sent} messages from the orchestrator.`,
+      "Reject it and write a better story, or ask the person.",
     );
   // Whatever its label, a message to a story whose turn ended (in review)
   // asks it to change its work.
   const changes = input.kind === "changes" || story.status === "in-review";
   const requested = entry?.changes[story.id] ?? 0;
   if (changes && requested >= maxChangeRequests)
-    throw new Error(
-      `${storyDisplayId(story)} already had ${requested} requests for changes (a message after its turn ended is one): reject it and write a better story, or ask the person.`,
+    throw refused(
+      `${storyDisplayId(story)} has had its ${requested} requests for changes (a message after its turn ended counts as one).`,
+      "Reject it and write a better story, or ask the person.",
     );
   let model: ReturnType<typeof escalateModel> = null;
   if (input.escalate) {
     const current = story.agentModels?.at(-1) ?? story.requestedModel;
     if (!current)
-      throw new Error(
+      throw refused(
         `${storyDisplayId(story)} has no model to escalate from.`,
+        "Send the message without escalate.",
       );
     model = escalateModel({ ...(await modelPool(desk, look.epic)), current });
     if (!model)
-      throw new Error(
-        `${storyDisplayId(story)} already runs on the smartest model the epic allows: send the message without escalate, or reject it.`,
+      throw refused(
+        `${storyDisplayId(story)} already runs on the smartest model the epic allows.`,
+        "Send the message without escalate, or reject it.",
       );
   }
   // Counted before it goes: a quit after the send never forgets one.
@@ -369,26 +395,31 @@ export async function approveStory(
   const look = await fresh(desk);
   const story = epicStory(look, input.storyId);
   if (story.status !== "in-review")
-    throw new Error(
-      `${storyDisplayId(story)} is not in review: only a story in review can be approved.`,
+    throw refused(
+      `${storyDisplayId(story)} is not in review, so it cannot be approved.`,
+      "Wait for its agent to finish, or message it.",
     );
   if (story.agentStatus === "Running")
-    throw new Error(
-      `${storyDisplayId(story)}'s agent is working: wait for its turn to end.`,
+    throw refused(
+      `${storyDisplayId(story)}'s agent is still working, so it cannot be approved yet.`,
+      "Wait for its turn to end.",
     );
   const status = await look.status(story.id);
   if (!status?.exists)
-    throw new Error(
-      `${storyDisplayId(story)}'s agent records are not on this computer: it cannot be judged here.`,
+    throw refused(
+      `${storyDisplayId(story)}'s agent ran on another computer, so its work cannot be judged here.`,
+      "Ask the person.",
     );
   if (status.turnRunning ?? status.running)
-    throw new Error(
-      `${storyDisplayId(story)}'s agent is working: wait for its turn to end.`,
+    throw refused(
+      `${storyDisplayId(story)}'s agent is still working, so it cannot be approved yet.`,
+      "Wait for its turn to end.",
     );
   if (status.lastOutcome?.status !== "completed") {
     const facts = outcomeFacts(status.lastOutcome);
-    throw new Error(
-      `${storyDisplayId(story)}'s last turn did not end completed (${status.lastOutcome?.status ?? "no turn"}${facts.failingChecks ? `: ${facts.failingChecks.join(", ")} still fail` : ""}): the harness did not accept its finish_task. Ask for changes, or reject it.`,
+    throw refused(
+      `${storyDisplayId(story)} is not merged: the harness did not verify its work (its last turn ended ${status.lastOutcome?.status ?? "with no turn"}${facts.failingChecks ? `: ${facts.failingChecks.join(", ")} still ${facts.failingChecks.length === 1 ? "fails" : "fail"}` : ""}).`,
+      "Ask for changes, or reject it.",
     );
   }
   // The target branch only moves when the person approves the epic: a
@@ -401,22 +432,27 @@ export async function approveStory(
     branch === look.epic.targetBranch ||
     story.targetBranch !== branch
   )
-    throw new Error(
-      `${storyDisplayId(story)} would merge into ${story.targetBranch ?? "the project folder's branch"}, not the epic's branch${branch ? ` ${branch}` : ""}: it is not merged. Ask the person.`,
+    throw refused(
+      `${storyDisplayId(story)} is not merged: it would merge into ${story.targetBranch ?? "the project folder's branch"}, not the epic's branch${branch ? ` ${branch}` : ""}.`,
+      "Ask the person.",
     );
   if (
     (story.workspaceMode ?? "direct") === "direct" ||
     story.runMode === "direct"
   )
-    throw new Error(
-      `${storyDisplayId(story)} ran Direct, in the project folder: it is not merged into the epic. Reject it and write it again.`,
+    throw refused(
+      `${storyDisplayId(story)} is not merged: it ran Direct, in the project folder.`,
+      "Reject it and write it again.",
     );
   const model = desk.orchestrator.orchestratorModel(
     look.epic,
     entry?.settings?.model,
   );
   if (!model)
-    throw new Error("No model to write the merge's commit message with.");
+    throw refused(
+      `${storyDisplayId(story)} is not merged: there is no model to write its commit message with.`,
+      "Ask the person to choose the orchestrator's model.",
+    );
   let outcome: Awaited<ReturnType<StoryService["approve"]>>;
   try {
     outcome = await desk.stories.approve(story.id, { model });
@@ -424,9 +460,10 @@ export async function approveStory(
     // Never resolved by the merge agent and merged unverified: the
     // story's own agent brings the epic's branch in and passes its checks.
     if (error instanceof Error && error.name === "StoryMergeConflictError")
-      throw new Error(
-        `${error.message} It is not merged. Ask for changes (message_story, kind changes): its agent merges ${branch} into its work (git merge ${branch}), resolves the conflicts, and passes its checks again.`,
-        { cause: error },
+      throw refused(
+        `${storyDisplayId(story)} is not merged: its changes conflict with what the epic's branch ${branch} already has${conflictWhere(error)}.${conflictLeft(error)}`,
+        `Ask for changes (message_story, kind changes): its agent merges ${branch} into its work (git merge ${branch}), resolves the conflicts and passes its checks again.`,
+        error,
       );
     throw error;
   }
@@ -445,8 +482,9 @@ export async function rejectStory(
   const look = await fresh(desk);
   const story = epicStory(look, input.storyId);
   if (story.status === "done")
-    throw new Error(
-      `${storyDisplayId(story)} is merged into the epic's branch: it stays.`,
+    throw refused(
+      `${storyDisplayId(story)} is already merged into the epic's branch, so it stays.`,
+      "There is nothing to reject.",
     );
   await desk.stories.discard(
     story.id,
@@ -465,14 +503,18 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
         desk.blocked(story as HostStory),
       )
     )
-      throw new Error(
-        "Nothing of the epic works or can start, so nothing would wake you: approve, ask for changes, queue or create stories, ask the person, or finish.",
+      throw refused(
+        "The orchestrator cannot sleep: nothing of the epic is working or will start by itself, so nothing would wake it.",
+        "Approve, ask for changes, queue or create stories, ask the person, or finish.",
       );
     return "Waiting: you will be woken when there is something to judge.";
   }
   if (input.action === "ask") {
     if (!input.question?.trim())
-      throw new Error("ask needs the question for the person.");
+      throw refused(
+        "The question for the person is missing.",
+        "Give it with ask.",
+      );
     return "Asked: the person's answer comes as their next message.";
   }
   if (input.action === "finish") {
@@ -480,16 +522,25 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
       (story) => story.status !== "done" && story.status !== "discarded",
     );
     if (open.length)
-      throw new Error(
-        `Not every story is merged or rejected: ${open
+      throw refused(
+        `The epic is not finished: ${open
           .map((story) => `${storyDisplayId(story)} (${story.status})`)
-          .join(", ")}. Approve or reject each first.`,
+          .join(
+            ", ",
+          )} ${open.length === 1 ? "is" : "are"} neither merged nor rejected.`,
+        "Approve or reject each first.",
       );
     if (!input.summary?.trim())
-      throw new Error("finish needs the epic's summary.");
+      throw refused(
+        "The epic's summary for the person is missing.",
+        "Give it with finish.",
+      );
     return "Finished: the epic waits for the person's review.";
   }
-  throw new Error("action is wait, ask or finish.");
+  throw refused(
+    "The way to end the turn is missing.",
+    "Use wait, ask or finish.",
+  );
 }
 
 // --------------------------------------------------------------- helpers
@@ -505,14 +556,19 @@ function epicStory(look: EpicReading, storyId: string): HostStory {
   const story = look
     .epicStories()
     .find((item) => item.id === storyId || storyDisplayId(item) === storyId);
-  if (!story) throw new Error(`${storyId} is not a story of this epic.`);
+  if (!story)
+    throw refused(
+      `${storyId} is not a story of this epic.`,
+      "Name one of its stories by id or number.",
+    );
   return story;
 }
 
 function assertBudget(spend: EpicSpend) {
   if (!spend.spent) return;
-  throw new Error(
-    `The epic's budget is spent (${usd(spend.totalMicroUsd)} of ${usd(spend.budgetMicroUsd ?? 0)}): nothing more starts. Approve or reject what is in review, ask the person to raise the budget, or finish.`,
+  throw refused(
+    `The epic's budget is spent (${usd(spend.totalMicroUsd)} of ${usd(spend.budgetMicroUsd ?? 0)}), so nothing more starts.`,
+    "Approve or reject what is in review, ask the person to raise the budget, or finish.",
   );
 }
 
@@ -549,8 +605,9 @@ function dependencyOrder<T extends { key: string; startsAfter?: string[] }>(
     const seen = state.get(story.key);
     if (seen === "done") return;
     if (seen === "visiting")
-      throw new Error(
+      throw refused(
         `These stories start after each other in a cycle: ${[...path, story.key].join(" → ")}.`,
+        "Break the cycle.",
       );
     state.set(story.key, "visiting");
     for (const dependency of story.startsAfter ?? []) {
@@ -589,8 +646,9 @@ async function isolatedRunMode(
     preferences?.initializingProjects?.includes(epic.projectId) ?? false,
   );
   if (decision === "run-direct")
-    throw new Error(
-      "This project has no working preview environment, so its stories would run Direct in the project folder, on its current branch, not in worktrees of the epic's branch. Ask the person to set up the preview environment first.",
+    throw refused(
+      "This project has no working preview environment, so its stories would run in the person's project folder on its own branch, not on the epic's branch.",
+      "Ask the person to set up the preview environment first.",
     );
   return mode;
 }
@@ -611,7 +669,10 @@ async function modelPool(desk: EpicDesk, epic: Epic): Promise<ModelPool> {
 
 function chooseModel(desk: EpicDesk, pool: ModelPool, intent: ModelIntent) {
   if (intent !== "cheaper" && intent !== "balanced" && intent !== "smarter")
-    throw new Error("intent is cheaper, balanced or smarter.");
+    throw refused(
+      "The story's intent is missing.",
+      "Use cheaper, balanced or smarter.",
+    );
   const fallback = desk.orchestrator.fallbackModel();
   const resolution = resolveModelIntent({
     ...pool,
@@ -619,8 +680,9 @@ function chooseModel(desk: EpicDesk, pool: ModelPool, intent: ModelIntent) {
     fallback: fallback ?? { providerId: "", modelId: "" },
   });
   if (resolution.fallback && !fallback?.providerId)
-    throw new Error(
-      "No model can run the stories: no ranked model is in the epic's range and the account has no agent model. Ask the person to connect a provider.",
+    throw refused(
+      "No model can run the stories: nothing ranked is in the epic's range, and the account has no agent model.",
+      "Ask the person to connect a provider.",
     );
   // Nothing ranked: the account's model, only on a provider the epic allows.
   if (
@@ -629,8 +691,9 @@ function chooseModel(desk: EpicDesk, pool: ModelPool, intent: ModelIntent) {
       ? !pool.providers.includes(resolution.model.providerId)
       : false)
   )
-    throw new Error(
-      `No model of the providers the epic allows (${pool.providers!.join(", ")}) can be ranked, and the account's agent model is on ${resolution.model.providerId}. Ask the person to widen the providers or the range.`,
+    throw refused(
+      `No model of the providers the epic allows (${pool.providers!.join(", ")}) can run the stories: nothing of theirs ranks in the epic's range, and the account's agent model is on ${resolution.model.providerId}.`,
+      "Ask the person to widen the providers or the range.",
     );
   if (
     resolution.fallback &&
@@ -640,8 +703,9 @@ function chooseModel(desk: EpicDesk, pool: ModelPool, intent: ModelIntent) {
         hidden.modelId === resolution.model.modelId,
     )
   )
-    throw new Error(
-      "No visible model can be ranked in the epic's range, and the account's agent model is hidden. Ask the person.",
+    throw refused(
+      "No visible model can run the stories: nothing ranks in the epic's range, and the account's agent model is hidden.",
+      "Ask the person.",
     );
   const model = resolution.model;
   const requested: StoryRequestedModel = {
@@ -656,18 +720,59 @@ function chooseModel(desk: EpicDesk, pool: ModelPool, intent: ModelIntent) {
 }
 
 /** The epic's branch exists (made again from its target if a quit cut its making). */
-async function epicBranchReady(desk: EpicDesk, epic: Epic) {
+async function epicBranchReady(desk: EpicDesk, look: EpicReading) {
+  const epic = look.epic;
   const branch = (await desk.state.get(desk.epicId))?.branch;
   if (!branch || !epic.targetBranch || epic.branch !== branch)
-    throw new Error(
-      "The epic's branch is not the one this computer made for it: nothing starts. Ask the person.",
+    throw refused(
+      "Nothing starts: the epic's branch is not the one this computer made for it.",
+      "Ask the person.",
     );
-  await ensureBranch(
-    requiredGit(desk),
-    await workspaceRoot(desk),
-    branch,
-    epic.targetBranch,
-  );
+  const git = requiredGit(desk);
+  const root = await workspaceRoot(desk);
+  // Made again from the target only while nothing was merged into it: a
+  // later story must never build without the work already merged.
+  const merged = look.epicStories().some((story) => story.status === "done");
+  if (merged && !(await hasBranch(git, root, branch)))
+    throw refused(
+      `Nothing starts: the epic's branch ${branch} is gone, and stories were already merged into it.`,
+      "Ask the person to restore it.",
+    );
+  await ensureBranch(git, root, branch, epic.targetBranch);
+}
+
+async function hasBranch(git: GitRun, root: string, branch: string) {
+  try {
+    await git(root, [
+      "rev-parse",
+      "--verify",
+      "--quiet",
+      `refs/heads/${branch}`,
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * A refusal read by two: the first sentence says what happened, in plain
+ * words the person reads in the decision log; what the orchestrator should
+ * do comes after it.
+ */
+function refused(what: string, then: string, cause?: unknown) {
+  return new Error(`${what} ${then}`, cause ? { cause } : undefined);
+}
+
+function conflictWhere(error: Error) {
+  const files = (error as { files?: unknown }).files;
+  return Array.isArray(files) && files.length ? ` (${files.join(", ")})` : "";
+}
+
+// A merge Git could not undo says where it left the worktree.
+function conflictLeft(error: Error) {
+  const left = (error as { left?: unknown }).left;
+  return typeof left === "string" && left ? ` ${left}` : "";
 }
 
 async function countMessage(

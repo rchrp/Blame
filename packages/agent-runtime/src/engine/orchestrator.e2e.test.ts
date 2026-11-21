@@ -22,6 +22,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -106,6 +107,8 @@ class ScriptedModel {
   readonly orchestrator: Step[] = [];
   readonly stories = new Map<string, Step[]>();
   readonly unscripted: string[] = [];
+  /** The title of the epic whose orchestrator the script answers. */
+  epic: string | undefined;
   private readonly stalled = new Set<() => void>();
   private readonly server: Server;
   base = "";
@@ -157,6 +160,10 @@ class ScriptedModel {
         },
       };
     if (system.includes("Blame Orchestrator")) {
+      // Another test's epic (left at work) never takes this test's script.
+      const title = /<epic>\ntitle: (.*)\n/.exec(system)?.[1];
+      if (this.epic && title !== this.epic)
+        return { who: `orchestrator:${title}`, step: { stall: true } };
       const step = this.orchestrator.shift();
       if (step) return { who: "orchestrator", step };
       this.unscripted.push(
@@ -609,6 +616,7 @@ describe("the orchestrator's loop", { skip }, () => {
     title: string,
     message: string,
   ) {
+    model.epic = title;
     const epic = await apiCall<{ id: string }>(
       api.connection,
       "POST",
@@ -924,7 +932,7 @@ describe("the orchestrator's loop", { skip }, () => {
       (body) => {
         assert.match(
           textOf(body.messages.at(-1)!.content),
-          /did not end completed \(contract_unmet: build still fail\)/,
+          /is not merged: the harness did not verify its work \(its last turn ended contract_unmet: build still fails\)/,
         );
         return tool("message_story", {
           reason: "The build still fails.",
@@ -1493,7 +1501,7 @@ describe("the orchestrator's loop", { skip }, () => {
       (body) => {
         assert.match(
           textOf(body.messages.at(-1)!.content),
-          /conflicts in shared\.txt\. It is not merged\. Ask for changes/,
+          /is not merged: its changes conflict with what the epic's branch epic\/clash already has \(shared\.txt\)\. Ask for changes/,
         );
         return tool("message_story", {
           reason: "It conflicts with A.",
@@ -1643,5 +1651,231 @@ describe("the orchestrator's loop", { skip }, () => {
       15_000,
     );
     model.stopStalls();
+  });
+
+  it("pauses and resumes four times without the conversation counting a cut", async () => {
+    const often = await newProject("often");
+    await open(host);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const gated = (reply: Reply) => async () => {
+      await gate;
+      return reply;
+    };
+    // Each resume starts a new turn of the story's agent: each waits.
+    model.stories.set("Keep going", [
+      gated({ text: "Working." }),
+      gated({ text: "Working." }),
+      gated({ text: "Working." }),
+      gated({ text: "Working." }),
+      gated(write("going.txt", "going\n")),
+      finish("Done."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "One.",
+        stories: [
+          {
+            key: "g",
+            title: "Keep going",
+            brief: "Create going.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      { stall: true },
+      { stall: true },
+      { stall: true },
+      { stall: true },
+      // The fourth resume: it sleeps.
+      tool("end_turn", { action: "wait", reason: "It works." }),
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "going.txt is on the epic's branch.",
+      }),
+    );
+    const asked = model.of("orchestrator").length;
+    const { epicId, session } = await startEpic(often, "Often", "Keep going.");
+    const list = () =>
+      apiCall<Array<{ agentStatus: string | null }>>(
+        api.connection,
+        "GET",
+        `/projects/user-stories?projectId=${often.id}`,
+      );
+    for (let cycle = 1; cycle <= 4; cycle += 1) {
+      await until(`cycle ${cycle}: both at work`, async () =>
+        model.of("orchestrator").length >= asked + 1 + cycle &&
+        model.of("story:Keep going").length >= cycle &&
+        (await list())[0]?.agentStatus === "Running"
+          ? true
+          : undefined,
+      );
+      await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+        status: "paused",
+      });
+      await host.call("epicChanged", { epicId });
+      await until(`cycle ${cycle}: paused`, async () => {
+        const now = await host.call("epicChanged", { epicId });
+        return now.pause?.phase === "paused" ? true : undefined;
+      });
+      model.stopStalls();
+      await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+        status: "active",
+      });
+      const resumed = await host.call("epicChanged", { epicId });
+      assert.notEqual(resumed.conversation, "failed", `cycle ${cycle}`);
+    }
+    release();
+    await until("the epic to finish", async () =>
+      (await state(epicId)).conversation === "finished" ? true : undefined,
+    );
+    const told = await wakes(session);
+    assert.deepEqual(
+      told.map((wake) => wake.reason),
+      ["resumed", "resumed", "resumed", "resumed", "stories"],
+    );
+    assert.deepEqual(model.unscripted, []);
+  });
+
+  it("resumes after a quit what the pause stopped before it", async () => {
+    const quiet = await newProject("quiet");
+    await open(host);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    model.stories.set("Stay paused", [
+      async () => {
+        await gate;
+        return { text: "Working." };
+      },
+      write("quiet.txt", "quiet\n"),
+      finish("Done."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "One.",
+        stories: [
+          {
+            key: "q",
+            title: "Stay paused",
+            brief: "Create quiet.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      tool("end_turn", { action: "wait", reason: "It works." }),
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "quiet.txt is on the epic's branch.",
+      }),
+    );
+    const { epicId, session } = await startEpic(quiet, "Quiet", "Stay paused.");
+    await until("its agent's first request", () =>
+      model.of("story:Stay paused").length ? true : undefined,
+    );
+    await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+      status: "paused",
+    });
+    await until("paused", async () =>
+      (await host.call("epicChanged", { epicId })).pause?.phase === "paused"
+        ? true
+        : undefined,
+    );
+    // Blame quits while the epic is paused, and opens again.
+    await host.shutdown();
+    release();
+    host = startHost();
+    await open(host);
+    assert.equal(
+      (await host.call("epicState", { epicId })).pause?.phase,
+      "paused",
+    );
+    await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+      status: "active",
+    });
+    await host.call("epicChanged", { epicId });
+    await until("the epic to finish", async () =>
+      (await state(epicId)).conversation === "finished" ? true : undefined,
+    );
+    assert.equal(git(quiet.path, "show", "epic/quiet:quiet.txt"), "quiet");
+    assert.deepEqual(
+      (await wakes(session)).map((wake) => wake.reason),
+      ["stories"],
+    );
+    assert.deepEqual(model.unscripted, []);
+  });
+
+  it("finds an epic again from its records when the kept file was lost", async () => {
+    const found = await newProject("found");
+    await open(host);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    model.stories.set("Find me", [
+      async () => {
+        await gate;
+        return { text: "Starting." };
+      },
+      write("found.txt", "found\n"),
+      finish("Done."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "One.",
+        stories: [
+          {
+            key: "f",
+            title: "Find me",
+            brief: "Create found.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      tool("end_turn", { action: "wait", reason: "It works." }),
+    );
+    const { epicId, session } = await startEpic(found, "Found", "Find me.");
+    await until("it to sleep", async () =>
+      (await state(epicId)).conversation === "waiting" ? true : undefined,
+    );
+    await host.shutdown();
+    // The kept file is lost: not JSON any more.
+    const stateFile = join(directory, "orchestrator-epics.json");
+    writeFileSync(stateFile, "{ not json");
+    model.orchestrator.push(
+      // Woken: the quit stopped the agent; it goes on, then is approved.
+      tool("message_story", {
+        reason: "Blame stopped it.",
+        storyId: "US-001",
+        kind: "answer",
+        message: "Go on.",
+      }),
+      tool("end_turn", { action: "wait", reason: "It goes on." }),
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "found.txt is on the epic's branch.",
+      }),
+    );
+    release();
+    host = startHost();
+    await open(host);
+    await until("the epic to finish", async () =>
+      (await state(epicId)).conversation === "finished" ? true : undefined,
+    );
+    const kept = JSON.parse(readFileSync(stateFile, "utf8")) as {
+      epics: Record<string, { session: string; branch: string }>;
+    };
+    assert.equal(kept.epics[epicId]?.session, session);
+    assert.equal(kept.epics[epicId]?.branch, "epic/found");
+    assert.ok(
+      readdirSync(directory).some((name) =>
+        name.startsWith("orchestrator-epics.json.corrupt-"),
+      ),
+    );
+    assert.equal(git(found.path, "show", "epic/found:found.txt"), "found");
+    assert.deepEqual(model.unscripted, []);
   });
 });

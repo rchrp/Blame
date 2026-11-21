@@ -114,6 +114,12 @@ export type EpicState = {
   unreported: number;
   /** Queued stories only the person can start, and why (the epic needs them). */
   blocked?: EpicBlockedStory[];
+  /**
+   * While the epic is `paused` in the API: whether the host has stopped
+   * everything the pause meant to stop (`paused`), or not yet
+   * (`pausing`, with `error` when it could not, or could not look).
+   */
+  pause?: { phase: "pausing" | "paused"; error?: string };
   spend: EpicSpend;
 };
 

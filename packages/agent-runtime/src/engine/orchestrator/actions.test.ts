@@ -5,7 +5,7 @@
 // or another account.
 
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, it } from "node:test";
@@ -22,6 +22,7 @@ import {
   type Row,
   type Status,
 } from "../stories/stories-fakes.test.js";
+import { idleSignature } from "./board.js";
 import { parseEpic } from "./epics.js";
 import { Orchestrator } from "./service.js";
 
@@ -69,6 +70,12 @@ type Setup = {
   /** Starting a story's worktree fails. */
   failStart?: boolean;
   stuckStartMs?: number;
+  /** Sessions whose interrupt fails once. */
+  failInterrupt?: string[];
+  /** Sessions whose interrupt never answers (Blame quits meanwhile). */
+  hangInterrupt?: string[];
+  /** The engine does not answer. */
+  noEngine?: boolean;
   /** No conversation is created (a relaunch reads what is kept). */
   prepare?: boolean;
 };
@@ -164,10 +171,13 @@ async function desk(setup: Setup = {}) {
       models: [],
       ...status,
     } as Status);
+  const starts = { count: 0 };
   if (setup.failStart)
     fake.host.desktop.createStoryWorktree = async () => {
+      starts.count += 1;
       throw new Error("the epic's branch is gone");
     };
+  const failInterrupt = new Set(setup.failInterrupt ?? []);
   const call = fake.host.call;
   const host = {
     ...fake.host,
@@ -180,11 +190,17 @@ async function desk(setup: Setup = {}) {
             ...(setup.ranking ?? ["cheap", "middle", "smart"]),
           ),
         };
+      const target = (input as { session?: string } | undefined)?.session;
+      if (method === "interrupt" && target && failInterrupt.delete(target))
+        throw new Error("The agent engine did not answer.");
+      if (method === "interrupt" && setup.hangInterrupt?.includes(target ?? ""))
+        await new Promise(() => undefined);
       if (method === "approveAndMerge" && setup.conflict) {
         const error = new Error(
           "Merging epic/checkout-flow into the story conflicts in src/cart.ts.",
         );
         error.name = "StoryMergeConflictError";
+        Object.assign(error, { files: ["src/cart.ts"] });
         throw error;
       }
       return call(method as never, input);
@@ -227,7 +243,10 @@ async function desk(setup: Setup = {}) {
       interrupt: async (id) => {
         interrupted.push(id);
       },
-      client: async () => noRecords,
+      client: async () => {
+        if (setup.noEngine) throw new Error("The agent engine did not answer.");
+        return noRecords;
+      },
       git,
       emit: () => undefined,
     },
@@ -291,6 +310,7 @@ async function desk(setup: Setup = {}) {
     written,
     interrupted,
     settings,
+    starts,
   };
 }
 
@@ -307,7 +327,11 @@ const inReview = (id: string, fields: Record<string, unknown> = {}) =>
     baseCommit: "base",
     ...fields,
   });
-const verified = { lastOutcome: { status: "completed" } } as never;
+const verified = { lastOutcome: { status: "completed" } } as Record<
+  string,
+  unknown
+> as never;
+const verifiedFields = { lastOutcome: { status: "completed" } };
 const newStory = (fields: Record<string, unknown> = {}) => ({
   key: "a",
   title: "A",
@@ -447,7 +471,7 @@ describe("creating and changing stories", () => {
     });
     await assert.rejects(
       run("create_stories", { reason: "r", stories: [newStory({ key: "" })] }),
-      /needs a key/,
+      /A story has no key\./,
     );
     await assert.rejects(
       run("create_stories", { reason: "r", stories: [newStory(), newStory()] }),
@@ -540,7 +564,7 @@ describe("creating and changing stories", () => {
     });
     await assert.rejects(
       run("update_story", { reason: "r", storyId: "s3", brief: "x" }),
-      /has started/,
+      /has already started, so it no longer changes/,
     );
     await assert.rejects(
       run("update_story", { reason: "r", storyId: "s2", startsAfter: ["s2"] }),
@@ -605,16 +629,16 @@ describe("judging stories", () => {
     );
     await assert.rejects(
       run("approve_story", { reason: "r", storyId: "s2" }),
-      /did not end completed \(contract_unmet: build still fail\)/,
+      /is not merged: the harness did not verify its work \(its last turn ended contract_unmet: build still fails\)/,
     );
     await assert.rejects(
       run("approve_story", { reason: "r", storyId: "s3" }),
-      /agent is working/,
+      /agent is still working, so it cannot be approved yet/,
     );
     // s4 is not this computer's: its records are not here.
     await assert.rejects(
       run("approve_story", { reason: "r", storyId: "s4" }),
-      /records are not on this computer/,
+      /agent ran on another computer, so its work cannot be judged here/,
     );
   });
 
@@ -634,7 +658,7 @@ describe("judging stories", () => {
     });
     await assert.rejects(
       run("approve_story", { reason: "r", storyId: "s1" }),
-      /would merge into main, not the epic's branch/,
+      /is not merged: it would merge into main, not the epic's branch/,
     );
     await assert.rejects(
       run("approve_story", { reason: "r", storyId: "s2" }),
@@ -642,7 +666,7 @@ describe("judging stories", () => {
     );
     await assert.rejects(
       run("approve_story", { reason: "r", storyId: "s3" }),
-      /ran Direct/,
+      /is not merged: it ran Direct/,
     );
     assert.equal(api.stories.get("s1")!.status, "in-review");
   });
@@ -670,7 +694,7 @@ describe("judging stories", () => {
     });
     await assert.rejects(
       run("approve_story", { reason: "r", storyId: "s1" }),
-      /conflicts in src\/cart\.ts\. It is not merged\. Ask for changes .*git merge epic\/checkout-flow/,
+      /is not merged: its changes conflict with what the epic's branch epic\/checkout-flow already has \(src\/cart\.ts\)\. Ask for changes .*git merge epic\/checkout-flow/,
     );
     assert.equal(api.stories.get("s1")!.status, "in-review");
   });
@@ -706,7 +730,7 @@ describe("judging stories", () => {
         kind: "answer",
         message: "Fix 4.",
       }),
-      /already had 3 requests for changes/,
+      /has had its 3 requests for changes/,
     );
     // Answers to a story at work are not changes, but are counted in all.
     const working = await desk({
@@ -745,7 +769,7 @@ describe("judging stories", () => {
         kind: "answer",
         message: "One more.",
       }),
-      /already had 6 messages from you/,
+      /has had its 6 messages from the orchestrator/,
     );
   });
 
@@ -779,7 +803,7 @@ describe("judging stories", () => {
     });
     await assert.rejects(
       run("reject_story", { reason: "r", storyId: "s1" }),
-      /is merged into the epic's branch: it stays/,
+      /is already merged into the epic's branch, so it stays/,
     );
   });
 
@@ -839,7 +863,7 @@ describe("ending a turn", () => {
     });
     await assert.rejects(
       waiting.run("end_turn", { action: "wait", reason: "r" }),
-      /Nothing of the epic works or can start/,
+      /cannot sleep: nothing of the epic is working or will start by itself/,
     );
     const working = await desk({
       rows: [
@@ -872,7 +896,7 @@ describe("ending a turn", () => {
     );
     await assert.rejects(
       run("end_turn", { action: "wait", reason: "r" }),
-      /Nothing of the epic works or can start/,
+      /cannot sleep: nothing of the epic is working or will start by itself/,
     );
   });
 
@@ -898,7 +922,7 @@ describe("ending a turn", () => {
     );
     await assert.rejects(
       run("end_turn", { action: "wait", reason: "r" }),
-      /Nothing of the epic works or can start/,
+      /cannot sleep: nothing of the epic is working or will start by itself/,
     );
   });
 
@@ -908,7 +932,7 @@ describe("ending a turn", () => {
     });
     await assert.rejects(
       open.run("end_turn", { action: "finish", reason: "r", summary: "Done." }),
-      /Not every story is merged or rejected: US-001 \(in-review\)/,
+      /The epic is not finished: US-001 \(in-review\) is neither merged nor rejected/,
     );
     const closed = await desk({
       rows: [
@@ -918,7 +942,7 @@ describe("ending a turn", () => {
     });
     await assert.rejects(
       closed.run("end_turn", { action: "finish", reason: "r" }),
-      /finish needs the epic's summary/,
+      /The epic's summary for the person is missing/,
     );
     assert.match(
       String(
@@ -932,7 +956,7 @@ describe("ending a turn", () => {
     );
     await assert.rejects(
       closed.run("end_turn", { action: "ask", reason: "r" }),
-      /ask needs the question/,
+      /The question for the person is missing/,
     );
   });
 });
@@ -1208,5 +1232,321 @@ describe("the budget, the gate and what is kept", () => {
     );
     const resolved = await orchestrator.resolve(session, settings);
     assert.equal(resolved.resolved.epic.branch, epicBranch);
+  });
+});
+
+describe("what holds when things go wrong", () => {
+  const running = (id: string, fields: Record<string, unknown> = {}) =>
+    row(id, "a", {
+      epicId,
+      status: "in-progress",
+      agentStatus: "Running",
+      engineSessionId: `session-${id}`,
+      worktree: `/w/${id}`,
+      workspaceMode: "cloud-mirror",
+      ...fields,
+    });
+  const runningTurn = { running: true, turnRunning: true } as never;
+  const keptPause = async (file: string) =>
+    (
+      JSON.parse(await readFile(file, "utf8")) as {
+        epics: Record<string, { pause?: { phase: string; stories: string[] } }>;
+      }
+    ).epics[epicId]?.pause;
+
+  it("writes what the pause means to stop before it acts, and takes it up again after a failure or a quit", async () => {
+    const first = await desk({
+      rows: [running("s1"), running("s2", { storyNumber: 2 })],
+      owned: { s1: "session-s1", s2: "session-s2" },
+      statuses: { "session-s1": runningTurn, "session-s2": runningTurn },
+      failInterrupt: ["session-s2"],
+    });
+    first.epics.get(epicId)!.status = "paused";
+    const state = await first.orchestrator.changed(epicId);
+    // s2's interrupt failed: the pause still names it, and says so.
+    assert.equal(state.pause?.phase, "pausing");
+    assert.match(state.pause?.error ?? "", /did not answer/);
+    assert.deepEqual((await keptPause(first.stateFile))?.stories.sort(), [
+      "s1",
+      "s2",
+    ]);
+    // Blame quits; a new run on the same file goes on with the pause.
+    first.orchestrator.stop();
+    const second = await desk({
+      prepare: false,
+      stateFile: first.stateFile,
+      epic: { ...first.epic, status: "paused" },
+      rows: [
+        running("s1", { agentStatus: "Paused" }),
+        running("s2", { storyNumber: 2 }),
+      ],
+      owned: { s1: "session-s1", s2: "session-s2" },
+      statuses: { "session-s2": runningTurn },
+    });
+    await second.orchestrator.changed(epicId);
+    const interrupts = second.fake.calls
+      .filter((item) => item.method === "interrupt")
+      .map((item) => (item.input as { session: string }).session);
+    assert.deepEqual(interrupts, ["session-s2"]);
+    Object.assign(second.api.stories.get("s2")!, { agentStatus: "Paused" });
+    await second.stories.refresh("a");
+    assert.equal(
+      (await second.orchestrator.changed(epicId)).pause?.phase,
+      "paused",
+    );
+    // Resumed: both, since both were the pause's.
+    second.epics.get(epicId)!.status = "active";
+    await second.orchestrator.changed(epicId);
+    const resumed = second.fake.calls
+      .filter((item) => item.method === "send")
+      .map((item) => (item.input as { session: string }).session)
+      .sort();
+    assert.deepEqual(resumed, ["session-s1", "session-s2"]);
+    assert.equal(await keptPause(second.stateFile), undefined);
+  });
+
+  it("has the pause on disk before it stops anything, so a quit part way loses none of it", async () => {
+    const { epics, orchestrator, stateFile } = await desk({
+      rows: [running("s1"), running("s2", { storyNumber: 2 })],
+      owned: { s1: "session-s1", s2: "session-s2" },
+      statuses: { "session-s1": runningTurn, "session-s2": runningTurn },
+      hangInterrupt: ["session-s1"],
+    });
+    epics.get(epicId)!.status = "paused";
+    // The first agent's stop never answers: Blame quits in the middle.
+    void orchestrator.changed(epicId).catch(() => undefined);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const pause = await keptPause(stateFile);
+    assert.equal(pause?.phase, "pausing");
+    assert.deepEqual(pause?.stories.sort(), ["s1", "s2"]);
+  });
+
+  it("leaves to the person a story they acted on during the pause", async () => {
+    const { orchestrator, epics, api, fake, stories } = await desk({
+      rows: [running("s1"), running("s2", { storyNumber: 2 })],
+      owned: { s1: "session-s1", s2: "session-s2" },
+      statuses: { "session-s1": runningTurn, "session-s2": runningTurn },
+    });
+    epics.get(epicId)!.status = "paused";
+    await orchestrator.changed(epicId);
+    for (const id of ["s1", "s2"])
+      Object.assign(api.stories.get(id)!, { agentStatus: "Paused" });
+    await stories.refresh("a");
+    // The person pauses s2 again from its drawer: it is theirs now.
+    orchestrator.touched("s2");
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    epics.get(epicId)!.status = "active";
+    await orchestrator.changed(epicId);
+    const resumed = fake.calls
+      .filter((item) => item.method === "send")
+      .map((item) => (item.input as { session: string }).session);
+    assert.deepEqual(resumed, ["session-s1"]);
+  });
+
+  it("says a pause did not take when the engine cannot be reached", async () => {
+    const { orchestrator, epics } = await desk({ noEngine: true });
+    epics.get(epicId)!.status = "paused";
+    await assert.rejects(
+      orchestrator.changed(epicId),
+      /Blame could not act on the epic's change: The agent engine did not answer/,
+    );
+  });
+
+  it("looks again only at the epic's own stories, never another story's start", async () => {
+    const { orchestrator, stories, starts } = await desk({
+      rows: [
+        row("plain", "a", { status: "ready", runMode: "local-container" }),
+      ],
+      failStart: true,
+    });
+    await settle(() => starts.count === 1, "the first start");
+    await settle(
+      () =>
+        stories
+          .queueState()
+          .waiting.some(
+            (wait) => wait.storyId === "plain" && wait.reason.kind === "error",
+          ),
+      "the start to fail",
+    );
+    for (let look = 0; look < 5; look += 1)
+      await orchestrator.epicState(epicId);
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(starts.count, 1, "its 30 s pause before the next start holds");
+  });
+
+  it("keeps counting a failing start through the waits between attempts", async () => {
+    const { orchestrator, stories } = await desk({
+      rows: [
+        row("s1", "a", { epicId, status: "ready", runMode: "local-container" }),
+      ],
+      failStart: true,
+      stuckStartMs: 200,
+    });
+    const phase = (runtimePhase: string) =>
+      sync(stories, [{ id: "a", path: "/a" }], "window", {
+        ...preferences,
+        runMode: "local-container",
+        runtimePhase,
+      });
+    const waits = (kind: string) =>
+      stories.queueState().waiting.some((wait) => wait.reason.kind === kind);
+    await settle(() => waits("error"), "the first failure");
+    await orchestrator.epicState(epicId);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    // Between attempts it waits for the runtime, then fails again.
+    await phase("starting");
+    await settle(() => waits("runtime"), "a wait for the runtime");
+    await orchestrator.epicState(epicId);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    await phase("ready");
+    await settle(() => waits("error"), "the second failure");
+    assert.equal(
+      (await orchestrator.epicState(epicId)).blocked?.length,
+      1,
+      "its clock ran from the first failure",
+    );
+  });
+
+  it("calls a start that keeps failing blocked", async () => {
+    const { orchestrator, stories } = await desk({
+      rows: [
+        row("s1", "a", { epicId, status: "ready", runMode: "local-container" }),
+      ],
+      failStart: true,
+      stuckStartMs: 0,
+    });
+    await settle(
+      () =>
+        stories
+          .queueState()
+          .waiting.some((wait) => wait.reason.kind === "error"),
+      "the start to fail",
+    );
+    assert.equal((await orchestrator.epicState(epicId)).blocked?.length, 1);
+    const story = stories.epicStories(epicId)[0]!;
+    assert.equal(orchestrator.blocked(story), true);
+  });
+
+  it("tells a blocked story once: the same states and reasons are not news", () => {
+    const stories = [{ id: "s1", status: "ready" as const, agentStatus: null }];
+    const failing = [
+      { storyId: "s1", reason: "its start keeps failing: gone" },
+    ];
+    const told = idleSignature(stories, failing);
+    // It flickers to waiting for the runtime, then fails the same way.
+    assert.notEqual(idleSignature(stories, []), told);
+    assert.equal(idleSignature(stories, failing), told);
+    // Another error, a start, or the person's act is news.
+    assert.notEqual(
+      idleSignature(stories, [
+        { storyId: "s1", reason: "its start keeps failing: other" },
+      ]),
+      told,
+    );
+    assert.notEqual(
+      idleSignature(
+        [{ ...stories[0]!, status: "in-progress" as const }],
+        failing,
+      ),
+      told,
+    );
+  });
+
+  it("makes a lost branch again while nothing was merged into it, and holds the epic once something was", async () => {
+    const fresh = await desk();
+    fresh.branches.delete(epicBranch);
+    await fresh.orchestrator.epicState(epicId);
+    assert.ok(fresh.branches.has(epicBranch), "made again from the target");
+    const merged = await desk({
+      rows: [
+        row("s1", "a", { epicId, status: "done" }),
+        row("s2", "a", { epicId, status: "ready", storyNumber: 2 }),
+      ],
+    });
+    merged.branches.delete(epicBranch);
+    const state = await merged.orchestrator.epicState(epicId);
+    assert.ok(
+      !merged.branches.has(epicBranch),
+      "never made again over merged work",
+    );
+    assert.match(
+      state.error ?? "",
+      /branch epic\/checkout-flow is gone, and stories were already merged into it/,
+    );
+    assert.deepEqual(
+      merged.orchestrator.holds({
+        ...row("s9", "a", { epicId }),
+        status: "ready",
+      } as never),
+      { kind: "epic", epicId, hold: "branch" },
+    );
+    await assert.rejects(
+      merged.run("create_stories", { reason: "r", stories: [newStory()] }),
+      /Nothing starts: the epic's branch epic\/checkout-flow is gone/,
+    );
+    await assert.rejects(
+      merged.run("update_story", { reason: "r", storyId: "s2", queue: true }),
+      /Nothing starts: the epic's branch epic\/checkout-flow is gone/,
+    );
+    // Restored by the person: the epic goes on.
+    merged.branches.add(epicBranch);
+    await merged.orchestrator.epicState(epicId);
+    assert.equal(
+      merged.orchestrator.holds({
+        ...row("s9", "a", { epicId }),
+        status: "ready",
+      } as never),
+      undefined,
+    );
+  });
+
+  it("holds, and writes nothing over, a kept file it cannot read", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "orchestrator-unreadable-"));
+    cleanups.push(() => rm(directory, { recursive: true, force: true }));
+    // A folder where the file should be: reading it fails, not as missing.
+    const stateFile = join(directory, "epics.json");
+    await mkdir(stateFile);
+    const { orchestrator } = await desk({ prepare: false, stateFile });
+    const story = { ...row("s9", "a", { epicId }), status: "ready" } as never;
+    assert.deepEqual(orchestrator.holds(story), {
+      kind: "epic",
+      epicId,
+      hold: "unknown",
+    });
+    await assert.rejects(orchestrator.epicState(epicId), /cannot be read/);
+    assert.ok(
+      (await stat(stateFile)).isDirectory(),
+      "nothing was written over it",
+    );
+  });
+
+  it("drops what is kept of a story only once it is merged or rejected", async () => {
+    const { report, orchestrator, api, stories, stateFile } = await desk({
+      rows: [inReview("s1"), inReview("s2", { storyNumber: 2 })],
+      owned: { s1: "session-s1", s2: "session-s2" },
+      statuses: {
+        "session-s1": {
+          ...verifiedFields,
+          endedTurns: [{ turn: "t1", outcome: { status: "completed" } }],
+        } as never,
+        "session-s2": {
+          ...verifiedFields,
+          endedTurns: [{ turn: "t2", outcome: { status: "completed" } }],
+        } as never,
+      },
+    });
+    await report("epic_board", {});
+    const heard = async () =>
+      (
+        JSON.parse(await readFile(stateFile, "utf8")) as {
+          epics: Record<string, { heard?: Record<string, string> }>;
+        }
+      ).epics[epicId]?.heard ?? {};
+    assert.deepEqual(Object.values(await heard()).sort(), ["s1", "s2"]);
+    Object.assign(api.stories.get("s1")!, { status: "done" });
+    await stories.refresh("a");
+    await orchestrator.epicState(epicId);
+    assert.deepEqual(Object.values(await heard()), ["s2"]);
   });
 });

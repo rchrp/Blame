@@ -57,6 +57,7 @@ export function epicHold(input: {
   if (!input.entry) return hold("elsewhere");
   if (!input.epic) return hold("unknown");
   if (input.epic.status !== "active") return hold("paused");
+  if (input.entry.branchGone) return hold("branch");
   if (budgetSpent(input.epic, input.entry)) return hold("budget");
   return undefined;
 }
@@ -98,6 +99,8 @@ export function waitWords(reason: StoryWaitReason): string {
         elsewhere: "the epic runs on another computer",
         direct:
           "the project has no working preview environment (an epic's story never runs Direct)",
+        branch:
+          "the epic's branch is gone, and stories were already merged into it",
         unknown: "the epic is not read yet",
       }[reason.hold];
     case "dependency-dropped":

@@ -9,6 +9,7 @@ import {
   TranscriptReducer,
   type EngineClient,
   type JsonValue,
+  type SessionConfig,
   type SessionRecord,
   type TurnOutcome,
 } from "@blame/engine-client";
@@ -32,6 +33,13 @@ export type ConversationView = {
   reported: ReadonlySet<string>;
   spentMicroUsd: number;
   unpricedRequests: number;
+  /** The config in effect (the folder it reads, its model, its prompt). */
+  config?: SessionConfig;
+  /** The completed `message_story` calls, by the story named, in all and as changes. */
+  messages: {
+    all: Record<string, number>;
+    changes: Record<string, number>;
+  };
 };
 
 /** The key a story turn is known by. */
@@ -71,6 +79,7 @@ export class ConversationReader {
         reported: new Set(),
         spentMicroUsd: 0,
         unpricedRequests: 0,
+        messages: { all: {}, changes: {} },
       };
     }
     return view(held);
@@ -96,6 +105,20 @@ function view({ reducer, reported }: Held): ConversationView {
     (turn) => turn.outcome && turn.status !== "withdrawn",
   );
   const lastTurn = ended.at(-1);
+  const messages = {
+    all: {} as Record<string, number>,
+    changes: {} as Record<string, number>,
+  };
+  for (const item of transcript.items) {
+    if (item.kind !== "tool_call" || item.name !== "message_story") continue;
+    if (item.state !== "completed") continue;
+    const input = item.input as { storyId?: unknown; kind?: unknown } | null;
+    if (typeof input?.storyId !== "string") continue;
+    messages.all[input.storyId] = (messages.all[input.storyId] ?? 0) + 1;
+    if (input.kind === "changes")
+      messages.changes[input.storyId] =
+        (messages.changes[input.storyId] ?? 0) + 1;
+  }
   let endTurn: EndTurn | undefined;
   if (lastTurn)
     for (const item of transcript.items)
@@ -124,6 +147,8 @@ function view({ reducer, reported }: Held): ConversationView {
     reported,
     spentMicroUsd: transcript.usage.spent.costMicroUsd,
     unpricedRequests: transcript.usage.spent.unpricedRequests,
+    ...(transcript.config ? { config: transcript.config } : {}),
+    messages,
   };
 }
 

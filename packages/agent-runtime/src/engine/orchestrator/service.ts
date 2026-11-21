@@ -36,12 +36,17 @@ import type {
 import { orchestratorWakeText } from "../protocol.js";
 import type { ResolvedOrchestratorSettings } from "../purposes/orchestrator.js";
 import type { StoryService } from "../stories/service.js";
-import { parseStory, type HostStory } from "../stories/story.js";
+import {
+  parseStory,
+  storyDisplayId,
+  type HostStory,
+} from "../stories/story.js";
 import type { ClientTool } from "../tool.js";
 import type { EpicDesk } from "./actions.js";
 import {
   epicCounts,
   epicHasWork,
+  idleSignature,
   wakeDue,
   waitsForPerson,
   wakeStory,
@@ -61,7 +66,7 @@ import {
 } from "./conversation.js";
 import { epicApi } from "./epics.js";
 import { blockedStories, epicHold, stuckStartMs } from "./gate.js";
-import { pauseEpic, resumeEpic } from "./pause.js";
+import { pauseEpic, resumeEpic, type PauseProgress } from "./pause.js";
 import { EpicReading } from "./reading.js";
 import { OrchestratorState, type EpicEntry } from "./state.js";
 import { orchestratorTools } from "./tools.js";
@@ -133,8 +138,16 @@ export class Orchestrator {
   private readonly wakeErrors = new Map<string, string>();
   /** Resumes sent in a row with no turn ended through `end_turn` between them. */
   private readonly resumes = new Map<string, number>();
-  /** Since when a queued story's start keeps failing, by story. */
+  /** Since when a queued story's start keeps failing, by story (until it starts). */
   private readonly failing = new Map<string, number>();
+  /** Why the last look at an epic could not run (the screen is told). */
+  private readonly lookErrors = new Map<string, string>();
+  /** How far the epic's pause is, as the last look left it. */
+  private readonly pauses = new Map<string, PauseProgress>();
+  /** The gate's answer for each epic at the last look: a release retries its stories. */
+  private readonly holdsSeen = new Map<string, string>();
+  /** Epics being found again from the engine's records. */
+  private readonly adopting = new Map<string, Promise<boolean>>();
   /** Epic branches being made, by project folder: two at once never pick one name. */
   private readonly preparing = new Map<string, Promise<unknown>>();
   private recommendations:
@@ -156,7 +169,7 @@ export class Orchestrator {
     this.tickTimer.unref?.();
     // Until the file is read every epic story is held: the gate answers
     // from it from then on.
-    void this.state.all().then(() => host.stories.retry(), report);
+    void this.state.all().then(() => this.retryHeld(), report);
   }
 
   // -------------------------------------------------------- host's hooks
@@ -170,6 +183,7 @@ export class Orchestrator {
     if (!epic) throw new Error("This epic cannot be read from the account.");
     if (epic.projectId !== settings.projectId)
       throw new Error("This epic belongs to another project.");
+    if (epic.engineSessionId === session) await this.adopt(epic.id);
     const entry = await this.state.get(epic.id);
     if (
       (epic.engineSessionId && epic.engineSessionId !== session) ||
@@ -278,7 +292,7 @@ export class Orchestrator {
       entry.settings = settings;
       entry.stopped = false;
     });
-    this.host.stories.retry();
+    this.retryEpic(epic.id);
   }
 
   /** A turn of a session started or every turn ended (the host's activity). */
@@ -349,6 +363,8 @@ export class Orchestrator {
     if (!epicId) return undefined;
     const epic = this.epics.get(epicId);
     if (!epic && this.state.peek(epicId)) this.readLater(epicId);
+    // Not kept here: its conversation may still be this computer's.
+    if (this.state.ready() && !this.state.peek(epicId)) this.adoptLater(epicId);
     return epicHold({
       story,
       ready: this.state.ready(),
@@ -378,15 +394,54 @@ export class Orchestrator {
 
   /** What the screen shows of an epic. */
   async epicState(epicId: string): Promise<EpicState> {
+    await this.adopt(epicId).catch(report);
     await this.schedule(epicId);
     return this.publish(await this.reading(epicId));
   }
 
-  /** The window changed the epic (its settings, a pause, a resume): read again, and act on it. */
+  /**
+   * The window changed the epic (its settings, a pause, a resume): read
+   * again, and act on it now. What it answers says whether a pause took
+   * (`pause`); one that could not even look fails with why.
+   */
   async changed(epicId: string): Promise<EpicState> {
-    await this.epic(epicId, true);
-    this.host.stories.retry();
-    return this.epicState(epicId);
+    try {
+      await this.epic(epicId, true);
+      return await this.epicState(epicId);
+    } catch (error) {
+      throw new Error(
+        `Blame could not act on the epic's change: ${errorText(error)}`,
+        { cause: error },
+      );
+    }
+  }
+
+  /**
+   * A person acted on a story from a window (a message, a pause, a resume,
+   * a discard…): it is theirs from then on, and the epic's pause and
+   * resume leave it as it is.
+   */
+  touched(storyId: string) {
+    void (async () => {
+      for (const [epicId, entry] of await this.state.all()) {
+        const pause = entry.pause;
+        if (
+          !pause?.stories.includes(storyId) &&
+          !pause?.awaiting?.includes(storyId)
+        )
+          continue;
+        await this.state.change(epicId, (item) => {
+          if (!item.pause) return;
+          item.pause = {
+            ...item.pause,
+            stories: item.pause.stories.filter((id) => id !== storyId),
+            ...(item.pause.awaiting
+              ? { awaiting: item.pause.awaiting.filter((id) => id !== storyId) }
+              : {}),
+          };
+        });
+      }
+    })().catch(report);
   }
 
   stop() {
@@ -405,7 +460,8 @@ export class Orchestrator {
         story = await this.host.stories.read(event.storyId);
       }
       const epicId = story.epicId;
-      if (!epicId || !(await this.state.get(epicId))) return;
+      // Not kept here: its conversation may still be this computer's.
+      if (!epicId || !(await this.adopt(epicId))) return;
       const told = wakeStory(story, event.session, {
         turn: event.turn,
         outcome: event.outcome,
@@ -429,8 +485,7 @@ export class Orchestrator {
             };
         }
       });
-      // The budget may be spent now: the queue's gate reads it.
-      this.host.stories.retry();
+      // The budget may be spent now: the gate reads it at the next start.
       await this.schedule(epicId);
     } catch (error) {
       report(error);
@@ -457,7 +512,10 @@ export class Orchestrator {
       try {
         do {
           check.again = false;
-          await this.check(epicId).catch(report);
+          await this.check(epicId).catch((error: unknown) => {
+            this.lookErrors.set(epicId, errorText(error));
+            report(error);
+          });
         } while (check.again && !this.stopped);
       } finally {
         this.checks.delete(epicId);
@@ -469,28 +527,62 @@ export class Orchestrator {
   private async check(epicId: string) {
     const entry = await this.state.get(epicId);
     const connection = this.host.api();
+    const cannot = (why: string) => {
+      this.lookErrors.set(epicId, why);
+    };
+    if (!entry)
+      return cannot("The epic's conversation does not run on this computer.");
+    if (!connection) return cannot("Blame is signed out.");
     // Kept for the API it was created through: another one is not asked.
-    if (!entry || !connection || !sameApi(entry, connection)) return;
+    if (!sameApi(entry, connection))
+      return cannot("The epic belongs to another account or deployment.");
     const epic = await this.epic(epicId, true);
     // Not shown to this connection (another account) or no answer: kept.
-    if (!epic) return;
+    if (!epic) return cannot("The account does not show this epic.");
     if (epic.status === "discarded") return this.state.forget(epicId);
     // Until its stories are read, what works is not known.
-    if (!this.host.stories.loaded(epic.projectId)) return;
+    if (!this.host.stories.loaded(epic.projectId))
+      return cannot("The epic's project is not read on this computer yet.");
     const client = await this.host.client();
     const conversation = await this.conversations.read(client, entry.session);
+    this.lookErrors.delete(epicId);
     let reading = this.lookAt(epic, entry, conversation);
+    await reading.prune();
+    await this.checkBranch(
+      epic,
+      await this.entry(epicId),
+      reading.epicStories(),
+    );
     if (epic.status === "paused") {
-      await pauseEpic(this.pauseHost(), reading, entry, conversation);
+      this.pauses.set(
+        epicId,
+        await pauseEpic(
+          this.pauseHost(),
+          reading,
+          await this.entry(epicId),
+          conversation,
+        ),
+      );
       await this.publish(
         this.lookAt(epic, await this.entry(epicId), conversation),
       );
       return;
     }
+    this.pauses.delete(epicId);
+    // A resume the pause's cut turn goes on with does not count as a cut.
+    let pauseCut = false;
     if (entry.pause) {
-      await resumeEpic(this.pauseHost(), reading);
-      reading = this.lookAt(epic, await this.entry(epicId), conversation);
+      const resumed = await resumeEpic(this.pauseHost(), reading);
+      if (!resumed.done) {
+        await this.publish(
+          this.lookAt(epic, await this.entry(epicId), conversation),
+        );
+        return;
+      }
+      if (resumed.turn) pauseCut = true;
+      else await this.state.change(epicId, (item) => delete item.pause);
     }
+    reading = this.lookAt(epic, await this.entry(epicId), conversation);
     this.noteFailingStarts(reading.epicStories());
     await this.publish(reading);
     if (epic.status !== "active" || !conversation.exists) return;
@@ -507,28 +599,34 @@ export class Orchestrator {
     const stories = reading.epicStories();
     const starting = this.starting();
     if (conversation.last?.endTurn) this.resumes.delete(epicId);
+    const interrupted =
+      conversation.last?.outcome.status === "interrupted" && !entry.stopped;
+    if (pauseCut && !interrupted)
+      await this.state.change(epicId, (item) => delete item.pause);
     // A conversation cut again and again (an engine that keeps stopping)
     // is resumed three times, then left to the person (it shows failed).
     const cut =
-      conversation.last?.outcome.status === "interrupted" &&
-      !entry.stopped &&
-      (this.resumes.get(epicId) ?? 0) < maxResumes;
+      interrupted && (pauseCut || (this.resumes.get(epicId) ?? 0) < maxResumes);
+    const blocked = this.blockedOf(stories);
+    // Told once: nothing about the epic's stories changed since the last
+    // `idle` wake (none started, the person did nothing, no other error).
+    const told = idleSignature(stories, blocked);
     const reason: OrchestratorWake["reason"] | undefined = cut
       ? "resumed"
       : wakeDue(stories, starting, unreported)
         ? "stories"
         : state === "waiting" &&
             !unreported.length &&
+            told !== (await this.entry(epicId)).idleTold &&
             !epicHasWork(stories, starting, (story) =>
               this.blocked(story as HostStory),
             )
           ? "idle"
           : undefined;
     if (!reason) return;
-    if (reason === "resumed")
+    if (reason === "resumed" && !pauseCut)
       this.resumes.set(epicId, (this.resumes.get(epicId) ?? 0) + 1);
     const spend = await reading.spend();
-    const blocked = this.blockedOf(stories);
     await this.wake(epicId, entry.session, {
       reason,
       stories: unreported,
@@ -543,6 +641,37 @@ export class Orchestrator {
           }
         : {}),
     });
+    await this.state.change(epicId, (item) => {
+      if (reason === "idle") item.idleTold = told;
+      if (pauseCut) delete item.pause;
+    });
+  }
+
+  /**
+   * The epic's branch is still there: made again from the target while no
+   * story was merged into it; once one was, the epic holds (its later
+   * stories would build without that work) and the person is told.
+   */
+  private async checkBranch(
+    epic: Epic,
+    entry: EpicEntry,
+    stories: readonly HostStory[],
+  ) {
+    const git = this.host.git;
+    const root = entry.settings?.workspace.root;
+    const branch = entry.branch;
+    if (!git || !root || !branch || !epic.targetBranch) return;
+    const merged = stories.some((story) => story.status === "done");
+    const gone = !(await branchExists(git, root, branch));
+    if (gone && !merged)
+      await ensureBranch(git, root, branch, epic.targetBranch);
+    const held = gone && merged;
+    if ((entry.branchGone ?? false) === held) return;
+    await this.state.change(epic.id, (item) => {
+      if (held) item.branchGone = true;
+      else delete item.branchGone;
+    });
+    if (!held) this.retryEpic(epic.id);
   }
 
   private async entry(epicId: string) {
@@ -615,7 +744,7 @@ export class Orchestrator {
       this.loadingEpics.set(epicId, loading);
     }
     const epic = await loading;
-    if (known?.status !== epic?.status) this.host.stories.retry();
+    if (known?.status !== epic?.status) this.releaseHeld(epicId);
     return epic;
   }
 
@@ -658,11 +787,20 @@ export class Orchestrator {
   private async publish(reading: EpicReading): Promise<EpicState> {
     const { epic, entry, conversation } = reading;
     const spend = await reading.spend();
-    // What was spent is kept now: the queue's gate holds a spent epic.
-    this.host.stories.retry();
+    // What was spent is kept now: a gate the look released lets its
+    // stories go (only the epic's: others keep their own pace).
+    this.releaseHeld(epic.id);
     const looked = conversationState(conversation, entry?.stopped === true);
     const { state } = looked;
-    const error = looked.error ?? this.wakeErrors.get(epic.id);
+    const lookError = this.lookErrors.get(epic.id);
+    const error =
+      this.state.failure() ??
+      looked.error ??
+      this.wakeErrors.get(epic.id) ??
+      (entry?.branchGone
+        ? `The epic's branch ${entry.branch} is gone, and stories were already merged into it: nothing starts until it is back.`
+        : undefined);
+    const progress = this.pauses.get(epic.id);
     const endTurn = conversation?.last?.endTurn;
     const unreported = entry ? (await reading.unreported()).length : 0;
     const blocked = this.blockedOf(reading.epicStories());
@@ -686,6 +824,16 @@ export class Orchestrator {
         : {}),
       unreported,
       ...(blocked.length ? { blocked } : {}),
+      ...(epic.status === "paused"
+        ? {
+            pause: {
+              phase: progress?.done && !lookError ? "paused" : "pausing",
+              ...((lookError ?? progress?.error)
+                ? { error: lookError ?? progress?.error }
+                : {}),
+            },
+          }
+        : {}),
       spend,
     };
     const serialized = JSON.stringify(epicState);
@@ -705,17 +853,131 @@ export class Orchestrator {
     );
   }
 
-  // Each look notes since when each queued story's start keeps failing.
+  /**
+   * Each look notes since when each queued story's start keeps failing:
+   * from its first failure until it starts (or leaves the queue), whatever
+   * it waits for in between (the runtime, the preview environment).
+   */
   private noteFailingStarts(stories: readonly HostStory[]) {
     const waits = this.host.stories.queueState().waiting;
     for (const story of stories) {
+      if (story.status !== "ready") {
+        this.failing.delete(story.id);
+        continue;
+      }
       const failing = waits.some(
         (wait) => wait.storyId === story.id && wait.reason.kind === "error",
       );
-      if (!failing) this.failing.delete(story.id);
-      else if (!this.failing.has(story.id))
+      if (failing && !this.failing.has(story.id))
         this.failing.set(story.id, Date.now());
     }
+  }
+
+  /** Lets the epic's queued stories be looked at again now (none of any other). */
+  private retryEpic(epicId: string) {
+    const ids = this.host.stories
+      .epicStories(epicId)
+      .filter((story) => story.status === "ready")
+      .map((story) => story.id);
+    if (ids.length) this.host.stories.retry(ids);
+  }
+
+  // Once the gate's answer for an epic changed, its stories are looked at again.
+  private releaseHeld(epicId: string) {
+    const hold = JSON.stringify(this.holds({ epicId } as HostStory) ?? null);
+    if (this.holdsSeen.get(epicId) === hold) return;
+    this.holdsSeen.set(epicId, hold);
+    this.retryEpic(epicId);
+  }
+
+  // The stories the gate held while the file was not read yet.
+  private retryHeld() {
+    const ids = this.host.stories
+      .queueState()
+      .waiting.filter((wait) => wait.reason.kind === "epic")
+      .map((wait) => wait.storyId);
+    if (ids.length) this.host.stories.retry(ids);
+  }
+
+  /**
+   * An epic the kept file does not know (it was lost, or set aside) whose
+   * conversation this computer's engine has is run here: its entry is
+   * built again from the API and the conversation's records, which name
+   * the branch this host made (its prompt) and the folder it reads.
+   */
+  async adopt(epicId: string): Promise<boolean> {
+    const known = this.adopting.get(epicId);
+    if (known) return known;
+    const adopting = this.rebuild(epicId).finally(() =>
+      this.adopting.delete(epicId),
+    );
+    this.adopting.set(epicId, adopting);
+    return adopting;
+  }
+
+  private async rebuild(epicId: string): Promise<boolean> {
+    if (await this.state.get(epicId)) return true;
+    const connection = this.host.api();
+    if (!connection) return false;
+    const epic = await this.epic(epicId, true);
+    const session = epic?.engineSessionId;
+    if (!epic || !session) return false;
+    const client = await this.host.client();
+    const { sessions } = await client.listSessions();
+    // Another computer's: never read here (that would pull it in).
+    if (!sessions.some((item) => item.session === session)) return false;
+    const conversation = await this.conversations.read(client, session);
+    const config = conversation.config;
+    if (!config || config.purpose !== "orchestrator") return false;
+    const branch = keptBranch(config.system_prompt);
+    if (
+      !branch ||
+      branch !== epic.branch ||
+      epicBranchProblem(branch, epic.targetBranch ?? "")
+    )
+      return false;
+    await this.state.register(epicId, {
+      projectId: epic.projectId,
+      session,
+      apiUrl: connection.url,
+      branch,
+    });
+    const named = new Map(
+      this.host.stories
+        .epicStories(epicId)
+        .map((story) => [storyDisplayId(story), story.id]),
+    );
+    const counted = (counts: Record<string, number>) =>
+      Object.fromEntries(
+        Object.entries(counts).map(([id, count]) => [
+          named.get(id) ?? id,
+          count,
+        ]),
+      );
+    await this.state.change(epicId, (entry) => {
+      entry.settings = {
+        workspace: { root: config.workspace_root, location: "host" },
+        projectId: epic.projectId,
+        epicId,
+        model: {
+          providerId: config.model.provider,
+          modelId: config.model.model,
+        },
+      };
+      entry.messages = counted(conversation.messages.all);
+      entry.changes = counted(conversation.messages.changes);
+    });
+    this.retryEpic(epicId);
+    return true;
+  }
+
+  // The gate's background search of an epic the file does not know.
+  private adoptLater(epicId: string) {
+    if (this.adopting.has(epicId) || !this.host.api()) return;
+    if (Date.now() - (this.unread.get(`adopt\n${epicId}`) ?? 0) < epicRetryMs)
+      return;
+    this.unread.set(`adopt\n${epicId}`, Date.now());
+    void this.adopt(epicId).catch(() => undefined);
   }
 
   private stuck(storyId: string) {
@@ -796,6 +1058,29 @@ export class Orchestrator {
     if (!git) throw new Error("Git is not available to the orchestrator here.");
     return git;
   }
+}
+
+/** The branch this host wrote into the conversation's prompt (`<epic>`). */
+function keptBranch(prompt: string) {
+  return /^branch: (\S+) \(stories merge here/m.exec(prompt)?.[1];
+}
+
+async function branchExists(git: GitRun, root: string, branch: string) {
+  try {
+    await git(root, [
+      "rev-parse",
+      "--verify",
+      "--quiet",
+      `refs/heads/${branch}`,
+    ]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function errorText(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 /** The entry was kept for this API (an entry from before it was noted is this one's). */

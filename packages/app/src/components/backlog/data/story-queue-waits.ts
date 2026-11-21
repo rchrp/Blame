@@ -75,6 +75,8 @@ export function storyWaitText(reason: StoryWaitReason): string {
           return "Its epic runs on another computer"
         case "direct":
           return "Needs a working preview environment: an epic's story never runs in your project folder"
+        case "branch":
+          return "Its epic's branch is gone"
         case "unknown":
           return "Waits for its epic to be read"
       }
