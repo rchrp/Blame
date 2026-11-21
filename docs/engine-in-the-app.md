@@ -149,8 +149,11 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   `<userData>/story-turns.json` (`stories/ledger.ts`). A story another
   computer of the account runs is left alone: its session is never read
   here (reading it would pull it from Blame's database and end its running
-  turn as interrupted on this computer), and a pause or a message to it
-  is refused. Two computers starting the same queued story is not
+  turn as interrupted on this computer), a pause or a message to it is
+  refused, and its worktree is not removed here. A story no agent runs is
+  cleaned of what this computer has of it when it is merged, done,
+  discarded or sent back here, whoever started it (a story in review from
+  before the ledger existed included). Two computers starting the same queued story is not
   prevented yet: that needs an atomic claim in the API.
 - **Reconcile** (`stories/reconcile.ts`): every path ends in one step, run
   as the story's action: its record read now, set against what the engine

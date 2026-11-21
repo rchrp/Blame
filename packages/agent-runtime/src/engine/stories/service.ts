@@ -721,13 +721,18 @@ export class StoryService {
 
   /** The folder of the story's project, which this computer must have. */
   requiredPath(story: HostStory) {
-    // A window's, else the one kept with a story this computer runs.
-    const path =
-      this.windows.projects().get(story.projectId) ??
-      this.ownedPaths.get(story.projectId);
+    const path = this.projectPath(story);
     if (!path)
       throw new Error("This story's project is not open on this computer.");
     return path;
+  }
+
+  /** A window's folder for the story's project, else one kept with a story run here. */
+  private projectPath(story: HostStory) {
+    return (
+      this.windows.projects().get(story.projectId) ??
+      this.ownedPaths.get(story.projectId)
+    );
   }
 
   /** Runs one action on a story at a time: no double resume or merge. */
@@ -785,8 +790,11 @@ export class StoryService {
 
   /**
    * Stops what the story runs and removes its worktree, telling the
-   * windows (a Cloud Preview's window state goes too). A story another
-   * computer runs is not touched here: its agent and worktree are there.
+   * windows (a Cloud Preview's window state goes too). A story whose agent
+   * runs on another computer is not touched here: its agent and worktree
+   * are there. One no agent runs that this computer did not start (from
+   * before it kept a ledger, or ended there) is cleaned of what this
+   * computer has of it.
    */
   private async clean(
     story: HostStory,
@@ -794,6 +802,9 @@ export class StoryService {
     release = true,
   ) {
     const owned = await this.ledger.story(story.id);
+    const path =
+      owned?.path ??
+      (story.agentStatus === "Running" ? undefined : this.projectPath(story));
     const event = {
       projectId: story.projectId,
       storyId: story.id,
@@ -801,8 +812,8 @@ export class StoryService {
     };
     this.host.emit({ type: "story-cleanup", ...event, cleaning: true });
     try {
-      if (owned) {
-        await cleanStory(this.context(), story, owned.path, options);
+      if (path) {
+        await cleanStory(this.context(), story, path, options);
         if (options.removeSession && story.engineSessionId)
           await this.ledger.forget(story.engineSessionId);
       }

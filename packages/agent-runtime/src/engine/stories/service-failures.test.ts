@@ -51,6 +51,56 @@ test("a story another computer runs is never read, paused nor settled here", asy
   }
 });
 
+test("a story this computer did not start loses its worktree here when it ends here, unless another computer runs its agent", async () => {
+  const api = fakeApi([
+    // In review from before this computer kept a ledger.
+    row("before", "a", {
+      status: "in-review",
+      engineSessionId: "old-session",
+      workspaceMode: "local-container",
+      worktree: "/worktrees/before",
+      branch: "story/before",
+    }),
+    row(
+      "elsewhere",
+      "a",
+      working("their-session", {
+        workspaceMode: "local-container",
+        worktree: "/worktrees/elsewhere",
+      }),
+    ),
+  ]);
+  const fake = fakeHost();
+  const { service: stories, close } = await service(fake.host);
+  try {
+    await sync(stories, [{ id: "a", path: "/a" }]);
+    await stories.approve("before", {
+      model: { providerId: "anthropic", modelId: "claude" },
+    });
+    await settle(
+      () => fake.order.includes("remove /worktrees/before"),
+      "the merged story's worktree to go",
+    );
+    await stories.discard("elsewhere", "Not needed");
+    await pause(100);
+    assert.ok(
+      !fake.order.includes("remove /worktrees/elsewhere"),
+      "the other computer's worktree is left alone",
+    );
+    assert.ok(
+      !fake.calls.some(
+        ({ method, input }) =>
+          method === "interrupt" &&
+          (input as { session: string }).session === "their-session",
+      ),
+      "its agent is not stopped here",
+    );
+  } finally {
+    await close();
+    api.restore();
+  }
+});
+
 test("a session the engine could not read is not taken for one it lost", async () => {
   const api = fakeApi([row("story", "a", working("session"))]);
   const fake = fakeHost();
