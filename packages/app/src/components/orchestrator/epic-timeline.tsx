@@ -427,9 +427,8 @@ function EndRow({
   if (end.action === "wait")
     return (
       <EventRow icon={<HourglassIcon />}>
-        <span>
-          Waiting for the stories{end.reason ? `: ${end.reason}` : "."}
-        </span>
+        <span className="text-foreground">Waiting for the stories</span>
+        {end.reason ? <span>{end.reason}</span> : null}
       </EventRow>
     )
   if (end.action === "ask")

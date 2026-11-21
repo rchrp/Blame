@@ -103,7 +103,8 @@ export function EpicConversation({
           ref={scrollRef}
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-1 pb-4"
         >
-          {epic.goal ? <EpicGoal goal={epic.goal} /> : null}
+          {/* The goal is the conversation's first message once it started. */}
+          {epic.goal && empty ? <EpicGoal goal={epic.goal} /> : null}
           {empty ? (
             <EpicConversationIntro />
           ) : (
