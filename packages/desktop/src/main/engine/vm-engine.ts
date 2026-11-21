@@ -192,6 +192,31 @@ async function installInVm(
     );
 }
 
+/**
+ * Takes a file the VM's harness left (a story's project memory): its text,
+ * read as the user that owns the worktrees, then removed so it is taken
+ * once. Undefined when there is none.
+ */
+export async function takeVmFile(target: VmEngineTarget, path: string) {
+  const spec =
+    target.platform === "darwin"
+      ? { command: target.wrapper, args: [] as string[] }
+      : { command: target.wsl, args: ["-d", target.distro, "-u", "blame", "--exec"] };
+  return new Promise<string | undefined>((resolve, reject) => {
+    const child = spawn(
+      spec.command,
+      [...spec.args, "sh", "-c", 'cat -- "$1" && rm -f -- "$1"', "sh", path],
+      { env: target.env, stdio: ["ignore", "pipe", "ignore"], windowsHide: true },
+    );
+    let stdout = "";
+    child.stdout!.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.once("error", reject);
+    child.once("close", (code) => resolve(code === 0 ? stdout : undefined));
+  });
+}
+
 /** Runs a command in the VM; true when it exits with 0. */
 function runInVm(
   target: VmEngineTarget,

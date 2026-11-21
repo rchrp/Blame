@@ -21,10 +21,15 @@ import {
 import { runHostGh, type GhRunner } from "../pull-request.js";
 import { setGitRunner } from "../runtime-git.js";
 import { mkdir } from "node:fs/promises";
+import { posix } from "node:path";
 import { listProjectMemories, saveProjectMemory } from "../cloud-api.js";
-import { takeCompletionMemory } from "../harness/completion-memory.js";
+import {
+  completionMemoryFile,
+  takeCompletionMemory,
+} from "../harness/completion-memory.js";
 import {
   selectProjectMemory,
+  type ProjectMemoryCandidate,
   type ProjectMemoryPersistence,
 } from "../harness/project-memory.js";
 import type { ApiConnection } from "../types.js";
@@ -269,8 +274,8 @@ export class EngineHost {
     );
     supervisor.onStarted(() => this.credentials.engineRestarted());
     const hub = new SessionHub(supervisor, (event) => {
-      if (event.type === "activity" && !event.running && location === "host")
-        void this.saveCompletionMemory(event.session);
+      if (event.type === "activity" && !event.running)
+        void this.saveCompletionMemory(event.session, location);
       options.emit(event);
     });
     return { supervisor, hub };
@@ -305,21 +310,41 @@ export class EngineHost {
   /**
    * A story's accepted finish_task may have left a memory for its project
    * (harness/completion-memory.ts): saved to the account when the turn
-   * ends, as the agent runtime did after its own sessions. Only on this
-   * computer: a VM story's memory file is in the VM.
+   * ends, as the agent runtime did after its own sessions. A VM story's
+   * harness leaves it in the VM: it is taken from there (and removed, so it
+   * is saved once).
    */
-  private async saveCompletionMemory(session: string) {
+  private async saveCompletionMemory(
+    session: string,
+    location: EngineLocation = "host",
+  ) {
     const config = this.current.get(session)?.config;
     const projectId = this.known.get(session)?.projectId;
     const api = this.api;
     if (config?.purpose !== "development-story" || !projectId || !api) return;
-    const memory = await takeCompletionMemory(config.workspace_root, session);
+    const memory =
+      location === "vm"
+        ? await this.takeVmMemory(config.workspace_root, session)
+        : await takeCompletionMemory(config.workspace_root, session);
     if (memory)
       await (this.options.projectMemory?.save ?? saveProjectMemory)(
         api,
         projectId,
         memory,
       ).catch(() => undefined);
+  }
+
+  private async takeVmMemory(workspaceRoot: string, session: string) {
+    const text = await this.options.desktop
+      ?.takeVmFile?.({
+        path: completionMemoryFile(workspaceRoot, session, posix.join),
+      })
+      .catch(() => null);
+    try {
+      return text ? (JSON.parse(text) as ProjectMemoryCandidate) : undefined;
+    } catch {
+      return undefined;
+    }
   }
 
   /**

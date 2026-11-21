@@ -10,7 +10,7 @@ import type {
   EngineDesktopMethods,
 } from "@blame/agent-runtime/engine-protocol";
 import { vmEngineBinaries } from "./engine-binary.ts";
-import { prepareVmEngine, vmEngineTarget } from "./vm-engine.ts";
+import { prepareVmEngine, takeVmFile, vmEngineTarget } from "./vm-engine.ts";
 import log from "electron-log";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -112,6 +112,11 @@ export function engineDesktopServices(
     git: (input) => agentGit(input),
     applyPreviewInitialization: (input) => applyPreviewInitialization(input),
     prepareVmEngine: () => prepareThisVmEngine(),
+    takeVmFile: async (input) => {
+      const target = vmEngineTarget();
+      if ("missing" in target) return null;
+      return (await takeVmFile(target, String(record(input).path ?? ""))) ?? null;
+    },
     commandCredentials: async (input) => {
       const { harnessCommandCredentials } =
         await import("../github-access/agent-github-access.ts");
