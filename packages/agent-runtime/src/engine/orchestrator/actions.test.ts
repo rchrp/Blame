@@ -454,7 +454,7 @@ describe("the orchestrator's tools", () => {
   });
 
   it("refuses a fourth request for changes on one story", async () => {
-    const { run, report: read } = await desk({
+    const { run } = await desk({
       rows: [inReview("s1")],
       owned: { s1: "session-s1" },
       statuses: {

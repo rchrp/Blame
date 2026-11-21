@@ -7,8 +7,6 @@ import {
   EngineSupervisor,
   TranscriptReducer,
   localEngine,
-  type Credential,
-  type EngineCommand,
   type EngineLogLine,
   type HostParamsOf,
   type JsonValue,
