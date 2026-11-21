@@ -426,6 +426,7 @@ export async function approveStory(
     if (error instanceof Error && error.name === "StoryMergeConflictError")
       throw new Error(
         `${error.message} It is not merged. Ask for changes (message_story, kind changes): its agent merges ${branch} into its work (git merge ${branch}), resolves the conflicts, and passes its checks again.`,
+        { cause: error },
       );
     throw error;
   }
