@@ -65,7 +65,7 @@ export async function runQueuedStoryTitleGeneration(
     const title = await generatedQueuedStoryTitle(request)
     return await persistGeneratedQueuedStoryTitle(request, title)
   } catch (error) {
-    reportModelLimit("Story title not written", error)
+    reportModelLimit("Title generation", error)
     return undefined
   } finally {
     setGenerating(false)

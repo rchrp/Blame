@@ -14,6 +14,7 @@ import {
 } from "@/components/project-initialization/initialization-blocked"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { useNow } from "@/hooks/use-now"
+import { modelLimit } from "@/lib/model-limit"
 import { cn } from "@/lib/utils"
 import { CornerLight, type CornerTone } from "./environment-kinds"
 import { EnvironmentStartChain } from "./environment-start-chain"
@@ -258,18 +259,22 @@ function FailedStatus({
         {readableInitializationError(initialization.error)}
       </p>
       <ModelLimitAction message={initialization.error} />
-      <p>
-        Stories run in Direct mode, in your project folder, until an analysis
-        succeeds. Run it again; if it keeps failing, try another model in{" "}
-        <button
-          type="button"
-          className="text-foreground underline underline-offset-3 hover:text-foreground/80"
-          onClick={openModelSettings}
-        >
-          Settings
-        </button>
-        .
-      </p>
+      {modelLimit(initialization.error) ? (
+        <p>Stories run in Direct mode, in your project folder, meanwhile.</p>
+      ) : (
+        <p>
+          Stories run in Direct mode, in your project folder, until an analysis
+          succeeds. Run it again; if it keeps failing, try another model in{" "}
+          <button
+            type="button"
+            className="text-foreground underline underline-offset-3 hover:text-foreground/80"
+            onClick={openModelSettings}
+          >
+            Settings
+          </button>
+          .
+        </p>
+      )}
       {initialization.error ? (
         <ErrorDetails label="Error details" text={initialization.error} />
       ) : null}

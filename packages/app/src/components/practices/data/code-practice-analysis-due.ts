@@ -18,7 +18,12 @@ export const failedCodePracticeAnalysisRetryMs = 10 * 60_000
 export function codePracticeAnalysisDue(
   analysis: Pick<
     CloudProjectCodePracticeAnalysis,
-    "agentModelId" | "agentProviderId" | "createdAt" | "error" | "status" | "updatedAt"
+    | "agentModelId"
+    | "agentProviderId"
+    | "createdAt"
+    | "error"
+    | "status"
+    | "updatedAt"
   >,
   runningHere: boolean,
   model: { providerId: string; modelId: string },
@@ -26,7 +31,8 @@ export function codePracticeAnalysisDue(
 ) {
   if (runningHere || analysis.status === "done") return false
   const reportedAt = Date.parse(analysis.updatedAt ?? analysis.createdAt)
-  if (analysis.status === "error") return failedAnalysisDue(analysis, reportedAt, model, now)
+  if (analysis.status === "error")
+    return failedAnalysisDue(analysis, reportedAt, model, now)
   if (analysis.status !== "running") return true
   return (
     !Number.isFinite(reportedAt) ||
@@ -35,16 +41,31 @@ export function codePracticeAnalysisDue(
 }
 
 function failedAnalysisDue(
-  analysis: Pick<CloudProjectCodePracticeAnalysis, "agentModelId" | "agentProviderId" | "error">,
+  analysis: Pick<
+    CloudProjectCodePracticeAnalysis,
+    "agentModelId" | "agentProviderId" | "error"
+  >,
   failedAt: number,
   model: { providerId: string; modelId: string },
   now: number
 ) {
   if (!Number.isFinite(failedAt)) return true
-  const failedModel = { providerId: analysis.agentProviderId, modelId: analysis.agentModelId }
-  if (!limitAllowsAutomaticRun({ error: analysis.error, failedAt, failedModel, model, now }))
+  const failedModel = {
+    providerId: analysis.agentProviderId,
+    modelId: analysis.agentModelId,
+  }
+  if (
+    !limitAllowsAutomaticRun({
+      error: analysis.error,
+      failedAt,
+      failedModel,
+      model,
+      now,
+    })
+  )
     return false
   const sameModel =
-    failedModel.providerId === model.providerId && failedModel.modelId === model.modelId
+    failedModel.providerId === model.providerId &&
+    failedModel.modelId === model.modelId
   return !sameModel || now - failedAt >= failedCodePracticeAnalysisRetryMs
 }

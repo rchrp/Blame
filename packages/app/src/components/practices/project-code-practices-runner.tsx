@@ -169,6 +169,7 @@ async function persistAnalysisError(
     .catch(() => undefined)
   if (input.signal.aborted) return
   failureToast("Code practice analysis failed", errorMessage(error), {
+    task: "Code practice analysis",
     id: toastId,
     position: "bottom-right",
   })

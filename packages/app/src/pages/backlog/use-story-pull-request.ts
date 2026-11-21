@@ -105,6 +105,7 @@ export function useStoryPullRequest({
         )
         if (!askedIdentity)
           failureToast("Open PR failed", message, {
+            task: "Pull request text",
             position: "bottom-right",
           })
         return activeStory(story, storiesRef.current)

@@ -115,6 +115,7 @@ async function checkPreviewEnvironment(input: PreviewEnvironmentSyncInput) {
     const message = error instanceof Error ? error.message : String(error)
     if (modelLimit(message)) {
       failureToast("Could not check the preview environment", message, {
+        task: "Preview environment check",
         id: toastId,
         position,
       })

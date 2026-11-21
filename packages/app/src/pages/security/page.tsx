@@ -90,7 +90,7 @@ export function SecurityPage() {
         failureToast(
           "Security audit failed",
           error instanceof Error ? error.message : "",
-          {}
+          { task: "Security audit" }
         )
       )
   }

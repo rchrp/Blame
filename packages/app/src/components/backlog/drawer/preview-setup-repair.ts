@@ -120,7 +120,10 @@ async function repairWithFeedback(
   } catch (error) {
     const description = error instanceof Error ? error.message : String(error)
     if (modelLimit(description)) {
-      failureToast("Unable to repair preview setup", description, options)
+      failureToast("Unable to repair preview setup", description, {
+        ...options,
+        task: "Preview setup repair",
+      })
       return
     }
     // A repaired setup can fail at a later step; another pass sees that error.

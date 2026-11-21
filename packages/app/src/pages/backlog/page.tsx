@@ -520,6 +520,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         )
         if (!askedIdentity)
           failureToast("Approve & Merge failed", message, {
+            task: "Approve & Merge",
             position: "bottom-right",
           })
         return updateStory(runningStory, {

@@ -298,7 +298,12 @@ test("a used-up plan says when it resets and where to choose another model, once
   assert.equal(errors.length, 1)
   assert.equal(errors[0]!.title, "Usage limit reached")
   assert.equal(errors[0]!.action, "choose-model")
-  assert.match(errors[0]!.detail, /^Your Claude Code usage for `claude-opus-5` is used up\. Claude Code said: “You've hit your session limit · resets 1:10am \(Europe\/Bucharest\)”\. To keep going now, choose another model in the message box's model menu/)
+  // Claude Code's own "resets 1:10am (Europe/Bucharest)" becomes the time.
+  assert.match(
+    errors[0]!.detail,
+    /^claude-opus-5 is used up until .+\. To keep going now, pick another model in the message box\.$/
+  )
+  assert.doesNotMatch(errors[0]!.detail, /said|“/)
 })
 
 test("a turn the agent did not finish keeps its own message, not a limit's", () => {

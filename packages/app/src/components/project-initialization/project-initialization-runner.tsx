@@ -891,9 +891,9 @@ function showError(projectId: string, error: unknown) {
   }
   if (modelLimit(errorMessage(error))) {
     failureToast("Preview environment setup failed", errorMessage(error), {
+      task: "Preview environment setup",
       id: toastId,
       position: "bottom-right",
-      cancel: { label: "Details", onClick: () => navigate("/initialization") },
     })
     return
   }

@@ -6,6 +6,7 @@
 // picked the model, so it writes the one message the person reads.
 
 import type { ErrorInfo } from "@blame/engine-client"
+import { usageResetAt } from "@blame/engine-client/usage-reset"
 
 export type ModelLimit = {
   kind: "usage_limit" | "billing"
@@ -27,10 +28,13 @@ const usagePattern =
   /Your (.+?) usage for `([^`]+)` is used up until it resets: "([\s\S]*)"\./u
 const creditPattern =
   /(?:^|: )([^:]+?) has no credit or quota left for `([^`]+)`: "([\s\S]*)"\./u
-const resetPattern = /It resets at (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)\./u
+const resetPattern =
+  /It resets at (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)\./u
 
 /** The limit a failure's text reports, if it is one. */
-export function modelLimit(text: string | null | undefined): ModelLimit | undefined {
+export function modelLimit(
+  text: string | null | undefined
+): ModelLimit | undefined {
   if (!text) return undefined
   const usage = usagePattern.exec(text)
   if (usage) {
@@ -46,23 +50,35 @@ export function modelLimit(text: string | null | undefined): ModelLimit | undefi
   }
   const credit = creditPattern.exec(text)
   if (!credit) return undefined
-  return { kind: "billing", provider: credit[1]!.trim(), model: credit[2]!, said: credit[3]! }
+  return {
+    kind: "billing",
+    provider: credit[1]!.trim(),
+    model: credit[2]!,
+    said: credit[3]!,
+  }
 }
 
 /** The limit a conversation's request failed on; `atMs` is when it failed. */
-export function modelLimitOfError(error: ErrorInfo, atMs: number): ModelLimit | undefined {
+export function modelLimitOfError(
+  error: ErrorInfo,
+  atMs: number
+): ModelLimit | undefined {
   if (error.kind !== "usage_limit" && error.kind !== "billing") return undefined
   const limit = modelLimit(error.message)
-  if (!limit) return undefined
-  return typeof error.retry_after_ms === "number" && error.retry_after_ms > 0
-    ? { ...limit, resetsAt: new Date(atMs + error.retry_after_ms) }
-    : limit
+  if (!limit || limit.kind === "billing") return limit
+  // The provider's delay, or the time Claude Code states in its words.
+  const resetsAt = usageResetAt(error, atMs)
+  return resetsAt ? { ...limit, resetsAt } : limit
 }
 
-export const alternativeModelSetting = "Settings → Models & Providers → Alternative model"
-export const agentModelSetting = "Settings → Models & Providers → Agent model"
+export const alternativeModelSetting =
+  "Settings › Models & Providers › Alternative model"
 
-/** The one message the person reads about a limit. */
+/**
+ * The one message the person reads about a limit, short: which model, until
+ * when, and where to pick another. The provider's own words only when they
+ * say more than that (no reset time known).
+ */
 export function modelLimitText(
   limit: ModelLimit,
   setting: ModelLimitSetting,
@@ -70,18 +86,27 @@ export function modelLimitText(
 ) {
   const where =
     setting === "alternative"
-      ? `in ${alternativeModelSetting}`
-      : `in the message box's model menu (the default is ${agentModelSetting})`
-  const said = `${limit.provider} said: “${limit.said}”.`
+      ? `pick another Alternative model in Settings › Models & Providers`
+      : "pick another model in the message box"
   if (limit.kind === "billing")
-    return `${limit.provider} has no credit left for \`${limit.model}\`. ${said} Add credit with ${limit.provider}, or choose another model ${where}.`
-  const resets = limit.resetsAt ? ` It resets ${resetTime(limit.resetsAt, now)}.` : ""
-  return `Your ${limit.provider} usage for \`${limit.model}\` is used up.${resets} ${said} To keep going now, choose another model ${where}.`
+    return `${limit.provider} has no credit left for ${limit.model}. Add credit, or ${where}.`
+  return `${modelLimitSummary(limit, now)} To keep going now, ${where}.`
+}
+
+/** "gpt-6-luna is used up until 4:19." (the provider's words when no time is known). */
+export function modelLimitSummary(limit: ModelLimit, now = new Date()) {
+  if (limit.kind === "billing")
+    return `${limit.provider} has no credit left for ${limit.model}.`
+  if (limit.resetsAt)
+    return `${limit.model} is used up until ${resetTime(limit.resetsAt, now)}.`
+  return `${limit.model} is used up for now (${limit.provider}: “${limit.said.replace(/\s*\(HTTP \d+\)$/u, "")}”).`
 }
 
 /** A short title for the limit. */
 export function modelLimitTitle(limit: ModelLimit) {
-  return limit.kind === "billing" ? "No credit left" : "Usage limit reached"
+  return limit.kind === "billing"
+    ? `No ${limit.provider} credit left`
+    : `${limit.provider} usage limit reached`
 }
 
 /** The person's own words for a failure: the limit's message when it is one. */
@@ -91,13 +116,20 @@ export function failureMessage(text: string, setting: ModelLimitSetting) {
 }
 
 function resetTime(at: Date, now: Date) {
-  const time = at.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })
-  if (at.toDateString() === now.toDateString()) return `at ${time}`
+  const time = at.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  })
+  if (at.toDateString() === now.toDateString()) return time
   const tomorrow = new Date(now)
   tomorrow.setDate(now.getDate() + 1)
-  if (at.toDateString() === tomorrow.toDateString()) return `tomorrow at ${time}`
-  const day = at.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })
-  return `on ${day} at ${time}`
+  if (at.toDateString() === tomorrow.toDateString()) return `tomorrow, ${time}`
+  const day = at.toLocaleDateString(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  })
+  return `${day}, ${time}`
 }
 
 /**

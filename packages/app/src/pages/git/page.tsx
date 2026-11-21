@@ -132,6 +132,7 @@ export function GitPage() {
       const message = errorText(error)
       git.setError(message)
       failureToast("Commit message generation failed", message, {
+        task: "Commit message",
         id: toastId,
         position: "bottom-right",
       })
@@ -198,6 +199,7 @@ export function GitPage() {
       const message = errorText(error)
       git.setError(message)
       failureToast("AI conflict resolution failed", message, {
+        task: "AI conflict resolution",
         id: toastId,
         position: "bottom-right",
       })
