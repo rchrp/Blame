@@ -84,6 +84,8 @@ type Check = { again: boolean; done: Promise<void> };
 
 // A failed read of an epic is tried again after this long (the queue's gate).
 const epicRetryMs = 30_000;
+// Resumes in a row after cut turns, before the person is left to decide.
+const maxResumes = 3;
 // The ranking stories' models come from, kept this long.
 const recommendationsMs = 5 * 60_000;
 
@@ -103,6 +105,8 @@ export class Orchestrator {
   private local: Set<string> | undefined;
   /** Why the last wake of an epic could not be sent. */
   private readonly wakeErrors = new Map<string, string>();
+  /** Resumes sent in a row with no turn ended through `end_turn` between them. */
+  private readonly resumes = new Map<string, number>();
   private recommendations:
     { at: number; value: Promise<ModelRecommendations> } | undefined;
   private readonly tickTimer: ReturnType<typeof setInterval>;
@@ -425,8 +429,13 @@ export class Orchestrator {
     const unreported = await reading.unreported();
     const stories = reading.epicStories();
     const starting = this.starting();
+    if (conversation.last?.endTurn) this.resumes.delete(epicId);
+    // A conversation cut again and again (an engine that keeps stopping)
+    // is resumed three times, then left to the person (it shows failed).
     const cut =
-      conversation.last?.outcome.status === "interrupted" && !entry.stopped;
+      conversation.last?.outcome.status === "interrupted" &&
+      !entry.stopped &&
+      (this.resumes.get(epicId) ?? 0) < maxResumes;
     const reason: OrchestratorWake["reason"] | undefined = cut
       ? "resumed"
       : wakeDue(stories, starting, unreported)
@@ -439,6 +448,8 @@ export class Orchestrator {
           ? "idle"
           : undefined;
     if (!reason) return;
+    if (reason === "resumed")
+      this.resumes.set(epicId, (this.resumes.get(epicId) ?? 0) + 1);
     const spend = await reading.spend();
     await this.wake(epicId, entry.session, {
       reason,
