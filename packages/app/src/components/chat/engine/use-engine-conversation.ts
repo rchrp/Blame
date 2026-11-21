@@ -21,7 +21,7 @@ export type EngineConversationMessage = {
   text: string
   codeSelectionAttachments?: UserStoryCodeSelectionAttachment[]
   fileAttachments?: UserStoryFileAttachment[]
-  /** What the agent should know with the message (it shows in the thread). */
+  /** What the agent should know with the message; the conversation does not show it. */
   context?: string
 }
 
@@ -80,15 +80,16 @@ export function useEngineConversation(input: {
         writeSession(input.storageKey, target)
         setSession(target)
       }
-      const text = [message.text, message.context].filter(Boolean).join("\n\n")
+      const body = await storyMessage(
+        message.text,
+        message.codeSelectionAttachments,
+        message.fileAttachments,
+        (file) => readStoryAttachment(auth.apiConnection, file)
+      )
       await engine.call("send", {
         session: target,
-        message: await storyMessage(
-          text,
-          message.codeSelectionAttachments,
-          message.fileAttachments,
-          (file) => readStoryAttachment(auth.apiConnection, file)
-        ),
+        // The context goes with the message for the model only.
+        message: message.context ? { ...body, context: message.context } : body,
         delivery: "turn",
         settings,
       })

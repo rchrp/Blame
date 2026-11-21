@@ -306,6 +306,10 @@ unreverted_commands: Array<string>, } | { "type": "rewind_undone", rewind: numbe
  */
 code: string, text: string, } | { "type": "result_accepted", turn: TurnId, call: ToolCallId, } | { "type": "result_rejected", turn: TurnId, call: ToolCallId, 
 /**
+ * Why the tool refused it, when it said so.
+ */
+refusal?: Refusal, 
+/**
  * Where the input does not match the result tool's schema.
  */
 invalid?: Array<string>, 
@@ -325,6 +329,9 @@ forced_tool?: string, } | { "type": "turn_continued", turn: TurnId, text: string
 
 // prettier-ignore
 export type Records = { records: Array<SessionRecord>, head: number, };
+
+// prettier-ignore
+export type Refusal = { "kind": "failing_checks", tasks: Array<string>, };
 
 // prettier-ignore
 export type RequestId = string;
@@ -455,6 +462,10 @@ unreverted_commands: Array<string>, } | { "type": "rewind_undone", rewind: numbe
  */
 code: string, text: string, } | { "type": "result_accepted", turn: TurnId, call: ToolCallId, } | { "type": "result_rejected", turn: TurnId, call: ToolCallId, 
 /**
+ * Why the tool refused it, when it said so.
+ */
+refusal?: Refusal, 
+/**
  * Where the input does not match the result tool's schema.
  */
 invalid?: Array<string>, 
@@ -534,7 +545,12 @@ needs_approval: boolean, };
 export type TurnId = string;
 
 // prettier-ignore
-export type TurnOutcome = { "status": "completed" } | { "status": "interrupted" } | { "status": "limit_reached", limit: string, } | { "status": "failed", error: ErrorInfo, } | { "status": "contract_unmet", unmet: Array<Obligation>, } | { "status": "withdrawn" };
+export type TurnOutcome = { "status": "completed" } | { "status": "interrupted" } | { "status": "limit_reached", limit: string, } | { "status": "failed", error: ErrorInfo, } | { "status": "contract_unmet", unmet: Array<Obligation>, 
+/**
+ * Why the result tool refused the turn's last finish, when it said
+ * so: the model's last reply stands, but is not verified.
+ */
+refused?: Refusal, } | { "status": "withdrawn" };
 
 // prettier-ignore
 export type Usage = { input_tokens?: number, output_tokens?: number, cache_read_tokens?: number, cache_write_tokens?: number, reasoning_tokens?: number, 
@@ -545,7 +561,7 @@ export type Usage = { input_tokens?: number, output_tokens?: number, cache_read_
 cost_micro_usd?: number, };
 
 // prettier-ignore
-export type UserBlock = { "type": "text", text: string, } | { "type": "image", blob: BlobRef, } | { "type": "document", blob: BlobRef, name: string, };
+export type UserBlock = { "type": "text", text: string, } | { "type": "image", blob: BlobRef, } | { "type": "document", blob: BlobRef, name: string, } | { "type": "context", text: string, };
 
 // prettier-ignore
 export type Version = "2.0";

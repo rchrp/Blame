@@ -21,6 +21,7 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import { codeSelectionLineLabel } from "../../components/backlog/shared/comment-attachment-events.ts"
+import { unverifiedChecks } from "@blame/engine-client/transcript"
 import { unfinishedTurnText } from "../../components/chat/engine/transcript-conversation.ts"
 
 /**
@@ -114,6 +115,40 @@ export function withAgentModel(
 }
 
 /**
+ * The story's models with how many turns each answered, as the engine's
+ * records count them: every entry of a model carries its count, and a model
+ * the records name but the story does not list is added. Undefined when
+ * nothing changes.
+ */
+export function withTurnCounts(
+  models: UserStoryAgentModel[] | null | undefined,
+  counts: ReadonlyArray<{ providerId: string; modelId: string; turns: number }>
+): UserStoryAgentModel[] | undefined {
+  const key = (model: { providerId: string; modelId: string }) =>
+    `${model.providerId}\u0000${model.modelId}`
+  const turns = new Map(counts.map((count) => [key(count), count.turns]))
+  const listed = new Set((models ?? []).map(key))
+  const next = [
+    ...(models ?? []).map((model) => {
+      const { turns: _, ...rest } = model
+      void _
+      const count = turns.get(key(model))
+      return count ? { ...rest, turns: count } : rest
+    }),
+    ...counts
+      .filter((count) => !listed.has(key(count)))
+      .map(({ providerId, modelId, turns: count }) => ({
+        providerId,
+        modelId,
+        turns: count,
+      })),
+  ].slice(-16)
+  return JSON.stringify(next) === JSON.stringify(models ?? [])
+    ? undefined
+    : next
+}
+
+/**
  * A message to the story's agent: the text, code excerpts quoted in it,
  * and attached files read as the model gets them (images, PDFs, text).
  */
@@ -166,9 +201,13 @@ export function storyOutcomeUpdate(
     // the person, with the reason, and resumes from its records.
     case "failed":
       return { agentStatus: "Paused", agentLastError: outcome.error.message }
-    // The agent stopped without a finish the checks accepted.
+    // The agent stopped without a finish the checks accepted. When they
+    // refused it because a check still fails, its reply stands, unverified,
+    // and the story waits for review as before; otherwise it is paused.
     case "contract_unmet":
-      return { agentStatus: "Paused", agentLastError: unfinishedTurnText }
+      return unverifiedChecks({ outcome })
+        ? { agentStatus: null, status: "in-review" }
+        : { agentStatus: "Paused", agentLastError: unfinishedTurnText }
     default:
       return { agentStatus: "Paused" }
   }

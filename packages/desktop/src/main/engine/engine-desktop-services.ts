@@ -18,6 +18,7 @@ import {
   agentScreenshotStore,
   storePreviewDevtoolsScreenshots,
 } from "../agent-screenshots/agent-screenshots-service.ts";
+import { screenshotSessions } from "../agent-screenshots/agent-screenshot-store.ts";
 import { githubMcpService } from "../github-access/github-mcp-service.ts";
 import { hostGitCommand } from "../host-git.ts";
 import {
@@ -371,7 +372,7 @@ async function previewScreenshotKnown(input: unknown) {
   const sessionId = optionalText(request.sessionId);
   const scope = optionalText(request.scope);
   return (
-    (Boolean(sessionId) && metadata.sessionId === sessionId) ||
+    (Boolean(sessionId) && screenshotSessions(metadata).includes(sessionId!)) ||
     (Boolean(scope) && metadata.scope === scope)
   );
 }

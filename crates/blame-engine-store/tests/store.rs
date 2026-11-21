@@ -408,3 +408,42 @@ async fn every_durability_level_works() {
         assert_eq!(mode, "wal");
     }
 }
+
+#[tokio::test]
+async fn deleting_a_session_removes_the_blobs_only_it_names() {
+    let dir = TempDir::new("delete-blobs");
+    let options = StoreOptions {
+        inline_blob_max: 1024,
+        ..StoreOptions::default()
+    };
+    let store = SqliteStore::open(dir.db(), ManualClock::at(0), options).unwrap();
+    // Its own screenshot (a file beside the database), and one another
+    // conversation took too (inline).
+    let own = store.put_blob("image/png", vec![7; 4096]).await.unwrap();
+    let shared = store.put_blob("image/png", vec![3; 16]).await.unwrap();
+    let image = |blob: &blame_engine_protocol::BlobRef| RecordBody::ToolCallFinished {
+        turn: "t1".into(),
+        call: "c1".into(),
+        outcome: blame_engine_protocol::ToolOutcome::Completed,
+        content: vec![ToolResultBlock::Image { blob: blob.clone() }],
+    };
+    let (story, chat) = (session("story"), session("chat"));
+    store
+        .append(&story, 0, vec![image(&own), image(&shared)])
+        .await
+        .unwrap();
+    store.append(&chat, 0, vec![image(&shared)]).await.unwrap();
+    let file = dir.0.join("engine.db-blobs").join(&own.sha256);
+    assert!(file.exists());
+
+    assert!(store.delete(&story).await.unwrap());
+    assert_eq!(store.blob(&own.sha256).await.unwrap(), None);
+    assert!(!file.exists(), "its file goes with it");
+    assert_eq!(
+        store.blob(&shared.sha256).await.unwrap(),
+        Some(vec![3; 16]),
+        "the chat still shows it"
+    );
+    assert!(store.delete(&chat).await.unwrap());
+    assert_eq!(store.blob(&shared.sha256).await.unwrap(), None);
+}

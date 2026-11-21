@@ -2,7 +2,7 @@
 // transcript (TranscriptReducer of @blame/engine-client), in the runs and
 // activities the timeline components take.
 
-import { turnReply, turnReplyImages } from "@blame/engine-client/transcript"
+import { turnReply, turnReplyImages, unverifiedChecks } from "@blame/engine-client/transcript"
 import type {
   ToolCallItem,
   Transcript,
@@ -144,6 +144,8 @@ export function transcriptConversation(
 }
 
 function runStatus(turn: TurnView): UserStoryAgentRunStatus {
+  // Its reply stands, unverified (turnReply): the work ended, it did not stop.
+  if (unverifiedChecks(turn)) return "completed"
   switch (turn.status) {
     case "queued":
       return "pending"
@@ -258,7 +260,8 @@ function itemActivity(
         return errorActivity(base, item.outcome.error, item.atMs)
       if (item.outcome.status === "limit_reached")
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
-      if (item.outcome.status === "contract_unmet")
+      // A reply the checks refused stands with its note (turnReply).
+      if (item.outcome.status === "contract_unmet" && !unverifiedChecks(item))
         return { ...base, kind: "error", title: "Not finished", detail: unfinishedTurnText, status: "failed" }
       return undefined
     default:
@@ -410,8 +413,9 @@ function userFiles(
   blocks: UserItem["blocks"],
   key: string
 ): UserStoryFileAttachment[] {
+  // Text and context (what only the model reads) are not files.
   return blocks.flatMap((block, index) =>
-    block.type === "text"
+    block.type !== "image" && block.type !== "document"
       ? []
       : [
           {

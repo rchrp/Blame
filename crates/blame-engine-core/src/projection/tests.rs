@@ -698,3 +698,48 @@ fn the_checkpoint_for_a_rewind_is_the_first_one_with_no_write_before_it() {
     );
     assert_eq!(checkpoint_for(&view, 7), Some(None));
 }
+
+#[test]
+fn the_context_part_of_a_message_stays_with_it_through_a_rewind_and_its_undo() {
+    let with_context = |turn: &str| RecordBody::UserMessage {
+        turn: t(turn),
+        input: vec![
+            UserBlock::Text {
+                text: "plan it".into(),
+            },
+            UserBlock::Context {
+                text: "P1 added".into(),
+            },
+        ],
+        delivery: Delivery::Turn,
+    };
+    let message = ModelMessage::User(vec![
+        UserBlock::Text {
+            text: "plan it".into(),
+        },
+        UserBlock::Context {
+            text: "P1 added".into(),
+        },
+    ]);
+    let mut bodies = vec![
+        user("t1", "first"),                        // 2
+        started("t1", "r1", 1),                     // 3
+        reply("t1", "r1", vec![text_block("one")]), // 4
+        ended("t1"),                                // 5
+        with_context("t2"),                         // 6
+        started("t2", "r2", 1),                     // 7
+        reply("t2", "r2", vec![text_block("two")]), // 8
+        ended("t2"),                                // 9
+    ];
+    let whole = log(bodies.clone());
+    let expected = vec![u("first"), a("one"), message, a("two")];
+    // The same messages, so the same bytes, on every request.
+    assert_eq!(View::new(&whole).messages(), expected);
+    bodies.extend(rewind_records(5, 10));
+    assert_eq!(
+        View::new(&log(bodies.clone())).messages(),
+        vec![u("first"), a("one")]
+    );
+    bodies.push(RecordBody::RewindUndone { rewind: 11 });
+    assert_eq!(View::new(&log(bodies)).messages(), expected);
+}

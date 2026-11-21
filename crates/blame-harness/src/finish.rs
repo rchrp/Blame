@@ -167,10 +167,13 @@ fn assert_no_failed_validation(state: &Json) -> Outcome<()> {
     if failed.is_empty() {
         return Ok(());
     }
-    Err(Failure::new(format!(
-        "Current validation is still failing: {}. Resolve it and run the relevant check before finishing.",
-        failed.join(", ")
-    )))
+    Err(Failure {
+        failing_checks: failed.clone().into(),
+        ..Failure::new(format!(
+            "Current validation is still failing: {}. Resolve it and run the relevant check before finishing.",
+            failed.join(", ")
+        ))
+    })
 }
 
 /// The session's finish: one per finish_task call, on its own journal and
@@ -952,7 +955,19 @@ pub fn execute_finish(
         },
         Err(failure) => {
             let blocked =
-                obj! { "status" => "blocked", "category" => "code", "message" => failure.message };
+                obj! { "status" => "blocked", "category" => "code", "message" => failure.message }
+                    .with_opt(
+                        "failingChecks",
+                        (!failure.failing_checks.is_empty()).then(|| {
+                            Json::Arr(
+                                failure
+                                    .failing_checks
+                                    .iter()
+                                    .map(|task| Json::Str(task.clone()))
+                                    .collect(),
+                            )
+                        }),
+                    );
             // A caller that reports validation activities as they happen
             // (`onValidationActivity`) also gets those of a refused finish.
             if input.get("reportActivities") == Some(&Json::Bool(true)) {

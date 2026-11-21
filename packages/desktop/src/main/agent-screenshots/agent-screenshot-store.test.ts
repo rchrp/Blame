@@ -94,3 +94,30 @@ test("lists by run and cleans up by scope or session", () =>
     await store.deleteScope("story:42");
     assert.deepEqual(await store.list({}), []);
   }));
+
+test("a screenshot two conversations took stays until both are deleted", () =>
+  withStore(async (store) => {
+    const scope = "component-preview:/project";
+    const story = await store.save(
+      input(png, { scope, sessionId: "story-session" }),
+    );
+    const chat = await store.save(
+      input(png, { scope, sessionId: "chat-session" }),
+    );
+    assert.equal(story.id, chat.id);
+    assert.deepEqual((await store.metadata(story.id))?.sessionIds, [
+      "story-session",
+      "chat-session",
+    ]);
+    assert.equal((await store.list({ sessionId: "story-session" })).length, 1);
+
+    // Deleting the story keeps what the chat still shows.
+    assert.equal(await store.deleteSessions(["story-session"]), 0);
+    assert.deepEqual((await store.read(story.id))?.data, png);
+    assert.deepEqual((await store.metadata(story.id))?.sessionIds, [
+      "chat-session",
+    ]);
+    assert.equal((await store.list({ sessionId: "story-session" })).length, 0);
+    assert.equal(await store.deleteSessions(["chat-session"]), 1);
+    assert.equal(await store.read(story.id), undefined);
+  }));

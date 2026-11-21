@@ -134,6 +134,8 @@ export type EngineSessionStatus = {
    */
   lastReply?: string;
   turns: number;
+  /** How many turns each model answered (`turnsByModel`), in order of first use. */
+  models: Array<{ providerId: string; modelId: string; turns: number }>;
 };
 
 /** One file the person attached to a message, as the renderer read it. */
@@ -147,6 +149,8 @@ export type EngineAttachment = {
 export type EngineMessage = {
   text: string;
   attachments?: EngineAttachment[];
+  /** Read by the model with the message, never shown in the conversation. */
+  context?: string;
 };
 
 export type EngineHostMethods = {

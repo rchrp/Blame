@@ -16,6 +16,7 @@ import {
   type SessionConfig,
   type TaskOutcome,
   turnReply,
+  turnsByModel,
   type UserBlock,
 } from "@blame/engine-client";
 import { runHostGh, type GhRunner } from "../pull-request.js";
@@ -755,7 +756,7 @@ export class EngineHost {
         if (!page.records.length || reducer.lastSeq >= page.head) break;
       }
     } catch {
-      return { session, exists: false, running: false, turns: 0 };
+      return { session, exists: false, running: false, turns: 0, models: [] };
     }
     const transcript = reducer.snapshot();
     const ended = transcript.turns.filter((turn) => turn.outcome).at(-1);
@@ -768,6 +769,11 @@ export class EngineHost {
       ...(last ? { lastOutcome: last } : {}),
       ...(reply ? { lastReply: reply } : {}),
       turns: transcript.turns.length,
+      models: turnsByModel(transcript).map(({ model, turns }) => ({
+        providerId: model.provider,
+        modelId: model.model,
+        turns,
+      })),
     };
   }
 
@@ -793,6 +799,8 @@ export class EngineHost {
           : { type: "document", blob, name: attachment.name },
       );
     }
+    if (message.context?.trim())
+      blocks.push({ type: "context", text: message.context });
     if (!blocks.length) throw new Error("The message is empty.");
     return blocks;
   }

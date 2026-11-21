@@ -58,8 +58,19 @@ pub struct Presented {
 }
 
 impl Presented {
+    /// The model's view of the result, and for a refused finish why, typed:
+    /// `refusal: { kind: "failing_checks", tasks }`.
     pub fn to_json(&self) -> Json {
-        obj! { "ok" => self.ok, "content" => self.content.clone() }
+        let failing = self
+            .raw
+            .as_ref()
+            .filter(|_| !self.ok)
+            .and_then(|raw| raw.get("failingChecks"))
+            .cloned();
+        obj! { "ok" => self.ok, "content" => self.content.clone() }.with_opt(
+            "refusal",
+            failing.map(|tasks| obj! { "kind" => "failing_checks", "tasks" => tasks }),
+        )
     }
 }
 

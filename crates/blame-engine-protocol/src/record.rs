@@ -1,7 +1,7 @@
 use crate::content::{
     AssistantBlock, ModelRef, ReasoningEffort, ToolResultBlock, Usage, UserBlock,
 };
-use crate::contract::{CompletionContract, Obligation, SessionKind};
+use crate::contract::{CompletionContract, Obligation, Refusal, SessionKind};
 use crate::ids::{CheckpointId, RequestId, Seq, ToolCallId, TurnId};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -167,11 +167,16 @@ pub enum RecordBody {
         turn: TurnId,
         call: ToolCallId,
     },
-    /// A call of the result tool was refused before it took effect; the
-    /// model reads why as the call's error and may try again.
+    /// A call of the result tool was refused: before it ran (its input, the
+    /// calls it needs first), or by the tool itself (`refusal`). The model
+    /// reads why as the call's error and may try again.
     ResultRejected {
         turn: TurnId,
         call: ToolCallId,
+        /// Why the tool refused it, when it said so.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        refusal: Option<Refusal>,
         /// Where the input does not match the result tool's schema.
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         #[cfg_attr(feature = "ts", ts(as = "Option<Vec<String>>", optional))]
@@ -347,6 +352,11 @@ pub enum TurnOutcome {
     /// past its corrections.
     ContractUnmet {
         unmet: Vec<Obligation>,
+        /// Why the result tool refused the turn's last finish, when it said
+        /// so: the model's last reply stands, but is not verified.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        #[cfg_attr(feature = "ts", ts(optional))]
+        refused: Option<Refusal>,
     },
     /// A queued turn the user took back before it ran: removed from the
     /// queue, or sent into the running turn instead (`session/promote`). The

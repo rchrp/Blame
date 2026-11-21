@@ -550,3 +550,28 @@ async fn an_error_inside_the_stream_is_classified() {
     let (_, error) = run(&anthropic(&mock), first_request()).await;
     assert_eq!(error.expect("error").kind, ErrorKind::Overloaded);
 }
+
+#[tokio::test]
+async fn a_context_part_of_a_message_reaches_the_model_as_its_text() {
+    let mock = Mock::start(vec![Reply::sse(&reply())]).await;
+    let request = request(
+        model("anthropic", MODEL),
+        vec![ModelMessage::User(vec![
+            UserBlock::Text {
+                text: "Plan the next story.".into(),
+            },
+            UserBlock::Context {
+                text: "<proposal_decisions>P1 added</proposal_decisions>".into(),
+            },
+        ])],
+    );
+    let (_, error) = run(&anthropic(&mock), request).await;
+    assert!(error.is_none(), "{error:?}");
+    let content = &mock.only_request().body["messages"][0]["content"];
+    assert_eq!(content[0]["text"], "Plan the next story.");
+    assert_eq!(content[1]["type"], "text");
+    assert_eq!(
+        content[1]["text"],
+        "<proposal_decisions>P1 added</proposal_decisions>"
+    );
+}

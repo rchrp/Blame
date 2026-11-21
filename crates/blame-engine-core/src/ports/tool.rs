@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use blame_engine_protocol::{
-    Seq, SessionConfig, SessionId, ToolCallId, ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
+    Refusal, Seq, SessionConfig, SessionId, ToolCallId, ToolOutcome, ToolResultBlock, ToolSpec,
+    TurnId,
 };
 use serde_json::Value;
 use std::sync::Arc;
@@ -25,6 +26,8 @@ pub struct ToolInvocation {
 pub struct ToolOutput {
     pub outcome: ToolOutcome,
     pub content: Vec<ToolResultBlock>,
+    /// Why a result tool refused the call, when it says so.
+    pub refusal: Option<Refusal>,
 }
 
 impl ToolOutput {
@@ -32,6 +35,7 @@ impl ToolOutput {
         Self {
             outcome,
             content: vec![ToolResultBlock::Text { text: text.into() }],
+            refusal: None,
         }
     }
 }

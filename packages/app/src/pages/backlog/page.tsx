@@ -314,7 +314,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     (story: UserStory) => userStoryDiffStats.get(story.id),
     [userStoryDiffStats]
   )
-  useStoryAgentOutcomes(backlog)
+  const { countTurns } = useStoryAgentOutcomes(backlog)
   const rotation = useBacklogRotation(backlog)
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
@@ -471,12 +471,14 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       const currentStory = activeStory(story, storiesRef.current)
       await rewindStoryMessage(platform, currentStory, rewind)
       replaceStoryAfterUndo(currentStory, storiesRef, setDrawerTarget)
+      // The undone turns no longer count for their model.
+      void countTurns(currentStory).catch(() => undefined)
       toast.success("Message undone and restored to the editor.", {
         position: "bottom-right",
       })
       return currentStory
     },
-    [platform]
+    [countTurns, platform]
   )
 
   const mergeApprovedStory = React.useCallback(

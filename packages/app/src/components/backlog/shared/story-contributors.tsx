@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils"
 type ModelWork = {
   modelId: string
   reasoningEffort?: string | null
+  turns?: number
 }
 
 type ProviderWork = { models: ModelWork[]; providerId: string }
@@ -150,6 +151,9 @@ function ContributorDetails({
               model.reasoningEffort
                 ? getVariantLabel(model.reasoningEffort)
                 : "",
+              model.turns
+                ? `${model.turns} ${model.turns === 1 ? "turn" : "turns"}`
+                : "",
             ]
               .filter(Boolean)
               .join(" · ")
@@ -201,8 +205,8 @@ function ContributorRow({
 }
 
 // Providers in the order they first worked on the story, each with the
-// models it ran and their latest reasoning level. The story keeps these as
-// it starts turns; the turns themselves live in its engine session.
+// models it ran, their latest reasoning level and how many turns each
+// answered (counted from the story's engine records when a turn ends).
 export function storyProviders(
   story: Pick<UserStory, "agentModels">
 ): ProviderWork[] {
@@ -213,6 +217,7 @@ export function storyProviders(
     models.set(model.modelId, {
       modelId: model.modelId,
       reasoningEffort: model.reasoningEffort ?? undefined,
+      turns: Math.max(models.get(model.modelId)?.turns ?? 0, model.turns ?? 0),
     })
     providers.set(model.providerId, models)
   }

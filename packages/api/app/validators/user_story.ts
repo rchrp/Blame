@@ -13,6 +13,8 @@ const agentModels = vine
       providerId: engineProviderId.clone(),
       modelId: vine.string().trim().minLength(1).maxLength(255),
       reasoningEffort: vine.string().trim().maxLength(32).nullable().optional(),
+      // Turns this model answered, counted from the story's engine records.
+      turns: vine.number().withoutDecimals().min(0).optional(),
     })
   )
   .maxLength(16)

@@ -28,7 +28,7 @@ pub use content::{
     UserBlock,
 };
 pub use contract::{
-    CompletionContract, Obligation, ResultTool, SessionKind, TaskFailure, TaskOutcome,
+    CompletionContract, Obligation, Refusal, ResultTool, SessionKind, TaskFailure, TaskOutcome,
 };
 pub use delta::{BlockKind, Delta, SessionActivity};
 pub use ids::{CheckpointId, RequestId, Seq, SessionId, ToolCallId, TurnId};

@@ -103,6 +103,17 @@ impl ResultTool {
     }
 }
 
+/// Why the result tool itself refused a call it ran, when it says so in a
+/// form the client can act on (the harness's `finish_task`).
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "ts", derive(ts_rs::TS))]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum Refusal {
+    /// Checks of the work are still failing, by task: the work is not
+    /// verified.
+    FailingChecks { tasks: Vec<String> },
+}
+
 /// Something a contract asks for that the turn has not done.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]

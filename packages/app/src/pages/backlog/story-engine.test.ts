@@ -7,6 +7,7 @@ import {
   storyOutcomeUpdate,
   storySessionSettings,
   withAgentModel,
+  withTurnCounts,
 } from "./story-engine.ts"
 
 const inProgress = { status: "in-progress" as const }
@@ -126,4 +127,74 @@ test("a turn the agent did not finish pauses the story with why", () => {
       "The agent stopped without finishing: its work was not checked with finish_task.",
     agentStatus: "Paused",
   })
+})
+
+test("a reply the checks refused sends the story to review; a turn that never finished pauses it", () => {
+  const refused = {
+    status: "contract_unmet",
+    unmet: [{ kind: "result", tool: "finish_task" }],
+    refused: { kind: "failing_checks", tasks: ["test:gpu"] },
+  }
+  assert.deepEqual(storyOutcomeUpdate(inProgress, refused as never), {
+    agentStatus: null,
+    status: "in-review",
+  })
+  const { refused: _, ...stopped } = refused
+  void _
+  assert.deepEqual(storyOutcomeUpdate(inProgress, stopped as never), {
+    agentStatus: "Paused",
+    agentLastError:
+      "The agent stopped without finishing: its work was not checked with finish_task.",
+  })
+})
+
+test("each model of a story carries the turns the records count for it", () => {
+  const models = [
+    {
+      providerId: "anthropic",
+      modelId: "claude-opus",
+      reasoningEffort: "high",
+    },
+    { providerId: "anthropic", modelId: "claude-opus", reasoningEffort: "low" },
+    { providerId: "openai", modelId: "gpt-large", turns: 4 },
+  ]
+  // After a model change and a rewind: opus 2 turns, gpt 1, and a third model.
+  const counted = withTurnCounts(models, [
+    { providerId: "anthropic", modelId: "claude-opus", turns: 2 },
+    { providerId: "openai", modelId: "gpt-large", turns: 1 },
+    { providerId: "gemini", modelId: "gemini-pro", turns: 1 },
+  ])
+  assert.deepEqual(counted, [
+    {
+      providerId: "anthropic",
+      modelId: "claude-opus",
+      reasoningEffort: "high",
+      turns: 2,
+    },
+    {
+      providerId: "anthropic",
+      modelId: "claude-opus",
+      reasoningEffort: "low",
+      turns: 2,
+    },
+    { providerId: "openai", modelId: "gpt-large", turns: 1 },
+    { providerId: "gemini", modelId: "gemini-pro", turns: 1 },
+  ])
+  assert.equal(
+    withTurnCounts(counted, [
+      { providerId: "anthropic", modelId: "claude-opus", turns: 2 },
+      { providerId: "openai", modelId: "gpt-large", turns: 1 },
+      { providerId: "gemini", modelId: "gemini-pro", turns: 1 },
+    ]),
+    undefined,
+    "nothing changed"
+  )
+  // A model whose turns were all undone keeps its entry, without a count.
+  assert.deepEqual(
+    withTurnCounts(
+      [{ providerId: "openai", modelId: "gpt-large", turns: 1 }],
+      []
+    ),
+    [{ providerId: "openai", modelId: "gpt-large" }]
+  )
 })

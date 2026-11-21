@@ -32,6 +32,7 @@ pub async fn call(
         Ok(result) => ToolOutput {
             outcome: result.outcome,
             content: result.content,
+            refusal: None,
         },
         Err(HostError::NoClient) => ToolOutput::text(
             ToolOutcome::Failed,
