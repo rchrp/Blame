@@ -67,6 +67,44 @@ test.group('model catalog matcher', () => {
     assert.equal(alias('opus', 'Claude Opus', '2026-07-20')?.model.id, 'anthropic/claude-opus-5')
   })
 
+  test('reads a version written with dashes as the one written with a dot', ({ assert }) => {
+    // models.dev ids ("claude-opus-5-5") against OpenRouter's ("claude-opus-5.5").
+    const matcher = new ModelCatalogMatcher([
+      openRouterModel('anthropic/claude-opus-5', 'Anthropic: Claude Opus 5'),
+      openRouterModel('anthropic/claude-opus-5.5', 'Anthropic: Claude Opus 5.5'),
+      openRouterModel('anthropic/claude-haiku-4.5', 'Anthropic: Claude Haiku 4.5'),
+    ])
+    const match = (providerId: string, id: string) =>
+      matcher.match(providerId, catalogModel(id, id))?.model.id
+
+    for (const providerId of ['anthropic', 'claude-code']) {
+      assert.equal(match(providerId, 'claude-opus-5-5'), 'anthropic/claude-opus-5.5')
+      assert.equal(match(providerId, 'claude-opus-5'), 'anthropic/claude-opus-5')
+      assert.equal(match(providerId, 'claude-haiku-4-5'), 'anthropic/claude-haiku-4.5')
+    }
+  })
+
+  test('does not take a dashed version for another version', ({ assert }) => {
+    const matcher = new ModelCatalogMatcher([
+      openRouterModel('anthropic/claude-opus-5', 'Anthropic: Claude Opus 5'),
+      openRouterModel('anthropic/claude-opus-5.1', 'Anthropic: Claude Opus 5.1'),
+    ])
+
+    assert.isUndefined(matcher.match('claude-code', catalogModel('claude-opus-5-5', 'Claude Opus')))
+  })
+
+  test('keeps a dated snapshot id whole', ({ assert }) => {
+    const matcher = new ModelCatalogMatcher([
+      openRouterModel('openai/gpt-4o-2024-08-06', 'OpenAI: GPT-4o (2024-08-06)'),
+      openRouterModel('openai/gpt-4o', 'OpenAI: GPT-4o'),
+    ])
+
+    const match = (id: string) => matcher.match('openai', catalogModel(id, id))?.model.id
+
+    assert.equal(match('gpt-4o-2024-08-06'), 'openai/gpt-4o-2024-08-06')
+    assert.equal(match('gpt-4o'), 'openai/gpt-4o')
+  })
+
   test('does not take a whole version for part of another', ({ assert }) => {
     const matcher = new ModelCatalogMatcher([
       openRouterModel('openai/gpt-5.6-sol-codex-max', 'GPT-5.6 Sol Codex Max'),

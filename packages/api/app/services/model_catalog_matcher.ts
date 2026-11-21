@@ -34,8 +34,8 @@ export class ModelCatalogMatcher {
   }
 
   private index(model: OpenRouterModel) {
-    this.byId.set(model.id.toLowerCase(), model)
-    this.byId.set(model.canonicalSlug.toLowerCase(), model)
+    this.byId.set(idKey(model.id), model)
+    this.byId.set(idKey(model.canonicalSlug), model)
     this.indexShortId(stripProviderPrefix(model.id), model)
     this.indexShortId(stripProviderPrefix(model.canonicalSlug), model)
     const key = normalizeModelText(model.name)
@@ -43,7 +43,7 @@ export class ModelCatalogMatcher {
   }
 
   private indexShortId(id: string, model: OpenRouterModel) {
-    const key = id.toLowerCase()
+    const key = idKey(id)
     const current = this.byShortId.get(key)
     if (current && current.id !== model.id) {
       this.byShortId.set(key, null)
@@ -54,10 +54,10 @@ export class ModelCatalogMatcher {
 
   private exactMatch(providerId: string, model: CatalogModel) {
     for (const id of candidateIds(providerId, model.id)) {
-      const match = this.byId.get(id.toLowerCase())
+      const match = this.byId.get(idKey(id))
       if (match) return match
     }
-    return this.byShortId.get(stripProviderPrefix(model.id).toLowerCase()) ?? undefined
+    return this.byShortId.get(idKey(stripProviderPrefix(model.id))) ?? undefined
   }
 
   // A family alias without a version ("opus" in Claude Code) stands for the
@@ -123,8 +123,8 @@ function providerCandidates(providerId: string, models: OpenRouterModel[]) {
 }
 
 function similarityScore(model: CatalogModel, candidate: OpenRouterModel) {
-  const rawModelId = stripProviderPrefix(model.id)
-  const rawCandidateId = stripProviderPrefix(candidate.canonicalSlug)
+  const rawModelId = idKey(stripProviderPrefix(model.id))
+  const rawCandidateId = idKey(stripProviderPrefix(candidate.canonicalSlug))
   if (!versionsCompatible(rawModelId, rawCandidateId)) return 0
   const modelId = normalizeModelText(rawModelId)
   const candidateId = normalizeModelText(rawCandidateId)
@@ -165,6 +165,14 @@ function normalizeModelText(value: string) {
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
     .replace(/\s+/g, ' ')
+}
+
+// The form ids are compared in. models.dev writes a version with dashes
+// ("claude-opus-5-5") where OpenRouter writes it with a dot
+// ("claude-opus-5.5"); a dash between two numbers is a dot, unless the second
+// number is a date's year or a build number (more than two digits).
+function idKey(value: string) {
+  return value.toLowerCase().replace(/(?<=\d)-(?=\d{1,2}(?:-|$))/g, '.')
 }
 
 function stripProviderPrefix(value: string) {
