@@ -47,7 +47,7 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `connect({ api })` | The API connection (URL, user token) the host uses for credentials, logs, blobs and web search. Sent at start and on every sign-in or token change. |
 | `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`, `development-story`, `plan`, `orchestrator`, `new-project`: system prompt, tools, harness options, checkpoints). The renderer never builds a `SessionConfig`. An `orchestrator` session first makes its epic's branch and writes it to the epic (see "The orchestrator"). |
 | `configure({ session, purpose, settings })` | Rebuilds the config from the settings and sets it only when it differs from the session's current one (`{ changed }`). |
-| `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. |
+| `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. It answers once the message is in the engine's records. A message whose context reads as the orchestrator's wake is refused: only the host writes one. |
 | `interrupt`, `compact`, `undoRewind({ session, location? })` | The engine calls of the same name. |
 | `rewind({ session, to, restoreWorkspace })` | `session/rewind`: undo a message and, when asked, its files. |
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
@@ -238,7 +238,9 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   settings. Pause is `interrupt`; undo of a message is `rewind` with its
   files, then the turns are counted again; Compact is `compact`.
 - **Board state**: an `activity` event with `running` sets `agentStatus:
-  "Running"`; the end of a turn sets what its outcome means (completed: In
+  "Running"` (the session hub ends `running` when the records say every turn
+  it opened ended, also for a turn the engine ended before it ran, an
+  interrupt at once, whose activity never turns busy); the end of a turn sets what its outcome means (completed: In
   review; failed: Paused with `agentLastError`; interrupted or limit
   reached: Paused) and how many turns each model answered. After a quit
   mid-turn, the stories left Running are settled from `status` when the
@@ -288,16 +290,31 @@ An epic's conversation is an `orchestrator` session
 - **Completion contract**: `end_turn` is the result tool
   (`orchestratorCompletionContract`).
 - **Approvals**: `create_stories`, `update_story` and `approve_story`
-  declare `needs_approval`; the host's `host/approval` handler answers at
-  once unless the epic asks before launching.
+  declare `needs_approval`; the host's `host/approval` handler answers
+  those three at once unless the epic asks before launching (any other
+  tool's request is the person's).
+- **The queue's gate**: `StoryServiceHost.holds` gives the wait reason of a
+  story its epic holds (`{ kind: "epic", hold }`: paused, budget, elsewhere,
+  direct, unknown); an epic's story never runs Direct (`stories/start.ts`
+  waits with `hold: "direct"`), and an epic's Approve & Merge refuses a
+  conflicting merge (`conflicts: "refuse"` of `approveAndMerge`, a
+  `StoryMergeConflictError`) instead of the merge agent's resolution.
+- **Pause all**: the host pauses the epic's agents at work and cuts its
+  turn, then resumes exactly those (`orchestrator/pause.ts`).
 - **Waking** (`engine/orchestrator/service.ts`): the host writes to the
   session itself, a user message of one `context` block holding
   `<orchestrator_wake>` (`parseOrchestratorWake`), when the epic's stories
   call for it; what a wake told is read back from the records, so each
   story turn is told once.
 - **Kept on this computer**: `<userData>/orchestrator-epics.json`, the epics
-  whose conversation runs here, the last settings a window sent, the turns
-  waiting for a wake, each story's spend, the requests for changes.
+  whose conversation runs here with the API they were made through and the
+  branch this host made, the last settings a window sent, the turns
+  waiting for a wake and those heard, each story's and the conversation's
+  spend, the messages and requests for changes sent, what a pause stopped.
+  A 404 never drops any of it.
+- **Model choice**: `resolveModelIntent` and `escalateModel`
+  (`engine/model-intent.ts`) are exported from `engine-protocol` for the
+  screen.
 
 ## Engine in the VM
 
