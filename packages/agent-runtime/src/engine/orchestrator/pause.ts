@@ -146,10 +146,15 @@ export async function resumeEpic(
     if (!cut.has(story.id)) continue;
     if (story.status !== "in-progress" || story.agentStatus !== "Paused")
       continue;
-    await host.stories.resume(story.id).catch((error: unknown) => {
-      done = false;
-      host.report(error);
-    });
+    // Asked again in turn with the person's acts on it: theirs once they acted.
+    const still = () =>
+      host.state.peek(epicId)?.pause?.stories.includes(story.id) ?? false;
+    await host.stories
+      .resume(story.id, undefined, still)
+      .catch((error: unknown) => {
+        done = false;
+        host.report(error);
+      });
   }
   return { turn: pause.turn, done };
 }

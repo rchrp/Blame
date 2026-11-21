@@ -17,14 +17,15 @@ type StoryHandlers = {
  */
 export function storyHandlers(
   service: () => StoryService,
-  touched: (storyId: string) => void = () => undefined,
+  touched: (storyId: string) => Promise<void> | void = () => undefined,
 ): StoryHandlers {
   const payload = (story: { id: string }) => service().payload(story.id);
   const person = <Input extends { storyId: string }, Result>(
     act: (input: Input) => Promise<Result>,
   ) => {
-    return (input: Input) => {
-      touched(input.storyId);
+    // Heard before the act runs: the epic's resume never doubles it.
+    return async (input: Input) => {
+      await touched(input.storyId);
       return act(input);
     };
   };

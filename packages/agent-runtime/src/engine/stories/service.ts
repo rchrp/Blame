@@ -21,17 +21,8 @@
 
 import type { TurnOutcome } from "@blame/engine-client";
 import type { ApiConnection } from "../../types.js";
-import type { DesktopServices } from "../desktop-services.js";
+import type { EngineModelChoice, EngineSessionStatus } from "../protocol.js";
 import type {
-  EngineHostInput,
-  EngineHostMethod,
-  EngineHostResult,
-  EngineLocation,
-  EngineModelChoice,
-  EngineSessionStatus,
-} from "../protocol.js";
-import type {
-  StoryHostEvent,
   StoryMergeOutcome,
   StoryMessageInput,
   StoryPreferences,
@@ -67,31 +58,10 @@ import {
   type StoryUpdate,
 } from "./story.js";
 import { pauseStory, sendStoryMessage } from "./turns.js";
+import type { StoryServiceHost, StoryServiceOptions } from "./service-host.js";
 import { StoryWindows } from "./windows.js";
 
-export type StoryServiceHost = {
-  api(): ApiConnection | undefined;
-  /** The engine host's own calls (createSession, send, status…). */
-  call<M extends EngineHostMethod>(
-    method: M,
-    input: EngineHostInput<M>,
-  ): Promise<EngineHostResult<M>>;
-  desktop: DesktopServices;
-  emit(event: StoryHostEvent): void;
-  /** The sessions this computer's engine at a location keeps (never read from Blame's database). */
-  storedSessions?(location: EngineLocation): Promise<string[]>;
-  /** Why a queued story is held back by its epic (paused, spent…), if it is. */
-  holds?(story: HostStory): StoryWaitReason | undefined;
-};
-
-export type StoryServiceOptions = {
-  /** Where what this computer runs and told is kept (`ledger.ts`). */
-  ledgerFile?: string;
-  /** How long a reconcile waits for the API or the engine (tests shorten it). */
-  deadlineMs?: number;
-  /** How long after its n-th failure a reconcile is tried again. */
-  retryMs?: (failures: number) => number;
-};
+export type { StoryServiceHost, StoryServiceOptions } from "./service-host.js";
 
 // Stories are read again, and checked against the engine, this often.
 const tickMs = 60_000;
@@ -308,10 +278,14 @@ export class StoryService {
       message: StoryMessageInput;
       steer?: boolean;
       turn?: StoryTurnChoice;
+      /** Read in turn with the story's other acts: true leaves it as it is. */
+      unless?: (story: HostStory) => boolean;
     },
   ) {
     return this.exclusive(storyId, async () => {
-      const story = await this.claim(await this.read(storyId));
+      const read = await this.read(storyId);
+      if (input.unless?.(read)) return read;
+      const story = await this.claim(read);
       return sendStoryMessage(
         this.context(),
         story,
@@ -330,9 +304,17 @@ export class StoryService {
     });
   }
 
-  /** A paused agent picks its conversation back up. */
-  resume(storyId: string, turn?: StoryTurnChoice) {
-    return this.send(storyId, { message: { text: storyResumeMessage }, turn });
+  /**
+   * A paused agent picks its conversation back up, once: one already
+   * resumed (by the person, or by its epic's resume) is left as it is, as
+   * is one `still` no longer wants resumed.
+   */
+  resume(storyId: string, turn?: StoryTurnChoice, still = () => true) {
+    return this.send(storyId, {
+      message: { text: storyResumeMessage },
+      turn,
+      unless: (story) => story.agentStatus === "Running" || !still(),
+    });
   }
 
   /** Undoes a message to the agent and what followed it, files included when they were snapshotted. */

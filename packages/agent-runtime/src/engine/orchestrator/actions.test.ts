@@ -25,6 +25,8 @@ import {
 import { idleSignature, idleTold } from "./board.js";
 import { parseEpic } from "./epics.js";
 import { Orchestrator } from "./service.js";
+import type { OrchestratorState } from "./state.js";
+import { storyHandlers } from "../stories/handlers.js";
 
 const epicId = "epic-1";
 const session = "orchestrator-1";
@@ -173,8 +175,11 @@ async function desk(setup: Setup = {}) {
       models: [],
       ...status,
     } as Status);
-  // `gate`, while set, holds each attempt open until it settles.
-  const starts: { count: number; gate?: Promise<void> } = { count: 0 };
+  // `gate`, while set, holds each attempt open until it settles; `send`
+  // holds each message to a story's agent the same way.
+  const starts: { count: number; gate?: Promise<void>; send?: Promise<void> } =
+    { count: 0 };
+  const sends: string[] = [];
   if (setup.failStart)
     fake.host.desktop.createStoryWorktree = async () => {
       starts.count += 1;
@@ -195,6 +200,10 @@ async function desk(setup: Setup = {}) {
           ),
         };
       const target = (input as { session?: string } | undefined)?.session;
+      if (method === "send" && target) {
+        sends.push(target);
+        await starts.send;
+      }
       if (method === "interrupt" && target && failInterrupt.delete(target))
         throw new Error("The agent engine did not answer.");
       if (method === "interrupt" && setup.hangInterrupt?.includes(target ?? ""))
@@ -326,6 +335,7 @@ async function desk(setup: Setup = {}) {
     interrupted,
     settings,
     starts,
+    sends,
   };
 }
 
@@ -1596,6 +1606,52 @@ describe("what holds when things go wrong", () => {
       String(await run("end_turn", { action: "wait", reason: "Paused." })),
       /^Waiting: the epic is paused\. You will be woken once it is resumed/,
     );
+  });
+
+  it("never resumes a story twice: a second resume while the first is in flight is left", async () => {
+    const { stories, starts, sends } = await desk({
+      rows: [running("s1", { agentStatus: "Paused" })],
+      owned: { s1: "session-s1" },
+    });
+    let release = () => {};
+    starts.send = new Promise((resolve) => (release = resolve));
+    // The person's resume is in flight when the epic's comes.
+    const person = stories.resume("s1");
+    await settle(() => sends.length === 1, "the person's resume");
+    const epic = stories.resume("s1", undefined, () => true);
+    release();
+    await Promise.all([person, epic]);
+    assert.deepEqual(sends, ["session-s1"]);
+  });
+
+  it("hears a person's act before it runs, so the epic's resume leaves that story", async () => {
+    const { orchestrator, epics, api, stories } = await desk({
+      rows: [running("s1"), running("s2", { storyNumber: 2 })],
+      owned: { s1: "session-s1", s2: "session-s2" },
+      statuses: { "session-s1": runningTurn, "session-s2": runningTurn },
+    });
+    epics.get(epicId)!.status = "paused";
+    await orchestrator.changed(epicId);
+    for (const id of ["s1", "s2"])
+      Object.assign(api.stories.get(id)!, { agentStatus: "Paused" });
+    await stories.refresh("a");
+    const kept = () =>
+      (orchestrator as unknown as { state: OrchestratorState }).state.peek(
+        epicId,
+      )?.pause?.stories ?? [];
+    const pauseNamed: boolean[] = [];
+    const resume = stories.resume.bind(stories);
+    stories.resume = (storyId, turn, still) => {
+      pauseNamed.push(kept().includes(storyId));
+      return resume(storyId, turn, still);
+    };
+    const handlers = storyHandlers(
+      () => stories,
+      (storyId) => orchestrator.touched(storyId),
+    );
+    await handlers.storyResume({ storyId: "s1" });
+    assert.deepEqual(pauseNamed, [false]);
+    assert.deepEqual(kept(), ["s2"]);
   });
 
   it("says a pause did not take when the engine cannot be reached", async () => {
