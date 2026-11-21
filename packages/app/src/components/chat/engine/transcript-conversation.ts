@@ -268,7 +268,13 @@ function itemActivity(
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
       // A reply the checks refused stands with its note (turnReply).
       if (item.outcome.status === "contract_unmet" && !unverifiedChecks(item))
-        return { ...base, kind: "error", title: "Not finished", detail: unfinishedTurnText, status: "failed" }
+        return {
+          ...base,
+          kind: "error",
+          title: "Not finished",
+          detail: unfinishedTurnDetail(item.outcome.refused),
+          status: "failed",
+        }
       return undefined
     default:
       return undefined
@@ -278,6 +284,13 @@ function itemActivity(
 /** A turn the agent ended without a finish the checks accepted. */
 export const unfinishedTurnText =
   "The agent stopped without finishing: its work was not checked with finish_task."
+
+/** Why the finish was refused, when it was because the plan still had steps to do. */
+function unfinishedTurnDetail(refused: { kind: string; steps?: string[] } | undefined) {
+  if (refused?.kind !== "open_plan" || !refused.steps?.length) return unfinishedTurnText
+  const count = refused.steps.length
+  return `The agent stopped with ${count === 1 ? "a step" : `${count} steps`} of its plan still open: ${refused.steps.join("; ")}.`
+}
 
 /**
  * A failed request or turn. A model whose plan is used up (or whose key has

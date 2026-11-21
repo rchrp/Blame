@@ -524,3 +524,27 @@ test("an update of the plan shows as what it changed, and a repeat shows nothing
   assert.deepEqual(lines, ["Plan set | 2 steps", "Step 1 done | Add it | 1/2"])
   assert.equal(transcript.plan?.steps[0]?.status, "completed")
 })
+
+test("a turn that left its plan open says which steps", () => {
+  const reducer = new TranscriptReducer()
+  reducer.applyRecords([
+    record({ type: "session_created", config }),
+    record({ type: "user_message", turn: "t1", input: [{ type: "text", text: "work" }], delivery: "turn" }),
+    record({
+      type: "turn_ended",
+      turn: "t1",
+      outcome: {
+        status: "contract_unmet",
+        unmet: [{ kind: "result", tool: "finish_task" }],
+        refused: { kind: "open_plan", steps: ["Wire the form", "Write tests"] },
+      },
+    }),
+  ])
+  const run = transcriptConversation(reducer.snapshot(), "You").runs[0]!
+  const error = run.activities.find((activity) => activity.kind === "error")
+  assert.equal(error?.title, "Not finished")
+  assert.equal(
+    error?.detail,
+    "The agent stopped with 2 steps of its plan still open: Wire the form; Write tests."
+  )
+})
