@@ -651,6 +651,21 @@ export function createStoryWorktree(input: CreateWorktreeInput) {
   return createWorktree(input);
 }
 
+/** Stops a worktree's project setup and its local preview. */
+export function stopStoryProjectSetup(input: StopProjectSetupInput) {
+  return stopProjectSetup(input);
+}
+
+/** Removes a story's worktree with its preview; the project folder stays. */
+export function removeStoryWorktree(input: RemoveWorktreeInput) {
+  return removeWorktree(input);
+}
+
+/** A file of a workspace, null when it is not there. */
+export function readStoryWorkspaceFile(input: WorkspacePathInput) {
+  return readWorkspaceFile(input).catch(() => null);
+}
+
 async function createWorktree(input: CreateWorktreeInput) {
   if (input.direct) return directWorkspace(input);
   const context = await worktreeCreationContext(input);

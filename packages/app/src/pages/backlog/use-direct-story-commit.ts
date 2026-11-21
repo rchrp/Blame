@@ -2,10 +2,7 @@ import * as React from "react"
 import type { DirectStoryFile } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
-import type {
-  UserStory,
-  UserStoryUpdate,
-} from "@/components/backlog/data/backlog-data"
+import type { UserStory } from "@/components/backlog/data/backlog-data"
 import type { useModelSelection } from "@/components/model/model-selection"
 import { navigate } from "@/components/navigation/navigation"
 import type { useCloudAuth } from "@/context/cloud-auth"
@@ -22,7 +19,7 @@ import {
   directCommitValidationError,
   type SharedFilesChoice,
 } from "./direct-story-commit"
-import { inactiveStoryFields } from "./story-runtime-state"
+import { parseUserStory } from "@/components/backlog/data/backlog-api"
 
 type DirectStoryCommitInput = {
   alternativeSelection: ReturnType<typeof useModelSelection>
@@ -30,7 +27,6 @@ type DirectStoryCommitInput = {
   gitIdentity: ReturnType<typeof useGitIdentity>
   platform: ReturnType<typeof usePlatform>
   projects: ReturnType<typeof useProjects>
-  updateStory: (story: UserStory, input: UserStoryUpdate) => Promise<UserStory>
 }
 
 type SharedFilesQuestion = Pick<DirectSharedFilesDialogProps, "files" | "open">
@@ -44,7 +40,6 @@ export function useDirectStoryCommit({
   gitIdentity,
   platform,
   projects,
-  updateStory,
 }: DirectStoryCommitInput) {
   const [question, setQuestion] = React.useState<SharedFilesQuestion>()
   const answer = React.useRef<(choice: SharedFilesChoice) => void>(undefined)
@@ -101,14 +96,15 @@ export function useDirectStoryCommit({
           workspace: platform.workspace!,
         })
         if (result.status === "cancelled") return story
-        const doneStory = await updateStory(story, {
-          ...inactiveStoryFields(),
-          agentLastError: null,
-          baseCommit: result.baseCommit,
-          mergeCommit: result.commit,
-          mergedAt: new Date().toISOString(),
-          status: "done",
-        })
+        // Done: the story service cleans its runtime up.
+        const doneStory = parseUserStory(
+          await platform.engine!.call("storyComplete", {
+            storyId: story.id,
+            baseCommit: result.baseCommit,
+            mergeCommit: result.commit,
+            mergedAt: new Date().toISOString(),
+          })
+        )
         celebrateStory(story.id)
         toast.success("Story committed", {
           action: { label: "Open Git", onClick: () => navigate("/git") },
@@ -132,9 +128,12 @@ export function useDirectStoryCommit({
             description: message,
             position: "bottom-right",
           })
-        return updateStory(story, {
-          agentLastError: message,
-        })
+        return parseUserStory(
+          await platform.engine!.call("storyError", {
+            storyId: story.id,
+            error: message,
+          })
+        )
       }
     },
     [
@@ -145,7 +144,6 @@ export function useDirectStoryCommit({
       gitIdentity,
       platform,
       projects,
-      updateStory,
     ]
   )
 

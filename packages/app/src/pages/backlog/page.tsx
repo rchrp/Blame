@@ -41,6 +41,7 @@ import {
 } from "@/components/model/model-selection"
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { storyModelChoice } from "@/components/backlog/data/story-model-choice"
+import { engineModelChoice } from "@/lib/agent-title-generation"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { KanbanBoard } from "@/components/shared/kanban-board"
 import { BacklogDragDrop } from "@/components/backlog/board/backlog-drag-drop"
@@ -70,16 +71,8 @@ import {
   titleGenerationStoryIds,
 } from "./backlog-title-generation"
 import { shouldCloseDrawerAfterDelete } from "./drawer-delete"
-import {
-  approveAndMergeValidationError,
-  mergeStoryIntoTarget,
-} from "./story-post-merge"
-import {
-  asyncInactiveStoryCleanup,
-  cleanupInactiveStory,
-  deleteUserStoryWithRuntime,
-  inactiveStoryCleanup,
-} from "./story-runtime-cleanup"
+import { afterStoryMerged } from "./story-post-merge"
+import { deleteUserStory } from "./story-deletion"
 import { activeStory } from "./story-runtime-state"
 import { useReviewCompletion } from "./use-review-completion"
 import { DirectSharedFilesDialog } from "./direct-shared-files-dialog"
@@ -253,50 +246,20 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       unsubscribe()
     }
   }, [])
+  // A story's own fields. Its status out of a run, its agent and its
+  // cleanup are the story service's (enqueue, discard, back to backlog…).
   const updateStory = React.useCallback(
-    async (
-      story: UserStory,
-      input: UserStoryUpdate,
-      options: { cleanup?: boolean } = {}
-    ) => {
+    async (story: UserStory, input: UserStoryUpdate) => {
       const currentStory = activeStory(story, storiesRef.current)
-      const persistStoryUpdate = async (input: UserStoryUpdate) => {
-        const nextStory = await backlog.update(currentStory, input)
-        setDrawerTarget((current) =>
-          current?.userStory?.id === currentStory.id
-            ? { ...current, userStory: nextStory }
-            : current
-        )
-        return nextStory
-      }
-      if (
-        options.cleanup !== false &&
-        asyncInactiveStoryCleanup(currentStory, input)
-      ) {
-        const nextStory = await persistStoryUpdate(input)
-        void cleanupInactiveStory(
-          currentStory,
-          platform,
-          projects.activeProject?.path,
-          backlog
-        )
-        return nextStory
-      }
-      const cleanup =
-        options.cleanup === false
-          ? {}
-          : await inactiveStoryCleanup(
-              currentStory,
-              input,
-              platform,
-              projects.activeProject?.path
-            )
-      return persistStoryUpdate({
-        ...input,
-        ...cleanup,
-      })
+      const nextStory = await backlog.update(currentStory, input)
+      setDrawerTarget((current) =>
+        current?.userStory?.id === currentStory.id
+          ? { ...current, userStory: nextStory }
+          : current
+      )
+      return nextStory
     },
-    [backlog, platform, projects.activeProject?.path]
+    [backlog]
   )
   const reviewDiffEmpty = React.useCallback(
     (story: UserStory) => userStoryDiffStats.get(story.id)?.files === 0,
@@ -316,16 +279,31 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       })
     )
   )
+  // Discarded or back to the backlog: the story service stops its agent
+  // and cleans its runtime up.
+  const discardStory = useLatestCallback(
+    async (story: UserStory, reason: string) =>
+      parseUserStory(
+        await requiredEngine(platform).call("storyDiscard", {
+          storyId: story.id,
+          reason,
+        })
+      )
+  )
+  const storyToBacklog = useLatestCallback(async (story: UserStory) =>
+    parseUserStory(
+      await requiredEngine(platform).call("storyToBacklog", {
+        storyId: story.id,
+      })
+    )
+  )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
       // The comment box opens; sending a comment is what resumes the agent.
       if (choice === "request-changes") return story
-      return updateStory(story, {
-        discardedReason: "Rejected during review",
-        status: "discarded",
-      })
+      return discardStory(story, "Rejected during review")
     },
-    [updateStory]
+    [discardStory]
   )
   const openWorktree = React.useCallback(
     async (story: UserStory) => {
@@ -383,18 +361,11 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         )
         return paused ?? story
       }
-      if (choice === "discard-worktree") {
-        return updateStory(story, {
-          discardedReason: "Worktree discarded by user",
-          status: "discarded",
-        })
-      }
-      return updateStory(story, {
-        discardedReason: null,
-        status: "backlog",
-      })
+      if (choice === "discard-worktree")
+        return discardStory(story, "Worktree discarded by user")
+      return storyToBacklog(story)
     },
-    [pauseStoryAgent, updateStory]
+    [discardStory, pauseStoryAgent, storyToBacklog]
   )
   // What the person picked for a story's next turn: its own model choice
   // (its last model unless the person picked another for it), else the
@@ -470,37 +441,38 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     [platform]
   )
 
+  // Approve & Merge runs in the story service; this window says where the
+  // story went and checks the preview environment against the merge.
   const mergeApprovedStory = React.useCallback(
     async (story: UserStory, options: { push?: boolean } = {}) => {
-      const validationError = approveAndMergeValidationError(
-        story,
-        auth,
-        platform,
-        projects.activeProject?.path,
-        alternativeSelection.currentModel
-      )
-      if (validationError) {
+      const model = engineModelChoice(alternativeSelection)
+      const validationError =
+        auth.status !== "authenticated"
+          ? "Reconnect the provider before approving the merge."
+          : !model
+            ? "Select a model before approving the merge."
+            : undefined
+      if (validationError || !model) {
         toast.error("Unable to approve and merge", {
           description: validationError,
           position: "bottom-right",
         })
         return story
       }
-      const runningStory = await updateStory(story, {
-        agentLastError: null,
-        agentStatus: "Running",
-      })
-      return mergeStoryIntoTarget({
-        auth,
-        model: alternativeSelection.currentModel!,
-        platform,
-        projects,
-        push: options.push,
-        reasoningEffort: alternativeSelection.currentVariant,
-        runningStory,
-        story,
-        updateStory,
-      }).catch((error: unknown) => {
+      try {
+        const outcome = await requiredEngine(platform).call("storyApprove", {
+          storyId: story.id,
+          push: options.push,
+          model,
+        })
+        void afterStoryMerged(story.id, story.projectId, outcome, {
+          auth,
+          platform,
+          model: alternativeSelection.currentModel!,
+          reasoningEffort: alternativeSelection.currentVariant,
+        }).catch(() => undefined)
+        return parseUserStory(outcome.story)
+      } catch (error) {
         const message = errorMessage(error)
         // Git asking who you are gets its dialog, not a raw error.
         const askedIdentity = gitIdentity?.handleError(message, () =>
@@ -514,21 +486,10 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
             task: "Approve & Merge",
             position: "bottom-right",
           })
-        return updateStory(runningStory, {
-          agentLastError: message,
-          agentStatus: null,
-        })
-      })
+        return activeStory(story, storiesRef.current)
+      }
     },
-    [
-      auth,
-      gitIdentity,
-      platform,
-      projects,
-      alternativeSelection.currentModel,
-      alternativeSelection.currentVariant,
-      updateStory,
-    ]
+    [alternativeSelection, auth, gitIdentity, platform]
   )
   // One merge per story at a time, shown on its card and in its drawer alike.
   const approveAndMergeStory = React.useCallback(
@@ -559,7 +520,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     storiesRef,
     updateStory,
   })
-  const { markReviewStoryDone } = useReviewCompletion(updateStory)
+  const { markReviewStoryDone } = useReviewCompletion()
   const { approveAndCommitDirectStory, sharedFilesDialog } =
     useDirectStoryCommit({
       alternativeSelection,
@@ -567,7 +528,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       gitIdentity,
       platform,
       projects,
-      updateStory,
     })
   // Like a merge: one at a time per story, shown on its card and its drawer.
   const approveAndCommitStory = React.useCallback(
@@ -662,12 +622,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     async (story: UserStory, action: BacklogAction) => {
       const currentStory = await detailedStoryForAction(story, action, backlog)
       if (action === "Delete Permanently") {
-        await deleteUserStoryWithRuntime(
-          currentStory,
-          platform,
-          projects.activeProject?.path,
-          backlog.remove
-        )
+        await deleteUserStory(currentStory, backlog.remove)
         closeDrawerIfDeleted(currentStory.id)
         return
       }
@@ -678,20 +633,10 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         )
         return enqueueStory(generatedStory ?? currentStory)
       }
-      if (action === "Discard") {
-        return updateStory(currentStory, {
-          discardedReason: "Discarded from backlog",
-          status: "discarded",
-        })
-      }
-      if (action === "Dequeue")
-        return updateStory(currentStory, { status: "backlog" })
-      if (action === "Rework") {
-        return updateStory(currentStory, {
-          discardedReason: null,
-          status: "backlog",
-        })
-      }
+      if (action === "Discard")
+        return discardStory(currentStory, "Discarded from backlog")
+      if (action === "Dequeue" || action === "Rework")
+        return storyToBacklog(currentStory)
       if (action === "Use Context") {
         openCreateDrawerWithDraft({ codeSelectionAttachments: [storyContextAttachment(currentStory)] })
         return
@@ -703,14 +648,13 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     [
       closeDrawerIfDeleted,
       completeReviewStory,
+      discardStory,
       enqueueStory,
       generateQueuedStoryTitle,
       backlog,
       openCreateDrawerWithDraft,
       openPullRequestForStory,
-      platform,
-      projects.activeProject?.path,
-      updateStory,
+      storyToBacklog,
     ]
   )
   const runStatusPipRequest = React.useCallback(
@@ -784,12 +728,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const columnAction = useLatestCallback(runStoryAction)
   const columnCheckPullRequest = useLatestCallback(checkPullRequest)
   const deleteStory = useLatestCallback(async (story: UserStory) => {
-    await deleteUserStoryWithRuntime(
-      await detailedStory(story, backlog),
-      platform,
-      projects.activeProject?.path,
-      backlog.remove
-    )
+    await deleteUserStory(story, backlog.remove)
     closeDrawerIfDeleted(story.id)
   })
   const columnDeleteStory = deleteStory
@@ -821,19 +760,29 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const deleteDrawerStory = deleteStory
   const updateDrawerStory = useLatestCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
-      // Joining the queue is the story service's: the edits go first.
-      if (input.status === "ready") {
-        const { status: _, agentLastError: __, ...edits } = input
-        void _
-        void __
-        const edited = Object.keys(edits).length
-          ? await updateStory(story, edits)
-          : story
+      // A story's status and agent are the story service's: the edits go
+      // first, then the queue, the backlog or the bin.
+      const {
+        status,
+        discardedReason,
+        agentStatus: _,
+        agentLastError: __,
+        ...edits
+      } = input
+      void _
+      void __
+      const edited = Object.keys(edits).length
+        ? await updateStory(story, edits)
+        : story
+      if (status === "ready")
         return enqueueStory(
           (await generateQueuedStoryTitle(edited, true)) ?? edited
         )
-      }
-      const nextStory = await updateStory(story, input)
+      if (status === "backlog") return storyToBacklog(edited)
+      if (status === "discarded")
+        return discardStory(edited, discardedReason ?? "Discarded")
+      if (!Object.keys(edits).length) return edited
+      const nextStory = edited
       void generateQueuedStoryTitle(nextStory)
       return nextStory
     }

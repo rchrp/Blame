@@ -62,11 +62,6 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
-    async delete(id: string) {
-      await request<void>(connection, baseUrl, `/projects/user-stories/${id}`, {
-        method: "DELETE",
-      })
-    },
   }
 }
 

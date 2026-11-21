@@ -15,8 +15,8 @@ import type { useProjects } from "@/context/projects"
 import { engineModelChoice } from "@/lib/agent-title-generation"
 import { measurePerformanceOperation } from "@/lib/performance-diagnostics"
 import { projectCodePractices } from "@/lib/project-code-practices"
+import { parseUserStory } from "@/components/backlog/data/backlog-api"
 import { storyLocation } from "./story-engine"
-import { approveAndMergeValidationError } from "./story-post-merge"
 import { activeStory } from "./story-runtime-state"
 import { withStoryTransition } from "./story-transitions"
 
@@ -45,7 +45,7 @@ export function useStoryPullRequest({
 }: StoryPullRequestInput) {
   const openStoryPullRequest = React.useCallback(
     async (story: UserStory) => {
-      const validationError = approveAndMergeValidationError(
+      const validationError = pullRequestValidationError(
         story,
         auth,
         platform,
@@ -91,10 +91,17 @@ export function useStoryPullRequest({
             position: "bottom-right",
           }
         )
-        return await updateStory(currentStory, {
-          agentLastError: null,
+        const opened = await updateStory(currentStory, {
           pullRequestUrl: result.url,
         })
+        // The story service keeps its agent fields: an earlier error goes.
+        if (!currentStory.agentLastError) return opened
+        return parseUserStory(
+          await platform.engine!.call("storyError", {
+            storyId: currentStory.id,
+            error: null,
+          })
+        )
       } catch (error) {
         const message = errorMessage(error)
         const askedIdentity = gitIdentity?.handleError(message, () =>
@@ -168,4 +175,21 @@ async function storyAgentSummary(
     .call("status", { sessions: [story.engineSessionId], location })
     .catch(() => [])
   return status?.lastReply
+}
+
+// What Open PR needs before it starts.
+function pullRequestValidationError(
+  story: UserStory,
+  auth: ReturnType<typeof useCloudAuth>,
+  platform: ReturnType<typeof usePlatform>,
+  repositoryRoot: string | undefined,
+  model: unknown
+) {
+  if (!story.worktree) return "This user story has no active worktree."
+  if (!story.branch) return "This user story has no feature branch."
+  if (!repositoryRoot) return "Unable to resolve the active project."
+  if (auth.status !== "authenticated")
+    return "Reconnect the provider before opening the pull request."
+  if (!model) return "Select a model before opening the pull request."
+  if (!platform.engine) return "Blame's agent engine is not available."
 }

@@ -33,6 +33,19 @@ export function storyHandlers(service: () => StoryService): StoryHandlers {
     storyPause: async ({ storyId }) => payload(await service().pause(storyId)),
     storyResume: async ({ storyId, turn }) =>
       payload(await service().resume(storyId, turn)),
+    storyApprove: ({ storyId, ...input }) => service().approve(storyId, input),
+    storyComplete: async ({ storyId, ...merge }) =>
+      payload(await service().complete(storyId, merge)),
+    storyToBacklog: async ({ storyId }) =>
+      payload(await service().toBacklog(storyId)),
+    storyDiscard: async ({ storyId, reason }) =>
+      payload(await service().discard(storyId, reason)),
+    storyDelete: async ({ storyId }) => {
+      await service().remove(storyId);
+      return null;
+    },
+    storyError: async ({ storyId, error }) =>
+      payload(await service().noteError(storyId, error)),
     storyRewind: ({ storyId, to, restoreWorkspace }) =>
       service().rewind(storyId, to, restoreWorkspace),
   };

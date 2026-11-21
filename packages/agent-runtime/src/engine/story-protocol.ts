@@ -152,6 +152,35 @@ export type EngineStoryMethods = {
     input: { storyId: string; to: number; restoreWorkspace: boolean };
     result: { finished: number };
   };
+  /** Approve & Merge: the story's work into its target branch, then its cleanup. */
+  storyApprove: {
+    input: { storyId: string; push?: boolean; model: EngineModelChoice };
+    result: StoryMergeOutcome;
+  };
+  /**
+   * Done without a merge here: committed in the project folder, merged on
+   * GitHub, or nothing to merge. Its agent, runtime and worktree go.
+   */
+  storyComplete: {
+    input: {
+      storyId: string;
+      baseCommit?: string | null;
+      mergeCommit?: string | null;
+      mergedAt?: string | null;
+    };
+    result: unknown;
+  };
+  /** Back to the backlog: its agent stopped, its runtime and worktree gone. */
+  storyToBacklog: { input: { storyId: string }; result: unknown };
+  /** Discarded: its agent stopped; its runtime and worktree go meanwhile. */
+  storyDiscard: { input: { storyId: string; reason: string }; result: unknown };
+  /** Deleted for good, with its agent, runtime and worktree. */
+  storyDelete: { input: { storyId: string }; result: null };
+  /** What a git flow of a window (Open PR, a Direct commit) says went wrong; null clears it. */
+  storyError: {
+    input: { storyId: string; error: string | null };
+    result: unknown;
+  };
 };
 
 /** What the host tells the windows about stories. */
@@ -168,6 +197,14 @@ export type StoryHostEvent =
       directFallback?: boolean;
     }
   | { type: "story-removed"; projectId: string; storyId: string }
+  /** What a story ran (its worktree, previews) is being removed; `error` when that failed. */
+  | {
+      type: "story-cleanup";
+      projectId: string;
+      storyId: string;
+      cleaning: boolean;
+      error?: string;
+    }
   | { type: "story-queue"; queue: StoryQueueState };
 
 /** One turn of a story's agent ended (for the host's own listeners). */

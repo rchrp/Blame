@@ -261,6 +261,12 @@ export const engineStoryMethods = [
   "storyPause",
   "storyResume",
   "storyRewind",
+  "storyApprove",
+  "storyComplete",
+  "storyToBacklog",
+  "storyDiscard",
+  "storyDelete",
+  "storyError",
 ] as const satisfies readonly (keyof EngineStoryMethods)[];
 
 export const engineHostMethods = [

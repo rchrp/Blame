@@ -17,9 +17,11 @@ import type {
   EngineHostMethod,
   EngineHostResult,
   EngineLocation,
+  EngineModelChoice,
 } from "../protocol.js";
 import type {
   StoryHostEvent,
+  StoryMergeOutcome,
   StoryMessageInput,
   StoryPreferences,
   StoryQueueState,
@@ -37,6 +39,7 @@ import {
   type StoryEventExtra,
 } from "./start.js";
 import {
+  inactiveStoryFields,
   storyLocation,
   storyOutcomeUpdate,
   storyResumeMessage,
@@ -45,6 +48,7 @@ import {
   type StoryUpdate,
 } from "./story.js";
 import { pauseStory, sendStoryMessage } from "./turns.js";
+import { approveStory, cleanStory, hasRuntime } from "./endings.js";
 
 export type StoryServiceHost = {
   api(): ApiConnection | undefined;
@@ -214,6 +218,154 @@ export class StoryService {
     return this.send(storyId, { message: { text: storyResumeMessage }, turn });
   }
 
+  /**
+   * Approve & Merge into the story's target branch; its runtime is cleaned
+   * meanwhile, and the stories that start after it can start.
+   */
+  approve(
+    storyId: string,
+    input: { push?: boolean; model: EngineModelChoice },
+  ): Promise<StoryMergeOutcome> {
+    return this.exclusive(storyId, async () => {
+      const story = await this.detail(storyId);
+      const repositoryRoot = this.requiredPath(story);
+      const outcome = await approveStory(
+        this.context(),
+        story,
+        repositoryRoot,
+        input,
+      );
+      this.cleanInBackground(story, { removeSession: true });
+      this.pump();
+      return {
+        story: this.payload(storyId),
+        merge: outcome.merge,
+        repositoryRoot,
+        ...(outcome.previewRepairCandidate !== undefined
+          ? { previewRepairCandidate: outcome.previewRepairCandidate }
+          : {}),
+      };
+    });
+  }
+
+  /** Done without a merge here (a Direct commit, a pull request merged, nothing to merge). */
+  complete(
+    storyId: string,
+    merge: {
+      baseCommit?: string | null;
+      mergeCommit?: string | null;
+      mergedAt?: string | null;
+    },
+  ) {
+    return this.exclusive(storyId, async () => {
+      const story = await this.current(storyId);
+      const done = await this.patch(story, {
+        ...inactiveStoryFields(),
+        agentLastError: null,
+        status: "done",
+        ...definedFields(merge),
+      });
+      if (hasRuntime(story.status))
+        this.cleanInBackground(story, { removeSession: true });
+      this.pump();
+      return done;
+    });
+  }
+
+  /** Discarded: shown so at once, its runtime cleaned meanwhile. */
+  discard(storyId: string, reason: string) {
+    return this.exclusive(storyId, async () => {
+      const story = await this.current(storyId);
+      const discarded = await this.patch(story, {
+        discardedReason: reason,
+        status: "discarded",
+      });
+      if (hasRuntime(story.status))
+        this.cleanInBackground(story, {
+          removeSession: false,
+          after: inactiveStoryFields(),
+        });
+      this.pump();
+      return discarded;
+    });
+  }
+
+  /** Back to the backlog; a story at work stops and loses its worktree first. */
+  toBacklog(storyId: string) {
+    return this.exclusive(storyId, async () => {
+      const story = await this.current(storyId);
+      const working = hasRuntime(story.status);
+      if (working)
+        await cleanStory(
+          this.context(),
+          story,
+          this.projectPath(story.projectId),
+          {
+            removeSession: false,
+          },
+        );
+      const backlog = await this.patch(story, {
+        ...(working ? inactiveStoryFields() : {}),
+        discardedReason: null,
+        status: "backlog",
+      });
+      this.pump();
+      return backlog;
+    });
+  }
+
+  /** Deleted for good, with its agent, runtime and worktree. */
+  remove(storyId: string) {
+    return this.exclusive(storyId, async () => {
+      const story = await this.current(storyId);
+      await cleanStory(
+        this.context(),
+        story,
+        this.projectPath(story.projectId),
+        {
+          removeSession: true,
+        },
+      );
+      await this.api().delete(storyId);
+      this.forget(story);
+    });
+  }
+
+  /** What a window's git flow (Open PR, a Direct commit) said went wrong; null clears it. */
+  async noteError(storyId: string, error: string | null) {
+    return this.patch(await this.current(storyId), { agentLastError: error });
+  }
+
+  private cleanInBackground(
+    story: HostStory,
+    options: { removeSession: boolean; after?: StoryUpdate },
+  ) {
+    const event = { projectId: story.projectId, storyId: story.id };
+    this.host.emit({ type: "story-cleanup", ...event, cleaning: true });
+    void cleanStory(
+      this.context(),
+      story,
+      this.projectPath(story.projectId),
+      options,
+    )
+      .then(() =>
+        options.after ? this.patch(story, options.after) : undefined,
+      )
+      .then(
+        () =>
+          this.host.emit({ type: "story-cleanup", ...event, cleaning: false }),
+        (error: unknown) => {
+          report(error);
+          this.host.emit({
+            type: "story-cleanup",
+            ...event,
+            cleaning: false,
+            error: errorMessage(error),
+          });
+        },
+      );
+  }
+
   /** Undoes a message to the agent and what followed it, files included when they were snapshotted. */
   async rewind(storyId: string, to: number, restoreWorkspace: boolean) {
     const story = await this.current(storyId);
@@ -334,7 +486,9 @@ export class StoryService {
   private begin(story: HostStory, projectPath: string) {
     this.starting.add(story.id);
     this.waiting.delete(story.id);
-    void startStory(this.context(), story, projectPath)
+    void this.exclusive(story.id, () =>
+      startStory(this.context(), story, projectPath),
+    )
       .then(
         (reason) => {
           if (reason) this.setWaiting(story, reason);
@@ -590,6 +744,12 @@ export class StoryService {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     if (this.reloadTimer) clearInterval(this.reloadTimer);
   }
+}
+
+function definedFields<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, field]) => field !== undefined),
+  ) as Partial<T>;
 }
 
 function mergeRecord(

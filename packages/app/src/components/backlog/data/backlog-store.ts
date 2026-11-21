@@ -243,6 +243,23 @@ function useBacklogActions(
       platform.engine?.onStory((event) => {
         if (event.type === "story-queue" || event.projectId !== projectId)
           return
+        // What a discarded or finished story ran is being removed.
+        if (event.type === "story-cleanup") {
+          setState((current) => ({
+            ...current,
+            cleanupStoryIds: storyStateIds(
+              current.cleanupStoryIds,
+              event.storyId,
+              event.cleaning
+            ),
+          }))
+          if (event.error)
+            toast.error("Story cleanup failed", {
+              description: event.error,
+              position: "bottom-right",
+            })
+          return
+        }
         if (event.type === "story-removed") {
           setState((current) => ({
             ...current,
@@ -377,7 +394,10 @@ function useBacklogActions(
 
   const remove = React.useCallback(
     async (story: UserStory) => {
-      await api.delete(story.id)
+      // The story service stops its agent and runtime, then deletes it.
+      if (!platform.engine)
+        throw new Error("The desktop agent engine is not available.")
+      await platform.engine.call("storyDelete", { storyId: story.id })
       // The account deleted its copies; drop the screenshots on this device:
       // its preview's, and those its conversation took elsewhere (a component
       // preview, a project folder) unless another conversation took them too.
@@ -401,7 +421,7 @@ function useBacklogActions(
         ),
       }))
     },
-    [api, platform.agentScreenshots, setState]
+    [platform.agentScreenshots, platform.engine, setState]
   )
 
   const setStorySetupInitializing = React.useCallback(

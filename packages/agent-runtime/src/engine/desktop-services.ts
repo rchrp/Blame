@@ -125,6 +125,33 @@ export type DesktopServices = {
     created: boolean;
     apiConnection: ApiConnection | null;
   }): Promise<null>;
+  // Stops what a story runs besides its agent: its project setup and local
+  // preview, its devices and its cloud preview.
+  stopStoryRuntime?(input: {
+    storyId: string;
+    worktree?: string | null;
+    workspaceMode?: StoryWorktree["workspaceMode"] | null;
+  }): Promise<{ projectSetupStopped: boolean }>;
+  // Removes a story's worktree with its preview (never the project folder).
+  removeStoryWorktree?(input: {
+    repositoryRoot: string;
+    worktree: string;
+    workspaceMode?: StoryWorktree["workspaceMode"] | null;
+    projectSetupStopped?: boolean;
+  }): Promise<boolean>;
+  // A file of a workspace (the runtime VM's included); null when there is none.
+  readWorkspaceFile?(input: {
+    root: string;
+    path: string;
+  }): Promise<string | null>;
+  // A git flow the host runs on a story's worktree: what only the desktop
+  // knows of it (in the VM, the worktrees agents write in), its preview
+  // synced first, and the worktree counted as written until `endGitFlow`.
+  beginGitFlow?(input: {
+    method: "approveAndMerge";
+    worktree: string;
+  }): Promise<{ inVm: boolean; activeWorktrees: string[]; operation: string }>;
+  endGitFlow?(input: { operation: string }): Promise<null>;
 };
 
 export type CreateStoryWorktreeInput = {
@@ -186,6 +213,11 @@ export const desktopServiceNames = [
   "checkHostDependencies",
   "gitIdentity",
   "prepareStoryTurn",
+  "stopStoryRuntime",
+  "removeStoryWorktree",
+  "readWorkspaceFile",
+  "beginGitFlow",
+  "endGitFlow",
 ] as const satisfies readonly DesktopServiceName[];
 
 export type DesktopRequest = (

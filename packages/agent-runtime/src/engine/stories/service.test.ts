@@ -26,6 +26,10 @@ function fakeApi(rows: Row[]) {
     if (story) {
       const row = stories.get(story[1]!);
       if (!row) return new Response("{}", { status: 404 });
+      if (init?.method === "DELETE") {
+        stories.delete(row.id);
+        return new Response(null, { status: 204 });
+      }
       if (init?.method === "PATCH")
         Object.assign(row, JSON.parse(String(init.body)), {
           updatedAt: new Date().toISOString(),
@@ -41,6 +45,8 @@ function fakeApi(rows: Row[]) {
 
 function fakeHost() {
   const calls: Array<{ method: EngineHostMethod; input: unknown }> = [];
+  const cleaned: string[] = [];
+  const removed: string[] = [];
   const events: StoryHostEvent[] = [];
   const statuses = new Map<string, unknown>();
   const host = {
@@ -50,6 +56,13 @@ function fakeHost() {
       if (method === "createSession")
         return { session: (input as { session: string }).session, head: 0 };
       if (method === "send") return { turn: "turn", started: true };
+      if (method === "approveAndMerge")
+        return {
+          baseCommit: "base",
+          mergeCommit: "merge",
+          push: { status: "skipped" },
+          targetBranch: "main",
+        };
       if (method === "status")
         return (input as { sessions: string[] }).sessions.map(
           (session) =>
@@ -74,10 +87,25 @@ function fakeHost() {
       }),
       git: async () => "abc123\n",
       prepareStoryTurn: async () => null,
+      beginGitFlow: async () => ({
+        inVm: false,
+        activeWorktrees: [],
+        operation: "flow",
+      }),
+      endGitFlow: async () => null,
+      stopStoryRuntime: async (input: { storyId: string }) => {
+        cleaned.push(input.storyId);
+        return { projectSetupStopped: true };
+      },
+      removeStoryWorktree: async (input: { worktree: string }) => {
+        removed.push(input.worktree);
+        return true;
+      },
+      readWorkspaceFile: async () => '{"repaired":true}',
     },
     emit: (event: StoryHostEvent) => events.push(event),
   };
-  return { host, calls, events, statuses };
+  return { host, calls, events, statuses, cleaned, removed };
 }
 
 const preferences = {
@@ -299,6 +327,124 @@ test("a message resumes a paused story; a pause stops the running turn", async (
     assert.ok(calls.some(({ method }) => method === "interrupt"));
     // The turn's end, not the pause, pauses it.
     assert.equal(story.agentStatus, "Running");
+  } finally {
+    service.stop();
+    api.restore();
+  }
+});
+
+test("Approve & Merge merges, cleans up, and starts the stories after it", async () => {
+  const api = fakeApi([
+    row("first", "a", {
+      status: "in-review",
+      engineSessionId: "session",
+      workspaceMode: "local-container",
+      worktree: "/worktrees/first",
+      branch: "story/first",
+    }),
+    row("second", "a", { startsAfter: ["first"] }),
+  ]);
+  const { host, calls, removed } = fakeHost();
+  const service = new StoryService(host as never);
+  try {
+    await service.sync({ projects: [{ id: "a", path: "/a" }], preferences });
+    const outcome = await service.approve("first", {
+      model: { providerId: "anthropic", modelId: "claude" },
+    });
+    const merged = api.stories.get("first")!;
+    assert.equal(merged.status, "done");
+    assert.equal(merged.mergeCommit, "merge");
+    assert.equal(merged.worktree, null);
+    assert.equal(outcome.repositoryRoot, "/a");
+    assert.deepEqual(outcome.previewRepairCandidate, { repaired: true });
+    const merge = calls.find(({ method }) => method === "approveAndMerge")!
+      .input as { worktree: string; storyBranch: string; inVm: boolean };
+    assert.equal(merge.worktree, "/worktrees/first");
+    assert.equal(merge.storyBranch, "story/first");
+    await settle(service, () => removed.includes("/worktrees/first"));
+    // Done with its agent: its session leaves the engine.
+    assert.ok(calls.some(({ method }) => method === "deleteSession"));
+    await settle(
+      service,
+      () => api.stories.get("second")!.status === "in-progress",
+    );
+  } finally {
+    service.stop();
+    api.restore();
+  }
+});
+
+test("a discarded story shows at once and loses its runtime meanwhile", async () => {
+  const api = fakeApi([
+    row("story", "a", {
+      status: "in-progress",
+      agentStatus: "Paused",
+      engineSessionId: "session",
+      workspaceMode: "local-container",
+      worktree: "/worktrees/story",
+      branch: "story/x",
+    }),
+    row("after", "a", { startsAfter: ["story"] }),
+  ]);
+  const { host, events, removed } = fakeHost();
+  const service = new StoryService(host as never);
+  try {
+    await service.sync({ projects: [{ id: "a", path: "/a" }], preferences });
+    await service.discard("story", "Rejected during review");
+    assert.equal(api.stories.get("story")!.status, "discarded");
+    await settle(service, () => api.stories.get("story")!.worktree === null);
+    assert.deepEqual(removed, ["/worktrees/story"]);
+    assert.ok(
+      events.some(
+        (event) => event.type === "story-cleanup" && event.cleaning === false,
+      ),
+    );
+    // The story kept its conversation for a rework.
+    assert.equal(api.stories.get("story")!.engineSessionId, "session");
+    const wait = service
+      .queueState()
+      .waiting.find(({ storyId }) => storyId === "after");
+    assert.equal(wait?.reason.kind, "dependency-dropped");
+  } finally {
+    service.stop();
+    api.restore();
+  }
+});
+
+test("back to the backlog stops the story first; a delete removes it for good", async () => {
+  const api = fakeApi([
+    row("story", "a", {
+      status: "in-progress",
+      agentStatus: "Running",
+      engineSessionId: "session",
+      workspaceMode: "direct",
+      worktree: "/a",
+    }),
+    row("other", "a", { status: "backlog" }),
+  ]);
+  const { host, calls, statuses, events } = fakeHost();
+  statuses.set("session", {
+    session: "session",
+    exists: true,
+    running: true,
+    turns: 1,
+    models: [],
+  });
+  const service = new StoryService(host as never);
+  try {
+    await service.sync({ projects: [{ id: "a", path: "/a" }], preferences });
+    await service.toBacklog("story");
+    const story = api.stories.get("story")!;
+    assert.equal(story.status, "backlog");
+    assert.equal(story.worktree, null);
+    assert.ok(calls.some(({ method }) => method === "interrupt"));
+    await service.remove("other");
+    assert.equal(api.stories.has("other"), false);
+    assert.ok(
+      events.some(
+        (event) => event.type === "story-removed" && event.storyId === "other",
+      ),
+    );
   } finally {
     service.stop();
     api.restore();
