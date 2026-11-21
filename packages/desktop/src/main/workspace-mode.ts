@@ -49,6 +49,10 @@ function nativeCloudWorktreeRoot(
   platform: NodeJS.Platform,
   env: NodeJS.ProcessEnv,
 ) {
+  // A drive or a test keeps them out of the person's folders (as LIMA_HOME
+  // does for the runtime VM).
+  const override = env.BLAME_CLOUD_WORKTREE_ROOT?.trim();
+  if (override) return override;
   if (platform === "win32") {
     const localAppData =
       env.LOCALAPPDATA ||

@@ -66,6 +66,27 @@ test("uses native host worktree roots for managed cloud previews", () => {
   );
 });
 
+test("BLAME_CLOUD_WORKTREE_ROOT puts the cloud worktrees elsewhere, never the runtime's", () => {
+  const env = {
+    HOME: "/Users/dev",
+    BLAME_CLOUD_WORKTREE_ROOT: "/tmp/drive/cloud",
+  };
+  assert.equal(worktreeRoot("darwin", env, "cloud-mirror"), "/tmp/drive/cloud");
+  assert.equal(worktreeRoot("linux", env, "cloud-mirror"), "/tmp/drive/cloud");
+  assert.equal(
+    worktreeRoot("darwin", env),
+    "/home/blame/.local/share/blame/runtime/worktrees",
+  );
+  assert.equal(
+    worktreeRoot(
+      "darwin",
+      { ...env, BLAME_CLOUD_WORKTREE_ROOT: " " },
+      "cloud-mirror",
+    ),
+    "/Users/dev/Library/Application Support/Blame/cloud/worktrees",
+  );
+});
+
 test("builds stable worktree paths for every desktop platform", () => {
   const expectedRuntime =
     "/home/blame/.local/share/blame/runtime/worktrees/Blame/story-42-add-login";
