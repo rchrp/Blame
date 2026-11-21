@@ -227,6 +227,17 @@ export type Obligation = { "kind": "call", tool: string, } | { "kind": "result",
 export type Outcome = { "result": JsonValue } | { "error": RpcError };
 
 // prettier-ignore
+export type PlanStep = { 
+/**
+ * One short imperative sentence.
+ */
+step: string, status: StepStatus, 
+/**
+ * Why the step was abandoned. Only abandoned steps have one.
+ */
+reason?: string, };
+
+// prettier-ignore
 export type Price = { input: number, output: number, cache_read?: number, cache_write?: number, };
 
 // prettier-ignore
@@ -331,7 +342,7 @@ forced_tool?: string, } | { "type": "turn_continued", turn: TurnId, text: string
 export type Records = { records: Array<SessionRecord>, head: number, };
 
 // prettier-ignore
-export type Refusal = { "kind": "failing_checks", tasks: Array<string>, };
+export type Refusal = { "kind": "failing_checks", tasks: Array<string>, } | { "kind": "open_plan", steps: Array<string>, };
 
 // prettier-ignore
 export type RequestId = string;
@@ -487,6 +498,9 @@ forced_tool?: string, } | { "type": "turn_continued", turn: TurnId, text: string
 export type SessionSummary = { session: SessionId, purpose: string, workspace_root: string, head: number, updated_at_ms: number, };
 
 // prettier-ignore
+export type StepStatus = "pending" | "in_progress" | "completed" | "abandoned";
+
+// prettier-ignore
 export type StopReason = "end_turn" | "tool_use" | "max_output_tokens" | "refusal" | "other";
 
 // prettier-ignore
@@ -551,6 +565,9 @@ export type TurnOutcome = { "status": "completed" } | { "status": "interrupted" 
  * so: the model's last reply stands, but is not verified.
  */
 refused?: Refusal, } | { "status": "withdrawn" };
+
+// prettier-ignore
+export type UpdatePlan = { plan: Array<PlanStep>, };
 
 // prettier-ignore
 export type Usage = { input_tokens?: number, output_tokens?: number, cache_read_tokens?: number, cache_write_tokens?: number, reasoning_tokens?: number, 

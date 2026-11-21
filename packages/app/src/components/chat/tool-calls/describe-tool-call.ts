@@ -1,5 +1,6 @@
 import { describeEdit, describeRead, describeSearch } from "./describe-code.ts"
 import { describeWebResearch } from "./describe-web-research.ts"
+import { describePlan } from "./describe-plan.ts"
 import { describePreviewEnvironment } from "./describe-preview-environment.ts"
 import {
   describeCommand,
@@ -50,6 +51,7 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   skills: describeSkill,
   ask_question: describeQuestion,
   ask_followup_question: describeQuestion,
+  update_plan: describePlan,
   finish_task: describeFinish,
   submit_and_exit: describeFinish,
   attempt_completion: describeFinish,

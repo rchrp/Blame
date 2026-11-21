@@ -15,6 +15,7 @@ import {
   type Limits,
   type SessionConfig,
   type TaskOutcome,
+  planProgress,
   turnReply,
   turnsByModel,
   type UserBlock,
@@ -762,6 +763,7 @@ export class EngineHost {
     const ended = transcript.turns.filter((turn) => turn.outcome).at(-1);
     const last = ended?.outcome;
     const reply = ended ? turnReply(ended, transcript.items)?.trim() : undefined;
+    const plan = planProgress(transcript.plan);
     return {
       session,
       exists: true,
@@ -769,6 +771,7 @@ export class EngineHost {
       ...(last ? { lastOutcome: last } : {}),
       ...(reply ? { lastReply: reply } : {}),
       turns: transcript.turns.length,
+      ...(plan ? { plan } : {}),
       models: turnsByModel(transcript).map(({ model, turns }) => ({
         providerId: model.provider,
         modelId: model.model,

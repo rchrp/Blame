@@ -4,13 +4,15 @@
 use super::Inner;
 use crate::contract;
 use crate::error::EngineError;
+use crate::plan;
 use crate::policy::DEFAULT_PARALLEL_TOOL_CALLS;
 use crate::ports::{ApprovalRequest, ToolInvocation, ToolProgress};
 use crate::projection::{ApprovalState, View};
 use crate::race::{BoxFuture, Either, join_limited, race};
 use blame_engine_protocol::{
-    ApprovalDecision, Delta, Obligation, RecordBody, ResultTool, Seq, SessionActivity,
-    SessionConfig, ToolCallId, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec, TurnId,
+    ApprovalDecision, Delta, Obligation, PlanStep, RecordBody, Refusal, ResultTool, Seq,
+    SessionActivity, SessionConfig, ToolCallId, ToolEffect, ToolOutcome, ToolResultBlock, ToolSpec,
+    TurnId,
 };
 use serde_json::Value;
 use std::sync::Arc;
@@ -136,7 +138,7 @@ async fn run_one(
         .as_ref()
         .filter(|contract| contract.result.name() == call.name);
     if let Some(contract) = contract {
-        let (accepted, completed) = {
+        let (accepted, completed, plan) = {
             let core = inner.core.lock().await;
             let view = View::new(&core.records);
             let state = view.turn_state(turn);
@@ -145,7 +147,8 @@ async fn run_one(
                 .iter()
                 .map(|name| (*name).to_owned())
                 .collect();
-            (state.accepted.is_some(), completed)
+            let plan: Vec<PlanStep> = view.plan().map(|plan| plan.steps).unwrap_or_default();
+            (state.accepted.is_some(), completed, plan)
         };
         if accepted {
             inner
@@ -183,6 +186,26 @@ async fn run_one(
                 .await?;
             return Ok(());
         }
+        // The plan is the agent's own account of what is left: a finish
+        // waits until none of it is open. Checked before the tool runs, so
+        // a finish that would run the checks does not.
+        let open = contract::open_steps(&plan);
+        if !open.is_empty() {
+            let text = contract::open_plan_text(&call.name, &plan);
+            inner
+                .append(vec![
+                    finished(ToolOutcome::Failed, text),
+                    RecordBody::ResultRejected {
+                        turn: turn.clone(),
+                        call: call.call.clone(),
+                        refusal: Some(Refusal::OpenPlan { steps: open }),
+                        invalid: Vec::new(),
+                        unmet: Vec::new(),
+                    },
+                ])
+                .await?;
+            return Ok(());
+        }
         if let ResultTool::Submit { .. } = contract.result {
             inner
                 .append(vec![
@@ -206,6 +229,31 @@ async fn run_one(
         return Ok(());
     };
     if cancel.is_cancelled() {
+        return Ok(());
+    }
+    // Without a contract, the tool that ends the turn waits for the plan
+    // the same way: the call is answered, the model carries on.
+    if config.contract.is_none() && spec.ends_turn {
+        let steps = {
+            let core = inner.core.lock().await;
+            View::new(&core.records).plan().map(|plan| plan.steps)
+        }
+        .unwrap_or_default();
+        if !contract::open_steps(&steps).is_empty() {
+            let text = contract::open_plan_text(&call.name, &steps);
+            inner
+                .append(vec![finished(ToolOutcome::Failed, text)])
+                .await?;
+            return Ok(());
+        }
+    }
+    // The engine's own tool: nothing to start, nothing to recover.
+    if call.name == plan::TOOL {
+        let (outcome, text) = match plan::parse(&call.input) {
+            Ok(steps) => (ToolOutcome::Completed, plan::applied_text(&steps)),
+            Err(problems) => (ToolOutcome::Failed, plan::rejected_text(&problems)),
+        };
+        inner.append(vec![finished(outcome, text)]).await?;
         return Ok(());
     }
     if spec.needs_approval {

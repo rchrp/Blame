@@ -5,7 +5,11 @@ import type { QuickChatSettings } from "../protocol.js";
 import { engineModel, sessionToolNames, type Purpose } from "./purpose.js";
 import { directFolderEnvironment, projectPrompt } from "./prompt.js";
 import { normalizePersonalization } from "../../personalization.js";
-import { purposeHarnessTools } from "./tool-sets.js";
+import {
+  planToolGuidance,
+  purposeEngineTools,
+  purposeHarnessTools,
+} from "./tool-sets.js";
 
 export const quickChatPurpose: Purpose<QuickChatSettings> = {
   workspace: (settings) => ({ root: settings.workspaceRoot, location: "host" }),
@@ -18,12 +22,13 @@ export const quickChatPurpose: Purpose<QuickChatSettings> = {
         template: "code-agent-system",
         workspaceRoot: settings.workspaceRoot,
         environment: directFolderEnvironment,
+        plan: planToolGuidance("quick-chat"),
         personalization: settings.personalization,
         practices: settings.codePractices,
         promptDate,
         tools: sessionToolNames(toolNames, purposeHarnessTools["quick-chat"]),
       }),
-      engine_tools: ["harness"],
+      engine_tools: [...purposeEngineTools["quick-chat"]],
       client_tools: tools.specs(clientTools),
       tool_options: {
         harness: {

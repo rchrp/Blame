@@ -29,6 +29,8 @@ export type ProjectPromptInput = {
   preview?: string;
   /** Story proposals guidance, empty without the proposal tool. */
   proposals?: string;
+  /** Guidance on the plan tool, empty when the session does not offer it. */
+  plan?: string;
   personalization?: Partial<AgentPersonalization>;
   practices?: ProjectCodePracticePreference[];
   /** The day the conversation started: the prompt keeps it (prompt cache). */
@@ -50,6 +52,7 @@ export function projectPrompt(input: ProjectPromptInput) {
     BLAME_PARETO: loadPrompt(plan ? "pareto/plan-agent" : "pareto/code-agent"),
     BLAME_PRACTICES: developmentPracticePrompts(input.practices ?? []),
     BLAME_PREVIEW: input.preview ?? "",
+    BLAME_PLAN: input.plan ?? "",
     BLAME_PROPOSALS: input.proposals ?? "",
     BLAME_SPECIALISTS: "",
     CURRENT_DATE: input.promptDate.toISOString().slice(0, 10),

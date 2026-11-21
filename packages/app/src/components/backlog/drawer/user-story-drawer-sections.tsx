@@ -1,3 +1,4 @@
+import { StoryPlanTab } from "@/components/chat/plan/story-plan"
 import type { FileAttachmentReplacement } from "./user-story-attachment-files"
 import * as React from "react"
 
@@ -341,6 +342,7 @@ function UserStoryCommentComposer({
       onMessageChange={onCommentChange}
       onMessageSubmit={onCommentSubmit}
       onMessageSendNow={onCommentSendNow}
+      planTab={<StoryPlanTab />}
       personalizationMenu={
         userStory && status !== "done" ? (
           <PersonalizationMenu

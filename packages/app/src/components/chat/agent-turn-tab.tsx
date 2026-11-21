@@ -17,8 +17,10 @@ const corner = 11.5
 
 // On the tab's parent: the editor drops its outline under the tab, whose
 // width the tab sets on that parent.
+// The plan's tab grows out of the left edge the same way (plan-tab.tsx): its
+// width, when there is one, leaves a second gap.
 export const turnTabNotchClass =
-  "[&>[data-slot=markdown-editor]]:[clip-path:polygon(-60px_-60px,calc(100%-36px-var(--turn-tab-width,0px))_-60px,calc(100%-36px-var(--turn-tab-width,0px))_0,calc(100%-36px)_0,calc(100%-36px)_-60px,calc(100%+60px)_-60px,calc(100%+60px)_calc(100%+60px),-60px_calc(100%+60px))]"
+  "[&>[data-slot=markdown-editor]]:[clip-path:polygon(-60px_-60px,36px_-60px,36px_0,calc(36px+var(--plan-tab-width,0px))_0,calc(36px+var(--plan-tab-width,0px))_-60px,calc(100%-36px-var(--turn-tab-width,0px))_-60px,calc(100%-36px-var(--turn-tab-width,0px))_0,calc(100%-36px)_0,calc(100%-36px)_-60px,calc(100%+60px)_-60px,calc(100%+60px)_calc(100%+60px),-60px_calc(100%+60px))]"
 
 export function AgentTurnTab({ metrics }: { metrics?: AgentTurnMetrics }) {
   return (

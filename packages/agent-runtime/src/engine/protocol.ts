@@ -5,6 +5,7 @@
 
 import type {
   FollowEvent,
+  PlanProgress,
   ReasoningEffort,
   Seq,
   SessionId,
@@ -134,6 +135,8 @@ export type EngineSessionStatus = {
    */
   lastReply?: string;
   turns: number;
+  /** How far the agent's plan is; absent without one. */
+  plan?: PlanProgress;
   /** How many turns each model answered (`turnsByModel`), in order of first use. */
   models: Array<{ providerId: string; modelId: string; turns: number }>;
 };
@@ -278,7 +281,9 @@ export type EngineHostEvent =
       session: SessionId;
       running: boolean;
       outcome?: TurnOutcome;
-    };
+    }
+  /** How far a followed session's plan is, each time it moves. */
+  | { type: "plan"; session: SessionId; plan: PlanProgress | undefined };
 
 /** What the host asks of the main process: desktop services its tools use. */
 export type EngineDesktopMethods = DesktopServiceMethods;
@@ -351,6 +356,8 @@ export type EngineActivityEvent = Extract<
   { type: "activity" }
 >;
 
+export type EnginePlanEvent = Extract<EngineHostEvent, { type: "plan" }>;
+
 /** `platform.engine`: the renderer's only way to the engine. */
 export type EnginePlatformClient = {
   call<M extends EngineWindowMethod>(
@@ -365,4 +372,6 @@ export type EnginePlatformClient = {
   ): () => void;
   /** Turns starting and ending in any session. */
   onActivity(callback: (event: EngineActivityEvent) => void): () => void;
+  /** The progress of the plans of the sessions the host follows. */
+  onPlan(callback: (event: EnginePlanEvent) => void): () => void;
 };

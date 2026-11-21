@@ -16,6 +16,7 @@ mod tools;
 
 use crate::contract;
 use crate::error::EngineError;
+use crate::plan;
 use crate::policy::{ContextPolicy, EngineOptions};
 use crate::ports::{
     Approver, Checkpointer, Clock, IdSource, ModelProvider, SessionStore, ToolHost,
@@ -698,7 +699,7 @@ impl Inner {
             return specs.clone();
         }
         let specs = self.ports.tools.specs(config).await;
-        let mut specs = contract::offered(config.contract.as_ref(), specs);
+        let mut specs = plan::offered(config, contract::offered(config.contract.as_ref(), specs));
         specs.sort_by(|a, b| a.name.cmp(&b.name));
         let specs: Arc<[ToolSpec]> = specs.into();
         core.specs = Some((config.clone(), specs.clone()));

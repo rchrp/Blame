@@ -2,8 +2,9 @@
 // transcript (TranscriptReducer of @blame/engine-client), in the runs and
 // activities the timeline components take.
 
-import { turnReply, turnReplyImages, unverifiedChecks } from "@blame/engine-client/transcript"
+import { PLAN_TOOL, turnReply, turnReplyImages, unverifiedChecks } from "@blame/engine-client/transcript"
 import type {
+  PlanChange,
   ToolCallItem,
   Transcript,
   TranscriptItem,
@@ -238,8 +239,13 @@ function itemActivity(
     case "reasoning":
       if (!item.text.trim()) return undefined
       return { ...base, kind: "reasoning", title: "Reasoning", detail: item.text, status: "completed" }
-    case "tool_call":
-      return toolActivity(item, transcript.toolProgress.get(item.call))
+    case "tool_call": {
+      // What an update of the plan changed is the line it shows as; one that
+      // changed nothing the person can see is not shown.
+      const change = item.name === PLAN_TOOL ? transcript.planChanges.get(item.call) : undefined
+      if (change?.kind === "same") return undefined
+      return toolActivity(item, transcript.toolProgress.get(item.call), change)
+    }
     case "user":
       // A message that joined the running turn (the opening one is the
       // comment): the person's own message, where it joined the work.
@@ -262,7 +268,13 @@ function itemActivity(
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
       // A reply the checks refused stands with its note (turnReply).
       if (item.outcome.status === "contract_unmet" && !unverifiedChecks(item))
-        return { ...base, kind: "error", title: "Not finished", detail: unfinishedTurnText, status: "failed" }
+        return {
+          ...base,
+          kind: "error",
+          title: "Not finished",
+          detail: unfinishedTurnDetail(item.outcome.refused),
+          status: "failed",
+        }
       return undefined
     default:
       return undefined
@@ -272,6 +284,13 @@ function itemActivity(
 /** A turn the agent ended without a finish the checks accepted. */
 export const unfinishedTurnText =
   "The agent stopped without finishing: its work was not checked with finish_task."
+
+/** Why the finish was refused, when it was because the plan still had steps to do. */
+function unfinishedTurnDetail(refused: { kind: string; steps?: string[] } | undefined) {
+  if (refused?.kind !== "open_plan" || !refused.steps?.length) return unfinishedTurnText
+  const count = refused.steps.length
+  return `The agent stopped with ${count === 1 ? "a step" : `${count} steps`} of its plan still open: ${refused.steps.join("; ")}.`
+}
 
 /**
  * A failed request or turn. A model whose plan is used up (or whose key has
@@ -320,7 +339,11 @@ function errorTitle(kind: ErrorKind) {
   }
 }
 
-function toolActivity(item: ToolCallItem, progress: string | undefined): UserStoryAgentActivity {
+function toolActivity(
+  item: ToolCallItem,
+  progress: string | undefined,
+  planChange?: PlanChange
+): UserStoryAgentActivity {
   // Images of the result (screenshots) are engine blobs, by their sha256.
   const images = (item.result ?? []).flatMap((block) =>
     block.type === "image" ? [{ caption: item.name, id: block.blob.sha256 }] : []
@@ -339,6 +362,7 @@ function toolActivity(item: ToolCallItem, progress: string | undefined): UserSto
       input: item.input,
       output: toolOutput(item),
       update: progress,
+      ...(planChange ? { planChange } : {}),
       durationMs:
         item.startedAtMs && item.finishedAtMs ? item.finishedAtMs - item.startedAtMs : undefined,
     }),

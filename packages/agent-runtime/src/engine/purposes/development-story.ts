@@ -12,7 +12,12 @@ import {
   projectPrompt,
   worktreeEnvironment,
 } from "./prompt.js";
-import { purposeClientTools, purposeHarnessTools } from "./tool-sets.js";
+import {
+  planToolGuidance,
+  purposeClientTools,
+  purposeEngineTools,
+  purposeHarnessTools,
+} from "./tool-sets.js";
 
 /**
  * How a story's turn is complete: through a `finish_task` the harness
@@ -67,12 +72,13 @@ export const developmentStoryPurpose: Purpose<DevelopmentStorySettings> = {
         proposals: names.includes("propose_user_stories")
           ? proposalsGuidance
           : "",
+        plan: planToolGuidance("development-story"),
         personalization: settings.personalization,
         practices: settings.codePractices,
         promptDate,
         tools: names,
       }),
-      engine_tools: ["harness"],
+      engine_tools: [...purposeEngineTools["development-story"]],
       client_tools: tools.specs(clientTools),
       tool_options: {
         harness: {

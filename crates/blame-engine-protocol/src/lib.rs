@@ -18,6 +18,7 @@ mod content;
 mod contract;
 mod delta;
 mod ids;
+mod plan;
 mod record;
 pub mod rpc;
 #[cfg(feature = "ts")]
@@ -32,6 +33,7 @@ pub use contract::{
 };
 pub use delta::{BlockKind, Delta, SessionActivity};
 pub use ids::{CheckpointId, RequestId, Seq, SessionId, ToolCallId, TurnId};
+pub use plan::{PlanStep, StepStatus, UpdatePlan};
 pub use record::{
     ApprovalDecision, ContextEdit, Delivery, ErrorInfo, ErrorKind, Limits, NoticeLevel, Record,
     RecordBody, SessionConfig, StopReason, ToolEffect, ToolOutcome, ToolSpec, TurnOutcome,

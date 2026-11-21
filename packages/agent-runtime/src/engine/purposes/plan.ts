@@ -5,7 +5,7 @@ import { normalizePersonalization } from "../../personalization.js";
 import type { PlanSettings } from "../protocol.js";
 import { engineModel, sessionToolNames, type Purpose } from "./purpose.js";
 import { directFolderEnvironment, projectPrompt } from "./prompt.js";
-import { purposeHarnessTools } from "./tool-sets.js";
+import { purposeEngineTools, purposeHarnessTools } from "./tool-sets.js";
 
 export const planPurpose: Purpose<PlanSettings> = {
   workspace: (settings) => settings.workspace,
@@ -23,7 +23,7 @@ export const planPurpose: Purpose<PlanSettings> = {
         promptDate,
         tools: sessionToolNames(toolNames, harnessTools),
       }),
-      engine_tools: ["harness"],
+      engine_tools: [...purposeEngineTools["plan"]],
       client_tools: tools.specs(clientTools),
       tool_options: {
         harness: {

@@ -54,7 +54,7 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
 | task calls (`generateTitle`…), `cancelTask({ session })`, `deleteSession({ session })` | See [Tasks](#tasks); declared in `engine/task-protocol.ts`. |
-| `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended and what the agent last reported (`lastReply`: its `finish_task` summary, or its last text). |
+| `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended, what the agent last reported (`lastReply`: its `finish_task` summary, or its last text) and how far its plan is (`plan`). |
 | `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
 | `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
 | `signInChatGpt({ label })` | `blame-engine auth chatgpt login`: opens the sign-in in the browser (`openExternal`, served by main) and keeps the tokens in the API. |
@@ -73,6 +73,11 @@ Host → renderer, on `engine:event`:
   live events: the renderer keeps nothing between loads.
 - `{ type: "activity", session, running, outcome? }`: a turn started or ended,
   for the sidebar, the running count and the "response ready" notification.
+- `{ type: "plan", session, plan }`: how far a followed session's plan is
+  (`PlanProgress`: done, abandoned, total, the step in hand), each time it
+  moves. A story's card and its drawer header read it (`onPlan`,
+  `components/chat/plan/plan-progress-store.ts`); no transcript is read for a
+  card.
 
 ## Development stories
 
@@ -88,6 +93,10 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   the engine-checked end of a turn (see "Tasks"): a reply that stops
   without one is corrected, and a turn the agent still does not finish ends
   as `contract_unmet`, which pauses the story with that reason.
+- **Plan**: stories and quick chats get `update_plan`
+  (`purposeEngineTools`: the `plan` tool set, which the engine's core serves
+  itself, see "The agent's plan"). Plan mode and the new-project assistant do
+  not: they discuss and propose, and have no work to break into steps.
 - **Tools**: `purposeClientTools` / `purposeHarnessTools`
   (`engine/purposes/tool-sets.ts`) name the shared tools; the host adds the
   conversation's own (`conversationTools.ensure`: preview, story history and
@@ -262,6 +271,35 @@ reload alike. `components/chat/engine/transcript-conversation.ts` maps a
 `Transcript` to the shared `AgentConversationTimeline`; that mapping is the
 only place that knows both shapes. Undo of a message is `rewind` to the
 item's `rewind.to` with `restoreWorkspace` when it has a checkpoint.
+
+## The agent's plan
+
+A short list of steps the agent writes and ticks off, shown live and refused
+a finish while a step is open. It is a projection of the log, never state of
+its own:
+
+- **The tool.** `update_plan` is served by `blame-engine-core`
+  (`plan.rs`), offered to a session whose `engine_tools` name `plan`. Its
+  input is the whole plan, each step `pending`, `in_progress`, `completed` or
+  `abandoned` (with a reason), at most one in progress; a refused input is
+  answered with what to fix. It changes no file.
+- **The plan is the input of the latest `update_plan` call that completed**,
+  among the records in effect (`View::plan`; `currentPlan` and the
+  `TranscriptReducer` in `@blame/engine-client` read it the same way). A
+  rewind, its undo, a fork, a restart and an offline replay give it as the
+  log says. The model's last reply of a turn may call it twice: the later
+  call in the reply stands.
+- **The finish gate.** `finish_task` (the contract's result tool) is refused
+  before it runs while a step is open: the call's answer names the open
+  steps, and `ResultRejected` carries `Refusal::OpenPlan`. Without a
+  contract (a quick chat) the tool that ends the turn is held back the same
+  way. A turn that never closes its plan ends as `contract_unmet` with that
+  refusal, which the app words ("The agent stopped with 2 steps of its plan
+  still open").
+- **In the app.** The plan is a tab growing out of the composer's left edge
+  (`plan/plan-tab.tsx`, beside the turn's tab); an update reads in the
+  transcript as what it changed (`describe-plan.ts`); a story's card and its
+  drawer header show the count and the step in hand.
 
 ## Settings during a conversation
 

@@ -1306,3 +1306,53 @@
     }
   }
 }
+
+/* The step the agent is on: a dot whose halo breathes slowly while it works,
+   still when it does not and for people who reduce motion. */
+@layer components {
+  .plan-step-mark {
+    position: relative;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: var(--color-blue-500);
+  }
+
+  .dark .plan-step-mark {
+    background: var(--color-blue-400);
+  }
+
+  /* A steady halo says the agent is on it, with or without the pulse. */
+  .plan-step-mark[data-working="true"] {
+    box-shadow: 0 0 0 0.1875rem
+      color-mix(in oklab, var(--color-blue-500) 22%, transparent);
+  }
+
+  .plan-step-mark[data-working="true"]::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    animation: plan-step-breath 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+}
+
+@keyframes plan-step-breath {
+  0% {
+    opacity: 0.45;
+    transform: scale(1);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-step-mark[data-working="true"]::after {
+    animation: none;
+  }
+}

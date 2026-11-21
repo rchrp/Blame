@@ -23,6 +23,7 @@ import type {
   UserBlock,
   WorkspaceRestore,
 } from "../protocol.js";
+import type { PlanChange, PlanView } from "./plan.js";
 
 /** Token counts and cost, summed. Absent counters count as zero. */
 export interface UsageTotals {
@@ -281,4 +282,8 @@ export interface Transcript {
   readonly live: LiveReply | undefined;
   /** Output of tools still running, by call. */
   readonly toolProgress: ReadonlyMap<ToolCallId, string>;
+  /** The agent's plan now: the latest `update_plan` call that completed. */
+  readonly plan: PlanView | undefined;
+  /** What each completed `update_plan` call did to the plan before it. */
+  readonly planChanges: ReadonlyMap<ToolCallId, PlanChange>;
 }

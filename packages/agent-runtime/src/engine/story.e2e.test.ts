@@ -440,6 +440,57 @@ describe(
       await host.shutdown();
     });
 
+    it("keeps the agent's plan, refuses a finish while a step is open, and says how far it is", async () => {
+      const host = startHost();
+      const session = "story-plan";
+      await open(host, session);
+      const plan = (...steps: Array<[string, string]>) =>
+        tools({
+          name: "update_plan",
+          input: {
+            plan: steps.map(([step, status]) => ({ step, status })),
+          },
+        });
+      model.script(
+        plan(["Add the note", "in_progress"], ["Check it", "pending"]),
+        // Too early: a step is open, so the engine refuses it.
+        finish("Done."),
+        plan(["Add the note", "completed"], ["Check it", "completed"]),
+        finish("Added and checked."),
+      );
+      const start = model.requests.length;
+      await turn(host, session, "Add a note, then check it.");
+
+      // The model was told which step was open, in the finish's own answer.
+      const sent = model.sent().slice(start);
+      assert.match(sent[2]!, /the plan still has open steps/);
+      assert.match(sent[2]!, /1\. Add the note \(in progress\)/);
+      // The plan is the log's: the transcript has its last update.
+      const transcript = view(session);
+      assert.deepEqual(
+        transcript.plan?.steps.map((step) => step.status),
+        ["completed", "completed"],
+      );
+      // The host said how far it was each time it moved, and only then.
+      const moved = events
+        .filter((event) => event.type === "plan" && event.session === session)
+        .map((event) =>
+          event.type === "plan" && event.plan
+            ? `${event.plan.done}/${event.plan.total}`
+            : "none",
+        );
+      assert.deepEqual(moved, ["0/2", "2/2"]);
+      const [status] = await host.call("status", { sessions: [session] });
+      assert.deepEqual(status!.plan, {
+        done: 2,
+        abandoned: 0,
+        total: 2,
+        open: 0,
+        finished: true,
+      });
+      await host.shutdown();
+    });
+
     it("refuses a VM worktree on a computer without a runtime VM", async () => {
       const host = startHost();
       const vm = settings("story-vm");
