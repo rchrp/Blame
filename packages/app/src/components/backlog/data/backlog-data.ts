@@ -157,6 +157,10 @@ export type UserStory = {
     credentialLabel?: string
     reasoningEffort?: string
   } | null
+  // What the orchestrator wanted of that model when it chose it.
+  modelIntent?: "cheaper" | "balanced" | "smarter" | null
+  // The epic the orchestrator made the story for (docs/orchestrator.md).
+  epicId?: string | null
   mergedAt?: string | null
   mergeCommit?: string | null
   baseCommit?: string | null
