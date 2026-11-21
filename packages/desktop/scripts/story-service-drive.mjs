@@ -2,8 +2,13 @@
 // in an isolated profile, against a scripted model: five queued stories in two
 // projects (one of them not shown) start at once, go to review, one takes a
 // follow-up from its drawer, a worktree story is approved and merged from
-// the board, stories are discarded and sent back, and a discarded story is
-// deleted from its card. It prints each check and takes screenshots.
+// the board, stories are discarded and sent back, a discarded story is
+// deleted from its card, and a second window on the other project queues a
+// story there, then closes while that project's stories keep running. With
+// --dependencies (an API with startsAfter and requestedModel): a story waits
+// for another and starts once it is done, one whose dependency is discarded
+// never starts, one runs on its requested model. It prints each check and
+// takes screenshots.
 //
 //   pnpm --filter @blame/desktop exec electron-vite build
 //   pnpm --filter @blame/api build
@@ -99,7 +104,7 @@ async function startModel() {
     }
     const plan = decide(body);
     const lastUser = userText((body.messages ?? []).findLast?.((message) => message.role === "user"));
-    requests.push({ story: plan.story, tool: plan.tool, lastUser, at: Date.now() });
+    requests.push({ story: plan.story, tool: plan.tool, lastUser, model: body.model, at: Date.now() });
     await delay(plan.wait);
     response.writeHead(200, { "content-type": "text/event-stream" });
     response.end(sseOf(plan));
@@ -164,10 +169,12 @@ async function drive() {
 }
 
 function parseOptions(argv) {
-  const options = { keep: false, out: resolve("story-shots") };
+  const options = { keep: false, dependencies: false, out: resolve("story-shots") };
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--out") options.out = resolve(argv[++index]);
     else if (argv[index] === "--keep") options.keep = true;
+    // Needs an API with startsAfter and requestedModel on stories.
+    else if (argv[index] === "--dependencies") options.dependencies = true;
   }
   return options;
 }
@@ -203,12 +210,14 @@ async function until(condition, timeoutMs, what) {
 }
 
 // One tab over the DevTools protocol: the workspace window, not the compact one.
-async function connect(port) {
+const appPage = (entry) => entry.type === "page" && !entry.url.startsWith("devtools") && !entry.url.includes("window-role=compact");
+
+async function connect(port, pick = appPage) {
   let target;
   await until(async () => {
     try {
       const targets = await (await fetch(`http://127.0.0.1:${port}/json`)).json();
-      target = targets.find((entry) => entry.type === "page" && !entry.url.startsWith("devtools") && !entry.url.includes("window-role=compact"));
+      target = targets.find(pick);
       return Boolean(target);
     } catch {
       return false;
@@ -237,7 +246,7 @@ async function connect(port) {
     if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description ?? "evaluation failed");
     return result.result.value;
   };
-  return { send, evaluate };
+  return { send, evaluate, port, target };
 }
 
 async function scenario(cdp, options, model, paths) {
@@ -417,6 +426,55 @@ async function scenario(cdp, options, model, paths) {
   await until(() => evaluate(`!document.querySelector('[data-story-id="${deleted.id}"]')`), 10_000, "the card to leave").catch(() => undefined);
   check("its card left the board", await evaluate(`!document.querySelector('[data-story-id="${deleted.id}"]')`));
   await shot("06-after-delete");
+
+  // A second window, on the other project: its stories run from there, and
+  // keep running once it is closed.
+  const known = new Set(((await (await fetch(`http://127.0.0.1:${cdp.port}/json`)).json())).map((entry) => entry.id));
+  await evaluate(`window.blame.projectWindows.openProject(${JSON.stringify(paths.hidden)})`);
+  const other = await connect(cdp.port, (entry) => appPage(entry) && !known.has(entry.id));
+  await until(() => other.evaluate(`Boolean(document.body?.innerText.includes("Agent Queue"))`), 60_000, "the second window's board");
+  const shipping = await api("/projects/user-stories", "POST", { projectId: hiddenProject.id, title: "Shipping page", summary: "Build the shipping page.", status: "ready", runMode: "direct" });
+  await other.evaluate(`window.blame.engine.call("storyRefresh", { projectId: ${JSON.stringify(hiddenProject.id)} })`);
+  await until(async () => (await stories(hiddenProject.id)).some((story) => story.id === shipping.id && story.status === "in-review"), 60_000, "the second window's story to reach review");
+  check("a story queued from a second window runs and settles", true);
+  await fetch(`http://127.0.0.1:${cdp.port}/json/close/${other.target.id}`);
+  await delay(1500);
+  const returns = await api("/projects/user-stories", "POST", { projectId: hiddenProject.id, title: "Returns page", summary: "Build the returns page.", status: "ready", runMode: "direct" });
+  await evaluate(`window.blame.engine.call("storyRefresh", {})`);
+  await until(async () => (await stories(hiddenProject.id)).some((story) => story.id === returns.id && story.status === "in-review"), 60_000, "a story of the closed window's project to settle");
+  check("once that window is closed, its project's stories still start and settle", true);
+
+  if (options.dependencies) await dependencies();
+
+  async function dependencies() {
+    const create = (fields) => api("/projects/user-stories", "POST", { projectId: shownProject.id, summary: `Build the ${fields.title.toLowerCase()}.`, runMode: "direct", ...fields });
+    const base = await create({ title: "Base API", status: "backlog" });
+    const dropped = await create({ title: "Dropped idea", status: "backlog" });
+    const after = await create({ title: "After base", status: "ready", startsAfter: [base.id] });
+    const orphan = await create({ title: "Orphan", status: "ready", startsAfter: [dropped.id] });
+    const ownModel = await create({ title: "Own model", status: "ready", requestedModel: { providerId: "anthropic", modelId: "claude-opus-5-5" } });
+    await evaluate(`window.blame.engine.call("storyDiscard", { storyId: ${JSON.stringify(dropped.id)}, reason: "Not needed" })`);
+    await evaluate(`window.blame.engine.call("storyRefresh", {})`);
+    const card = (id) => evaluate(`document.querySelector('[data-story-id="${id}"]')?.innerText.replace(/\s+/g, " ") ?? ""`);
+    await until(async () => (await card(after.id)).includes("Starts after"), 30_000, "the waiting card to say why");
+    check("a story waits for the one it starts after, and its card says so", (await card(after.id)).includes("Base API"), await card(after.id));
+    await until(async () => (await card(orphan.id)).includes("Will not start"), 30_000, "the orphan's card");
+    check("a story whose dependency was discarded never starts, and its card says so", true, await card(orphan.id));
+    await shot("07-waiting-cards");
+    await until(async () => (await stories(shownProject.id)).some((story) => story.id === ownModel.id && story.status === "in-review"), 60_000, "the story on its own model");
+    const ownRequests = model.requests.filter((request) => request.story === "Own model");
+    check("a story runs on the model it asked for", ownRequests.length > 0 && ownRequests.every((request) => request.model === "claude-opus-5-5"), ownRequests.map((request) => request.model).join(", "));
+    // The base runs, is done, and the story after it starts.
+    await evaluate(`window.blame.engine.call("storyEnqueue", { storyId: ${JSON.stringify(base.id)} })`);
+    await until(async () => (await stories(shownProject.id)).some((story) => story.id === base.id && story.status === "in-review"), 60_000, "the base to reach review");
+    check("the story after it has not started yet", (await stories(shownProject.id)).find((story) => story.id === after.id)?.status === "ready");
+    await evaluate(`window.blame.engine.call("storyComplete", { storyId: ${JSON.stringify(base.id)} })`);
+    await until(async () => ["in-progress", "in-review"].includes((await stories(shownProject.id)).find((story) => story.id === after.id)?.status), 60_000, "the story after it to start");
+    check("once it is done, the story after it starts", true);
+    const orphanNow = (await stories(shownProject.id)).find((story) => story.id === orphan.id);
+    check("the orphan is still queued", orphanNow?.status === "ready");
+  }
+
   console.log(`model requests: ${model.requests.length}; checks: ${checks.filter((item) => item.ok).length}/${checks.length}`);
 }
 
