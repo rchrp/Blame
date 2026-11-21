@@ -192,9 +192,10 @@ export class StoryService {
   }
 
   /** Looks at a waiting story (every one without an id) again now. */
-  retry(storyId?: string) {
-    if (storyId) this.retryAt.delete(storyId);
-    else this.retryAt.clear();
+  retry(storyId?: string | readonly string[]) {
+    if (storyId === undefined) this.retryAt.clear();
+    for (const id of typeof storyId === "string" ? [storyId] : (storyId ?? []))
+      this.retryAt.delete(id);
     this.pump();
   }
 
