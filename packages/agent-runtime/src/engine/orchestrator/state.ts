@@ -37,10 +37,13 @@ export type EpicEntry = {
   /** Story → its sessions → what each spent. */
   spend: Record<string, Record<string, SessionSpend>>;
   changes: Record<string, number>;
+  /** Story turns its own tools showed it (`epic_board`, `story_report`): no wake repeats them. */
+  heard?: string[];
 };
 
 // Pending turns beyond this are the oldest dropped (a wake carries the rest).
 const pendingKept = 200;
+const heardKept = 500;
 
 export class OrchestratorState {
   private readonly file: string | undefined;
@@ -97,6 +100,7 @@ export class OrchestratorState {
     const before = JSON.stringify(entry);
     mutate(entry);
     entry.pending = entry.pending.slice(-pendingKept);
+    if (entry.heard) entry.heard = entry.heard.slice(-heardKept);
     if (JSON.stringify(entry) !== before) await this.flush();
   }
 
@@ -138,6 +142,7 @@ export class OrchestratorState {
             entry.changes && typeof entry.changes === "object"
               ? entry.changes
               : {},
+          ...(Array.isArray(entry.heard) ? { heard: entry.heard } : {}),
         });
       }
     } catch (error) {

@@ -97,6 +97,7 @@ export async function epicBoard(desk: EpicDesk) {
       };
     }),
   );
+  await look.heard();
   return {
     epic: {
       title: look.epic.title,
@@ -253,6 +254,7 @@ export async function storyReport(
   const status = await look.status(story.id);
   const spend = await look.spend();
   const entry = await desk.state.get(desk.epicId);
+  await look.heard([story.id]);
   return {
     id: story.id,
     number: storyDisplayId(story),

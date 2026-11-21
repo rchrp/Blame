@@ -207,7 +207,10 @@ is told by the next wake. The candidates are the turns the story service
 told, kept here before the wake goes and dropped once the records have
 them, and the ended turns of the sessions of the epic's stories this
 computer runs (`status`), read again on every look, so a telling lost in a
-crash (between the story service's ledger and this file) is found there. A
+crash (between the story service's ledger and this file) is found there.
+What the orchestrator's own `epic_board` (every story) or `story_report`
+(that story) showed it counts as heard: no wake repeats it (kept in the
+same file, the last 500). A
 story whose agent still works is left until its end is settled. The host
 looks at an epic on each ended story turn, each end of an orchestrator
 turn, `epicChanged`, `epicState`, sign-in and every minute, one look at a

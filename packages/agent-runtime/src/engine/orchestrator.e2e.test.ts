@@ -27,7 +27,7 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { createServer, type Server } from "node:http";
+import { createServer, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -70,7 +70,7 @@ type Reply =
   | { tool: string; input: unknown }
   /** The start of a reply, then nothing: the turn stays in flight. */
   | { stall: true };
-type Step = Reply | ((body: Body) => Reply);
+type Step = Reply | ((body: Body) => Reply | Promise<Reply>);
 type Body = {
   model: string;
   system?: string | Array<{ text?: string }>;
@@ -119,21 +119,26 @@ class ScriptedModel {
         ) as Body;
         const { who, step } = this.route(body);
         this.requests.push({ who, model: body.model, body });
-        const reply = typeof step === "function" ? step(body) : step;
-        response.writeHead(200, { "content-type": "text/event-stream" });
-        const events = sse(reply);
-        if ("stall" in reply) {
-          response.write(
-            events.slice(0, events.indexOf("event: content_block_stop")),
-          );
-          const close = () => response.destroy();
-          this.stalled.add(close);
-          response.on("close", () => this.stalled.delete(close));
-          return;
-        }
-        response.end(events);
+        void Promise.resolve(
+          typeof step === "function" ? step(body) : step,
+        ).then((reply) => this.answer(response, reply));
       });
     });
+  }
+
+  private answer(response: ServerResponse, reply: Reply) {
+    response.writeHead(200, { "content-type": "text/event-stream" });
+    const events = sse(reply);
+    if ("stall" in reply) {
+      response.write(
+        events.slice(0, events.indexOf("event: content_block_stop")),
+      );
+      const close = () => response.destroy();
+      this.stalled.add(close);
+      response.on("close", () => this.stalled.delete(close));
+      return;
+    }
+    response.end(events);
   }
 
   private route(body: Body): { who: string; step: Step } {
@@ -1109,5 +1114,170 @@ describe("the orchestrator's loop", { skip }, () => {
       [["resumed", ["completed"]]],
     );
     assert.equal(git(lost.path, "show", "epic/notice:notice.txt"), "notice");
+  });
+
+  it("sends nothing after ask, and no wake repeats what the board showed", async () => {
+    const asked = await newProject("asked");
+    await open(host);
+    model.stories.set("Paint the header", [
+      write("header.txt", "blue\n"),
+      finish("Painted the header."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "Start it while asking.",
+        stories: [
+          {
+            key: "header",
+            title: "Paint the header",
+            brief: "Create header.txt holding the colour.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      tool("end_turn", {
+        action: "ask",
+        reason: "The colour is the person's.",
+        question: "Which colour?",
+        options: ["Blue", "Green"],
+      }),
+      // The person's answer: it reads the board (the header is in review),
+      // starts the footer and sleeps.
+      tool("epic_board", {}),
+      tool("create_stories", {
+        reason: "The footer matches.",
+        stories: [
+          {
+            key: "footer",
+            title: "Paint the footer",
+            brief: "Create footer.txt holding blue.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      tool("end_turn", { action: "wait", reason: "Painting the footer." }),
+      // Woken for the footer alone: the board already showed the header.
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("approve_story", { reason: "Verified.", storyId: "US-002" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "The header and footer are blue.",
+      }),
+    );
+    model.stories.set("Paint the footer", [
+      write("footer.txt", "blue\n"),
+      finish("Painted the footer."),
+    ]);
+    const { epicId, session, settings } = await startEpic(
+      asked,
+      "Header",
+      "Paint the header.",
+    );
+    const asking = await until("the question", async () => {
+      const now = await state(epicId);
+      return now.conversation === "asking" ? now : undefined;
+    });
+    assert.deepEqual(asking.question, {
+      text: "Which colour?",
+      options: ["Blue", "Green"],
+    });
+    const stories = () =>
+      apiCall<Array<{ status: string }>>(
+        api.connection,
+        "GET",
+        `/projects/user-stories?projectId=${asked.id}`,
+      );
+    await until("the story to wait for review", async () =>
+      (await stories())[0]?.status === "in-review" ? true : undefined,
+    );
+    await until("its turn to be kept", async () =>
+      (await state(epicId)).unreported === 1 ? true : undefined,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    assert.equal((await wakes(session)).length, 0, "no wake after ask");
+    await host.call("send", {
+      session,
+      message: { text: "Blue." },
+      delivery: "turn",
+      settings: { purpose: "orchestrator", settings },
+    });
+    await until("the epic to finish", async () =>
+      (await state(epicId)).conversation === "finished" ? true : undefined,
+    );
+    // The board showed it the header: the one wake told the footer alone.
+    const told = await wakes(session);
+    assert.deepEqual(
+      told.map((wake) => wake.stories.map((item) => item.title)),
+      [["Paint the footer"]],
+    );
+    assert.equal((await state(epicId)).unreported, 0);
+    assert.deepEqual(model.unscripted, []);
+  });
+
+  it("sends nothing while the epic is paused, and the wake once it resumes", async () => {
+    const paused = await newProject("paused");
+    await open(host);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    model.stories.set("Write the footer", [
+      async () => {
+        await gate;
+        return write("footer.txt", "footer\n");
+      },
+      finish("Wrote the footer."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "One footer.",
+        stories: [
+          {
+            key: "footer",
+            title: "Write the footer",
+            brief: "Create footer.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      tool("end_turn", { action: "wait", reason: "Writing." }),
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "footer.txt is on the epic's branch.",
+      }),
+    );
+    const { epicId, session } = await startEpic(
+      paused,
+      "Footer",
+      "Write the footer.",
+    );
+    await until("the orchestrator to sleep", async () =>
+      (await state(epicId)).conversation === "waiting" ? true : undefined,
+    );
+    // Pause all, as the screen does it: the API, then the host.
+    await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+      status: "paused",
+    });
+    await host.call("epicChanged", { epicId });
+    release();
+    await until("the story's turn to be kept", async () =>
+      (await state(epicId)).unreported === 1 ? true : undefined,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    assert.equal((await wakes(session)).length, 0, "no wake while paused");
+    await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+      status: "active",
+    });
+    await host.call("epicChanged", { epicId });
+    await until("the epic to finish", async () =>
+      (await state(epicId)).conversation === "finished" ? true : undefined,
+    );
+    const told = await wakes(session);
+    assert.deepEqual(
+      told.map((wake) => [wake.reason, wake.stories.length]),
+      [["stories", 1]],
+    );
+    assert.deepEqual(model.unscripted, []);
   });
 });

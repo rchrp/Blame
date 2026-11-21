@@ -113,7 +113,10 @@ export class EpicReading {
    * its agent still works on is left for its end to be settled first.
    */
   async unreported(): Promise<OrchestratorWakeStory[]> {
-    const reported = this.conversation?.reported ?? new Set<string>();
+    const reported = new Set([
+      ...(this.conversation?.reported ?? []),
+      ...(this.entry?.heard ?? []),
+    ]);
     const found = new Map<string, OrchestratorWakeStory>();
     for (const { story } of this.entry?.pending ?? []) {
       const key = turnKey(story.session, story.turn);
@@ -141,6 +144,25 @@ export class EpicReading {
         );
       });
     return [...found.values()];
+  }
+
+  /**
+   * The orchestrator's own tools showed it these stories as they are now
+   * (the board, a report): their ended turns are known, no wake repeats
+   * them.
+   */
+  async heard(storyIds?: readonly string[]) {
+    if (!this.entry) return;
+    const keys = (await this.unreported())
+      .filter((story) => !storyIds || storyIds.includes(story.storyId))
+      .map((story) => turnKey(story.session, story.turn));
+    if (!keys.length) return;
+    await this.state.change(this.epic.id, (entry) => {
+      entry.heard = [...(entry.heard ?? []), ...keys];
+      entry.pending = entry.pending.filter(
+        ({ story }) => !keys.includes(turnKey(story.session, story.turn)),
+      );
+    });
   }
 }
 
