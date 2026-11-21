@@ -339,9 +339,14 @@ function useBacklogActions(
               : currentStory
           ),
         }))
+        // A queued story waits, or starts, for what it now starts after.
+        if (input.startsAfter !== undefined)
+          void refreshStoryService(platform.engine, projectId).catch(
+            () => undefined
+          )
         return nextStory
       }),
-    [api, setState]
+    [api, platform.engine, projectId, setState]
   )
   const loadDetail = React.useCallback(
     async (story: UserStory) => {

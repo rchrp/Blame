@@ -303,6 +303,10 @@ export function UserStoryDrawerPanel({
   const [targetBranch, setTargetBranch] = React.useState<string | null>(
     userStory?.targetBranch ?? null
   )
+  // A new story's choice waits for its creation; a story's own is saved.
+  const [newStartsAfter, setNewStartsAfter] = React.useState<string[]>(
+    initialDraft?.startsAfter ?? []
+  )
   const [ambition, setAmbition] = React.useState<Ambition | null>(
     userStory?.ambition ?? null
   )
@@ -741,6 +745,10 @@ export function UserStoryDrawerPanel({
                 runMode={runMode}
                 onTargetBranchChange={changeTargetBranch}
                 targetBranch={targetBranch}
+                startsAfter={
+                  mode === "create" ? newStartsAfter : userStory?.startsAfter
+                }
+                onStartsAfterChange={changeStartsAfter}
                 status={status}
                 summary={summary}
                 summaryCodeSelectionAttachments={summaryCodeSelectionAttachments}
@@ -838,6 +846,12 @@ export function UserStoryDrawerPanel({
       void onUpdateUserStory(userStory, { targetBranch: next })
   }
 
+  // Saved with the story at once; the API's refusal reaches the field.
+  async function changeStartsAfter(next: string[]) {
+    if (mode === "create" || !userStory) setNewStartsAfter(next)
+    else await onUpdateUserStory(userStory, { startsAfter: next })
+  }
+
   // Kept with the story, and told to its agent from the next turn on.
   function changeAmbition(next: Ambition | null) {
     setAmbition(next)
@@ -865,6 +879,7 @@ export function UserStoryDrawerPanel({
             runMode: runMode ?? readStoryRunMode(),
             targetBranch,
             ambition,
+            ...(newStartsAfter.length ? { startsAfter: newStartsAfter } : {}),
           },
           storyContextLimit(contextLimitKey)
         )

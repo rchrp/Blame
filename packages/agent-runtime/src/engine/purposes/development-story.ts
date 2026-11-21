@@ -17,11 +17,7 @@ import {
   projectPrompt,
   worktreeEnvironment,
 } from "./prompt.js";
-import {
-  planToolGuidance,
-  purposeClientTools,
-  purposeHarnessTools,
-} from "./tool-sets.js";
+import { planToolGuidance, purposeHarnessTools } from "./tool-sets.js";
 
 /**
  * How a story's turn is complete: through a `finish_task` the harness
@@ -131,8 +127,8 @@ async function storyBrief(
     title && title !== untitledStory
       ? [`Backlog item: ${title}`, "", message.text]
       : [message.text];
-  const names = purposeClientTools["development-story"];
-  const hint = names.includes("read_user_story")
+  // A story of a project has the story history tools (read_user_story).
+  const hint = settings.projectId
     ? earlierStoriesHint(message.text, [])
     : undefined;
   if (hint) parts.push("", hint);

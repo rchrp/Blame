@@ -7,6 +7,11 @@ import {
   queuedStories,
   runtimeWait,
 } from "./queue.js";
+import {
+  earlierStoriesHint,
+  startsAfterBriefing,
+} from "../../development-prompt-parts.js";
+import { developmentStoryPurpose } from "../purposes/development-story.js";
 import { storySessionSettings, storyTurnModel } from "./settings.js";
 import {
   parseStory,
@@ -375,4 +380,63 @@ test("a story's settings name its worktree, where it is and its preview", () => 
       model: { providerId: "anthropic", modelId: "a" },
     }),
   );
+});
+
+test("what the stories it starts after delivered is told with a bound", () => {
+  assert.equal(
+    startsAfterBriefing([
+      { storyNumber: 5, title: "Nothing to say" },
+      { storyNumber: 6, title: "Blank", reply: "  ", files: [] },
+    ]),
+    undefined,
+    "a dependency with nothing to report adds nothing",
+  );
+  const one = startsAfterBriefing([
+    {
+      storyNumber: 5,
+      title: "Theme toggle",
+      reply: "Added the toggle.",
+      files: ["A src/toggle.ts", "M src/app.ts"],
+    },
+    { storyNumber: 6, title: "Empty" },
+  ])!;
+  assert.match(one, /^<starts_after>\n/u);
+  assert.match(one, /US-005 · Theme toggle\nReported:\nAdded the toggle\./u);
+  assert.match(one, /Changed files:\nA src\/toggle\.ts\nM src\/app\.ts/u);
+  assert.doesNotMatch(one, /US-006/u);
+
+  const flood = startsAfterBriefing(
+    Array.from({ length: 5 }, (_, index) => ({
+      storyNumber: index + 1,
+      title: `Story ${index + 1}`,
+      reply: "r".repeat(5_000),
+      files: Array.from({ length: 80 }, (_, file) => `M src/f${file}.ts`),
+    })),
+  )!;
+  assert.ok(flood.length < 6_100, `bounded, got ${flood.length}`);
+  assert.match(flood, /US-001 · Story 1/u);
+  assert.match(flood, /… 74 more/u);
+});
+
+test("a story that starts after others reads their delivery, not a second mention of them", async () => {
+  const block = startsAfterBriefing([
+    { storyNumber: 5, title: "First", reply: "Done. See US-003 too." },
+  ])!;
+  const hint = earlierStoriesHint(`Do it.\n\n${block}`, [])!;
+  assert.match(hint, /starts after US-005, which is done/u);
+  assert.doesNotMatch(hint, /Earlier stories mentioned/u);
+  assert.equal(earlierStoriesHint("Do it.", []), undefined);
+
+  const brief = await developmentStoryPurpose.firstMessage!(
+    {
+      title: "Second",
+      projectId: "project",
+      workspace: { root: "/work" },
+    } as never,
+    { text: `Do it.\n\n${block}` },
+    {},
+  );
+  assert.match(brief.text, /^Backlog item: Second\n\nDo it\./u);
+  assert.match(brief.text, /Reported:\nDone\. See US-003 too\./u);
+  assert.match(brief.text, /starts after US-005/u);
 });
