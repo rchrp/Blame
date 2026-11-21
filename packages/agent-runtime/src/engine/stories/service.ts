@@ -851,7 +851,10 @@ export class StoryService {
       const askedAt = this.stories.now();
       const records = await this.api().list(projectId);
       if (!this.projects.has(projectId)) return;
-      this.stories.replace(projectId, records, askedAt);
+      const changed = this.stories.replace(projectId, records, askedAt);
+      // Stories created or changed elsewhere (another window, another
+      // device) show on the boards; the windows read the rest themselves.
+      if (!first) for (const record of changed) this.emitStory(record);
       // Where this project's stories were left (a quit, a crash, a turn
       // that ended while Blame was closed) is settled once it is read.
       if (first) await this.reconcileAll(projectId);

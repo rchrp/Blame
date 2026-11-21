@@ -740,3 +740,24 @@ test("back to the backlog stops the story first; a delete removes it for good", 
     api.restore();
   }
 });
+
+test("a story created elsewhere shows on the boards once its project is read again", async () => {
+  const api = fakeApi([row("old", "a", { status: "backlog" })]);
+  const { host, events } = fakeHost();
+  const service = new StoryService(host as never);
+  try {
+    await sync(service, [{ id: "a", path: "/a" }]);
+    api.stories.set("new", row("new", "a", { status: "backlog" }));
+    await service.refresh("a");
+    const announced = events.filter(
+      (event) => event.type === "story",
+    ) as Array<{ storyId: string }>;
+    assert.deepEqual(
+      announced.map(({ storyId }) => storyId),
+      ["new"],
+    );
+  } finally {
+    service.stop();
+    api.restore();
+  }
+});

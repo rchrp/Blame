@@ -40,26 +40,37 @@ export class StoryRecords {
   /**
    * A project's stories as a list read since `askedAt`. A story written
    * since keeps its record; a detail read since keeps what the summary
-   * leaves out.
+   * leaves out. Returns the stories that are new or changed.
    */
-  replace(projectId: string, records: readonly StoryRecord[], askedAt: number) {
+  replace(
+    projectId: string,
+    records: readonly StoryRecord[],
+    askedAt: number,
+  ): StoryRecord[] {
     const known = this.byProject.get(projectId) ?? new Map<string, Held>();
     const next = new Map<string, Held>();
+    const changed: StoryRecord[] = [];
     for (const record of records) {
       if ((this.deleted.get(record.story.id) ?? 0) > askedAt) continue;
       const held = known.get(record.story.id);
-      next.set(
-        record.story.id,
-        held && held.stamp > askedAt
-          ? held
-          : { ...merge(held, record), stamp: askedAt },
-      );
+      if (held && held.stamp > askedAt) {
+        next.set(record.story.id, held);
+        continue;
+      }
+      const merged = { ...merge(held, record), stamp: askedAt };
+      next.set(record.story.id, merged);
+      if (
+        !held ||
+        JSON.stringify(held.payload) !== JSON.stringify(merged.payload)
+      )
+        changed.push(merged);
     }
     // A story created or written since the list was asked is not lost.
     for (const [id, held] of known)
       if (!next.has(id) && held.stamp > askedAt) next.set(id, held);
     this.byProject.set(projectId, next);
     this.loaded.add(projectId);
+    return changed;
   }
 
   /** A story read or written, asked at `askedAt`; an older answer is ignored. */
