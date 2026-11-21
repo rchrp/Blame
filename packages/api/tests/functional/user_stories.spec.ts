@@ -13,7 +13,12 @@ import type { ApiClient } from '@japa/api-client'
 import { test } from '@japa/runner'
 import { createLicensedUser as createUser } from '../helpers/create_licensed_user.js'
 
-type AgentModel = { providerId: string; modelId: string; reasoningEffort?: string | null }
+type AgentModel = {
+  providerId: string
+  modelId: string
+  reasoningEffort?: string | null
+  turns?: number
+}
 
 type UserStoryData = {
   agentLastError: string | null
@@ -467,7 +472,7 @@ test.group('user stories', (group) => {
     assert.isNull(story.data.agentModels)
     const engineSessionId = sessionId()
     const agentModels = [
-      { providerId: 'anthropic', modelId: 'claude-opus', reasoningEffort: 'high' },
+      { providerId: 'anthropic', modelId: 'claude-opus', reasoningEffort: 'high', turns: 3 },
       { providerId: 'openai', modelId: 'gpt-large' },
     ]
 

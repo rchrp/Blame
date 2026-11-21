@@ -19,6 +19,7 @@ export type UserStoryAgentModel = {
   providerId: string
   modelId: string
   reasoningEffort?: string | null
+  turns?: number
 }
 
 export type UserStoryCodeSelectionAttachment = {

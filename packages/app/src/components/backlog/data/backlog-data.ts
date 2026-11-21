@@ -102,6 +102,8 @@ export type UserStoryAgentModel = {
   providerId: string
   modelId: string
   reasoningEffort?: string | null
+  /** Turns this model answered, from the story's engine records. */
+  turns?: number
 }
 
 export type UserStoryAgentRunKind = "initial" | "change-request" | "resume"

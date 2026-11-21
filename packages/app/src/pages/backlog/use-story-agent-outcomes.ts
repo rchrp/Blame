@@ -6,7 +6,11 @@ import type { UserStory } from "@/components/backlog/data/backlog-data"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { usePlatform } from "@/context/platform"
 import { useLatestCallback } from "@/lib/use-latest-callback"
-import { storyLocation, storyOutcomeUpdate } from "./story-engine"
+import {
+  storyLocation,
+  storyOutcomeUpdate,
+  withTurnCounts,
+} from "./story-engine"
 
 /**
  * Keeps each story's agent state in step with its engine session: Running
@@ -37,8 +41,26 @@ export function useStoryAgentOutcomes(
       void backlog
         .update(story, storyOutcomeUpdate(story, outcome))
         .catch(report)
+      void countTurns(story).catch(report)
     }
   )
+
+  // How many turns each model answered, from the records: after every turn
+  // and every undo, so a model change and a rewind count right.
+  const countTurns = useLatestCallback(async (story: UserStory) => {
+    const engine = platform.engine
+    if (!engine || !story.engineSessionId) return
+    const [status] = await engine.call("status", {
+      sessions: [story.engineSessionId],
+      location: storyLocation(
+        story.workspaceMode ?? "direct",
+        platform.platform
+      ),
+    })
+    if (!status?.exists) return
+    const agentModels = withTurnCounts(story.agentModels, status.models)
+    if (agentModels) await backlog.update(story, { agentModels })
+  })
 
   React.useEffect(
     () =>
@@ -103,6 +125,8 @@ export function useStoryAgentOutcomes(
     if (backlog.loading) return
     void recover(backlog.stories)
   }, [backlog.loading, backlog.stories, recover])
+
+  return { countTurns }
 }
 
 function report(error: unknown) {
