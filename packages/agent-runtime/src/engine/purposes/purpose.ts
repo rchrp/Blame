@@ -5,6 +5,7 @@
 import type { SessionConfig } from "@blame/engine-client";
 import {
   engineReasoning,
+  helperAgentsAvailable,
   type EngineMessage,
   type EngineModelChoice,
   type EngineWorkspace,
@@ -56,6 +57,20 @@ export function engineModel(choice: EngineModelChoice) {
     model: { provider: choice.providerId, model: choice.modelId },
     ...(reasoning ? { reasoning } : {}),
   };
+}
+
+/**
+ * The engine's tool sets of a conversation that works in a workspace: the
+ * harness, and the helper agents of ultra mode (`run_agents`). The helpers'
+ * tool is offered whether or not a message turns ultra mode on, so toggling
+ * it never changes the tool list the provider caches; the engine refuses a
+ * call made while it is off. Claude Code is the exception: each helper
+ * would be a whole Claude Code process, and the engine refuses them there.
+ */
+export function workspaceEngineTools(choice: EngineModelChoice) {
+  return helperAgentsAvailable(choice.providerId)
+    ? ["harness", "subagents"]
+    : ["harness"];
 }
 
 /** Names of every tool a session offers: its client tools and its harness tools. */

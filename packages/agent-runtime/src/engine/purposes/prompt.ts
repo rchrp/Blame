@@ -51,7 +51,6 @@ export function projectPrompt(input: ProjectPromptInput) {
     BLAME_PRACTICES: developmentPracticePrompts(input.practices ?? []),
     BLAME_PREVIEW: input.preview ?? "",
     BLAME_PROPOSALS: input.proposals ?? "",
-    BLAME_SPECIALISTS: "",
     CURRENT_DATE: input.promptDate.toISOString().slice(0, 10),
     CWD: input.workspaceRoot,
     IDE_NAME: "Blame",

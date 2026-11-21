@@ -2,7 +2,12 @@
 // branch, with the harness and the web research tools.
 
 import type { QuickChatSettings } from "../protocol.js";
-import { engineModel, sessionToolNames, type Purpose } from "./purpose.js";
+import {
+  engineModel,
+  sessionToolNames,
+  workspaceEngineTools,
+  type Purpose,
+} from "./purpose.js";
 import { directFolderEnvironment, projectPrompt } from "./prompt.js";
 import { normalizePersonalization } from "../../personalization.js";
 import { purposeHarnessTools } from "./tool-sets.js";
@@ -23,7 +28,7 @@ export const quickChatPurpose: Purpose<QuickChatSettings> = {
         promptDate,
         tools: sessionToolNames(toolNames, purposeHarnessTools["quick-chat"]),
       }),
-      engine_tools: ["harness"],
+      engine_tools: workspaceEngineTools(settings.model),
       client_tools: tools.specs(clientTools),
       tool_options: {
         harness: {
