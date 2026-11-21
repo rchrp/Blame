@@ -34,6 +34,8 @@ export type StoryPreferences = {
   contextLimits?: Record<string, number>;
   /** The Blame Runtime's phase (`RuntimePhase` in the app). */
   runtimePhase: string;
+  /** Projects whose preview environment this window is preparing now. */
+  initializingProjects?: string[];
 };
 
 /** A story's agent model asked for by its creator (`UserStory.requestedModel`). */
@@ -45,11 +47,24 @@ export type StoryRequestedModel = {
 };
 
 /** Why a queued story does not start now. */
+/** A story another one starts after, as the board names it. */
+export type StoryDependency = {
+  id: string;
+  /** Absent when the story no longer exists. */
+  storyNumber?: number;
+  title?: string;
+  status?: string;
+};
+
 export type StoryWaitReason =
   /** Stories it starts after are not done yet. */
-  | { kind: "dependencies"; storyIds: string[] }
+  | { kind: "dependencies"; storyIds: string[]; stories: StoryDependency[] }
   /** A story it starts after was discarded or deleted: it never starts. */
-  | { kind: "dependency-dropped"; storyIds: string[] }
+  | {
+      kind: "dependency-dropped";
+      storyIds: string[];
+      stories: StoryDependency[];
+    }
   /** The project's folder is not known on this computer. */
   | { kind: "no-project" }
   | { kind: "no-model" }
@@ -119,7 +134,12 @@ export type StoryMergeOutcome = {
 export type EngineStoryMethods = {
   /** The projects on this computer and the person's settings (`StoryPreferences`). */
   storySync: {
-    input: { projects: StoryProject[]; preferences: StoryPreferences };
+    input: {
+      /** The window that says so: what every window knows counts. */
+      window: string;
+      projects: StoryProject[];
+      preferences: StoryPreferences;
+    };
     result: null;
   };
   /** Reads a project's stories again (one the window changed), then looks at the queue. */
@@ -202,6 +222,8 @@ export type StoryHostEvent =
       type: "story-cleanup";
       projectId: string;
       storyId: string;
+      /** Where the story ran (a Cloud Preview's window state goes too). */
+      workspaceMode?: "direct" | "local-container" | "cloud-mirror" | null;
       cleaning: boolean;
       error?: string;
     }
@@ -212,6 +234,8 @@ export type StoryTurnEnded = {
   storyId: string;
   projectId: string;
   session: string;
+  /** The turn's id in the session: each ended turn is told once. */
+  turn: string;
   /** The story as the API keeps it once the turn's outcome is applied. */
   story: unknown;
   outcome?: TurnOutcome;

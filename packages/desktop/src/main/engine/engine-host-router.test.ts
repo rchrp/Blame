@@ -95,3 +95,32 @@ it("knows the folders a running turn writes in, until it ends", () => {
   router.hostStopped();
   assert.deepEqual(router.activeWorkspaces(), []);
 });
+
+it("tells a restarted host what every window gave the story service", () => {
+  const router = new EngineHostRouter();
+  const preferences = {
+    runMode: "direct",
+    premium: false,
+    runtimePhase: "ready",
+  } as const;
+  const first = {
+    window: "w1",
+    projects: [{ id: "a", path: "/a" }],
+    preferences,
+  };
+  const second = {
+    window: "w2",
+    projects: [{ id: "b", path: "/b" }],
+    preferences,
+  };
+  router.observe(viewer(1), "storySync", first);
+  router.observe(viewer(2), "storySync", second);
+  router.observe(viewer(1), "storySync", {
+    ...first,
+    projects: [{ id: "c", path: "/c" }],
+  });
+  assert.deepEqual(
+    router.replay().map(({ input }) => (input as typeof first).projects[0]!.id),
+    ["c", "b"],
+  );
+});

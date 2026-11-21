@@ -24,7 +24,8 @@ export function queuedStories(stories: readonly HostStory[]) {
  */
 export function dependencyWait(
   story: Pick<HostStory, "id" | "startsAfter">,
-  projectStories: readonly Pick<HostStory, "id" | "status">[],
+  projectStories: readonly (Pick<HostStory, "id" | "status"> &
+    Partial<Pick<HostStory, "storyNumber" | "title">>)[],
 ): StoryWaitReason | undefined {
   const ids = [...new Set(story.startsAfter ?? [])].filter(
     (id) => id !== story.id,
@@ -35,10 +36,27 @@ export function dependencyWait(
     const dependency = byId.get(id);
     return !dependency || dependency.status === "discarded";
   });
-  if (dropped.length) return { kind: "dependency-dropped", storyIds: dropped };
+  const named = (storyIds: string[]) =>
+    storyIds.map((id) => {
+      const dependency = byId.get(id);
+      return dependency
+        ? {
+            id,
+            storyNumber: dependency.storyNumber,
+            title: dependency.title,
+            status: dependency.status,
+          }
+        : { id };
+    });
+  if (dropped.length)
+    return {
+      kind: "dependency-dropped",
+      storyIds: dropped,
+      stories: named(dropped),
+    };
   const pending = ids.filter((id) => byId.get(id)?.status !== "done");
   return pending.length
-    ? { kind: "dependencies", storyIds: pending }
+    ? { kind: "dependencies", storyIds: pending, stories: named(pending) }
     : undefined;
 }
 
@@ -56,10 +74,13 @@ export function initializationDecision(
   initialization: ProjectInitialization | null | undefined,
   mode: StoryRunMode,
   now = Date.now(),
+  /** A window is preparing it now, whatever the API says yet. */
+  runningHere = false,
 ): "start" | "wait" | "run-direct" {
   if (mode === "direct") return "start";
   if (initialization?.status === "done" && initialization.previewManifest)
     return "start";
+  if (runningHere) return "wait";
   if (initialization?.status === "running") {
     const reportedAt = Date.parse(
       initialization.updatedAt ?? initialization.createdAt,
@@ -99,16 +120,13 @@ export function runtimeWait(
   return { kind: "needs-runtime", phase };
 }
 
-/** How long a story waits before the queue looks at it again by itself. */
-export function retryDelay(reason: StoryWaitReason): number | undefined {
+/**
+ * How long a story waits before the queue looks at it again by itself. Every
+ * reason has one, so a queue that cannot start a story never spins on it;
+ * a change the service hears of (a sync, a story done) looks sooner.
+ */
+export function retryDelay(reason: StoryWaitReason): number {
   switch (reason.kind) {
-    // Settled by a change the service hears of (a story done, a sync).
-    case "dependencies":
-    case "dependency-dropped":
-    case "no-project":
-    case "no-model":
-    case "signed-out":
-      return undefined;
     case "initialization":
     case "runtime":
       return 5_000;

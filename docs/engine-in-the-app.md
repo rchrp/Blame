@@ -123,28 +123,50 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   writes; the host's own code (the orchestrator) calls its methods directly:
   `create`, `enqueue`, `send`, `pause`, `resume`, `approve`, `complete`,
   `discard`, `toBacklog`, `remove`, and `onTurnEnded` for one event per
-  ended turn with the story, the turn's outcome and the agent's last report
-  (`lastReply`).
-- **What only a window knows**: each window sends `storySync` with the
-  projects open on this computer (id and folder, from its recent projects)
-  and the person's settings kept on the device: the account's agent model
-  as the picker resolves it, personalization, the default run mode,
-  Premium, the context caps picked per story, and the Blame Runtime's
-  phase. The host keeps the latest; main replays it to a restarted host. A
-  window that created or edited a story says so (`storyRefresh`); the
-  service also reads every project's stories again each minute.
+  ended turn (its id, the story, the turn's outcome and the agent's report,
+  `lastReply`). Each method checks the story is in the state it needs
+  (`enqueue` a story of the backlog, `approve` one in review), and every
+  action on a story runs after the one before it.
+- **What only a window knows**: each window sends `storySync` with its id,
+  the projects open on this computer (id and folder, from its recent
+  projects) and the person's settings kept on the device: the account's
+  agent model as the picker resolves it, personalization, the default run
+  mode, Premium, the context caps picked per story, the Blame Runtime's
+  phase and the projects whose preview environment it prepares now. The
+  projects are what every window knows together, never dropped while the
+  same account is signed in; main replays every window's last sync to a
+  restarted host. A window that created or edited a story says so
+  (`storyRefresh`); the service also reads every project's stories again
+  each minute. A read asked before a write never replaces what the write
+  returned (`stories/records.ts`).
+- **Reconcile** (`stories/reconcile.ts`): every path ends in one step, run
+  as the story's action: its record read now, set against what the engine
+  says of its session (`status`), and written with retries. A turn running
+  makes the story In Progress and Running (a follow-up to a story in
+  review too); a turn that ended applies its outcome; a session that never
+  got its first message is dropped and the story queued again; a start or
+  an Approve & Merge cut short (a quit, a crash, a failed write) is put
+  right. It runs on each `activity` event, when a project is first read
+  (after a quit), and every minute for the stories said Running whose turn
+  does not run. So a story is never left Running with no turn running, nor
+  In Progress with no agent.
+- **Turns told once**: each ended turn reaches `onTurnEnded` once, after
+  the story is settled, a turn that ended while Blame was closed included.
+  `status` lists a session's last ended turns (`endedTurns`); the service
+  keeps which it told in `<userData>/story-turns.json` (`stories/ledger.ts`).
 - **The queue**: every story in `ready` whose files are uploaded starts, oldest
   first, with no cap on how many agents work at once (preview starts and
   builds still take turns by free memory in main, `runtime-heavy-work.ts`).
   A story whose `startsAfter` names stories of its project starts once each
   is `done`; one that was discarded or deleted means it never starts
   (`dependency-dropped`). A story that cannot start yet waits with a reason
-  (`StoryWaitReason`: the preview environment being prepared, the Blame
-  Runtime starting or missing, a missing tool on this computer, Git without
-  a name, Cloud Preview without Premium, a failed start); the window showing
-  its project says so (the column's notice, the host-dependencies or Git
-  identity dialog, a toast) and does what only it can (start the runtime,
-  ask for a name), then `storyRetry`.
+  (`StoryWaitReason`: the stories it starts after, no model chosen, the
+  preview environment being prepared, the Blame Runtime starting or
+  missing, a missing tool on this computer, Git without a name, Cloud
+  Preview without Premium, a failed start). Its card in Agent Queue says
+  why; the window showing its project also does what only it can (start
+  the runtime, the host-dependencies or Git identity dialog, a toast), then
+  `storyRetry`. Every wait has a delay before the queue tries again.
 - **Start** (`stories/start.ts`): the details, the run mode (a project with
   no working preview environment runs Direct), the runtime and host checks
   (desktop services `checkHostDependencies`, `gitIdentity`), the worktree

@@ -32,8 +32,12 @@ export async function sendStoryMessage(
   },
 ): Promise<HostStory> {
   const session = story.engineSessionId;
-  if (!story.worktree || !session)
-    throw new Error("This user story has no agent to talk to yet.");
+  if (
+    !story.worktree ||
+    !session ||
+    (story.status !== "in-progress" && story.status !== "in-review")
+  )
+    throw new Error("This user story has no agent to talk to.");
   const turn = storyTurnModel(story, context.preferences, input.turn, false);
   if (!turn)
     throw new Error("Select a model before writing to this user story.");
@@ -92,7 +96,7 @@ export async function sendStoryMessage(
     // Nothing reached the agent: the story stays as it was.
     if (!running)
       await context
-        .patch(working, {
+        .patchDurably(working, {
           agentStatus: story.agentStatus ?? null,
           agentLastError: story.agentLastError ?? null,
           status: story.status,
@@ -111,6 +115,8 @@ export async function pauseStory(
   context: StoryContext,
   story: HostStory,
 ): Promise<HostStory> {
+  if (story.status !== "in-progress")
+    throw new Error("Only a story in progress can be paused.");
   if (story.engineSessionId && story.agentStatus === "Running") {
     await context.call("interrupt", {
       session: story.engineSessionId,

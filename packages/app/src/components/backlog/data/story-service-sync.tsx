@@ -6,6 +6,10 @@ import { useBlameRuntime } from "@/context/blame-runtime"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
+import {
+  initializationsRunningHere,
+  subscribeInitializationRunning,
+} from "@/components/project-initialization/project-initialization-availability"
 import { personalizationStore } from "@/lib/personalization-store"
 import { useStoryRunMode } from "@/lib/runtime-preference"
 import { syncStoryService, type StorySync } from "@/lib/story-service"
@@ -27,6 +31,12 @@ export function StoryServiceSync() {
   const personalization = React.useSyncExternalStore(
     personalizationStore.subscribe,
     personalizationStore.get
+  )
+  // Projects whose preview environment this window prepares: their stories
+  // wait for it instead of running Direct.
+  const initializingProjects = React.useSyncExternalStore(
+    subscribeInitializationRunning,
+    initializationsRunningHere
   )
   const model = selection.currentModel
   const sync: StorySync = {
@@ -54,6 +64,7 @@ export function StoryServiceSync() {
       runMode,
       premium,
       runtimePhase,
+      initializingProjects: [...initializingProjects],
     },
   }
   const serialized = JSON.stringify(sync)

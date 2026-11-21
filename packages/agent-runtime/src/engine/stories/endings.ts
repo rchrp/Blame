@@ -33,6 +33,8 @@ export async function approveStory(
   merge: ApproveAndMergeResult;
   previewRepairCandidate?: unknown;
 }> {
+  if (story.status !== "in-review")
+    throw new Error("Only a story in review can be approved and merged.");
   if (!story.worktree)
     throw new Error("This user story has no active worktree.");
   if (!story.branch) throw new Error("This user story has no feature branch.");
@@ -67,8 +69,9 @@ export async function approveStory(
       await context.desktop.endGitFlow?.({ operation: flow.operation });
     }
   } catch (error) {
+    // A write that fails here is the reconcile's to redo (a merge stopped).
     await context
-      .patch(running, {
+      .patchDurably(running, {
         agentLastError: errorMessage(error),
         agentStatus: null,
       })
@@ -76,7 +79,7 @@ export async function approveStory(
     throw error;
   }
   const previewRepairCandidate = await readPreviewRepair(context, worktree);
-  const merged = await context.patch(running, {
+  const merged = await context.patchDurably(running, {
     ...inactiveStoryFields(),
     agentLastError: null,
     baseCommit: merge.baseCommit,

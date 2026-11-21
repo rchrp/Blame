@@ -56,17 +56,24 @@ export function initializationStartsAutomatically(
 
 const runningProjects = new Set<string>()
 const runningListeners = new Set<() => void>()
+let runningSnapshot: readonly string[] = []
 
 /** Marks a run of this app, so the queue and the page know it is live. */
 export function markInitializationRunning(projectId: string, running: boolean) {
   if (running === runningProjects.has(projectId)) return
   if (running) runningProjects.add(projectId)
   else runningProjects.delete(projectId)
+  runningSnapshot = [...runningProjects]
   runningListeners.forEach((listener) => listener())
 }
 
 export function initializationRunningHere(projectId: string) {
   return runningProjects.has(projectId)
+}
+
+/** The projects this app prepares now, for the story service's queue. */
+export function initializationsRunningHere(): readonly string[] {
+  return runningSnapshot
 }
 
 export function subscribeInitializationRunning(listener: () => void) {

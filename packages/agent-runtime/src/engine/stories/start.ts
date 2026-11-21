@@ -1,6 +1,8 @@
 // The start of a queued story: where it runs, what it needs first, its
-// worktree, its session and its first message. It returns why it waits
-// when it cannot start now; it throws when the start failed.
+// worktree, its session and its first message. It says why the story waits
+// when it cannot start now; it throws when the start failed, after putting
+// the story back in the queue. Whatever it leaves when it is cut short (a
+// quit, a write that failed twice) the service's reconcile settles.
 
 import { randomUUID } from "node:crypto";
 import type { ApiConnection } from "../../types.js";
@@ -24,6 +26,7 @@ import {
 } from "./settings.js";
 import {
   storyDisplayId,
+  storyLocation,
   storyMessage,
   withAgentModel,
   type HostStory,
@@ -45,37 +48,51 @@ export type StoryContext = {
     method: M,
     input: EngineHostInput<M>,
   ): Promise<EngineHostResult<M>>;
+  /** The story as the API keeps it now (the service's cache learns it too). */
+  read(storyId: string): Promise<HostStory>;
   /** Writes the story and tells the windows; resolves with the story as the API keeps it. */
   patch(
     story: HostStory,
     update: StoryUpdate,
     extra?: StoryEventExtra,
   ): Promise<HostStory>;
+  /** The same, tried again a few times: for the writes a story must not miss. */
+  patchDurably(story: HostStory, update: StoryUpdate): Promise<HostStory>;
+  /** A session the service made for a story: each turn it ends will be told. */
+  sessionMade(session: string): Promise<void>;
 };
+
+/** What a start did: started, or why the story waits. */
+export type StartResult =
+  { started: true } | { notReady: true } | { wait: StoryWaitReason };
 
 export async function startStory(
   context: StoryContext,
   queued: HostStory,
   projectPath: string,
-): Promise<StoryWaitReason | undefined> {
+): Promise<StartResult> {
   const { api, desktop, preferences } = context;
-  // The details: its attachments and code excerpts.
-  const { story } = await api.get(queued.id);
-  if (story.status !== "ready") return undefined;
-  if (!preferences) return { kind: "no-model" };
+  // The details (attachments, excerpts) and the status as the API has it now.
+  const story = await context.read(queued.id);
+  if (story.status !== "ready") return { notReady: true };
   const turn = storyTurnModel(story, preferences, undefined, true);
-  if (!turn) return { kind: "no-model" };
+  if (!preferences || !turn) return { wait: { kind: "no-model" } };
   const snapshot = await api.initialization(story.projectId);
   let mode = story.runMode ?? preferences.runMode;
-  const gate = initializationDecision(snapshot.initialization, mode);
-  if (gate === "wait") return { kind: "initialization" };
+  const gate = initializationDecision(
+    snapshot.initialization,
+    mode,
+    Date.now(),
+    preferences.initializingProjects?.includes(story.projectId) ?? false,
+  );
+  if (gate === "wait") return { wait: { kind: "initialization" } };
   // No usable preview environment: run Direct rather than wait for one.
   if (gate === "run-direct") {
     await context.patch(story, { runMode: "direct" }, { directFallback: true });
     mode = "direct";
   }
   if (mode === "vercel-compose" && !preferences.premium)
-    return { kind: "cloud-without-premium" };
+    return { wait: { kind: "cloud-without-premium" } };
   const direct = mode === "direct";
   const runtimeProfile =
     mode === "vercel-compose" ? "vercel-compose" : "local-container";
@@ -88,7 +105,7 @@ export async function startStory(
   const runtime = direct
     ? undefined
     : runtimeWait(mode, preferences.runtimePhase);
-  if (runtime) return runtime;
+  if (runtime) return { wait: runtime };
   const report = await required(desktop.checkHostDependencies)({
     // A runtime the window cannot report on is checked here instead.
     includeRuntime:
@@ -97,13 +114,20 @@ export async function startStory(
     workspaceMode,
   });
   if (!report.ok)
-    return { kind: "host-dependencies", report, runtimeProfile, workspaceMode };
+    return {
+      wait: {
+        kind: "host-dependencies",
+        report,
+        runtimeProfile,
+        workspaceMode,
+      },
+    };
   // Git won't commit the story's work without a name and an email.
   const identity = await desktop
     .gitIdentity?.({ root: projectPath })
     .catch(() => undefined);
   if (identity?.available && !identity.configured)
-    return { kind: "git-identity" };
+    return { wait: { kind: "git-identity" } };
 
   const worktree = await required(desktop.createStoryWorktree)({
     branch: story.branch,
@@ -145,24 +169,33 @@ export async function startStory(
     maxContextTokens: turn.maxContextTokens,
     personalization: storyPersonalization(story, preferences),
   });
-  // A story keeps one conversation: a requeued story continues it.
-  const existing = story.engineSessionId;
-  const session = existing ?? randomUUID();
+  let session: string | undefined;
   try {
+    // A story keeps one conversation: a requeued story continues it. A
+    // session that never got its first message goes, so that the new one
+    // starts with the story's brief.
+    session = await reusableSession(
+      context,
+      story,
+      storyLocation(worktree.workspaceMode),
+    );
+    const created = !session;
+    session ??= randomUUID();
     await desktop.prepareStoryTurn?.({
       session,
       projectId: story.projectId,
       root: worktree.worktree,
       workspaceMode: worktree.workspaceMode,
-      created: !existing,
+      created,
       apiConnection: context.connection,
     });
-    if (!existing)
+    if (created) {
       await context.call("createSession", { session, ...settings });
-    // Stopped, dequeued or discarded while it was starting: let it go.
-    if (!(await stillStarting(context, story.id))) return undefined;
+      await context.sessionMade(session);
+    }
     const { model } = settings.settings;
-    await context.patch(story, {
+    // Said before the turn starts, so that the end of the turn settles it.
+    await context.patchDurably(working, {
       agentLastError: null,
       agentModels: withAgentModel(story.agentModels, {
         modelId: model.modelId,
@@ -184,26 +217,41 @@ export async function startStory(
       settings,
     });
   } catch (error) {
-    // Back to the queue: its worktree and its conversation are reused on
-    // the next attempt.
-    if (await stillStarting(context, story.id))
-      await context
-        .patch(story, {
-          agentLastError: errorMessage(error),
-          agentStatus: null,
-          ...(existing ? {} : { engineSessionId: null }),
-          status: "ready",
-        })
-        .catch(() => undefined);
+    // Back to the queue: its worktree is reused on the next attempt, and
+    // its session too once it has its first message (else it is dropped
+    // then). A write that fails here is the service's reconcile's to redo.
+    await context
+      .patchDurably(working, {
+        agentLastError: errorMessage(error),
+        agentStatus: null,
+        engineSessionId: session ?? story.engineSessionId ?? null,
+        status: "ready",
+      })
+      .catch(() => undefined);
     throw error;
   }
-  return undefined;
+  return { started: true };
 }
 
-// Still the story this start moved to In Progress, untouched since.
-async function stillStarting(context: StoryContext, storyId: string) {
-  const { story } = await context.api.get(storyId);
-  return story.status === "in-progress" && story.agentStatus !== "Paused";
+// The story's session when it can go on: one the engine where the story now
+// runs has, with turns.
+async function reusableSession(
+  context: StoryContext,
+  story: HostStory,
+  location: ReturnType<typeof storyLocation>,
+) {
+  const existing = story.engineSessionId;
+  if (!existing) return undefined;
+  const [status] = await context.call("status", {
+    sessions: [existing],
+    location,
+  });
+  if (status?.exists && status.turns > 0) return existing;
+  if (status?.exists)
+    await context
+      .call("deleteSession", { session: existing, location })
+      .catch(() => undefined);
+  return undefined;
 }
 
 function required<Input, Output>(

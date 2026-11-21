@@ -15,9 +15,6 @@ import {
   type Limits,
   type SessionConfig,
   type TaskOutcome,
-  planProgress,
-  turnReply,
-  turnsByModel,
   type UserBlock,
 } from "@blame/engine-client";
 import { runHostGh, type GhRunner } from "../pull-request.js";
@@ -48,7 +45,6 @@ import type {
   EngineMessage,
   EngineSessionRef,
   EngineSessionSettings,
-  EngineSessionStatus,
 } from "./protocol.js";
 import { developmentStoryPurpose } from "./purposes/development-story.js";
 import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
@@ -57,6 +53,7 @@ import { purposeClientTools } from "./purposes/tool-sets.js";
 import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
+import { sessionStatus } from "./session-status.js";
 import { storyHandlers } from "./stories/handlers.js";
 import { StoryService } from "./stories/service.js";
 import { taskHandlers, type TaskHost } from "./tasks/handlers.js";
@@ -106,6 +103,12 @@ export type EngineHostOptions = {
   now?: () => Date;
   /** Where project memories are kept: the account's API by default (a file for benchmarks). */
   projectMemory?: ProjectMemoryPersistence;
+  /**
+   * Where the story service keeps which ended turns it told its listeners
+   * about (a turn that ended while Blame was closed is told once, later).
+   * Without it, that is kept in memory only.
+   */
+  storyLedgerFile?: string;
   /** For tests: more client tools beside the app's own. */
   extraTools?: ClientTool<never>[];
   /** For tests: more client tools, by name, for sessions of a purpose. */
@@ -210,12 +213,15 @@ export class EngineHost {
       },
       options.binary,
     );
-    this.stories = new StoryService({
-      api: () => this.api,
-      call: (method, input) => this.handlers[method](input),
-      desktop: options.desktop ?? {},
-      emit: (event) => options.emit(event),
-    });
+    this.stories = new StoryService(
+      {
+        api: () => this.api,
+        call: (method, input) => this.handlers[method](input),
+        desktop: options.desktop ?? {},
+        emit: (event) => options.emit(event),
+      },
+      { ledgerFile: options.storyLedgerFile },
+    );
     // The native engine starts with the host: the catalog and every host
     // workspace use it.
     this.engineAt("host");
@@ -320,7 +326,10 @@ export class EngineHost {
     if (params.method === "refreshPreviewDependencies") {
       const preview = this.previews.get(params.session);
       if (!preview || !desktop?.refreshPreviewDependencies) return null;
-      return desktop.refreshPreviewDependencies({ ...preview, signal } as never);
+      return desktop.refreshPreviewDependencies({
+        ...preview,
+        signal,
+      } as never);
     }
     return null;
   }
@@ -415,7 +424,8 @@ export class EngineHost {
       );
       return { session, outcome: { status: "completed" } as TaskOutcome };
     } catch (error) {
-      if (error instanceof EngineTaskError) return { session, outcome: error.outcome };
+      if (error instanceof EngineTaskError)
+        return { session, outcome: error.outcome };
       throw error;
     } finally {
       await this.saveCompletionMemory(session);
@@ -448,8 +458,9 @@ export class EngineHost {
   } = {
     connect: async ({ api }) => {
       this.api = api ?? undefined;
-      // Signed in: the stories of the projects it knows are read again.
-      if (this.api) void this.stories.refresh().catch(() => undefined);
+      // Signed in: the stories of the projects it knows are read again;
+      // another account starts over.
+      this.stories.connected(this.api);
       return null;
     },
     createSession: async ({ session, ...settings }) => {
@@ -491,7 +502,9 @@ export class EngineHost {
       return { turn: accepted.turn, started: accepted.started };
     },
     withdraw: async ({ turn, ...ref }) => {
-      await (await this.clientFor(ref)).withdraw({ session: ref.session, turn });
+      await (
+        await this.clientFor(ref)
+      ).withdraw({ session: ref.session, turn });
       return null;
     },
     promote: async ({ turn, ...ref }) => {
@@ -560,7 +573,7 @@ export class EngineHost {
       const client = await engine.supervisor.client();
       const running = new Set(engine.hub.running());
       return Promise.all(
-        sessions.map((session) => this.sessionStatus(client, session, running)),
+        sessions.map((session) => sessionStatus(client, session, running)),
       );
     },
     providers: ({ refresh }) => this.providers.list(refresh ?? false),
@@ -759,47 +772,6 @@ export class EngineHost {
       return selection.briefing;
     },
   };
-
-  /** Where a session stands, from its records (it is opened if needed). */
-  private async sessionStatus(
-    client: EngineClient,
-    session: string,
-    running: ReadonlySet<string>,
-  ): Promise<EngineSessionStatus> {
-    const reducer = new TranscriptReducer();
-    try {
-      for (;;) {
-        const page = await client.readRecords({
-          session,
-          after: reducer.lastSeq,
-          limit: 1000,
-        });
-        reducer.applyRecords(page.records);
-        if (!page.records.length || reducer.lastSeq >= page.head) break;
-      }
-    } catch {
-      return { session, exists: false, running: false, turns: 0, models: [] };
-    }
-    const transcript = reducer.snapshot();
-    const ended = transcript.turns.filter((turn) => turn.outcome).at(-1);
-    const last = ended?.outcome;
-    const reply = ended ? turnReply(ended, transcript.items)?.trim() : undefined;
-    const plan = planProgress(transcript.plan);
-    return {
-      session,
-      exists: true,
-      running: running.has(session) || transcript.runningTurn !== undefined,
-      ...(last ? { lastOutcome: last } : {}),
-      ...(reply ? { lastReply: reply } : {}),
-      turns: transcript.turns.length,
-      ...(plan ? { plan } : {}),
-      models: turnsByModel(transcript).map(({ model, turns }) => ({
-        providerId: model.provider,
-        modelId: model.model,
-        turns,
-      })),
-    };
-  }
 
   private async userInput(
     client: EngineClient,

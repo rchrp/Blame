@@ -27,8 +27,9 @@ export class EngineHostRouter {
   >();
   private readonly viewers = new Map<number, EngineViewer>();
   private connection: EngineHostInput<"connect"> | undefined;
-  // The projects and settings the story service runs stories with.
-  private storySync: EngineHostInput<"storySync"> | undefined;
+  // The projects and settings each window gave the story service: a
+  // restarted host is told what every window knows.
+  private readonly storySyncs = new Map<string, EngineHostInput<"storySync">>();
   // Where each session works, from the settings its calls carry, and which
   // sessions have a turn running: the rest of the app keeps a preview up and
   // does not merge into a folder an agent is writing.
@@ -49,8 +50,10 @@ export class EngineHostRouter {
     this.viewers.set(viewer.id, viewer);
     if (method === "connect")
       this.connection = input as EngineHostInput<"connect">;
-    if (method === "storySync")
-      this.storySync = input as EngineHostInput<"storySync">;
+    if (method === "storySync") {
+      const sync = input as EngineHostInput<"storySync">;
+      this.storySyncs.set(sync.window, sync);
+    }
     if (method === "follow") {
       const { session, subscription } = input as EngineHostInput<"follow">;
       this.follows.set(subscription, { session, viewer });
@@ -118,9 +121,10 @@ export class EngineHostRouter {
       ...(this.connection
         ? [{ method: "connect" as const, input: this.connection }]
         : []),
-      ...(this.storySync
-        ? [{ method: "storySync" as const, input: this.storySync }]
-        : []),
+      ...[...this.storySyncs.values()].map((input) => ({
+        method: "storySync" as const,
+        input,
+      })),
       ...[...this.follows].map(([subscription, { session }]) => ({
         method: "follow" as const,
         input: { session, subscription },

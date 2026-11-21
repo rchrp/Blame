@@ -16,6 +16,8 @@ export type StorySync = {
   preferences: Omit<StoryPreferences, "contextLimits">
 }
 
+// This window, for the host: what every window knows counts together.
+const windowId = crypto.randomUUID()
 let latest: StorySync | undefined
 
 /** Tells the host the projects and settings it runs stories with. */
@@ -43,6 +45,7 @@ export async function refreshStoryService(
 
 function send(engine: EnginePlatformClient, input: StorySync) {
   return engine.call("storySync", {
+    window: windowId,
     projects: input.projects,
     preferences: { ...input.preferences, contextLimits: storyContextLimits() },
   })

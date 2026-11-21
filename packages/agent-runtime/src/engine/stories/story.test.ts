@@ -202,9 +202,9 @@ test("queued stories start oldest first, once their files are uploaded", () => {
 
 test("a story starts after the stories it names are done, never after a dropped one", () => {
   const project = [
-    { id: "a", status: "done" as const },
-    { id: "b", status: "in-review" as const },
-    { id: "c", status: "discarded" as const },
+    { id: "a", status: "done" as const, storyNumber: 1, title: "A" },
+    { id: "b", status: "in-review" as const, storyNumber: 2, title: "B" },
+    { id: "c", status: "discarded" as const, storyNumber: 3, title: "C" },
   ];
   assert.equal(
     dependencyWait({ id: "x", startsAfter: [] }, project),
@@ -219,6 +219,7 @@ test("a story starts after the stories it names are done, never after a dropped 
     {
       kind: "dependencies",
       storyIds: ["b"],
+      stories: [{ id: "b", storyNumber: 2, title: "B", status: "in-review" }],
     },
   );
   assert.deepEqual(
@@ -226,6 +227,7 @@ test("a story starts after the stories it names are done, never after a dropped 
     {
       kind: "dependency-dropped",
       storyIds: ["c"],
+      stories: [{ id: "c", storyNumber: 3, title: "C", status: "discarded" }],
     },
   );
   assert.deepEqual(
@@ -233,6 +235,7 @@ test("a story starts after the stories it names are done, never after a dropped 
     {
       kind: "dependency-dropped",
       storyIds: ["gone"],
+      stories: [{ id: "gone" }],
     },
   );
   // A field the API does not send yet reads as empty.
