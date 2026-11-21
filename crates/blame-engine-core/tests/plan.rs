@@ -292,6 +292,53 @@ Mark each one `completed`, or `abandoned` with a one-line reason, by calling `up
     check_invariants(&records, &offered_specs());
 }
 
+/// A chat has no contract: the tool that ends the turn is held back the
+/// same way, and the model carries on, or stops in text, as it chooses.
+#[tokio::test]
+async fn without_a_contract_the_tool_that_ends_the_turn_waits_for_the_plan_too() {
+    let world = World::new(ScriptedProvider::new());
+    world
+        .provider
+        .push(update(&[("Add it", "in_progress")]))
+        .push(finish())
+        .push(update(&[("Add it", "completed")]))
+        .push(finish());
+    let session = start(
+        &world,
+        SessionConfig {
+            contract: None,
+            ..plan_config(2)
+        },
+    )
+    .await;
+    turn(&session, "Build it").await;
+    let records = session.records().await;
+    let finishes = answers(&records, "finish");
+    assert_eq!(
+        finishes
+            .iter()
+            .map(|(outcome, _)| *outcome)
+            .collect::<Vec<_>>(),
+        [ToolOutcome::Failed, ToolOutcome::Completed]
+    );
+    assert!(finishes[0].1.starts_with(
+        "Not accepted: `finish` was refused: the plan still has open steps.\n- 1. Add it (in progress)"
+    ));
+    assert!(matches!(
+        records.last().map(|record| &record.body),
+        Some(RecordBody::TurnEnded {
+            outcome: TurnOutcome::Completed,
+            ..
+        })
+    ));
+    // Not a contract: nothing was rejected as a result.
+    assert!(
+        records
+            .iter()
+            .all(|record| !matches!(record.body, RecordBody::ResultRejected { .. }))
+    );
+}
+
 #[tokio::test]
 async fn a_finish_goes_through_once_every_step_is_closed() {
     let world = World::new(ScriptedProvider::new());

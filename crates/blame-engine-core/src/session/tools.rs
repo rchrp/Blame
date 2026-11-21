@@ -231,6 +231,22 @@ async fn run_one(
     if cancel.is_cancelled() {
         return Ok(());
     }
+    // Without a contract, the tool that ends the turn waits for the plan
+    // the same way: the call is answered, the model carries on.
+    if config.contract.is_none() && spec.ends_turn {
+        let steps = {
+            let core = inner.core.lock().await;
+            View::new(&core.records).plan().map(|plan| plan.steps)
+        }
+        .unwrap_or_default();
+        if !contract::open_steps(&steps).is_empty() {
+            let text = contract::open_plan_text(&call.name, &steps);
+            inner
+                .append(vec![finished(ToolOutcome::Failed, text)])
+                .await?;
+            return Ok(());
+        }
+    }
     // The engine's own tool: nothing to start, nothing to recover.
     if call.name == plan::TOOL {
         let (outcome, text) = match plan::parse(&call.input) {
