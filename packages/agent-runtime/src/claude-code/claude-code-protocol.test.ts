@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { claudeCodeArguments, parseAuthStatus } from "./claude-code-cli.js";
+import {
+  claudeCodeArguments,
+  claudeCodeEnvironment,
+  parseAuthStatus,
+} from "./claude-code-cli.js";
 
 import { lightCompletionDescription } from "../harness/test-client/light-tools.js";
 import {
@@ -247,6 +251,11 @@ test("runs Claude Code as a model only, with Blame's tools over MCP", () => {
   assert.ok(args.includes("--strict-mcp-config"));
   assert.equal(args[args.indexOf("--allowedTools") + 1], "mcp__blame");
   assert.ok(args.includes("--no-session-persistence"));
+  // With ToolSearch off (`--tools ""`), a deferred tool cannot be called:
+  // Blame's tools are always in the prompt.
+  const mcp = JSON.parse(args[args.indexOf("--mcp-config") + 1]!);
+  assert.equal(mcp.mcpServers.blame.alwaysLoad, true);
+  assert.equal(claudeCodeEnvironment({}).ENABLE_TOOL_SEARCH, "false");
   assert.deepEqual(parseAuthStatus('{"loggedIn":true,"authMethod":"claude.ai","subscriptionType":"max"}'), {
     loggedIn: true,
     authMethod: "claude.ai",

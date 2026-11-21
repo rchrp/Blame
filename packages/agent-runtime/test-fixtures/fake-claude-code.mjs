@@ -12,6 +12,8 @@ const systemPrompt = readFileSync(option("--system-prompt-file"), "utf8");
 const model = option("--model");
 const effort = args.includes("--effort") ? option("--effort") : "default";
 let messageCount = 0;
+// What the scripted conversation's tools answered, in order.
+const seen = [];
 let mcpReady;
 // Called when Blame interrupts a stream this fake left silent on purpose.
 let onInterrupt;
@@ -56,7 +58,27 @@ for await (const line of lines) {
     .filter((block) => block.type === "text")
     .map((block) => block.text)
     .join("\n");
-  if (text.includes("use tool")) {
+  if (text.includes("check the pages")) {
+    // The conversation `fixtures/engine-requests.json` records, as the
+    // engine's mock model played it: two calls at once, one more, an answer.
+    const result = (called) => called.content.map((item) => item.text).join(" ");
+    streamMessage(
+      [
+        { type: "tool_use", id: "toolu_01A0", name: "mcp__blame__preview", input: {} },
+        { type: "tool_use", id: "toolu_01A1", name: "mcp__blame__preview", input: {} },
+      ],
+      [],
+      "tool_use",
+    );
+    const first = await Promise.all([
+      callNamed("preview", "toolu_01A0", { path: "/" }),
+      callNamed("preview", "toolu_01A1", { path: "/about" }),
+    ]);
+    seen.push(...first.map(result));
+    streamMessage([{ type: "tool_use", id: "toolu_01B0", name: "mcp__blame__preview", input: {} }], [], "tool_use");
+    seen.push(result(await callNamed("preview", "toolu_01B0", { path: "/contact" })));
+    streamText(`All three pages render. seen: ${seen.join(" / ")}`);
+  } else if (text.includes("use tool")) {
     const id = `toolu_${++messageCount}`;
     streamMessage([
       { type: "tool_use", id, name: "mcp__blame__echo", input: {} },
@@ -147,6 +169,16 @@ async function callTool(toolUseId, input) {
   const called = await rpc({
     method: "tools/call",
     params: { name: "echo", arguments: input, _meta: { "claudecode/toolUseId": toolUseId } },
+  });
+  return called.result;
+}
+
+async function callNamed(name, toolUseId, input) {
+  mcpReady ??= rpc({ method: "initialize", params: { protocolVersion: "2025-06-18" } });
+  await mcpReady;
+  const called = await rpc({
+    method: "tools/call",
+    params: { name, arguments: input, _meta: { "claudecode/toolUseId": toolUseId } },
   });
   return called.result;
 }

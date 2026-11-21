@@ -17,5 +17,8 @@ export function engineHostEnvironment(): NodeJS.ProcessEnv {
     BLAME_GITHUB_CLI_DIR: join(app.getPath("userData"), "github-cli"),
     // The user's MCP servers, the file Settings → MCP writes.
     BLAME_MCP_SETTINGS_PATH: mcpSettingsFile(),
+    // The Claude Code bridge's port, secret, lanes and event log: the app's
+    // own, private (0700), not the shared temp folder.
+    BLAME_CLAUDE_CODE_STATE_DIR: join(app.getPath("userData"), "claude-code"),
   };
 }

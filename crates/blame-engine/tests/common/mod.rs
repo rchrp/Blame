@@ -690,12 +690,17 @@ pub fn text_sse(pieces: &[&str]) -> String {
 
 /// A reply calling `calls` (name, input), each in its own block.
 pub fn tool_reply(calls: &[(&str, Value)]) -> Reply {
+    tool_reply_as("toolu_", calls)
+}
+
+/// The same, with the provider's call ids `<prefix><index>`.
+pub fn tool_reply_as(prefix: &str, calls: &[(&str, Value)]) -> Reply {
     let mut events = vec![start("msg_tool")];
     for (index, (name, input)) in calls.iter().enumerate() {
         events.push((
             "content_block_start",
             json!({"type": "content_block_start", "index": index,
-                   "content_block": {"type": "tool_use", "id": format!("toolu_{index}"), "name": name, "input": {}}}),
+                   "content_block": {"type": "tool_use", "id": format!("{prefix}{index}"), "name": name, "input": {}}}),
         ));
         events.push((
             "content_block_delta",

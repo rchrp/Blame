@@ -117,6 +117,10 @@ export function claudeCodeEnvironment(env: NodeJS.ProcessEnv = process.env) {
   // the tools are listed).
   next.CLAUDE_CODE_MCP_STARTUP_WAIT_MS = "20000";
   next.DISABLE_AUTOUPDATER = "1";
+  // Claude Code defers MCP tool schemas behind its ToolSearch tool, which
+  // `--tools ""` turns off: the model then sees only the tools' names and
+  // writes its calls as JSON text (the repair tasks of 2026-11-20).
+  next.ENABLE_TOOL_SEARCH = "false";
   return next;
 }
 
@@ -127,8 +131,15 @@ export function claudeCodeArguments(input: {
   model: string;
   systemPromptFile: string;
 }) {
+  // `alwaysLoad`: every tool's schema is in the prompt, never deferred.
   const mcpServers = input.mcpUrl
-    ? { [bridgeMcpServerName]: { type: "http", url: input.mcpUrl } }
+    ? {
+        [bridgeMcpServerName]: {
+          type: "http",
+          url: input.mcpUrl,
+          alwaysLoad: true,
+        },
+      }
     : {};
   return [
     "--print",

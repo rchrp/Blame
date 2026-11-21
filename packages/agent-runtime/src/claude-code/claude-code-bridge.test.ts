@@ -61,6 +61,66 @@ test("relays turns and holds tool calls until Blame sends results", async () => 
   });
 });
 
+/**
+ * Four requests as the engine sent them to its mock model (captured by
+ * `crates/blame-engine/tests/call_ids.rs`): two tool calls at once, a message
+ * the person added while they ran, one more call, the answer, a second turn.
+ * Cache markers move between them, and the first message loses its own.
+ */
+const engineRequests = JSON.parse(
+  readFileSync(
+    fileURLToPath(new URL("../../src/claude-code/fixtures/engine-requests.json", import.meta.url)),
+    "utf8",
+  ),
+) as Array<{ messages: unknown[] }>;
+
+test("a conversation the engine sends keeps one Claude Code process", async () => {
+  await withBridge(async (bridge, stateDirectory) => {
+    const key = bridge.token("engine-session");
+    const turns = [];
+    for (const body of engineRequests) {
+      const response = await post(bridge, key, body);
+      assert.equal(response.status, 200);
+      turns.push(await events(response));
+    }
+    assert.deepEqual(
+      turns.map(stopReason),
+      ["tool_use", "tool_use", "end_turn", "end_turn"],
+    );
+    // The results, and the message beside them, reached the same process.
+    assert.match(
+      text(turns[2]!),
+      /seen: preview ran with \{"path":"\/"\} \/ preview ran with \{"path":"\/about"\} also the contact page \/ preview ran with \{"path":"\/contact"\}/,
+    );
+    assert.match(text(turns[3]!), /echo\(claude-sonnet-4-6\): thanks/);
+    const started = (await laneEvents(stateDirectory)).filter(
+      (entry) => entry.event === "lane_started",
+    );
+    assert.equal(started.length, 1, JSON.stringify(started));
+    assert.equal(started[0]!.replayed, false);
+    assert.equal(openLanes(bridge), 1);
+  });
+});
+
+test("a changed history still starts a new process", async () => {
+  await withBridge(async (bridge, stateDirectory) => {
+    const key = bridge.token("engine-session-rewound");
+    const [first, second] = engineRequests as Array<{ messages: Array<{ content: unknown }> }>;
+    await events(await post(bridge, key, first));
+    // A rewind: the first message is not the one this process started from.
+    const rewound = structuredClone(second!);
+    rewound.messages[0]!.content = [{ type: "text", text: "check the pages again" }];
+    await events(await post(bridge, key, rewound));
+    const started = (await laneEvents(stateDirectory)).filter(
+      (entry) => entry.event === "lane_started",
+    );
+    assert.deepEqual(
+      started.map((entry) => entry.replayed),
+      [false, true],
+    );
+  });
+});
+
 test("replays history in a new Claude Code process when turns do not line up", async () => {
   await withBridge(async (bridge) => {
     const events = await stream(bridge, bridge.token("session-b"), [
@@ -390,6 +450,14 @@ type StreamEvent = {
   content_block?: { name?: string; caller?: unknown };
   delta?: { text?: string; stop_reason?: string | null };
 };
+
+/** The events of a streamed response. */
+async function events(response: Response) {
+  return (await response.text())
+    .split("\n")
+    .filter((line) => line.startsWith("data: "))
+    .map((line) => JSON.parse(line.slice(6)) as StreamEvent);
+}
 
 /** Streams a turn; `onText` runs once, when its first text arrives. */
 async function stream(
