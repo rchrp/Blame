@@ -176,10 +176,14 @@ const workingDiffAttributes = [
   "*.sample -blame-env",
   "*.template -blame-env",
 ].join("\n");
-// Naming an ignored path, such as .blame, would fail the add.
-const workingDiffAddPathspecs = [".", ":(exclude,attr:blame-env)"];
+// Naming an ignored path, such as .blame, would fail the add. The add
+// fills a scratch index only, so it takes every file: an older git (the
+// runtime VM's 2.43) refuses the attr magic in `add`, and the diff leaves
+// the env files out by their attribute.
+export const workingDiffAddPathspecs = ["."];
 const workingDiffPathspecs = [
-  ...workingDiffAddPathspecs,
+  ".",
+  ":(exclude,attr:blame-env)",
   ...ignoredGitDiffPathspecs,
 ];
 const workingDiffScript = `set -e
