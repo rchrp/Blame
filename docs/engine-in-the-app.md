@@ -238,9 +238,13 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   settings. Pause is `interrupt`; undo of a message is `rewind` with its
   files, then the turns are counted again; Compact is `compact`.
 - **Board state**: an `activity` event with `running` sets `agentStatus:
-  "Running"` (the session hub ends `running` when the records say every turn
-  it opened ended, also for a turn the engine ended before it ran, an
-  interrupt at once, whose activity never turns busy); the end of a turn sets what its outcome means (completed: In
+  "Running"`. The engine reports no activity between accepting a message
+  and its turn's first request (it sets `waiting` just before the request),
+  so the activity reads idle while a turn is open: the session hub ends a
+  run on the engine's idle activity, or, for a turn the engine ended before
+  it ever turned busy (an interrupt at once), on the end in the records of
+  the very turn the host sent (`hub.watch(session, turn)`), never on an
+  older turn's end met while a long log is read back in pages; the end of a turn sets what its outcome means (completed: In
   review; failed: Paused with `agentLastError`; interrupted or limit
   reached: Paused) and how many turns each model answered. After a quit
   mid-turn, the stories left Running are settled from `status` when the
@@ -298,9 +302,14 @@ An epic's conversation is an `orchestrator` session
   direct, unknown); an epic's story never runs Direct (`stories/start.ts`
   waits with `hold: "direct"`), and an epic's Approve & Merge refuses a
   conflicting merge (`conflicts: "refuse"` of `approveAndMerge`, a
-  `StoryMergeConflictError`) instead of the merge agent's resolution.
+  `StoryMergeConflictError` with the files) instead of the merge agent's
+  resolution: the merge is undone (`git merge --abort`, else `git reset
+  --merge`), or the error says the worktree is left mid-merge and where.
 - **Pause all**: the host pauses the epic's agents at work and cuts its
-  turn, then resumes exactly those (`orchestrator/pause.ts`).
+  turn, then resumes exactly those (`orchestrator/pause.ts`), written ahead
+  so a quit part way is taken up. The windows' story calls name each story
+  a person acts on (`storyHandlers`' `touched`), which the pause leaves to
+  them. `StoryService.retry` takes the stories to look at again.
 - **Waking** (`engine/orchestrator/service.ts`): the host writes to the
   session itself, a user message of one `context` block holding
   `<orchestrator_wake>` (`parseOrchestratorWake`), when the epic's stories

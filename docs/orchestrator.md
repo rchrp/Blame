@@ -91,6 +91,25 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
   paused by hand, or a turn the person stopped, stays as it is through a
   pause and a resume. A story that ends otherwise meanwhile is told once
   the epic resumes.
+  - What the pause means to stop is written before it acts (`pausing`:
+    the stories at work, those whose start was in flight, whether it cuts
+    the turn), and every step runs again safely, so a failure or a quit
+    part way is taken up by the next look; `paused` once everything it
+    meant to stop is stopped; `resuming`, also written ahead, while those
+    resume. A quit while paused keeps all of it.
+  - A story the person acts on from a window while the epic is paused (a
+    message, a pause, a resume, a discard, back to the backlog) is theirs
+    from then on: the resume leaves it as it is.
+  - A pause's cut and its resume never count against the three resumes in
+    a row after cuts.
+  - `epicChanged` answers whether the pause took: `EpicState.pause` is
+    `{ phase: "pausing" | "paused", error? }` while the API says `paused`,
+    with the reason when the host could not stop something or could not
+    look (the project not read yet, another account, the engine not
+    answering, in which case `epicChanged` fails saying so).
+  - Resuming with the budget spent resumes the agents the pause stopped:
+    running agents are not stopped by the budget (the owner's rule today),
+    only new starts and messages are refused.
 - `settings` (a JSON object the screen writes, the host reads on every turn):
 
 | key | meaning |
@@ -150,12 +169,36 @@ uses them (the screen slice removes Plan Mode's interface first).
   the branch stay, the epic's stories are held, and all of it applies again
   once that account shows the epic. An epic is forgotten only once the API
   reads it `discarded`. Another API's epics are not looked at.
+- **The kept file is never written over when it cannot be read.** A file
+  that is not there starts empty; one that cannot be read (a disk or
+  permission error) holds everything: every epic story waits (`unknown`),
+  the epic's state shows the error, and it is read again on the next look.
+  One that reads but is not JSON is set aside (`.corrupt-<time>`), and an
+  epic whose conversation this computer's engine has (`session/list`, never
+  Blame's database) is found again (`Orchestrator.adopt`): its entry is
+  built from the API and the conversation's records, whose prompt names
+  the branch this host made (it must be the epic's), whose config gives the
+  folder and the model, and whose `message_story` calls give the counts.
+  The merged stories' cost and what was heard are lost then (a turn may be
+  told twice).
+- **What is kept of a story goes only once it is merged or rejected** (its
+  heard and pending turns): no cap evicts anything else, however long the
+  epic.
 - **The queue's gate** (`orchestrator/gate.ts`): a queued story of an epic
   waits with the reason `{ kind: "epic", epicId, hold }`, `hold` being
   `paused` (paused or over), `budget` (spent, from the spend kept on disk,
   so from the first start after a launch), `elsewhere` (its conversation
-  runs on another computer), `direct` (no working preview environment) or
-  `unknown` (not read yet). Its card says so.
+  runs on another computer), `direct` (no working preview environment),
+  `branch` (its branch is gone, see below) or `unknown` (not read yet). Its
+  card says so. Only the epic's own stories are looked at again, and only
+  when its gate changed: no other story's backoff is touched.
+- **A lost branch**: each look checks the epic's branch. While no story was
+  merged into it, it is made again from the target; once one was, it never
+  is (later stories would build without that work and a summary would be
+  false): the epic holds (`hold: "branch"`), its state says the branch is
+  gone, and `create_stories` and `update_story` refuse until the person
+  restores it. `update_story` with `queue` makes a queued story's branch
+  back too, not only a held one's.
 - **An epic's story never runs Direct**: when the project's preview
   environment broke after the story was created (or Direct is its run
   mode), `stories/start.ts` makes it wait with `hold: "direct"` instead of
@@ -164,7 +207,9 @@ uses them (the screen slice removes Plan Mode's interface first).
 ### Tools
 
 Every tool that acts takes a `reason`, one sentence the screen shows as the
-decision log. A refusal is the call's error, with what to do instead. A
+decision log. A refusal is the call's error, read by both: its first
+sentence says what happened in plain words for the person (the screen shows
+it as "Refused: …"), and what the orchestrator should do comes after. A
 story is named by its id or its number (`US-004`); a story of another epic
 or none is refused by every tool. The inputs are `OrchestratorToolInputs`
 (`engine/orchestrator-protocol.ts`); each answers JSON the model reads.
@@ -206,10 +251,16 @@ It also writes to the conversation when its last turn was cut by a quit or
 a crash (`resumed`: it goes on from the board), and when it waits while
 nothing of the epic works or will start by itself and no ended turn is left
 to tell (`idle`: a story deleted from the board, the budget spent, a story
-waiting for the person, a start that keeps failing). A message that waited
-behind a turn through a quit is sent on (`promote`). A conversation cut
-again and again is resumed three times in a row, then left to the person
-(it shows `failed`).
+waiting for the person, a start that keeps failing). An `idle` wake is told
+once: the next needs something about the epic's stories to change (one
+started or ended, the person acted, another error), never the same states
+and reasons again, so a story whose start alternates between an error and
+another wait cannot wake the orchestrator over and over. A start counts as
+failing from its first error until it starts, whatever it waits for in
+between, and is blocked after 90 s. A message that waited behind a turn
+through a quit is sent on (`promote`). A conversation cut again and again
+is resumed three times in a row, then left to the person (it shows
+`failed`); a pause's cut does not count.
 
 Nothing is sent while the epic is not `active`, while a turn runs or a
 message waits behind one, before its first turn, after `ask`, or after the
