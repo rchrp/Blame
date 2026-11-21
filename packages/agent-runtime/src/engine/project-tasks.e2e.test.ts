@@ -227,6 +227,32 @@ describe(
       );
     });
 
+    it("takes an answer from the evidence alone in one request", async () => {
+      // With a read required first, this answer was refused: the owner's
+      // run took 3 requests (22 s) for it, the Cline version 1.
+      const comment = { detected: true, comment: "Seen in the samples." };
+      mock.script(
+        tools({
+          name: "submit_project_code_practices",
+          input: {
+            projectState: "established",
+            practices: {
+              coding_style: comment,
+              unit_tests: comment,
+              layered_architecture: comment,
+              commit_message_convention: comment,
+            },
+          },
+        }),
+      );
+      const before = mock.requests.length;
+      await host.call("analyzeCodePractices", {
+        model,
+        workspace: { root: workspace },
+      });
+      assert.equal(mock.requests.length - before, 1);
+    });
+
     it("assesses the impact of commits, by the diff alone or by the agent", async () => {
       const base = git("rev-parse", "HEAD");
       writeFileSync(join(workspace, "README.md"), "# App\n");
