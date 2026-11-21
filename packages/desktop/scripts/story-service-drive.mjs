@@ -4,7 +4,8 @@
 // follow-up from its drawer, a worktree story is approved and merged from
 // the board, stories are discarded and sent back, a discarded story is
 // deleted from its card, and a second window on the other project queues a
-// story there, then closes while that project's stories keep running. With
+// story there (while it loads and reloads, the first window's projects keep
+// starting stories), then closes while that project's stories keep running. With
 // --dependencies (an API with startsAfter and requestedModel): a story waits
 // for another and starts once it is done, one whose dependency is discarded
 // never starts, one runs on its requested model. It prints each check and
@@ -428,17 +429,38 @@ async function scenario(cdp, options, model, paths) {
   await shot("06-after-delete");
 
   // A second window, on the other project: its stories run from there, and
-  // keep running once it is closed.
+  // keep running once it is closed. It lists only its own project (the
+  // first window lists both): while it loads, and when it reloads, the
+  // first window's projects keep starting stories.
   const known = new Set(((await (await fetch(`http://127.0.0.1:${cdp.port}/json`)).json())).map((entry) => entry.id));
+  const savedProjects = await evaluate(`(() => {
+    const saved = localStorage.getItem("blame.app.projects.v1");
+    const state = JSON.parse(saved ?? "{}");
+    localStorage.setItem("blame.app.projects.v1", JSON.stringify({ ...state, recent: (state.recent ?? []).filter((project) => project.id === ${JSON.stringify(hiddenProject.id)}) }));
+    return saved;
+  })()`);
   await evaluate(`window.blame.projectWindows.openProject(${JSON.stringify(paths.hidden)})`);
   const other = await connect(cdp.port, (entry) => appPage(entry) && !known.has(entry.id));
   await until(() => other.evaluate(`Boolean(document.body?.innerText.includes("Agent Queue"))`), 60_000, "the second window's board");
+  await other.evaluate(`window.location.reload()`).catch(() => undefined);
+  await delay(1000);
+  await until(() => other.evaluate(`Boolean(document.body?.innerText.includes("Agent Queue"))`), 60_000, "the second window's board after a reload");
+  await delay(1500);
+  const profile = await api("/projects/user-stories", "POST", { projectId: shownProject.id, title: "Profile page", summary: "Build the profile page.", status: "ready", runMode: "direct" });
+  // Straight to the host: the first window does not tell it its projects again.
+  await evaluate(`window.blame.engine.call("storyRefresh", { projectId: ${JSON.stringify(shownProject.id)} })`);
+  const profileStarted = await until(async () => (await stories(shownProject.id)).some((story) => story.id === profile.id && story.status !== "ready"), 30_000, "the first window's story to start").then(() => true, () => false);
+  const profileWait = profileStarted ? "" : JSON.stringify((await evaluate(`window.blame.engine.call("storyQueueState", undefined)`))?.waiting?.find((entry) => entry.storyId === profile.id)?.reason);
+  check("a second window that opens and reloads leaves the first window's projects starting stories", profileStarted, profileWait);
+  await until(async () => (await stories(shownProject.id)).some((story) => story.id === profile.id && story.status === "in-review"), 60_000, "the first window's story to settle").catch(() => undefined);
   const shipping = await api("/projects/user-stories", "POST", { projectId: hiddenProject.id, title: "Shipping page", summary: "Build the shipping page.", status: "ready", runMode: "direct" });
   await other.evaluate(`window.blame.engine.call("storyRefresh", { projectId: ${JSON.stringify(hiddenProject.id)} })`);
   await until(async () => (await stories(hiddenProject.id)).some((story) => story.id === shipping.id && story.status === "in-review"), 60_000, "the second window's story to reach review");
   check("a story queued from a second window runs and settles", true);
   await fetch(`http://127.0.0.1:${cdp.port}/json/close/${other.target.id}`);
   await delay(1500);
+  // The first window's list of projects as it was.
+  await evaluate(typeof savedProjects === "string" ? `localStorage.setItem("blame.app.projects.v1", ${JSON.stringify(savedProjects)})` : `localStorage.removeItem("blame.app.projects.v1")`);
   const returns = await api("/projects/user-stories", "POST", { projectId: hiddenProject.id, title: "Returns page", summary: "Build the returns page.", status: "ready", runMode: "direct" });
   await evaluate(`window.blame.engine.call("storyRefresh", {})`);
   await until(async () => (await stories(hiddenProject.id)).some((story) => story.id === returns.id && story.status === "in-review"), 60_000, "a story of the closed window's project to settle");

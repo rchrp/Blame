@@ -281,26 +281,33 @@ test("a write's own answer is never replaced by a read asked before it arrived",
   }
 });
 
-test("a refreshed token keeps the projects; signing out starts over", async () => {
+test("a second window that loads, and a refreshed token, keep the first window's projects and queue", async () => {
   const api = fakeApi([row("first", "a", { status: "backlog" })]);
   const fake = fakeHost();
   const { service: stories, close } = await service(fake.host);
   try {
-    await sync(stories, [{ id: "a", path: "/a" }]);
+    await sync(stories, [{ id: "a", path: "/a" }], "first-window");
+    // A second window on another project, its model picker still loading.
+    await sync(stories, [{ id: "b", path: "/b" }], "second-window", {
+      ...preferences,
+      agentModel: undefined,
+    });
+    api.stories.set("second", row("second", "a"));
+    await stories.refresh("a");
+    await settle(() => api.stories.get("second")!.status === "in-progress");
     fake.connection.token = "refreshed";
     stories.connected(fake.connection);
-    api.stories.set("second", row("second", "a"));
-    await stories.refresh();
-    await settle(() => api.stories.get("second")!.status === "in-progress");
-    // Signed out, then in again: nothing runs until a window says what.
+    api.stories.set("third", row("third", "a"));
+    await stories.refresh("a");
+    await settle(() => api.stories.get("third")!.status === "in-progress");
+    // Signed out (main says so once no window is signed in): nothing runs
+    // until a window says what.
     stories.connected(undefined);
     stories.connected(fake.connection);
-    api.stories.set("third", row("third", "a"));
+    api.stories.set("fourth", row("fourth", "a"));
     await stories.refresh();
     await pause(100);
-    assert.equal(api.stories.get("third")!.status, "ready");
-    await sync(stories, [{ id: "a", path: "/a" }]);
-    await settle(() => api.stories.get("third")!.status === "in-progress");
+    assert.equal(api.stories.get("fourth")!.status, "ready");
   } finally {
     await close();
     api.restore();

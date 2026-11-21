@@ -28,6 +28,9 @@ export class EngineHostRouter {
   >();
   private readonly viewers = new Map<number, EngineViewer>();
   private connection: EngineHostInput<"connect"> | undefined;
+  // Whether each open window's last connect was signed in: one still
+  // loading, or on the sign-in screen, signs no other window out.
+  private readonly signedIn = new Map<number, boolean>();
   // The projects and settings each open window gave the story service, the
   // latest last: a restarted host is told what every open window knows,
   // and the latest settings win there too.
@@ -51,13 +54,6 @@ export class EngineHostRouter {
     )
       return false;
     this.viewers.set(viewer.id, viewer);
-    if (method === "connect") {
-      const next = input as EngineHostInput<"connect">;
-      // Signed out, or another API: what the windows knew is not told again.
-      if (!next.api || next.api.url !== this.connection?.api?.url)
-        this.storySyncs.clear();
-      this.connection = next;
-    }
     if (method === "storySync") {
       this.storySyncs.delete(viewer.id);
       this.storySyncs.set(viewer.id, input as EngineHostInput<"storySync">);
@@ -75,6 +71,40 @@ export class EngineHostRouter {
       if (root) this.workspaces.set(call.session, root);
     }
     return true;
+  }
+
+  /**
+   * What the host is told of a window's connection, if anything: a window
+   * that is not signed in (still loading, or on the sign-in screen) signs
+   * no one out while another open window is signed in.
+   */
+  connect(viewer: EngineViewer, input: EngineHostInput<"connect">) {
+    this.viewers.set(viewer.id, viewer);
+    this.signedIn.set(viewer.id, Boolean(input.api));
+    const elsewhere = [...this.signedIn].some(
+      ([id, signedIn]) => id !== viewer.id && signedIn,
+    );
+    if (!input.api && elsewhere) return undefined;
+    return this.tell(input);
+  }
+
+  /**
+   * After a window closed: the host signs out once every window left said
+   * it is not signed in (with none left, the app runs on in the background).
+   */
+  signOutLeft() {
+    const left = [...this.signedIn.values()];
+    if (!this.connection?.api || !left.length || left.some(Boolean))
+      return undefined;
+    return this.tell({ api: null });
+  }
+
+  private tell(input: EngineHostInput<"connect">) {
+    // Signed out, or another API: what the windows knew is not told again.
+    if (!input.api || input.api.url !== this.connection?.api?.url)
+      this.storySyncs.clear();
+    this.connection = input;
+    return input;
   }
 
   hostStopped() {
@@ -110,6 +140,7 @@ export class EngineHostRouter {
   /** The window closed: what it followed is not needed any more. */
   forget(viewerId: number): string[] {
     this.viewers.delete(viewerId);
+    this.signedIn.delete(viewerId);
     this.storySyncs.delete(viewerId);
     const dropped: string[] = [];
     for (const [subscription, follow] of this.follows)

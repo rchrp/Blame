@@ -255,7 +255,15 @@ export function registerEngineIpcHandlers(
             .catch(() => undefined);
         for (const subscription of engine.router.forget(viewer.id))
           void engine.call("unfollow", { subscription }).catch(() => undefined);
+        const signOut = engine.router.signOutLeft();
+        if (signOut) void engine.call("connect", signOut).catch(() => undefined);
       });
+    }
+    if (method === "connect") {
+      // Nothing is told for a window that would sign the others out.
+      const told = engine.router.connect(viewer, input as EngineHostInput<"connect">);
+      if (!told) return null;
+      input = told;
     }
     const call = (prepared: unknown) =>
       engine.call(method as EngineHostMethod, prepared);

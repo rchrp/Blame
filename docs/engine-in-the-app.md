@@ -136,10 +136,15 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   queue runs for the projects the open windows list together; a project no
   window lists any more stops starting stories, and when a window closes
   main tells the host (`storyWindowClosed`). When the last window closes
-  its list stays, since the app runs on. The latest settings win; main
-  replays each open window's last sync to a restarted host, the latest
-  last, and none after a sign-out. A refreshed token keeps everything;
-  signing out or another API starts over. A window that created or edited
+  its list stays, since the app runs on. The latest settings win (the
+  agent model is the latest one a window named, so a window whose picker
+  is still loading holds nothing back); main replays each open window's
+  last sync to a restarted host, the latest last, and none after a
+  sign-out. A refreshed token keeps everything; signing out or another API
+  starts over. A window still loading sends no `connect`, and main tells
+  the host a window is not signed in only once no other open window is
+  (`engine-host-router.ts`): opening or reloading a window, or one on the
+  sign-in screen, signs no one out. A window that created or edited
   a story says so (`storyRefresh`); the service also reads every project's
   stories again each minute. A read asked before a write's answer arrived
   never replaces it (`stories/records.ts`).

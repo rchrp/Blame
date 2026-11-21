@@ -64,14 +64,21 @@ export class StoryWindows {
 
   /**
    * The person's settings: the latest a window gave, with the projects any
-   * open window prepares now and every context cap picked.
+   * open window prepares now and every context cap picked. The agent model
+   * is the latest one named: a window whose model picker is still loading
+   * holds no story back.
    */
   preferences(): StoryPreferences | undefined {
     const syncs = this.syncs().sort((left, right) => left.order - right.order);
     const latest = syncs.at(-1)?.preferences;
     if (!latest) return undefined;
+    const agentModel = syncs
+      .map((sync) => sync.preferences.agentModel)
+      .filter((model) => model !== undefined)
+      .at(-1);
     return {
       ...latest,
+      ...(agentModel ? { agentModel } : {}),
       initializingProjects: [
         ...new Set(
           syncs.flatMap((sync) => sync.preferences.initializingProjects ?? []),

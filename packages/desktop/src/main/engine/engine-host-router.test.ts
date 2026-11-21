@@ -60,7 +60,7 @@ it("tells a restarted host the connection, then every open follow", () => {
   const router = new EngineHostRouter();
   const one = viewer(1);
   router.observe(one, "follow", { session: "s", subscription: "a" });
-  router.observe(one, "connect", { api: { url: "http://api", token: "t" } });
+  router.connect(one, { api: { url: "http://api", token: "t" } });
   assert.deepEqual(router.replay(), [
     { method: "connect", input: { api: { url: "http://api", token: "t" } } },
     { method: "follow", input: { session: "s", subscription: "a" } },
@@ -110,7 +110,7 @@ it("tells a restarted host what each open window gave the story service, the lat
   });
   const one = viewer(1);
   const two = viewer(2);
-  router.observe(one, "connect", { api: { url: "http://api", token: "a" } });
+  router.connect(one, { api: { url: "http://api", token: "a" } });
   router.observe(one, "storySync", sync("w1", "a"));
   router.observe(two, "storySync", sync("w2", "b"));
   router.observe(one, "storySync", sync("w1", "c"));
@@ -124,13 +124,59 @@ it("tells a restarted host what each open window gave the story service, the lat
   router.forget(2);
   assert.deepEqual(told(), ["c"], "a closed window's sync is not told again");
   // A refreshed token keeps them; signing out does not.
-  router.observe(one, "connect", { api: { url: "http://api", token: "b" } });
+  router.connect(one, { api: { url: "http://api", token: "b" } });
   assert.deepEqual(told(), ["c"]);
-  router.observe(one, "connect", { api: null });
+  assert.deepEqual(router.connect(one, { api: null }), { api: null });
   assert.deepEqual(told(), []);
   assert.equal(
     router.observe(one, "storyWindowClosed", { window: "w1" }),
     false,
     "main's call",
   );
+});
+
+it("a window that loads, or shows the sign-in, signs no other window out", () => {
+  const router = new EngineHostRouter();
+  const preferences = {
+    runMode: "direct",
+    premium: false,
+    runtimePhase: "ready",
+  } as const;
+  const api = { url: "http://api", token: "a" };
+  const one = viewer(1);
+  const two = viewer(2);
+  assert.deepEqual(router.connect(one, { api }), { api });
+  router.observe(one, "storySync", {
+    window: "w1",
+    projects: [{ id: "a", path: "/a" }],
+    preferences,
+  });
+  // A second window opens (or reloads): its sign-in is still loading.
+  assert.equal(router.connect(two, { api: null }), undefined, "not told");
+  assert.deepEqual(
+    router.replay().map(({ method }) => method),
+    ["connect", "storySync"],
+  );
+  assert.deepEqual(router.replay()[0]!.input, { api });
+  // Once it is signed in too, the connection is told again, the syncs kept.
+  assert.deepEqual(router.connect(two, { api }), { api });
+  assert.equal(router.replay().length, 2);
+  // The first window signs out: the second is still signed in.
+  assert.equal(router.connect(one, { api: null }), undefined);
+  // The second window closes: no window left is signed in.
+  router.forget(2);
+  assert.deepEqual(router.signOutLeft(), { api: null });
+  assert.deepEqual(router.replay(), [
+    { method: "connect", input: { api: null } },
+  ]);
+});
+
+it("the last window closing signs no one out: the app runs on", () => {
+  const router = new EngineHostRouter();
+  const api = { url: "http://api", token: "a" };
+  const one = viewer(1);
+  router.connect(one, { api });
+  router.forget(1);
+  assert.equal(router.signOutLeft(), undefined);
+  assert.deepEqual(router.replay(), [{ method: "connect", input: { api } }]);
 });
