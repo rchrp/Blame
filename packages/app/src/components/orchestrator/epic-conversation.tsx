@@ -135,9 +135,11 @@ export function EpicConversation({ epic }: { epic: Epic }) {
             onMessageChange={setDraft}
             onMessageSubmit={submit}
             placeholder={
-              empty
-                ? "Describe what the epic should achieve"
-                : "Answer the orchestrator, or steer it"
+              !empty
+                ? "Answer the orchestrator, or steer it"
+                : epic.goal
+                  ? "Anything else the orchestrator should know?"
+                  : "Describe what the epic should achieve"
             }
             speechSessionKey={`epic:${epic.id}`}
             speechTarget={{
