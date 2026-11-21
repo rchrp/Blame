@@ -115,7 +115,11 @@ export function planChange(
   const sameSteps =
     previous.length === next.length &&
     previous.every((step, index) => step.step === next[index]!.step);
-  if (!sameSteps) return { kind: "revised", total };
+  // Other steps than a finished plan's are another plan, not a revision.
+  if (!sameSteps)
+    return openSteps(previous).length === 0
+      ? { kind: "created", total }
+      : { kind: "revised", total };
 
   const completed: number[] = [];
   const abandoned: number[] = [];

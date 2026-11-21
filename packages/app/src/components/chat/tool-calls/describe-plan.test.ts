@@ -151,3 +151,32 @@ test("an update the engine refused, and one still running", () => {
   assert.equal(refused.view.failed, true)
   assert.equal(line(undefined, start, { running: true }).view.verb, "Updating plan")
 })
+
+test("a finish refused for open steps says so, with the steps", () => {
+  const view = describeToolCall(
+    toolCallSource(
+      {
+        kind: "tool",
+        title: "finish_task",
+        toolName: "finish_task",
+        detail: JSON.stringify({
+          toolName: "finish_task",
+          input: { summary: "Done." },
+          output:
+            "Not accepted: `finish_task` was refused: the plan still has open steps.\n- 2. Wire the form (in progress)\n- 3. Write tests (pending)\nMark each one `completed`, or `abandoned` with a one-line reason, by calling `update_plan` with the whole plan. Then call `finish_task` again.",
+        }),
+      },
+      false
+    )
+  )
+  assert.equal(view.verb, "Finish refused")
+  assert.equal(view.target?.text, "2 plan steps still open")
+  assert.equal(view.failed, true)
+  assert.deepEqual(view.bodies, [
+    {
+      type: "list",
+      label: "Still open",
+      items: ["2. Wire the form (in progress)", "3. Write tests (pending)"],
+    },
+  ])
+})

@@ -1,4 +1,4 @@
-import { StoryPlanDock } from "@/components/chat/plan/story-plan-dock"
+import { StoryPlanTab } from "@/components/chat/plan/story-plan"
 import type { FileAttachmentReplacement } from "./user-story-attachment-files"
 import * as React from "react"
 
@@ -269,7 +269,6 @@ export const UserStoryFixedSection = React.memo(function UserStoryFixedSection({
         {commentComposerVisible ? (
           <div className="transition-[margin] duration-500 ease-out lg:mr-(--story-panel-inset,0px)">
             <div className="mx-auto w-full max-w-4xl">
-              <StoryPlanDock />
               <UserStoryCommentComposer {...commentComposerProps} />
             </div>
           </div>
@@ -343,6 +342,7 @@ function UserStoryCommentComposer({
       onMessageChange={onCommentChange}
       onMessageSubmit={onCommentSubmit}
       onMessageSendNow={onCommentSendNow}
+      planTab={<StoryPlanTab />}
       personalizationMenu={
         userStory && status !== "done" ? (
           <PersonalizationMenu

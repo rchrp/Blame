@@ -144,6 +144,16 @@ describe("what an update changed", () => {
     );
   });
 
+  it("is a first plan again when the steps replace a finished plan's", () => {
+    assert.deepEqual(
+      planChange(
+        steps(["Add it", "completed"], ["Drop it", "abandoned", "No"]),
+        steps(["Ship it", "in_progress"]),
+      ),
+      { kind: "created", total: 1 },
+    );
+  });
+
   it("is a revision when the steps themselves changed or a closed step reopened", () => {
     assert.deepEqual(
       planChange(

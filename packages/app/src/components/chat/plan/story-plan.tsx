@@ -2,14 +2,14 @@ import { useStoryConversation } from "@/components/backlog/drawer/story-conversa
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import { planProgress } from "@blame/engine-client/transcript"
 
-import { PlanDock } from "./plan-dock"
+import { PlanTab } from "./plan-tab"
 import { PlanProgressLine } from "./plan-progress-line"
 import { usePlanDockModel } from "./use-plan-dock"
 
-/** The open story's plan, pinned above its composer. */
-export function StoryPlanDock() {
+/** The open story's plan, as a tab on its composer. */
+export function StoryPlanTab() {
   const { transcript } = useStoryConversation()
-  return <PlanDock model={usePlanDockModel(transcript)} />
+  return <PlanTab model={usePlanDockModel(transcript)} />
 }
 
 /**
@@ -26,5 +26,8 @@ export function StoryPlanBadge({
   const working =
     story?.agentStatus === "Running" || transcript?.runningTurn !== undefined
   if (!progress || !working) return null
-  return <PlanProgressLine className="max-w-72" progress={progress} />
+  return <PlanProgressLine
+      className="max-w-64 rounded-full border border-foreground/15 px-2 py-0.5"
+      progress={progress}
+    />
 }

@@ -24,6 +24,7 @@ import { useComposerShortcuts } from "./use-composer-shortcuts"
 import { useChatExcerpts } from "./use-chat-excerpts"
 import { useQuickChatConversation } from "./use-quick-chat-conversation"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
+import { PlanTab } from "@/components/chat/plan/plan-tab"
 import { usePlanDockModel } from "@/components/chat/plan/use-plan-dock"
 import { QuickChatView } from "./quick-chat-view"
 
@@ -155,7 +156,6 @@ function QuickChatProjectPage() {
         <QuickChatView
           conversationId={activeChat?.id}
           emptyConversation={emptyConversation}
-          plan={plan}
           status={{
             error: quickChats.error,
             loading: quickChats.loading || !chat.loaded,
@@ -182,6 +182,7 @@ function QuickChatProjectPage() {
           }
           onSuggestion={project ? applySuggestion : undefined}
           composer={{
+            planTab: <PlanTab model={plan} />,
             speechSessionKey: draftStorageKey,
             speechTarget: chatSpeechTarget(draftStorageKey),
             agentRunning: chat.running,

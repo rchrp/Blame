@@ -1,3 +1,4 @@
+import { describeOpenPlanRefusal } from "./describe-plan.ts"
 import { describeRead, describeSearch, withError } from "./describe-code.ts"
 import {
   firstLine,
@@ -169,6 +170,8 @@ export function describeQuestion(source: ToolCallSource): ToolCallView {
 }
 
 export function describeFinish(source: ToolCallSource): ToolCallView {
+  const refused = describeOpenPlanRefusal(source)
+  if (refused) return refused
   const input = record(source.input)
   // Accepted, its summary is the turn's reply: shown there, not twice.
   const summary = source.replyShown ? undefined : textOf(input.summary)

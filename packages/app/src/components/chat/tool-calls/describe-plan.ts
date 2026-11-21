@@ -154,3 +154,28 @@ function outlineItem(
           : ""
   return `${index + 1}. ${step.step}${suffix}`
 }
+
+/**
+ * A finish the engine refused because the plan still has open steps: said as
+ * that, with the steps, not as the task wrapped up.
+ */
+export function describeOpenPlanRefusal(
+  source: ToolCallSource
+): ToolCallView | undefined {
+  const text = typeof source.output === "string" ? source.output : undefined
+  if (!text?.includes("the plan still has open steps")) return undefined
+  const open = text
+    .split("\n")
+    .filter((line) => line.startsWith("- "))
+    .map((line) => line.slice(2))
+  return {
+    family: "finish",
+    verb: "Finish refused",
+    target: {
+      text: `${open.length} plan ${open.length === 1 ? "step" : "steps"} still open`,
+    },
+    chips: [],
+    bodies: open.length ? [{ type: "list", label: "Still open", items: open }] : [],
+    failed: true,
+  }
+}

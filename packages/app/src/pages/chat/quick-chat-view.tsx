@@ -1,9 +1,8 @@
-import { useState, type ComponentProps, type CSSProperties } from "react"
+import type { ComponentProps, CSSProperties } from "react"
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
 } from "@/components/chat/agent-conversation"
-import { PlanDock } from "@/components/chat/plan/plan-dock"
 import { QuickChatEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { ModelSelector } from "@/components/model/model-selector"
 import { ConversationPersonalizationMenu } from "@/components/personalization/personalization-menu"
@@ -35,8 +34,6 @@ type QuickChatViewProps = {
   status: ComponentProps<typeof QuickChatStatus>
   timeline?: ComponentProps<typeof AgentConversationTimeline>
   composer: ComponentProps<typeof AgentConversationComposer>
-  // The agent's plan, pinned above the composer.
-  plan?: ComponentProps<typeof PlanDock>["model"]
   onSuggestion: ComponentProps<typeof QuickChatEmptyState>["onSuggestion"]
   preview: ComponentProps<typeof ProjectRunConfigurationPreviewWarmup>
   // The agent stats floating at the top right, once the chat has run.
@@ -53,12 +50,9 @@ export function QuickChatView({
   timeline,
   composer,
   onSuggestion,
-  plan,
   preview,
   stats,
 }: QuickChatViewProps) {
-  // The plan covers the foot of the conversation: its messages keep clear.
-  const [planHeight, setPlanHeight] = useState(0)
   // The stats panel opens in full; it can fold into a small pill.
   const [statsExpanded, setStatsExpanded] = useUiMemory(
     "chat.stats-expanded",
@@ -75,7 +69,6 @@ export function QuickChatView({
               // When there is room, the conversation keeps clear of the open panel.
               stats && statsExpanded && "@4xl:[--chat-stats-inset:21rem]"
             )}
-            style={{ "--plan-dock-height": `${planHeight}px` } as CSSProperties}
           >
             <MessageScrollerProvider
               key={conversationId ?? "new-chat"}
@@ -86,7 +79,7 @@ export function QuickChatView({
                   <MessageScrollerContent
                     aria-busy={composer.agentRunning}
                     className={cn(
-                      "mx-auto w-full max-w-[calc(56rem+var(--chat-stats-inset))] gap-10 px-4 pt-[calc(var(--header-height)+1rem)] pb-[calc(12rem+var(--plan-dock-height,0px))] transition-[max-width,padding] duration-500 ease-out md:px-8 md:pr-[calc(2rem+var(--chat-stats-inset))]",
+                      "mx-auto w-full max-w-[calc(56rem+var(--chat-stats-inset))] gap-10 px-4 pt-[calc(var(--header-height)+1rem)] pb-48 transition-[max-width,padding] duration-500 ease-out md:px-8 md:pr-[calc(2rem+var(--chat-stats-inset))]",
                       // The first message starts below the folded pill.
                       stats && !statsExpanded && "pt-[calc(var(--header-height)+4rem)]"
                     )}
@@ -95,7 +88,7 @@ export function QuickChatView({
                     {timeline ? <AgentConversationTimeline {...timeline} /> : null}
                   </MessageScrollerContent>
                 </MessageScrollerViewport>
-                <MessageScrollerButton className="bottom-[calc(10rem+var(--plan-dock-height,0px))] md:bottom-[calc(11rem+var(--plan-dock-height,0px))]" />
+                <MessageScrollerButton className="bottom-40 md:bottom-44" />
               </MessageScroller>
             </MessageScrollerProvider>
             <div
@@ -118,7 +111,6 @@ export function QuickChatView({
                   {emptyConversation ? (
                     <QuickChatEmptyState onSuggestion={onSuggestion} />
                   ) : null}
-                  <PlanDock model={plan} onHeightChange={setPlanHeight} />
                   <AgentConversationComposer
                     {...composer}
                     personalizationMenu={

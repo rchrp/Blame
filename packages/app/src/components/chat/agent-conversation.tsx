@@ -489,6 +489,7 @@ export function AgentConversationComposer({
   onAgentCancel,
   placeholder,
   personalizationMenu,
+  planTab,
   submitLabel,
   queueWhileRunning = false,
   title,
@@ -528,6 +529,8 @@ export function AgentConversationComposer({
   submitLabel: string
   // The button that opens the personalization menu, next to the microphone.
   personalizationMenu?: React.ReactNode
+  // A tab growing out of the editor's left edge: the agent's plan.
+  planTab?: React.ReactNode
   title?: string
   toolbarEnd?: React.ReactNode
   turnMetrics?: AgentTurnMetrics
@@ -591,6 +594,7 @@ export function AgentConversationComposer({
           if (!event.repeat && !disabled && !submitting) onMessageSubmit()
         }}
       >
+        {planTab}
         <AgentTurnTab metrics={turnMetrics} />
         <DraftSavedHint message={message} hidden={submitting || disabled} />
         <MarkdownEditor
@@ -2150,7 +2154,7 @@ function DraftSavedHint({
     <span
       aria-live="polite"
       className={cn(
-        "pointer-events-none absolute bottom-full left-5 z-10 mb-1.5 flex items-center gap-1 text-[11px] text-muted-foreground transition-opacity duration-300",
+        "pointer-events-none absolute bottom-full left-(--plan-tab-end,1.25rem) z-10 mb-1.5 flex items-center gap-1 text-[11px] text-muted-foreground transition-opacity duration-300",
         saved && hasText && !hidden ? "opacity-100" : "opacity-0"
       )}
     >
