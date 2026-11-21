@@ -334,9 +334,16 @@ function useBacklogActions(
   const remove = React.useCallback(
     async (story: UserStory) => {
       await api.delete(story.id)
-      // The account deleted its copies; drop the screenshots on this device.
+      // The account deleted its copies; drop the screenshots on this device:
+      // its preview's, and those its conversation took elsewhere (a component
+      // preview, a project folder) unless another conversation took them too.
       void platform.agentScreenshots
-        ?.delete({ scope: storyPreviewDevtoolsScope(story.id) })
+        ?.delete({
+          scope: storyPreviewDevtoolsScope(story.id),
+          ...(story.engineSessionId
+            ? { sessionIds: [story.engineSessionId] }
+            : {}),
+        })
         .catch(() => undefined)
       setState((current) => ({
         ...current,

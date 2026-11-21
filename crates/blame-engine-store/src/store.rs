@@ -280,17 +280,36 @@ fn stays_local(records: &[Record]) -> bool {
 }
 
 impl SqliteStore {
-    /// Deletes a session's records from this machine. Blobs stay: they are
-    /// shared by content and cost nothing to keep. `false` when there was no
-    /// such session.
+    /// Deletes a session's records from this machine, with the blobs (its
+    /// screenshots, attachments) no other session's records name: a blob is
+    /// shared by content, so one another conversation still shows stays.
+    /// `false` when there was no such session.
     pub async fn delete(&self, session: &SessionId) -> Result<bool, StoreError> {
         let id = session.clone();
-        self.inner
+        let dir = self.inner.blob_dir.clone();
+        let (removed, files) = self
+            .inner
             .writer
             .run(move |conn| {
                 let tx = conn
                     .transaction_with_behavior(TransactionBehavior::Immediate)
                     .map_err(sql)?;
+                let mut hashes: Vec<String> = Vec::new();
+                {
+                    let mut statement = tx
+                        .prepare_cached("SELECT body FROM records WHERE session = ?1")
+                        .map_err(sql)?;
+                    let bodies = statement
+                        .query_map([id.as_str()], |r| r.get::<_, String>(0))
+                        .map_err(sql)?;
+                    for body in bodies {
+                        for hash in blob_hashes(&body.map_err(sql)?) {
+                            if !hashes.contains(&hash) {
+                                hashes.push(hash);
+                            }
+                        }
+                    }
+                }
                 tx.prepare_cached("DELETE FROM records WHERE session = ?1")
                     .and_then(|mut s| s.execute([id.as_str()]))
                     .map_err(sql)?;
@@ -298,10 +317,36 @@ impl SqliteStore {
                     .prepare_cached("DELETE FROM sessions WHERE id = ?1")
                     .and_then(|mut s| s.execute([id.as_str()]))
                     .map_err(sql)?;
+                let mut files = Vec::new();
+                for hash in hashes {
+                    let used = tx
+                        .prepare_cached("SELECT 1 FROM records WHERE instr(body, ?1) > 0 LIMIT 1")
+                        .and_then(|mut s| s.exists([hash.as_str()]))
+                        .map_err(sql)?;
+                    if used {
+                        continue;
+                    }
+                    let on_disk: Option<bool> = tx
+                        .prepare_cached("SELECT data IS NULL FROM blobs WHERE sha256 = ?1")
+                        .and_then(|mut s| s.query_row([hash.as_str()], |r| r.get(0)).optional())
+                        .map_err(sql)?;
+                    tx.prepare_cached("DELETE FROM blobs WHERE sha256 = ?1")
+                        .and_then(|mut s| s.execute([hash.as_str()]))
+                        .map_err(sql)?;
+                    if on_disk == Some(true) {
+                        files.push(hash);
+                    }
+                }
                 tx.commit().map_err(sql)?;
-                Ok(removed > 0)
+                Ok((removed > 0, files))
             })
-            .await
+            .await?;
+        // After the commit: a file outlives its row at worst, never the
+        // reverse.
+        for hash in files {
+            let _ = std::fs::remove_file(dir.join(hash));
+        }
+        Ok(removed)
     }
 
     /// Sessions kept on this machine only (tasks that were not replicated)
@@ -507,4 +552,21 @@ pub(crate) fn read_records(
         )));
     }
     Ok(records)
+}
+
+/// The blob hashes a record names (`"sha256":"<64 hex>"` of its blob refs).
+fn blob_hashes(body: &str) -> Vec<String> {
+    const KEY: &str = "\"sha256\":\"";
+    let mut hashes = Vec::new();
+    let mut rest = body;
+    while let Some(at) = rest.find(KEY) {
+        rest = &rest[at + KEY.len()..];
+        if let Some(hash) = rest.get(..64)
+            && blobs::is_sha256_hex(hash)
+            && rest[64..].starts_with('"')
+        {
+            hashes.push(hash.to_owned());
+        }
+    }
+    hashes
 }

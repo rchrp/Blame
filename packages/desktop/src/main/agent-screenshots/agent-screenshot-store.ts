@@ -24,7 +24,13 @@ export type AgentScreenshotMetadata = {
   pageUrl: string;
   runId?: string;
   scope: string;
+  /** The latest conversation that took it. */
   sessionId?: string;
+  /**
+   * Every conversation that took it (the same capture has the same id): it
+   * stays until the last of them is deleted.
+   */
+  sessionIds?: string[];
   toolCallId?: string;
   viewport: { height: number; width: number };
   width: number;
@@ -32,7 +38,7 @@ export type AgentScreenshotMetadata = {
 
 export type AgentScreenshotInput = Omit<
   AgentScreenshotMetadata,
-  "byteLength" | "createdAt" | "id"
+  "byteLength" | "createdAt" | "id" | "sessionIds"
 > & { createdAt?: string; data: Buffer };
 
 const idPattern = /^[0-9a-f]{64}$/u;
@@ -71,11 +77,21 @@ export class AgentScreenshotStore {
     const image = join(directory, `${id}.${extension}`);
     if (!(await exists(image))) await atomicWrite(image, input.data);
     const { data: _data, ...rest } = input;
+    const previous = await readMetadata(join(directory, `${id}.json`));
+    const sessionIds = [
+      ...new Set(
+        [
+          ...screenshotSessions(previous),
+          ...(input.sessionId ? [input.sessionId] : []),
+        ].filter(Boolean),
+      ),
+    ];
     const metadata: AgentScreenshotMetadata = {
       ...rest,
       byteLength: input.data.byteLength,
       createdAt: input.createdAt ?? new Date().toISOString(),
       id,
+      ...(sessionIds.length ? { sessionIds } : {}),
     };
     await atomicWrite(
       join(directory, `${id}.json`),
@@ -109,7 +125,8 @@ export class AgentScreenshotStore {
         if (
           metadata &&
           (!filter.runId || metadata.runId === filter.runId) &&
-          (!filter.sessionId || metadata.sessionId === filter.sessionId)
+          (!filter.sessionId ||
+            screenshotSessions(metadata).includes(filter.sessionId))
         )
           result.push(metadata);
       }
@@ -123,14 +140,33 @@ export class AgentScreenshotStore {
     await rm(this.scopeDirectory(scope), { force: true, recursive: true });
   }
 
+  /**
+   * Forgets these conversations: a screenshot only they took is removed; one
+   * another conversation also took stays, for it.
+   */
   async deleteSessions(sessionIds: string[]) {
     const sessions = new Set(sessionIds.filter(Boolean));
     if (!sessions.size) return 0;
     let removed = 0;
     for (const metadata of await this.list({})) {
-      if (!metadata.sessionId || !sessions.has(metadata.sessionId)) continue;
-      await this.remove(metadata);
-      removed += 1;
+      const takers = screenshotSessions(metadata);
+      if (!takers.some((session) => sessions.has(session))) continue;
+      const kept = takers.filter((session) => !sessions.has(session));
+      if (!kept.length) {
+        await this.remove(metadata);
+        removed += 1;
+        continue;
+      }
+      await atomicWrite(
+        join(this.scopeDirectory(metadata.scope), `${metadata.id}.json`),
+        Buffer.from(
+          JSON.stringify({
+            ...metadata,
+            sessionId: kept.at(-1),
+            sessionIds: kept,
+          }),
+        ),
+      );
     }
     return removed;
   }
@@ -197,4 +233,17 @@ async function atomicWrite(path: string, data: Buffer) {
   const temporary = `${path}.${process.pid}.${Date.now()}.tmp`;
   await writeFile(temporary, data);
   await rename(temporary, path);
+}
+
+/** The conversations that took a screenshot, oldest first. */
+export function screenshotSessions(
+  metadata:
+    Pick<AgentScreenshotMetadata, "sessionId" | "sessionIds"> | undefined,
+) {
+  if (!metadata) return [];
+  return metadata.sessionIds?.length
+    ? metadata.sessionIds
+    : metadata.sessionId
+      ? [metadata.sessionId]
+      : [];
 }
