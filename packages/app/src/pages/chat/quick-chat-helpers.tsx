@@ -10,6 +10,7 @@ import {
   type PendingCodeSelectionAttachment,
 } from "@/components/backlog/shared/comment-attachment-events"
 import type { useModelSelection } from "@/components/model/model-selection"
+import { reportModelLimit } from "@/components/model/model-limit-notice"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { Platform } from "@/context/platform"
 import {
@@ -106,7 +107,8 @@ export async function generatedQuickChatTitle(
       prompt: message,
       workspace: input.projectPath,
     })
-  } catch {
+  } catch (error) {
+    reportModelLimit("Chat title not written", error, "conversation")
     return undefined
   }
 }

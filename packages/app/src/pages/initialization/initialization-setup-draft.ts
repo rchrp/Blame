@@ -7,6 +7,8 @@ import {
   parsePreviewManifest,
 } from "@blame/preview-runtime"
 
+import { modelLimit, modelLimitText } from "../../lib/model-limit.ts"
+
 // The editable part of a project's preview setup, as text fields: what
 // people change by hand (images, commands, environment, ports, run
 // commands). Everything else in the manifest is kept as it is.
@@ -310,6 +312,8 @@ function withoutUndefined<T>(value: T): T {
  */
 export function readableInitializationError(error: string | null) {
   if (!error) return "Blame could not finish the analysis."
+  const limit = modelLimit(error)
+  if (limit) return modelLimitText(limit, "alternative")
   const message = error
     .replace(/^Error invoking remote method '[^']+':\s*/, "")
     .replace(/^(?:Error:\s*)+/, "")

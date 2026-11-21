@@ -1,6 +1,8 @@
 import * as React from "react"
 import { toast } from "sonner"
 
+import { failureToast } from "@/components/model/model-limit-notice"
+
 import type {
   RejectChoice,
   StopAgentChoice,
@@ -517,8 +519,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           })
         )
         if (!askedIdentity)
-          toast.error("Approve & Merge failed", {
-            description: message,
+          failureToast("Approve & Merge failed", message, {
             position: "bottom-right",
           })
         return updateStory(runningStory, {

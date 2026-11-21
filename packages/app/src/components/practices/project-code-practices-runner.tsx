@@ -1,6 +1,5 @@
 import * as React from "react"
-import { toast } from "sonner"
-
+import { failureToast } from "@/components/model/model-limit-notice"
 import { useModelSelection } from "@/components/model/model-selection"
 import { codePracticeAnalysisDue } from "@/components/practices/data/code-practice-analysis-due"
 import { notifyCodePracticeAnalysisUpdated } from "@/components/practices/data/code-practice-analysis-events"
@@ -31,8 +30,11 @@ export function ProjectCodePracticesRunner() {
 function useCodePracticeAnalysisEffect(selection: AnalysisSelection) {
   const { engine, apiConnection, authStatus, model, project, reasoningEffort } =
     selection
-  React.useEffect(() => {
-    const input = analysisInput({
+  // The latest selection, read when the effect runs: it reruns when what is
+  // analyzed changes (project, model, sign-in), not when the same project or
+  // model comes back as a new object (a refreshed list).
+  const latest = React.useEffectEvent(() =>
+    analysisInput({
       engine,
       apiConnection,
       authStatus,
@@ -40,9 +42,22 @@ function useCodePracticeAnalysisEffect(selection: AnalysisSelection) {
       project,
       reasoningEffort,
     })
+  )
+  React.useEffect(() => {
+    const input = latest()
     if (!input) return
     return startCodePracticeAnalysis(input)
-  }, [engine, apiConnection, authStatus, model, project, reasoningEffort])
+  }, [
+    project?.id,
+    project?.path,
+    model?.provider.id,
+    model?.id,
+    model?.credentialLabel,
+    reasoningEffort,
+    authStatus,
+    apiConnection,
+    engine,
+  ])
 }
 
 function startCodePracticeAnalysis(input: Omit<AnalysisInput, "signal">) {
@@ -101,7 +116,11 @@ async function maybeAnalyzeProjectCodePractices(input: AnalysisInput) {
   try {
     const analysis = await cloud.projectCodePracticeAnalysis(projectId)
     const runningHere = analysesHere.has(projectId)
-    if (input.signal.aborted || !codePracticeAnalysisDue(analysis, runningHere))
+    const model = { providerId: input.providerId, modelId: input.modelId }
+    if (
+      input.signal.aborted ||
+      !codePracticeAnalysisDue(analysis, runningHere, model)
+    )
       return
     analysesHere.add(projectId)
     started = true
@@ -149,8 +168,7 @@ async function persistAnalysisError(
     })
     .catch(() => undefined)
   if (input.signal.aborted) return
-  toast.error("Code practice analysis failed", {
-    description: errorMessage(error),
+  failureToast("Code practice analysis failed", errorMessage(error), {
     id: toastId,
     position: "bottom-right",
   })

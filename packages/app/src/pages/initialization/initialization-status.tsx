@@ -1,6 +1,9 @@
 import { ChevronRightIcon, LoaderCircleIcon } from "lucide-react"
 
-import { navigate } from "@/components/navigation/navigation"
+import {
+  ModelLimitAction,
+  openModelSettings,
+} from "@/components/model/model-limit-notice"
 import type { ProjectInitializationAvailability } from "@/components/project-initialization/project-initialization-availability"
 import type { ProjectInitializationProgress } from "@/components/project-initialization/project-initialization-progress"
 import { ProgressNotificationBody } from "@/components/shared/progress-notification"
@@ -254,13 +257,14 @@ function FailedStatus({
       <p className="text-foreground">
         {readableInitializationError(initialization.error)}
       </p>
+      <ModelLimitAction message={initialization.error} />
       <p>
         Stories run in Direct mode, in your project folder, until an analysis
         succeeds. Run it again; if it keeps failing, try another model in{" "}
         <button
           type="button"
           className="text-foreground underline underline-offset-3 hover:text-foreground/80"
-          onClick={() => navigate("/settings")}
+          onClick={openModelSettings}
         >
           Settings
         </button>

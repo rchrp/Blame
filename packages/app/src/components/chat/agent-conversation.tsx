@@ -67,6 +67,10 @@ import { CurrentUserAvatar } from "@/components/shared/user-avatar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
+  chooseModelLabel,
+  openModelSettings,
+} from "@/components/model/model-limit-notice"
+import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -1294,7 +1298,9 @@ function AgentStreamError({
   return (
     <AgentErrorTimelineItem
       alwaysVisible={alwaysVisible}
+      chooseModel={activity.action === "choose-model"}
       createdAt={activity.createdAt}
+      title={activity.action === "choose-model" ? activity.title : undefined}
       detail={activity.detail}
     />
   )
@@ -1643,12 +1649,16 @@ function AgentMarkdownTimelineItem({
 
 function AgentErrorTimelineItem({
   alwaysVisible,
+  chooseModel,
   createdAt,
   detail,
+  title = "Agent error",
 }: {
   alwaysVisible: boolean
+  chooseModel?: boolean
   createdAt: string
   detail: string
+  title?: string
 }) {
   const entering = useEnterAnimation(createdAt)
   return (
@@ -1662,10 +1672,20 @@ function AgentErrorTimelineItem({
       <div className="flex min-w-0 gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive shadow-sm">
         <AlertCircleIcon className="mt-0.5 size-5 shrink-0" />
         <div className="min-w-0">
-          <p className="text-sm font-semibold">Agent error</p>
+          <p className="text-sm font-semibold">{title}</p>
           <p className="mt-1 text-sm leading-relaxed break-words whitespace-pre-wrap">
             {detail}
           </p>
+          {chooseModel ? (
+            <Button
+              className="mt-2"
+              onClick={openModelSettings}
+              size="sm"
+              variant="outline"
+            >
+              {chooseModelLabel}
+            </Button>
+          ) : null}
         </div>
       </div>
       <MarkdownMessageActions

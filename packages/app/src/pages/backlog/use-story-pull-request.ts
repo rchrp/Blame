@@ -6,6 +6,7 @@ import type {
   UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
+import { failureToast } from "@/components/model/model-limit-notice"
 import type { useModelSelection } from "@/components/model/model-selection"
 import type { useCloudAuth } from "@/context/cloud-auth"
 import type { useGitIdentity } from "@/context/git-identity"
@@ -103,8 +104,7 @@ export function useStoryPullRequest({
           })
         )
         if (!askedIdentity)
-          toast.error("Open PR failed", {
-            description: message,
+          failureToast("Open PR failed", message, {
             position: "bottom-right",
           })
         return activeStory(story, storiesRef.current)

@@ -1,6 +1,8 @@
 import * as React from "react"
 import { toast } from "sonner"
 
+import { failureToast } from "@/components/model/model-limit-notice"
+
 import type {
   GitLogCommit,
   GitStatusFile,
@@ -129,8 +131,7 @@ export function GitPage() {
     } catch (error) {
       const message = errorText(error)
       git.setError(message)
-      toast.error("Commit message generation failed", {
-        description: message,
+      failureToast("Commit message generation failed", message, {
         id: toastId,
         position: "bottom-right",
       })
@@ -196,8 +197,7 @@ export function GitPage() {
     } catch (error) {
       const message = errorText(error)
       git.setError(message)
-      toast.error("AI conflict resolution failed", {
-        description: message,
+      failureToast("AI conflict resolution failed", message, {
         id: toastId,
         position: "bottom-right",
       })

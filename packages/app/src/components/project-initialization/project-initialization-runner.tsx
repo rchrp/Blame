@@ -39,6 +39,8 @@ import {
   type PreviewSetupChoice,
 } from "@/components/project-initialization/preview-setup-dialog"
 import { previewSetupDecision } from "@/lib/preview-setup-decision"
+import { modelLimit } from "@/lib/model-limit"
+import { failureToast } from "@/components/model/model-limit-notice"
 import {
   readPreviewSetupPolicy,
   rememberPreviewSetupPolicy,
@@ -884,6 +886,14 @@ function showError(projectId: string, error: unknown) {
       duration: 30_000,
       className: undefined,
       action: { label: "Details", onClick: () => navigate("/initialization") },
+    })
+    return
+  }
+  if (modelLimit(errorMessage(error))) {
+    failureToast("Preview environment setup failed", errorMessage(error), {
+      id: toastId,
+      position: "bottom-right",
+      cancel: { label: "Details", onClick: () => navigate("/initialization") },
     })
     return
   }

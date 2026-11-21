@@ -47,6 +47,8 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
+import { failureMessage } from "@/lib/model-limit"
+import { ModelLimitAction } from "@/components/model/model-limit-notice"
 
 export function NewProjectDialog({
   onOpenChange,
@@ -118,9 +120,10 @@ function WizardBody({ wizard }: { wizard: NewProjectWizard }) {
         <StepProgress wizard={wizard} />
         <StepContent wizard={wizard} />
         {wizard.error && wizard.step !== "progress" && (
-          <p role="alert" className="text-sm break-words text-destructive">
-            {wizard.error}
-          </p>
+          <div role="alert" className="text-sm break-words text-destructive">
+            <p>{failureMessage(wizard.error, "alternative")}</p>
+            <ModelLimitAction message={wizard.error} />
+          </div>
         )}
       </div>
     </>

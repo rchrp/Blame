@@ -280,6 +280,39 @@ test("a model the provider refuses says so once, in the engine's words", () => {
   assert.equal(errors[0]!.detail, message)
 })
 
+test("a used-up plan says when it resets and where to choose another model, once", () => {
+  seq = 0
+  const error = {
+    kind: "usage_limit",
+    message:
+      "Your Claude Code usage for `claude-opus-5` is used up until it resets: \"You've hit your session limit · resets 1:10am (Europe/Bucharest)\". Choose another model, or wait for the reset.",
+  }
+  const result = conversation([
+    record({ type: "session_created", config }),
+    record({ type: "user_message", turn: "t1", input: [{ type: "text", text: "go" }], delivery: "turn" }),
+    record({ type: "request_started", turn: "t1", request: "r1", model, attempt: 1, prefix_digest: "d" }),
+    record({ type: "request_failed", turn: "t1", request: "r1", error }),
+    record({ type: "turn_ended", turn: "t1", outcome: { status: "failed", error } }),
+  ])
+  const errors = result.runs[0]!.activities!.filter((activity) => activity.kind === "error")
+  assert.equal(errors.length, 1)
+  assert.equal(errors[0]!.title, "Usage limit reached")
+  assert.equal(errors[0]!.action, "choose-model")
+  assert.match(errors[0]!.detail, /^Your Claude Code usage for `claude-opus-5` is used up\. Claude Code said: “You've hit your session limit · resets 1:10am \(Europe\/Bucharest\)”\. To keep going now, choose another model in the message box's model menu/)
+})
+
+test("a turn the agent did not finish keeps its own message, not a limit's", () => {
+  seq = 0
+  const result = conversation([
+    record({ type: "session_created", config }),
+    record({ type: "user_message", turn: "t1", input: [{ type: "text", text: "go" }], delivery: "turn" }),
+    record({ type: "turn_ended", turn: "t1", outcome: { status: "contract_unmet" } }),
+  ])
+  const error = result.runs[0]!.activities!.at(-1)!
+  assert.equal(error.title, "Not finished")
+  assert.equal(error.action, undefined)
+})
+
 test("an accepted finish supplies exactly one final reply in every conversation mode", () => {
   const summary = "The harness uses JSON-lines."
   for (const purpose of ["quick-chat", "development-story", "plan", "new-project"]) {

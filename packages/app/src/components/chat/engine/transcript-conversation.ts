@@ -11,7 +11,7 @@ import type {
   UsageTotals,
   UserItem,
 } from "@blame/engine-client/transcript"
-import type { ErrorKind } from "@blame/engine-client"
+import type { ErrorInfo, ErrorKind } from "@blame/engine-client"
 
 import type {
   UserStoryAgentActivity,
@@ -23,6 +23,7 @@ import type {
   AgentConversationComment,
   AgentConversationRun,
 } from "@/components/chat/agent-conversation"
+import { modelLimitOfError, modelLimitText } from "../../../lib/model-limit.ts"
 
 /** A message queued behind the running turn: shown with its controls, not as a turn. */
 export type QueuedMessage = {
@@ -170,7 +171,13 @@ function turnActivities(
     const activity = itemActivity(item, transcript, author)
     // The turn ends on the failure its request just showed: say it once.
     const previous = activities.at(-1)
-    if (activity?.kind === "error" && previous?.kind === "error" && previous.detail === activity.detail)
+    // (A limit's reset is counted from each record's time: same action, same failure.)
+    if (
+      activity?.kind === "error" &&
+      previous?.kind === "error" &&
+      (previous.detail === activity.detail ||
+        (previous.action === "choose-model" && activity.action === "choose-model"))
+    )
       continue
     if (activity) activities.push(activity)
   }
@@ -245,10 +252,10 @@ function itemActivity(
       }
     case "request_failed":
       if (item.retried) return undefined
-      return { ...base, kind: "error", title: errorTitle(item.error.kind), detail: item.error.message, status: "failed" }
+      return errorActivity(base, item.error, item.atMs)
     case "turn_ended":
       if (item.outcome.status === "failed")
-        return { ...base, kind: "error", title: errorTitle(item.outcome.error.kind), detail: item.outcome.error.message, status: "failed" }
+        return errorActivity(base, item.outcome.error, item.atMs)
       if (item.outcome.status === "limit_reached")
         return { ...base, kind: "notice", title: "Limit reached", detail: `The turn stopped at its ${item.outcome.limit} limit.`, status: "completed" }
       if (item.outcome.status === "contract_unmet")
@@ -263,6 +270,28 @@ function itemActivity(
 export const unfinishedTurnText =
   "The agent stopped without finishing: its work was not checked with finish_task."
 
+/**
+ * A failed request or turn. A model whose plan is used up (or whose key has
+ * no credit) gets the one message that says when it resets and where to
+ * choose another model, with the button to that setting.
+ */
+function errorActivity(
+  base: { id: string; createdAt: string },
+  error: ErrorInfo,
+  atMs: number
+): UserStoryAgentActivity {
+  const limit = modelLimitOfError(error, atMs)
+  const detail = limit ? modelLimitText(limit, "conversation") : error.message
+  return {
+    ...base,
+    kind: "error",
+    title: errorTitle(error.kind),
+    detail,
+    status: "failed",
+    ...(limit ? { action: "choose-model" as const } : {}),
+  }
+}
+
 /** What went wrong, in a few words; the engine's message says the rest. */
 function errorTitle(kind: ErrorKind) {
   switch (kind) {
@@ -271,7 +300,9 @@ function errorTitle(kind: ErrorKind) {
     case "authentication":
       return "Sign-in refused"
     case "billing":
-      return "Plan or credit limit reached"
+      return "No credit left"
+    case "usage_limit":
+      return "Usage limit reached"
     case "rate_limited":
       return "Rate limited"
     case "overloaded":

@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import type {
   CompletionContract,
   EngineClient,
+  ErrorInfo,
   HostParamsOf,
   Limits,
   SessionConfig,
@@ -21,6 +22,7 @@ import type { EngineLocation, EngineModelChoice } from "../protocol.js";
 import { engineModel } from "../purposes/purpose.js";
 import type { TaskWorkspace } from "../task-protocol.js";
 import { ToolSet, type ClientTool } from "../tool.js";
+import { usageResetAt } from "./usage-reset.js";
 
 /** A task as a purpose describes it. */
 export type TaskSpec<R> = {
@@ -55,7 +57,7 @@ export class EngineTaskError extends Error {
 }
 
 /** Why a task did not complete, in words. */
-export function failureText(outcome: Failure): string {
+export function failureText(outcome: Failure, now = Date.now()): string {
   if (outcome.status === "interrupted") return "was stopped.";
   const { failure } = outcome;
   switch (failure.kind) {
@@ -70,8 +72,21 @@ export function failureText(outcome: Failure): string {
     case "limit_reached":
       return `stopped at its limit (${failure.limit}).`;
     case "provider_error":
-      return `failed: ${failure.error.message}`;
+      return providerFailureText(failure.error, now);
   }
+}
+
+/**
+ * A plan used up or an account out of credit cannot succeed by running the
+ * task again with the same model: the text says so, with the instant the
+ * plan resets when known (the app names the setting that picks the model,
+ * and waits for that instant before running it by itself again).
+ */
+function providerFailureText(error: ErrorInfo, now: number) {
+  if (error.kind === "billing") return `could not run: ${error.message}`;
+  if (error.kind !== "usage_limit") return `failed: ${error.message}`;
+  const resetsAt = usageResetAt(error, now);
+  return `could not run: ${error.message}${resetsAt ? ` It resets at ${resetsAt.toISOString()}.` : ""}`;
 }
 
 export type TaskRunOptions = {
