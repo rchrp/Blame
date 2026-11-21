@@ -16,7 +16,6 @@ import type {
   EngineHostInput,
   EngineHostMethod,
   EngineHostResult,
-  EngineLocation,
   EngineModelChoice,
 } from "../protocol.js";
 import type {
@@ -31,6 +30,8 @@ import type {
   StoryWaiting,
 } from "../story-protocol.js";
 import { storyApi, type StoryRecord } from "./api.js";
+import { StoryRecords } from "./records.js";
+import { recoverStories } from "./recovery.js";
 import { dependencyWait, queuedStories, retryDelay } from "./queue.js";
 import {
   errorMessage,
@@ -69,7 +70,7 @@ export class StoryService {
   private readonly projects = new Map<string, string>();
   private preferences: StoryPreferences | undefined;
   /** Each project's stories, as the API last gave them. */
-  private readonly stories = new Map<string, Map<string, StoryRecord>>();
+  private readonly stories = new StoryRecords();
   private readonly loading = new Map<string, Promise<void>>();
   private readonly starting = new Set<string>();
   private readonly waiting = new Map<string, StoryWaiting>();
@@ -98,7 +99,7 @@ export class StoryService {
     for (const id of [...this.projects.keys()])
       if (!known.has(id)) {
         this.projects.delete(id);
-        this.stories.delete(id);
+        this.stories.drop(id);
       }
     const added = input.projects.filter(
       (project) => this.projects.get(project.id) !== project.path,
@@ -136,12 +137,14 @@ export class StoryService {
     return {
       waiting: [...this.waiting.values()],
       starting: [...this.starting],
-      localRunning: this.allStories().filter(
-        (story) =>
-          story.status === "in-progress" &&
-          story.agentStatus === "Running" &&
-          story.workspaceMode === "local-container",
-      ).length,
+      localRunning: this.stories
+        .all()
+        .filter(
+          (story) =>
+            story.status === "in-progress" &&
+            story.agentStatus === "Running" &&
+            story.workspaceMode === "local-container",
+        ).length,
     };
   }
 
@@ -168,7 +171,7 @@ export class StoryService {
       ...input,
       status: input.status ?? "backlog",
     });
-    this.remember(record);
+    this.stories.remember(record);
     this.emitStory(record);
     this.pump();
     return record.story;
@@ -396,9 +399,9 @@ export class StoryService {
     running: boolean;
     outcome?: TurnOutcome;
   }) {
-    const story = this.allStories().find(
-      (item) => item.engineSessionId === event.session,
-    );
+    const story = this.stories
+      .all()
+      .find((item) => item.engineSessionId === event.session);
     if (!story) return;
     if (event.running) {
       if (story.agentStatus !== "Running" && story.status === "in-progress")
@@ -420,7 +423,7 @@ export class StoryService {
       ...storyOutcomeUpdate(story, outcome),
       ...(agentModels ? { agentModels } : {}),
     });
-    const record = this.record(settled.id);
+    const record = this.stories.record(settled.id);
     for (const listener of this.turnListeners)
       listener({
         storyId: settled.id,
@@ -450,9 +453,8 @@ export class StoryService {
     this.retryTimer = undefined;
     const now = Date.now();
     const queued = new Set<string>();
-    for (const [projectId, records] of this.stories) {
+    for (const [projectId, projectStories] of this.stories.projects()) {
       const path = this.projects.get(projectId);
-      const projectStories = [...records.values()].map(({ story }) => story);
       for (const story of queuedStories(projectStories)) {
         queued.add(story.id);
         if (this.starting.has(story.id)) continue;
@@ -541,7 +543,7 @@ export class StoryService {
 
   /** The story's payload as the API last sent it, for the windows. */
   payload(storyId: string): unknown {
-    return this.record(storyId)?.payload;
+    return this.stories.record(storyId)?.payload;
   }
 
   /** The project folder of a story's project, when this computer has it. */
@@ -551,17 +553,17 @@ export class StoryService {
 
   /** The story as the service holds it, read from the API when it does not. */
   async current(storyId: string): Promise<HostStory> {
-    const known = this.record(storyId);
+    const known = this.stories.record(storyId);
     if (known) return known.story;
     const record = await this.api().get(storyId);
-    this.remember(record);
+    this.stories.remember(record);
     return record.story;
   }
 
   /** The story with its details (attachments, excerpts), read now. */
   async detail(storyId: string): Promise<HostStory> {
     const record = await this.api().get(storyId);
-    this.remember(record);
+    this.stories.remember(record);
     return record.story;
   }
 
@@ -600,7 +602,7 @@ export class StoryService {
       .catch(() => undefined)
       .then(async () => {
         const record = await this.api().update(story.id, update);
-        this.remember(record);
+        this.stories.remember(record);
         this.emitStory(record, extra);
         return record.story;
       });
@@ -613,7 +615,7 @@ export class StoryService {
 
   /** A story deleted from the account: the service forgets it. */
   forget(story: HostStory) {
-    this.stories.get(story.projectId)?.delete(story.id);
+    this.stories.delete(story);
     this.waiting.delete(story.id);
     this.retryAt.delete(story.id);
     this.host.emit({
@@ -648,96 +650,19 @@ export class StoryService {
       const first = !this.stories.has(projectId);
       const records = await this.api().list(projectId);
       if (!this.projects.has(projectId)) return;
-      const known = this.stories.get(projectId);
-      this.stories.set(
-        projectId,
-        new Map(
-          records.map((record) => [
-            record.story.id,
-            // A detail read since keeps what the summary leaves out.
-            mergeRecord(known?.get(record.story.id), record),
-          ]),
-        ),
-      );
-      if (first) await this.recover(projectId);
+      this.stories.replace(projectId, records);
+      if (first)
+        await recoverStories(
+          this.stories.projectStories(projectId),
+          this.recovered,
+          this.host.call,
+          (story, update) => this.patch(story, update),
+        );
     })()
       .catch(report)
       .finally(() => this.loading.delete(projectId));
     this.loading.set(projectId, load);
     return load;
-  }
-
-  /**
-   * After Blame quits mid-turn (agents stop with the app), the stories it
-   * left Running are settled from their records.
-   */
-  private async recover(projectId: string) {
-    const left = [...(this.stories.get(projectId)?.values() ?? [])]
-      .map(({ story }) => story)
-      .filter(
-        (story) =>
-          // In review, Running means Approve & Merge, not the agent.
-          story.status === "in-progress" &&
-          story.agentStatus === "Running" &&
-          story.engineSessionId &&
-          !this.recovered.has(story.engineSessionId),
-      );
-    for (const story of left) this.recovered.add(story.engineSessionId!);
-    // Each engine answers for its own sessions (this computer's, the VM's).
-    const byLocation = new Map<EngineLocation, HostStory[]>();
-    for (const story of left) {
-      const location = storyLocation(story.workspaceMode);
-      byLocation.set(location, [...(byLocation.get(location) ?? []), story]);
-    }
-    const statuses = (
-      await Promise.all(
-        [...byLocation].map(([location, stories]) =>
-          this.host
-            .call("status", {
-              sessions: stories.map((story) => story.engineSessionId!),
-              location,
-            })
-            .catch(() => []),
-        ),
-      )
-    ).flat();
-    for (const status of statuses) {
-      if (status.running) continue;
-      const story = left.find(
-        (item) => item.engineSessionId === status.session,
-      );
-      if (!story) continue;
-      await this.patch(story, {
-        ...storyOutcomeUpdate(story, status.lastOutcome),
-        ...(status.exists
-          ? {}
-          : {
-              agentStatus: "Paused" as const,
-              agentLastError: "The agent's conversation could not be found.",
-            }),
-      }).catch(report);
-    }
-  }
-
-  private remember(record: StoryRecord) {
-    const { projectId, id } = record.story;
-    const stories = this.stories.get(projectId) ?? new Map();
-    stories.set(id, mergeRecord(stories.get(id), record));
-    this.stories.set(projectId, stories);
-  }
-
-  private record(storyId: string) {
-    for (const stories of this.stories.values()) {
-      const record = stories.get(storyId);
-      if (record) return record;
-    }
-    return undefined;
-  }
-
-  private allStories() {
-    return [...this.stories.values()].flatMap((stories) =>
-      [...stories.values()].map(({ story }) => story),
-    );
   }
 
   stop() {
@@ -750,17 +675,6 @@ function definedFields<T extends object>(value: T): Partial<T> {
   return Object.fromEntries(
     Object.entries(value).filter(([, field]) => field !== undefined),
   ) as Partial<T>;
-}
-
-function mergeRecord(
-  known: StoryRecord | undefined,
-  next: StoryRecord,
-): StoryRecord {
-  if (!known) return next;
-  return {
-    story: { ...known.story, ...next.story },
-    payload: { ...(known.payload as object), ...(next.payload as object) },
-  };
 }
 
 function report(error: unknown) {
