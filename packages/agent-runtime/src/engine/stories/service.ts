@@ -48,7 +48,7 @@ import { StoryLedger } from "./ledger.js";
 import { StoryOwnership } from "./ownership.js";
 import { dependencyWait, queuedStories, retryDelay } from "./queue.js";
 import { reconcileDecision } from "./reconcile.js";
-import { ReconcileScheduler } from "./reconciler.js";
+import { ReconcileScheduler, withinDeadline } from "./reconciler.js";
 import { StoryRecords } from "./records.js";
 import { storyTurnModel } from "./settings.js";
 import {
@@ -58,10 +58,12 @@ import {
   type StoryEventExtra,
 } from "./start.js";
 import {
+  definedFields,
   inactiveStoryFields,
   storyLocation,
   storyResumeMessage,
   type HostStory,
+  type StoryBriefUpdate,
   type StoryUpdate,
 } from "./story.js";
 import { pauseStory, sendStoryMessage } from "./turns.js";
@@ -78,6 +80,8 @@ export type StoryServiceHost = {
   emit(event: StoryHostEvent): void;
   /** The sessions this computer's engine at a location keeps (never read from Blame's database). */
   storedSessions?(location: EngineLocation): Promise<string[]>;
+  /** A queued story held back without a reason of its own (its epic is paused or spent). */
+  holds?(story: HostStory): boolean;
 };
 
 export type StoryServiceOptions = {
@@ -227,6 +231,8 @@ export class StoryService {
     requestedModel?: HostStory["requestedModel"];
     runMode?: HostStory["runMode"];
     targetBranch?: string | null;
+    epicId?: string | null;
+    modelIntent?: HostStory["modelIntent"];
   }): Promise<HostStory> {
     const record = await this.api().create({
       ...input,
@@ -236,6 +242,44 @@ export class StoryService {
     this.emitStory(record);
     this.pump();
     return record.story;
+  }
+
+  /** The brief, dependencies or model of a story no agent has started yet (the orchestrator). */
+  edit(storyId: string, update: StoryBriefUpdate) {
+    return this.exclusive(storyId, async () => {
+      const story = await this.read(storyId);
+      if (story.status !== "backlog" && story.status !== "ready")
+        throw new Error("This story has started: it no longer changes.");
+      const edited = await this.patch(story, update);
+      this.retry(storyId);
+      return edited;
+    });
+  }
+
+  /** The project's stories were read at least once. */
+  loaded(projectId: string) {
+    return this.stories.loadedOnce(projectId);
+  }
+
+  /** The stories of an epic, as last read. */
+  epicStories(epicId: string) {
+    return this.stories.all().filter((story) => story.epicId === epicId);
+  }
+
+  /** The person's settings the windows gave (the account's agent model…). */
+  preferences() {
+    return this.windows.preferences();
+  }
+
+  /**
+   * Where a story's session stands, for a story this computer runs and at
+   * work (another computer's is never read: that would pull it here).
+   */
+  async storyStatus(storyId: string) {
+    const story = this.stories.record(storyId)?.story;
+    if (!story?.engineSessionId || !hasRuntime(story.status)) return undefined;
+    if (!(await this.ledger.owns(storyId))) return undefined;
+    return this.within(this.sessionStatus(story), "The agent engine");
   }
 
   /** Send to Dev Agent: a story of the backlog (or set aside) joins the queue. */
@@ -507,6 +551,8 @@ export class StoryService {
         story: this.payload(story.id),
         outcome: ended.outcome,
         ...(ended.reply ? { lastReply: ended.reply } : {}),
+        spentMicroUsd: status.spentMicroUsd,
+        unpricedRequests: status.unpricedRequests,
       };
       for (const listener of this.turnListeners) {
         try {
@@ -531,14 +577,7 @@ export class StoryService {
   // What a reconcile waits for, it waits for this long at most: a story's
   // turn is never held by an engine or an API that does not answer.
   private within<T>(work: Promise<T>, what: string): Promise<T> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const deadline = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error(`${what} did not answer in time.`)),
-        this.deadlineMs,
-      );
-    });
-    return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
+    return withinDeadline(work, what, this.deadlineMs);
   }
 
   /**
@@ -624,6 +663,10 @@ export class StoryService {
         queued.add(story.id);
         if (this.starting.has(story.id)) continue;
         if ((this.retryAt.get(story.id) ?? 0) > now) continue;
+        if (this.host.holds?.(story)) {
+          this.waiting.delete(story.id);
+          continue;
+        }
         // Reasons seen here cost nothing to check again: no delay for them.
         const reason: StoryWaitReason | undefined = !this.host.api()
           ? { kind: "signed-out" }
@@ -943,12 +986,6 @@ export class StoryService {
     if (this.tickTimer) clearInterval(this.tickTimer);
     this.reconciler.stop();
   }
-}
-
-function definedFields<T extends object>(value: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, field]) => field !== undefined),
-  ) as Partial<T>;
 }
 
 function report(error: unknown) {
