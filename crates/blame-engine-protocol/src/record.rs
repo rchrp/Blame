@@ -426,8 +426,13 @@ pub enum ErrorKind {
     /// The request no longer fits the model's context window.
     ContextOverflow,
     Authentication,
-    /// Quota, credit or subscription limits.
+    /// Out of credit or quota: an API key's balance or spending limit.
     Billing,
+    /// A plan's usage is used up until it resets (a Claude or ChatGPT
+    /// subscription's session or weekly limit): asking again before then
+    /// cannot succeed. `retry_after_ms` is the time to the reset when the
+    /// provider gives it.
+    UsageLimit,
     InvalidRequest,
     /// The provider does not serve the model asked for, or not to this
     /// account or plan: another model may work.

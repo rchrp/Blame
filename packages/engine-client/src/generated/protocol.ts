@@ -128,7 +128,7 @@ export type ErrorInfo = { kind: ErrorKind, message: string,
 retry_after_ms?: number, };
 
 // prettier-ignore
-export type ErrorKind = "rate_limited" | "overloaded" | "context_overflow" | "authentication" | "billing" | "invalid_request" | "model_unavailable" | "transport" | "stalled" | "cancelled" | "internal";
+export type ErrorKind = "rate_limited" | "overloaded" | "context_overflow" | "authentication" | "billing" | "usage_limit" | "invalid_request" | "model_unavailable" | "transport" | "stalled" | "cancelled" | "internal";
 
 // prettier-ignore
 export type Initialized = { protocol_version: number, engine_version: string, };
