@@ -6,7 +6,9 @@
 // ended turn once. It is the one writer of a story's agent fields
 // (`agentStatus`, `agentLastError`, `engineSessionId`, `agentModels`) for
 // the stories this computer runs; a story another computer of the account
-// runs is left alone (`ledger.ts`).
+// runs is left alone (`ledger.ts`). A story at work the ledger does not
+// name (the previous build left it, or the ledger was lost) is this
+// computer's all the same when this computer runs it (`ownership.ts`).
 //
 // Every path ends in one step, `reconcile`: the story's record read now,
 // set against what this computer's engine says of its session. It runs when
@@ -24,6 +26,7 @@ import type {
   EngineHostInput,
   EngineHostMethod,
   EngineHostResult,
+  EngineLocation,
   EngineModelChoice,
   EngineSessionStatus,
 } from "../protocol.js";
@@ -42,6 +45,7 @@ import type {
 import { storyApi, type StoryRecord } from "./api.js";
 import { approveStory, cleanStory, hasRuntime } from "./endings.js";
 import { StoryLedger } from "./ledger.js";
+import { StoryOwnership } from "./ownership.js";
 import { dependencyWait, queuedStories, retryDelay } from "./queue.js";
 import { reconcileDecision } from "./reconcile.js";
 import { ReconcileScheduler } from "./reconciler.js";
@@ -72,6 +76,8 @@ export type StoryServiceHost = {
   ): Promise<EngineHostResult<M>>;
   desktop: DesktopServices;
   emit(event: StoryHostEvent): void;
+  /** The sessions this computer's engine at a location keeps (never read from Blame's database). */
+  storedSessions?(location: EngineLocation): Promise<string[]>;
 };
 
 export type StoryServiceOptions = {
@@ -108,6 +114,7 @@ export class StoryService {
   private readonly turnListeners = new Set<(event: StoryTurnEnded) => void>();
   /** The folders kept with the stories this computer runs, by project. */
   private readonly ownedPaths = new Map<string, string>();
+  private readonly ownership: StoryOwnership;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private tickTimer: ReturnType<typeof setInterval> | undefined;
   private lastQueue = "";
@@ -116,6 +123,13 @@ export class StoryService {
     this.host = host;
     this.ledger = new StoryLedger(options.ledgerFile);
     this.deadlineMs = options.deadlineMs ?? 60_000;
+    this.ownership = new StoryOwnership({
+      ledger: this.ledger,
+      host,
+      projectPath: (story) => this.projectPath(story),
+      within: (work, what) => this.within(work, what),
+      runtimeReady: () => this.windows.preferences()?.runtimePhase === "ready",
+    });
     this.reconciler = new ReconcileScheduler(
       (storyId) => this.exclusive(storyId, () => this.reconcile(storyId)),
       options.retryMs,
@@ -426,7 +440,12 @@ export class StoryService {
    * the story's action, with a deadline on what it waits for.
    */
   private async reconcile(storyId: string) {
-    if (!(await this.ledger.owns(storyId))) return;
+    const cached = this.stories.record(storyId)?.story;
+    if (
+      !(await this.ledger.owns(storyId)) &&
+      !(cached && (await this.ownership.adopt(cached)))
+    )
+      return;
     let story: HostStory;
     try {
       story = await this.within(this.read(storyId), "The account's API");
@@ -455,7 +474,11 @@ export class StoryService {
         .catch(() => undefined);
       await this.ledger.forget(session);
     } else if (session && status?.exists) {
-      await this.tellEndedTurns(settled, session, status);
+      // Said at work while no turn runs: its last turn's end was never settled.
+      const unsettled =
+        story.agentStatus === "Running" &&
+        !(status.turnRunning ?? status.running);
+      await this.tellEndedTurns(settled, session, status, unsettled);
     }
     // A story no longer at work here is no longer this computer's.
     if (!hasRuntime(settled.status) && settled.agentStatus !== "Running")
@@ -467,8 +490,13 @@ export class StoryService {
     story: HostStory,
     session: string,
     status: EngineSessionStatus,
+    unsettled: boolean,
   ) {
-    const untold = await this.ledger.untold(session, status.endedTurns ?? []);
+    const untold = await this.ledger.untold(
+      session,
+      status.endedTurns ?? [],
+      unsettled,
+    );
     for (const ended of untold) {
       await this.ledger.told(session, ended.turn);
       const event: StoryTurnEnded = {
@@ -543,6 +571,7 @@ export class StoryService {
 
   private async tick() {
     await this.refresh().catch(report);
+    await this.ownership.adoptAll(this.stories.all()).catch(report);
     await this.reconcileAll().catch(report);
   }
 
@@ -565,7 +594,7 @@ export class StoryService {
 
   private async assertHere(story: HostStory) {
     if (story.agentStatus !== "Running") return;
-    if (await this.ledger.owns(story.id)) return;
+    if (await this.ownership.adopt(story)) return;
     throw new Error("This story's agent runs on another computer.");
   }
 
@@ -799,10 +828,13 @@ export class StoryService {
     options: { removeSession: boolean },
     release = true,
   ) {
-    const owned = await this.ledger.story(story.id);
-    const path =
-      owned?.path ??
-      (story.agentStatus === "Running" ? undefined : this.projectPath(story));
+    const running = story.agentStatus === "Running";
+    const owned =
+      (await this.ledger.story(story.id)) ??
+      (running && (await this.ownership.adopt(story))
+        ? await this.ledger.story(story.id)
+        : undefined);
+    const path = owned?.path ?? (running ? undefined : this.projectPath(story));
     const event = {
       projectId: story.projectId,
       storyId: story.id,
@@ -892,7 +924,13 @@ export class StoryService {
       if (!first) for (const record of changed) this.emitStory(record);
       // Where the stories this computer runs were left (a quit, a crash, a
       // turn that ended while Blame was closed) is settled once read.
-      if (first) await this.reconcileAll(projectId);
+      if (first) {
+        await this.ownership.adoptAll(
+          this.stories.projectStories(projectId),
+          true,
+        );
+        await this.reconcileAll(projectId);
+      }
     })()
       .catch(report)
       .finally(() => this.loading.delete(projectId));

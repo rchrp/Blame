@@ -2,8 +2,9 @@
 // a development story (docs/engine-in-the-app.md, "Development stories"):
 // its worktree, what this computer needs for its mode, Git's identity, what
 // a turn needs before it starts (the development server, the preview's
-// sync, the session's GitHub access), what Approve & Merge needs, and the
-// cleanup of what the story ran once it is done, discarded or deleted.
+// sync, the session's GitHub access), what Approve & Merge needs, the
+// cleanup of what the story ran once it is done, discarded or deleted, and
+// whether a story's worktree is on this computer.
 
 import { randomUUID } from "node:crypto";
 import log from "electron-log";
@@ -24,6 +25,7 @@ import {
   readStoryWorkspaceFile,
   removeStoryWorktree,
   stopStoryProjectSetup,
+  storyWorktreeHere,
 } from "../workspace-ipc.ts";
 
 type StoryServiceName =
@@ -33,6 +35,7 @@ type StoryServiceName =
   | "prepareStoryTurn"
   | "stopStoryRuntime"
   | "removeStoryWorktree"
+  | "storyWorktreeHere"
   | "readWorkspaceFile"
   | "beginGitFlow"
   | "endGitFlow";
@@ -66,6 +69,11 @@ export function engineStoryServices(previews: PreviewService): Handlers {
       if (!removed) throw new Error("Unable to remove worktree.");
       return true;
     },
+    storyWorktreeHere: (input) =>
+      storyWorktreeHere({
+        ...input,
+        workspaceMode: input.workspaceMode ?? undefined,
+      }),
     readWorkspaceFile: (input) => readStoryWorkspaceFile(input),
     beginGitFlow: (input) =>
       beginEngineGitFlow(input.worktree, (worktree) =>

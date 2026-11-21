@@ -158,8 +158,20 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   refused, and its worktree is not removed here. A story no agent runs is
   cleaned of what this computer has of it when it is merged, done,
   discarded or sent back here, whoever started it (a story in review from
-  before the ledger existed included). Two computers starting the same queued story is not
-  prevented yet: that needs an atomic claim in the API.
+  before the ledger existed included). A story at work the ledger does not
+  name (one the previous build left, or a lost ledger) is this computer's
+  when its engine runs the story's session or the story's own worktree is
+  here, the runtime VM's included (`storyWorktreeHere`; a Direct story's
+  folder proves nothing); and, for a story already at work when its
+  project is first read after the ledger started empty (no file yet, or
+  one set aside), when this computer's engine keeps its session
+  (`session/list`, never Blame's database). Only then, since a session
+  followed here from a drawer is kept here too. The service looks when a
+  project is first read and each minute (in the runtime VM only while it
+  runs, since looking there starts it), and before it refuses a pause or a
+  message or skips a cleanup; the ledger names the story from then on,
+  and the turn it was left at work for is told (`stories/ownership.ts`). Two computers starting the same queued story is
+  not prevented yet: that needs an atomic claim in the API.
 - **Reconcile** (`stories/reconcile.ts`): every path ends in one step, run
   as the story's action: its record read now, set against what the engine
   says of its session (`status`), and written with retries. A turn running

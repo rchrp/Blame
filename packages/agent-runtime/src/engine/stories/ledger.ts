@@ -39,6 +39,7 @@ export class StoryLedger {
   private state: State | undefined;
   private loading: Promise<State> | undefined;
   private writing: Promise<void> = Promise.resolve();
+  private empty = false;
 
   constructor(file?: string) {
     this.file = file;
@@ -91,22 +92,29 @@ export class StoryLedger {
 
   /**
    * The ended turns not told yet, oldest first. A session the ledger never
-   * saw (one made elsewhere, or a lost file) starts from where it is: its
-   * history is not told again.
+   * saw (one made elsewhere, by the previous build, or a lost file) starts
+   * from where it is: its history is not told again, except its last turn
+   * when that one was never settled (`unsettled`: its story was left at
+   * work, and no turn runs now).
    */
   async untold<Turn extends EndedTurn>(
     session: string,
     ended: readonly Turn[],
+    unsettled = false,
   ): Promise<Turn[]> {
     const state = await this.load();
     const told = state.sessions.get(session);
     if (!told) {
+      const untold = unsettled ? ended.slice(-1) : [];
       state.sessions.set(
         session,
-        ended.map(({ turn }) => turn).slice(-toldKept),
+        ended
+          .slice(0, ended.length - untold.length)
+          .map(({ turn }) => turn)
+          .slice(-toldKept),
       );
       await this.flush();
-      return [];
+      return untold;
     }
     const seen = new Set(told);
     return ended.filter(({ turn }) => !seen.has(turn));
@@ -127,6 +135,15 @@ export class StoryLedger {
     await this.flush();
   }
 
+  /**
+   * Whether the ledger started empty in this run: there was no file yet
+   * (the first run of a build that keeps one) or it could not be read.
+   */
+  async startedEmpty() {
+    await this.load();
+    return this.empty;
+  }
+
   // ------------------------------------------------------------------ file
 
   private load() {
@@ -138,6 +155,7 @@ export class StoryLedger {
   private async read(): Promise<State> {
     const state: State = { sessions: new Map(), stories: new Map() };
     const file = this.file;
+    this.empty = true;
     if (!file) return state;
     let text: string;
     try {
@@ -145,6 +163,7 @@ export class StoryLedger {
     } catch {
       return state;
     }
+    this.empty = false;
     try {
       const stored = JSON.parse(text) as {
         sessions?: Record<string, unknown>;
@@ -165,6 +184,7 @@ export class StoryLedger {
       return state;
     } catch (error) {
       // Kept aside for a person to look at; the service starts over.
+      this.empty = true;
       const aside = `${file}.corrupt-${Date.now()}`;
       await rename(file, aside).catch(() => undefined);
       console.error(

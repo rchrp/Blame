@@ -139,6 +139,14 @@ export type DesktopServices = {
     workspaceMode?: StoryWorktree["workspaceMode"] | null;
     projectSetupStopped?: boolean;
   }): Promise<boolean>;
+  // Whether a story's own worktree (never the project folder) is on this
+  // computer, the runtime VM's included; it throws when Git cannot tell
+  // (the VM not running).
+  storyWorktreeHere?(input: {
+    repositoryRoot: string;
+    worktree: string;
+    workspaceMode?: StoryWorktree["workspaceMode"] | null;
+  }): Promise<boolean>;
   // A file of a workspace (the runtime VM's included); null when there is none.
   readWorkspaceFile?(input: {
     root: string;
@@ -215,6 +223,7 @@ export const desktopServiceNames = [
   "prepareStoryTurn",
   "stopStoryRuntime",
   "removeStoryWorktree",
+  "storyWorktreeHere",
   "readWorkspaceFile",
   "beginGitFlow",
   "endGitFlow",

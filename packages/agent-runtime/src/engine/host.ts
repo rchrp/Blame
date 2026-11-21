@@ -219,6 +219,11 @@ export class EngineHost {
         call: (method, input) => this.handlers[method](input),
         desktop: options.desktop ?? {},
         emit: (event) => options.emit(event),
+        storedSessions: async (location) => {
+          const client = await this.engineAt(location).supervisor.client();
+          const { sessions } = await client.listSessions();
+          return sessions.map(({ session }) => session);
+        },
       },
       { ledgerFile: options.storyLedgerFile },
     );

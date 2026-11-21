@@ -661,6 +661,23 @@ export function removeStoryWorktree(input: RemoveWorktreeInput) {
   return removeWorktree(input);
 }
 
+/**
+ * Whether a story's own worktree (never the project folder) is on this
+ * computer, in the runtime VM included; throws when Git cannot tell.
+ */
+export async function storyWorktreeHere(input: {
+  repositoryRoot: string;
+  worktree: string;
+  workspaceMode?: WorkspaceMode;
+}) {
+  const { state } = await inspectWorktreeRemoval({
+    repositoryRoot: resolveRuntimePath(input.repositoryRoot),
+    worktree: resolveRuntimePath(input.worktree),
+    workspaceMode: input.workspaceMode,
+  });
+  return state === "registered" || state === "unregistered";
+}
+
 /** A file of a workspace, null when it is not there. */
 export function readStoryWorkspaceFile(input: WorkspacePathInput) {
   return readWorkspaceFile(input).catch(() => null);

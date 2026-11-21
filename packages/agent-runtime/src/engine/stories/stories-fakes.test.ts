@@ -154,11 +154,15 @@ export function fakeHost() {
   const statuses = new Map<string, Status>();
   const troubles = new Map<string, StatusTrouble>();
   const live = new Set<string>();
+  // The sessions this computer's engine keeps, and the worktrees it has.
+  const stored = new Set<string>();
+  const worktrees = new Set<string>();
   const order: string[] = [];
   const removeDelay = { ms: 0 };
   const connection = { url: "http://api.test/api/v1", token: "token" };
   const host = {
     api: () => connection,
+    storedSessions: async () => [...stored],
     call: async (method: EngineHostMethod, input: unknown) => {
       calls.push({ method, input });
       if (method === "createSession")
@@ -226,6 +230,8 @@ export function fakeHost() {
         return true;
       },
       readWorkspaceFile: async () => '{"repaired":true}',
+      storyWorktreeHere: async (input: { worktree: string }) =>
+        worktrees.has(input.worktree),
     },
     emit: (event: StoryHostEvent) => events.push(event),
   };
@@ -237,6 +243,8 @@ export function fakeHost() {
     statuses,
     troubles,
     live,
+    stored,
+    worktrees,
     order,
     removeDelay,
   };
@@ -290,32 +298,34 @@ export function working(session: string, fields: Record<string, unknown> = {}) {
 /**
  * A story service whose ledger says this computer runs `owned` (story id →
  * its session, if any) in project "a" at "/a"; each owned session has no
- * turn told yet.
+ * turn told yet. With `owned` null there is no ledger file yet (the first
+ * run of a build that keeps one).
  */
 export async function service(
   host: ReturnType<typeof fakeHost>["host"],
-  owned: Record<string, string | null> = {},
+  owned: Record<string, string | null> | null = {},
   options: StoryServiceOptions = {},
 ) {
   const directory = await mkdtemp(join(tmpdir(), "story-service-"));
   const ledgerFile = join(directory, "stories.json");
-  await writeFile(
-    ledgerFile,
-    JSON.stringify({
-      version: 2,
-      stories: Object.fromEntries(
-        Object.entries(owned).map(([storyId, session]) => [
-          storyId,
-          { projectId: "a", path: "/a", ...(session ? { session } : {}) },
-        ]),
-      ),
-      sessions: Object.fromEntries(
-        Object.values(owned)
-          .filter((session): session is string => Boolean(session))
-          .map((session) => [session, []]),
-      ),
-    }),
-  );
+  if (owned)
+    await writeFile(
+      ledgerFile,
+      JSON.stringify({
+        version: 2,
+        stories: Object.fromEntries(
+          Object.entries(owned).map(([storyId, session]) => [
+            storyId,
+            { projectId: "a", path: "/a", ...(session ? { session } : {}) },
+          ]),
+        ),
+        sessions: Object.fromEntries(
+          Object.values(owned)
+            .filter((session): session is string => Boolean(session))
+            .map((session) => [session, []]),
+        ),
+      }),
+    );
   const instance = new StoryService(host as never, { ledgerFile, ...options });
   return {
     service: instance,
