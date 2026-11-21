@@ -17,3 +17,21 @@ export function previewRecoveryStories(stories: UserStory[], hidden: boolean) {
       activePreviewStory(story) && (!hidden || story.agentStatus === "Running")
   )
 }
+
+// What preview recovery looks at: it runs again when this changes.
+export function previewRecoveryStateKey(stories: UserStory[]) {
+  return stories
+    .filter(activePreviewStory)
+    .map((story) =>
+      [
+        story.id,
+        story.status,
+        story.worktree,
+        story.workspaceMode,
+        story.previewUrl,
+        story.runConfigurationId,
+      ].join("\0")
+    )
+    .sort()
+    .join("\n")
+}

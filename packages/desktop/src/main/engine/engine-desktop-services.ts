@@ -10,6 +10,7 @@ import type {
   EngineDesktopMethods,
 } from "@blame/agent-runtime/engine-protocol";
 import { vmEngineBinaries } from "./engine-binary.ts";
+import { engineStoryServices } from "./engine-story-services.ts";
 import { prepareVmEngine, takeVmFile, vmEngineTarget } from "./vm-engine.ts";
 import log from "electron-log";
 import { execFile } from "node:child_process";
@@ -127,6 +128,7 @@ export function engineDesktopServices(
         request.location === "vm" ? "vm" : "host",
       );
     },
+    ...engineStoryServices(previews),
     refreshPreviewDependencies: (input, signal) =>
       refreshPreviewDependencies(input, signal, harness, previews),
   };

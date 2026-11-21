@@ -17,7 +17,8 @@ export type EngineViewer = {
  * Which window gets which event: a session's records go to the windows that
  * follow it, a turn starting or ending to every window. It also remembers
  * what a new engine host must be told again after the last one died: the
- * API connection and every follow still open.
+ * API connection, the story service's projects and settings (so stories
+ * are recovered and the queue runs again), and every follow still open.
  */
 export class EngineHostRouter {
   private readonly follows = new Map<
@@ -26,6 +27,8 @@ export class EngineHostRouter {
   >();
   private readonly viewers = new Map<number, EngineViewer>();
   private connection: EngineHostInput<"connect"> | undefined;
+  // The projects and settings the story service runs stories with.
+  private storySync: EngineHostInput<"storySync"> | undefined;
   // Where each session works, from the settings its calls carry, and which
   // sessions have a turn running: the rest of the app keeps a preview up and
   // does not merge into a folder an agent is writing.
@@ -46,6 +49,8 @@ export class EngineHostRouter {
     this.viewers.set(viewer.id, viewer);
     if (method === "connect")
       this.connection = input as EngineHostInput<"connect">;
+    if (method === "storySync")
+      this.storySync = input as EngineHostInput<"storySync">;
     if (method === "follow") {
       const { session, subscription } = input as EngineHostInput<"follow">;
       this.follows.set(subscription, { session, viewer });
@@ -80,6 +85,8 @@ export class EngineHostRouter {
 
   route(event: EngineHostEvent) {
     if (event.type === "activity") {
+      // The host names the folder of a session it started itself (a story).
+      if (event.workspace) this.workspaces.set(event.session, event.workspace);
       if (event.running) this.running.add(event.session);
       else this.running.delete(event.session);
     }
@@ -115,6 +122,9 @@ export class EngineHostRouter {
     return [
       ...(this.connection
         ? [{ method: "connect" as const, input: this.connection }]
+        : []),
+      ...(this.storySync
+        ? [{ method: "storySync" as const, input: this.storySync }]
         : []),
       ...[...this.follows].map(([subscription, { session }]) => ({
         method: "follow" as const,

@@ -2,7 +2,10 @@ import * as React from "react"
 import { saveStoryContextLimit } from "./story-context-limit"
 import { toast } from "sonner"
 
-import { createBacklogApi } from "@/components/backlog/data/backlog-api"
+import {
+  createBacklogApi,
+  parseUserStory,
+} from "@/components/backlog/data/backlog-api"
 import {
   mergeLoadedStories,
   mergeUserStory,
@@ -18,6 +21,7 @@ import { usePlatform } from "@/context/platform"
 import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
 import { useProjects } from "@/context/projects"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+import { refreshStoryService } from "@/lib/story-service"
 
 type BacklogState = {
   cleanupStoryIds: Set<string>
@@ -232,6 +236,40 @@ function useBacklogActions(
     }
   }, [load])
 
+  // The story service in the engine host writes the stories' agent state:
+  // what it wrote shows here as it happens.
+  React.useEffect(
+    () =>
+      platform.engine?.onStory((event) => {
+        if (event.type === "story-queue" || event.projectId !== projectId)
+          return
+        if (event.type === "story-removed") {
+          setState((current) => ({
+            ...current,
+            stories: current.stories.filter(({ id }) => id !== event.storyId),
+          }))
+          return
+        }
+        let story: UserStory
+        try {
+          story = parseUserStory(event.story)
+        } catch {
+          return
+        }
+        setState((current) => ({
+          ...current,
+          stories: current.stories.some(({ id }) => id === story.id)
+            ? current.stories.map((currentStory) =>
+                currentStory.id === story.id
+                  ? mergeUserStory(currentStory, story)
+                  : currentStory
+              )
+            : [...current.stories, story],
+        }))
+      }),
+    [platform.engine, projectId, setState]
+  )
+
   const create = React.useCallback(
     async (input: Omit<UserStoryDraft, "projectId">, contextLimit?: number) => {
       if (!projectId)
@@ -253,12 +291,18 @@ function useBacklogActions(
         runCreatedStoryAttachmentUpload(
           story,
           creation.completeAttachmentUpload,
-          setState
+          setState,
+          // Its files uploaded: a queued story can start.
+          () => void refreshStoryService(platform.engine, projectId)
         )
       }
+      // A story created in the queue starts now.
+      void refreshStoryService(platform.engine, projectId).catch(
+        () => undefined
+      )
       return story
     },
-    [api, projectId, setState]
+    [api, platform.engine, projectId, setState]
   )
 
   const update = React.useCallback(
@@ -457,12 +501,14 @@ function storyStateIds(
 function runCreatedStoryAttachmentUpload(
   story: UserStory,
   completeUpload: () => Promise<UserStory>,
-  setState: React.Dispatch<React.SetStateAction<BacklogState>>
+  setState: React.Dispatch<React.SetStateAction<BacklogState>>,
+  onUploaded: () => void
 ) {
   void completeUpload()
-    .then((uploadedStory) =>
+    .then((uploadedStory) => {
       setAttachmentUploadCompleted(story, uploadedStory, setState)
-    )
+      onUploaded()
+    })
     .catch((error) => {
       const message =
         error instanceof Error ? error.message : "Unknown upload error"
@@ -472,7 +518,12 @@ function runCreatedStoryAttachmentUpload(
           label: "Retry",
           onClick: () => {
             setAttachmentUploading(story.id, setState)
-            runCreatedStoryAttachmentUpload(story, completeUpload, setState)
+            runCreatedStoryAttachmentUpload(
+              story,
+              completeUpload,
+              setState,
+              onUploaded
+            )
           },
         },
         description: "The agent keeps the local copy. Retry to persist it.",

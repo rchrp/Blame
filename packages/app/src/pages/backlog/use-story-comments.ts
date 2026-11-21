@@ -15,7 +15,6 @@ import { useCloudAuth } from "@/context/cloud-auth"
 import { conversationUltra, storyUltraKey } from "@/lib/conversation-ultra"
 import { usePlatform } from "@/context/platform"
 import { useLatestCallback } from "@/lib/use-latest-callback"
-import { errorMessage } from "./backlog-rotation-helpers"
 import {
   storyMessage,
   withAgentModel,
@@ -94,7 +93,7 @@ export function useStoryComments({
         })
       } catch (error) {
         toast.error("Unable to send your message", {
-          description: errorMessage(error),
+          description: error instanceof Error ? error.message : String(error),
           position: "bottom-right",
         })
         return undefined

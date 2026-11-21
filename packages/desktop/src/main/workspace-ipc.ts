@@ -526,16 +526,8 @@ export function registerWorkspaceIpcHandlers(
   );
   ipcMain.handle(
     "workspace:check-host-dependencies",
-    async (_event, input: CheckHostDependenciesInput) =>
-      checkHostDependencies({
-        env: await setupEnvironment(
-          input.worktree ? resolveRuntimePath(input.worktree) : "",
-        ),
-        includeRuntime: input.includeRuntime,
-        runtimeProfile: input.runtimeProfile,
-        workspaceMode: input.workspaceMode,
-        setupScript: input.setupScript ?? "",
-      }),
+    (_event, input: CheckHostDependenciesInput) =>
+      checkWorkspaceHostDependencies(input),
   );
   ipcMain.handle(
     "workspace:stop-project-setup",
@@ -637,6 +629,26 @@ async function readWorkspaceFile(input: WorkspacePathInput) {
   const fileStat = await stat(filePath);
   if (!fileStat.isFile()) throw new Error("Path is not a file");
   return readFile(filePath, "utf8");
+}
+
+/** What this computer needs to run a story or a project setup in that mode. */
+export async function checkWorkspaceHostDependencies(
+  input: CheckHostDependenciesInput,
+) {
+  return checkHostDependencies({
+    env: await setupEnvironment(
+      input.worktree ? resolveRuntimePath(input.worktree) : "",
+    ),
+    includeRuntime: input.includeRuntime,
+    runtimeProfile: input.runtimeProfile,
+    workspaceMode: input.workspaceMode,
+    setupScript: input.setupScript ?? "",
+  });
+}
+
+/** A story's worktree, for the story service in the engine host. */
+export function createStoryWorktree(input: CreateWorktreeInput) {
+  return createWorktree(input);
 }
 
 async function createWorktree(input: CreateWorktreeInput) {

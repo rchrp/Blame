@@ -54,20 +54,6 @@ export function initializationStartsAutomatically(
   )
 }
 
-/**
- * What a queued story does with the project's initialization. Direct
- * stories need none: they run the project's own app in its folder. The
- * others wait while it runs, and without one (it failed, never ran, or
- * stopped reporting) they run Direct instead of waiting forever.
- */
-export function storyInitializationDecision(
-  availability: ProjectInitializationAvailability,
-  mode: string
-): "start" | "wait" | "run-direct" {
-  if (availability === "ready" || mode === "direct") return "start"
-  return availability === "running" ? "wait" : "run-direct"
-}
-
 const runningProjects = new Set<string>()
 const runningListeners = new Set<() => void>()
 

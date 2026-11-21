@@ -140,7 +140,7 @@ export type UserStory = {
   // Null follows the ambition set in Settings.
   ambition?: "quick" | "standard" | "ambitious" | null
   // Running while its agent works, Paused when it stopped mid-work. Written
-  // by the app when a turn starts or ends (useStoryAgentOutcomes).
+  // by the story service in the engine host when a turn starts or ends.
   agentStatus?: UserStoryAgentStatus | null
   // Why the agent could not start, shown on the queued card.
   agentLastError?: string | null
@@ -148,6 +148,15 @@ export type UserStory = {
   engineSessionId?: string | null
   // The models that worked on the story, for the card's avatars.
   agentModels?: UserStoryAgentModel[] | null
+  // Stories of the project this one starts after, once each is done.
+  startsAfter?: string[] | null
+  // The model its first run uses instead of the account's.
+  requestedModel?: {
+    providerId: string
+    modelId: string
+    credentialLabel?: string
+    reasoningEffort?: string
+  } | null
   mergedAt?: string | null
   mergeCommit?: string | null
   baseCommit?: string | null

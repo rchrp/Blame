@@ -70,6 +70,11 @@ export function createBacklogApi(connection: ApiConnection) {
   }
 }
 
+/** A story as the API sends it (the story service's events carry it so). */
+export function parseUserStory(value: unknown) {
+  return userStory(value)
+}
+
 export class BacklogApiError extends Error {
   readonly retryable: boolean
   readonly status: number

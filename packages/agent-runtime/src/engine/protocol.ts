@@ -24,8 +24,10 @@ import type {
   SubscriptionUsage,
 } from "../types.js";
 import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
+import type { EngineStoryMethods, StoryHostEvent } from "./story-protocol.js";
 
 export type * from "./task-protocol.js";
+export type * from "./story-protocol.js";
 export { engineMainOnlyMethods } from "./task-protocol.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
 import type { PreviewInitialization } from "../preview-selection.js";
@@ -239,13 +241,24 @@ export type EngineHostMethods = {
     result: SubscriptionUsage | null;
   };
   shutdown: { input: undefined; result: null };
-} & EngineTaskMethods;
+} & EngineTaskMethods &
+  EngineStoryMethods;
 
 export type EngineHostMethod = keyof EngineHostMethods;
 export type EngineHostInput<M extends EngineHostMethod> =
   EngineHostMethods[M]["input"];
 export type EngineHostResult<M extends EngineHostMethod> =
   EngineHostMethods[M]["result"];
+
+/** The story service's calls (`story-protocol.ts`). */
+export const engineStoryMethods = [
+  "storySync",
+  "storyRefresh",
+  "storyRetry",
+  "storyQueueState",
+  "storyEnqueue",
+  "storyRewind",
+] as const satisfies readonly (keyof EngineStoryMethods)[];
 
 export const engineHostMethods = [
   "connect",
@@ -272,6 +285,7 @@ export const engineHostMethods = [
   "shutdown",
   "status",
   ...engineTaskMethods,
+  ...engineStoryMethods,
 ] as const satisfies readonly EngineHostMethod[];
 
 /** What the host tells the renderers. */
@@ -283,9 +297,12 @@ export type EngineHostEvent =
       session: SessionId;
       running: boolean;
       outcome?: TurnOutcome;
+      /** The folder the session works in, when the host knows it. */
+      workspace?: string;
     }
   /** How far a followed session's plan is, each time it moves. */
-  | { type: "plan"; session: SessionId; plan: PlanProgress | undefined };
+  | { type: "plan"; session: SessionId; plan: PlanProgress | undefined }
+  | StoryHostEvent;
 
 /** What the host asks of the main process: desktop services its tools use. */
 export type EngineDesktopMethods = DesktopServiceMethods;
@@ -369,6 +386,8 @@ export type EngineActivityEvent = Extract<
 
 export type EnginePlanEvent = Extract<EngineHostEvent, { type: "plan" }>;
 
+export type EngineStoryEvent = StoryHostEvent;
+
 /** `platform.engine`: the renderer's only way to the engine. */
 export type EnginePlatformClient = {
   call<M extends EngineWindowMethod>(
@@ -385,4 +404,6 @@ export type EnginePlatformClient = {
   onActivity(callback: (event: EngineActivityEvent) => void): () => void;
   /** The progress of the plans of the sessions the host follows. */
   onPlan(callback: (event: EnginePlanEvent) => void): () => void;
+  /** Stories the story service changed, and its queue. */
+  onStory(callback: (event: EngineStoryEvent) => void): () => void;
 };

@@ -64,7 +64,9 @@ import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-st
 import { backlogStatusPipStories } from "@/pages/backlog/backlog-status-pip-snapshot"
 import { HostDependenciesDialog } from "@/pages/backlog/host-dependencies-dialog"
 import { currentReviewDiffEmpty } from "@/pages/backlog/review-diff-evidence"
-import { useBacklogRotation } from "@/pages/backlog/use-backlog-rotation"
+import { useStoryQueue } from "@/pages/backlog/use-story-queue"
+import { usePreviewRecovery } from "@/pages/backlog/use-preview-recovery"
+import { parseUserStory } from "@/components/backlog/data/backlog-api"
 import {
   queuedUserStoryTitleRequest,
   runQueuedStoryTitleGeneration,
@@ -88,14 +90,9 @@ import { useDirectStoryCommit } from "./use-direct-story-commit"
 import { useStoryPullRequest } from "./use-story-pull-request"
 import { useStoryPullRequestSync } from "./use-story-pull-request-sync"
 import { pauseInterruptRefusal } from "./story-agent-control"
-import {
-  replaceStoryAfterUndo,
-  rewindStoryMessage,
-} from "./story-checkpoint-undo"
+import { replaceStoryAfterUndo } from "./story-checkpoint-undo"
 import { storyResumeMessage, storySessionSettings } from "./story-engine"
-import { useStoryAgentOutcomes } from "./use-story-agent-outcomes"
 import { useStoryComments } from "./use-story-comments"
-import { useResumeSlots } from "./use-resume-slots"
 import { useNewUserStoryExcerpts } from "./use-new-story-excerpts"
 import { withStoryTransition } from "./story-transitions"
 import { optimizeUserStoryPrompt } from "./user-story-prompt-optimizer"
@@ -314,8 +311,16 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     (story: UserStory) => userStoryDiffStats.get(story.id),
     [userStoryDiffStats]
   )
-  const { countTurns } = useStoryAgentOutcomes(backlog)
-  const rotation = useBacklogRotation(backlog)
+  const queue = useStoryQueue(backlog)
+  usePreviewRecovery(backlog)
+  // Send to Dev Agent: the story service starts it as soon as it can.
+  const enqueueStory = useLatestCallback(async (story: UserStory) => {
+    const engine = platform.engine
+    if (!engine) throw new Error("The desktop agent engine is not available.")
+    return parseUserStory(
+      await engine.call("storyEnqueue", { storyId: story.id })
+    )
+  })
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
       // The comment box opens; sending a comment is what resumes the agent.
@@ -461,24 +466,26 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     )
     return resumed ?? story
   })
-  const unpauseAgent = useResumeSlots({
-    resume: resumeInSlot,
-    stories: backlog.stories,
-  })
+  const unpauseAgent = resumeInSlot
   // Undoes a message to the agent and what followed, with its files.
   const undoUserStoryComment = React.useCallback(
     async (story: UserStory, rewind: { to: number; workspace: boolean }) => {
       const currentStory = activeStory(story, storiesRef.current)
-      await rewindStoryMessage(platform, currentStory, rewind)
+      if (!platform.engine)
+        throw new Error("The desktop agent engine is not available.")
+      // The story service counts the turns left once they are undone.
+      await platform.engine.call("storyRewind", {
+        storyId: currentStory.id,
+        to: rewind.to,
+        restoreWorkspace: rewind.workspace,
+      })
       replaceStoryAfterUndo(currentStory, storiesRef, setDrawerTarget)
-      // The undone turns no longer count for their model.
-      void countTurns(currentStory).catch(() => undefined)
       toast.success("Message undone and restored to the editor.", {
         position: "bottom-right",
       })
       return currentStory
     },
-    [countTurns, platform]
+    [platform]
   )
 
   const mergeApprovedStory = React.useCallback(
@@ -687,10 +694,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
           currentStory,
           true
         )
-        return updateStory(generatedStory ?? currentStory, {
-          agentLastError: null,
-          status: "ready",
-        })
+        return enqueueStory(generatedStory ?? currentStory)
       }
       if (action === "Discard") {
         return updateStory(currentStory, {
@@ -717,6 +721,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     [
       closeDrawerIfDeleted,
       completeReviewStory,
+      enqueueStory,
       generateQueuedStoryTitle,
       backlog,
       openCreateDrawerWithDraft,
@@ -834,6 +839,18 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const deleteDrawerStory = deleteStory
   const updateDrawerStory = useLatestCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
+      // Joining the queue is the story service's: the edits go first.
+      if (input.status === "ready") {
+        const { status: _, agentLastError: __, ...edits } = input
+        void _
+        void __
+        const edited = Object.keys(edits).length
+          ? await updateStory(story, edits)
+          : story
+        return enqueueStory(
+          (await generateQueuedStoryTitle(edited, true)) ?? edited
+        )
+      }
       const nextStory = await updateStory(story, input)
       void generateQueuedStoryTitle(nextStory)
       return nextStory
@@ -900,7 +917,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
             onStopAgent={columnStopAgent}
             onUnpauseAgent={columnUnpauseAgent}
             queueInitializing={column.id === "ready" && queueInitializing}
-            queueNotice={column.id === "ready" ? rotation.runtimeWaitingLabel : undefined}
+            queueNotice={column.id === "ready" ? queue.queueNotice : undefined}
             storyCleanup={backlog.storyCleanup}
             storySetupInitializing={backlog.storySetupInitializing}
             storyTitleGenerating={storyTitleGenerating}
@@ -947,7 +964,7 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       />
       </WhileShown>
       <UserStoryPreviewWarmup userStories={backlog.stories} />
-      <HostDependenciesDialog {...rotation.hostDependenciesDialog} />
+      <HostDependenciesDialog {...queue.hostDependenciesDialog} />
       <DirectSharedFilesDialog {...sharedFilesDialog} />
     </div>
   )

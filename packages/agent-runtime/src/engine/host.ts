@@ -57,6 +57,8 @@ import { purposeClientTools } from "./purposes/tool-sets.js";
 import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
 import { SessionHub } from "./session-hub.js";
+import { storyHandlers } from "./stories/handlers.js";
+import { StoryService } from "./stories/service.js";
 import { taskHandlers, type TaskHost } from "./tasks/handlers.js";
 import { runInitializationRepair } from "./tasks/project.js";
 import { EngineTaskError, TaskRunner } from "./tasks/runner.js";
@@ -150,6 +152,11 @@ export class EngineHost {
   readonly conversationTools: ConversationTools;
   private readonly credentials: CredentialResolver;
   private readonly providers: EngineProviders;
+  /**
+   * The life of every development story (`stories/service.ts`): its queue,
+   * its starts, the end of each turn. The orchestrator calls it directly.
+   */
+  readonly stories: StoryService;
   private readonly options: EngineHostOptions;
   // Before `handlers`, which hand it out. A task is not watched like a
   // conversation (no activity events): a window that shows its progress
@@ -203,6 +210,12 @@ export class EngineHost {
       },
       options.binary,
     );
+    this.stories = new StoryService({
+      api: () => this.api,
+      call: (method, input) => this.handlers[method](input),
+      desktop: options.desktop ?? {},
+      emit: (event) => options.emit(event),
+    });
     // The native engine starts with the host: the catalog and every host
     // workspace use it.
     this.engineAt("host");
@@ -276,9 +289,12 @@ export class EngineHost {
     );
     supervisor.onStarted(() => this.credentials.engineRestarted());
     const hub = new SessionHub(supervisor, (event) => {
-      if (event.type === "activity" && !event.running)
+      if (event.type !== "activity") return options.emit(event);
+      if (!event.running)
         void this.saveCompletionMemory(event.session, location);
-      options.emit(event);
+      this.stories.onActivity(event);
+      const workspace = this.current.get(event.session)?.config.workspace_root;
+      options.emit(workspace ? { ...event, workspace } : event);
     });
     return { supervisor, hub };
   }
@@ -432,6 +448,8 @@ export class EngineHost {
   } = {
     connect: async ({ api }) => {
       this.api = api ?? undefined;
+      // Signed in: the stories of the projects it knows are read again.
+      if (this.api) void this.stories.refresh().catch(() => undefined);
       return null;
     },
     createSession: async ({ session, ...settings }) => {
@@ -556,6 +574,8 @@ export class EngineHost {
       await this.shutdown();
       return null;
     },
+    // The service is made in the constructor, after these handlers.
+    ...storyHandlers(() => this.stories),
     ...taskHandlers(this.taskHost()),
   };
 
@@ -586,6 +606,7 @@ export class EngineHost {
 
   /** Stops following, ends running turns as interrupted and stops the engine. */
   async shutdown() {
+    this.stories.stop();
     this.tasks.cancelAll();
     await Promise.all(
       [...this.engines.values()].map((engine) => engine.hub.stop()),

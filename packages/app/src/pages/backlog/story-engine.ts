@@ -1,8 +1,6 @@
 // A story's agent on Blame's engine (docs/engine-in-the-app.md): what the
-// renderer decides about it (its settings, the person's messages) and what
-// the end of a turn means for the story. The conversation itself is the
-// engine session's records; the API keeps only `engineSessionId`,
-// `agentStatus`, `agentLastError` and `agentModels`, written here.
+// renderer decides about it (its settings, the person's messages). The
+// story service in the engine host starts it and writes its agent fields.
 
 import type {
   DevelopmentStorySettings,
@@ -11,18 +9,14 @@ import type {
   EngineSessionSettings,
   StoryWorkspaceMode,
 } from "@blame/agent-runtime/engine-protocol"
-import type { TurnOutcome } from "@blame/engine-client"
 
 import type {
   UserStory,
   UserStoryAgentModel,
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
-  UserStoryUpdate,
 } from "@/components/backlog/data/backlog-data"
 import { codeSelectionLineLabel } from "../../components/backlog/shared/comment-attachment-events.ts"
-import { unverifiedChecks } from "@blame/engine-client/transcript"
-import { unfinishedTurnText } from "../../components/chat/engine/transcript-conversation.ts"
 
 /**
  * Where a story's worktree is, so its agent runs on the engine next to it. A
@@ -115,40 +109,6 @@ export function withAgentModel(
 }
 
 /**
- * The story's models with how many turns each answered, as the engine's
- * records count them: every entry of a model carries its count, and a model
- * the records name but the story does not list is added. Undefined when
- * nothing changes.
- */
-export function withTurnCounts(
-  models: UserStoryAgentModel[] | null | undefined,
-  counts: ReadonlyArray<{ providerId: string; modelId: string; turns: number }>
-): UserStoryAgentModel[] | undefined {
-  const key = (model: { providerId: string; modelId: string }) =>
-    `${model.providerId}\u0000${model.modelId}`
-  const turns = new Map(counts.map((count) => [key(count), count.turns]))
-  const listed = new Set((models ?? []).map(key))
-  const next = [
-    ...(models ?? []).map((model) => {
-      const { turns: _, ...rest } = model
-      void _
-      const count = turns.get(key(model))
-      return count ? { ...rest, turns: count } : rest
-    }),
-    ...counts
-      .filter((count) => !listed.has(key(count)))
-      .map(({ providerId, modelId, turns: count }) => ({
-        providerId,
-        modelId,
-        turns: count,
-      })),
-  ].slice(-16)
-  return JSON.stringify(next) === JSON.stringify(models ?? [])
-    ? undefined
-    : next
-}
-
-/**
  * A message to the story's agent: the text, code excerpts quoted in it,
  * and attached files read as the model gets them (images, PDFs, text).
  */
@@ -180,36 +140,6 @@ export async function storyMessage(
   return {
     text: [text.trim(), ...excerpts, ...stories].filter(Boolean).join("\n\n"),
     attachments,
-  }
-}
-
-/**
- * What the end of every turn of a story's agent means for the story:
- * done, it waits for review; stopped (by the person, by a limit, by Blame
- * quitting), it is paused where it was; failed, it goes to review with the
- * error in its conversation, except a sign-in problem, which pauses it.
- */
-export function storyOutcomeUpdate(
-  story: Pick<UserStory, "status">,
-  outcome: TurnOutcome | undefined
-): UserStoryUpdate {
-  if (story.status !== "in-progress") return { agentStatus: null }
-  switch (outcome?.status) {
-    case "completed":
-      return { agentStatus: null, status: "in-review" }
-    // The engine already retried what could be retried: the story waits for
-    // the person, with the reason, and resumes from its records.
-    case "failed":
-      return { agentStatus: "Paused", agentLastError: outcome.error.message }
-    // The agent stopped without a finish the checks accepted. When they
-    // refused it because a check still fails, its reply stands, unverified,
-    // and the story waits for review as before; otherwise it is paused.
-    case "contract_unmet":
-      return unverifiedChecks({ outcome })
-        ? { agentStatus: null, status: "in-review" }
-        : { agentStatus: "Paused", agentLastError: unfinishedTurnText }
-    default:
-      return { agentStatus: "Paused" }
   }
 }
 
