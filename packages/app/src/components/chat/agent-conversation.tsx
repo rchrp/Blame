@@ -74,7 +74,7 @@ import {
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { cn } from "@/lib/utils"
 import { UltraMark } from "@/components/model/ultra-mode"
-import { SubAgentsCard } from "./sub-agents/sub-agents-card"
+import { HelperAgents } from "./sub-agents/helper-agents"
 import { SubAgentsNotice } from "./sub-agents/sub-agents-notice"
 import {
   readSubAgentsCall,
@@ -865,7 +865,7 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
         />
       ) : null}
       {helperCalls.map(({ activity, call }) => (
-        <SubAgentsCard
+        <HelperAgents
           key={activity.id}
           call={call}
           onFileLinkClick={props.onFileLinkClick}

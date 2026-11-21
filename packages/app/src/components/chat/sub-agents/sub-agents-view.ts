@@ -12,7 +12,12 @@ import type {
 } from "@blame/engine-client"
 import type { Transcript } from "@blame/engine-client/transcript"
 
+import {
+  describeToolCall,
+  toolCallSource,
+} from "../tool-calls/describe-tool-call.ts"
 import { formatDuration as formatElapsed } from "../tool-calls/tool-call-values.ts"
+import { helperIdentity, type HelperIdentity } from "./helper-identity.ts"
 
 export const runAgentsTool = "run_agents"
 
@@ -28,6 +33,10 @@ export type SubAgentRow = {
   status: SubAgentStatus
   /** The helper's own session, whose records are its thread. */
   session: string
+  /** Its face and its name. */
+  identity: HelperIdentity
+  /** What it is doing now, as a sentence: only for a helper that runs. */
+  current?: string
   tokens: number
   durationMs: number
   report?: SubAgentReport
@@ -94,6 +103,7 @@ export function subAgentRows(
       title: brief.title,
       brief: brief.brief,
       session: subAgentSession(call.call, index),
+      identity: helperIdentity(call.call, index),
     }
     const result = call.result?.agents.find((agent) => agent.index === index)
     if (result) return { ...base, ...settled(result) }
@@ -130,6 +140,30 @@ function statusOf(status: SubAgentResult["status"]): SubAgentStatus {
       : "cancelled"
 }
 
+/**
+ * What the helper last did, as a sentence ("Searching "registerRoutes""),
+ * from its own records.
+ */
+export function currentStep(thread: Transcript): string | undefined {
+  const call = [...thread.items]
+    .reverse()
+    .find((item) => item.kind === "tool_call" && item.name !== "report")
+  if (call?.kind !== "tool_call") return undefined
+  const running = call.state === "requested" || call.state === "running"
+  const view = describeToolCall(
+    toolCallSource(
+      {
+        kind: "tool",
+        title: call.name,
+        toolName: call.name,
+        detail: JSON.stringify({ toolName: call.name, input: call.input }),
+      },
+      running
+    )
+  )
+  return [view.verb, view.target?.text].filter(Boolean).join(" ")
+}
+
 /** A helper still going, from its own records. */
 function live(thread: Transcript | undefined, queued: boolean, now: number) {
   const turn = thread?.turns[0]
@@ -141,8 +175,14 @@ function live(thread: Transcript | undefined, queued: boolean, now: number) {
     }
   const tokens = threadTokens(thread)
   const durationMs = Math.max(0, (turn.endedAtMs ?? now) - turn.startedAtMs)
-  if (turn.status === "running" || turn.status === "queued")
-    return { status: "running" as const, tokens, durationMs }
+  if (turn.status === "running" || turn.status === "queued") {
+    return {
+      status: "running" as const,
+      tokens,
+      durationMs,
+      current: currentStep(thread) ?? "Thinking",
+    }
+  }
   // Ended, and the lead's call has not reported yet.
   return {
     status:
@@ -221,19 +261,22 @@ export function formatDuration(ms: number) {
 }
 
 /**
- * The card's header: where the helpers stand. A helper that failed or was
- * stopped is said so, never counted as one still to come.
+ * The sentence that opens the helpers of a call, like the sentence of any
+ * step of the work: "Running 3 helpers · 1 done", "Ran 3 helpers · 1 failed".
+ * A helper that failed or was stopped is said so, never counted as one still
+ * to come.
  */
-export function summaryLine(totals: SubAgentTotals, running: boolean) {
-  if (!running && totals.done === totals.count) return "All done"
+export function leadIn(totals: SubAgentTotals, running: boolean) {
   const lost = [
     totals.failed ? `${totals.failed} failed` : "",
     totals.stopped ? `${totals.stopped} stopped` : "",
   ].filter(Boolean)
-  const done = running
-    ? `${totals.done} of ${totals.count} done`
-    : `${totals.done} done`
-  return [done, ...lost].join(" · ")
+  const progress = running && totals.done > 0 ? [`${totals.done} done`] : []
+  return {
+    verb: running ? "Running" : "Ran",
+    target: `${totals.count} ${totals.count === 1 ? "helper" : "helpers"}`,
+    rest: [...progress, ...lost].join(" · "),
+  }
 }
 
 /**

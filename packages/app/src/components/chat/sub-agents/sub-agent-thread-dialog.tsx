@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { HelperAvatar } from "./helper-avatar"
 import { ToolCallItem } from "../tool-calls/tool-call-item"
 import {
   formatDuration,
@@ -53,13 +54,20 @@ export function SubAgentThreadDialog({
   return (
     <Dialog open onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[min(85vh,52rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
-        <DialogHeader className="gap-1 border-b px-5 py-4 text-left">
+        <DialogHeader className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-0 border-b px-5 py-4 text-left">
+          <HelperAvatar
+            className="row-span-2"
+            identity={row.identity}
+            size={36}
+            status={row.status}
+          />
           <DialogTitle className="pr-8 text-base leading-snug">
             {row.title}
           </DialogTitle>
           <DialogDescription className="tabular-nums">
-            {roleLabels[row.role]} · {statusLabels[row.status]} ·{" "}
-            {formatDuration(row.durationMs)} · {formatTokens(tokens)} tokens
+            {row.identity.name} · {roleLabels[row.role]} ·{" "}
+            {statusLabels[row.status]} · {formatDuration(row.durationMs)} ·{" "}
+            {formatTokens(tokens)} tokens
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="min-h-0 flex-1">

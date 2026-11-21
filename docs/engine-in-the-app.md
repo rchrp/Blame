@@ -492,11 +492,19 @@ and `path:line` or URL references).
   (about 115 MB), kept for a follow-up that a helper never makes. The tool is
   not offered there (`helperAgentsAvailable`), the engine refuses it, and the
   menu says so.
-- **In the app** a `run_agents` call is one card (`chat/sub-agents/`): a row
-  per helper (role, title, status, time, tokens), the total at the bottom, and
-  a row opens the helper's thread in a dialog. While the call runs the card
-  follows each helper's own session; afterwards it reads the call's result,
-  so a thread the engine no longer keeps costs the card nothing.
+- **In the app** a `run_agents` call is a few lines of the conversation, no
+  frame (`chat/sub-agents/`): a sentence that opens them ("Running 3
+  helpers · 1 done", "Ran 3 helpers"), then a line per helper on the chat's own
+  background: its pixel-art flower (the flower glows while it works, a small
+  badge says done, failed or stopped), the flower's name, the title of its
+  brief, what it does now or found, its time and tokens. The flowers are given
+  by the call (a hash of its id), so a reload shows the same helpers, and no
+  two helpers of a call are alike; they are a face, not a persona (the prompt is
+  the role's and nothing else). A line opens the helper's thread in a dialog.
+  While the call runs the lines follow each helper's own session; afterwards
+  they read the call's result, so a thread the engine no longer keeps costs
+  nothing. The agent's stats island reminds the person of the helpers that
+  work: a section in the open panel, the flowers in the pill.
 
 ## Context shaping
 

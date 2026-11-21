@@ -419,6 +419,12 @@
     animation: agent-thinking-mark-breath 1.25s ease-in-out infinite;
   }
 
+  /* A helper agent's flower while it works: a soft glow that breathes, in the
+     colours of the thinking mark. */
+  .helper-avatar-running {
+    animation: helper-avatar-breath 1.8s ease-in-out infinite;
+  }
+
   .agent-thinking-text {
     color: transparent;
     background: linear-gradient(
@@ -519,8 +525,13 @@
   @media (prefers-reduced-motion: reduce) {
     .agent-activity-running,
     .agent-thinking-mark,
-    .agent-thinking-text {
+    .agent-thinking-text,
+    .helper-avatar-running {
       animation: none;
+    }
+
+    .helper-avatar-running {
+      box-shadow: 0 0 0 2px oklch(0.78 0.16 230 / 70%);
     }
 
     .smart-model-slider-fill::after {
@@ -825,6 +836,22 @@
     caret-color: transparent !important;
     outline: none !important;
     resize: none !important;
+  }
+}
+
+@keyframes helper-avatar-breath {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.16 230 / 45%),
+      0 0 0 0 oklch(0.72 0.2 285 / 0%);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.16 230 / 85%),
+      0 0 0 4px oklch(0.72 0.2 285 / 16%),
+      0 0 12px oklch(0.62 0.22 255 / 45%);
   }
 }
 

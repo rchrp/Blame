@@ -8,6 +8,7 @@ import {
   describeToolCall,
   toolCallSource,
 } from "../tool-calls/describe-tool-call.ts"
+import { helperIdentity } from "./helper-identity.ts"
 import {
   formatDuration,
   formatTokens,
@@ -16,7 +17,7 @@ import {
   subAgentRows,
   subAgentSession,
   subAgentTotals,
-  summaryLine,
+  leadIn,
 } from "./sub-agents-view.ts"
 
 const model = { provider: "chatgpt", model: "gpt-5.5" }
@@ -178,6 +179,49 @@ function leadActivity(finished: "result" | "running" | "refused") {
   }
 }
 
+/** A helper in the middle of a tool call. */
+function helperDoing(tool: string, input: Record<string, unknown>) {
+  const turn = "h2"
+  const records = [
+    record({
+      type: "session_created",
+      config: { ...config, kind: { kind: "task" } },
+    }),
+    record({
+      type: "user_message",
+      turn,
+      input: [{ type: "text", text: "brief" }],
+      delivery: "turn",
+    }),
+    record({
+      type: "request_started",
+      turn,
+      request: "r1",
+      model,
+      attempt: 1,
+      prefix_digest: "d",
+    }),
+    record({
+      type: "assistant_message",
+      turn,
+      request: "r1",
+      blocks: [{ type: "tool_call", call: "call-h", name: tool, input }],
+      stop: "tool_use",
+      usage: { input_tokens: 100, output_tokens: 10 },
+    }),
+    record({
+      type: "tool_call_started",
+      turn,
+      call: "call-h",
+      name: tool,
+      effect: "read_only",
+    }),
+  ]
+  const reducer = new TranscriptReducer()
+  reducer.applyRecords(records)
+  return reducer.snapshot()
+}
+
 /** A helper's own session, as far as it got. */
 function helper(options: {
   ended?: "completed" | "interrupted"
@@ -290,7 +334,7 @@ test("helpers the call reports as waiting are waiting", () => {
     rows.map((row) => row.status),
     ["running", "running", "waiting"]
   )
-  assert.equal(summaryLine(subAgentTotals(rows), true), "0 of 3 done")
+  assert.equal(leadIn(subAgentTotals(rows), true).rest, "")
 })
 
 test("an interrupted helper reads as stopped, not failed", () => {
@@ -304,19 +348,63 @@ test("an interrupted helper reads as stopped, not failed", () => {
   assert.equal(rows[0]!.status, "cancelled")
 })
 
-test("the header says who failed or was stopped, not just who is done", () => {
+test("the opening sentence says who failed or was stopped, not just who is done", () => {
   const { activity } = leadActivity("result")
   const rows = subAgentRows(readSubAgentsCall(activity)!, new Map(), Date.now())
   const totals = subAgentTotals(rows)
-  assert.equal(summaryLine(totals, false), "1 done · 1 failed · 1 stopped")
-  assert.equal(
-    summaryLine({ ...totals, done: 3, failed: 0, stopped: 0 }, false),
-    "All done"
+  assert.deepEqual(leadIn(totals, false), {
+    verb: "Ran",
+    target: "3 helpers",
+    rest: "1 failed · 1 stopped",
+  })
+  assert.deepEqual(
+    leadIn({ ...totals, done: 3, failed: 0, stopped: 0 }, false),
+    {
+      verb: "Ran",
+      target: "3 helpers",
+      rest: "",
+    }
   )
-  assert.equal(
-    summaryLine({ ...totals, done: 1, failed: 1, stopped: 0 }, true),
-    "1 of 3 done · 1 failed"
+  assert.deepEqual(
+    leadIn({ ...totals, done: 1, failed: 1, stopped: 0 }, true),
+    {
+      verb: "Running",
+      target: "3 helpers",
+      rest: "1 done · 1 failed",
+    }
   )
+  assert.equal(leadIn({ ...totals, count: 1 }, true).target, "1 helper")
+})
+
+test("each helper of a call has its own flower, the same on every render", () => {
+  const faces = [0, 1, 2, 3].map((index) => helperIdentity("call-1", index))
+  assert.equal(
+    new Set(faces.map((face) => face.name)).size,
+    4,
+    "never alike in a call"
+  )
+  assert.deepEqual(
+    faces,
+    [0, 1, 2, 3].map((index) => helperIdentity("call-1", index))
+  )
+  // Another call may start elsewhere in the list.
+  const starts = new Set(
+    ["call-a", "call-b", "call-c", "call-d", "call-e", "call-f"].map(
+      (call) => helperIdentity(call, 0).name
+    )
+  )
+  assert.ok(starts.size > 1)
+  for (const face of faces) assert.match(face.avatar, /\/helpers\/\w+\.png$/u)
+})
+
+test("a running helper says what it is doing", () => {
+  const { activity } = leadActivity("running")
+  const call = readSubAgentsCall(activity)!
+  const thread = helperDoing("search_code", { query: "registerRoutes" })
+  const rows = subAgentRows(call, new Map([[0, thread]]), Date.now())
+  assert.equal(rows[0]!.status, "running")
+  assert.equal(rows[0]!.current, 'Searching for "registerRoutes"')
+  assert.equal(rows[1]!.current, undefined)
 })
 
 test("a refusal is said to the person in its first sentence", () => {

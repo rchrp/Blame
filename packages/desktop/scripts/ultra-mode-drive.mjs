@@ -358,7 +358,7 @@ async function scenario(cdp, options, model, child) {
     await send("Input.dispatchMouseEvent", { type: "mousePressed", ...point, button: "left", clickCount: 1 });
     await send("Input.dispatchMouseEvent", { type: "mouseReleased", ...point, button: "left", clickCount: 1 });
   };
-  const text = (value) => evaluate(`document.body.innerText.includes(${JSON.stringify(value)})`);
+  const text = (value) => evaluate(`document.body.innerText.replace(/\\s+/g, " ").includes(${JSON.stringify(value)})`);
   const theme = (scheme) =>
     send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: scheme }] });
 
@@ -408,16 +408,22 @@ async function scenario(cdp, options, model, child) {
   await send("Input.insertText", { text: "Check how routes are registered in this project, and whether my uncommitted changes break anything." });
   await delay(200);
   await press("Enter", "Enter", 13, 0, "\r");
-  await until(() => text("Helper agents"), 40_000, "the helper agents card");
+  await until(() => evaluate(`Boolean(document.querySelector('section[aria-label="Helper agents"]'))`), 40_000, "the helper agents");
   await delay(2500);
-  await shot("04-card-running-light");
+  await shot("04-helpers-running-light");
+  // The stats island folds into its pill, which keeps the reminder.
+  await click(`button[aria-label="Minimize agent stats"]`);
+  await delay(900);
+  await shot("04b-pill-with-helpers-light");
+  await click(`button[aria-label="Show agent stats"]`, 1);
+  await delay(900);
   const running = await footprints(child.pid);
   console.log("engine footprint with three helpers running (MiB):", JSON.stringify(running));
-  await until(() => text("2 of 3 done") || text("1 of 3 done"), 40_000, "a helper to finish").catch(() => undefined);
-  await shot("05-card-partly-done-light");
-  await until(() => text("All done"), 60_000, "all helpers to finish");
+  await until(() => text("1 done") || text("2 done"), 40_000, "a helper to finish").catch(() => undefined);
+  await shot("05-helpers-partly-done-light");
+  await until(() => text("Ran 3 helpers"), 60_000, "all helpers to finish");
   await delay(1500);
-  await shot("06-card-done-light");
+  await shot("06-helpers-done-light");
   await delay(3000);
   console.log("engine footprint after the helpers ended (MiB):", JSON.stringify(await footprints(child.pid)));
 
@@ -431,7 +437,7 @@ async function scenario(cdp, options, model, child) {
   // Dark.
   await theme("dark");
   await delay(900);
-  await shot("08-card-done-dark");
+  await shot("08-helpers-done-dark");
   await click(`section[aria-label="Helper agents"] button`, 2);
   await delay(900);
   await shot("09-thread-dark");
@@ -447,10 +453,10 @@ async function scenario(cdp, options, model, child) {
   // A narrow window.
   await send("Emulation.setDeviceMetricsOverride", { width: 420, height: 860, deviceScaleFactor: 2, mobile: false });
   await delay(900);
-  await shot("12-card-narrow-dark");
+  await shot("12-helpers-narrow-dark");
   await theme("light");
   await delay(600);
-  await shot("13-card-narrow-light");
+  await shot("13-helpers-narrow-light");
   await send("Emulation.setDeviceMetricsOverride", { width: 1280, height: 860, deviceScaleFactor: 1, mobile: false });
   await delay(600);
 
@@ -478,12 +484,13 @@ async function scenario(cdp, options, model, child) {
   await send("Input.insertText", { text: "Check it once more with helpers." });
   await press("Enter", "Enter", 13, 0, "\r");
   await until(() => text("1 failed"), 60_000, "the failed helper");
+  await shot("15a-helpers-failed-running-light");
   await until(() => text("Check it once more with helpers.") && evaluate(`document.querySelectorAll('section[aria-label="Helper agents"]').length === 2`), 20_000, "the second card");
   await delay(1500);
-  await shot("15-card-failed-light");
+  await shot("15-helpers-failed-light");
   await theme("dark");
   await delay(800);
-  await shot("16-card-failed-dark");
+  await shot("16-helpers-failed-dark");
   console.log("model requests:", model.requests.length);
 }
 
