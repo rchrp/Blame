@@ -14,7 +14,7 @@ import { loadPrompt } from "../../prompt-loader.js";
 import { webResearchGuidance } from "../../web-research-calls.js";
 import type { NewProjectSettings } from "../protocol.js";
 import { engineModel, type Purpose } from "./purpose.js";
-import { purposeHarnessTools } from "./tool-sets.js";
+import { purposeEngineTools, purposeHarnessTools } from "./tool-sets.js";
 
 /** The conversation's scratch folder, the same for every message of it. */
 export function newProjectFolder(session: string) {
@@ -49,7 +49,7 @@ export const newProjectPurpose: Purpose<NewProjectSettings> = {
       ]
         .filter(Boolean)
         .join("\n\n"),
-      engine_tools: ["harness"],
+      engine_tools: [...purposeEngineTools["new-project"]],
       client_tools: tools.specs(clientTools),
       tool_options: {
         harness: {
