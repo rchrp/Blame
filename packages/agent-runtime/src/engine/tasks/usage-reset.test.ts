@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { failureText } from "./runner.js";
-import { statedReset, usageResetAt } from "./usage-reset.js";
+import { statedReset, usageResetAt } from "@blame/engine-client/usage-reset";
 
 // 2026-11-20 23:28 in Bucharest (UTC+2): the owner's failing runs.
 const now = Date.parse("2026-11-20T21:28:00Z");

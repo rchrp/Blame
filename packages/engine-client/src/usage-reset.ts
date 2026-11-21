@@ -2,9 +2,10 @@
 // delay (ChatGPT's `resets_in_seconds`); Claude Code only writes it in its
 // message ("You've hit your session limit · resets 1:10am (Europe/Bucharest)").
 // A task's failure keeps it as an instant, so a message read later (a saved
-// analysis) still says when, and the app can wait for it.
+// analysis) still says when, and the app can wait for it; a conversation
+// shows it from the failed request. Browser-safe: the app imports it.
 
-import type { ErrorInfo } from "@blame/engine-client";
+import type { ErrorInfo } from "./protocol.js";
 
 const weekdays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];

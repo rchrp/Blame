@@ -23,7 +23,7 @@ import type { EngineLocation, EngineModelChoice } from "../protocol.js";
 import { engineModel } from "../purposes/purpose.js";
 import type { TaskWorkspace } from "../task-protocol.js";
 import { ToolSet, type ClientTool } from "../tool.js";
-import { usageResetAt } from "./usage-reset.js";
+import { usageResetAt } from "@blame/engine-client/usage-reset";
 
 /** A task as a purpose describes it. */
 export type TaskSpec<R> = {
