@@ -824,10 +824,21 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
     .map((activityId) => registry.persistedById.get(activityId))
     .filter((activity) => isProposalActivity(activity))
     .filter((activity) => activity!.status !== "failed")
+  // Helper agents are cards under the work, not steps in it: they stay in
+  // sight when the work folds.
+  const helperCalls = registry.activityIds.flatMap((activityId) => {
+    const activity = registry.persistedById.get(activityId)
+    const call =
+      activity?.kind === "tool" && activity.toolName === runAgentsTool
+        ? readSubAgentsCall(activity)
+        : undefined
+    return activity && call ? [{ activity, call }] : []
+  })
   const workActivityIds = registry.activityIds.filter(
     (activityId) =>
       activityId !== responseActivityId &&
-      !proposals.some((activity) => activity!.id === activityId)
+      !proposals.some((activity) => activity!.id === activityId) &&
+      !helperCalls.some(({ activity }) => activity.id === activityId)
   )
   return (
     <div className="grid gap-2">
@@ -839,6 +850,13 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
           {...props}
         />
       ) : null}
+      {helperCalls.map(({ activity, call }) => (
+        <SubAgentsCard
+          key={activity.id}
+          call={call}
+          onFileLinkClick={props.onFileLinkClick}
+        />
+      ))}
       {responseActivityId ? (
         <AgentActivityTimeline
           activityIds={[responseActivityId]}
@@ -1041,15 +1059,6 @@ function AgentStreamActivity({
   }
   if (activity.kind === "message") {
     return <AgentStreamMessage activity={activity} {...props} />
-  }
-  const helpers =
-    activity.kind === "tool" && activity.toolName === runAgentsTool
-      ? readSubAgentsCall(activity)
-      : undefined
-  if (helpers) {
-    return (
-      <SubAgentsCard call={helpers} onFileLinkClick={props.onFileLinkClick} />
-    )
   }
   if (activity.kind === "tool" && activity.images?.length) {
     return (

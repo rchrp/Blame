@@ -46,6 +46,7 @@ export function SubAgentThreadDialog({
         : [],
     [thread]
   )
+  const stepCount = shownSteps(steps).length
   // The thread's own numbers are live; the result's are final.
   const tokens =
     thread && row.status === "running" ? threadTokens(thread) : row.tokens
@@ -69,7 +70,7 @@ export function SubAgentThreadDialog({
                 {row.brief}
               </p>
             </Section>
-            <Section title={steps.length ? `Steps · ${steps.length}` : "Steps"}>
+            <Section title={stepCount ? `Steps · ${stepCount}` : "Steps"}>
               <Steps
                 error={view.error}
                 loaded={view.loaded}
@@ -111,7 +112,7 @@ function Report({
     return (
       <Section title="Report">
         <MarkdownMessage
-          appearance="subtle"
+          appearance="plain"
           markdown={row.report.summary}
           onFileLinkClick={onFileLinkClick}
         />
@@ -180,6 +181,13 @@ function Reference({
   )
 }
 
+// The report is shown above, not as a step.
+function shownSteps(steps: readonly UserStoryAgentActivity[]) {
+  return steps.filter(
+    (step) => !(step.kind === "tool" && step.toolName === "report")
+  )
+}
+
 function Steps({
   error,
   loaded,
@@ -193,10 +201,7 @@ function Steps({
   running: boolean
   steps: readonly UserStoryAgentActivity[]
 }) {
-  // The report is shown above, not as a step.
-  const shown = steps.filter(
-    (step) => !(step.kind === "tool" && step.toolName === "report")
-  )
+  const shown = shownSteps(steps)
   if (!shown.length)
     return (
       <p className="text-sm text-muted-foreground">

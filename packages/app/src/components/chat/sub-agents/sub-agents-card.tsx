@@ -112,7 +112,7 @@ function SubAgentRowButton({
     <button
       aria-haspopup="dialog"
       aria-label={rowLabel(row)}
-      className="group/row grid w-full min-w-0 grid-cols-[0.75rem_minmax(0,1fr)_1rem] items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset @md:grid-cols-[0.75rem_minmax(0,1fr)_auto_1rem]"
+      className="group/row grid w-full min-w-0 grid-cols-[0.75rem_minmax(0,1fr)_1rem] items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset @xl:grid-cols-[0.75rem_minmax(0,1fr)_auto_1rem]"
       type="button"
       onClick={onOpen}
     >
@@ -125,10 +125,10 @@ function SubAgentRowButton({
           {row.title}
         </span>
       </span>
-      <span className="col-start-2 row-start-2 flex min-w-0 items-center gap-2.5 text-xs text-muted-foreground tabular-nums @md:col-start-3 @md:row-start-1">
+      <span className="col-start-2 row-start-2 flex min-w-0 items-center gap-1.5 pl-[4.75rem] text-xs text-muted-foreground tabular-nums @xl:col-start-3 @xl:row-start-1 @xl:gap-2.5 @xl:pl-0">
         <span
           className={cn(
-            "@md:w-[4.5rem] @md:text-right",
+            "@xl:w-[4.5rem] @xl:text-right",
             row.status === "failed" && "text-destructive",
             row.status === "running" && "agent-activity-running"
           )}
@@ -137,25 +137,36 @@ function SubAgentRowButton({
         </span>
         {waiting ? null : (
           <>
-            <span className="@md:w-[3.75rem] @md:text-right">
+            <Dot />
+            <span className="@xl:w-[3.75rem] @xl:text-right">
               {formatDuration(row.durationMs)}
             </span>
-            <span className="@md:w-[3.25rem] @md:text-right">
-              {formatTokens(row.tokens)}
+            <Dot />
+            <span className="@xl:w-[5.75rem] @xl:text-right">
+              {formatTokens(row.tokens)} tokens
             </span>
           </>
         )}
       </span>
       <ChevronRightIcon
         aria-hidden="true"
-        className="col-start-3 row-start-1 size-4 text-muted-foreground opacity-60 transition-opacity group-hover/row:opacity-100 @md:col-start-4"
+        className="col-start-3 row-start-1 size-4 text-muted-foreground opacity-60 transition-opacity group-hover/row:opacity-100 @xl:col-start-4"
       />
       {row.status === "failed" && row.reason ? (
-        <span className="col-start-2 row-start-3 truncate text-xs text-destructive @md:row-start-2">
+        <span className="col-start-2 row-start-3 truncate text-xs text-destructive @xl:row-start-2">
           {row.reason}
         </span>
       ) : null}
     </button>
+  )
+}
+
+// Between the figures of a row that stacks under its title.
+function Dot() {
+  return (
+    <span aria-hidden="true" className="@xl:hidden">
+      ·
+    </span>
   )
 }
 

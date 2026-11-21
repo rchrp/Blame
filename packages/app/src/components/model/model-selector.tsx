@@ -1196,7 +1196,8 @@ function ModelVariantContent({
 }) {
   return (
     <PopoverContent
-      align="start"
+      align={ultra ? "end" : "start"}
+      collisionPadding={12}
       side="top"
       sideOffset={6}
       className={cn(

@@ -30,7 +30,7 @@ export function UltraMark({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-px text-xs leading-4 font-medium text-primary",
+        "inline-flex shrink-0 items-center gap-1 rounded-md bg-primary/10 px-1.5 py-px text-xs leading-4 font-medium text-primary dark:bg-blue-400/15 dark:text-blue-300",
         className
       )}
     >
