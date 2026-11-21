@@ -19,7 +19,7 @@ import {
   planAnnouncement,
   planCount,
   statusWords,
-  type PlanDockModel,
+  type PlanTabModel,
   type PlanRow,
 } from "./plan-model.ts"
 
@@ -38,7 +38,7 @@ const corner = 11.5
 const tabWidth =
   "min(24rem, max(10rem, calc(100% - 72px - var(--turn-tab-width, 0px) - 12px)))"
 
-export function PlanTab({ model }: { model: PlanDockModel | undefined }) {
+export function PlanTab({ model }: { model: PlanTabModel | undefined }) {
   return (
     <AnimatePresence>
       {model ? <Tab key="plan" model={model} /> : null}
@@ -46,7 +46,7 @@ export function PlanTab({ model }: { model: PlanDockModel | undefined }) {
   )
 }
 
-function Tab({ model }: { model: PlanDockModel }) {
+function Tab({ model }: { model: PlanTabModel }) {
   const listId = React.useId()
   const tab = React.useRef<HTMLDivElement>(null)
   const list = React.useRef<HTMLOListElement>(null)

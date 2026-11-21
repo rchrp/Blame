@@ -25,7 +25,7 @@ import { useChatExcerpts } from "./use-chat-excerpts"
 import { useQuickChatConversation } from "./use-quick-chat-conversation"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
 import { PlanTab } from "@/components/chat/plan/plan-tab"
-import { usePlanDockModel } from "@/components/chat/plan/use-plan-dock"
+import { usePlanTabModel } from "@/components/chat/plan/use-plan-tab"
 import { QuickChatView } from "./quick-chat-view"
 
 export function ChatPage() {
@@ -49,7 +49,7 @@ function QuickChatProjectPage() {
   const [cancelingAgent, setCancelingAgent] = React.useState(false)
   const activeChat = quickChats.activeChat
   const chat = useQuickChatConversation(activeChat)
-  const plan = usePlanDockModel(chat.transcript)
+  const plan = usePlanTabModel(chat.transcript)
   const draftStorageKey = composerDraftStorageKey(
     project?.id ?? "project",
     "chat",

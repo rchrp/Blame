@@ -6,7 +6,7 @@ import type { Transcript, TurnView } from "@blame/engine-client/transcript"
 import {
   planAnnouncement,
   planCount,
-  planDockModel,
+  planTabModel,
   statusWords,
 } from "./plan-model.ts"
 
@@ -36,8 +36,8 @@ function transcript(
   }
 }
 
-test("the dock shows where the plan stands and which step is current", () => {
-  const model = planDockModel(transcript(steps, { running: true }))!
+test("the tab shows where the plan stands and which step is current", () => {
+  const model = planTabModel(transcript(steps, { running: true }))!
   assert.equal(model.total, 4)
   assert.equal(model.done, 1)
   assert.equal(model.abandoned, 1)
@@ -49,7 +49,7 @@ test("the dock shows where the plan stands and which step is current", () => {
 })
 
 test("with nothing in progress, the next step to do is the current one", () => {
-  const model = planDockModel(
+  const model = planTabModel(
     transcript([
       { step: "Add it", status: "completed" },
       { step: "Test it", status: "pending" },
@@ -59,9 +59,9 @@ test("with nothing in progress, the next step to do is the current one", () => {
   assert.equal(model.working, false)
 })
 
-test("there is no dock without a plan", () => {
-  assert.equal(planDockModel(transcript(undefined)), undefined)
-  assert.equal(planDockModel(undefined), undefined)
+test("there is no tab without a plan", () => {
+  assert.equal(planTabModel(transcript(undefined)), undefined)
+  assert.equal(planTabModel(undefined), undefined)
 })
 
 test("a finished plan stays until the next turn starts, an open one stays whoever left it", () => {
@@ -69,34 +69,34 @@ test("a finished plan stays until the next turn starts, an open one stays whoeve
     { step: "Add it", status: "completed" },
     { step: "Drop it", status: "abandoned", reason: "Not needed" },
   ]
-  const same = planDockModel(transcript(done, { turns: [turn("t1")] }))!
+  const same = planTabModel(transcript(done, { turns: [turn("t1")] }))!
   assert.equal(same.finished, true)
   assert.equal(same.current, undefined)
   // A turn that did not touch it came after: the work moved on.
   assert.equal(
-    planDockModel(transcript(done, { turns: [turn("t1"), turn("t2", "running")] })),
+    planTabModel(transcript(done, { turns: [turn("t1"), turn("t2", "running")] })),
     undefined
   )
   // Its own turn still counts when a message waits behind it.
   assert.ok(
-    planDockModel(
+    planTabModel(
       transcript(done, { turns: [turn("t1"), turn("t2", "queued")] })
     )
   )
   // Steps left open by an earlier turn are still the agent's to settle.
   assert.ok(
-    planDockModel(
+    planTabModel(
       transcript(steps, { turns: [turn("t1", "interrupted"), turn("t2", "running")] })
     )
   )
 })
 
 test("a screen reader is told how far the plan is, and what is next", () => {
-  const model = planDockModel(transcript(steps))!
+  const model = planTabModel(transcript(steps))!
   assert.equal(planAnnouncement(model), "1 of 4 steps done. Now: Wire the form.")
   assert.equal(
     planAnnouncement(
-      planDockModel(
+      planTabModel(
         transcript([{ step: "Add it", status: "completed" }], {
           turns: [turn("t1")],
         })

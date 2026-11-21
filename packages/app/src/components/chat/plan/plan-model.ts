@@ -1,5 +1,5 @@
 // What the plan shows, from the engine's plan (`Transcript.plan`): the
-// pinned dock above the composer and the progress on a story's card. Pure,
+// tab on the composer and the progress on a story's card. Pure,
 // so each rule is tested without a screen.
 
 import { openSteps } from "@blame/engine-client/transcript"
@@ -19,7 +19,7 @@ export type PlanRow = {
   reason?: string
 }
 
-export type PlanDockModel = {
+export type PlanTabModel = {
   /** The update that set it: a new plan is a new identity. */
   call: string
   rows: readonly PlanRow[]
@@ -48,9 +48,9 @@ export function planRows(plan: PlanView): PlanRow[] {
  * left them; a finished one stays until the next turn starts, as a line
  * saying the work was done.
  */
-export function planDockModel(
+export function planTabModel(
   transcript: Pick<Transcript, "plan" | "turns" | "runningTurn"> | undefined
-): PlanDockModel | undefined {
+): PlanTabModel | undefined {
   const plan = transcript?.plan
   if (!transcript || !plan) return undefined
   const rows = planRows(plan)
@@ -86,7 +86,7 @@ export function planCount(model: Pick<PlanProgress, "done" | "total">): string {
 }
 
 /** What a screen reader hears when the plan moves. */
-export function planAnnouncement(model: PlanDockModel): string {
+export function planAnnouncement(model: PlanTabModel): string {
   if (model.finished)
     return model.abandoned
       ? `Plan complete: ${model.done} done, ${model.abandoned} abandoned.`

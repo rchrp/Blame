@@ -4,12 +4,12 @@ import { planProgress } from "@blame/engine-client/transcript"
 
 import { PlanTab } from "./plan-tab"
 import { PlanProgressLine } from "./plan-progress-line"
-import { usePlanDockModel } from "./use-plan-dock"
+import { usePlanTabModel } from "./use-plan-tab"
 
 /** The open story's plan, as a tab on its composer. */
 export function StoryPlanTab() {
   const { transcript } = useStoryConversation()
-  return <PlanTab model={usePlanDockModel(transcript)} />
+  return <PlanTab model={usePlanTabModel(transcript)} />
 }
 
 /**
