@@ -3,6 +3,7 @@ import * as React from "react"
 import { BacklogPage } from "@/pages/backlog/page"
 import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
 import { ChatPage } from "@/pages/chat/page"
+import { OrchestratorPage } from "@/pages/orchestrator/page"
 import { EngineConnection } from "@/components/chat/engine/engine-connection"
 import { SecurityAuditRecorder } from "@/components/security/security-audit-recorder"
 import { GitPage } from "@/pages/git/page"
@@ -13,6 +14,7 @@ import { SecurityPage } from "@/pages/security/page"
 import { BacklogStoreProvider } from "@/components/backlog/data/backlog-store"
 import { StoryServiceSync } from "@/components/backlog/data/story-service-sync"
 import { QuickChatStoreProvider } from "@/components/chat/data/quick-chat-store"
+import { EpicStoreProvider } from "@/components/orchestrator/data/epic-store"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { AiPreferencesSetupScreen } from "@/components/onboarding/ai-preferences-setup-screen"
 import {
@@ -77,6 +79,11 @@ const loadedRole = loadedWindowRole(window.location.search)
 const routes = [
   { path: "/backlog", title: "Backlog", element: null },
   {
+    path: "/orchestrator",
+    title: "Orchestrator",
+    element: <OrchestratorPage />,
+  },
+  {
     path: backlogStatusPipPath,
     title: "Active User Stories",
     element: <BacklogStatusPipPage />,
@@ -129,6 +136,9 @@ export function App() {
   const activeRoute = settingsOpen || premiumOpen ? previousRoute : route
   // The backlog page stays mounted: it runs the agents and the story queue.
   const backlogActive = activeRoute.path === "/backlog"
+  // The orchestrator's board opens its stories in the backlog's drawer.
+  const backlogDrawerShown =
+    backlogActive || activeRoute.path === "/orchestrator"
   const loading = useMinimumDuration(
     auth.status === "loading",
     statusPipOpen ? 0 : minimumLoadingMs
@@ -206,7 +216,7 @@ export function App() {
     <TooltipProvider>
       <BacklogStoreProvider>
         <QuickChatStoreProvider>
-          <>
+          <EpicStoreProvider>
             <EngineConnection />
             <StoryServiceSync />
             <ProjectInitializationRunner />
@@ -215,7 +225,12 @@ export function App() {
             <SecurityAuditRecorder />
             <AppLayout
               pathname={pathname}
-              persistent={<BacklogPage active={backlogActive} />}
+              persistent={
+                <BacklogPage
+                  active={backlogActive}
+                  drawerShown={backlogDrawerShown}
+                />
+              }
               persistentActive={backlogActive}
               routeKey={activeRoute.path}
               title={activeRoute.title}
@@ -227,7 +242,7 @@ export function App() {
             <StarInvite />
             {/* Only once the app itself is up: never over loading or onboarding. */}
             <WhatsNewOnLaunch enabled={!isSecondaryWindow()} />
-          </>
+          </EpicStoreProvider>
         </QuickChatStoreProvider>
       </BacklogStoreProvider>
     </TooltipProvider>

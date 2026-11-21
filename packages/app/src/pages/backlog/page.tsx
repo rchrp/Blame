@@ -9,7 +9,6 @@ import type {
 } from "@/components/backlog/actions/story-action-dialogs"
 import { BacklogColumn } from "@/components/backlog/board/backlog-column"
 import { BacklogToolbar } from "@/components/backlog/board/backlog-toolbar"
-import { PlanModeLauncher } from "@/components/backlog/planning/plan-mode-dialog"
 import type {
   BacklogAction,
   BacklogColumnId,
@@ -85,7 +84,15 @@ import { useNewUserStoryExcerpts } from "./use-new-story-excerpts"
 import { withStoryTransition } from "./story-transitions"
 import { optimizeUserStoryPrompt } from "./user-story-prompt-optimizer"
 
-export function BacklogPage({ active = true }: { active?: boolean }) {
+export function BacklogPage({
+  active = true,
+  drawerShown = active,
+}: {
+  active?: boolean
+  // The drawer also shows over the orchestrator's page, for the story
+  // selected there.
+  drawerShown?: boolean
+}) {
   recordPerformanceCount("backlog.render")
   const backlog = useBacklogStore()
   const auth = useCloudAuth()
@@ -95,6 +102,15 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const agentSelection = useModelSelection({ role: "agent" })
   const alternativeSelection = useModelSelection({ role: "alternative" })
   const [drawerTarget, setDrawerTarget] = React.useState<DrawerTarget>()
+  const selectedStoryId = React.useSyncExternalStore(
+    subscribeToBacklogStorySelection,
+    selectedBacklogStoryId
+  )
+  const drawerOpen = active
+    ? Boolean(drawerTarget)
+    : drawerShown &&
+      Boolean(selectedStoryId) &&
+      drawerTarget?.userStory?.id === selectedStoryId
   const [titleGeneratingStoryIds, setTitleGeneratingStoryIds] = React.useState(
     () => new Set<string>()
   )
@@ -749,14 +765,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       return story
     }
   )
-  const openPlannedStory = useLatestCallback((storyId: string) => {
-    const userStory = backlog.stories.find((story) => story.id === storyId)
-    if (userStory)
-      openDrawer({
-        userStory,
-        mode: userStory.status === "backlog" ? "edit" : "view",
-      })
-  })
   const deleteDrawerStory = deleteStory
   const updateDrawerStory = useLatestCallback(
     async (story: UserStory, input: UserStoryUpdate) => {
@@ -804,15 +812,6 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
         disabled={!backlog.projectPath}
         onOpenStatusPip={platform.backlogStatusPip ? openStatusPip : undefined}
         onCreateUserStory={openCreateDrawer}
-        planAction={
-          platform.agent ? (
-            <PlanModeLauncher
-              key={backlog.projectId}
-              disabled={!backlog.projectPath}
-              onOpenStory={openPlannedStory}
-            />
-          ) : undefined
-        }
         storyCount={backlog.stories.length}
       />
       {backlog.error && (
@@ -859,11 +858,13 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
       </KanbanBoard>
       </BacklogDragDrop>
       ) : null}
+      </WhileShown>
+      <WhileShown shown={drawerShown}>
       <UserStoryDrawer
         diffStats={
           drawerUserStory ? storyDiffStats(drawerUserStory) : undefined
         }
-        open={active && Boolean(drawerTarget)}
+        open={drawerOpen}
         onOpenChange={closeDrawer}
         userStory={drawerUserStory}
         mode={drawerTarget?.mode ?? "view"}
