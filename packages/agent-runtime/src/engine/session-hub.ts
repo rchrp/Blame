@@ -102,6 +102,17 @@ export class SessionHub {
     followed.sent = true;
     if (turn) followed.awaiting = turn;
     this.setRunning(session, followed, true);
+    // A session already followed may have handled the turn's end before
+    // the send returned (an interrupt at once): it is in what was followed.
+    if (
+      turn &&
+      followed.records.some(
+        (record) => record.type === "turn_ended" && record.turn === turn,
+      )
+    ) {
+      followed.awaiting = undefined;
+      this.endedIfIdle(session, followed);
+    }
   }
 
   running(): SessionId[] {
@@ -168,13 +179,7 @@ export class SessionHub {
         // turn the host sent, with no other open, is the end of the run.
         // Only that turn's own end counts, never an older turn's met while
         // a long log is read back in pages.
-        if (awaitedEnded && !followed.open.size && followed.running)
-          queueMicrotask(() => {
-            if (followed.open.size || followed.activity.state !== "idle")
-              return;
-            followed.sent = false;
-            this.setRunning(session, followed, false);
-          });
+        if (awaitedEnded) this.endedIfIdle(session, followed);
         break;
       }
       case "delta":
@@ -254,6 +259,16 @@ export class SessionHub {
     if (samePlanProgress(plan, followed.plan)) return;
     followed.plan = plan;
     this.emit({ type: "plan", session, plan });
+  }
+
+  // The awaited turn ended: with no other turn open and the engine idle, the run did.
+  private endedIfIdle(session: SessionId, followed: Followed) {
+    if (followed.open.size || !followed.running) return;
+    queueMicrotask(() => {
+      if (followed.open.size || followed.activity.state !== "idle") return;
+      followed.sent = false;
+      this.setRunning(session, followed, false);
+    });
   }
 
   private setRunning(session: SessionId, followed: Followed, running: boolean) {

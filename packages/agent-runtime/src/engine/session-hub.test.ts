@@ -151,6 +151,22 @@ describe("the session hub", () => {
     await hub.stop();
   });
 
+  it("ends the run when the turn sent already ended in what was followed before the send returned", async () => {
+    const engine = fakeClient([opened(1, "first"), ended(2, "first")]);
+    const hub = new SessionHub(fixedClient(engine.client), () => undefined);
+    // A window shows the conversation: the hub keeps following it.
+    hub.subscribe(session, "window");
+    hub.watch(session, "first");
+    await settle(() => hub.running().length === 0, "the first run to end");
+    // The next message is cut at once: its records come before the send's answer.
+    engine.push(opened(3, "next"));
+    engine.push(ended(4, "next", "interrupted"));
+    await pause(20);
+    hub.watch(session, "next");
+    await settle(() => hub.running().length === 0, "the run to end");
+    await hub.stop();
+  });
+
   it("still ends a run on the engine's idle activity, once", async () => {
     const engine = fakeClient([opened(1, "new")]);
     const events: EngineHostEvent[] = [];
