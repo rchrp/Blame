@@ -1195,7 +1195,13 @@ describe("the budget, the gate and what is kept", () => {
   });
 
   it("refuses to build a conversation's config for a session that is not the epic's", async () => {
-    const { orchestrator, settings } = await desk();
+    const { orchestrator, settings, epic } = await desk();
+    await assert.rejects(
+      orchestrator.resolve("another-session", settings),
+      /not this epic's/,
+    );
+    // Even when the API forgot which session it is, this computer knows.
+    epic.engineSessionId = null;
     await assert.rejects(
       orchestrator.resolve("another-session", settings),
       /not this epic's/,
