@@ -83,19 +83,18 @@ export function HelpersPill({
         aria-label={`${helpers.length} helper ${helpers.length === 1 ? "agent" : "agents"} running`}
       >
         {shown.map((helper, index) => (
-          <span
+          // The ring is on the avatar itself, which has an exact size: a
+          // wrapper without one stretches its ring below the flower.
+          <HelperAvatar
             key={helper.session}
             className={cn(
               "rounded-full ring-2 ring-card dark:ring-muted",
               index > 0 && "-ml-2"
             )}
-          >
-            <HelperAvatar
-              identity={helper.identity}
-              size={20}
-              status="running"
-            />
-          </span>
+            identity={helper.identity}
+            size={20}
+            status="running"
+          />
         ))}
         {helpers.length > shown.length ? (
           <span className="ml-1 text-[10px] font-medium text-muted-foreground tabular-nums">

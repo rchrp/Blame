@@ -12,12 +12,18 @@ const running = new Map<string, readonly SubAgentRow[]>()
 const listeners = new Set<Listener>()
 let snapshot: readonly SubAgentRow[] = []
 
-/** Publishes the rows of `call`, or takes them back with `undefined`. */
+/**
+ * Publishes the helpers of `call` that still work (running or waiting), or
+ * takes them back with `undefined`.
+ */
 export function publishHelpers(
   call: string,
   rows: readonly SubAgentRow[] | undefined
 ) {
-  if (rows) running.set(call, rows)
+  const open = rows?.filter(
+    (row) => row.status === "running" || row.status === "waiting"
+  )
+  if (open?.length) running.set(call, open)
   else if (!running.delete(call)) return
   snapshot = [...running.values()].flat()
   listeners.forEach((listener) => listener())
