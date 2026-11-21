@@ -63,6 +63,11 @@ const host = new EngineHost({
   dataDir: config.dataDir,
   // Beside the engine's own data: which ended story turns were told.
   storyLedgerFile: join(dirname(config.dataDir), "story-turns.json"),
+  // The epics whose conversation runs here, and what no wake told yet.
+  orchestratorStateFile: join(
+    dirname(config.dataDir),
+    "orchestrator-epics.json",
+  ),
   clientVersion: config.clientVersion,
   harnessCommand: [config.harness, ...harnessServeArgs()],
   // The engine passes its environment to the harness: Electron, run as

@@ -1,6 +1,7 @@
 import type { EngineSessionSettings } from "../protocol.js";
 import { developmentStoryPurpose } from "./development-story.js";
 import { newProjectPurpose } from "./new-project.js";
+import { orchestratorPurpose } from "./orchestrator.js";
 import { planPurpose } from "./plan.js";
 import type { Purpose } from "./purpose.js";
 import { quickChatPurpose } from "./quick-chat.js";
@@ -16,6 +17,7 @@ const purposes: {
   "development-story": developmentStoryPurpose,
   plan: planPurpose,
   "new-project": newProjectPurpose,
+  orchestrator: orchestratorPurpose,
 };
 
 /** The builder of a purpose, typed for its settings. */

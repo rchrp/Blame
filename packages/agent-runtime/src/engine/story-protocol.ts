@@ -243,4 +243,7 @@ export type StoryTurnEnded = {
   outcome?: TurnOutcome;
   /** What the agent reported: its finish_task summary, or its last text. */
   lastReply?: string;
+  /** What the story's session spent up to then (micro-USD), and its unpriced requests. */
+  spentMicroUsd?: number;
+  unpricedRequests?: number;
 };

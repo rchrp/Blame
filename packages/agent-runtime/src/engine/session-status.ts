@@ -52,6 +52,9 @@ export async function sessionStatus(
     ...(reply ? { lastReply: reply } : {}),
     turns: transcript.turns.length,
     ...(plan ? { plan } : {}),
+    // Every request ever made, rewound ones included: what was spent.
+    spentMicroUsd: transcript.usage.spent.costMicroUsd,
+    unpricedRequests: transcript.usage.spent.unpricedRequests,
     models: turnsByModel(transcript).map(({ model, turns }) => ({
       providerId: model.provider,
       modelId: model.model,

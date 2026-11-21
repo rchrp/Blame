@@ -36,9 +36,11 @@ export type { PreviewRuntimeContext } from "./preview-types.js";
  * - story: a development story (its own worktree or the project folder);
  * - plan: plan mode, which reads and proposes but never edits;
  * - new-project: the assistant that picks a new project's stack;
- * - quick-chat: a chat in the project folder.
+ * - quick-chat: a chat in the project folder;
+ * - orchestrator: an epic's conversation, which reads and never edits.
  */
-export type ConversationKind = "story" | "plan" | "new-project" | "quick-chat";
+export type ConversationKind =
+  "story" | "plan" | "new-project" | "quick-chat" | "orchestrator";
 
 /** What the tools need from the app; a missing service leaves its tools out. */
 export type ConversationToolServices = PreviewToolServices &
@@ -51,6 +53,8 @@ export type ConversationToolServices = PreviewToolServices &
     mcp?: McpConnections;
     /** Plugin folders whose `skills` folder adds skills (BLAME_AGENT_PLUGIN_PATHS). */
     pluginPaths?: readonly string[];
+    /** An epic's own tools (`engine/orchestrator/tools.ts`), bound to its conversation. */
+    orchestratorTools?(session: string, epicId: string): ClientTool<never>[];
   };
 
 export type ConversationToolSession = {
@@ -61,6 +65,8 @@ export type ConversationToolSession = {
   projectId?: string;
   /** The story worked on, left out of the story history search. */
   storyId?: string;
+  /** An orchestrator's epic. */
+  epicId?: string;
   /** The conversation's preview (`previewRuntimeContext`), when it has one. */
   preview?: PreviewRuntimeContext;
   /** A story's saved preview setup, which its repair tool starts from. */
@@ -79,6 +85,11 @@ export type ConversationClientTools = {
 const planModeExcluded = new Set([
   componentPreviewToolName,
   "repair_preview_initialization",
+]);
+// The orchestrator creates stories itself: it proposes none.
+const orchestratorExcluded = new Set([
+  ...planModeExcluded,
+  "propose_user_stories",
 ]);
 
 /** Every client tool this conversation gets, in a stable order. */
@@ -127,10 +138,16 @@ export async function conversationClientTools(
     session.projectId ? storyProposalTool() : undefined,
     ...github,
     ...mcp,
+    ...(session.kind === "orchestrator" && session.epicId
+      ? (services.orchestratorTools?.(session.session, session.epicId) ?? [])
+      : []),
   ]
     .filter(present)
     .filter(
-      (tool) => session.kind !== "plan" || !planModeExcluded.has(tool.name),
+      (tool) =>
+        (session.kind !== "plan" || !planModeExcluded.has(tool.name)) &&
+        (session.kind !== "orchestrator" ||
+          !orchestratorExcluded.has(tool.name)),
     );
   if (session.skills === false) return { tools, prompt: "" };
   const skills = await conversationSkills(

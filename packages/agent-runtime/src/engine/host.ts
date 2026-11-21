@@ -35,6 +35,9 @@ import type { ApiConnection } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
 import type { DesktopServices } from "./desktop-services.js";
+export { attachmentKind, vmCredential } from "./host-helpers.js";
+export type { VmEngineOptions } from "./host-helpers.js";
+
 import type {
   DevelopmentStorySettings,
   EngineHostEvent,
@@ -46,9 +49,17 @@ import type {
   EngineSessionRef,
   EngineSessionSettings,
 } from "./protocol.js";
+import {
+  announcedTask,
+  attachmentKind,
+  conversationToolSession,
+  sameJson,
+  vmCredential,
+  type VmEngineOptions,
+} from "./host-helpers.js";
+import { Orchestrator } from "./orchestrator/service.js";
 import { developmentStoryPurpose } from "./purposes/development-story.js";
 import { purposeOf, type FirstMessageServices } from "./purposes/index.js";
-import { engineTaskMethods } from "./task-protocol.js";
 import { purposeClientTools } from "./purposes/tool-sets.js";
 import { EngineProviders } from "./providers.js";
 import { remoteLogHandlers } from "./remote-log.js";
@@ -65,8 +76,6 @@ import {
   McpConnections,
   clientToolGuards,
   clientToolPolicy,
-  previewRuntimeContext,
-  type ConversationToolSession,
   type PreviewRuntimeContext,
 } from "./tools/index.js";
 import { webResearchClientTools } from "./tools/web-research.js";
@@ -109,6 +118,8 @@ export type EngineHostOptions = {
    * Without it, that is kept in memory only.
    */
   storyLedgerFile?: string;
+  /** Where the epics whose conversation runs here are kept (`orchestrator/state.ts`). */
+  orchestratorStateFile?: string;
   /** For tests: more client tools beside the app's own. */
   extraTools?: ClientTool<never>[];
   /** For tests: more client tools, by name, for sessions of a purpose. */
@@ -160,6 +171,8 @@ export class EngineHost {
    * its starts, the end of each turn. The orchestrator calls it directly.
    */
   readonly stories: StoryService;
+  /** The epics' conversations: their branch, tools, spend and waking. */
+  readonly orchestrator: Orchestrator;
   private readonly options: EngineHostOptions;
   // Before `handlers`, which hand it out. A task is not watched like a
   // conversation (no activity events): a window that shows its progress
@@ -204,6 +217,8 @@ export class EngineHost {
       // A story's repair_preview_initialization runs the repair task.
       repairInitialization: (input) =>
         runInitializationRepair(this.taskHost(), input),
+      orchestratorTools: (session, epicId) =>
+        this.orchestrator.tools(session, epicId),
     });
     this.credentials = new CredentialResolver(
       {
@@ -224,8 +239,22 @@ export class EngineHost {
           const { sessions } = await client.listSessions();
           return sessions.map(({ session }) => session);
         },
+        holds: (story) => this.orchestrator.holds(story),
       },
       { ledgerFile: options.storyLedgerFile },
+    );
+    this.orchestrator = new Orchestrator(
+      {
+        api: () => this.api,
+        stories: this.stories,
+        call: (method, input) => this.handlers[method](input),
+        client: () => this.engineAt("host").supervisor.client(),
+        ...(git
+          ? { git: (cwd: string, args: string[]) => git({ cwd, args }) }
+          : {}),
+        emit: (event) => options.emit(event),
+      },
+      { stateFile: options.orchestratorStateFile },
     );
     // The native engine starts with the host: the catalog and every host
     // workspace use it.
@@ -304,6 +333,7 @@ export class EngineHost {
       if (!event.running)
         void this.saveCompletionMemory(event.session, location);
       this.stories.onActivity(event);
+      void this.orchestrator.onActivity(event);
       const workspace = this.current.get(event.session)?.config.workspace_root;
       options.emit(workspace ? { ...event, workspace } : event);
     });
@@ -466,6 +496,7 @@ export class EngineHost {
       // Signed in: the stories of the projects it knows are read again;
       // another account starts over.
       this.stories.connected(this.api);
+      this.orchestrator.connected();
       return null;
     },
     createSession: async ({ session, ...settings }) => {
@@ -478,6 +509,9 @@ export class EngineHost {
       // agent. A VM workspace is the story's worktree, made by the desktop.
       if (workspace.location === "host")
         await mkdir(workspace.root, { recursive: true });
+      // An epic's branch is made, and written to the epic, first.
+      if (settings.purpose === "orchestrator")
+        await this.orchestrator.prepareSession(session, settings.settings);
       const promptDate = this.now();
       const config = await this.config(session, settings, promptDate);
       const client = await engine.supervisor.client();
@@ -520,6 +554,7 @@ export class EngineHost {
       return { turn: accepted.turn };
     },
     interrupt: async (ref) => {
+      await this.orchestrator.interrupted(ref.session);
       await (await this.clientFor(ref)).interrupt({ session: ref.session });
       return null;
     },
@@ -592,6 +627,8 @@ export class EngineHost {
       await this.shutdown();
       return null;
     },
+    epicState: ({ epicId }) => this.orchestrator.epicState(epicId),
+    epicChanged: ({ epicId }) => this.orchestrator.changed(epicId),
     // The service is made in the constructor, after these handlers.
     ...storyHandlers(() => this.stories),
     ...taskHandlers(this.taskHost()),
@@ -625,6 +662,7 @@ export class EngineHost {
   /** Stops following, ends running turns as interrupted and stops the engine. */
   async shutdown() {
     this.stories.stop();
+    this.orchestrator.stop();
     this.tasks.cancelAll();
     await Promise.all(
       [...this.engines.values()].map((engine) => engine.hub.stop()),
@@ -688,10 +726,22 @@ export class EngineHost {
 
   private async config(
     session: string,
-    settings: EngineSessionSettings,
+    given: EngineSessionSettings,
     promptDate: Date,
   ): Promise<SessionConfig> {
-    const { model } = settings.settings;
+    // An epic's conversation runs on the epic's model, read with the epic.
+    const settings: EngineSessionSettings =
+      given.purpose === "orchestrator"
+        ? {
+            purpose: "orchestrator",
+            settings: await this.orchestrator.resolve(session, given.settings),
+          }
+        : given;
+    const model =
+      settings.purpose === "orchestrator"
+        ? (settings.settings as Awaited<ReturnType<Orchestrator["resolve"]>>)
+            .resolved.model
+        : settings.settings.model;
     const projectId =
       "projectId" in settings.settings
         ? settings.settings.projectId
@@ -807,10 +857,14 @@ export class EngineHost {
     return blocks;
   }
 
-  private approval(
+  private async approval(
     params: HostParamsOf<"host/approval">,
     signal: AbortSignal,
   ): Promise<{ decision: "approved" | "denied" }> {
+    const auto = await this.orchestrator
+      .approval(params)
+      .catch(() => undefined);
+    if (auto) return { decision: auto };
     const key = `${params.session}\u0000${params.call}`;
     const early = this.earlyDecisions.get(key);
     if (early) {
@@ -831,140 +885,4 @@ export class EngineHost {
   }
 }
 
-const imageTypes = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/gif",
-  "image/webp",
-]);
-const textTypes =
-  /^(text\/|application\/(json|xml|yaml|x-yaml|javascript|typescript|toml|x-sh|sql)$)/;
-
-/** What the providers can read: images, PDFs and text, nothing else. */
-export function attachmentKind(
-  mediaType: string,
-): "image" | "document" | undefined {
-  if (imageTypes.has(mediaType)) return "image";
-  if (mediaType === "application/pdf" || textTypes.test(mediaType))
-    return "document";
-  return undefined;
-}
-
-/** Equal as JSON, whatever the order of object keys (the engine's differs). */
-function sameJson(left: unknown, right: unknown): boolean {
-  return canonical(left) === canonical(right);
-}
-
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(",")}]`;
-  if (value && typeof value === "object")
-    return `{${Object.keys(value)
-      .filter((key) => (value as Record<string, unknown>)[key] !== undefined)
-      .sort()
-      .map(
-        (key) =>
-          `${JSON.stringify(key)}:${canonical((value as Record<string, unknown>)[key])}`,
-      )
-      .join(",")}}`;
-  return JSON.stringify(value);
-}
-
-/** What the conversation's own client tools are listed for. */
-/** The id of the task a call runs, when the renderer named it to follow it. */
-function announcedTask(method: EngineHostMethod, input: unknown) {
-  if (!(engineTaskMethods as readonly string[]).includes(method)) return;
-  const task = (input as { task?: unknown } | undefined)?.task;
-  return typeof task === "string" && task ? task : undefined;
-}
-
-function conversationToolSession(
-  session: string,
-  settings: EngineSessionSettings,
-  workspaceRoot: string,
-): ConversationToolSession {
-  switch (settings.purpose) {
-    case "development-story": {
-      const story = settings.settings;
-      return {
-        session,
-        kind: "story",
-        workspaceRoot,
-        projectId: story.projectId,
-        storyId: story.storyId,
-        preview: previewRuntimeContext({
-          projectInitialization: story.projectInitialization,
-          previewDevtoolsScope: story.previewDevtoolsScope,
-          projectId: story.projectId,
-          storyId: story.storyId,
-          workspaceMode: story.workspaceMode,
-          workspaceRoot,
-        }),
-        ...(story.projectInitialization
-          ? {
-              previewRepair: {
-                model: story.model,
-                projectId: story.projectId,
-                initialization: story.projectInitialization,
-              },
-            }
-          : {}),
-      };
-    }
-    case "plan":
-      return {
-        session,
-        kind: "plan",
-        workspaceRoot,
-        projectId: settings.settings.projectId,
-      };
-    case "new-project":
-      return { session, kind: "new-project", workspaceRoot };
-    case "quick-chat":
-      return {
-        session,
-        kind: "quick-chat",
-        workspaceRoot,
-        projectId: settings.settings.projectId,
-      };
-  }
-}
-
 type Engine = { supervisor: EngineSupervisor; hub: SessionHub };
-
-/** What the desktop tells the host about its runtime VM. */
-export type VmEngineOptions = {
-  /**
-   * Installs the engine in the VM when missing or out of date, then gives
-   * the command that runs `blame-engine serve` there over stdio.
-   */
-  prepare(): Promise<EngineCommand>;
-  /** Folders that live in the VM: a task whose workspace is under one runs there. */
-  workspaceRoots: readonly string[];
-  /**
-   * How the VM reaches this computer (`host.lima.internal`): a credential's
-   * local endpoint (a local model, the Claude Code bridge) is rewritten to
-   * it, since the VM's own localhost is not this computer's.
-   */
-  hostAlias?: string;
-};
-
-const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
-
-/** A credential as the VM's engine can use it: local endpoints point at this computer. */
-export function vmCredential(
-  credential: Credential,
-  vm: Pick<VmEngineOptions, "hostAlias">,
-): Credential {
-  if (!vm.hostAlias || !("base_url" in credential) || !credential.base_url)
-    return credential;
-  let url: URL;
-  try {
-    url = new URL(credential.base_url);
-  } catch {
-    return credential;
-  }
-  if (!loopbackHosts.has(url.hostname) && !url.hostname.endsWith(".localhost"))
-    return credential;
-  url.hostname = vm.hostAlias;
-  return { ...credential, base_url: url.toString().replace(/\/$/, "") };
-}
