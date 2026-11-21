@@ -34,8 +34,6 @@ import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-p
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
 import type { DrawerTarget } from "@/components/backlog/shared/backlog-types"
 import { approveMergeOptions } from "@/components/backlog/shared/approve-merge-options"
-import { storyPreviewDevtoolsScope } from "@/components/backlog/shared/preview-devtools-scope"
-import { directStoryPreviewScope } from "@/components/backlog/board/project-run-configuration"
 import { newUserStoryEvent } from "@/components/navigation/command-palette"
 import {
   modelForPreference,
@@ -57,7 +55,6 @@ import {
   recordPerformanceCount,
   recordPerformanceMetric,
 } from "@/lib/performance-diagnostics"
-import { projectCodePractices } from "@/lib/project-code-practices"
 import { currentPersonalization } from "@/lib/agent-personalization"
 import { showSystemNotification } from "@/lib/system-notifications"
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
@@ -89,9 +86,7 @@ import { DirectSharedFilesDialog } from "./direct-shared-files-dialog"
 import { useDirectStoryCommit } from "./use-direct-story-commit"
 import { useStoryPullRequest } from "./use-story-pull-request"
 import { useStoryPullRequestSync } from "./use-story-pull-request-sync"
-import { pauseInterruptRefusal } from "./story-agent-control"
 import { replaceStoryAfterUndo } from "./story-checkpoint-undo"
-import { storyResumeMessage, storySessionSettings } from "./story-engine"
 import { useStoryComments } from "./use-story-comments"
 import { useNewUserStoryExcerpts } from "./use-new-story-excerpts"
 import { withStoryTransition } from "./story-transitions"
@@ -314,13 +309,13 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const queue = useStoryQueue(backlog)
   usePreviewRecovery(backlog)
   // Send to Dev Agent: the story service starts it as soon as it can.
-  const enqueueStory = useLatestCallback(async (story: UserStory) => {
-    const engine = platform.engine
-    if (!engine) throw new Error("The desktop agent engine is not available.")
-    return parseUserStory(
-      await engine.call("storyEnqueue", { storyId: story.id })
+  const enqueueStory = useLatestCallback(async (story: UserStory) =>
+    parseUserStory(
+      await requiredEngine(platform).call("storyEnqueue", {
+        storyId: story.id,
+      })
     )
-  })
+  )
   const rejectStory = React.useCallback(
     async (story: UserStory, choice: RejectChoice) => {
       // The comment box opens; sending a comment is what resumes the agent.
@@ -358,26 +353,25 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     },
     [platform]
   )
+  // The turn ends as interrupted, which pauses the story where it was; a
+  // story with no running turn pauses now (the story service).
   const pauseStoryAgent = React.useCallback(
     async (story: UserStory) => {
-      const refusal = await pauseInterruptRefusal(
-        story,
-        platform.engine,
-        platform.platform
-      )
-      if (refusal) {
+      try {
+        return parseUserStory(
+          await requiredEngine(platform).call("storyPause", {
+            storyId: story.id,
+          })
+        )
+      } catch (error) {
         toast.error("Couldn't pause the agent", {
-          description: errorMessage(refusal.error),
+          description: errorMessage(error),
           position: "bottom-right",
         })
         return story
       }
-      // The turn ends as interrupted, which pauses the story where it was
-      // (useStoryAgentOutcomes); a story with no running turn pauses now.
-      if (story.agentStatus === "Running") return story
-      return updateStory(story, { agentStatus: "Paused", status: "in-progress" })
     },
-    [platform.engine, platform.platform, updateStory]
+    [platform]
   )
   const stopAgent = React.useCallback(
     async (story: UserStory, choice: StopAgentChoice) => {
@@ -402,56 +396,46 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
     },
     [pauseStoryAgent, updateStory]
   )
-  // The settings of a story's next turn: its own model choice (its last
-  // model unless the person picked another for it), else the default.
-  const storyTurnSettings = useLatestCallback(async (story: UserStory) => {
-    if (auth.status !== "authenticated")
-      throw new Error("Reconnect the selected provider.")
+  // What the person picked for a story's next turn: its own model choice
+  // (its last model unless the person picked another for it), else the
+  // default. The story service builds the rest of the turn.
+  const storyTurnChoice = useLatestCallback((story: UserStory) => {
     const chosen = modelForPreference(
       agentSelection.models,
       storyModelChoice(story)
     )
     const model = chosen?.model ?? agentSelection.currentModel
-    if (!model) throw new Error("Select a model before resuming this user story.")
-    return storySessionSettings({
-      story,
+    if (!model) return {}
+    const reasoning = chosen ? chosen.variant : agentSelection.currentVariant
+    const maxContextTokens = storyMaxInputTokens(
+      story.id,
+      model,
+      agentSelection.allProviders
+    )
+    return {
       model: {
         providerId: model.provider.id,
         modelId: model.id,
-        credentialLabel: model.credentialLabel,
-        reasoning: chosen ? chosen.variant : agentSelection.currentVariant,
+        ...(model.credentialLabel
+          ? { credentialLabel: model.credentialLabel }
+          : {}),
+        ...(reasoning ? { reasoning } : {}),
       },
-      maxContextTokens: storyMaxInputTokens(
-        story.id,
-        model,
-        agentSelection.allProviders
-      ),
+      ...(maxContextTokens ? { maxContextTokens } : {}),
       personalization: currentPersonalization(story.ambition),
-      codePractices: await projectCodePractices(auth, projects),
-      // Direct stories inspect the project's own app.
-      previewDevtoolsScope:
-        story.workspaceMode === "direct"
-          ? directStoryPreviewScope(
-              projectInitialization?.initialization?.runConfigurations,
-              projects.activeProject?.path
-            )
-          : storyPreviewDevtoolsScope(story.id),
-      initialization: projectInitialization?.initialization,
-      platformName: platform.platform,
-    })
+    }
   })
-  const { requestChanges, send: sendStoryMessage } = useStoryComments({
-    backlog,
-    settingsFor: storyTurnSettings,
-  })
+  const { requestChanges } = useStoryComments({ turnFor: storyTurnChoice })
   // A paused agent picks its conversation back up.
   const resumeStoryAgent = React.useCallback(
     async (story: UserStory) =>
-      // Inside the resume's transition already (resumeInSlot).
-      (await sendStoryMessage(await detailedStory(story, backlog), {
-        text: storyResumeMessage,
-      })) ?? story,
-    [backlog, sendStoryMessage]
+      parseUserStory(
+        await requiredEngine(platform).call("storyResume", {
+          storyId: story.id,
+          turn: storyTurnChoice(story),
+        })
+      ),
+    [platform, storyTurnChoice]
   )
   // One resume at a time per story; failures say so instead of vanishing.
   const resumeInSlot = useLatestCallback(async (story: UserStory) => {
@@ -471,10 +455,8 @@ export function BacklogPage({ active = true }: { active?: boolean }) {
   const undoUserStoryComment = React.useCallback(
     async (story: UserStory, rewind: { to: number; workspace: boolean }) => {
       const currentStory = activeStory(story, storiesRef.current)
-      if (!platform.engine)
-        throw new Error("The desktop agent engine is not available.")
       // The story service counts the turns left once they are undone.
-      await platform.engine.call("storyRewind", {
+      await requiredEngine(platform).call("storyRewind", {
         storyId: currentStory.id,
         to: rewind.to,
         restoreWorkspace: rewind.workspace,
@@ -1054,6 +1036,12 @@ function statusPipDrawerTarget(
     initialDevelopmentTab: request.drawer?.initialDevelopmentTab,
     initialTab: request.drawer?.initialTab ?? "user-story",
   }
+}
+
+function requiredEngine(platform: ReturnType<typeof usePlatform>) {
+  if (!platform.engine)
+    throw new Error("The desktop agent engine is not available.")
+  return platform.engine
 }
 
 function reportStatusPipRequestError(error: unknown) {

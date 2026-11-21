@@ -28,6 +28,11 @@ export function storyHandlers(service: () => StoryService): StoryHandlers {
     storyQueueState: async () => service().queueState(),
     storyEnqueue: async ({ storyId }) =>
       payload(await service().enqueue(storyId)),
+    storySend: async ({ storyId, ...input }) =>
+      payload(await service().send(storyId, input)),
+    storyPause: async ({ storyId }) => payload(await service().pause(storyId)),
+    storyResume: async ({ storyId, turn }) =>
+      payload(await service().resume(storyId, turn)),
     storyRewind: ({ storyId, to, restoreWorkspace }) =>
       service().rewind(storyId, to, restoreWorkspace),
   };

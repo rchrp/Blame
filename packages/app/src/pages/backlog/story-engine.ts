@@ -1,18 +1,14 @@
-// A story's agent on Blame's engine (docs/engine-in-the-app.md): what the
-// renderer decides about it (its settings, the person's messages). The
-// story service in the engine host starts it and writes its agent fields.
+// Where a story's agent runs, and how a message to an agent reads (quick
+// chats use it too). The story service in the engine host runs the story
+// (docs/engine-in-the-app.md, "Development stories").
 
 import type {
-  DevelopmentStorySettings,
   EngineLocation,
   EngineMessage,
-  EngineSessionSettings,
   StoryWorkspaceMode,
 } from "@blame/agent-runtime/engine-protocol"
 
 import type {
-  UserStory,
-  UserStoryAgentModel,
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
@@ -30,82 +26,6 @@ export function storyLocation(
   return workspaceMode === "local-container" && platformName !== "linux"
     ? "vm"
     : "host"
-}
-
-export type StorySettingsInput = {
-  story: Pick<
-    UserStory,
-    "id" | "projectId" | "title" | "worktree" | "workspaceMode"
-  > &
-    Partial<Pick<UserStory, "runConfigurationId">>
-  model: DevelopmentStorySettings["model"]
-  maxContextTokens?: number
-  personalization?: DevelopmentStorySettings["personalization"]
-  codePractices?: DevelopmentStorySettings["codePractices"]
-  previewDevtoolsScope?: string
-  /** The project's saved preview environment: it decides the preview tools. */
-  initialization?: {
-    previewManifest: unknown
-    runConfigurations: unknown[]
-  } | null
-  platformName?: string
-}
-
-export function storySessionSettings(
-  input: StorySettingsInput
-): EngineSessionSettings {
-  const { story } = input
-  if (!story.worktree) throw new Error("The story has no worktree yet.")
-  const workspaceMode = story.workspaceMode ?? "direct"
-  return {
-    purpose: "development-story",
-    settings: {
-      workspace: {
-        root: story.worktree,
-        location: storyLocation(workspaceMode, input.platformName),
-      },
-      workspaceMode,
-      projectId: story.projectId,
-      storyId: story.id,
-      title: story.title,
-      model: input.model,
-      ...(input.maxContextTokens
-        ? { maxContextTokens: input.maxContextTokens }
-        : {}),
-      ...(input.personalization
-        ? { personalization: input.personalization }
-        : {}),
-      ...(input.codePractices ? { codePractices: input.codePractices } : {}),
-      ...(input.previewDevtoolsScope
-        ? { previewDevtoolsScope: input.previewDevtoolsScope }
-        : {}),
-      ...(input.initialization
-        ? {
-            projectInitialization: {
-              previewManifest: input.initialization.previewManifest,
-              runConfigurations: input.initialization.runConfigurations,
-              ...(story.runConfigurationId
-                ? { runConfigurationId: story.runConfigurationId }
-                : {}),
-            } as NonNullable<DevelopmentStorySettings["projectInitialization"]>,
-          }
-        : {}),
-    },
-  }
-}
-
-/** The models list with this one last (the card shows them; the next turn reuses the last). */
-export function withAgentModel(
-  models: UserStoryAgentModel[] | null | undefined,
-  model: UserStoryAgentModel
-): UserStoryAgentModel[] {
-  const others = (models ?? []).filter(
-    (item) =>
-      item.providerId !== model.providerId ||
-      item.modelId !== model.modelId ||
-      (item.reasoningEffort ?? null) !== (model.reasoningEffort ?? null)
-  )
-  return [...others, model].slice(-16)
 }
 
 /**
@@ -142,6 +62,3 @@ export async function storyMessage(
     attachments,
   }
 }
-
-export const storyResumeMessage =
-  "Continue the story where you left off: check what is already done in the worktree before going on."

@@ -20,8 +20,10 @@ import type {
 } from "../protocol.js";
 import type {
   StoryHostEvent,
+  StoryMessageInput,
   StoryPreferences,
   StoryQueueState,
+  StoryTurnChoice,
   StoryTurnEnded,
   StoryWaitReason,
   StoryWaiting,
@@ -37,10 +39,12 @@ import {
 import {
   storyLocation,
   storyOutcomeUpdate,
+  storyResumeMessage,
   withTurnCounts,
   type HostStory,
   type StoryUpdate,
 } from "./story.js";
+import { pauseStory, sendStoryMessage } from "./turns.js";
 
 export type StoryServiceHost = {
   api(): ApiConnection | undefined;
@@ -69,6 +73,8 @@ export class StoryService {
   /** Sessions already settled after a quit. */
   private readonly recovered = new Set<string>();
   private readonly writes = new Map<string, Promise<unknown>>();
+  /** What the person or the orchestrator asked of each story, one at a time. */
+  private readonly actions = new Map<string, Promise<unknown>>();
   private readonly turnListeners = new Set<(event: StoryTurnEnded) => void>();
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private reloadTimer: ReturnType<typeof setInterval> | undefined;
@@ -174,6 +180,38 @@ export class StoryService {
     this.retryAt.delete(storyId);
     this.pump();
     return queued;
+  }
+
+  /** A message to the story's agent; a paused or reviewed story works again. */
+  send(
+    storyId: string,
+    input: {
+      message: StoryMessageInput;
+      steer?: boolean;
+      turn?: StoryTurnChoice;
+    },
+  ) {
+    return this.exclusive(storyId, async () => {
+      const story = await this.detail(storyId);
+      return sendStoryMessage(
+        this.context(),
+        story,
+        this.requiredPath(story),
+        input,
+      );
+    });
+  }
+
+  /** Stops the running turn; the story waits, paused, where it was. */
+  pause(storyId: string) {
+    return this.exclusive(storyId, async () =>
+      pauseStory(this.context(), await this.current(storyId)),
+    );
+  }
+
+  /** A paused agent picks its conversation back up. */
+  resume(storyId: string, turn?: StoryTurnChoice) {
+    return this.send(storyId, { message: { text: storyResumeMessage }, turn });
   }
 
   /** Undoes a message to the agent and what followed it, files included when they were snapshotted. */
@@ -364,6 +402,37 @@ export class StoryService {
     const record = await this.api().get(storyId);
     this.remember(record);
     return record.story;
+  }
+
+  /** The story with its details (attachments, excerpts), read now. */
+  async detail(storyId: string): Promise<HostStory> {
+    const record = await this.api().get(storyId);
+    this.remember(record);
+    return record.story;
+  }
+
+  /** The folder of the story's project, which this computer must have. */
+  requiredPath(story: HostStory) {
+    const path = this.projects.get(story.projectId);
+    if (!path)
+      throw new Error("This story's project is not open on this computer.");
+    return path;
+  }
+
+  /** Runs one action on a story at a time: no double resume or merge. */
+  exclusive<T>(storyId: string, action: () => Promise<T>): Promise<T> {
+    const previous = this.actions.get(storyId) ?? Promise.resolve();
+    const next = previous.catch(() => undefined).then(action);
+    this.actions.set(storyId, next);
+    void next.then(
+      () => this.forgetAction(storyId, next),
+      () => this.forgetAction(storyId, next),
+    );
+    return next;
+  }
+
+  private forgetAction(storyId: string, action: Promise<unknown>) {
+    if (this.actions.get(storyId) === action) this.actions.delete(storyId);
   }
 
   /** Writes a story, one write at a time per story, and tells the windows. */

@@ -129,6 +129,24 @@ export type EngineStoryMethods = {
   storyQueueState: { input: undefined; result: StoryQueueState };
   /** Send to Dev Agent: the story joins the queue. */
   storyEnqueue: { input: { storyId: string }; result: unknown };
+  /** A message to the story's agent; a paused or reviewed story resumes. */
+  storySend: {
+    input: {
+      storyId: string;
+      message: StoryMessageInput;
+      /** While the agent works: into the running turn now. */
+      steer?: boolean;
+      turn?: StoryTurnChoice;
+    };
+    result: unknown;
+  };
+  /** Stops the running turn; the story waits, paused, where it was. */
+  storyPause: { input: { storyId: string }; result: unknown };
+  /** A paused agent picks its conversation back up. */
+  storyResume: {
+    input: { storyId: string; turn?: StoryTurnChoice };
+    result: unknown;
+  };
   /** Undoes a message to the agent and what followed, with its files. */
   storyRewind: {
     input: { storyId: string; to: number; restoreWorkspace: boolean };

@@ -1,12 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import {
-  storyLocation,
-  storyMessage,
-  storySessionSettings,
-  withAgentModel,
-} from "./story-engine.ts"
+import { storyLocation, storyMessage } from "./story-engine.ts"
 
 test("a local-container worktree is in the VM except on Linux", () => {
   assert.equal(storyLocation("local-container", "darwin"), "vm")
@@ -14,50 +9,6 @@ test("a local-container worktree is in the VM except on Linux", () => {
   assert.equal(storyLocation("local-container", "linux"), "host")
   assert.equal(storyLocation("direct", "darwin"), "host")
   assert.equal(storyLocation("cloud-preview", "darwin"), "host")
-})
-
-test("the models list keeps each choice once, the latest last", () => {
-  const a = { providerId: "anthropic", modelId: "a", reasoningEffort: null }
-  const b = { providerId: "openai", modelId: "b", reasoningEffort: "high" }
-  assert.deepEqual(withAgentModel([a, b], a), [b, a])
-  assert.deepEqual(withAgentModel(undefined, a), [a])
-  const many = Array.from({ length: 20 }, (_, index) => ({
-    providerId: "p",
-    modelId: `m${index}`,
-  }))
-  assert.equal(withAgentModel(many, a).length, 16)
-})
-
-test("a story's settings name its worktree, where it is and its preview", () => {
-  const settings = storySessionSettings({
-    story: {
-      id: "story",
-      projectId: "project",
-      title: "Checkout",
-      worktree: "/worktrees/story",
-      workspaceMode: "local-container",
-    },
-    model: { providerId: "anthropic", modelId: "a" },
-    platformName: "darwin",
-    previewDevtoolsScope: "story",
-  })
-  assert.equal(settings.purpose, "development-story")
-  assert.deepEqual(
-    settings.purpose === "development-story" && settings.settings.workspace,
-    { root: "/worktrees/story", location: "vm" }
-  )
-  assert.throws(() =>
-    storySessionSettings({
-      story: {
-        id: "s",
-        projectId: "p",
-        title: "t",
-        worktree: null,
-        workspaceMode: null,
-      },
-      model: { providerId: "anthropic", modelId: "a" },
-    })
-  )
 })
 
 test("a message carries quoted code, earlier stories and attached files", async () => {

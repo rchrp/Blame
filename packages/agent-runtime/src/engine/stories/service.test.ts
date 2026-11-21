@@ -263,3 +263,44 @@ test("after a quit, a story left running is settled from its records", async () 
     api.restore();
   }
 });
+
+test("a message resumes a paused story; a pause stops the running turn", async () => {
+  const api = fakeApi([
+    row("story", "a", {
+      status: "in-progress",
+      agentStatus: "Paused",
+      engineSessionId: "session",
+      workspaceMode: "direct",
+      worktree: "/a",
+      agentModels: [{ providerId: "openai", modelId: "gpt" }],
+    }),
+  ]);
+  const { host, calls } = fakeHost();
+  const service = new StoryService(host as never);
+  try {
+    await service.sync({ projects: [{ id: "a", path: "/a" }], preferences });
+    await service.send("story", {
+      message: { text: "Use the blue button" },
+      turn: { ultra: true },
+    });
+    const story = api.stories.get("story")!;
+    assert.equal(story.agentStatus, "Running");
+    const send = calls.find(({ method }) => method === "send")!.input as {
+      message: { text: string; ultra?: boolean };
+      delivery: string;
+      settings: { settings: { model: { providerId: string } } };
+    };
+    assert.equal(send.message.text, "Use the blue button");
+    assert.equal(send.message.ultra, true);
+    assert.equal(send.delivery, "turn");
+    // The story keeps the model it last worked with.
+    assert.equal(send.settings.settings.model.providerId, "openai");
+    await service.pause("story");
+    assert.ok(calls.some(({ method }) => method === "interrupt"));
+    // The turn's end, not the pause, pauses it.
+    assert.equal(story.agentStatus, "Running");
+  } finally {
+    service.stop();
+    api.restore();
+  }
+});

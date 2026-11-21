@@ -257,6 +257,9 @@ export const engineStoryMethods = [
   "storyRetry",
   "storyQueueState",
   "storyEnqueue",
+  "storySend",
+  "storyPause",
+  "storyResume",
   "storyRewind",
 ] as const satisfies readonly (keyof EngineStoryMethods)[];
 

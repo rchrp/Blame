@@ -36,16 +36,6 @@ export type EngineHostRegistration = {
   environment: NodeJS.ProcessEnv;
   /** The services the agents' tools use (engine-desktop-services.ts). */
   desktop: EngineDesktopHandlers;
-  /**
-   * What the desktop prepares before a window's call reaches the host (a
-   * story's development server, its GitHub access); `api` is the
-   * connection the windows gave the host.
-   */
-  beforeCall?(
-    method: EngineHostMethod,
-    input: unknown,
-    api: EngineHostInput<"connect">["api"] | undefined,
-  ): Promise<void>;
   /** A session's turn started or its turns all ended. */
   onActivity?(event: Extract<EngineHostEvent, { type: "activity" }>): void;
   /** Adds what only main knows to a window's call (the git flows'), then makes it. */
@@ -261,11 +251,6 @@ export function registerEngineIpcHandlers(
           void engine.call("unfollow", { subscription }).catch(() => undefined);
       });
     }
-    await registration.beforeCall?.(
-      method as EngineHostMethod,
-      input,
-      engine.router.api(),
-    );
     const call = (prepared: unknown) =>
       engine.call(method as EngineHostMethod, prepared);
     return registration.prepareCall
