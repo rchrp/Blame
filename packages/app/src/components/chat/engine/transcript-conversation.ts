@@ -144,6 +144,8 @@ export function transcriptConversation(
 }
 
 function runStatus(turn: TurnView): UserStoryAgentRunStatus {
+  // Its reply stands, unverified (turnReply): the work ended, it did not stop.
+  if (unverifiedChecks(turn)) return "completed"
   switch (turn.status) {
     case "queued":
       return "pending"

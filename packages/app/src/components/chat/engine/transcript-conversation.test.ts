@@ -457,6 +457,7 @@ test("a reply the checks refused stays, unverified, with the check it names", ()
     "The GPU test needs a host package I cannot install.\n\n> **Not verified:** the last run of `test:gpu` failed."
   )
   assert.ok(!refused.activities?.some((activity) => activity.title === "Not finished"))
+  assert.equal(refused.status, "completed")
   seq = 0
   const stopped = conversation(turnRecords({ status: "contract_unmet", unmet })).runs[0]!
   assert.equal(stopped.finalResponse, "The GPU test needs a host package I cannot install.")
