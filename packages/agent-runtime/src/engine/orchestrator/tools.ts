@@ -139,7 +139,7 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
     defineTool<Inputs["message_story"]>({
       name: "message_story",
       description:
-        "Sends a story's agent a message: an answer to its question, or a request for changes (at most three per story). `escalate` runs that turn on the next model up.",
+        "Sends a story's agent a message: an answer to its question, or a request for changes. A message to a story in review is a request for changes whatever its kind: at most 3 per story, 6 messages in all. `escalate` runs that turn on the next model up.",
       inputSchema: {
         type: "object",
         properties: {
@@ -185,7 +185,7 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
     defineTool<Inputs["end_turn"]>({
       name: "end_turn",
       description:
-        "Ends your turn: `wait` to sleep until the host wakes you (only while stories work or can start), `ask` to put a question to the person, `finish` once every story is merged or rejected.",
+        "Ends your turn, whoever wrote last. `wait`: sleep until the host wakes you; only while stories work or will start (also after answering the person mid-epic). `ask`: hand the turn back to the person, with your question; also when nothing works yet (chatting before any story, a plan to show before starting). `finish`: once every story is merged or rejected, with the epic's summary.",
       inputSchema: {
         type: "object",
         properties: {

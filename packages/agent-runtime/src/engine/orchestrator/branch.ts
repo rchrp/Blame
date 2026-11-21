@@ -45,18 +45,45 @@ async function branchExists(git: GitRun, root: string, branch: string) {
   }
 }
 
-/** A name for a new epic's branch that no branch and no other epic uses. */
+/** A name for a new epic's branch that no branch and no other epic uses, and that git can make next to them. */
 export async function newEpicBranch(
   git: GitRun,
   root: string,
   input: { title: string; epicId: string; taken: readonly string[] },
 ) {
-  const base = `epic/${epicSlug(input.title, input.epicId)}`;
+  const existing = (
+    await git(root, ["for-each-ref", "--format=%(refname:short)", "refs/heads"])
+  )
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const names = [...existing, ...input.taken];
+  // A branch named `epic` leaves no room for `epic/…` (and `epic/x/y` none
+  // for `epic/x`): such a name is never written, since it could never be made.
+  const prefix = names.includes("epic") ? "epic-" : "epic/";
+  const base = `${prefix}${epicSlug(input.title, input.epicId)}`;
   for (let index = 1; ; index += 1) {
     const name = index === 1 ? base : `${base}-${index}`;
-    if (input.taken.includes(name)) continue;
-    if (!(await branchExists(git, root, name))) return name;
+    if (!names.some((other) => refsCollide(name, other))) return name;
   }
+}
+
+/** Two branch names git cannot hold together: the same, or one a folder of the other. */
+function refsCollide(left: string, right: string) {
+  return (
+    left === right ||
+    left.startsWith(`${right}/`) ||
+    right.startsWith(`${left}/`)
+  );
+}
+
+/** Why a name cannot be the epic's branch, if it cannot. */
+export function epicBranchProblem(branch: string, targetBranch: string) {
+  if (branch === targetBranch)
+    return `The epic's branch cannot be its target branch (${targetBranch}).`;
+  if (!/^epic[/-][a-z0-9]+(?:-[a-z0-9]+)*$/.test(branch))
+    return `${branch} is not a branch this host makes for an epic.`;
+  return undefined;
 }
 
 /** Creates the branch from the target when it is missing (a quit cut its creation). */

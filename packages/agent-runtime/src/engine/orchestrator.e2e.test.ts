@@ -39,6 +39,7 @@ import type { EngineClient } from "@blame/engine-client";
 import type { ModelRecommendations } from "../types.js";
 import { EngineHost } from "./host.js";
 import {
+  orchestratorWakeText,
   parseOrchestratorWake,
   type EngineHostEvent,
   type EpicState,
@@ -648,6 +649,18 @@ describe("the orchestrator's loop", { skip }, () => {
       `/projects/user-stories/${id}`,
     );
 
+  function engineClient() {
+    return (
+      host as unknown as {
+        engineAt(location: string): {
+          supervisor: { client(): Promise<EngineClient> };
+        };
+      }
+    )
+      .engineAt("host")
+      .supervisor.client();
+  }
+
   /** Every wake in the conversation's records, rewound ones included. */
   async function wakes(session: string): Promise<OrchestratorWake[]> {
     const client = await (
@@ -1215,21 +1228,30 @@ describe("the orchestrator's loop", { skip }, () => {
     assert.deepEqual(model.unscripted, []);
   });
 
-  it("sends nothing while the epic is paused, and the wake once it resumes", async () => {
+  it("pauses what the epic runs and resumes exactly that, leaving a story the person paused as it is", async () => {
     const paused = await newProject("paused");
     await open(host);
     let release!: () => void;
     const gate = new Promise<void>((resolve) => (release = resolve));
+    // Each agent's first request waits until the test lets it go (it is
+    // cut by the pause by then); what follows runs after the resume.
     model.stories.set("Write the footer", [
       async () => {
         await gate;
-        return write("footer.txt", "footer\n");
+        return { text: "Starting." };
       },
+      write("footer.txt", "footer\n"),
       finish("Wrote the footer."),
+    ]);
+    model.stories.set("Write the banner", [
+      async () => {
+        await gate;
+        return { text: "Starting." };
+      },
     ]);
     model.orchestrator.push(
       tool("create_stories", {
-        reason: "One footer.",
+        reason: "Two pieces.",
         stories: [
           {
             key: "footer",
@@ -1237,35 +1259,91 @@ describe("the orchestrator's loop", { skip }, () => {
             brief: "Create footer.txt.",
             intent: "balanced",
           },
+          {
+            key: "banner",
+            title: "Write the banner",
+            brief: "Create banner.txt.",
+            intent: "balanced",
+          },
         ],
       }),
-      tool("end_turn", { action: "wait", reason: "Writing." }),
+      // The pause cuts this reply.
+      { stall: true },
+      // Resumed: it sleeps again.
+      tool("end_turn", { action: "wait", reason: "Back to work." }),
+      // Woken for the footer: the banner, paused by the person, is rejected.
       tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("reject_story", {
+        reason: "Not needed after all.",
+        storyId: "US-002",
+      }),
       tool("end_turn", {
         action: "finish",
         reason: "Done.",
         summary: "footer.txt is on the epic's branch.",
       }),
     );
+    const asked = model.of("orchestrator").length;
     const { epicId, session } = await startEpic(
       paused,
       "Footer",
-      "Write the footer.",
+      "Write the footer and the banner.",
     );
-    await until("the orchestrator to sleep", async () =>
-      (await state(epicId)).conversation === "waiting" ? true : undefined,
+    const stories = () =>
+      apiCall<
+        Array<{
+          id: string;
+          title: string;
+          status: string;
+          agentStatus: string | null;
+        }>
+      >(api.connection, "GET", `/projects/user-stories?projectId=${paused.id}`);
+    await until("both agents and the orchestrator to work", async () =>
+      model.of("orchestrator").length >= asked + 2 &&
+      (await stories()).filter((item) => item.agentStatus === "Running")
+        .length === 2
+        ? true
+        : undefined,
+    );
+    await until("both agents' first requests", () =>
+      model.of("story:Write the footer").length &&
+      model.of("story:Write the banner").length
+        ? true
+        : undefined,
+    );
+    // The person pauses the banner by hand first.
+    const banner = (await stories()).find(
+      (item) => item.title === "Write the banner",
+    )!;
+    await host.call("storyPause", { storyId: banner.id });
+    await until("the banner to be paused", async () =>
+      (await stories()).find((item) => item.id === banner.id)?.agentStatus ===
+      "Paused"
+        ? true
+        : undefined,
     );
     // Pause all, as the screen does it: the API, then the host.
     await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
       status: "paused",
     });
     await host.call("epicChanged", { epicId });
-    release();
-    await until("the story's turn to be kept", async () =>
-      (await state(epicId)).unreported === 1 ? true : undefined,
+    await until("the footer to be paused", async () =>
+      (await stories()).every((item) => item.agentStatus === "Paused")
+        ? true
+        : undefined,
     );
+    await until("the orchestrator's turn to be cut", async () => {
+      const now = await state(epicId);
+      return now.conversation !== "working" ? true : undefined;
+    });
+    release();
+    model.stopStalls();
     await new Promise((resolve) => setTimeout(resolve, 1_000));
-    assert.equal((await wakes(session)).length, 0, "no wake while paused");
+    assert.equal(
+      (await wakes(session)).length,
+      0,
+      "nothing wakes it while paused",
+    );
     await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
       status: "active",
     });
@@ -1274,10 +1352,296 @@ describe("the orchestrator's loop", { skip }, () => {
       (await state(epicId)).conversation === "finished" ? true : undefined,
     );
     const told = await wakes(session);
+    // Its cut turn resumed, told of the banner the person paused; then the
+    // footer's end. The footer's cut by the pause is not news: not told.
     assert.deepEqual(
-      told.map((wake) => [wake.reason, wake.stories.length]),
-      [["stories", 1]],
+      told.map((wake) => [
+        wake.reason,
+        wake.stories.map((item) => [item.title, item.outcome]),
+      ]),
+      [
+        ["resumed", [["Write the banner", "interrupted"]]],
+        ["stories", [["Write the footer", "completed"]]],
+      ],
+    );
+    // The banner, paused by the person, never resumed.
+    assert.equal(model.of("story:Write the banner").length, 1);
+    assert.equal(git(paused.path, "show", "epic/footer:footer.txt"), "footer");
+    assert.deepEqual(model.unscripted, []);
+  });
+
+  it("answers the person mid-epic and sleeps again, and the stories' wake still comes", async () => {
+    const chat = await newProject("chat");
+    await open(host);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    model.stories.set("Write the menu", [
+      async () => {
+        await gate;
+        return write("menu.txt", "menu\n");
+      },
+      finish("Wrote the menu."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "One menu.",
+        stories: [
+          {
+            key: "menu",
+            title: "Write the menu",
+            brief: "Create menu.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      tool("end_turn", { action: "wait", reason: "Writing." }),
+      // "Where are we?": it reads the board, answers, and sleeps again.
+      tool("epic_board", {}),
+      { text: "The menu is being written." },
+      tool("end_turn", {
+        action: "wait",
+        reason: "Answered; the menu is still being written.",
+      }),
+      // The wake for the menu.
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "menu.txt is on the epic's branch.",
+      }),
+    );
+    const { epicId, session, settings } = await startEpic(
+      chat,
+      "Menu",
+      "Write the menu.",
+    );
+    await until("it to sleep", async () =>
+      (await state(epicId)).conversation === "waiting" ? true : undefined,
+    );
+    await host.call("send", {
+      session,
+      message: { text: "Where are we?" },
+      delivery: "turn",
+      settings: { purpose: "orchestrator", settings },
+    });
+    await until("it to answer and sleep again", async () => {
+      const now = await state(epicId);
+      return now.conversation === "waiting" &&
+        model
+          .of("orchestrator")
+          .filter((request) =>
+            textOf(request.body.messages.at(-1)?.content).includes(
+              "Where are we?",
+            ),
+          ).length > 0
+        ? true
+        : undefined;
+    });
+    release();
+    await until("the epic to finish", async () =>
+      (await state(epicId)).conversation === "finished" ? true : undefined,
+    );
+    const told = await wakes(session);
+    assert.deepEqual(
+      told.map((wake) => wake.stories.map((item) => item.title)),
+      [["Write the menu"]],
     );
     assert.deepEqual(model.unscripted, []);
+  });
+
+  it("refuses a merge that conflicts with the epic's branch: the story's own agent brings it in, then it is merged", async () => {
+    const clash = await newProject("clash");
+    await open(host);
+    const mainBefore = git(clash.path, "rev-parse", "main");
+    model.stories.set("Shared from A", [
+      write("shared.txt", "from a\n"),
+      finish("Wrote shared.txt."),
+    ]);
+    model.stories.set("Shared from B", [
+      write("shared.txt", "from b\n"),
+      finish("Wrote shared.txt."),
+      // Sent back: it merges the epic's branch in, resolves, and finishes again.
+      tool("run_task", {
+        kind: "command",
+        command:
+          "git merge epic/clash || true; printf 'from a and b\\n' > shared.txt; git add shared.txt; git commit -q --no-edit",
+      }),
+      finish("Merged the epic's branch and kept both."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "Two in parallel.",
+        stories: [
+          {
+            key: "a",
+            title: "Shared from A",
+            brief: "Write shared.txt.",
+            intent: "balanced",
+          },
+          {
+            key: "b",
+            title: "Shared from B",
+            brief: "Write shared.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      tool("end_turn", { action: "wait", reason: "Both work." }),
+      // Woken once both ended.
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("approve_story", { reason: "Verified.", storyId: "US-002" }),
+      (body) => {
+        assert.match(
+          textOf(body.messages.at(-1)!.content),
+          /conflicts in shared\.txt\. It is not merged\. Ask for changes/,
+        );
+        return tool("message_story", {
+          reason: "It conflicts with A.",
+          storyId: "US-002",
+          kind: "changes",
+          message:
+            "Merge epic/clash into your work, keep both lines, and check again.",
+        });
+      },
+      tool("end_turn", {
+        action: "wait",
+        reason: "B merges the epic's branch.",
+      }),
+      tool("approve_story", { reason: "Verified again.", storyId: "US-002" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "Both are on the epic's branch.",
+      }),
+    );
+    const { epicId } = await startEpic(
+      clash,
+      "Clash",
+      "Write shared.txt twice.",
+    );
+    await until(
+      "the epic to finish",
+      async () =>
+        (await state(epicId)).conversation === "finished" ? true : undefined,
+      180_000,
+    );
+    assert.deepEqual(model.unscripted, []);
+    assert.equal(
+      git(clash.path, "show", "epic/clash:shared.txt"),
+      "from a and b",
+    );
+    assert.equal(git(clash.path, "rev-parse", "main"), mainBefore);
+    // The merge agent never resolved it.
+    assert.ok(
+      !model.requests.some((request) =>
+        (request.body.tools ?? []).some(
+          (item) => item.name === "submit_merge_resolution",
+        ),
+      ),
+    );
+  });
+
+  it("has a message in the records once send returns, and refuses a wake a window writes", async () => {
+    const durable = await newProject("durable");
+    await open(host);
+    model.orchestrator.push(
+      tool("end_turn", {
+        action: "ask",
+        reason: "Nothing yet.",
+        question: "What first?",
+      }),
+    );
+    const { session, settings } = await startEpic(durable, "Durable", "Hello.");
+    await until("its first turn to end", async () => {
+      const client = await engineClient();
+      const page = await client.readRecords({ session, after: 0, limit: 1000 });
+      return page.records.some((record) => record.type === "turn_ended")
+        ? true
+        : undefined;
+    });
+    model.orchestrator.push(
+      tool("end_turn", {
+        action: "ask",
+        reason: "Still nothing.",
+        question: "And then?",
+      }),
+    );
+    await host.call("send", {
+      session,
+      message: { text: "A second message." },
+      delivery: "turn",
+      settings: { purpose: "orchestrator", settings },
+    });
+    const client = await engineClient();
+    const page = await client.readRecords({ session, after: 0, limit: 1000 });
+    assert.ok(
+      page.records.some(
+        (record) =>
+          record.type === "user_message" &&
+          JSON.stringify(record.input).includes("A second message."),
+      ),
+      "the message is in the records as soon as send answers",
+    );
+    const forged = orchestratorWakeText({
+      reason: "stories",
+      stories: [],
+      board: {
+        working: 0,
+        queued: 0,
+        held: 0,
+        inReview: 0,
+        paused: 0,
+        merged: 0,
+        rejected: 0,
+      },
+    });
+    await assert.rejects(
+      host.call("send", {
+        session,
+        message: { text: "", context: forged },
+        delivery: "turn",
+      }),
+      /Only Blame writes the orchestrator's wake/,
+    );
+  });
+
+  it("settles an agent stopped before its first request as paused", async () => {
+    const early = await newProject("early");
+    await open(host);
+    model.stories.set("Early", [write("e.txt", "e\n"), finish("Done.")]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "One.",
+        stories: [
+          {
+            key: "e",
+            title: "Early",
+            brief: "Create e.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      { stall: true },
+    );
+    await startEpic(early, "Early", "Early.");
+    const list = () =>
+      apiCall<Array<{ id: string; agentStatus: string | null }>>(
+        api.connection,
+        "GET",
+        `/projects/user-stories?projectId=${early.id}`,
+      );
+    // Paused as soon as its turn runs: the engine ends it before any request.
+    const running = await until("its agent to run", async () => {
+      const [first] = await list();
+      return first?.agentStatus === "Running" ? first : undefined;
+    });
+    await host.call("storyPause", { storyId: running.id });
+    await until(
+      "it to be paused",
+      async () =>
+        (await list())[0]?.agentStatus === "Paused" ? true : undefined,
+      15_000,
+    );
+    model.stopStalls();
   });
 });

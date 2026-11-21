@@ -31,14 +31,29 @@ export type SessionSpend = { microUsd: number; unpriced: number };
 export type EpicEntry = {
   projectId: string;
   session: string;
+  /** The API (its URL) the epic was created through: what is kept here belongs to it. */
+  apiUrl?: string;
+  /** The epic's branch as this host made it: the only branch its stories merge into. */
+  branch?: string;
   settings?: OrchestratorSettings;
   stopped?: boolean;
   pending: PendingTurn[];
   /** Story → its sessions → what each spent. */
   spend: Record<string, Record<string, SessionSpend>>;
+  /** What the conversation itself spent, as last read. */
+  orchestrator?: SessionSpend;
+  /** Requests for changes sent, by story. */
   changes: Record<string, number>;
+  /** Every message sent to a story, by story. */
+  messages?: Record<string, number>;
   /** Story turns its own tools showed it (`epic_board`, `story_report`): no wake repeats them. */
   heard?: string[];
+  /**
+   * What the epic's pause stopped, to start again on resume: the stories
+   * it paused, whether it cut the conversation's turn, and the stories
+   * whose start was in flight when it came (paused once they run).
+   */
+  pause?: { stories: string[]; turn: boolean; awaiting?: string[] };
 };
 
 // Pending turns beyond this are the oldest dropped (a wake carries the rest).
@@ -59,6 +74,16 @@ export class OrchestratorState {
     return (await this.load()).get(epicId);
   }
 
+  /** The entry as read so far, without waiting: undefined until the file is read. */
+  peek(epicId: string): EpicEntry | undefined {
+    return this.epics?.get(epicId);
+  }
+
+  /** The file was read: `peek` answers for every epic. */
+  ready() {
+    return this.epics !== undefined;
+  }
+
   async all(): Promise<Array<[string, EpicEntry]>> {
     return [...(await this.load())];
   }
@@ -72,15 +97,19 @@ export class OrchestratorState {
   /** The epic's conversation runs here from now on. */
   async register(
     epicId: string,
-    input: { projectId: string; session: string },
+    input: {
+      projectId: string;
+      session: string;
+      apiUrl: string;
+      branch: string;
+    },
   ) {
     await this.change(
       epicId,
       (entry) => {
-        entry.projectId = input.projectId;
-        entry.session = input.session;
+        Object.assign(entry, input);
       },
-      input,
+      { projectId: input.projectId, session: input.session },
     );
   }
 
@@ -143,6 +172,15 @@ export class OrchestratorState {
               ? entry.changes
               : {},
           ...(Array.isArray(entry.heard) ? { heard: entry.heard } : {}),
+          ...(typeof entry.apiUrl === "string" ? { apiUrl: entry.apiUrl } : {}),
+          ...(typeof entry.branch === "string" ? { branch: entry.branch } : {}),
+          ...(entry.orchestrator ? { orchestrator: entry.orchestrator } : {}),
+          ...(entry.messages && typeof entry.messages === "object"
+            ? { messages: entry.messages }
+            : {}),
+          ...(entry.pause && Array.isArray(entry.pause.stories)
+            ? { pause: entry.pause }
+            : {}),
         });
       }
     } catch (error) {

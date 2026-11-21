@@ -17,6 +17,7 @@ import type {
   OrchestratorToolInputs,
   StoryRequestedModel,
   StoryRunMode,
+  StoryWaitReason,
 } from "../protocol.js";
 import { storyApi } from "../stories/api.js";
 import { initializationDecision } from "../stories/queue.js";
@@ -24,6 +25,7 @@ import type { StoryService } from "../stories/service.js";
 import { storyDisplayId, type HostStory } from "../stories/story.js";
 import { epicCounts, epicHasWork, outcomeFacts, storyWorks } from "./board.js";
 import { ensureBranch, type GitRun } from "./branch.js";
+import { waitWords } from "./gate.js";
 import type { EpicReading } from "./reading.js";
 import type { Orchestrator } from "./service.js";
 import type { OrchestratorState } from "./state.js";
@@ -38,7 +40,7 @@ export type EpicDesk = {
   git?: GitRun;
   starting(): ReadonlySet<string>;
   /** The queue's gate holds it (its epic paused or spent, or run elsewhere). */
-  holds(story: HostStory): boolean;
+  holds(story: HostStory): StoryWaitReason | undefined;
   /** It will not start by itself: held, or its wait needs the person. */
   blocked(story: HostStory): boolean;
 };
@@ -47,6 +49,8 @@ type Inputs = OrchestratorToolInputs;
 
 /** Requests for changes a story may get before it is rejected instead. */
 export const maxChangeRequests = 3;
+/** Messages of any kind a story may get from the orchestrator. */
+export const maxMessages = 6;
 
 // ------------------------------------------------------------------ board
 
@@ -59,9 +63,13 @@ export async function epicBoard(desk: EpicDesk) {
   );
   const spend = await look.spend();
   const entry = await desk.state.get(desk.epicId);
+  const shown: Array<{ session: string; turn: string }> = [];
   const rows = await Promise.all(
     stories.map(async (story) => {
       const status = await look.status(story.id);
+      const last = status?.endedTurns?.at(-1);
+      if (status && last)
+        shown.push({ session: status.session, turn: last.turn });
       const wait = waiting.get(story.id)?.reason;
       return {
         id: story.id,
@@ -72,11 +80,10 @@ export async function epicBoard(desk: EpicDesk) {
         ...(story.startsAfter?.length
           ? { startsAfter: story.startsAfter }
           : {}),
-        ...(wait ? { waitsFor: wait.kind } : {}),
-        ...(desk.holds(story) && story.status === "ready"
+        ...(wait && story.status === "ready"
           ? {
-              held:
-                look.epic.status !== "active" ? "epic paused" : "budget spent",
+              waitsFor: waitWords(wait),
+              ...(desk.blocked(story) ? { needsPerson: true } : {}),
             }
           : {}),
         ...(story.modelIntent ? { intent: story.modelIntent } : {}),
@@ -97,7 +104,8 @@ export async function epicBoard(desk: EpicDesk) {
       };
     }),
   );
-  await look.heard();
+  // The last ended turn of each story the answer shows: no wake repeats it.
+  await look.markHeard(shown);
   return {
     epic: {
       title: look.epic.title,
@@ -153,12 +161,7 @@ export async function createStories(
   const runMode = batch.some((story) => !story.hold)
     ? await isolatedRunMode(desk, epic)
     : await isolatedRunMode(desk, epic).catch(() => undefined);
-  await ensureBranch(
-    requiredGit(desk),
-    await workspaceRoot(desk),
-    epic.branch,
-    epic.targetBranch,
-  );
+  await epicBranchReady(desk, epic);
   const pool = await modelPool(desk, epic);
   const created = new Map<string, HostStory>();
   const answers: Array<Record<string, unknown>> = [];
@@ -225,7 +228,10 @@ export async function updateStory(
     update.modelIntent = input.intent;
     update.requestedModel = choice.requested;
   }
-  if (queue) update.runMode = await isolatedRunMode(desk, look.epic);
+  if (queue) {
+    update.runMode = await isolatedRunMode(desk, look.epic);
+    await epicBranchReady(desk, look.epic);
+  }
   let edited = story;
   if (Object.keys(update).length)
     edited = await desk.stories.edit(story.id, update);
@@ -254,7 +260,9 @@ export async function storyReport(
   const status = await look.status(story.id);
   const spend = await look.spend();
   const entry = await desk.state.get(desk.epicId);
-  await look.heard([story.id]);
+  const last = status?.endedTurns?.at(-1);
+  if (status && last)
+    await look.markHeard([{ session: status.session, turn: last.turn }]);
   return {
     id: story.id,
     number: storyDisplayId(story),
@@ -299,10 +307,18 @@ export async function messageStory(
     throw new Error("kind is answer or changes.");
   assertBudget(await look.spend());
   const entry = await desk.state.get(desk.epicId);
-  const requested = entry?.changes[story.id] ?? 0;
-  if (input.kind === "changes" && requested >= maxChangeRequests)
+  const sent = entry?.messages?.[story.id] ?? 0;
+  if (sent >= maxMessages)
     throw new Error(
-      `${storyDisplayId(story)} already had ${requested} requests for changes: reject it and write a better story, or ask the person.`,
+      `${storyDisplayId(story)} already had ${sent} messages from you: reject it and write a better story, or ask the person.`,
+    );
+  // Whatever its label, a message to a story whose turn ended (in review)
+  // asks it to change its work.
+  const changes = input.kind === "changes" || story.status === "in-review";
+  const requested = entry?.changes[story.id] ?? 0;
+  if (changes && requested >= maxChangeRequests)
+    throw new Error(
+      `${storyDisplayId(story)} already had ${requested} requests for changes (a message after its turn ended is one): reject it and write a better story, or ask the person.`,
     );
   let model: ReturnType<typeof escalateModel> = null;
   if (input.escalate) {
@@ -317,14 +333,15 @@ export async function messageStory(
         `${storyDisplayId(story)} already runs on the smartest model the epic allows: send the message without escalate, or reject it.`,
       );
   }
-  if (input.kind === "changes") await countChange(desk, story.id, 1);
+  // Counted before it goes: a quit after the send never forgets one.
+  await countMessage(desk, story.id, changes, 1);
   try {
     await desk.stories.send(story.id, {
       message: { text: input.message.trim() },
       ...(model ? { turn: { model: model.model } } : {}),
     });
   } catch (error) {
-    if (input.kind === "changes") await countChange(desk, story.id, -1);
+    await countMessage(desk, story.id, changes, -1);
     throw error;
   }
   return {
@@ -333,12 +350,13 @@ export async function messageStory(
     ...(model
       ? { model: `${model.model.providerId}/${model.model.modelId}` }
       : {}),
-    ...(input.kind === "changes"
+    ...(changes
       ? {
           changesRequested: requested + 1,
           left: maxChangeRequests - requested - 1,
         }
       : {}),
+    messagesLeft: maxMessages - sent - 1,
   };
 }
 
@@ -373,11 +391,44 @@ export async function approveStory(
       `${storyDisplayId(story)}'s last turn did not end completed (${status.lastOutcome?.status ?? "no turn"}${facts.failingChecks ? `: ${facts.failingChecks.join(", ")} still fail` : ""}): the harness did not accept its finish_task. Ask for changes, or reject it.`,
     );
   }
-  const sent = (await desk.state.get(desk.epicId))?.settings?.model;
-  const model = desk.orchestrator.orchestratorModel(look.epic, sent);
+  // The target branch only moves when the person approves the epic: a
+  // story merges into the epic's branch as this host made it, or not at all.
+  const entry = await desk.state.get(desk.epicId);
+  const branch = entry?.branch;
+  if (
+    !branch ||
+    look.epic.branch !== branch ||
+    branch === look.epic.targetBranch ||
+    story.targetBranch !== branch
+  )
+    throw new Error(
+      `${storyDisplayId(story)} would merge into ${story.targetBranch ?? "the project folder's branch"}, not the epic's branch${branch ? ` ${branch}` : ""}: it is not merged. Ask the person.`,
+    );
+  if (
+    (story.workspaceMode ?? "direct") === "direct" ||
+    story.runMode === "direct"
+  )
+    throw new Error(
+      `${storyDisplayId(story)} ran Direct, in the project folder: it is not merged into the epic. Reject it and write it again.`,
+    );
+  const model = desk.orchestrator.orchestratorModel(
+    look.epic,
+    entry?.settings?.model,
+  );
   if (!model)
     throw new Error("No model to write the merge's commit message with.");
-  const outcome = await desk.stories.approve(story.id, { model });
+  let outcome: Awaited<ReturnType<StoryService["approve"]>>;
+  try {
+    outcome = await desk.stories.approve(story.id, { model });
+  } catch (error) {
+    // Never resolved by the merge agent and merged unverified: the
+    // story's own agent brings the epic's branch in and passes its checks.
+    if (error instanceof Error && error.name === "StoryMergeConflictError")
+      throw new Error(
+        `${error.message} It is not merged. Ask for changes (message_story, kind changes): its agent merges ${branch} into its work (git merge ${branch}), resolves the conflicts, and passes its checks again.`,
+      );
+    throw error;
+  }
   return {
     merged: true,
     number: storyDisplayId(story),
@@ -570,6 +621,27 @@ function chooseModel(desk: EpicDesk, pool: ModelPool, intent: ModelIntent) {
     throw new Error(
       "No model can run the stories: no ranked model is in the epic's range and the account has no agent model. Ask the person to connect a provider.",
     );
+  // Nothing ranked: the account's model, only on a provider the epic allows.
+  if (
+    resolution.fallback &&
+    (pool.providers?.length
+      ? !pool.providers.includes(resolution.model.providerId)
+      : false)
+  )
+    throw new Error(
+      `No model of the providers the epic allows (${pool.providers!.join(", ")}) can be ranked, and the account's agent model is on ${resolution.model.providerId}. Ask the person to widen the providers or the range.`,
+    );
+  if (
+    resolution.fallback &&
+    pool.hidden?.some(
+      (hidden) =>
+        hidden.providerId === resolution.model.providerId &&
+        hidden.modelId === resolution.model.modelId,
+    )
+  )
+    throw new Error(
+      "No visible model can be ranked in the epic's range, and the account's agent model is hidden. Ask the person.",
+    );
   const model = resolution.model;
   const requested: StoryRequestedModel = {
     providerId: model.providerId,
@@ -582,9 +654,35 @@ function chooseModel(desk: EpicDesk, pool: ModelPool, intent: ModelIntent) {
   return { requested, fallback: resolution.fallback };
 }
 
-async function countChange(desk: EpicDesk, storyId: string, delta: number) {
+/** The epic's branch exists (made again from its target if a quit cut its making). */
+async function epicBranchReady(desk: EpicDesk, epic: Epic) {
+  const branch = (await desk.state.get(desk.epicId))?.branch;
+  if (!branch || !epic.targetBranch || epic.branch !== branch)
+    throw new Error(
+      "The epic's branch is not the one this computer made for it: nothing starts. Ask the person.",
+    );
+  await ensureBranch(
+    requiredGit(desk),
+    await workspaceRoot(desk),
+    branch,
+    epic.targetBranch,
+  );
+}
+
+async function countMessage(
+  desk: EpicDesk,
+  storyId: string,
+  changes: boolean,
+  delta: number,
+) {
   await desk.state.change(desk.epicId, (entry) => {
-    entry.changes[storyId] = Math.max(0, (entry.changes[storyId] ?? 0) + delta);
+    const messages = (entry.messages ??= {});
+    messages[storyId] = Math.max(0, (messages[storyId] ?? 0) + delta);
+    if (changes)
+      entry.changes[storyId] = Math.max(
+        0,
+        (entry.changes[storyId] ?? 0) + delta,
+      );
   });
 }
 

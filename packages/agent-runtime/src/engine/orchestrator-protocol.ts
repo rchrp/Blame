@@ -112,7 +112,19 @@ export type EpicState = {
   summary?: string;
   /** Story turns that ended and that the orchestrator has not heard of yet. */
   unreported: number;
+  /** Queued stories only the person can start, and why (the epic needs them). */
+  blocked?: EpicBlockedStory[];
   spend: EpicSpend;
+};
+
+/** A queued story of the epic that will not start by itself. */
+export type EpicBlockedStory = {
+  storyId: string;
+  /** `US-004`. */
+  number: string;
+  title: string;
+  /** Why, in words (a start that keeps failing gives its error). */
+  reason: string;
 };
 
 /** The intent a story's model was chosen by. */
@@ -229,6 +241,8 @@ export type OrchestratorWake = {
   reason: "stories" | "resumed" | "idle";
   stories: OrchestratorWakeStory[];
   board: EpicBoardCounts;
+  /** Queued stories only the person can start, and why. */
+  blocked?: EpicBlockedStory[];
   budget?: { spent: boolean; remainingMicroUsd?: number };
 };
 
@@ -243,7 +257,7 @@ export function orchestratorWakeText(wake: OrchestratorWake): string {
     wake.reason === "resumed"
       ? "Blame stopped while you were working. Read the board and go on."
       : wake.reason === "idle"
-        ? "No story of the epic works or can start any more. Read the board and decide."
+        ? "No story of the epic works or will start by itself. Read the board; ask the person for what only they can fix."
         : "Stories you started ended a turn. Call story_report for one's full report.";
   return `${wakeOpen}\n${note}\n${JSON.stringify(wake)}\n${wakeClose}`;
 }

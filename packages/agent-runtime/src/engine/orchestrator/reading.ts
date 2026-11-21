@@ -70,9 +70,16 @@ export class EpicReading {
         unpriced: status.unpricedRequests ?? 0,
       };
     }
+    const orchestrator = this.conversation
+      ? {
+          microUsd: this.conversation.spentMicroUsd,
+          unpriced: this.conversation.unpricedRequests,
+        }
+      : this.entry?.orchestrator;
     if (this.entry)
       await this.state.change(this.epic.id, (entry) => {
         entry.spend = cached;
+        if (orchestrator) entry.orchestrator = orchestrator;
       });
     const stories: EpicStorySpend[] = Object.entries(cached).map(
       ([storyId, sessions]) => ({
@@ -84,7 +91,7 @@ export class EpicReading {
       }),
     );
     const storiesMicroUsd = sum(stories.map((item) => item.microUsd));
-    const orchestratorMicroUsd = this.conversation?.spentMicroUsd ?? 0;
+    const orchestratorMicroUsd = orchestrator?.microUsd ?? 0;
     const totalMicroUsd = storiesMicroUsd + orchestratorMicroUsd;
     const budget = this.epic.settings.budgetMicroUsd;
     const hasBudget = typeof budget === "number" && Number.isFinite(budget);
@@ -101,7 +108,7 @@ export class EpicReading {
       spent: hasBudget && totalMicroUsd >= budget,
       unpricedRequests:
         sum(stories.map((item) => item.unpricedRequests)) +
-        (this.conversation?.unpricedRequests ?? 0),
+        (orchestrator?.unpriced ?? 0),
       stories,
     };
   }
@@ -147,20 +154,19 @@ export class EpicReading {
   }
 
   /**
-   * The orchestrator's own tools showed it these stories as they are now
-   * (the board, a report): their ended turns are known, no wake repeats
-   * them.
+   * These ended turns are known to the orchestrator without a wake (its
+   * board or a report showed them, or the epic's pause made them): no wake
+   * repeats them. Exactly these, nothing read since.
    */
-  async heard(storyIds?: readonly string[]) {
-    if (!this.entry) return;
-    const keys = (await this.unreported())
-      .filter((story) => !storyIds || storyIds.includes(story.storyId))
-      .map((story) => turnKey(story.session, story.turn));
-    if (!keys.length) return;
+  async markHeard(stories: ReadonlyArray<{ session: string; turn: string }>) {
+    if (!this.entry || !stories.length) return;
+    const keys = new Set(
+      stories.map((story) => turnKey(story.session, story.turn)),
+    );
     await this.state.change(this.epic.id, (entry) => {
-      entry.heard = [...(entry.heard ?? []), ...keys];
+      entry.heard = [...new Set([...(entry.heard ?? []), ...keys])];
       entry.pending = entry.pending.filter(
-        ({ story }) => !keys.includes(turnKey(story.session, story.turn)),
+        ({ story }) => !keys.has(turnKey(story.session, story.turn)),
       );
     });
   }

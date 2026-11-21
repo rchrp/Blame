@@ -29,9 +29,10 @@ export function parseEpic(value: unknown): Epic {
     projectId: epic.projectId,
     title: typeof epic.title === "string" ? epic.title : "Epic",
     goal: text(epic.goal),
+    // A status this build does not know is never taken as free to run.
     status: statuses.has(epic.status as EpicStatus)
       ? (epic.status as EpicStatus)
-      : "active",
+      : "paused",
     branch: text(epic.branch),
     targetBranch: text(epic.targetBranch),
     engineSessionId: text(epic.engineSessionId),
