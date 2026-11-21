@@ -38,7 +38,7 @@ Site language in use: "the ADE for verifiable agentic development"; "From story 
 ## Capabilities and Constraints
 
 - Core features: backlog-driven development, isolated Git worktrees, Quick Chat, project Code Practices, integrated previews and review, bring-your-own AI providers, Light Semantic Harness, MCP servers, and a security audit area.
-- Specialist agent roles named on the site include Frontend Design Specialist, Test & Verification Analyst, and Risk & Review Analyst.
+- Ultra mode (switched on per message, in the composer's reasoning menu) lets the lead agent start up to four read-only helper agents in parallel: `explore` reads the code, `research` reads the web, `review` reads the current changes. Helpers cannot edit files or run commands, and the lead stays responsible for the work. Helper agents are not offered with Claude Code. (The website still names the earlier specialist roles.)
 - Account sync restores stories and conversations, Code Practices and preferences, provider connections, and configured MCP servers on another computer.
 - Plans: the free core covers projects, backlog, conversations, local worktrees, local previews and own provider credentials. **Blame Cloud is $20/month** and pays for hosted services: cloud voice transcription, managed Vercel previews and new hosted file uploads. Existing files stay accessible after a subscription ends.
 - Licence: AGPL-3.0-only, open source at github.com/rchrp/Blame. Self-hosting is not yet turnkey (see `docs/open-source-readiness.tex`).

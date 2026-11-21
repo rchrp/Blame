@@ -88,6 +88,13 @@ results are presented as the harness presents them (`call`, see
 credentials, the preview's dependency refresh) the harness asks for, and the
 engine relays the question to the client (`host/harness`).
 
+## Helper agents
+
+A session whose `engine_tools` contains `"subagents"` is offered `run_agents`
+(`src/subagents/`): read-only helpers run as tasks of the engine while a
+message of the turn carries `UserBlock::Ultra`. See "Ultra mode" in
+`docs/engine-in-the-app.md`.
+
 ## Tests
 
 The tests in `tests/` spawn the built binary and speak the protocol to it,
