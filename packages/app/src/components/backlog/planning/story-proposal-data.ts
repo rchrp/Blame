@@ -5,8 +5,7 @@ import type {
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
 
-// User stories an agent proposed in a conversation (plan mode, a chat, a
-// user story). They are cards the person can edit, dismiss or add to the
+// User stories an agent proposed in a conversation (a chat, a user story). They are cards the person can edit, dismiss or add to the
 // backlog; nothing is created until they do.
 
 export type PlanStory = PlannedUserStory & {
@@ -140,20 +139,4 @@ export function addedStoryRefs(proposals: PlanStory[][]) {
           title: story.title,
         })
   return refs
-}
-
-/**
- * What the person did with a proposal, for the agent's next turn: it only
- * sees its own tool call otherwise.
- */
-export function proposalDecisionsNote(stories: PlanStory[]) {
-  const lines = stories.flatMap((story) =>
-    story.addedAs
-      ? [`- ${story.key} added to the backlog as ${story.addedAs}`]
-      : story.dismissed
-        ? [`- ${story.key} dismissed`]
-        : []
-  )
-  if (!lines.length) return undefined
-  return `<proposal_decisions>\nWhat I did with your latest proposed stories:\n${lines.join("\n")}\n</proposal_decisions>`
 }

@@ -23,28 +23,24 @@ type ProposalHost = {
   // The files attached to the conversation, which a proposed story can
   // carry. Without them, proposals do not offer files.
   fileAttachments?: UserStoryFileAttachment[]
-  // Opens a story added from a proposal; the backlog by default.
-  onOpenStory?: (storyId: string) => void
 }
 
 const ProposalHostContext = React.createContext<ProposalHost>({ cards: {} })
 const StoryProposalsContext = React.createContext<string[]>([])
 
-/** Lets a surface render its own proposal cards or open stories its way. */
+/** Lets a surface render its own proposal cards. */
 export function ProposalHostProvider({
   cards,
   children,
   fileAttachments,
-  onOpenStory,
 }: Partial<ProposalHost> & { children: React.ReactNode }) {
   const parent = React.useContext(ProposalHostContext)
   const value = React.useMemo(
     () => ({
       cards: cards ? { ...parent.cards, ...cards } : parent.cards,
       fileAttachments: fileAttachments ?? parent.fileAttachments,
-      onOpenStory: onOpenStory ?? parent.onOpenStory,
     }),
-    [cards, fileAttachments, onOpenStory, parent]
+    [cards, fileAttachments, parent]
   )
   return (
     <ProposalHostContext.Provider value={value}>

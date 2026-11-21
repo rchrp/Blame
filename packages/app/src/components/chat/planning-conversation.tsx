@@ -32,7 +32,7 @@ const footerBlurMask = {
     "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
 } satisfies React.CSSProperties
 
-/** Shared conversation surface for backlog planning and new-project guidance. */
+/** The new-project assistant's conversation surface. */
 export function PlanningConversation({
   open,
   empty,

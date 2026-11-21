@@ -5,7 +5,6 @@ import {
   chatAmbitionKey,
   createConversationAmbitionStore,
   newChatAmbitionKey,
-  planModeAmbitionKey,
 } from "./conversation-ambition.ts"
 
 const memory = (initial?: string) => {
@@ -27,9 +26,9 @@ test("a conversation follows the account's ambition until one is chosen for it",
 
 test("going back to the default clears the choice", () => {
   const store = createConversationAmbitionStore(memory())
-  store.set(planModeAmbitionKey("p"), "quick")
-  store.set(planModeAmbitionKey("p"), null)
-  assert.equal(store.get(planModeAmbitionKey("p")), null)
+  store.set(chatAmbitionKey("a"), "quick")
+  store.set(chatAmbitionKey("a"), null)
+  assert.equal(store.get(chatAmbitionKey("a")), null)
 })
 
 test("keeps the choice for the whole conversation, across restarts", () => {
@@ -77,5 +76,4 @@ test("works without any storage", () => {
 test("gives the new chat and each chat their own key", () => {
   assert.equal(chatAmbitionKey(), newChatAmbitionKey)
   assert.notEqual(chatAmbitionKey("a"), chatAmbitionKey("b"))
-  assert.notEqual(planModeAmbitionKey("p"), planModeAmbitionKey("q"))
 })

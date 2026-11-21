@@ -84,7 +84,6 @@ export function ProposedStoriesCard(props: ProposalCardProps) {
     earlierRefs.get(key)?.displayId ??
     key
   const openStory = (storyId: string) => {
-    if (host.onOpenStory) return host.onOpenStory(storyId)
     selectBacklogStory(storyId)
     navigate("/backlog")
   }
