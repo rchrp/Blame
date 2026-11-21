@@ -170,9 +170,9 @@ function ParallelAgentsSection() {
             Run every agent on the model that fits.
           </h2>
           <p className="story-copy mx-auto mt-7 max-w-3xl">
-            Run up to three agents at once, each on its own model. Sign in with
-            your Claude or ChatGPT plan, or use any of 50 AI providers with your
-            own key.
+            Run an agent on every story you queue, each on its own model. Sign
+            in with your Claude or ChatGPT plan, or use any of 50 AI providers
+            with your own key.
           </p>
         </ScrollReveal>
         <ProviderRail />

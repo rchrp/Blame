@@ -89,7 +89,7 @@ const softwareApplicationStructuredData = {
   name: "Blame ADE",
   alternateName: "Blame",
   description:
-    "Blame ADE is an open-source Agentic Development Environment: a desktop app that runs up to three coding agents at once, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so you try each change in its running app before you review and merge it. Free, no account needed, and it works with your Claude or ChatGPT plan or 50 AI providers.",
+    "Blame ADE is an open-source Agentic Development Environment: a desktop app that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so you try each change in its running app before you review and merge it. Free, no account needed, and it works with your Claude or ChatGPT plan or 50 AI providers.",
   url: absoluteSiteUrl("/"),
   downloadUrl: absoluteSiteUrl("/download"),
   installUrl: absoluteSiteUrl("/download"),
@@ -101,7 +101,7 @@ const softwareApplicationStructuredData = {
   isAccessibleForFree: true,
   operatingSystem: "macOS 13 or later, Windows 10 or 11, Linux",
   featureList: [
-    "Up to three agents at once, each with its own live preview of the running app",
+    "Agents in parallel, each with its own live preview of the running app",
     "Isolated running apps: each story gets its own branch, worktree, ports, and containers for the app and its services (database, cache, workers)",
     "Backlog-driven development: each user story becomes a lane that keeps its brief, agent work, review, and decision",
     "Light Semantic Harness: agents find code by its structure, read before they edit, and prove their checks",
