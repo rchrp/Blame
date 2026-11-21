@@ -28,7 +28,12 @@ describe(
     let api: FakeApi;
     let workspace: string;
     let dataDir: string;
-    let clock = Date.parse("2026-11-20T10:00:00Z");
+    // Today: the engine stamps its records with the real clock, and a host
+    // that reopens a conversation reads the prompt's day from them.
+    let clock = Date.now();
+    const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+    const firstDay = isoDay(clock);
+    const laterDay = isoDay(clock + 3 * day);
     const hosts: EngineHost[] = [];
     const events: EngineHostEvent[] = [];
 
@@ -169,11 +174,11 @@ describe(
       held = await configs();
       assert.equal(held.length, 4);
       assert.notEqual(held[3]!.system_prompt, held[2]!.system_prompt);
-      assert.match(held[3]!.system_prompt, /2026-11-20/, "still the first day");
+      assert.ok(held[3]!.system_prompt.includes(firstDay), "still the first day");
 
       // The model request of that turn used what was picked.
       const last = model.requests.at(-1)!.body as { system: unknown };
-      assert.equal(JSON.stringify(last.system).includes("2026-11-23"), false);
+      assert.equal(JSON.stringify(last.system).includes(laterDay), false);
     });
   },
 );
