@@ -75,7 +75,12 @@ import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { cn } from "@/lib/utils"
 import { UltraMark } from "@/components/model/ultra-mode"
 import { SubAgentsCard } from "./sub-agents/sub-agents-card"
-import { readSubAgentsCall, runAgentsTool } from "./sub-agents/sub-agents-view"
+import { SubAgentsNotice } from "./sub-agents/sub-agents-notice"
+import {
+  readSubAgentsCall,
+  readSubAgentsRefusal,
+  runAgentsTool,
+} from "./sub-agents/sub-agents-view"
 import { ToolCallItem } from "./tool-calls/tool-call-item"
 import {
   AgentScreenshotOwnerProvider,
@@ -834,11 +839,20 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
         : undefined
     return activity && call ? [{ activity, call }] : []
   })
+  const refusedCalls = registry.activityIds.flatMap((activityId) => {
+    const activity = registry.persistedById.get(activityId)
+    const reason =
+      activity?.kind === "tool" && activity.toolName === runAgentsTool
+        ? readSubAgentsRefusal(activity)
+        : undefined
+    return activity && reason ? [{ activity, reason }] : []
+  })
   const workActivityIds = registry.activityIds.filter(
     (activityId) =>
       activityId !== responseActivityId &&
       !proposals.some((activity) => activity!.id === activityId) &&
-      !helperCalls.some(({ activity }) => activity.id === activityId)
+      !helperCalls.some(({ activity }) => activity.id === activityId) &&
+      !refusedCalls.some(({ activity }) => activity.id === activityId)
   )
   return (
     <div className="grid gap-2">
@@ -856,6 +870,9 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
           call={call}
           onFileLinkClick={props.onFileLinkClick}
         />
+      ))}
+      {refusedCalls.map(({ activity, reason }) => (
+        <SubAgentsNotice key={activity.id} reason={reason} />
       ))}
       {responseActivityId ? (
         <AgentActivityTimeline

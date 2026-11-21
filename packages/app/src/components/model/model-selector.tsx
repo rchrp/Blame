@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import {
+  UltraGlyph,
   UltraMark,
   UltraToggle,
   ultraUnavailableReason,
@@ -1126,6 +1127,7 @@ function ModelVariantSelector({
       ? ultraUnavailableReason
       : undefined
   const ultraOn = Boolean(ultra?.checked && !unavailable)
+  const variantLabel = getVariantLabel(selected)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
@@ -1133,24 +1135,28 @@ function ModelVariantSelector({
           <PopoverTrigger asChild>
             <button
               aria-label={
-                hasVariants
+                !ultra
                   ? undefined
-                  : `Ultra mode, ${ultraOn ? "on" : "off"}`
+                  : hasVariants
+                    ? `Thinking mode ${variantLabel}, ultra mode ${ultraOn ? "on" : "off"}`
+                    : `Ultra mode, ${ultraOn ? "on" : "off"}`
               }
               className={cn(
                 selectorSegmentClassName,
                 "shrink-0 capitalize",
-                hasVariants ? (ultraOn ? "w-auto" : "w-28") : "w-auto"
+                hasVariants ? "min-w-28" : "w-auto"
               )}
               type="button"
               onWheel={onWheel}
             >
               {hasVariants ? (
-                <span className="truncate">{getVariantLabel(selected)}</span>
+                <span className="truncate">{variantLabel}</span>
               ) : null}
               {ultraOn ? (
                 <UltraMark className="normal-case" compact />
-              ) : hasVariants ? null : (
+              ) : hasVariants ? (
+                ultra && !unavailable ? <UltraGlyph /> : null
+              ) : (
                 <UltraMark
                   className="bg-transparent px-0 text-muted-foreground normal-case dark:bg-transparent dark:text-muted-foreground"
                   compact
@@ -1161,7 +1167,11 @@ function ModelVariantSelector({
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="left">
-          {hasVariants ? "Choose thinking mode" : "Ultra mode"}
+          {!hasVariants
+            ? "Ultra mode"
+            : ultra
+              ? "Thinking mode and Ultra mode"
+              : "Choose thinking mode"}
         </TooltipContent>
       </Tooltip>
       <ModelVariantContent

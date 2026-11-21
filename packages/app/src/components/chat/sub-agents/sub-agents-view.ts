@@ -172,6 +172,9 @@ export type SubAgentTotals = {
   /** Helpers run side by side: the longest one is the wait. */
   durationMs: number
   done: number
+  failed: number
+  /** Stopped before they reported (the turn was interrupted). */
+  stopped: number
   count: number
 }
 
@@ -183,6 +186,8 @@ export function subAgentTotals(rows: readonly SubAgentRow[]): SubAgentTotals {
       0
     ),
     done: rows.filter((row) => row.status === "done").length,
+    failed: rows.filter((row) => row.status === "failed").length,
+    stopped: rows.filter((row) => row.status === "cancelled").length,
     count: rows.length,
   }
 }
@@ -215,12 +220,36 @@ export function formatDuration(ms: number) {
   return ms < 1000 ? "<1 s" : (formatElapsed(ms) ?? "")
 }
 
-/** One sentence for the card's header: where the helpers stand. */
+/**
+ * The card's header: where the helpers stand. A helper that failed or was
+ * stopped is said so, never counted as one still to come.
+ */
 export function summaryLine(totals: SubAgentTotals, running: boolean) {
-  if (running) return `${totals.done} of ${totals.count} done`
-  return totals.done === totals.count
-    ? "All done"
-    : `${totals.done} of ${totals.count} done`
+  if (!running && totals.done === totals.count) return "All done"
+  const lost = [
+    totals.failed ? `${totals.failed} failed` : "",
+    totals.stopped ? `${totals.stopped} stopped` : "",
+  ].filter(Boolean)
+  const done = running
+    ? `${totals.done} of ${totals.count} done`
+    : `${totals.done} done`
+  return [done, ...lost].join(" · ")
+}
+
+/**
+ * Why the engine did not start a call, when it did not (ultra mode off for
+ * the message, a role the conversation cannot serve): its first sentence, for
+ * the person. `undefined` for a call that did start helpers or is not over.
+ */
+export function readSubAgentsRefusal(activity: CallActivity) {
+  if (!activity.toolCallId || activity.status === "running") return undefined
+  const output = parse(activity.detail).output
+  if (typeof output !== "string") return undefined
+  const sentence = output
+    .replace(/^Not started:\s*/u, "")
+    .split(/(?<=\.)\s/u)[0]
+    ?.trim()
+  return sentence ? sentence[0]!.toUpperCase() + sentence.slice(1) : undefined
 }
 
 function parse(detail: string): Record<string, unknown> {

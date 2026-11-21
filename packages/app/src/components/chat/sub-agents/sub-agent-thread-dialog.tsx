@@ -73,6 +73,7 @@ export function SubAgentThreadDialog({
             <Section title={stepCount ? `Steps · ${stepCount}` : "Steps"}>
               <Steps
                 error={view.error}
+                hasReport={Boolean(row.report)}
                 loaded={view.loaded}
                 onFileLinkClick={onFileLinkClick}
                 running={row.status === "running"}
@@ -190,12 +191,14 @@ function shownSteps(steps: readonly UserStoryAgentActivity[]) {
 
 function Steps({
   error,
+  hasReport,
   loaded,
   onFileLinkClick,
   running,
   steps,
 }: {
   error?: string
+  hasReport: boolean
   loaded: boolean
   onFileLinkClick?: (path: string) => void
   running: boolean
@@ -205,8 +208,8 @@ function Steps({
   if (!shown.length)
     return (
       <p className="text-sm text-muted-foreground">
-        {error
-          ? "This thread is no longer kept. Helper threads stay for a few days; the report above stays with the conversation."
+        {error && !running
+          ? `This thread is no longer kept on this computer: helper threads stay for a few days.${hasReport ? " The report above stays with the conversation." : ""}`
           : running || !loaded
             ? "Waiting for its first step."
             : "It took no steps."}

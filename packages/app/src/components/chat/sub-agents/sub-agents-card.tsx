@@ -1,5 +1,5 @@
 import * as React from "react"
-import { ChevronRightIcon } from "lucide-react"
+import { CheckIcon, ChevronRightIcon, MinusIcon, XIcon } from "lucide-react"
 
 import { useEngineLocation } from "@/components/chat/engine/engine-approvals"
 import { useEngineSessions } from "@/components/chat/engine/use-engine-sessions"
@@ -84,7 +84,7 @@ export function SubAgentsCard({
         <span>Total</span>
         <span>
           {formatTokens(totals.tokens)} tokens ·{" "}
-          {formatDuration(totals.durationMs)}
+          {formatDuration(totals.durationMs)} elapsed
         </span>
       </footer>
       {opened !== undefined && rows[opened] ? (
@@ -112,11 +112,11 @@ function SubAgentRowButton({
     <button
       aria-haspopup="dialog"
       aria-label={rowLabel(row)}
-      className="group/row grid w-full min-w-0 grid-cols-[0.75rem_minmax(0,1fr)_1rem] items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset @xl:grid-cols-[0.75rem_minmax(0,1fr)_auto_1rem]"
+      className="group/row grid w-full min-w-0 grid-cols-[0.875rem_minmax(0,1fr)_1rem] items-center gap-x-3 gap-y-0.5 px-3.5 py-2.5 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset @xl:grid-cols-[0.875rem_minmax(0,1fr)_auto_1rem]"
       type="button"
       onClick={onOpen}
     >
-      <StatusDot status={row.status} />
+      <StatusMark status={row.status} />
       <span className="flex min-w-0 items-baseline gap-2">
         <span className="w-[4.25rem] shrink-0 text-xs text-muted-foreground">
           {roleLabels[row.role]}
@@ -143,7 +143,7 @@ function SubAgentRowButton({
             </span>
             <Dot />
             <span className="@xl:w-[5.75rem] @xl:text-right">
-              {formatTokens(row.tokens)} tokens
+              {tokenText(row)}
             </span>
           </>
         )}
@@ -170,7 +170,25 @@ function Dot() {
   )
 }
 
-function StatusDot({ status }: { status: SubAgentStatus }) {
+// Each state has its own shape, so colour is never the only signal.
+function StatusMark({ status }: { status: SubAgentStatus }) {
+  const mark = "size-3.5 justify-self-center"
+  if (status === "done")
+    return (
+      <CheckIcon
+        aria-hidden="true"
+        className={cn(mark, "text-emerald-600 dark:text-emerald-400")}
+      />
+    )
+  if (status === "failed")
+    return <XIcon aria-hidden="true" className={cn(mark, "text-destructive")} />
+  if (status === "cancelled")
+    return (
+      <MinusIcon
+        aria-hidden="true"
+        className={cn(mark, "text-muted-foreground")}
+      />
+    )
   return (
     <span
       aria-hidden="true"
@@ -178,16 +196,17 @@ function StatusDot({ status }: { status: SubAgentStatus }) {
         "justify-self-center rounded-full",
         status === "running"
           ? "agent-thinking-mark"
-          : cn(
-              "size-2",
-              status === "done" && "bg-emerald-500",
-              status === "failed" && "bg-destructive",
-              status === "cancelled" && "bg-muted-foreground/50",
-              status === "waiting" && "border border-muted-foreground/60"
-            )
+          : "size-2 border border-muted-foreground/60"
       )}
     />
   )
+}
+
+// A helper that has not answered yet has no figure to show.
+function tokenText(row: SubAgentRow) {
+  return row.status === "running" && row.tokens === 0
+    ? "— tokens"
+    : `${formatTokens(row.tokens)} tokens`
 }
 
 /** What a screen reader hears for a row. */
@@ -197,10 +216,8 @@ function rowLabel(row: SubAgentRow) {
     statusLabels[row.status],
   ]
   if (row.status !== "waiting")
-    parts.push(
-      formatDuration(row.durationMs),
-      `${formatTokens(row.tokens)} tokens`
-    )
+    parts.push(formatDuration(row.durationMs), tokenText(row))
+  if (row.status === "failed" && row.reason) parts.push(row.reason)
   return `${parts.join(", ")}. Opens its thread.`
 }
 

@@ -14,10 +14,20 @@ export type UltraControl = {
 }
 
 export const ultraExplanation =
-  "Starts helper agents in parallel. Uses more tokens."
+  "Lets the agent start up to 4 read-only helper agents. Uses more tokens."
 
 /** What the menu says where the model cannot run helpers. */
 export const ultraUnavailableReason = "Not available with Claude Code."
+
+/** The glyph alone, where Ultra mode is off but can be turned on. */
+export function UltraGlyph({ className }: { className?: string }) {
+  return (
+    <ZapIcon
+      aria-hidden="true"
+      className={cn("size-3.5 shrink-0 text-muted-foreground", className)}
+    />
+  )
+}
 
 /** The small marker of a composer or a message that has ultra mode on. */
 export function UltraMark({

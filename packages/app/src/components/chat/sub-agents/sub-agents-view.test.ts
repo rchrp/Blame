@@ -12,6 +12,7 @@ import {
   formatDuration,
   formatTokens,
   readSubAgentsCall,
+  readSubAgentsRefusal,
   subAgentRows,
   subAgentSession,
   subAgentTotals,
@@ -250,6 +251,8 @@ test("a finished call reads its rows from the result, and the call is the whole 
     tokens: 5100,
     durationMs: 12_400,
     done: 1,
+    failed: 1,
+    stopped: 1,
     count: 3,
   })
 })
@@ -299,6 +302,35 @@ test("an interrupted helper reads as stopped, not failed", () => {
     Date.now()
   )
   assert.equal(rows[0]!.status, "cancelled")
+})
+
+test("the header says who failed or was stopped, not just who is done", () => {
+  const { activity } = leadActivity("result")
+  const rows = subAgentRows(readSubAgentsCall(activity)!, new Map(), Date.now())
+  const totals = subAgentTotals(rows)
+  assert.equal(summaryLine(totals, false), "1 done · 1 failed · 1 stopped")
+  assert.equal(
+    summaryLine({ ...totals, done: 3, failed: 0, stopped: 0 }, false),
+    "All done"
+  )
+  assert.equal(
+    summaryLine({ ...totals, done: 1, failed: 1, stopped: 0 }, true),
+    "1 of 3 done · 1 failed"
+  )
+})
+
+test("a refusal is said to the person in its first sentence", () => {
+  const { activity } = leadActivity("refused")
+  assert.equal(
+    readSubAgentsRefusal(activity),
+    "Ultra mode is off for this message."
+  )
+  // Helpers that ran, or a call still running, have none.
+  assert.equal(readSubAgentsRefusal(leadActivity("result").activity), undefined)
+  assert.equal(
+    readSubAgentsRefusal(leadActivity("running").activity),
+    undefined
+  )
 })
 
 test("a call the engine refused is an ordinary step with the reason", () => {

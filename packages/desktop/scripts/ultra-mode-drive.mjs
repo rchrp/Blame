@@ -115,6 +115,9 @@ function userText(message) {
         .join("\n");
 }
 
+/** What the scenario changes while it runs. */
+const state = { failReview: false };
+
 /** What the model answers: `{ pieces }` of text, or `{ tool, input }`, after `wait` ms. */
 function decide(body) {
   const messages = body.messages ?? [];
@@ -122,6 +125,8 @@ function decide(body) {
   const answered = last?.role === "user" && Array.isArray(last.content) && last.content.some((block) => block.type === "tool_result");
   const role = helperRole(body);
   if (role) {
+    if (role === "review" && state.failReview)
+      return { wait: 800, error: { status: 400, type: "invalid_request_error", message: "The scripted review helper fails here." } };
     if (answered && messages.filter((m) => m.role === "assistant").length === 1)
       return { wait: 400, usage: [900, 160], tool: "report", input: reports[role] };
     if (answered) return { wait: 100, usage: [900, 20], pieces: ["Done."] };
@@ -191,6 +196,11 @@ async function startModel() {
     const plan = decide(body);
     requests.push({ role: helperRole(body) ?? "lead", tool: plan.tool });
     await delay(plan.wait);
+    if (plan.error) {
+      response.writeHead(plan.error.status, { "content-type": "application/json" });
+      response.end(JSON.stringify({ type: "error", error: { type: plan.error.type, message: plan.error.message } }));
+      return;
+    }
     response.writeHead(200, { "content-type": "text/event-stream" });
     response.end(sseOf(plan));
   });
@@ -238,7 +248,8 @@ async function drive() {
     }
   } catch (error) {
     console.error(output.slice(-4000));
-    throw error;
+    console.error(error);
+    process.exitCode = 1;
   } finally {
     child.kill("SIGTERM");
     await delay(1500);
@@ -452,9 +463,27 @@ async function scenario(cdp, options, model, child) {
   await click("[contenteditable='true']");
   await send("Input.insertText", { text: "force helpers: look at routes again" });
   await press("Enter", "Enter", 13, 0, "\r");
-  await until(() => text("Did not start"), 40_000, "the refused call");
+  await until(() => text("did not start"), 40_000, "the refused call");
   await delay(1200);
   await shot("14-refused-light");
+
+  // Ultra on again, and one helper fails.
+  state.failReview = true;
+  await click(trigger, variantIndex);
+  await delay(400);
+  await click(`[data-slot="checkbox"]`);
+  await delay(300);
+  await press("Escape", "Escape", 27);
+  await click("[contenteditable='true']");
+  await send("Input.insertText", { text: "Check it once more with helpers." });
+  await press("Enter", "Enter", 13, 0, "\r");
+  await until(() => text("1 failed"), 60_000, "the failed helper");
+  await until(() => text("Check it once more with helpers.") && evaluate(`document.querySelectorAll('section[aria-label="Helper agents"]').length === 2`), 20_000, "the second card");
+  await delay(1500);
+  await shot("15-card-failed-light");
+  await theme("dark");
+  await delay(800);
+  await shot("16-card-failed-dark");
   console.log("model requests:", model.requests.length);
 }
 
