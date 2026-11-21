@@ -76,6 +76,7 @@ import {
   resumeEpic,
   type PauseProgress,
 } from "./pause.js";
+import { epicStateOf } from "./epic-state.js";
 import { EpicModels } from "./models.js";
 import { EpicReading } from "./reading.js";
 import { OrchestratorState, type EpicEntry } from "./state.js";
@@ -429,7 +430,7 @@ export class Orchestrator {
    * resume leave it as it is.
    */
   touched(storyId: string) {
-    void leaveToPerson(this.state, storyId).catch(report);
+    return leaveToPerson(this.state, storyId).catch(report);
   }
 
   stop() {
@@ -568,6 +569,7 @@ export class Orchestrator {
     // A resume the pause's cut turn goes on with does not count as a cut.
     let pauseCut = false;
     if (entry.pause) {
+      const cutTurn = entry.pause.cut;
       const resumed = await resumeEpic(this.pauseHost(), reading);
       if (!resumed.done) {
         await this.publish(
@@ -575,8 +577,20 @@ export class Orchestrator {
         );
         return;
       }
-      if (resumed.turn) pauseCut = true;
-      else await this.state.change(epicId, (item) => delete item.pause);
+      // The cut turn is owed its `resumed` wake only while it is still the
+      // conversation's last, nothing came after it and the person did not
+      // stop it; otherwise the pause ends here.
+      const last = conversation.last;
+      pauseCut =
+        resumed.turn &&
+        epic.status === "active" &&
+        !conversation.running &&
+        !conversation.queued.length &&
+        last?.outcome.status === "interrupted" &&
+        !entry.stopped &&
+        (cutTurn === undefined || last.turn === cutTurn);
+      if (!pauseCut)
+        await this.state.change(epicId, (item) => delete item.pause);
     }
     reading = this.lookAt(epic, await this.entry(epicId), conversation);
     this.failing.note(
@@ -600,8 +614,6 @@ export class Orchestrator {
     if (conversation.last?.endTurn) this.resumes.delete(epicId);
     const interrupted =
       conversation.last?.outcome.status === "interrupted" && !entry.stopped;
-    if (pauseCut && !interrupted)
-      await this.state.change(epicId, (item) => delete item.pause);
     // A conversation cut again and again (an engine that keeps stopping)
     // is resumed three times, then left to the person (it shows failed).
     const cut =
@@ -789,52 +801,20 @@ export class Orchestrator {
     // What was spent is kept now: a gate the look released lets its
     // stories go (only the epic's: others keep their own pace).
     this.releaseHeld(epic.id);
-    const looked = conversationState(conversation, entry?.stopped === true);
-    const { state } = looked;
-    const lookError = this.lookErrors.get(epic.id);
-    const error =
-      this.state.failure() ??
-      looked.error ??
-      this.wakeErrors.get(epic.id) ??
-      (entry?.branchGone
-        ? `The epic's branch ${entry.branch} is gone, and stories were already merged into it: nothing starts until it is back.`
-        : undefined);
-    const progress = this.pauses.get(epic.id);
-    const endTurn = conversation?.last?.endTurn;
-    const unreported = entry ? (await reading.unreported()).length : 0;
-    const blocked = this.blockedOf(reading.epicStories());
-    const epicState: EpicState = {
-      epicId: epic.id,
-      ...((entry?.session ?? epic.engineSessionId)
-        ? { session: entry?.session ?? epic.engineSessionId! }
-        : {}),
-      conversation: state,
-      ...(error ? { error } : {}),
-      ...(state === "asking" && endTurn?.question
-        ? {
-            question: {
-              text: endTurn.question,
-              options: endTurn.options ?? [],
-            },
-          }
-        : {}),
-      ...(state === "finished" && endTurn?.summary
-        ? { summary: endTurn.summary }
-        : {}),
-      unreported,
-      ...(blocked.length ? { blocked } : {}),
-      ...(epic.status === "paused"
-        ? {
-            pause: {
-              phase: progress?.done && !lookError ? "paused" : "pausing",
-              ...((lookError ?? progress?.error)
-                ? { error: lookError ?? progress?.error }
-                : {}),
-            },
-          }
-        : {}),
+    const epicState = epicStateOf({
+      epic,
+      entry,
+      conversation,
       spend,
-    };
+      unreported: entry ? (await reading.unreported()).length : 0,
+      blocked: this.blockedOf(reading.epicStories()),
+      errors: {
+        file: this.state.failure(),
+        look: this.lookErrors.get(epic.id),
+        wake: this.wakeErrors.get(epic.id),
+      },
+      pause: this.pauses.get(epic.id),
+    });
     const serialized = JSON.stringify(epicState);
     if (this.published.get(epic.id) !== serialized) {
       this.published.set(epic.id, serialized);

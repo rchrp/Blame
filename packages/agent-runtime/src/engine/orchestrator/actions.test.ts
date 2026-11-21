@@ -1417,6 +1417,115 @@ describe("what holds when things go wrong", () => {
     assert.deepEqual(interrupted, [session], "the person's turn runs");
   });
 
+  it("wakes the turn the pause cut on the resume, once, and ends the pause", async () => {
+    const records = conversation([
+      {
+        type: "user_message",
+        turn: "t1",
+        input: text("Go."),
+        delivery: "turn",
+      },
+      requestStarted("t1"),
+    ]);
+    const { orchestrator, epics, written, stateFile } = await desk({
+      records,
+    });
+    epics.get(epicId)!.status = "paused";
+    await orchestrator.changed(epicId);
+    records.push(
+      ...conversation(
+        [
+          {
+            type: "turn_ended",
+            turn: "t1",
+            outcome: { status: "interrupted" },
+          },
+        ],
+        records.length,
+      ),
+    );
+    assert.equal((await orchestrator.changed(epicId)).pause?.phase, "paused");
+    epics.get(epicId)!.status = "active";
+    await orchestrator.changed(epicId);
+    assert.equal(written.length, 1);
+    assert.equal(await keptPause(stateFile), undefined);
+    // The wake's turn runs: nothing more is owed.
+    records.push(
+      ...conversation(
+        [
+          {
+            type: "user_message",
+            turn: "t2",
+            input: text("wake"),
+            delivery: "turn",
+          },
+          requestStarted("t2"),
+        ],
+        records.length,
+      ),
+    );
+    await orchestrator.changed(epicId);
+    assert.equal(written.length, 1);
+    assert.match(JSON.stringify(written[0]), /\\"reason\\":\\"resumed\\"/);
+    assert.equal(await keptPause(stateFile), undefined);
+  });
+
+  it("ends the pause on the resume when the person stopped a turn of theirs after the cut", async () => {
+    const records = conversation([
+      {
+        type: "user_message",
+        turn: "t1",
+        input: text("Go."),
+        delivery: "turn",
+      },
+      requestStarted("t1"),
+    ]);
+    const { orchestrator, epics, written, stateFile } = await desk({
+      records,
+    });
+    epics.get(epicId)!.status = "paused";
+    await orchestrator.changed(epicId);
+    // The cut turn ends; the person talks to it, then stops that turn.
+    records.push(
+      ...conversation(
+        [
+          {
+            type: "turn_ended",
+            turn: "t1",
+            outcome: { status: "interrupted" },
+          },
+          {
+            type: "user_message",
+            turn: "t2",
+            input: text("Wait."),
+            delivery: "turn",
+          },
+          requestStarted("t2"),
+        ],
+        records.length,
+      ),
+    );
+    await orchestrator.changed(epicId);
+    await orchestrator.interrupted(session);
+    records.push(
+      ...conversation(
+        [
+          {
+            type: "turn_ended",
+            turn: "t2",
+            outcome: { status: "interrupted" },
+          },
+        ],
+        records.length,
+      ),
+    );
+    epics.get(epicId)!.status = "active";
+    const resumed = await orchestrator.changed(epicId);
+    assert.equal(resumed.conversation, "stopped");
+    assert.equal(await keptPause(stateFile), undefined);
+    assert.deepEqual(written, [], "the person's stop is not undone");
+  });
+
   it("lets a message that waited through a quit go on while the epic is paused", async () => {
     const records = conversation([
       {
