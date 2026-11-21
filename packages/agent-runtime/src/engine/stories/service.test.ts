@@ -473,3 +473,81 @@ test("a story created elsewhere shows on the boards once its project is read aga
     api.restore();
   }
 });
+
+test("a story that starts after another is told what that story delivered", async () => {
+  const api = fakeApi([
+    row("first", "a", {
+      storyNumber: 5,
+      title: "Theme toggle",
+      status: "done",
+      engineSessionId: "first-session",
+      baseCommit: "base1",
+      mergeCommit: "merge1",
+    }),
+    row("quiet", "a", { storyNumber: 6, title: "Quiet", status: "done" }),
+    row("second", "a", {
+      storyNumber: 7,
+      startsAfter: ["first", "quiet"],
+    }),
+  ]);
+  const fake = fakeHost();
+  const reported = {
+    ...endedStatus("first-session", [["t1", "completed"]]),
+    lastReply: "Added the toggle.",
+  };
+  fake.statuses.set("first-session", reported);
+  const gits: string[][] = [];
+  (fake.host.desktop as { git: unknown }).git = async ({
+    args,
+  }: {
+    args: string[];
+  }) => {
+    gits.push(args);
+    return args[0] === "diff" ? "A\tsrc/toggle.ts\nM\tsrc/app.ts\n" : "abc\n";
+  };
+  const { service: stories, close } = await service(fake.host);
+  try {
+    await sync(stories, [{ id: "a", path: "/a" }]);
+    await settle(() => api.stories.get("second")!.status === "in-progress");
+    const send = fake.calls.find(
+      ({ method, input }) =>
+        method === "send" &&
+        (input as { message: { text: string } }).message.text.includes(
+          "Do second",
+        ),
+    )!.input as { message: { text: string } };
+    const text = send.message.text;
+    assert.match(text, /^Do second\n\n<starts_after>/u);
+    assert.match(text, /US-005 · Theme toggle\nReported:\nAdded the toggle\./u);
+    assert.match(text, /Changed files:\nA src\/toggle\.ts\nM src\/app\.ts/u);
+    assert.doesNotMatch(
+      text,
+      /US-006/u,
+      "a story with nothing to report adds nothing",
+    );
+    assert.deepEqual(
+      gits.find((args) => args[0] === "diff"),
+      ["diff", "--name-status", "--no-renames", "base1..merge1"],
+    );
+  } finally {
+    await close();
+    api.restore();
+  }
+});
+
+test("a story that starts after nothing gets its request alone", async () => {
+  const api = fakeApi([row("plain", "a")]);
+  const fake = fakeHost();
+  const { service: stories, close } = await service(fake.host);
+  try {
+    await sync(stories, [{ id: "a", path: "/a" }]);
+    await settle(() => api.stories.get("plain")!.status === "in-progress");
+    const send = fake.calls.find(({ method }) => method === "send")!.input as {
+      message: { text: string };
+    };
+    assert.equal(send.message.text, "Do plain");
+  } finally {
+    await close();
+    api.restore();
+  }
+});

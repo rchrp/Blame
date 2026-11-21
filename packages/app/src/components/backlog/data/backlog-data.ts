@@ -182,6 +182,7 @@ export type UserStoryDraft = {
   runMode?: UserStory["runMode"]
   targetBranch?: UserStory["targetBranch"]
   ambition?: UserStory["ambition"]
+  startsAfter?: UserStory["startsAfter"]
 }
 
 export type UserStoryUpdate = Partial<
@@ -205,6 +206,7 @@ export type UserStoryUpdate = Partial<
     | "workspaceMode"
     | "runMode"
     | "ambition"
+    | "startsAfter"
     | "agentStatus"
     | "agentLastError"
     | "engineSessionId"
@@ -251,6 +253,31 @@ export const backlogColumns = [
 
 export function userStoryDisplayId(story: Pick<UserStory, "storyNumber">) {
   return `US-${String(story.storyNumber).padStart(3, "0")}`
+}
+
+// The stories a story starts after, as its field lists them: each with the
+// story it names, or none when that story is gone.
+export type StartsAfterEntry = {
+  id: string
+  story?: Pick<UserStory, "id" | "status" | "storyNumber" | "title">
+}
+
+export function startsAfterEntries(
+  ids: readonly string[] | null | undefined,
+  stories: readonly Pick<UserStory, "id" | "status" | "storyNumber" | "title">[]
+): StartsAfterEntry[] {
+  const byId = new Map(stories.map((story) => [story.id, story]))
+  return [...new Set(ids ?? [])].map((id) => ({ id, story: byId.get(id) }))
+}
+
+// The stories the person may pick: the project's own, newest first, never
+// the story itself and never one that was discarded (it would not be done).
+export function startsAfterChoices<
+  Story extends Pick<UserStory, "id" | "status" | "storyNumber">,
+>(stories: readonly Story[], storyId: string | undefined) {
+  return stories
+    .filter((story) => story.id !== storyId && story.status !== "discarded")
+    .sort((left, right) => right.storyNumber - left.storyNumber)
 }
 
 export function userStoryReadyForAgent(
