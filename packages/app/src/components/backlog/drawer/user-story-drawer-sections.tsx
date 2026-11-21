@@ -17,6 +17,7 @@ import {
 } from "@/components/backlog/drawer/markdown-editor"
 import { RuntimeProfileSelector } from "@/components/backlog/drawer/runtime-profile-selector"
 import { BranchSelector } from "@/components/backlog/drawer/branch-selector"
+import { StartsAfterField } from "@/components/backlog/drawer/starts-after-field"
 import { composerDraftStorageKey } from "@/components/backlog/drawer/composer-draft-storage"
 import type { SpeechTarget } from "@/components/backlog/drawer/speech-session-store"
 import { useStoryRunMode, type StoryRunMode } from "@/lib/runtime-preference"
@@ -105,8 +106,10 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onChangedFileClick,
   onRunModeChange,
   onTargetBranchChange,
+  onStartsAfterChange,
   loadChangedFileDiffs,
   runMode,
+  startsAfter,
   status,
   summary,
   summaryCodeSelectionAttachments,
@@ -128,6 +131,9 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   // The branch the story starts from and merges into.
   targetBranch?: string | null
   onTargetBranchChange?: (branch: string) => void
+  // The stories it starts after; saved at once, or refused with a message.
+  startsAfter?: readonly string[] | null
+  onStartsAfterChange?: (storyIds: string[]) => Promise<unknown> | void
   /** Undoes a message to the agent; its text goes back to the composer. */
   onCommentUndo?: (target: StoryMessageUndo) => Promise<void>
   onSummaryChange?: (summary: string) => void
@@ -224,6 +230,18 @@ export const UserStoryContent = React.memo(function UserStoryContent({
             alwaysVisible={summaryActionsAlwaysVisible(storyRuns)}
             createdAt={userStory?.createdAt}
             markdown={summary}
+          />
+        ) : null}
+        {onStartsAfterChange ? (
+          <StartsAfterField
+            // Until it starts: in the backlog or queued, or being written.
+            editable={
+              mode === "create" || status === "backlog" || status === "ready"
+            }
+            onChange={onStartsAfterChange}
+            queued={status === "ready"}
+            storyId={userStory?.id}
+            value={startsAfter ?? []}
           />
         ) : null}
       </div>
