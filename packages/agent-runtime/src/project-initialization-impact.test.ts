@@ -7,6 +7,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 
 import {
+  diagnosticsBrief,
   collectProjectInitializationImpactDiagnostics,
   deterministicInitializationImpact,
   parseProjectInitializationImpactResult,
@@ -223,3 +224,28 @@ async function git(repository: string, args: string[]) {
   const { stdout } = await execFileAsync("git", args, { cwd: repository });
   return stdout.trim();
 }
+
+test("the brief lists runtime files first and drops content the full diff gives", () => {
+  const others = Array.from({ length: 2_000 }, (_, index) => `packages/app/src/view-${index}.tsx`);
+  const diagnostics = {
+    baseCommit: "a",
+    mergeCommit: "b",
+    changedFiles: [...others, "package.json", "pnpm-lock.yaml"],
+    diffSummary: "",
+    relevantDiffs: { "package.json": "+  \"dev\": \"vite\"", "pnpm-lock.yaml": "x".repeat(18_000) },
+    currentPreviewManifest: {} as never,
+    currentRunConfigurations: [],
+    strategicFilesBefore: { "package.json": "{}", "pnpm-lock.yaml": "lock" },
+    strategicFilesAfter: { "package.json": "{ \"dev\": \"vite\" }", "pnpm-lock.yaml": "lock 2" },
+  };
+  const brief = diagnosticsBrief(diagnostics);
+  assert.equal(brief.changedFiles.length, 300);
+  assert.deepEqual(brief.changedFiles.slice(0, 2), ["package.json", "pnpm-lock.yaml"]);
+  assert.equal(brief.changedFilesNotListed, 1_702);
+  // package.json's whole diff is there; the lockfile's was cut at 18,000.
+  assert.deepEqual(brief.strategicFilesBefore, { "pnpm-lock.yaml": "lock" });
+  assert.deepEqual(brief.strategicFilesAfter, diagnostics.strategicFilesAfter);
+  const small = diagnosticsBrief({ ...diagnostics, changedFiles: ["package.json"] });
+  assert.deepEqual(small.changedFiles, ["package.json"]);
+  assert.equal("changedFilesNotListed" in small, false);
+});
