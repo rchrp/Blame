@@ -149,3 +149,29 @@ export async function resumeEpic(
 function message(error: unknown) {
   return error instanceof Error ? error.message : String(error);
 }
+
+/**
+ * A person acted on a story from a window (a message, a pause, a resume, a
+ * discard…): it is theirs from then on, and no epic's pause or resume
+ * touches it.
+ */
+export async function leaveToPerson(state: OrchestratorState, storyId: string) {
+  for (const [epicId, entry] of await state.all()) {
+    const pause = entry.pause;
+    if (
+      !pause?.stories.includes(storyId) &&
+      !pause?.awaiting?.includes(storyId)
+    )
+      continue;
+    await state.change(epicId, (item) => {
+      if (!item.pause) return;
+      item.pause = {
+        ...item.pause,
+        stories: item.pause.stories.filter((id) => id !== storyId),
+        ...(item.pause.awaiting
+          ? { awaiting: item.pause.awaiting.filter((id) => id !== storyId) }
+          : {}),
+      };
+    });
+  }
+}

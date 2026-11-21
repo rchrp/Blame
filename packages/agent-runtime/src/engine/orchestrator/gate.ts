@@ -127,3 +127,37 @@ export function waitWords(reason: StoryWaitReason): string {
       return "Git has no name and email";
   }
 }
+
+/**
+ * Since when each queued story's start keeps failing: from its first
+ * failure until it starts (or leaves the queue), whatever it waits for in
+ * between (the runtime, the preview environment). Blocked once that lasted
+ * `stuckMs`.
+ */
+export class FailingStarts {
+  private readonly since = new Map<string, number>();
+  private readonly stuckMs: number;
+
+  constructor(stuckMs: number) {
+    this.stuckMs = stuckMs;
+  }
+
+  note(stories: readonly HostStory[], waits: readonly StoryWaiting[]) {
+    for (const story of stories) {
+      if (story.status !== "ready") {
+        this.since.delete(story.id);
+        continue;
+      }
+      const failing = waits.some(
+        (wait) => wait.storyId === story.id && wait.reason.kind === "error",
+      );
+      if (failing && !this.since.has(story.id))
+        this.since.set(story.id, Date.now());
+    }
+  }
+
+  stuck(storyId: string) {
+    const since = this.since.get(storyId);
+    return since !== undefined && Date.now() - since >= this.stuckMs;
+  }
+}

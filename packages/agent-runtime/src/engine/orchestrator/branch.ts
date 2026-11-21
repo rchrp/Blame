@@ -100,3 +100,20 @@ export async function ensureBranch(
     );
   await git(root, ["branch", branch, targetBranch]);
 }
+
+/**
+ * Whether the epic holds for its branch: there, nothing to hold; gone with
+ * nothing merged into it, made again from the target; gone after stories
+ * were merged into it, never made again (later stories would build
+ * without that work), so the epic holds.
+ */
+export async function branchHeld(
+  git: GitRun,
+  root: string,
+  input: { branch: string; targetBranch: string; merged: boolean },
+) {
+  if (await branchExists(git, root, input.branch)) return false;
+  if (input.merged) return true;
+  await ensureBranch(git, root, input.branch, input.targetBranch);
+  return false;
+}
