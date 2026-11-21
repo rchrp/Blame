@@ -1,6 +1,8 @@
 // Which professional practices a project follows (or, for a starter, adopts),
-// from a scan of its files and what the agent reads: it must read the code
-// before it answers (`required`), with the harness's read-only tools. The
+// from a scan of its files: the brief carries samples of its sources, tests
+// and commits, enough to answer in one reply, as the Cline version did; the
+// harness's read-only tools confirm a practice the samples leave uncertain.
+// (Requiring a read first cost a refused submission: 12 s of a 22 s run.) The
 // engine's `submit_project_code_practices` checks the whole answer, each
 // practice once and a starter's defaults included.
 
@@ -41,7 +43,6 @@ export async function codePracticesTask(
         "Submit the complete project code practice analysis.",
         projectCodePracticesResultSchema,
       ),
-      required: ["read_code"],
       allowed: readOnlyHarness.allowed,
       max_corrections: 2,
     },
