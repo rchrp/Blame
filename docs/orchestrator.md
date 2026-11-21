@@ -71,7 +71,8 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
 
 An `orchestrator` purpose (`engine/purposes/orchestrator.ts`), one session
 per epic, its id in `epic.engineSessionId`. The `plan` purpose, its prompt,
-`PlanSettings` and what only it used are deleted in the same slice.
+`PlanSettings` and what only it used are deleted once the screen no longer
+uses them (the screen slice removes Plan Mode's interface first).
 
 - **Workspace**: the project folder, read only. Harness tools `search_code`
   and `read_code` only: no `edit_code`, no `run_task`. It also gets the
@@ -148,9 +149,10 @@ or the person answers.
 ## Slices
 
 1. **Engine**: the purpose, the tools, the waking, the epic's branch, the
-   budget refusals, the removal of the `plan` purpose.
-2. **Screen**: the sidebar entry, the epic page, the settings, the removal
-   of Plan Mode's interface.
+   budget refusals.
+2. **Screen**: the sidebar entry, the epic page with its board and
+   settings, the removal of Plan Mode's interface; then, once the engine
+   slice is merged, the conversation and the removal of the `plan` purpose.
 3. **Epic review**: checks on the epic's branch after each merge, a preview
    of the epic's branch, and the person's merge of the epic into its target
    (or a pull request).
