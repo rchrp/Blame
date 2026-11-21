@@ -70,9 +70,10 @@ export function useStoryQueue(backlog: ReturnType<typeof useBacklogStore>) {
       if (event.type !== "story") return
       // Its preview gets ready in the window that shows its project.
       if (event.started)
-        prepareStartingStoryPreview(event.storyId, {
-          environment: event.started.environment as never,
-        })
+        prepareStartingStoryPreview(
+          { id: event.storyId, worktree: storyWorktree(event.story) },
+          { environment: event.started.environment as never }
+        )
       if (event.directFallback && event.projectId === projectId)
         notifyDirectFallback(event.projectId, storyTitle(event.story))
     })
@@ -265,6 +266,11 @@ function runtimeWaitingLabel(phase: string) {
 
 function waitKey(wait: StoryWaiting) {
   return `${wait.storyId}:${JSON.stringify(wait.reason)}`
+}
+
+function storyWorktree(story: unknown) {
+  const worktree = (story as { worktree?: unknown } | undefined)?.worktree
+  return typeof worktree === "string" ? worktree : undefined
 }
 
 function storyTitle(story: unknown) {
