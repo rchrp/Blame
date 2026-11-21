@@ -357,6 +357,19 @@ code: number, message: string, data?: RpcErrorData, };
 export type RpcErrorData = { kind: ErrorKind, };
 
 // prettier-ignore
+export type RunAgentsInput = { agents: Array<SubAgentBrief>, };
+
+// prettier-ignore
+export type RunAgentsProgress = { queued: Array<number>, };
+
+// prettier-ignore
+export type RunAgentsResult = { agents: Array<SubAgentResult>, 
+/**
+ * Tokens of all of them together.
+ */
+tokens: number, };
+
+// prettier-ignore
 export type SessionActivity = { "state": "idle" } | { "state": "waiting" } | { "state": "streaming" } | { "state": "running_tools" } | { "state": "awaiting_approval" } | { "state": "retrying", in_ms: number, } | { "state": "compacting" } | { "state": "rewinding" };
 
 // prettier-ignore
@@ -490,6 +503,51 @@ export type SessionSummary = { session: SessionId, purpose: string, workspace_ro
 export type StopReason = "end_turn" | "tool_use" | "max_output_tokens" | "refusal" | "other";
 
 // prettier-ignore
+export type SubAgentBrief = { role: SubAgentRole, 
+/**
+ * A few words naming the question, shown to the person.
+ */
+title: string, 
+/**
+ * All the helper knows: what to find out, where, and what to hand back.
+ */
+brief: string, };
+
+// prettier-ignore
+export type SubAgentOrigin = { 
+/**
+ * The lead's session.
+ */
+lead: SessionId, call: ToolCallId, index: number, role: SubAgentRole, };
+
+// prettier-ignore
+export type SubAgentReference = { ref: string, note: string, };
+
+// prettier-ignore
+export type SubAgentReport = { summary: string, references: Array<SubAgentReference>, };
+
+// prettier-ignore
+export type SubAgentResult = { index: number, role: SubAgentRole, title: string, status: SubAgentStatus, 
+/**
+ * Its own session: the thread behind the result.
+ */
+session: SessionId, report?: SubAgentReport, 
+/**
+ * Why it did not complete.
+ */
+reason?: string, 
+/**
+ * Tokens of every request it made: input, cache reads and writes, output.
+ */
+tokens: number, duration_ms: number, };
+
+// prettier-ignore
+export type SubAgentRole = "explore" | "research" | "review";
+
+// prettier-ignore
+export type SubAgentStatus = "completed" | "failed" | "cancelled";
+
+// prettier-ignore
 export type Subscribed = { head: number, activity: SessionActivity, 
 /**
  * Deltas of the reply being streamed right now, so a client that
@@ -561,7 +619,7 @@ export type Usage = { input_tokens?: number, output_tokens?: number, cache_read_
 cost_micro_usd?: number, };
 
 // prettier-ignore
-export type UserBlock = { "type": "text", text: string, } | { "type": "image", blob: BlobRef, } | { "type": "document", blob: BlobRef, name: string, } | { "type": "context", text: string, };
+export type UserBlock = { "type": "text", text: string, } | { "type": "image", blob: BlobRef, } | { "type": "document", blob: BlobRef, name: string, } | { "type": "context", text: string, } | { "type": "ultra" };
 
 // prettier-ignore
 export type Version = "2.0";

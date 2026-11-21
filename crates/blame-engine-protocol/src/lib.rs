@@ -20,12 +20,13 @@ mod delta;
 mod ids;
 mod record;
 pub mod rpc;
+mod subagent;
 #[cfg(feature = "ts")]
 pub mod typescript;
 
 pub use content::{
-    AssistantBlock, BlobRef, ModelRef, NativeItem, ReasoningEffort, ToolResultBlock, Usage,
-    UserBlock,
+    AssistantBlock, BlobRef, ModelRef, NativeItem, ReasoningEffort, ToolResultBlock, ULTRA_NOTICE,
+    Usage, UserBlock,
 };
 pub use contract::{
     CompletionContract, Obligation, Refusal, ResultTool, SessionKind, TaskFailure, TaskOutcome,
@@ -36,6 +37,11 @@ pub use record::{
     ApprovalDecision, ContextEdit, Delivery, ErrorInfo, ErrorKind, Limits, NoticeLevel, Record,
     RecordBody, SessionConfig, StopReason, ToolEffect, ToolOutcome, ToolSpec, TurnOutcome,
     WorkspaceRestore,
+};
+pub use subagent::{
+    MAX_AGENTS_PER_CALL, REPORT, RUN_AGENTS, RunAgentsInput, RunAgentsProgress, RunAgentsResult,
+    SUB_AGENT_PURPOSE, SUBAGENTS, SubAgentBrief, SubAgentOrigin, SubAgentReference, SubAgentReport,
+    SubAgentResult, SubAgentRole, SubAgentStatus, sub_agent_session,
 };
 
 /// Bumped on any change a client or a stored session could not read.

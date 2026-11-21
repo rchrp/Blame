@@ -743,3 +743,48 @@ fn the_context_part_of_a_message_stays_with_it_through_a_rewind_and_its_undo() {
     bodies.push(RecordBody::RewindUndone { rewind: 11 });
     assert_eq!(View::new(&log(bodies)).messages(), expected);
 }
+
+#[test]
+fn a_turn_is_ultra_when_a_message_of_it_says_so() {
+    let ultra = |turn: &str, delivery| RecordBody::UserMessage {
+        turn: t(turn),
+        input: vec![UserBlock::Text { text: "go".into() }, UserBlock::Ultra],
+        delivery,
+    };
+    let records = log(vec![
+        user("t1", "plain"),                        // 2
+        started("t1", "r1", 1),                     // 3
+        reply("t1", "r1", vec![text_block("one")]), // 4
+        ended("t1"),                                // 5
+        ultra("t2", Delivery::Turn),                // 6
+        ended("t2"),                                // 7
+        user("t3", "plain"),                        // 8
+        started("t3", "r3", 1),                     // 9
+        ultra("t3", Delivery::Steer),               // 10
+    ]);
+    let view = View::new(&records);
+    assert!(!view.turn_state(&t("t1")).ultra);
+    assert!(
+        view.turn_state(&t("t2")).ultra,
+        "the message that opened it"
+    );
+    assert!(view.turn_state(&t("t3")).ultra, "a steer that joined it");
+}
+
+#[test]
+fn the_model_reads_the_notice_of_ultra_mode_where_the_message_has_the_block() {
+    let records = log(vec![RecordBody::UserMessage {
+        turn: t("t1"),
+        input: vec![UserBlock::Text { text: "go".into() }, UserBlock::Ultra],
+        delivery: Delivery::Turn,
+    }]);
+    // The block itself is the same bytes on every request; each provider
+    // turns it into `ULTRA_NOTICE`.
+    assert_eq!(
+        View::new(&records).messages(),
+        vec![ModelMessage::User(vec![
+            UserBlock::Text { text: "go".into() },
+            UserBlock::Ultra
+        ])]
+    );
+}

@@ -25,6 +25,14 @@ struct Pending {
     approval: ApprovalState,
 }
 
+/// What holds for every call of a reply, read from the log once.
+#[derive(Clone, Copy)]
+struct Shared {
+    /// No compaction runs while tools do, so this holds for every call.
+    compacted_through: Option<Seq>,
+    ultra: bool,
+}
+
 enum Group {
     Alone(Pending),
     Together(Vec<Pending>),
@@ -35,7 +43,7 @@ pub(super) async fn run(
     turn: &TurnId,
     cancel: &CancellationToken,
 ) -> Result<(), EngineError> {
-    let (pending, specs, config, compacted_through) = {
+    let (pending, specs, config, shared) = {
         let mut core = inner.core.lock().await;
         let config = View::new(&core.records)
             .config()
@@ -43,10 +51,12 @@ pub(super) async fn run(
             .ok_or_else(|| EngineError::InvalidLog("no configuration".into()))?;
         let specs = inner.specs_locked(&mut core, &config).await;
         let view = View::new(&core.records);
-        // No compaction runs while tools do, so this holds for every call.
-        let compacted_through = view.compacted_through();
-        let pending: Vec<Pending> = view
-            .turn_state(turn)
+        let state = view.turn_state(turn);
+        let shared = Shared {
+            compacted_through: view.compacted_through(),
+            ultra: state.ultra,
+        };
+        let pending: Vec<Pending> = state
             .pending_calls()
             .map(|call| Pending {
                 call: call.call.clone(),
@@ -55,7 +65,7 @@ pub(super) async fn run(
                 approval: call.approval,
             })
             .collect();
-        (pending, specs, config, compacted_through)
+        (pending, specs, config, shared)
     };
     let parallel = config
         .limits
@@ -91,22 +101,15 @@ pub(super) async fn run(
         match group {
             Group::Alone(call) => {
                 let spec = spec_of(&call.name);
-                run_one(inner, turn, call, spec, &config, compacted_through, cancel).await?;
+                run_one(inner, turn, call, spec, &config, shared, cancel).await?;
             }
             Group::Together(calls) => {
                 let futures: Vec<BoxFuture<'_, Result<(), EngineError>>> = calls
                     .into_iter()
                     .map(|call| {
                         let spec = spec_of(&call.name);
-                        Box::pin(run_one(
-                            inner,
-                            turn,
-                            call,
-                            spec,
-                            &config,
-                            compacted_through,
-                            cancel,
-                        )) as BoxFuture<'_, _>
+                        Box::pin(run_one(inner, turn, call, spec, &config, shared, cancel))
+                            as BoxFuture<'_, _>
                     })
                     .collect();
                 join_limited(futures, parallel).await?;
@@ -122,7 +125,7 @@ async fn run_one(
     call: Pending,
     spec: Option<&ToolSpec>,
     config: &SessionConfig,
-    compacted_through: Option<Seq>,
+    shared: Shared,
     cancel: &CancellationToken,
 ) -> Result<(), EngineError> {
     let finished = |outcome, text: String| RecordBody::ToolCallFinished {
@@ -282,7 +285,8 @@ async fn run_one(
         name: call.name.clone(),
         input: call.input.clone(),
         workspace_root: config.workspace_root.clone(),
-        compacted_through,
+        compacted_through: shared.compacted_through,
+        ultra: shared.ultra,
     };
     let output = inner
         .ports
