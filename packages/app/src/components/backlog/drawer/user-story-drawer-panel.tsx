@@ -96,6 +96,7 @@ import { Tabs, TabsContent, TabsTrigger } from "@/components/ui/tabs"
 import { SlidingTabsList, slidingTabsTrigger, TabReadyIcon } from "@/components/backlog/drawer/sliding-tabs-list"
 import { cn } from "@/lib/utils"
 import { isBoolean, useUiMemory } from "@/lib/ui-memory"
+import { StoryPlanBadge } from "@/components/chat/plan/story-plan-dock"
 import { StoryStatsIsland } from "@/components/backlog/drawer/user-story-drawer-sidebar"
 import { useStoryAgentStats } from "@/components/backlog/drawer/story-conversation"
 import { DirectStoryPreview } from "@/components/backlog/drawer/direct-story-preview"
@@ -650,6 +651,7 @@ export function UserStoryDrawerPanel({
               <DrawerDescription asChild>
                 <div className="flex flex-wrap items-center gap-2">
                   <ColumnStatusBadge status={status} />
+                  <StoryPlanBadge story={userStory} />
                   <span>{userStory?.owner ?? "Product"} created this</span>
                   <span>{createdAtLabel(userStory)}</span>
                   {userStory?.pullRequestUrl ? (

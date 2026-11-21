@@ -24,9 +24,13 @@ import { StoryActions } from "@/components/backlog/actions/story-actions"
 import { StoryContributors } from "@/components/backlog/shared/story-contributors"
 import { StoryRunModeIcon } from "@/components/backlog/shared/story-run-mode-icon"
 import { storyStartFailure } from "@/components/backlog/shared/story-start-failure"
+import { PlanProgressLine } from "@/components/chat/plan/plan-progress-line"
+import { usePlanProgress } from "@/components/chat/plan/plan-progress-store"
 import { Button } from "@/components/ui/button"
+import { usePlatform } from "@/context/platform"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { recordPerformanceCount } from "@/lib/performance-diagnostics"
+import { storyLocation } from "@/pages/backlog/story-engine"
 import { isSecurityStory } from "@/components/security/data/security-remediation"
 import {
   Card,
@@ -227,8 +231,26 @@ function UserStoryCardBody({
           </p>
         </CardContent>
       )}
+      <StoryPlanProgress story={story} />
       <StoryStartFailure story={story} />
     </>
+  )
+}
+
+// How far the agent's plan is, while it works: the card reads a small event
+// of its own, never the conversation.
+function StoryPlanProgress({ story }: { story: UserStory }) {
+  const platform = usePlatform()
+  const running = story.agentStatus === "Running"
+  const progress = usePlanProgress(
+    running ? story.engineSessionId : undefined,
+    storyLocation(story.workspaceMode ?? "direct", platform.platform)
+  )
+  if (!running || !progress) return null
+  return (
+    <CardContent>
+      <PlanProgressLine progress={progress} />
+    </CardContent>
   )
 }
 

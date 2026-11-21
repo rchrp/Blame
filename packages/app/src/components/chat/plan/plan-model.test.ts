@@ -7,7 +7,6 @@ import {
   planAnnouncement,
   planCount,
   planDockModel,
-  planProgress,
   statusWords,
 } from "./plan-model.ts"
 
@@ -107,12 +106,4 @@ test("a screen reader is told how far the plan is, and what is next", () => {
   )
   assert.equal(statusWords(model.rows[3]!), "Abandoned: Out of scope")
   assert.equal(statusWords(model.rows[2]!), "To do")
-})
-
-test("a card needs only the count and the current step", () => {
-  assert.deepEqual(
-    planProgress({ steps, turn: "t1", call: "c", seq: 1 }),
-    { done: 1, abandoned: 1, total: 4, current: "Wire the form" }
-  )
-  assert.equal(planProgress(undefined), undefined)
 })

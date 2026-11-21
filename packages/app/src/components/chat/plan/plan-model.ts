@@ -3,7 +3,11 @@
 // so each rule is tested without a screen.
 
 import { openSteps } from "@blame/engine-client/transcript"
-import type { PlanView, Transcript } from "@blame/engine-client/transcript"
+import type {
+  PlanProgress,
+  PlanView,
+  Transcript,
+} from "@blame/engine-client/transcript"
 import type { StepStatus } from "@blame/engine-client"
 
 export type PlanRow = {
@@ -28,14 +32,6 @@ export type PlanDockModel = {
   finished: boolean
   /** The agent is working: the current step moves. */
   working: boolean
-}
-
-/** How far a plan is, small enough to travel in an event. */
-export type PlanProgress = {
-  done: number
-  abandoned: number
-  total: number
-  current?: string
 }
 
 export function planRows(plan: PlanView): PlanRow[] {
@@ -81,21 +77,6 @@ export function planDockModel(
       rows.find((row) => row.status === "pending"),
     finished,
     working: transcript.runningTurn !== undefined,
-  }
-}
-
-/** The progress of a plan, for a card that shows no list. */
-export function planProgress(plan: PlanView | undefined): PlanProgress | undefined {
-  if (!plan) return undefined
-  const rows = planRows(plan)
-  const current =
-    rows.find((row) => row.status === "in_progress") ??
-    rows.find((row) => row.status === "pending")
-  return {
-    done: rows.filter((row) => row.status === "completed").length,
-    abandoned: rows.filter((row) => row.status === "abandoned").length,
-    total: rows.length,
-    ...(current ? { current: current.step } : {}),
   }
 }
 

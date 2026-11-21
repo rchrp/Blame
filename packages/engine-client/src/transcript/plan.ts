@@ -7,10 +7,13 @@ import type {
   JsonValue,
   PlanStep,
   Seq,
+  SessionRecord,
   StepStatus,
   ToolCallId,
+  ToolOutcome,
   TurnId,
 } from "../protocol.js";
+import { linearLog } from "./oracle.js";
 
 /** The tool the model calls to set its plan, and what it answers to. */
 export const PLAN_TOOL = "update_plan";
@@ -141,4 +144,77 @@ export function planChange(
       total,
     };
   return { kind: "progress", completed, abandoned, started, done, total };
+}
+
+/** How far a plan is: all a card that shows no list needs. */
+export interface PlanProgress {
+  readonly done: number;
+  readonly abandoned: number;
+  readonly total: number;
+  /** The step in progress, else the next one to do. */
+  readonly current?: string;
+}
+
+export function planProgress(
+  plan: Pick<PlanView, "steps"> | undefined,
+): PlanProgress | undefined {
+  if (!plan) return undefined;
+  const count = (status: StepStatus) =>
+    plan.steps.filter((step) => step.status === status).length;
+  const current =
+    plan.steps.find((step) => step.status === "in_progress") ??
+    plan.steps.find((step) => step.status === "pending");
+  return {
+    done: count("completed"),
+    abandoned: count("abandoned"),
+    total: plan.steps.length,
+    ...(current ? { current: current.step } : {}),
+  };
+}
+
+export function samePlanProgress(
+  a: PlanProgress | undefined,
+  b: PlanProgress | undefined,
+): boolean {
+  return (
+    a === b ||
+    (!!a &&
+      !!b &&
+      a.done === b.done &&
+      a.abandoned === b.abandoned &&
+      a.total === b.total &&
+      a.current === b.current)
+  );
+}
+
+/**
+ * The plan of a whole log, read from scratch: the reducer's answer
+ * (`Transcript.plan`) for a caller that holds records and no reducer.
+ */
+export function currentPlan(
+  records: readonly SessionRecord[],
+): PlanView | undefined {
+  const log = linearLog(records);
+  const first = new Map<ToolCallId, { outcome: ToolOutcome; seq: Seq }>();
+  for (const record of log)
+    if (record.type === "tool_call_finished" && !first.has(record.call))
+      first.set(record.call, { outcome: record.outcome, seq: record.seq });
+  let current: PlanView | undefined;
+  for (const record of log) {
+    if (record.type !== "assistant_message") continue;
+    for (const block of record.blocks) {
+      if (block.type !== "tool_call" || block.name !== PLAN_TOOL) continue;
+      const answer = first.get(block.call);
+      if (answer?.outcome !== "completed") continue;
+      const steps = parsePlan(block.input);
+      if (steps)
+        current = {
+          steps,
+          turn: record.turn,
+          call: block.call,
+          seq: answer.seq,
+        };
+    }
+  }
+  return current;
 }

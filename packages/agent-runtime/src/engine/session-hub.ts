@@ -4,7 +4,12 @@
 // once nobody shows the session and no turn runs.
 
 import {
+  PLAN_TOOL,
+  currentPlan,
   followSession,
+  planProgress,
+  samePlanProgress,
+  type PlanProgress,
   type ClientSource,
   type Delta,
   type FollowEvent,
@@ -31,6 +36,9 @@ type Followed = {
   sent: boolean;
   /** How the last turn ended, reported once the session goes idle. */
   lastOutcome: TurnOutcome | undefined;
+  /** The calls that set the agent's plan, and how far the plan is now. */
+  planCalls: Set<string>;
+  plan: PlanProgress | undefined;
 };
 
 // Deltas of one reply kept for a late viewer; beyond this it sees the reply
@@ -111,6 +119,8 @@ export class SessionHub {
       running: false,
       sent: false,
       lastOutcome: undefined,
+      planCalls: new Set(),
+      plan: undefined,
       follower: undefined as unknown as SessionFollower,
     };
     this.followed.set(session, followed);
@@ -131,6 +141,7 @@ export class SessionHub {
         for (const record of event.records)
           if (record.type === "turn_ended")
             followed.lastOutcome = record.outcome;
+        this.trackPlan(session, followed, event.records);
         break;
       case "delta":
         if (event.delta.type === "activity") {
@@ -178,6 +189,37 @@ export class SessionHub {
       for (const subscription of followed.subscribers)
         this.subscriptions.delete(subscription);
     }
+  }
+
+  /**
+   * Tells the renderers how far the plan is when it moves: an update that
+   * completed, or a rewind. Windows that show no list (a card) need no more.
+   */
+  private trackPlan(
+    session: SessionId,
+    followed: Followed,
+    records: readonly SessionRecord[],
+  ) {
+    let moved = false;
+    for (const record of records) {
+      if (record.type === "assistant_message") {
+        for (const block of record.blocks)
+          if (block.type === "tool_call" && block.name === PLAN_TOOL)
+            followed.planCalls.add(block.call);
+      } else if (record.type === "tool_call_finished") {
+        moved ||= followed.planCalls.has(record.call);
+      } else if (
+        record.type === "rewind_finished" ||
+        record.type === "rewind_undone"
+      ) {
+        moved = true;
+      }
+    }
+    if (!moved) return;
+    const plan = planProgress(currentPlan(followed.records));
+    if (samePlanProgress(plan, followed.plan)) return;
+    followed.plan = plan;
+    this.emit({ type: "plan", session, plan });
   }
 
   private setRunning(session: SessionId, followed: Followed, running: boolean) {

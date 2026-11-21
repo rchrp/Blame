@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { PlanStep } from "../protocol.js";
 import { Log, call, text } from "./fixtures.js";
-import { parsePlan, planChange } from "./plan.js";
+import {
+  currentPlan,
+  parsePlan,
+  planChange,
+  planProgress,
+  samePlanProgress,
+} from "./plan.js";
 import { TranscriptReducer, reduceTranscript } from "./reducer.js";
 
 const input = (...steps: Array<[string, string, string?]>) => ({
@@ -245,6 +251,48 @@ describe("the plan in a transcript", () => {
     assert.deepEqual(
       reduceTranscript(log.records).plan?.steps,
       steps(["Second", "pending"]),
+    );
+  });
+});
+
+describe("the plan of a whole log", () => {
+  const first = input(["Add it", "in_progress"], ["Test it", "pending"]);
+  const second = input(["Add it", "completed"], ["Test it", "in_progress"]);
+
+  it("is what the reducer says, through rewinds and their undo", () => {
+    const log = new Log();
+    updateTurn(log, "t1", "c1", first);
+    const afterOne = log.head;
+    updateTurn(log, "t2", "c2", second);
+    const { finished } = log.rewind(afterOne);
+    const states = [log.records.slice(0, afterOne + 6), log.records];
+    log.undo(finished);
+    states.push(log.records);
+    for (const records of states) {
+      const reducer = new TranscriptReducer();
+      reducer.applyRecords(records);
+      assert.deepEqual(currentPlan(records), reducer.snapshot().plan);
+    }
+    assert.deepEqual(currentPlan(log.records)?.steps, parsePlan(second));
+  });
+
+  it("says how far it is, and when nothing moved", () => {
+    const steps = parsePlan(second)!;
+    assert.deepEqual(planProgress({ steps }), {
+      done: 1,
+      abandoned: 0,
+      total: 2,
+      current: "Test it",
+    });
+    assert.equal(planProgress(undefined), undefined);
+    assert.ok(
+      samePlanProgress(planProgress({ steps }), planProgress({ steps })),
+    );
+    assert.ok(
+      !samePlanProgress(
+        planProgress({ steps }),
+        planProgress({ steps: parsePlan(first)! }),
+      ),
     );
   });
 });
