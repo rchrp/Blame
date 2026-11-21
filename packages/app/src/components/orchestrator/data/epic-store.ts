@@ -184,6 +184,26 @@ function useEpicStoreValue() {
     [api, replace]
   )
 
+  // The host writes the session and the branch to the epic when its
+  // conversation is created, and says so only through its state: an epic
+  // whose session this window does not know yet (created by another window
+  // or computer) is read again, so its branch shows.
+  const reread = React.useRef(new Set<string>())
+  React.useEffect(() => {
+    for (const epic of state.epics) {
+      const session = states.get(epic.id)?.session
+      const seen = `${epic.id}:${session}`
+      if (
+        !session ||
+        epic.engineSessionId === session ||
+        reread.current.has(seen)
+      )
+        continue
+      reread.current.add(seen)
+      void reload(epic.id).catch(() => undefined)
+    }
+  }, [reload, state.epics, states])
+
   const setActiveId = React.useCallback(
     (activeId: string | undefined) => {
       if (projectId) writeUiMemory(memoryKey(projectId), activeId ?? null)

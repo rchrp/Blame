@@ -31,8 +31,9 @@ export function EpicModelRangeField({
   recommendations: ModelRecommendations | undefined
   onChange: (range: NotchedRange) => void
 }) {
-  const ranked = rankedEpicModels({ hidden, providers, recommendations })
-  const picks = intentModels(ranked, range)
+  const pool = { hidden, providers, recommendations }
+  const ranked = rankedEpicModels(pool)
+  const picks = intentModels(pool, range)
   if (!ranked.length) {
     return (
       <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">

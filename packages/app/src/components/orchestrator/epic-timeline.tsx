@@ -155,9 +155,12 @@ function WakeRow({
   if (wake.reason === "idle" && !wake.stories.length)
     return (
       <EventRow icon={<BellRingIcon />}>
-        Nothing of the epic can move by itself any more: the orchestrator
-        decides what comes next.
-        {wake.budget?.spent ? " The budget is spent." : null}
+        <span>
+          Nothing of the epic can move by itself any more: the orchestrator
+          decides what comes next.
+          {wake.budget?.spent ? " The budget is spent." : null}
+        </span>
+        <WakeBlocked context={context} wake={wake} />
       </EventRow>
     )
   const count = wake.stories.length
@@ -183,8 +186,39 @@ function WakeRow({
           </li>
         ))}
       </ul>
+      <WakeBlocked context={context} wake={wake} />
       {wake.budget?.spent ? <span>The budget is spent.</span> : null}
     </EventRow>
+  )
+}
+
+// Queued stories only the person can start, each with why.
+function WakeBlocked({
+  context,
+  wake,
+}: {
+  context: TimelineContext
+  wake: OrchestratorWake
+}) {
+  if (!wake.blocked?.length) return null
+  return (
+    <>
+      <span>Only you can start:</span>
+      <ul className="grid gap-0.5">
+        {wake.blocked.map((story) => (
+          <li key={story.storyId} className="flex flex-wrap gap-x-1.5">
+            <StoryChip
+              context={context}
+              storyRef={story.storyId}
+              fallback={story.number}
+            />
+            <span className="text-amber-700 dark:text-amber-300">
+              {story.reason}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </>
   )
 }
 

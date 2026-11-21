@@ -5,8 +5,6 @@ import {
   selectBacklogStory,
   selectedBacklogStoryId,
 } from "@/components/backlog/data/backlog-navigation"
-import { useBacklogSelector } from "@/components/backlog/data/backlog-store"
-import { workingStoryIds } from "@/components/orchestrator/data/epic-board"
 import type {
   Epic,
   EpicSettings,
@@ -75,7 +73,6 @@ function EpicView({
   const platform = usePlatform()
   const models = useEpicModels()
   const groups = useEpicBoard(epic)
-  const stories = useBacklogSelector(storiesOf)
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   const [pausing, setPausing] = React.useState(false)
   // A narrow window shows one pane at a time.
@@ -83,21 +80,13 @@ function EpicView({
   const needsYou =
     groups.find((group) => group.id === "needs-you")?.entries.length ?? 0
 
+  // The host pauses the epic's running agents and the orchestrator's turn,
+  // and resumes exactly those (the store tells it: epicChanged). A pause is
+  // never the person's Stop (interrupt), which is not resumed.
   async function pauseAll() {
     setPausing(true)
     try {
-      // Paused first: the stories stopping now do not wake the orchestrator.
       await epics.update(epic, { status: "paused" })
-      const ids = workingStoryIds(epic, stories)
-      const results = await Promise.allSettled(
-        ids.map((storyId) => platform.engine!.call("storyPause", { storyId }))
-      )
-      const failed = results.filter((result) => result.status === "rejected")
-      if (failed.length)
-        toast.error(`Couldn't pause ${failed.length} of the epic's agents`, {
-          description: String((failed[0] as PromiseRejectedResult).reason),
-          position: "bottom-right",
-        })
     } catch (error) {
       toast.error("Couldn't pause the epic", {
         description: error instanceof Error ? error.message : String(error),
@@ -202,12 +191,6 @@ function EpicView({
       />
     </>
   )
-}
-
-function storiesOf(backlog: {
-  stories: Parameters<typeof workingStoryIds>[1]
-}) {
-  return backlog.stories
 }
 
 // A story opened from the board shows in the backlog's drawer over this

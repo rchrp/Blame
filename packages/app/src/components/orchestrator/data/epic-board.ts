@@ -1,4 +1,5 @@
 import type {
+  EpicBlockedStory,
   OrchestratorConversationState,
   StoryWaitReason,
 } from "@blame/agent-runtime/engine-protocol"
@@ -73,8 +74,8 @@ export type EpicBoardInput<Story extends EpicBoardStory> = {
   epic: Pick<Epic, "id" | "status" | "engineSessionId">
   // The orchestrator's conversation, as the host says it.
   orchestrator?: OrchestratorConversationState
-  // The epic's budget is spent: its queued stories are held.
-  budgetSpent?: boolean
+  // Queued stories only the person can start, as the host says (EpicState).
+  blocked?: readonly Pick<EpicBlockedStory, "storyId" | "reason">[]
   stories: readonly Story[]
   wait: (storyId: string) => StoryWaitReason | undefined
   waitText: (reason: StoryWaitReason) => string
@@ -128,20 +129,21 @@ function placeStory<Story extends EpicBoardStory>(
           : { group: "working", note: "Paused with the epic" }
       return { group: "working" }
     case "ready": {
+      // The host says which queued stories only the person can start.
+      const blocked = input.blocked?.find((item) => item.storyId === story.id)
+      if (blocked)
+        return { group: "needs-you", note: blocked.reason, alert: true }
       if (story.agentLastError)
         return { group: "needs-you", note: story.agentLastError, alert: true }
       const reason = input.wait(story.id)
-      // The host holds an epic's queued stories without a wait reason.
-      if (!reason && !running)
-        return { group: "queued", note: "Held while the epic is paused" }
-      if (!reason && input.budgetSpent)
-        return {
-          group: "needs-you",
-          note: "Held: the epic's budget is spent",
-          alert: true,
-        }
       if (!reason) return { group: "queued" }
       const note = input.waitText(reason)
+      // Held by its epic: a spent budget or a missing preview environment
+      // is the person's to fix; a pause or another computer is not.
+      if (reason.kind === "epic")
+        return reason.hold === "budget" || reason.hold === "direct"
+          ? { group: "needs-you", note, alert: true }
+          : { group: "queued", note }
       return passingWaits.has(reason.kind)
         ? { group: "queued", note }
         : { group: "needs-you", note, alert: true }
@@ -188,19 +190,4 @@ export const epicActivityLabels: Record<EpicActivity, string> = {
   working: "Working",
   paused: "Paused",
   done: "Done",
-}
-
-/** The stories Pause all stops: those whose agent works now. */
-export function workingStoryIds(
-  epic: Pick<Epic, "id">,
-  stories: readonly EpicBoardStory[]
-) {
-  return stories
-    .filter(
-      (story) =>
-        story.epicId === epic.id &&
-        story.status === "in-progress" &&
-        story.agentStatus === "Running"
-    )
-    .map((story) => story.id)
 }

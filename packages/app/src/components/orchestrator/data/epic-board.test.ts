@@ -2,12 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import type { StoryWaitReason } from "@blame/agent-runtime/engine-protocol"
 
-import {
-  epicActivity,
-  epicBoard,
-  workingStoryIds,
-  type EpicBoardStory,
-} from "./epic-board.ts"
+import { epicActivity, epicBoard, type EpicBoardStory } from "./epic-board.ts"
 
 let nextNumber = 1
 
@@ -153,21 +148,6 @@ test("the sidebar dot follows what the epic owes", () => {
   assert.equal(epicActivity({ status: "discarded" }, working), undefined)
 })
 
-test("Pause all stops the epic's running agents only", () => {
-  const stories = [
-    story({ id: "run", status: "in-progress", agentStatus: "Running" }),
-    story({ id: "stopped", status: "in-progress", agentStatus: "Paused" }),
-    story({
-      id: "other",
-      epicId: "e2",
-      status: "in-progress",
-      agentStatus: "Running",
-    }),
-    story({ id: "review", status: "in-review" }),
-  ]
-  assert.deepEqual(workingStoryIds({ id: "e1" }, stories), ["run"])
-})
-
 test("a review waits for the person while the orchestrator is stopped or failed", () => {
   const review = [story({ id: "r", status: "in-review" })]
   for (const orchestrator of ["stopped", "failed"] as const) {
@@ -182,18 +162,32 @@ test("a review waits for the person while the orchestrator is stopped or failed"
   }
 })
 
-test("queued stories the host holds say why", () => {
-  const queued = [story({ id: "q", status: "ready" })]
-  const paused = board(queued, {}, { ...activeEpic, status: "paused" })
-  assert.equal(paused[2]!.entries[0]!.note, "Held while the epic is paused")
-  const spent = epicBoard({
+test("an epic's hold keeps a story queued, or needs the person when it is theirs to fix", () => {
+  const stories = ["paused", "elsewhere", "budget", "direct"].map((hold) =>
+    story({ id: hold, status: "ready" })
+  )
+  const waits = Object.fromEntries(
+    stories.map((item) => [
+      item.id,
+      { kind: "epic", epicId: "e1", hold: item.id } as StoryWaitReason,
+    ])
+  )
+  const groups = board(stories, waits)
+  assert.deepEqual(ids(groups)["queued"], ["paused", "elsewhere"])
+  assert.deepEqual(ids(groups)["needs-you"], ["budget", "direct"])
+  assert.equal(groups[2]!.entries[0]!.note, "wait:epic")
+})
+
+test("a story the host calls blocked needs the person, with its reason", () => {
+  const groups = epicBoard({
     epic: activeEpic,
-    budgetSpent: true,
-    stories: queued,
-    wait: () => undefined,
-    waitText: () => "",
+    blocked: [{ storyId: "q", reason: "No model can run it" }],
+    stories: [story({ id: "q", status: "ready" })],
+    wait: () => ({ kind: "dependencies", storyIds: [], stories: [] }),
+    waitText: () => "Starts after",
   })
-  assert.deepEqual(ids(spent)["needs-you"], ["q"])
+  assert.deepEqual(ids(groups)["needs-you"], ["q"])
+  assert.equal(groups[0]!.entries[0]!.note, "No model can run it")
 })
 
 test("the dot follows the orchestrator's conversation too", () => {

@@ -60,7 +60,7 @@ function useBoardOf(stories: readonly EpicBoardStory[]) {
         wait: (id) => waits.get(id),
         waitText: storyWaitText,
         ...(state
-          ? { orchestrator: state.conversation, budgetSpent: state.spend.spent }
+          ? { orchestrator: state.conversation, blocked: state.blocked ?? [] }
           : {}),
       })
     },

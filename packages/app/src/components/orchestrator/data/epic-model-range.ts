@@ -1,21 +1,25 @@
-import type {
-  ModelRecommendation,
-  ModelRecommendations,
-} from "@blame/agent-runtime"
+import {
+  escalateModel,
+  resolveModelIntent,
+  type ModelIntent,
+  type ModelKey,
+  type ModelPool,
+} from "@blame/agent-runtime/engine-protocol"
 
-import type { EpicModelKey } from "@/components/orchestrator/data/epic-data"
+// The models an epic's stories may run on, as the engine host ranks them
+// when it turns an intent into a model (`resolveModelIntent`): the settings'
+// range slider puts its notches on these positions, so a handle set on a
+// notch is the slice the host reads, and the preview names the model each
+// intent would pick. The ranking is the host's own: walked from the
+// cheapest model up, one `escalateModel` at a time.
 
-// The models an epic's stories may run on, ranked the way the engine host
-// ranks them when it turns an intent into a model
-// (`packages/agent-runtime/src/engine/model-intent.ts`): the benchmarked,
-// visible models of the allowed providers, cheapest first, at i / (n - 1).
-// The settings' range slider puts its notches on these positions, so a
-// handle set on a notch is the slice the host reads. The host's module is
-// not exported to the app; this mirrors its ranking and its intent choice.
+export type { ModelIntent } from "@blame/agent-runtime/engine-protocol"
 
-export type ModelIntent = "cheaper" | "balanced" | "smarter"
+export type EpicModelPool = Omit<ModelPool, "range" | "recommendations"> & {
+  recommendations: ModelPool["recommendations"] | undefined
+}
 
-export type RankedModel = ModelRecommendation & { rank: number }
+export type RankedModel = ModelKey & { rank: number }
 
 export const modelIntents: readonly ModelIntent[] = [
   "cheaper",
@@ -29,101 +33,51 @@ export const modelIntentLabels: Record<ModelIntent, string> = {
   smarter: "Smarter",
 }
 
-const tolerance = 1e-9
+const wholeScale = { min: 0, max: 1 }
+// Without a ranked model the host falls back to the account's: no notch.
+const noFallback = { providerId: "", modelId: "" }
 
-export function rankedEpicModels(input: {
-  recommendations: Pick<ModelRecommendations, "all" | "byProvider"> | undefined
-  providers?: readonly string[]
-  hidden?: readonly EpicModelKey[]
-}): RankedModel[] {
+export function rankedEpicModels(input: EpicModelPool): RankedModel[] {
   if (!input.recommendations) return []
-  const sorted = sourceList(input).sort(compare)
-  return sorted.map((item, index) => ({
-    ...item,
-    rank: sorted.length === 1 ? 0.5 : index / (sorted.length - 1),
-  }))
+  const pool = {
+    ...input,
+    recommendations: input.recommendations,
+    range: wholeScale,
+  }
+  const first = resolveModelIntent({
+    ...pool,
+    intent: "cheaper",
+    fallback: noFallback,
+  })
+  if (first.fallback || first.position === null) return []
+  const ranked: RankedModel[] = [{ ...key(first.model), rank: first.position }]
+  for (let current = first.model; ranked.length < 500;) {
+    const next = escalateModel({ ...pool, current })
+    if (!next || next.position === null) break
+    ranked.push({ ...key(next.model), rank: next.position })
+    current = next.model
+  }
+  return ranked
 }
 
-/** The ranked models inside the range; the nearest one when none is. */
-export function modelsInRange(
-  ranked: readonly RankedModel[],
-  range: { min: number; max: number }
-) {
-  if (!ranked.length) return []
-  const inside = ranked.filter(
-    (item) =>
-      item.rank >= range.min - tolerance && item.rank <= range.max + tolerance
-  )
-  if (inside.length) return inside
-  const distance = (item: RankedModel) =>
-    Math.max(range.min - item.rank, item.rank - range.max)
-  return [
-    ranked.reduce((best, item) =>
-      distance(item) < distance(best) ? item : best
-    ),
-  ]
-}
-
-/** What each intent would pick inside the range now. */
+/** What each intent would pick inside the range now, as the host picks it. */
 export function intentModels(
-  ranked: readonly RankedModel[],
+  input: EpicModelPool,
   range: { min: number; max: number }
-): Record<ModelIntent, RankedModel> | undefined {
-  const inRange = modelsInRange(ranked, range)
-  if (!inRange.length) return undefined
+): Record<ModelIntent, ModelKey> | undefined {
+  if (!input.recommendations) return undefined
+  const pool = { ...input, recommendations: input.recommendations, range }
+  const picks = modelIntents.map((intent) =>
+    resolveModelIntent({ ...pool, intent, fallback: noFallback })
+  )
+  if (picks.some((pick) => pick.fallback)) return undefined
   return {
-    cheaper: inRange[0]!,
-    balanced: inRange[Math.floor((inRange.length - 1) / 2)]!,
-    smarter: inRange[inRange.length - 1]!,
+    cheaper: key(picks[0]!.model),
+    balanced: key(picks[1]!.model),
+    smarter: key(picks[2]!.model),
   }
 }
 
-function sourceList(input: Parameters<typeof rankedEpicModels>[0]) {
-  const recommendations = input.recommendations!
-  const hidden = input.hidden ?? []
-  const allowed = [...new Set(input.providers ?? [])]
-  const visible = (items: readonly ModelRecommendation[]) =>
-    items.filter(
-      (item) =>
-        item.segment === "benchmarked" &&
-        !hidden.some((entry) => sameModel(entry, item))
-    )
-  if (!allowed.length) return visible(recommendations.all)
-  if (allowed.length === 1)
-    return visible(recommendations.byProvider[allowed[0]!] ?? [])
-  const union = new Map<string, ModelRecommendation>()
-  for (const providerId of allowed)
-    for (const item of visible(recommendations.byProvider[providerId] ?? []))
-      union.set(`${item.providerId}\n${item.modelId}`, item)
-  const items = [...union.values()]
-  return items.filter((item) => !items.some((other) => dominates(other, item)))
-}
-
-function dominates(left: ModelRecommendation, right: ModelRecommendation) {
-  return (
-    cost(left) <= cost(right) &&
-    score(left) >= score(right) &&
-    (cost(left) < cost(right) || score(left) > score(right))
-  )
-}
-
-function compare(left: ModelRecommendation, right: ModelRecommendation) {
-  return (
-    cost(left) - cost(right) ||
-    score(left) - score(right) ||
-    left.providerId.localeCompare(right.providerId) ||
-    left.modelId.localeCompare(right.modelId)
-  )
-}
-
-function cost(item: ModelRecommendation) {
-  return item.estimatedCost ?? Number.POSITIVE_INFINITY
-}
-
-function score(item: ModelRecommendation) {
-  return item.smartScore ?? Number.NEGATIVE_INFINITY
-}
-
-function sameModel(left: EpicModelKey, right: EpicModelKey) {
-  return left.providerId === right.providerId && left.modelId === right.modelId
+function key(model: ModelKey): ModelKey {
+  return { providerId: model.providerId, modelId: model.modelId }
 }

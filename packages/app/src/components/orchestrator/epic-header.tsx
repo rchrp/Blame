@@ -180,13 +180,30 @@ const conversationLabels: Partial<
 }
 
 function ConversationStatus({ state }: { state?: EpicState }) {
-  const label = state ? conversationLabels[state.conversation] : undefined
+  const blocked = state?.blocked?.length ?? 0
+  const quiet =
+    state?.conversation === "waiting" ||
+    state?.conversation === "idle" ||
+    state?.conversation === "working"
+  // Stories only the person can start come before the orchestrator's state.
+  const label =
+    blocked && quiet
+      ? {
+          text:
+            blocked === 1
+              ? "1 story needs you to start"
+              : `${blocked} stories need you to start`,
+          tone: "text-amber-700 dark:text-amber-300",
+        }
+      : state
+        ? conversationLabels[state.conversation]
+        : undefined
   if (!label) return null
   return (
     <span
       className={cn("inline-flex items-center gap-1.5 font-medium", label.tone)}
     >
-      {state?.conversation === "working" ? (
+      {state?.conversation === "working" && label.tone === "text-foreground" ? (
         <span aria-hidden="true" className="agent-thinking-mark size-2!" />
       ) : null}
       {label.text}
