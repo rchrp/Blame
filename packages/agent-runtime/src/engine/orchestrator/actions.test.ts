@@ -1116,6 +1116,10 @@ describe("the budget, the gate and what is kept", () => {
           ),
       "the queue to say why",
     );
+    // Held, so it does not start by itself, but not listed as needing the
+    // person: the pause is theirs.
+    assert.equal(orchestrator.blocked(stories.epicStories(epicId)[0]!), true);
+    assert.equal((await orchestrator.epicState(epicId)).blocked, undefined);
     epics.get(epicId)!.status = "active";
     await orchestrator.changed(epicId);
     assert.equal(orchestrator.holds(story), undefined);

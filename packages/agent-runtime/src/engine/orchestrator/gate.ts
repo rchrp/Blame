@@ -62,7 +62,12 @@ export function epicHold(input: {
   return undefined;
 }
 
-/** The waits of the epic's queued stories that only the person ends, with the reason in words. */
+/**
+ * The waits of the epic's queued stories that only the person ends, with
+ * the reason in words. The epic's pause is left out: the person chose it,
+ * and "needs you" would misread it (the stories still do not start by
+ * themselves: `Orchestrator.blocked`).
+ */
 export function blockedStories(
   stories: readonly HostStory[],
   waits: readonly StoryWaiting[],
@@ -72,6 +77,7 @@ export function blockedStories(
   return stories.flatMap((story) => {
     const reason = byId.get(story.id);
     if (story.status !== "ready" || !reason) return [];
+    if (reason.kind === "epic" && reason.hold === "paused") return [];
     const blocked =
       waitsForPerson(reason) || (reason.kind === "error" && stuck(story.id));
     return blocked
