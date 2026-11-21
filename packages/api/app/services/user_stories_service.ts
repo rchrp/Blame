@@ -20,6 +20,7 @@ import FileAttachmentsService from '#services/file_attachments_service'
 import type FileAttachment from '#models/file_attachment'
 import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
 import PreviewSessionService from '#services/preview_sessions/preview_session_service'
+import { assertStoryLinks, distinctIds } from '#services/story_links'
 
 type ListUserStoriesInput = Infer<typeof listUserStoriesValidator>
 type CreateUserStoryInput = Infer<typeof createUserStoryValidator>
@@ -36,6 +37,7 @@ export default class UserStoriesService {
   async list(userId: string, input: ListUserStoriesInput) {
     await new ProjectsService().findForUser(userId, input.projectId)
     const query = UserStory.query().where('projectId', input.projectId).orderBy('createdAt', 'asc')
+    if (input.epicId) query.where('epicId', input.epicId)
     if (input.view === 'summary') return query
     const stories = await query.preload('storedFileAttachments')
     await this.prepareDownloads(stories)
@@ -59,6 +61,12 @@ export default class UserStoriesService {
     const attachments = await this.fileAttachments.resolveInputs(userId, input.fileAttachments)
     const storyId = await db.transaction(async (transaction) => {
       const storyNumber = await this.nextStoryNumber(userId, input.projectId, transaction)
+      await assertStoryLinks(transaction, {
+        projectId: input.projectId,
+        targetBranch: input.targetBranch ?? null,
+        startsAfter: input.startsAfter ? distinctIds(input.startsAfter) : undefined,
+        epicId: input.epicId,
+      })
       return this.createRecord(userId, input, storyNumber, attachments, transaction)
     })
     return this.find(userId, storyId)
@@ -80,13 +88,30 @@ export default class UserStoriesService {
         .where('id', id)
         .forUpdate()
         .firstOrFail()
-      const storyNumber =
-        input.projectId && input.projectId !== userStory.projectId
-          ? await this.nextStoryNumber(userId, input.projectId, transaction)
-          : userStory.storyNumber
+      const moved = Boolean(input.projectId && input.projectId !== userStory.projectId)
+      const storyNumber = moved
+        ? await this.nextStoryNumber(userId, input.projectId!, transaction)
+        : userStory.storyNumber
+      const startsAfter = input.startsAfter ? distinctIds(input.startsAfter) : undefined
+      if (startsAfter || input.epicId || moved) {
+        const projectId = input.projectId ?? userStory.projectId
+        // Two writes of the lists must not close a cycle between them.
+        if (!moved) await lockProject(userId, projectId, transaction)
+        // A story that moves to another project takes its links with it, so
+        // they are checked again there.
+        await assertStoryLinks(transaction, {
+          projectId,
+          storyId: userStory.id,
+          targetBranch:
+            input.targetBranch === undefined ? userStory.targetBranch : input.targetBranch,
+          startsAfter: startsAfter ?? (moved ? userStory.startsAfter : undefined),
+          epicId: input.epicId === undefined && moved ? userStory.epicId : input.epicId,
+        })
+      }
       userStory.useTransaction(transaction)
       userStory.merge({
         ...update,
+        ...(startsAfter ? { startsAfter } : {}),
         storyNumber,
         ...idleAgentUpdate(input),
         mergedAt: input.mergedAt === undefined ? userStory.mergedAt : input.mergedAt,
@@ -192,6 +217,10 @@ function userStoryCreateAttributes(input: CreateUserStoryInput, storyNumber: num
   void fileAttachments
   return {
     ...attributes,
+    startsAfter: distinctIds(input.startsAfter ?? []),
+    modelIntent: input.modelIntent ?? null,
+    requestedModel: input.requestedModel ?? null,
+    epicId: input.epicId ?? null,
     ...nullableStoryAttributes(input),
     codeSelectionAttachments: input.codeSelectionAttachments ?? null,
     fileAttachmentUploadPending: fileAttachmentUploadPending ?? false,
@@ -221,6 +250,19 @@ function nullableStoryAttributes(input: CreateUserStoryInput) {
     runMode: input.runMode ?? null,
     ambition: input.ambition ?? null,
   }
+}
+
+/** Locks the project's row, so writes of its stories' links run one at a time. */
+async function lockProject(
+  userId: string,
+  projectId: string,
+  transaction: TransactionClientContract
+) {
+  await Project.query({ client: transaction })
+    .where('id', projectId)
+    .where('userId', userId)
+    .forUpdate()
+    .firstOrFail()
 }
 
 // An agent only runs or pauses on a story in progress.

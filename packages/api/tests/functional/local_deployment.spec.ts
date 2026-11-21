@@ -89,12 +89,30 @@ test.group('local API', (group) => {
       .bearerToken(token)
       .json({ projectId, title: 'Checkout', summary: 'Pay' })
     story.assertStatus(200)
+    const epic = await client
+      .post('/api/v1/projects/epics')
+      .bearerToken(token)
+      .json({ projectId, title: 'Checkout flow', settings: { askBeforeLaunch: true } })
+    epic.assertStatus(200)
+    const epicId = (epic.body() as unknown as { data: { id: string } }).data.id
+    const dependent = await client
+      .post('/api/v1/projects/user-stories')
+      .bearerToken(token)
+      .json({
+        projectId,
+        title: 'Receipt',
+        summary: 'Mail it',
+        epicId,
+        startsAfter: [(story.body() as unknown as { data: { id: string } }).data.id],
+      })
+    dependent.assertStatus(200)
 
     const workspace = await client.get('/api/v1/account/workspace').bearerToken(token)
     workspace.assertStatus(200)
     // Only the local API registers this export: the typed client, made from
     // the hosted routes, takes it for the import that shares its path.
     const bundle = workspace.body() as unknown as { data: WorkspaceBundle }
-    assert.lengthOf(bundle.data.tables.user_stories ?? [], 1)
+    assert.lengthOf(bundle.data.tables.user_stories ?? [], 2)
+    assert.lengthOf(bundle.data.tables.epics ?? [], 1)
   })
 })

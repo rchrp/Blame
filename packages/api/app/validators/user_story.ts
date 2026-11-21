@@ -36,7 +36,22 @@ const fileAttachment = vine.object({
   size: vine.number().nonNegative().withoutDecimals(),
   type: vine.string().trim().maxLength(255),
 })
-const nullableDateTime = vine
+const startsAfter = vine
+  .array(vine.string().trim().minLength(1).maxLength(64))
+  .maxLength(100)
+  .optional()
+const modelIntent = vine.enum(['cheaper', 'balanced', 'smarter']).nullable().optional()
+const requestedModel = vine
+  .object({
+    providerId: engineProviderId.clone(),
+    modelId: vine.string().trim().minLength(1).maxLength(255),
+    credentialLabel: vine.string().trim().minLength(1).maxLength(255).optional(),
+    reasoningEffort: vine.string().trim().minLength(1).maxLength(32).optional(),
+  })
+  .nullable()
+  .optional()
+const epicId = vine.string().trim().minLength(1).maxLength(64).nullable().optional()
+export const nullableDateTime = vine
   .string()
   .trim()
   .nullable()
@@ -54,6 +69,7 @@ const nullableDateTime = vine
 export const listUserStoriesValidator = vine.create({
   projectId: vine.string().trim().minLength(1),
   view: vine.enum(['summary', 'detail']).optional(),
+  epicId: vine.string().trim().minLength(1).maxLength(64).optional(),
 })
 
 export const createUserStoryValidator = vine.create({
@@ -74,6 +90,10 @@ export const createUserStoryValidator = vine.create({
   workspaceMode: vine.enum(['local-container', 'cloud-mirror', 'direct']).nullable().optional(),
   runMode: vine.enum(['local-container', 'vercel-compose', 'direct']).nullable().optional(),
   ambition: vine.enum(['quick', 'standard', 'ambitious']).nullable().optional(),
+  startsAfter,
+  modelIntent,
+  requestedModel,
+  epicId,
   agentStatus: agentStatus.nullable().optional(),
   agentLastError: vine.string().trim().maxLength(4096).nullable().optional(),
   agentModels,
@@ -101,6 +121,10 @@ export const updateUserStoryValidator = vine.withMetaData<{ storyId: string }>()
   workspaceMode: vine.enum(['local-container', 'cloud-mirror', 'direct']).nullable().optional(),
   runMode: vine.enum(['local-container', 'vercel-compose', 'direct']).nullable().optional(),
   ambition: vine.enum(['quick', 'standard', 'ambitious']).nullable().optional(),
+  startsAfter,
+  modelIntent,
+  requestedModel,
+  epicId,
   // The desktop names the story's engine session when its agent starts; the id
   // follows the engine's own rule and names one story only.
   engineSessionId: vine

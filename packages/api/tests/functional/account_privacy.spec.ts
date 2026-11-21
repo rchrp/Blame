@@ -1,5 +1,6 @@
 import AccountClosureRequest from '#models/account_closure_request'
 import AccountClosureService from '#services/account_closure_service'
+import Epic from '#models/epic'
 import Project from '#models/project'
 import ProjectCodePractice from '#models/project_code_practice'
 import ProjectInitialization from '#models/project_initialization'
@@ -48,7 +49,7 @@ test.group('account privacy', (group) => {
   test('exports owned cloud data without reusable secrets', async ({ client, assert }) => {
     const user = await createUser()
     const stranger = await createUser()
-    await createOwnedData(user)
+    const ownedData = await createOwnedData(user)
     await Project.create({ userId: stranger.id, name: 'Private stranger project' })
 
     const response = await client.post('/api/v1/account/export').loginAs(user).json({ password })
@@ -63,9 +64,11 @@ test.group('account privacy', (group) => {
     assert.equal(body.format, 'blame-account-export')
     assert.equal(body.account.email, user.email)
     assert.equal(body.security.dedicatedAuthenticationSecretsIncluded, false)
+    assertEpicExport(body, ownedData, assert)
     assert.include(serialized, 'Owned project')
     assert.include(serialized, 'Owned story')
     assert.include(serialized, 'Owned quick chat')
+    assert.include(serialized, 'Owned epic')
     assert.include(serialized, 'owned-quick-chat-session')
     assert.notInclude(serialized, 'Private stranger project')
     assert.notInclude(serialized, passwordHash)
@@ -191,16 +194,34 @@ async function createUser() {
 async function createOwnedData(user: User) {
   const project = await Project.create({ userId: user.id, name: 'Owned project' })
   await createProjectDetails(project.id)
-  const storyId = await createStory(project.id)
+  const epicId = await createEpic(project.id)
+  const storyId = await createStory(project.id, epicId)
   const chatId = await createQuickChat(project.id)
   await createAccountSettings(user)
   await User.accessTokens.create(user)
-  return { chatId, projectId: project.id, storyId }
+  return { chatId, epicId, projectId: project.id, storyId }
 }
 
-async function createStory(projectId: string) {
+async function createEpic(projectId: string) {
+  const epic = await Epic.create({
+    projectId,
+    title: 'Owned epic',
+    goal: 'Export and delete this epic',
+    status: 'active',
+    branch: 'epic/owned',
+    engineSessionId: 'owned-epic-session',
+    settings: { modelRange: { min: 0, max: 1 }, askBeforeLaunch: true },
+  })
+  return epic.id
+}
+
+async function createStory(projectId: string, epicId: string) {
   const story = await UserStory.create({
     projectId,
+    epicId,
+    startsAfter: ['01a19910-96a1-79a4-b933-df4ae67dd9eb'],
+    modelIntent: 'balanced',
+    requestedModel: { providerId: 'anthropic', modelId: 'claude-sonnet' },
     storyNumber: 1,
     title: 'Owned story',
     summary: 'Export and delete this story',
@@ -302,8 +323,31 @@ async function assertOwnedRowsDeleted(ids: OwnedDataIds, assert: Assert) {
     db.from('user_stories').where('project_id', ids.projectId),
     db.from('user_stories').where('id', ids.storyId),
     db.from('quick_chats').where('id', ids.chatId),
+    db.from('epics').where('project_id', ids.projectId),
+    db.from('epics').where('id', ids.epicId),
   ])
   for (const records of rows) assert.lengthOf(records, 0)
+}
+
+/** The export names the epics, the stories' new fields and the JSON of both as JSON. */
+function assertEpicExport(body: AccountExportBody, ids: OwnedDataIds, assert: Assert) {
+  const { epics, userStories } = body.workspace as {
+    epics: Array<Record<string, unknown>>
+    userStories: Array<Record<string, unknown>>
+  }
+  assert.lengthOf(epics, 1)
+  assert.equal(epics[0].id, ids.epicId)
+  assert.equal(epics[0].goal, 'Export and delete this epic')
+  assert.equal(epics[0].engine_session_id, 'owned-epic-session')
+  assert.deepEqual(epics[0].settings, { modelRange: { min: 0, max: 1 }, askBeforeLaunch: true })
+  assert.lengthOf(userStories, 1)
+  assert.equal(userStories[0].epic_id, ids.epicId)
+  assert.equal(userStories[0].model_intent, 'balanced')
+  assert.deepEqual(userStories[0].starts_after, ['01a19910-96a1-79a4-b933-df4ae67dd9eb'])
+  assert.deepEqual(userStories[0].requested_model, {
+    providerId: 'anthropic',
+    modelId: 'claude-sonnet',
+  })
 }
 
 async function assertClosureArchive(user: User, assert: Assert) {
@@ -364,6 +408,7 @@ async function assertReceiptStatus(client: ApiClient, receipt: ClosureReceipt) {
 }
 
 type Assert = {
+  deepEqual(actual: unknown, expected: unknown): void
   equal(actual: unknown, expected: unknown): void
   isAtMost(actual: number, expected: number): void
   isNotNull(value: unknown): void
@@ -375,6 +420,7 @@ type AccountExportBody = {
   format: string
   account: { email: string }
   security: { dedicatedAuthenticationSecretsIncluded: boolean }
+  workspace: unknown
 }
 
 type ClosureReceipt = {
@@ -389,6 +435,7 @@ type ClosureReceipt = {
 
 type OwnedDataIds = {
   chatId: string
+  epicId: string
   projectId: string
   storyId: string
 }

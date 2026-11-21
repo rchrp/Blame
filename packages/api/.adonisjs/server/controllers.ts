@@ -13,6 +13,7 @@ export const controllers = {
   DesktopAuth: () => import('#controllers/desktop_auth_controller'),
   EngineBlobs: () => import('#controllers/engine_blobs_controller'),
   EngineSessions: () => import('#controllers/engine_sessions_controller'),
+  Epics: () => import('#controllers/epics_controller'),
   FileAttachments: () => import('#controllers/file_attachments_controller'),
   GithubInstallations: () => import('#controllers/github_installations_controller'),
   ModelRecommendations: () => import('#controllers/model_recommendations_controller'),

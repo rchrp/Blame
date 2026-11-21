@@ -32,6 +32,44 @@ export type UserStoryCodeSelectionAttachment = {
 
 export type UserStoryFileAttachment = FileAttachmentReference
 
+// How the orchestrator weighs a story when it picks a model.
+export type UserStoryModelIntent = 'cheaper' | 'balanced' | 'smarter'
+// The model the story's first run must use.
+export type UserStoryRequestedModel = {
+  providerId: string
+  modelId: string
+  credentialLabel?: string
+  reasoningEffort?: string
+}
+
+function prepareStartsAfter(value: string[] | null | undefined) {
+  return JSON.stringify(value ?? [])
+}
+
+function consumeStartsAfter(value: unknown): string[] {
+  const parsed = typeof value === 'string' ? safeParse(value) : value
+  return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+}
+
+function prepareRequestedModel(value: UserStoryRequestedModel | null | undefined) {
+  return value ? JSON.stringify(value) : null
+}
+
+function consumeRequestedModel(value: unknown) {
+  const parsed = typeof value === 'string' ? safeParse(value) : value
+  return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    ? (parsed as UserStoryRequestedModel)
+    : null
+}
+
+function safeParse(value: string): unknown {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
 function prepareAgentModels(value: UserStoryAgentModel[] | null) {
   return value ? JSON.stringify(value) : null
 }
@@ -169,6 +207,21 @@ export default class UserStory extends BaseModel {
 
   @column()
   declare ambition: UserStoryAmbition | null
+
+  // Ids of the stories this one waits for. A story that others list can be
+  // deleted: its id stays in their lists, and clients show them as blocked.
+  @column({ consume: consumeStartsAfter, prepare: prepareStartsAfter })
+  declare startsAfter: string[]
+
+  @column()
+  declare modelIntent: UserStoryModelIntent | null
+
+  @column({ consume: consumeRequestedModel, prepare: prepareRequestedModel })
+  declare requestedModel: UserStoryRequestedModel | null
+
+  // The epic the orchestrator made the story for, of the same project.
+  @column()
+  declare epicId: string | null
 
   // The agent engine's session holding the story's conversation, kept in
   // `engine_sessions`; the desktop names it when the story's agent starts.

@@ -167,6 +167,18 @@ router
 
     router
       .group(() => {
+        router.get('/', [controllers.Epics, 'index'])
+        router.post('/', [controllers.Epics, 'store'])
+        router.get('/:id', [controllers.Epics, 'show'])
+        router.patch('/:id', [controllers.Epics, 'update'])
+        router.delete('/:id', [controllers.Epics, 'destroy'])
+      })
+      .prefix('projects/epics')
+      .as('projects.epics')
+      .use(middleware.auth())
+
+    router
+      .group(() => {
         router.get('/', [controllers.UserStories, 'index'])
         router.post('/', [controllers.UserStories, 'store'])
         router.get('/:id', [controllers.UserStories, 'show'])

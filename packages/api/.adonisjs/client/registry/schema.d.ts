@@ -1294,6 +1294,71 @@ export interface Registry {
       rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/quick_chats_controller').default['destroy']>>>
     }
   }
+  'projects.epics.epics.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/epics'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: ExtractQueryForGet<InferInput<(typeof import('#validators/epic').listEpicsValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['index']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.epics.epics.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/projects/epics'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/epic').createEpicValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#validators/epic').createEpicValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.epics.epics.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/projects/epics/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['show']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['show']>>>
+    }
+  }
+  'projects.epics.epics.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/projects/epics/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#validators/epic').updateEpicValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#validators/epic').updateEpicValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'projects.epics.epics.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/projects/epics/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['destroy']>>>
+      rawResponse: ExtractRawResponse<Awaited<ReturnType<import('#controllers/epics_controller').default['destroy']>>>
+    }
+  }
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"]
     pattern: '/api/v1/projects/user-stories'

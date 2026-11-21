@@ -59,6 +59,7 @@ export default class AccountExportService {
       // The conversations of stories and quick chats are their engine
       // sessions; the rows only name them.
       userStories: normalizeRows(userStories, storyJsonColumns),
+      epics: normalizeRows(await queries.epics(projectIds), ['settings']),
       quickChats: await queries.quickChats(projectIds),
       fileAttachments: await fileAttachmentExport(queries, userId),
       fileAttachmentLinks: {
@@ -68,7 +69,13 @@ export default class AccountExportService {
   }
 }
 
-const storyJsonColumns = ['code_selection_attachments', 'file_attachments', 'agent_models']
+const storyJsonColumns = [
+  'code_selection_attachments',
+  'file_attachments',
+  'agent_models',
+  'starts_after',
+  'requested_model',
+]
 const additionalRecords = {
   contact: 'privacy@blame.so',
   notice:

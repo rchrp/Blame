@@ -5,6 +5,7 @@
 
 /// <reference path="./manifest.d.ts" />
 import type { InferData, InferVariants } from '@adonisjs/core/types/transformers'
+import type EpicTransformer from '#transformers/epic_transformer'
 import type ProjectAgentMemoryTransformer from '#transformers/project_agent_memory_transformer'
 import type ProjectCodePracticeAnalysisTransformer from '#transformers/project_code_practice_analysis_transformer'
 import type ProjectCodePracticeTransformer from '#transformers/project_code_practice_transformer'
@@ -18,6 +19,10 @@ import type UserStoryTransformer from '#transformers/user_story_transformer'
 import type UserTransformer from '#transformers/user_transformer'
 
 export namespace Data {
+  export type Epic = InferData<EpicTransformer>
+  export namespace Epic {
+    export type Variants = InferVariants<EpicTransformer>
+  }
   export type ProjectAgentMemory = InferData<ProjectAgentMemoryTransformer>
   export namespace ProjectAgentMemory {
     export type Variants = InferVariants<ProjectAgentMemoryTransformer>
