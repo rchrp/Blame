@@ -57,11 +57,17 @@ export function epicHold(input: {
   if (!input.entry) return hold("elsewhere");
   if (!input.epic) return hold("unknown");
   if (input.epic.status !== "active") return hold("paused");
+  if (input.entry.branchGone) return hold("branch");
   if (budgetSpent(input.epic, input.entry)) return hold("budget");
   return undefined;
 }
 
-/** The waits of the epic's queued stories that only the person ends, with the reason in words. */
+/**
+ * The waits of the epic's queued stories that only the person ends, with
+ * the reason in words. The epic's pause is left out: the person chose it,
+ * and "needs you" would misread it (the stories still do not start by
+ * themselves: `Orchestrator.blocked`).
+ */
 export function blockedStories(
   stories: readonly HostStory[],
   waits: readonly StoryWaiting[],
@@ -71,6 +77,7 @@ export function blockedStories(
   return stories.flatMap((story) => {
     const reason = byId.get(story.id);
     if (story.status !== "ready" || !reason) return [];
+    if (reason.kind === "epic" && reason.hold === "paused") return [];
     const blocked =
       waitsForPerson(reason) || (reason.kind === "error" && stuck(story.id));
     return blocked
@@ -98,6 +105,8 @@ export function waitWords(reason: StoryWaitReason): string {
         elsewhere: "the epic runs on another computer",
         direct:
           "the project has no working preview environment (an epic's story never runs Direct)",
+        branch:
+          "the epic's branch is gone, and stories were already merged into it",
         unknown: "the epic is not read yet",
       }[reason.hold];
     case "dependency-dropped":
@@ -122,5 +131,39 @@ export function waitWords(reason: StoryWaitReason): string {
       return "a tool it needs is missing on this computer";
     case "git-identity":
       return "Git has no name and email";
+  }
+}
+
+/**
+ * Since when each queued story's start keeps failing: from its first
+ * failure until it starts (or leaves the queue), whatever it waits for in
+ * between (the runtime, the preview environment). Blocked once that lasted
+ * `stuckMs`.
+ */
+export class FailingStarts {
+  private readonly since = new Map<string, number>();
+  private readonly stuckMs: number;
+
+  constructor(stuckMs: number) {
+    this.stuckMs = stuckMs;
+  }
+
+  note(stories: readonly HostStory[], waits: readonly StoryWaiting[]) {
+    for (const story of stories) {
+      if (story.status !== "ready") {
+        this.since.delete(story.id);
+        continue;
+      }
+      const failing = waits.some(
+        (wait) => wait.storyId === story.id && wait.reason.kind === "error",
+      );
+      if (failing && !this.since.has(story.id))
+        this.since.set(story.id, Date.now());
+    }
+  }
+
+  stuck(storyId: string) {
+    const since = this.since.get(storyId);
+    return since !== undefined && Date.now() - since >= this.stuckMs;
   }
 }

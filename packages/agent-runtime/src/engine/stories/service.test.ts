@@ -508,14 +508,18 @@ test("a story that starts after another is told what that story delivered", asyn
   const { service: stories, close } = await service(fake.host);
   try {
     await sync(stories, [{ id: "a", path: "/a" }]);
-    await settle(() => api.stories.get("second")!.status === "in-progress");
-    const send = fake.calls.find(
-      ({ method, input }) =>
-        method === "send" &&
-        (input as { message: { text: string } }).message.text.includes(
-          "Do second",
-        ),
-    )!.input as { message: { text: string } };
+    // `in-progress` is written before the briefing is built and sent:
+    // the send itself is waited for.
+    const briefing = () =>
+      fake.calls.find(
+        ({ method, input }) =>
+          method === "send" &&
+          (input as { message: { text: string } }).message.text.includes(
+            "Do second",
+          ),
+      );
+    await settle(() => briefing() !== undefined, "the briefing to be sent");
+    const send = briefing()!.input as { message: { text: string } };
     const text = send.message.text;
     assert.match(text, /^Do second\n\n<starts_after>/u);
     assert.match(text, /US-005 · Theme toggle\nReported:\nAdded the toggle\./u);
@@ -541,10 +545,9 @@ test("a story that starts after nothing gets its request alone", async () => {
   const { service: stories, close } = await service(fake.host);
   try {
     await sync(stories, [{ id: "a", path: "/a" }]);
-    await settle(() => api.stories.get("plain")!.status === "in-progress");
-    const send = fake.calls.find(({ method }) => method === "send")!.input as {
-      message: { text: string };
-    };
+    const request = () => fake.calls.find(({ method }) => method === "send");
+    await settle(() => request() !== undefined, "the request to be sent");
+    const send = request()!.input as { message: { text: string } };
     assert.equal(send.message.text, "Do plain");
   } finally {
     await close();

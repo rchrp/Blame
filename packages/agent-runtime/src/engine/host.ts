@@ -549,7 +549,7 @@ export class EngineHost {
       const accepted = await (
         await this.clientFor(ref)
       ).promote({ session: ref.session, turn });
-      this.engineFor(ref).hub.watch(ref.session);
+      this.engineFor(ref).hub.watch(ref.session, accepted.turn);
       return { turn: accepted.turn };
     },
     interrupt: async (ref) => {
@@ -629,7 +629,11 @@ export class EngineHost {
     epicState: ({ epicId }) => this.orchestrator.epicState(epicId),
     epicChanged: ({ epicId }) => this.orchestrator.changed(epicId),
     // The service is made in the constructor, after these handlers.
-    ...storyHandlers(() => this.stories),
+    ...storyHandlers(
+      () => this.stories,
+      // A story a person acts on is theirs through the epic's pause.
+      (storyId) => this.orchestrator.touched(storyId),
+    ),
     ...taskHandlers(this.taskHost()),
   };
 
@@ -652,7 +656,7 @@ export class EngineHost {
     const input = await this.userInput(client, text);
     const accepted = await client.sendMessage({ session, input, delivery });
     this.awaitingFirst.delete(session);
-    engine.hub.watch(session);
+    engine.hub.watch(session, accepted.turn);
     return { turn: accepted.turn, started: accepted.started };
   }
 

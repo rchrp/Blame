@@ -170,3 +170,24 @@ export function wakeStory(
     ...(reply ? { reply } : {}),
   };
 }
+
+/**
+ * What an `idle` wake tells: each story's state and each blocked story's
+ * reason. The same again, after the same `wait`, is not told again
+ * (`idleTold`): a story that started, the person's act, or another error
+ * makes it differ.
+ */
+export function idleSignature(
+  stories: ReadonlyArray<Pick<HostStory, "id" | "status" | "agentStatus">>,
+  blocked: ReadonlyArray<{ storyId: string; reason: string }>,
+) {
+  return JSON.stringify([
+    stories.map((story) => [story.id, story.status, story.agentStatus ?? null]),
+    blocked.map((item) => [item.storyId, item.reason]),
+  ]);
+}
+
+/** What an `idle` wake told: the `wait` it answered and the stories as they stood. */
+export function idleTold(waitTurn: string | undefined, signature: string) {
+  return `${waitTurn ?? ""}\n${signature}`;
+}

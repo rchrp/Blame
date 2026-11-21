@@ -122,7 +122,7 @@ export class EpicReading {
   async unreported(): Promise<OrchestratorWakeStory[]> {
     const reported = new Set([
       ...(this.conversation?.reported ?? []),
-      ...(this.entry?.heard ?? []),
+      ...Object.keys(this.entry?.heard ?? {}),
     ]);
     const found = new Map<string, OrchestratorWakeStory>();
     for (const { story } of this.entry?.pending ?? []) {
@@ -158,15 +158,48 @@ export class EpicReading {
    * board or a report showed them, or the epic's pause made them): no wake
    * repeats them. Exactly these, nothing read since.
    */
-  async markHeard(stories: ReadonlyArray<{ session: string; turn: string }>) {
+  async markHeard(
+    stories: ReadonlyArray<{ storyId: string; session: string; turn: string }>,
+  ) {
     if (!this.entry || !stories.length) return;
-    const keys = new Set(
-      stories.map((story) => turnKey(story.session, story.turn)),
+    const keys = new Map(
+      stories.map((story) => [
+        turnKey(story.session, story.turn),
+        story.storyId,
+      ]),
     );
     await this.state.change(this.epic.id, (entry) => {
-      entry.heard = [...new Set([...(entry.heard ?? []), ...keys])];
+      entry.heard = { ...entry.heard, ...Object.fromEntries(keys) };
       entry.pending = entry.pending.filter(
         ({ story }) => !keys.has(turnKey(story.session, story.turn)),
+      );
+    });
+  }
+
+  /**
+   * Drops what can no longer matter: the heard and pending turns of the
+   * epic's stories that are merged or rejected (no wake would tell those,
+   * and nothing is decided on them). Nothing else is ever dropped, however
+   * long the epic.
+   */
+  async prune() {
+    if (!this.entry) return;
+    const over = new Set(
+      this.epicStories()
+        .filter(
+          (story) => story.status === "done" || story.status === "discarded",
+        )
+        .map((story) => story.id),
+    );
+    if (!over.size) return;
+    await this.state.change(this.epic.id, (entry) => {
+      entry.heard = Object.fromEntries(
+        Object.entries(entry.heard ?? {}).filter(
+          ([, storyId]) => !over.has(storyId),
+        ),
+      );
+      entry.pending = entry.pending.filter(
+        ({ story }) => !over.has(story.storyId),
       );
     });
   }

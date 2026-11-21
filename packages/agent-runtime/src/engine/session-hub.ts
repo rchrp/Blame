@@ -38,6 +38,8 @@ type Followed = {
   lastOutcome: TurnOutcome | undefined;
   /** The turns its records opened and did not end yet. */
   open: Set<string>;
+  /** The turn the host just sent (`watch`), until its records say it ended. */
+  awaiting: string | undefined;
   /** The calls that set the agent's plan, and how far the plan is now. */
   planCalls: Set<string>;
   plan: PlanProgress | undefined;
@@ -89,12 +91,28 @@ export class SessionHub {
     this.release(session);
   }
 
-  /** Follows a session while its turn runs, so its end is reported. */
-  watch(session: SessionId) {
+  /**
+   * Follows a session while its turn runs, so its end is reported. `turn`
+   * is the turn the message just sent opened (or joined): its end in the
+   * records ends the session's run even when the engine never turned busy.
+   */
+  watch(session: SessionId, turn?: string) {
     const followed = this.follow(session);
     // Until the engine says otherwise, a message was just sent.
     followed.sent = true;
+    if (turn) followed.awaiting = turn;
     this.setRunning(session, followed, true);
+    // A session already followed may have handled the turn's end before
+    // the send returned (an interrupt at once): it is in what was followed.
+    if (
+      turn &&
+      followed.records.some(
+        (record) => record.type === "turn_ended" && record.turn === turn,
+      )
+    ) {
+      followed.awaiting = undefined;
+      this.endedIfIdle(session, followed);
+    }
   }
 
   running(): SessionId[] {
@@ -122,6 +140,7 @@ export class SessionHub {
       sent: false,
       lastOutcome: undefined,
       open: new Set(),
+      awaiting: undefined,
       planCalls: new Set(),
       plan: undefined,
       follower: undefined as unknown as SessionFollower,
@@ -141,26 +160,26 @@ export class SessionHub {
       case "records": {
         followed.records.push(...event.records);
         followed.streaming = [];
-        let ended = false;
+        let awaitedEnded = false;
         for (const record of event.records)
           if (record.type === "user_message" && record.delivery === "turn")
             followed.open.add(record.turn);
           else if (record.type === "turn_ended") {
             followed.open.delete(record.turn);
             followed.lastOutcome = record.outcome;
-            ended = true;
+            if (record.turn === followed.awaiting) {
+              followed.awaiting = undefined;
+              awaitedEnded = true;
+            }
           }
         this.trackPlan(session, followed, event.records);
-        // A turn the engine ended before its driver ran (an interrupt at
-        // once) never makes the activity busy, so no idle delta comes: the
-        // records saying every turn ended is the end.
-        if (ended && !followed.open.size && followed.running)
-          queueMicrotask(() => {
-            if (followed.open.size || followed.activity.state !== "idle")
-              return;
-            followed.sent = false;
-            this.setRunning(session, followed, false);
-          });
+        // The engine reports no activity between accepting a message and
+        // the turn's first request, so a turn it ended in that window (an
+        // interrupt at once) never makes an idle delta: the end of the very
+        // turn the host sent, with no other open, is the end of the run.
+        // Only that turn's own end counts, never an older turn's met while
+        // a long log is read back in pages.
+        if (awaitedEnded) this.endedIfIdle(session, followed);
         break;
       }
       case "delta":
@@ -240,6 +259,16 @@ export class SessionHub {
     if (samePlanProgress(plan, followed.plan)) return;
     followed.plan = plan;
     this.emit({ type: "plan", session, plan });
+  }
+
+  // The awaited turn ended: with no other turn open and the engine idle, the run did.
+  private endedIfIdle(session: SessionId, followed: Followed) {
+    if (followed.open.size || !followed.running) return;
+    queueMicrotask(() => {
+      if (followed.open.size || followed.activity.state !== "idle") return;
+      followed.sent = false;
+      this.setRunning(session, followed, false);
+    });
   }
 
   private setRunning(session: SessionId, followed: Followed, running: boolean) {

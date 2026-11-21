@@ -10,8 +10,25 @@ type StoryHandlers = {
   ) => Promise<EngineStoryMethods[M]["result"]>;
 };
 
-export function storyHandlers(service: () => StoryService): StoryHandlers {
+/**
+ * `touched` hears of each story a person acts on from a window (a message,
+ * a pause, a resume, a discard…): the orchestrator leaves such a story to
+ * the person through a pause and a resume.
+ */
+export function storyHandlers(
+  service: () => StoryService,
+  touched: (storyId: string) => Promise<void> | void = () => undefined,
+): StoryHandlers {
   const payload = (story: { id: string }) => service().payload(story.id);
+  const person = <Input extends { storyId: string }, Result>(
+    act: (input: Input) => Promise<Result>,
+  ) => {
+    // Heard before the act runs: the epic's resume never doubles it.
+    return async (input: Input) => {
+      await touched(input.storyId);
+      return act(input);
+    };
+  };
   return {
     storySync: async (input) => {
       await service().sync(input);
@@ -30,27 +47,38 @@ export function storyHandlers(service: () => StoryService): StoryHandlers {
       return null;
     },
     storyQueueState: async () => service().queueState(),
-    storyEnqueue: async ({ storyId }) =>
+    storyEnqueue: person(async ({ storyId }) =>
       payload(await service().enqueue(storyId)),
-    storySend: async ({ storyId, ...input }) =>
+    ),
+    storySend: person(async ({ storyId, ...input }) =>
       payload(await service().send(storyId, input)),
-    storyPause: async ({ storyId }) => payload(await service().pause(storyId)),
-    storyResume: async ({ storyId, turn }) =>
+    ),
+    storyPause: person(async ({ storyId }) =>
+      payload(await service().pause(storyId)),
+    ),
+    storyResume: person(async ({ storyId, turn }) =>
       payload(await service().resume(storyId, turn)),
-    storyApprove: ({ storyId, ...input }) => service().approve(storyId, input),
-    storyComplete: async ({ storyId, ...merge }) =>
+    ),
+    storyApprove: person(({ storyId, ...input }) =>
+      service().approve(storyId, input),
+    ),
+    storyComplete: person(async ({ storyId, ...merge }) =>
       payload(await service().complete(storyId, merge)),
-    storyToBacklog: async ({ storyId }) =>
+    ),
+    storyToBacklog: person(async ({ storyId }) =>
       payload(await service().toBacklog(storyId)),
-    storyDiscard: async ({ storyId, reason }) =>
+    ),
+    storyDiscard: person(async ({ storyId, reason }) =>
       payload(await service().discard(storyId, reason)),
-    storyDelete: async ({ storyId }) => {
+    ),
+    storyDelete: person(async ({ storyId }) => {
       await service().remove(storyId);
       return null;
-    },
+    }),
     storyError: async ({ storyId, error }) =>
       payload(await service().noteError(storyId, error)),
-    storyRewind: ({ storyId, to, restoreWorkspace }) =>
+    storyRewind: person(({ storyId, to, restoreWorkspace }) =>
       service().rewind(storyId, to, restoreWorkspace),
+    ),
   };
 }

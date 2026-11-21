@@ -96,7 +96,13 @@ export type StoryWaitReason =
   | { kind: "epic"; epicId: string; hold: StoryEpicHold };
 
 export type StoryEpicHold =
-  "paused" | "budget" | "elsewhere" | "direct" | "unknown";
+  | "paused"
+  | "budget"
+  | "elsewhere"
+  | "direct"
+  /** The epic's branch is gone after stories were merged into it. */
+  | "branch"
+  | "unknown";
 
 export type StoryWaiting = {
   storyId: string;
