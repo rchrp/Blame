@@ -132,6 +132,12 @@ export async function createStories(
 ) {
   const look = await fresh(desk);
   const epic = look.epic;
+  if ((input.stories ?? []).some((story) => !story.hold))
+    assertActive(
+      look,
+      "No story is created",
+      `Create them held (hold) for later. ${pausedThen}`,
+    );
   assertBudget(await look.spend());
   if (!epic.branch || !epic.targetBranch)
     throw refused(
@@ -226,6 +232,7 @@ export async function updateStory(
       "Talk to its agent with message_story, or reject it.",
     );
   const queue = input.queue === true && story.status === "backlog";
+  if (input.queue) assertActive(look, `${storyDisplayId(story)} is not queued`);
   if (input.queue) assertBudget(await look.spend());
   const known = new Set(look.epicStories().map(({ id }) => id));
   for (const dependency of input.startsAfter ?? [])
@@ -328,6 +335,7 @@ export async function messageStory(
     throw refused("The message is empty.", "Write what the agent should read.");
   if (input.kind !== "answer" && input.kind !== "changes")
     throw refused("The message has no kind.", "Use answer or changes.");
+  assertActive(look, `${storyDisplayId(story)} gets no message`);
   assertBudget(await look.spend());
   const entry = await desk.state.get(desk.epicId);
   const sent = entry?.messages?.[story.id] ?? 0;
@@ -395,6 +403,7 @@ export async function approveStory(
 ) {
   const look = await fresh(desk);
   const story = epicStory(look, input.storyId);
+  assertActive(look, `${storyDisplayId(story)} is not merged`);
   if (story.status !== "in-review")
     throw refused(
       `${storyDisplayId(story)} is not in review, so it cannot be approved.`,
@@ -499,6 +508,9 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
   const stories = look.epicStories();
   const starting = desk.starting(stories);
   if (input.action === "wait") {
+    // The resume wakes it: what was paused goes on, or nothing works.
+    if (look.epic.status === "paused")
+      return "Waiting: the epic is paused. You will be woken once it is resumed and there is something to judge.";
     if (
       !epicHasWork(stories, starting, (story) =>
         desk.blocked(story as HostStory),
@@ -547,6 +559,16 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
 // --------------------------------------------------------------- helpers
 
 /** The epic and its stories as the API keeps them now. */
+// While the epic is paused the orchestrator reads and talks with the
+// person; nothing of the epic moves until the person resumes it.
+const pausedThen =
+  "Until the person resumes it you can read the epic and answer the person; end your turn with wait, and the resume wakes you.";
+
+function assertActive(look: EpicReading, what: string, then = pausedThen) {
+  if (look.epic.status === "paused")
+    throw refused(`${what}: the epic is paused.`, then);
+}
+
 async function fresh(desk: EpicDesk): Promise<EpicReading> {
   const look = await desk.orchestrator.reading(desk.epicId);
   await desk.stories.refresh(look.epic.projectId);

@@ -1,8 +1,10 @@
 // Pause all, done by the host (docs/orchestrator.md, "The epic"): when the
 // epic goes `paused`, the agents of its stories at work are paused and the
-// orchestrator's own turn is cut; nothing starts and nothing wakes it
-// meanwhile. When it is `active` again exactly those agents resume, and the
-// orchestrator's turn if the pause cut it.
+// orchestrator's turn running then is cut; nothing starts and nothing wakes
+// it meanwhile. The person can still talk to it: a turn they start later
+// runs (its acting tools refuse while the epic is paused). When it is
+// `active` again exactly those agents resume, and the orchestrator's turn
+// if the pause cut it.
 //
 // What the pause means to stop is written before it acts, and every step
 // can run again (pausing a paused agent, cutting a turn that ended, resuming
@@ -42,7 +44,8 @@ export async function pauseEpic(
   const stories = new Map(
     reading.epicStories().map((story) => [story.id, story]),
   );
-  const working = conversation.running || conversation.queued.length > 0;
+  // Only the turn running when the pause came is cut, never a later one.
+  const runningTurn = conversation.runningTurn;
   let pause = entry.pause;
   if (!pause || pause.phase === "resuming") {
     const starting = host.stories
@@ -58,7 +61,10 @@ export async function pauseEpic(
         ]),
       ],
       ...(starting.length ? { awaiting: starting } : {}),
-      turn: (pause?.turn ?? false) || working,
+      turn: (pause?.turn ?? false) || runningTurn !== undefined,
+      ...((runningTurn ?? pause?.cut)
+        ? { cut: runningTurn ?? pause?.cut }
+        : {}),
     };
     const intended = pause;
     // Written before anything is stopped.
@@ -84,7 +90,8 @@ export async function pauseEpic(
       host.report(error);
     });
   }
-  if (pause.turn && working)
+  const cutting = pause.cut !== undefined && runningTurn === pause.cut;
+  if (cutting)
     await host.interrupt(entry.session).catch((error: unknown) => {
       errors.push(message(error));
       host.report(error);
@@ -94,12 +101,13 @@ export async function pauseEpic(
   const still =
     [...pausing].some((id) => running(stories.get(id))) ||
     awaiting.length > 0 ||
-    (pause.turn && working);
+    cutting;
   const next: EpicPause = {
     phase: still ? "pausing" : "paused",
     stories: [...pausing],
     ...(awaiting.length ? { awaiting } : {}),
     turn: pause.turn,
+    ...(pause.cut ? { cut: pause.cut } : {}),
   };
   await host.state.change(epicId, (item) => {
     item.pause = next;

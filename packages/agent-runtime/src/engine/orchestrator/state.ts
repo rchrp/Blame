@@ -42,7 +42,8 @@ export type SessionSpend = { microUsd: number; unpriced: number };
  * acts so a quit or a failure part way is taken up again:
  * - `pausing`: the stories at work when it came (`stories`), those whose
  *   start was in flight (`awaiting`, paused once they run), and whether it
- *   cuts the conversation's turn (`turn`), until each is stopped;
+ *   cuts the conversation's turn (`turn`: the one running then, `cut`; a
+ *   later turn, the person's, runs), until each is stopped;
  * - `paused`: everything it meant to stop is stopped;
  * - `resuming`: the epic is active again and those are being resumed.
  */
@@ -51,6 +52,8 @@ export type EpicPause = {
   stories: string[];
   awaiting?: string[];
   turn: boolean;
+  /** The conversation's turn running when the pause came: the only one it cuts. */
+  cut?: string;
 };
 
 export type EpicEntry = {

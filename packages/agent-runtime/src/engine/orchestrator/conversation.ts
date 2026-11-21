@@ -25,6 +25,8 @@ export type ConversationView = {
   exists: boolean;
   /** A turn runs. */
   running: boolean;
+  /** The turn that runs. */
+  runningTurn?: string;
   /** Turns waiting to run while none runs (they waited through a quit). */
   queued: string[];
   /** The last turn that ended, how, and the `end_turn` it was accepted with. */
@@ -132,6 +134,7 @@ function view({ reducer, reported }: Held): ConversationView {
   return {
     exists: true,
     running: transcript.runningTurn !== undefined,
+    ...(transcript.runningTurn ? { runningTurn: transcript.runningTurn } : {}),
     queued: transcript.runningTurn
       ? []
       : open.filter((turn) => turn.status === "queued").map(({ turn }) => turn),

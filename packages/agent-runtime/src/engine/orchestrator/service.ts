@@ -554,6 +554,14 @@ export class Orchestrator {
       await this.publish(
         this.lookAt(epic, await this.entry(epicId), conversation),
       );
+      // The person may talk to it while paused: a message that waited
+      // through a quit goes on (wakes are not sent meanwhile).
+      const waiting = conversation.queued[0];
+      if (conversation.exists && !conversation.running && waiting)
+        await this.host.call("promote", {
+          session: entry.session,
+          turn: waiting,
+        });
       return;
     }
     this.pauses.delete(epicId);

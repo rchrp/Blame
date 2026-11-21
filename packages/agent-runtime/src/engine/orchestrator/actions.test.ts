@@ -78,6 +78,8 @@ type Setup = {
   noEngine?: boolean;
   /** No conversation is created (a relaunch reads what is kept). */
   prepare?: boolean;
+  /** The conversation's records, as the engine has them (more may be pushed). */
+  records?: Array<Record<string, unknown>>;
 };
 
 const cleanups: Array<() => Promise<void> | void> = [];
@@ -228,8 +230,19 @@ async function desk(setup: Setup = {}) {
     return "";
   };
   const noRecords = {
-    readRecords: async ({ session: id }: { session: string }) => {
-      throw new Error(`session ${id} does not exist`);
+    readRecords: async ({
+      session: id,
+      after = 0,
+    }: {
+      session: string;
+      after?: number;
+    }) => {
+      if (id !== session || !setup.records)
+        throw new Error(`session ${id} does not exist`);
+      return {
+        records: setup.records.filter((record) => Number(record.seq) > after),
+        head: setup.records.length,
+      };
     },
   } as unknown as EngineClient;
   const written: unknown[] = [];
@@ -315,6 +328,23 @@ async function desk(setup: Setup = {}) {
     starts,
   };
 }
+
+// The conversation's records from `after`, numbered as the engine numbers them.
+const conversation = (bodies: Array<Record<string, unknown>>, after = 0) =>
+  bodies.map((body, index) => ({
+    seq: after + index + 1,
+    at_ms: 1_000 + after + index,
+    ...body,
+  }));
+const text = (value: string) => [{ type: "text", text: value }];
+const requestStarted = (turn: string) => ({
+  type: "request_started",
+  turn,
+  request: `r-${turn}`,
+  model: { provider: "anthropic", model: "claude" },
+  attempt: 1,
+  prefix_digest: "sha256:0",
+});
 
 const inReview = (id: string, fields: Record<string, unknown> = {}) =>
   row(id, "a", {
@@ -1343,6 +1373,120 @@ describe("what holds when things go wrong", () => {
       .filter((item) => item.method === "send")
       .map((item) => (item.input as { session: string }).session);
     assert.deepEqual(resumed, ["session-s1"]);
+  });
+
+  it("cuts only the conversation's turn running when the pause came, never the person's later one", async () => {
+    const records = conversation([
+      {
+        type: "user_message",
+        turn: "t1",
+        input: text("Go."),
+        delivery: "turn",
+      },
+      requestStarted("t1"),
+    ]);
+    const { orchestrator, epics, interrupted, stateFile } = await desk({
+      records,
+    });
+    epics.get(epicId)!.status = "paused";
+    assert.equal((await orchestrator.changed(epicId)).pause?.phase, "pausing");
+    assert.deepEqual(interrupted, [session]);
+    assert.equal((await keptPause(stateFile))?.stories.length, 0);
+    // Its turn ends; the person talks to it while the epic is paused.
+    records.push(
+      ...conversation(
+        [
+          {
+            type: "turn_ended",
+            turn: "t1",
+            outcome: { status: "interrupted" },
+          },
+          {
+            type: "user_message",
+            turn: "t2",
+            input: text("How is it going?"),
+            delivery: "turn",
+          },
+          requestStarted("t2"),
+        ],
+        records.length,
+      ),
+    );
+    for (let look = 0; look < 3; look += 1)
+      assert.equal((await orchestrator.changed(epicId)).pause?.phase, "paused");
+    assert.deepEqual(interrupted, [session], "the person's turn runs");
+  });
+
+  it("lets a message that waited through a quit go on while the epic is paused", async () => {
+    const records = conversation([
+      {
+        type: "user_message",
+        turn: "t1",
+        input: text("Go."),
+        delivery: "turn",
+      },
+      requestStarted("t1"),
+      // Sent while it worked, then Blame quit.
+      {
+        type: "user_message",
+        turn: "t2",
+        input: text("Where are we?"),
+        delivery: "turn",
+      },
+      { type: "turn_ended", turn: "t1", outcome: { status: "interrupted" } },
+    ]);
+    const { orchestrator, epics, fake, interrupted } = await desk({ records });
+    epics.get(epicId)!.status = "paused";
+    assert.equal((await orchestrator.changed(epicId)).pause?.phase, "paused");
+    assert.deepEqual(interrupted, []);
+    assert.deepEqual(
+      fake.calls
+        .filter((item) => item.method === "promote")
+        .map((item) => item.input),
+      [{ session, turn: "t2" }],
+    );
+  });
+
+  it("refuses what would move a paused epic, and reads, talks and sleeps", async () => {
+    const { epics, report, run } = await desk({
+      rows: [
+        inReview("s1"),
+        row("s2", "a", { epicId, status: "backlog", storyNumber: 2 }),
+      ],
+      statuses: { "session-s1": verified },
+    });
+    epics.get(epicId)!.status = "paused";
+    await assert.rejects(
+      run("approve_story", { reason: "Verified.", storyId: "s1" }),
+      /^Error: US-001 is not merged: the epic is paused\. Until the person resumes it/,
+    );
+    await assert.rejects(
+      run("message_story", {
+        storyId: "s1",
+        kind: "answer",
+        message: "Go on.",
+      }),
+      /US-001 gets no message: the epic is paused\./,
+    );
+    await assert.rejects(
+      run("update_story", { reason: "Now.", storyId: "s2", queue: true }),
+      /US-002 is not queued: the epic is paused\./,
+    );
+    await assert.rejects(
+      run("create_stories", {
+        reason: "More.",
+        stories: [{ key: "x", title: "X", brief: "Do x.", intent: "balanced" }],
+      }),
+      /No story is created: the epic is paused\. Create them held \(hold\)/,
+    );
+    assert.equal(
+      ((await report("epic_board", {})).stories as unknown[]).length,
+      2,
+    );
+    assert.match(
+      String(await run("end_turn", { action: "wait", reason: "Paused." })),
+      /^Waiting: the epic is paused\. You will be woken once it is resumed/,
+    );
   });
 
   it("says a pause did not take when the engine cannot be reached", async () => {
