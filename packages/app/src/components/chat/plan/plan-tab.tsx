@@ -19,8 +19,8 @@ import {
   planAnnouncement,
   planCount,
   statusWords,
-  type PlanTabModel,
   type PlanRow,
+  type PlanTabModel,
 } from "./plan-model.ts"
 
 // The agent's plan, as a tab growing out of the composer's top edge on the
@@ -33,10 +33,14 @@ const bar = 28
 // The concave curves at the foot, and the rounded top corners.
 const foot = 10
 const corner = 11.5
-// The tab keeps its width whatever it says, so nothing moves while the agent
-// works; it gives way to the turn's tab on a narrow editor.
-const tabWidth =
-  "min(24rem, max(10rem, calc(100% - 72px - var(--turn-tab-width, 0px) - 12px)))"
+// The tab is as wide as the plan's longest step asks, up to a cap: it holds
+// that width while the plan holds, so nothing moves as the agent works, and it
+// gives way to the turn's tab on a narrow editor.
+function tabWidth(model: PlanTabModel) {
+  const longest = Math.max(...model.rows.map((row) => row.step.length))
+  const wanted = `min(24rem, max(17rem, calc(${Math.min(longest, 48)}ch + 7rem)))`
+  return `min(${wanted}, max(10rem, calc(100% - 72px - var(--turn-tab-width, 0px) - 12px)))`
+}
 
 export function PlanTab({ model }: { model: PlanTabModel | undefined }) {
   return (
@@ -62,6 +66,13 @@ function Tab({ model }: { model: PlanTabModel }) {
   const [openFinished, setOpenFinished] = React.useState<string>()
   const open = model.finished ? openFinished === model.call : pinnedOpen
   const currentNumber = model.current?.number
+  const toggleButton = React.useRef<HTMLButtonElement>(null)
+
+  function close() {
+    if (model.finished) setOpenFinished(undefined)
+    else setPinnedOpen(false)
+    toggleButton.current?.focus()
+  }
 
   function toggle() {
     if (model.finished) setOpenFinished(open ? undefined : model.call)
@@ -106,13 +117,22 @@ function Tab({ model }: { model: PlanTabModel }) {
         row.offsetTop + row.offsetHeight - scroller.clientHeight + margin
   }, [open, currentNumber])
 
+  // Said after the tab is there, so even the first plan is heard.
+  const announcement = planAnnouncement(model)
+  const [said, setSaid] = React.useState("")
+  React.useEffect(() => {
+    const timer = window.setTimeout(() => setSaid(announcement), 150)
+    return () => window.clearTimeout(timer)
+  }, [announcement])
+
   const outline = tabOutline(size.width, size.height)
   const shape = `${outline} L ${size.width} ${size.height} L 0 ${size.height} Z`
+  // Opened, the list says what the label would: the bar only names the plan.
   const label = model.finished
-    ? model.abandoned
-      ? `Plan complete · ${model.abandoned} abandoned`
-      : "Plan complete"
-    : (model.current?.step ?? "")
+    ? "Plan complete"
+    : open
+      ? "Plan"
+      : (model.current?.step ?? "")
 
   return (
     <motion.div
@@ -122,7 +142,7 @@ function Tab({ model }: { model: PlanTabModel }) {
       data-slot="plan-tab"
       exit={{ clipPath: "inset(100% -1px 0 -1px)" }}
       initial={{ clipPath: "inset(100% -1px 0 -1px)" }}
-      style={{ width: tabWidth }}
+      style={{ width: tabWidth(model) }}
       transition={{ type: "spring", stiffness: 420, damping: 34 }}
     >
       <svg
@@ -139,11 +159,16 @@ function Tab({ model }: { model: PlanTabModel }) {
       <section
         aria-label="Agent plan"
         className="relative"
+        onKeyDown={(event) => {
+          if (event.key !== "Escape" || !open) return
+          event.stopPropagation()
+          close()
+        }}
         style={{ paddingInline: foot }}
       >
         {/* Said when the count or the step in hand changes, not while text streams. */}
         <span className="sr-only" role="status">
-          {planAnnouncement(model)}
+          {said}
         </span>
         <div
           className={cn(
@@ -171,9 +196,11 @@ function Tab({ model }: { model: PlanTabModel }) {
           </div>
         </div>
         <button
+          ref={toggleButton}
           aria-controls={listId}
           aria-expanded={open}
-          className="flex w-full items-center gap-2 rounded-md px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring/60 focus-visible:ring-inset"
+          aria-label={`Plan. ${planAnnouncement(model)}`}
+          className="flex w-full items-center gap-2 rounded-md px-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
           onClick={toggle}
           style={{ height: bar }}
           type="button"
@@ -195,6 +222,12 @@ function Tab({ model }: { model: PlanTabModel }) {
           <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">
             {label}
           </span>
+          {model.finished && model.abandoned ? (
+            // Never squeezed out: a step dropped is what a reviewer looks for.
+            <span className="shrink-0 font-medium text-amber-700 dark:text-amber-300">
+              {model.abandoned} abandoned
+            </span>
+          ) : null}
           <ChevronUpIcon
             aria-hidden
             className={cn(
@@ -244,7 +277,7 @@ function StepRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <span
-              className="min-w-0 rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              className="min-w-0 cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               tabIndex={0}
             >
               {text}
@@ -270,17 +303,17 @@ function StepMark({
   switch (status) {
     case "completed":
       return (
-        <CircleCheckIcon aria-hidden className="size-4 text-muted-foreground/70" />
+        <CircleCheckIcon aria-hidden className="size-4 text-muted-foreground" />
       )
     case "abandoned":
       return (
-        <CircleMinusIcon aria-hidden className="size-4 text-muted-foreground/60" />
+        <CircleMinusIcon aria-hidden className="size-4 text-muted-foreground" />
       )
     case "in_progress":
       return <span aria-hidden className="plan-step-mark" data-working={working} />
     default:
       return (
-        <CircleIcon aria-hidden className="size-4 text-muted-foreground/40" />
+        <CircleIcon aria-hidden className="size-4 text-muted-foreground/80" />
       )
   }
 }

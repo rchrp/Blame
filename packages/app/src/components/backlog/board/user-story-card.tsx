@@ -246,10 +246,10 @@ function StoryPlanProgress({ story }: { story: UserStory }) {
     running ? story.engineSessionId : undefined,
     storyLocation(story.workspaceMode ?? "direct", platform.platform)
   )
-  if (!running || !progress) return null
+  if (!running || !progress || progress.finished) return null
   return (
     <CardContent>
-      <PlanProgressLine progress={progress} />
+      <PlanProgressLine progress={progress} step />
     </CardContent>
   )
 }

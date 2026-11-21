@@ -155,6 +155,10 @@ export interface PlanProgress {
   readonly done: number;
   readonly abandoned: number;
   readonly total: number;
+  /** Steps still to do or to drop. */
+  readonly open: number;
+  /** Every step is completed or abandoned. */
+  readonly finished: boolean;
   /** The step in progress, else the next one to do. */
   readonly current?: string;
 }
@@ -168,10 +172,13 @@ export function planProgress(
   const current =
     plan.steps.find((step) => step.status === "in_progress") ??
     plan.steps.find((step) => step.status === "pending");
+  const open = openSteps(plan.steps).length;
   return {
     done: count("completed"),
     abandoned: count("abandoned"),
     total: plan.steps.length,
+    open,
+    finished: open === 0,
     ...(current ? { current: current.step } : {}),
   };
 }
@@ -187,6 +194,7 @@ export function samePlanProgress(
       a.done === b.done &&
       a.abandoned === b.abandoned &&
       a.total === b.total &&
+      a.open === b.open &&
       a.current === b.current)
   );
 }

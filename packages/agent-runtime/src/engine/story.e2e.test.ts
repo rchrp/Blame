@@ -485,6 +485,8 @@ describe(
         done: 2,
         abandoned: 0,
         total: 2,
+        open: 0,
+        finished: true,
       });
       await host.shutdown();
     });

@@ -1322,6 +1322,12 @@
     background: var(--color-blue-400);
   }
 
+  /* A steady halo says the agent is on it, with or without the pulse. */
+  .plan-step-mark[data-working="true"] {
+    box-shadow: 0 0 0 0.1875rem
+      color-mix(in oklab, var(--color-blue-500) 22%, transparent);
+  }
+
   .plan-step-mark[data-working="true"]::after {
     content: "";
     position: absolute;

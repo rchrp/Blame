@@ -292,8 +292,15 @@ describe("the plan of a whole log", () => {
       done: 1,
       abandoned: 0,
       total: 2,
+      open: 1,
+      finished: false,
       current: "Test it",
     });
+    assert.equal(
+      planProgress({ steps: parsePlan(input(["Add it", "completed"]))! })
+        ?.finished,
+      true,
+    );
     assert.equal(planProgress(undefined), undefined);
     assert.ok(
       samePlanProgress(planProgress({ steps }), planProgress({ steps })),

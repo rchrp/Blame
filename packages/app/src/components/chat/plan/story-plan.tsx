@@ -14,7 +14,8 @@ export function StoryPlanTab() {
 
 /**
  * Where the plan stands, beside the story's status, on every tab of the
- * drawer, while the agent works.
+ * drawer, while it has steps open. A finished plan is done work: nothing left
+ * to follow. One the agent stopped on stays, still, for whoever decides next.
  */
 export function StoryPlanBadge({
   story,
@@ -25,9 +26,12 @@ export function StoryPlanBadge({
   const progress = planProgress(transcript?.plan)
   const working =
     story?.agentStatus === "Running" || transcript?.runningTurn !== undefined
-  if (!progress || !working) return null
-  return <PlanProgressLine
-      className="max-w-64 rounded-full border border-foreground/15 px-2 py-0.5"
+  if (!progress || progress.finished) return null
+  return (
+    <PlanProgressLine
+      className="shrink-0 rounded-full border border-foreground/15 px-2 py-0.5"
       progress={progress}
+      working={working}
     />
+  )
 }
