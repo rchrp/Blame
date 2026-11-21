@@ -97,6 +97,8 @@ export async function epicBoard(desk: EpicDesk) {
         ...(status?.lastOutcome
           ? {
               lastTurn: {
+                // Named so the records say which turn the board showed.
+                ...(last ? { turn: last.turn } : {}),
                 outcome: status.lastOutcome.status,
                 ...outcomeFacts(status.lastOutcome),
               },
@@ -298,6 +300,7 @@ export async function storyReport(
     title: story.title,
     status: story.status,
     ...(story.agentStatus ? { agent: story.agentStatus } : {}),
+    ...(last ? { turn: last.turn } : {}),
     ...(status?.lastOutcome
       ? {
           outcome: status.lastOutcome.status,

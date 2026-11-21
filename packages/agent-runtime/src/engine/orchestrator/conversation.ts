@@ -37,11 +37,16 @@ export type ConversationView = {
   unpricedRequests: number;
   /** The config in effect (the folder it reads, its model, its prompt). */
   config?: SessionConfig;
-  /** The completed `message_story` calls, by the story named, in all and as changes. */
+  /**
+   * The completed `message_story` calls, by the story named, in all and
+   * those counted as requests for changes (its result says so).
+   */
   messages: {
     all: Record<string, number>;
     changes: Record<string, number>;
   };
+  /** What its boards and reports showed of each story: the turns named, the cost last shown. */
+  shown: Record<string, { turns: string[]; costMicroUsd?: number }>;
 };
 
 /** The key a story turn is known by. */
@@ -82,6 +87,7 @@ export class ConversationReader {
         spentMicroUsd: 0,
         unpricedRequests: 0,
         messages: { all: {}, changes: {} },
+        shown: {},
       };
     }
     return view(held);
@@ -107,20 +113,7 @@ function view({ reducer, reported }: Held): ConversationView {
     (turn) => turn.outcome && turn.status !== "withdrawn",
   );
   const lastTurn = ended.at(-1);
-  const messages = {
-    all: {} as Record<string, number>,
-    changes: {} as Record<string, number>,
-  };
-  for (const item of transcript.items) {
-    if (item.kind !== "tool_call" || item.name !== "message_story") continue;
-    if (item.state !== "completed") continue;
-    const input = item.input as { storyId?: unknown; kind?: unknown } | null;
-    if (typeof input?.storyId !== "string") continue;
-    messages.all[input.storyId] = (messages.all[input.storyId] ?? 0) + 1;
-    if (input.kind === "changes")
-      messages.changes[input.storyId] =
-        (messages.changes[input.storyId] ?? 0) + 1;
-  }
+  const { messages, shown } = toolFacts(transcript.items);
   let endTurn: EndTurn | undefined;
   if (lastTurn)
     for (const item of transcript.items)
@@ -152,7 +145,60 @@ function view({ reducer, reported }: Held): ConversationView {
     unpricedRequests: transcript.usage.spent.unpricedRequests,
     ...(transcript.config ? { config: transcript.config } : {}),
     messages,
+    shown,
   };
+}
+
+type Item = ReturnType<TranscriptReducer["snapshot"]>["items"][number];
+
+// What its own completed tools did, from their inputs and results (the
+// JSON the host answered): read again when the kept file is lost.
+function toolFacts(items: readonly Item[]) {
+  const messages = {
+    all: {} as Record<string, number>,
+    changes: {} as Record<string, number>,
+  };
+  const shown: ConversationView["shown"] = {};
+  const see = (row: unknown, turn: unknown) => {
+    const { id, costMicroUsd } = (row ?? {}) as Record<string, unknown>;
+    if (typeof id !== "string") return;
+    const seen = (shown[id] ??= { turns: [] });
+    if (typeof turn === "string" && !seen.turns.includes(turn))
+      seen.turns.push(turn);
+    if (typeof costMicroUsd === "number") seen.costMicroUsd = costMicroUsd;
+  };
+  for (const item of items) {
+    if (item.kind !== "tool_call" || item.state !== "completed") continue;
+    const result = resultJson(item.result);
+    if (item.name === "message_story") {
+      const input = item.input as { storyId?: unknown; kind?: unknown } | null;
+      if (typeof input?.storyId !== "string") continue;
+      const id = input.storyId;
+      messages.all[id] = (messages.all[id] ?? 0) + 1;
+      // A message to a story in review counted as one whatever its kind.
+      if (input.kind === "changes" || result?.changesRequested !== undefined)
+        messages.changes[id] = (messages.changes[id] ?? 0) + 1;
+    } else if (item.name === "epic_board" && Array.isArray(result?.stories)) {
+      for (const row of result.stories as unknown[])
+        see(row, (row as { lastTurn?: { turn?: unknown } })?.lastTurn?.turn);
+    } else if (item.name === "story_report" && result) see(result, result.turn);
+  }
+  return { messages, shown };
+}
+
+function resultJson(
+  result: Extract<Item, { kind: "tool_call" }>["result"],
+): Record<string, unknown> | undefined {
+  const block = result?.find((item) => item.type === "text");
+  if (!block || block.type !== "text") return undefined;
+  try {
+    const value: unknown = JSON.parse(block.text);
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function endTurnInput(input: JsonValue): EndTurn | undefined {

@@ -887,6 +887,8 @@ export class Orchestrator {
       conversations: this.conversations,
       state: this.state,
       stories: this.host.stories.epicStories(epicId),
+      status: (storyId) =>
+        this.host.stories.storyStatus(storyId).catch(() => undefined),
     });
     if (adopted) this.retryEpic(epicId);
     return adopted;

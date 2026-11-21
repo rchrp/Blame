@@ -189,6 +189,7 @@ describe("the orchestrator's rules", () => {
       spentMicroUsd: 0,
       unpricedRequests: 0,
       messages: { all: {}, changes: {} },
+      shown: {},
       ...fields,
     });
     const last = (outcome: object, endTurn?: object) =>
