@@ -59,6 +59,9 @@ export async function approveStory(
         storyBranch: story.branch,
         targetBranch: story.targetBranch ?? undefined,
         push: input.push,
+        // An epic's story is never merged on an agent's conflict
+        // resolution: it goes back to its own agent (docs/orchestrator.md).
+        ...(story.epicId ? { conflicts: "refuse" as const } : {}),
         title: story.title,
         summary: story.summary,
         codePractices: effectiveCodePractices(practices),
