@@ -11,6 +11,7 @@ import {
   type EpicBoardStory,
 } from "@/components/orchestrator/data/epic-board"
 import type { Epic } from "@/components/orchestrator/data/epic-data"
+import { useEpicStore } from "@/components/orchestrator/data/epic-store"
 
 // The project's stories that belong to an epic, with only what the board
 // shows: an agent saving its run does not redraw it.
@@ -49,15 +50,21 @@ export function useEpicStories() {
 
 function useBoardOf(stories: readonly EpicBoardStory[]) {
   const waits = useStoryWaits()
+  const states = useEpicStore().states
   return React.useCallback(
-    (epic: Pick<Epic, "id" | "status" | "engineSessionId">) =>
-      epicBoard({
+    (epic: Pick<Epic, "id" | "status" | "engineSessionId">) => {
+      const state = states.get(epic.id)
+      return epicBoard({
         epic,
         stories,
         wait: (id) => waits.get(id),
         waitText: storyWaitText,
-      }),
-    [stories, waits]
+        ...(state
+          ? { orchestrator: state.conversation, budgetSpent: state.spend.spent }
+          : {}),
+      })
+    },
+    [states, stories, waits]
   )
 }
 
@@ -71,11 +78,15 @@ export function useEpicBoard(epic: Epic | undefined) {
 export function useEpicActivities(epics: readonly Epic[]) {
   const stories = useEpicStories()
   const boardOf = useBoardOf(stories)
+  const states = useEpicStore().states
   return React.useMemo(
     () =>
       new Map(
-        epics.map((epic) => [epic.id, epicActivity(epic, boardOf(epic))])
+        epics.map((epic) => [
+          epic.id,
+          epicActivity(epic, boardOf(epic), states.get(epic.id)?.conversation),
+        ])
       ),
-    [boardOf, epics]
+    [boardOf, epics, states]
   )
 }

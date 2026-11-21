@@ -1,4 +1,8 @@
 import * as React from "react"
+import type {
+  EpicState,
+  OrchestratorConversationState,
+} from "@blame/agent-runtime/engine-protocol"
 import {
   GitBranchIcon,
   PauseIcon,
@@ -17,7 +21,7 @@ import { cn } from "@/lib/utils"
 export function EpicHeader({
   epic,
   pausing,
-  spentMicroUsd,
+  state,
   onOpenSettings,
   onPauseAll,
   onResume,
@@ -25,8 +29,8 @@ export function EpicHeader({
 }: {
   epic: Epic
   pausing: boolean
-  // What the epic spent, once the engine says it; unknown until then.
-  spentMicroUsd?: number
+  // The host's state of the epic: its conversation and spend.
+  state?: EpicState
   onOpenSettings: () => void
   onPauseAll: () => void
   onResume: () => void
@@ -58,10 +62,13 @@ export function EpicHeader({
               </span>
             ) : null}
           </span>
-          <EpicSpend
+          <EpicSpendLine
             budgetMicroUsd={epic.settings.budgetMicroUsd}
-            spentMicroUsd={spentMicroUsd}
+            state={state}
           />
+          {epic.status === "paused" ? null : (
+            <ConversationStatus state={state} />
+          )}
           {epic.status === "paused" ? (
             <span className="font-medium text-amber-700 dark:text-amber-300">
               Paused
@@ -108,31 +115,81 @@ export function EpicHeader({
   )
 }
 
-function EpicSpend({
+// What the epic spent, from the host's records; nothing until the
+// conversation exists, then the total against the budget. Requests the
+// catalog could not price make the total a floor, and it says so.
+function EpicSpendLine({
   budgetMicroUsd,
-  spentMicroUsd,
+  state,
 }: {
   budgetMicroUsd?: number
-  spentMicroUsd?: number
+  state?: EpicState
 }) {
-  if (budgetMicroUsd === undefined && spentMicroUsd === undefined) return null
-  const over =
-    budgetMicroUsd !== undefined &&
-    spentMicroUsd !== undefined &&
-    spentMicroUsd >= budgetMicroUsd
+  const spend = state?.session ? state.spend : undefined
+  const budget = spend?.budgetMicroUsd ?? budgetMicroUsd
+  if (budget === undefined && !spend) return null
+  const floor = spend?.unpricedRequests ? "at least " : ""
+  const total = spend
+    ? `${floor}${formatMicroUsd(spend.totalMicroUsd)}`
+    : undefined
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 tabular-nums",
-        over && "font-medium text-destructive"
+        spend?.spent && "font-medium text-destructive"
       )}
+      title={
+        spend
+          ? `Stories ${formatMicroUsd(spend.storiesMicroUsd)}, orchestrator ${formatMicroUsd(spend.orchestratorMicroUsd)}${
+              spend.unpricedRequests
+                ? `. ${spend.unpricedRequests} request${spend.unpricedRequests === 1 ? "" : "s"} had no known price: the total is a floor.`
+                : "."
+            }`
+          : undefined
+      }
     >
       <WalletIcon className="size-3.5" />
-      {spentMicroUsd === undefined
-        ? `Budget ${formatMicroUsd(budgetMicroUsd!)}`
-        : budgetMicroUsd === undefined
-          ? `${formatMicroUsd(spentMicroUsd)} spent`
-          : `${formatMicroUsd(spentMicroUsd)} of ${formatMicroUsd(budgetMicroUsd)}`}
+      {total === undefined
+        ? `Budget ${formatMicroUsd(budget!)}`
+        : budget === undefined
+          ? `${total} spent`
+          : `${total} of ${formatMicroUsd(budget)}`}
+      {spend?.spent ? " · budget spent" : null}
+    </span>
+  )
+}
+
+const conversationLabels: Partial<
+  Record<OrchestratorConversationState, { text: string; tone: string }>
+> = {
+  working: { text: "Orchestrator working", tone: "text-foreground" },
+  waiting: { text: "Waiting for its stories", tone: "" },
+  asking: {
+    text: "Asks you a question",
+    tone: "text-amber-700 dark:text-amber-300",
+  },
+  finished: {
+    text: "Done: your review",
+    tone: "text-emerald-700 dark:text-emerald-300",
+  },
+  stopped: {
+    text: "Orchestrator stopped",
+    tone: "text-amber-700 dark:text-amber-300",
+  },
+  failed: { text: "Orchestrator failed", tone: "text-destructive" },
+}
+
+function ConversationStatus({ state }: { state?: EpicState }) {
+  const label = state ? conversationLabels[state.conversation] : undefined
+  if (!label) return null
+  return (
+    <span
+      className={cn("inline-flex items-center gap-1.5 font-medium", label.tone)}
+    >
+      {state?.conversation === "working" ? (
+        <span aria-hidden="true" className="agent-thinking-mark size-2!" />
+      ) : null}
+      {label.text}
     </span>
   )
 }

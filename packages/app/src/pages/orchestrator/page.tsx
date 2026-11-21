@@ -126,6 +126,7 @@ function EpicView({
     <>
       <EpicHeader
         epic={epic}
+        state={epics.states.get(epic.id)}
         pausing={pausing || !platform.engine}
         onOpenSettings={() => setSettingsOpen(true)}
         onPauseAll={() => void pauseAll()}
@@ -177,7 +178,7 @@ function EpicView({
             pane === "conversation" ? "flex" : "hidden @4xl/epic:flex"
           )}
         >
-          <EpicConversation epic={epic} />
+          <EpicConversation epic={epic} onOpenStory={onOpenStory} />
         </section>
         <section
           aria-label="The epic's stories"

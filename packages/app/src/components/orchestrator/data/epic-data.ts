@@ -1,3 +1,5 @@
+import type { EngineModelChoice } from "@blame/agent-runtime/engine-protocol"
+
 // An epic of the project: a goal the orchestrator pursues through user
 // stories, an integration branch they merge into and a budget
 // (docs/orchestrator.md, "The epic"). A row of the API's `epics`.
@@ -6,10 +8,8 @@ export type EpicStatus = "active" | "paused" | "completed" | "discarded"
 
 export type EpicModelKey = { providerId: string; modelId: string }
 
-export type EpicOrchestratorModel = EpicModelKey & {
-  credentialLabel?: string
-  reasoning?: string
-}
+// The model the orchestrator runs on, as the engine takes it.
+export type EpicOrchestratorModel = EngineModelChoice
 
 // The keys the host reads on every turn of the orchestrator. The object may
 // hold others: a PATCH replaces it whole, so they are sent back as read.

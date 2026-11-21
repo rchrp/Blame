@@ -15,6 +15,7 @@ export function createEpicApi(connection: ApiConnection) {
   return {
     list: (projectId: string) =>
       call<Epic[]>(`?${new URLSearchParams({ projectId })}`),
+    get: (id: string) => call<Epic>(`/${id}`),
     create: (input: EpicDraft) =>
       call<Epic>("", { method: "POST", body: JSON.stringify(input) }),
     update: (id: string, input: EpicUpdate) =>

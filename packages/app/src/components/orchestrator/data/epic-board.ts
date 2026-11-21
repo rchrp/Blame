@@ -1,4 +1,7 @@
-import type { StoryWaitReason } from "@blame/agent-runtime/engine-protocol"
+import type {
+  OrchestratorConversationState,
+  StoryWaitReason,
+} from "@blame/agent-runtime/engine-protocol"
 
 import type { UserStory } from "@/components/backlog/data/backlog-data"
 import type { Epic } from "@/components/orchestrator/data/epic-data"
@@ -68,6 +71,10 @@ const passingWaits = new Set<StoryWaitReason["kind"]>([
 
 export type EpicBoardInput<Story extends EpicBoardStory> = {
   epic: Pick<Epic, "id" | "status" | "engineSessionId">
+  // The orchestrator's conversation, as the host says it.
+  orchestrator?: OrchestratorConversationState
+  // The epic's budget is spent: its queued stories are held.
+  budgetSpent?: boolean
   stories: readonly Story[]
   wait: (storyId: string) => StoryWaitReason | undefined
   waitText: (reason: StoryWaitReason) => string
@@ -108,7 +115,10 @@ function placeStory<Story extends EpicBoardStory>(
     case "discarded":
       return { group: "rejected" }
     case "in-review":
-      return running && input.epic.engineSessionId
+      return running &&
+        input.epic.engineSessionId &&
+        input.orchestrator !== "stopped" &&
+        input.orchestrator !== "failed"
         ? { group: "working", note: "The orchestrator reviews it" }
         : { group: "needs-you", note: "Ready for your review", alert: true }
     case "in-progress":
@@ -121,6 +131,15 @@ function placeStory<Story extends EpicBoardStory>(
       if (story.agentLastError)
         return { group: "needs-you", note: story.agentLastError, alert: true }
       const reason = input.wait(story.id)
+      // The host holds an epic's queued stories without a wait reason.
+      if (!reason && !running)
+        return { group: "queued", note: "Held while the epic is paused" }
+      if (!reason && input.budgetSpent)
+        return {
+          group: "needs-you",
+          note: "Held: the epic's budget is spent",
+          alert: true,
+        }
       if (!reason) return { group: "queued" }
       const note = input.waitText(reason)
       return passingWaits.has(reason.kind)
@@ -137,15 +156,29 @@ export type EpicActivity = "needs-you" | "working" | "paused" | "done"
 /** The dot of the epic in the sidebar; none while nothing happens. */
 export function epicActivity(
   epic: Pick<Epic, "status">,
-  groups: readonly EpicBoardGroup[]
+  groups: readonly EpicBoardGroup[],
+  orchestrator?: OrchestratorConversationState
 ): EpicActivity | undefined {
   if (epic.status === "completed") return "done"
   if (epic.status === "discarded") return undefined
   const count = (id: EpicBoardGroupId) =>
     groups.find((group) => group.id === id)?.entries.length ?? 0
-  if (count("needs-you")) return "needs-you"
+  if (
+    count("needs-you") ||
+    orchestrator === "asking" ||
+    orchestrator === "stopped" ||
+    orchestrator === "failed"
+  )
+    return "needs-you"
   if (epic.status === "paused") return "paused"
-  if (count("working") || count("queued")) return "working"
+  if (orchestrator === "finished") return "done"
+  if (
+    orchestrator === "working" ||
+    orchestrator === "waiting" ||
+    count("working") ||
+    count("queued")
+  )
+    return "working"
   if (count("merged")) return "done"
   return undefined
 }

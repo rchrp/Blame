@@ -16,6 +16,9 @@ import {
 } from "@/components/orchestrator/data/epic-data"
 import { useEpicStore } from "@/components/orchestrator/data/epic-store"
 import { useEpicModels } from "@/components/orchestrator/data/use-epic-models"
+import { useEpicMessenger } from "@/components/orchestrator/data/use-epic-conversation"
+import { AppLink } from "@/components/navigation/app-link"
+import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { usePlatform } from "@/context/platform"
@@ -53,12 +56,18 @@ export function NewEpic({
   const platform = usePlatform()
   const project = useProjects().activeProject
   const models = useEpicModels()
+  const messenger = useEpicMessenger()
+  const initialization = useProjectInitialization()
+  // The host refuses to create an epic's stories without a working preview
+  // environment (they would run Direct, not on the epic's branch): the same
+  // condition as its `initializationDecision`, said before the goal.
+  const noPreviewEnvironment = initialization?.availability === "unavailable"
   const [goal, setGoal] = React.useState("")
   const [creating, setCreating] = React.useState(false)
   const title = epicTitleFromGoal(goal)
 
   async function start() {
-    if (!title || creating) return
+    if (!title || creating || noPreviewEnvironment) return
     setCreating(true)
     try {
       const epic = await epics.create({
@@ -69,6 +78,9 @@ export function NewEpic({
       })
       setGoal("")
       onCreated(epic)
+      // The goal is the conversation's first message.
+      if (!messenger.unavailable(epic))
+        await messenger.deliver(epic, { text: epic.goal ?? title })
     } catch (error) {
       toast.error("Unable to start the epic", {
         description: error instanceof Error ? error.message : String(error),
@@ -105,6 +117,18 @@ export function NewEpic({
           </li>
         ))}
       </ol>
+      {noPreviewEnvironment ? (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2.5 text-sm">
+          An epic needs this project&rsquo;s preview environment: its stories
+          run in worktrees of the epic&rsquo;s branch, never in your folder.{" "}
+          <AppLink
+            className="font-medium text-primary underline-offset-4 hover:underline"
+            href="/initialization"
+          >
+            Set up the preview environment
+          </AppLink>
+        </p>
+      ) : null}
       <form
         className="grid gap-3"
         onSubmit={(event) => {
@@ -119,7 +143,7 @@ export function NewEpic({
           <Textarea
             autoFocus
             className="min-h-28 bg-background"
-            disabled={!project}
+            disabled={!project || noPreviewEnvironment}
             placeholder="For example: let people export their projects as a ZIP, from the project menu, with a progress bar."
             value={goal}
             onChange={(event) => setGoal(event.target.value)}
@@ -136,7 +160,10 @@ export function NewEpic({
             It may use any model from Cheaper to Smarter on your connected
             providers, with no budget. Change that in the epic&rsquo;s settings.
           </p>
-          <Button disabled={!title || creating || !project} type="submit">
+          <Button
+            disabled={!title || creating || !project || noPreviewEnvironment}
+            type="submit"
+          >
             Start epic
             <ArrowRightIcon />
           </Button>

@@ -1,4 +1,5 @@
 import * as React from "react"
+import type { EpicState } from "@blame/agent-runtime/engine-protocol"
 
 import { createEpicApi } from "@/components/orchestrator/data/epic-api"
 import type {
@@ -7,10 +8,11 @@ import type {
   EpicUpdate,
 } from "@/components/orchestrator/data/epic-data"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { readUiMemory, writeUiMemory } from "@/lib/ui-memory"
 
-type EpicState = {
+type StoreState = {
   // The epic the orchestrator page shows; none shows the new epic form.
   activeId?: string
   epics: Epic[]
@@ -44,9 +46,10 @@ export function useEpicStore() {
 // the backlog store's, filtered by `epicId`.
 function useEpicStoreValue() {
   const auth = useCloudAuth()
+  const platform = usePlatform()
   const projects = useProjects()
   const projectId = projects.activeProject?.id
-  const [state, setState] = React.useState<EpicState>({
+  const [state, setState] = React.useState<StoreState>({
     epics: [],
     loading: false,
   })
@@ -102,6 +105,43 @@ function useEpicStoreValue() {
     }
   }, [load])
 
+  // What the engine host says of each epic: its conversation and spend.
+  const [states, setStates] = React.useState<ReadonlyMap<string, EpicState>>(
+    () => new Map()
+  )
+  const putState = React.useCallback((state: EpicState) => {
+    setStates((current) => new Map(current).set(state.epicId, state))
+  }, [])
+  React.useEffect(
+    () => platform.engine?.onEpic?.((event) => putState(event.state)),
+    [platform.engine, putState]
+  )
+  const epicIds = state.epics.map((epic) => epic.id).join(",")
+  React.useEffect(() => {
+    const engine = platform.engine
+    if (!engine || !epicIds) return
+    let cancelled = false
+    for (const epicId of epicIds.split(","))
+      void engine
+        .call("epicState", { epicId })
+        .then((next) => {
+          if (!cancelled) putState(next)
+        })
+        .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [epicIds, platform.engine, putState])
+
+  /** Tells the host an epic changed (settings, a pause) and takes its state. */
+  const changed = React.useCallback(
+    async (epicId: string) => {
+      const next = await platform.engine?.call("epicChanged", { epicId })
+      if (next) putState(next)
+    },
+    [platform.engine, putState]
+  )
+
   const replace = React.useCallback((epic: Epic) => {
     setState((current) => ({
       ...current,
@@ -124,6 +164,20 @@ function useEpicStoreValue() {
   const update = React.useCallback(
     async (epic: Epic, input: EpicUpdate) => {
       const next = await api.update(epic.id, input)
+      replace(next)
+      // The host reads the epic again: a pause holds its stories, new
+      // settings apply from the orchestrator's next call.
+      if (input.status !== undefined || input.settings !== undefined)
+        await changed(epic.id).catch(() => undefined)
+      return next
+    },
+    [api, changed, replace]
+  )
+
+  /** Reads an epic again (the host writes its branch and session). */
+  const reload = React.useCallback(
+    async (epicId: string) => {
+      const next = await api.get(epicId)
       replace(next)
       return next
     },
@@ -150,7 +204,10 @@ function useEpicStoreValue() {
     epics,
     load,
     projectId,
+    putState,
+    reload,
     setActiveId,
+    states,
     update,
   }
 }

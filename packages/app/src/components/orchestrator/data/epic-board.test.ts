@@ -167,3 +167,40 @@ test("Pause all stops the epic's running agents only", () => {
   ]
   assert.deepEqual(workingStoryIds({ id: "e1" }, stories), ["run"])
 })
+
+test("a review waits for the person while the orchestrator is stopped or failed", () => {
+  const review = [story({ id: "r", status: "in-review" })]
+  for (const orchestrator of ["stopped", "failed"] as const) {
+    const groups = epicBoard({
+      epic: activeEpic,
+      orchestrator,
+      stories: review,
+      wait: () => undefined,
+      waitText: () => "",
+    })
+    assert.deepEqual(ids(groups)["needs-you"], ["r"])
+  }
+})
+
+test("queued stories the host holds say why", () => {
+  const queued = [story({ id: "q", status: "ready" })]
+  const paused = board(queued, {}, { ...activeEpic, status: "paused" })
+  assert.equal(paused[2]!.entries[0]!.note, "Held while the epic is paused")
+  const spent = epicBoard({
+    epic: activeEpic,
+    budgetSpent: true,
+    stories: queued,
+    wait: () => undefined,
+    waitText: () => "",
+  })
+  assert.deepEqual(ids(spent)["needs-you"], ["q"])
+})
+
+test("the dot follows the orchestrator's conversation too", () => {
+  const empty = board([])
+  assert.equal(epicActivity({ status: "active" }, empty, "asking"), "needs-you")
+  assert.equal(epicActivity({ status: "active" }, empty, "failed"), "needs-you")
+  assert.equal(epicActivity({ status: "active" }, empty, "waiting"), "working")
+  assert.equal(epicActivity({ status: "active" }, empty, "finished"), "done")
+  assert.equal(epicActivity({ status: "paused" }, empty, "waiting"), "paused")
+})
