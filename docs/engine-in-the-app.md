@@ -218,7 +218,8 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
 - **Endings** (`stories/endings.ts`): Approve & Merge runs the git flow
   (`approveAndMerge`, with what main adds through `beginGitFlow`), then the
   story is done and its runtime is cleaned as the story's next action (a
-  rework or a new start waits for it): the agent
+  rework or a new start waits for it, however long the removal takes):
+  the agent
   stopped and its session deleted (the account keeps the conversation), its
   setup, previews and devices stopped (`stopStoryRuntime`), its worktree
   removed (`removeStoryWorktree`). The window then says where it went and

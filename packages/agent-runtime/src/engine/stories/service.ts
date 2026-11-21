@@ -87,8 +87,6 @@ export type StoryServiceOptions = {
 const tickMs = 60_000;
 // How a write a story must not miss is tried again.
 const durableDelays = [1_000, 3_000, 7_000];
-// A cleanup (an agent stopped, a worktree removed) holds its story this long at most.
-const cleanupDeadlineMs = 5 * 60_000;
 
 export class StoryService {
   private readonly host: StoryServiceHost;
@@ -833,26 +831,22 @@ export class StoryService {
   /**
    * Cleans what the story ran as its next action: anything asked of the
    * story afterwards (a rework, a start on the same worktree's path) waits
-   * for it. What a discard still has to write is written only to the story
-   * as the discard left it.
+   * for it, for as long as the cleanup runs (removing a worktree with its
+   * preview's containers can take minutes). What a discard still has to
+   * write is written only to the story as the discard left it.
    */
   private cleanNext(
     story: HostStory,
     options: { removeSession: boolean; after?: StoryUpdate },
   ) {
-    void this.exclusive(story.id, () =>
-      this.within(
-        (async () => {
-          await this.clean(story, options);
-          const after = options.after;
-          if (!after) return;
-          const now = await this.read(story.id);
-          if (now.status === "discarded" && now.worktree === story.worktree)
-            await this.patchDurably(now, after);
-        })(),
-        "Cleaning the story",
-      ),
-    ).catch(report);
+    void this.exclusive(story.id, async () => {
+      await this.clean(story, options);
+      const after = options.after;
+      if (!after) return;
+      const now = await this.read(story.id);
+      if (now.status === "discarded" && now.worktree === story.worktree)
+        await this.patchDurably(now, after);
+    }).catch(report);
   }
 
   /** A story deleted from the account: the service forgets it. */

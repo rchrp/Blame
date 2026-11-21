@@ -386,6 +386,40 @@ test("a rework and a new start wait for a discard's cleanup, which never writes 
   }
 });
 
+test("a cleanup that outlasts the deadline holds the story until its worktree is gone", async () => {
+  const api = fakeApi([
+    row(
+      "story",
+      "a",
+      working("session", {
+        agentStatus: "Paused",
+        worktree: "/worktrees/story",
+        branch: "story/x",
+      }),
+    ),
+  ]);
+  const fake = fakeHost();
+  // Removing a VM worktree with its preview's containers takes long.
+  fake.removeDelay.ms = 300;
+  fake.statuses.set("session", endedStatus("session", [["t1", "interrupted"]]));
+  const { service: stories, close } = await service(
+    fake.host,
+    { story: "session" },
+    { deadlineMs: 50 },
+  );
+  try {
+    await sync(stories, [{ id: "a", path: "/a" }]);
+    await stories.discard("story", "Rejected during review");
+    await stories.toBacklog("story");
+    await stories.enqueue("story");
+    await settle(() => api.stories.get("story")!.status === "in-progress");
+    assert.deepEqual(fake.order, ["remove /worktrees/story", "create story"]);
+  } finally {
+    await close();
+    api.restore();
+  }
+});
+
 test("back to the backlog stops the story first and says so; a delete removes it for good", async () => {
   const api = fakeApi([
     row("story", "a", working("session", { workspaceMode: "cloud-mirror" })),
