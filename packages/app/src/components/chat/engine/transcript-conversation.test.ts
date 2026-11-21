@@ -463,3 +463,64 @@ test("a reply the checks refused stays, unverified, with the check it names", ()
   assert.equal(stopped.finalResponse, "The GPU test needs a host package I cannot install.")
   assert.ok(stopped.activities?.some((activity) => activity.title === "Not finished"))
 })
+
+// A turn whose agent updates its plan, once per entry: `steps` is the whole
+// plan each time, `outcome` how the engine answered.
+function planTurn(
+  id: string,
+  updates: Array<{ steps: Array<[string, string]>; outcome?: "completed" | "failed" }>
+) {
+  const records = [
+    record({ type: "user_message", turn: id, input: [{ type: "text", text: "work" }], delivery: "turn" }),
+    record({ type: "request_started", turn: id, request: `r-${id}`, model, attempt: 1, prefix_digest: "d" }),
+    record({
+      type: "assistant_message",
+      turn: id,
+      request: `r-${id}`,
+      blocks: updates.map((update, index) => ({
+        type: "tool_call",
+        call: `plan-${id}-${index}`,
+        name: "update_plan",
+        input: { plan: update.steps.map(([step, status]) => ({ step, status })) },
+      })),
+      stop: "tool_use",
+      usage,
+    }),
+  ]
+  updates.forEach((update, index) =>
+    records.push(
+      record({
+        type: "tool_call_finished",
+        turn: id,
+        call: `plan-${id}-${index}`,
+        outcome: update.outcome ?? "completed",
+        content: [{ type: "text", text: "Plan updated." }],
+      })
+    )
+  )
+  return records
+}
+
+test("an update of the plan shows as what it changed, and a repeat shows nothing", () => {
+  const reducer = new TranscriptReducer()
+  reducer.applyRecords([
+    record({ type: "session_created", config }),
+    ...planTurn("t1", [
+      { steps: [["Add it", "in_progress"], ["Test it", "pending"]] },
+      { steps: [["Add it", "in_progress"], ["Test it", "pending"]] },
+      { steps: [["Add it", "completed"], ["Test it", "in_progress"]] },
+    ]),
+  ])
+  const transcript = reducer.snapshot()
+  const conversation = transcriptConversation(transcript, "You")
+  const lines = conversation.runs[0]!.activities
+    .filter((activity) => activity.toolName === "update_plan")
+    .map((activity) => {
+      const view = describeToolCall(toolCallSource(activity, false))
+      return [view.verb, view.target?.text, ...view.chips.map((chip) => chip.label)]
+        .filter(Boolean)
+        .join(" | ")
+    })
+  assert.deepEqual(lines, ["Plan set | 2 steps", "Step 1 done | Add it | 1/2"])
+  assert.equal(transcript.plan?.steps[0]?.status, "completed")
+})

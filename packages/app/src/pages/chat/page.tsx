@@ -24,6 +24,7 @@ import { useComposerShortcuts } from "./use-composer-shortcuts"
 import { useChatExcerpts } from "./use-chat-excerpts"
 import { useQuickChatConversation } from "./use-quick-chat-conversation"
 import { useQuickChatDraft } from "./use-quick-chat-draft"
+import { usePlanDockModel } from "@/components/chat/plan/use-plan-dock"
 import { QuickChatView } from "./quick-chat-view"
 
 export function ChatPage() {
@@ -47,6 +48,7 @@ function QuickChatProjectPage() {
   const [cancelingAgent, setCancelingAgent] = React.useState(false)
   const activeChat = quickChats.activeChat
   const chat = useQuickChatConversation(activeChat)
+  const plan = usePlanDockModel(chat.transcript)
   const draftStorageKey = composerDraftStorageKey(
     project?.id ?? "project",
     "chat",
@@ -153,6 +155,7 @@ function QuickChatProjectPage() {
         <QuickChatView
           conversationId={activeChat?.id}
           emptyConversation={emptyConversation}
+          plan={plan}
           status={{
             error: quickChats.error,
             loading: quickChats.loading || !chat.loaded,

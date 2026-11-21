@@ -14,6 +14,7 @@ export type ToolCallFamily =
   | "graph"
   | "list"
   | "other"
+  | "plan"
   | "preview"
   | "question"
   | "read"
