@@ -161,7 +161,3 @@ export function operationResults(output: unknown): OperationResult[] {
     }
   )
 }
-
-export function specialistTool(toolName: string | undefined) {
-  return toolName === "consult_specialist" || toolName === "spawn_agent"
-}

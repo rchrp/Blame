@@ -103,6 +103,10 @@ export function transcriptConversation(
         createdAt: iso(opening.atMs),
         fileAttachments: userFiles(opening.blocks, opening.key),
         id: opening.key,
+        // Ultra mode was on when it was sent (a block of the message says so).
+        ...(opening.blocks.some((block) => block.type === "ultra")
+          ? { ultra: true }
+          : {}),
       })
       if (opening.rewind) rewindTargets.set(opening.key, opening.rewind)
     }

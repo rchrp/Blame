@@ -661,59 +661,6 @@
     min-height: 0;
   }
 
-  .sub-agent-response-effect {
-    position: relative;
-    padding: 1px;
-    border-radius: var(--radius-3xl);
-  }
-
-  .sub-agent-response-effect::before {
-    position: absolute;
-    z-index: 1;
-    inset: 0;
-    padding: 1px;
-    pointer-events: none;
-    border-radius: inherit;
-    background: radial-gradient(
-      ellipse 90% 140% at top left,
-      var(--agent-response-color) 0%,
-      var(--agent-response-glow-color) 42%,
-      transparent 78%
-    );
-    content: "";
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-  }
-
-  .sub-agent-response-content {
-    position: relative;
-    z-index: 0;
-    border-radius: inherit;
-    background: oklch(from var(--background) l c h / 100%) !important;
-  }
-
-  .sub-agent-response-collapsed::after {
-    position: absolute;
-    z-index: 1;
-    right: 1px;
-    bottom: 1px;
-    left: 1px;
-    height: 9rem;
-    pointer-events: none;
-    border-radius: 0 0 calc(var(--radius-3xl) - 1px)
-      calc(var(--radius-3xl) - 1px);
-    background: linear-gradient(
-      to bottom,
-      transparent 0%,
-      color-mix(in oklch, var(--background) 35%, transparent) 28%,
-      color-mix(in oklch, var(--background) 88%, transparent) 72%,
-      var(--background) 100%
-    );
-    content: "";
-  }
-
   /* The drawer's edge lit from its top left corner when a story changes
      status: the sub-agent response border, sized by --corner-w/--corner-h. */
   .story-status-corner {
