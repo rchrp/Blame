@@ -6,7 +6,12 @@ import { earlierStoriesHint } from "../../development-prompt-parts.js";
 import { normalizePersonalization } from "../../personalization.js";
 import type { CompletionContract } from "@blame/engine-client";
 import type { DevelopmentStorySettings, EngineMessage } from "../protocol.js";
-import { engineModel, sessionToolNames, type Purpose } from "./purpose.js";
+import {
+  engineModel,
+  sessionToolNames,
+  workspaceEngineTools,
+  type Purpose,
+} from "./purpose.js";
 import {
   directFolderEnvironment,
   projectPrompt,
@@ -15,7 +20,6 @@ import {
 import {
   planToolGuidance,
   purposeClientTools,
-  purposeEngineTools,
   purposeHarnessTools,
 } from "./tool-sets.js";
 
@@ -78,7 +82,7 @@ export const developmentStoryPurpose: Purpose<DevelopmentStorySettings> = {
         promptDate,
         tools: names,
       }),
-      engine_tools: [...purposeEngineTools["development-story"]],
+      engine_tools: workspaceEngineTools("development-story", settings.model),
       client_tools: tools.specs(clientTools),
       tool_options: {
         harness: {

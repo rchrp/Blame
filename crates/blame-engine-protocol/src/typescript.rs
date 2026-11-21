@@ -16,7 +16,10 @@ use crate::rpc::{
     Initialized, LogPushed, MessageAccepted, Outcome, Records, Rewound, RpcError, RpcErrorData,
     SessionList, SessionOpened, SessionSummary, Subscribed, ToolResult, Version,
 };
-use crate::{PROTOCOL_VERSION, Record, RecordBody, TaskOutcome, UpdatePlan};
+use crate::{
+    PROTOCOL_VERSION, Record, RecordBody, RunAgentsInput, RunAgentsProgress, RunAgentsResult,
+    SubAgentOrigin, SubAgentReport, TaskOutcome, UpdatePlan,
+};
 use std::any::TypeId;
 use std::collections::HashSet;
 use ts_rs::{Config, TS, TypeVisitor};
@@ -90,6 +93,11 @@ pub fn declarations() -> String {
     collector.collect::<Version>();
     collector.collect::<TaskOutcome>();
     collector.collect::<UpdatePlan>();
+    collector.collect::<RunAgentsInput>();
+    collector.collect::<RunAgentsResult>();
+    collector.collect::<RunAgentsProgress>();
+    collector.collect::<SubAgentReport>();
+    collector.collect::<SubAgentOrigin>();
     collector.collect::<ModelCatalog>();
 
     let mut declarations = collector.declarations;

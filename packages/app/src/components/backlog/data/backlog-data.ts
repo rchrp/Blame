@@ -57,11 +57,7 @@ export type UserStoryAgentActivity = {
   status?: "running" | "completed" | "failed"
   iteration?: number
   messageKind?: "intermediate" | "final"
-  agentName?: string
-  agentAvatar?: string
   toolCallId?: string
-  // Set on a specialist's own steps: the consult call they belong to.
-  parentToolCallId?: string
   toolName?: string
   detailArtifact?: string
   detailTruncated?: boolean

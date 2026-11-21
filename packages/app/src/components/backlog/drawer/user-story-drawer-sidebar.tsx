@@ -60,6 +60,13 @@ import {
   compactionNote,
   type StoryContextCompaction,
 } from "@/components/backlog/drawer/story-context-compaction"
+import {
+  HelpersPill,
+  HelpersSection,
+  helpersPillWidth,
+} from "@/components/chat/sub-agents/helpers-in-stats"
+import { useRunningHelpers } from "@/components/chat/sub-agents/sub-agents-live"
+import type { SubAgentRow } from "@/components/chat/sub-agents/sub-agents-view"
 import { cn } from "@/lib/utils"
 
 // A story or a quick chat, as its engine session's records describe it
@@ -100,6 +107,7 @@ export function StoryStatsIsland({
   useEditorModel?: boolean
 }) {
   const stats = useStoryStats(source, contextLimitKey, useEditorModel, compaction)
+  const helpers = useRunningHelpers()
   const reduceMotion = useReducedMotion()
   // The full face stays mounted so the island always knows its height and
   // can move between two known sizes.
@@ -126,7 +134,10 @@ export function StoryStatsIsland({
       animate={
         expanded
           ? { height: fullHeight ?? "auto", width: expandedWidth }
-          : { height: compactHeight, width: pillWidth(stats, buttons) }
+          : {
+              height: compactHeight,
+              width: pillWidth(stats, buttons, helpers.length > 0),
+            }
       }
       transition={islandTransition(expanded, reduceMotion)}
     >
@@ -143,6 +154,7 @@ export function StoryStatsIsland({
           <DrawerSidebar
             buttons={buttons}
             diffStats={diffStats}
+            helpers={helpers}
             source={source}
             stats={stats}
           />
@@ -156,6 +168,7 @@ export function StoryStatsIsland({
         <CompactStats
           buttons={buttons}
           diffStats={diffStats}
+          helpers={helpers}
           stats={stats}
           onExpand={onExpand}
         />
@@ -182,11 +195,12 @@ function buttonsWidth(buttons: number) {
   return 8 + Math.max(0, buttons) * 40
 }
 
-function pillWidth(stats: StoryStats, buttons: number) {
+function pillWidth(stats: StoryStats, buttons: number, helpers = false) {
   return (
     compactContentWidth +
     buttonsWidth(buttons) +
-    (stats.planUsage ? planUsageWidth : 0)
+    (stats.planUsage ? planUsageWidth : 0) +
+    (helpers ? helpersPillWidth : 0)
   )
 }
 const compactHeight = 48
@@ -258,7 +272,7 @@ const popVariants = {
 } as const
 
 // A part of a face, popping in its turn.
-function Pop({
+export function Pop({
   children,
   className,
   style,
@@ -348,11 +362,13 @@ function PreparationStats({
 function DrawerSidebar({
   buttons,
   diffStats,
+  helpers,
   source,
   stats: { budget, compaction, context, planUsage, totals },
 }: {
   buttons: number
   diffStats?: UserStoryDiffStats
+  helpers: readonly SubAgentRow[]
   source?: AgentStatsSource
   stats: StoryStats
 }) {
@@ -360,6 +376,7 @@ function DrawerSidebar({
     <aside className="grid gap-4 p-4">
       <ModelHeader buttons={buttons} source={source} />
       <ContextGauge budget={budget} compaction={compaction} context={context} />
+      {helpers.length ? <HelpersSection helpers={helpers} /> : null}
       {planUsage ? <PlanUsageSection usage={planUsage} /> : null}
       <div className="grid grid-cols-3 gap-2">
         <Pop className="grid min-w-0">
@@ -419,11 +436,13 @@ function DiffCounts({ diffStats }: { diffStats: UserStoryDiffStats }) {
 function CompactStats({
   buttons,
   diffStats,
+  helpers,
   onExpand,
   stats,
 }: {
   buttons: number
   diffStats?: UserStoryDiffStats
+  helpers: readonly SubAgentRow[]
   onExpand(): void
   stats: StoryStats
 }) {
@@ -432,7 +451,10 @@ function CompactStats({
   return (
     <div
       className="flex items-center"
-      style={{ height: compactHeight, width: pillWidth(stats, buttons) }}
+      style={{
+        height: compactHeight,
+        width: pillWidth(stats, buttons, helpers.length > 0),
+      }}
     >
       <Tooltip>
         <TooltipTrigger asChild>
@@ -450,6 +472,16 @@ function CompactStats({
                 <motion.span className="flex" variants={popVariants}>
                   <PlanUsagePercents usage={planUsage} />
                 </motion.span>
+                <motion.span
+                  aria-hidden
+                  className="mx-0.5 h-6 w-px shrink-0 bg-foreground/10"
+                  variants={popVariants}
+                />
+              </>
+            ) : null}
+            {helpers.length ? (
+              <>
+                <HelpersPill helpers={helpers} />
                 <motion.span
                   aria-hidden
                   className="mx-0.5 h-6 w-px shrink-0 bg-foreground/10"
@@ -488,6 +520,11 @@ function CompactStats({
                 : "· not started"}
           </span>
           {planUsage ? <span>Plan {planUsageSummary(planUsage)}</span> : null}
+          {helpers.length ? (
+            <span>
+              {helpers.length} helper{helpers.length === 1 ? "" : "s"} running
+            </span>
+          ) : null}
           {cost !== undefined && cost !== null ? (
             <span>Cost {formatCurrency(cost)}</span>
           ) : null}

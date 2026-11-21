@@ -58,7 +58,17 @@ pub enum UserBlock {
     Context {
         text: String,
     },
+    /// The person turned ultra mode on for this message: the agent may start
+    /// helper agents (`run_agents`) while it works on it. The model reads
+    /// [`ULTRA_NOTICE`] in its place, the same bytes on every request, and the
+    /// engine refuses a `run_agents` call in a turn none of whose messages
+    /// carries one.
+    Ultra,
 }
+
+/// What the model reads for a [`UserBlock::Ultra`].
+pub const ULTRA_NOTICE: &str = "Ultra mode is on for this message: you may start helper agents \
+with `run_agents` when that saves time.";
 
 /// What the provider itself returned for a block, kept verbatim.
 ///

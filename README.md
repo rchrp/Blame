@@ -169,7 +169,7 @@ Most coding agents grep, rewrite whole files, and tell you it should work now. B
 - **Controlled merge.** Request another pass, reject the work, or approve and merge. The agent moves fast; the decision stays yours.
 - **Parallel agents, any model.** Run several agents at once across 50 AI providers, plus any OpenAI-compatible API.
 - **Code Practices.** Hold every agent to your conventions, or to a stricter engineering standard, project by project.
-- **Specialist agents.** Codebase, story, frontend design, verification, and risk specialists sharpen the work while one lead agent stays responsible for it.
+- **Ultra mode.** Switch it on for a message and the agent can start up to four read-only helper agents, side by side: they read the code, the web, or the current changes, and each hands back a short report with references. Each helper's thread opens from the conversation; the lead agent stays responsible for the work.
 - **MCP servers.** Connect your MCP servers to every agent.
 - **Project creation.** Start from an empty folder: pick a web stack and Blame generates a project ready for agent work.
 - **Optional account sync.** Sign in to have stories, conversations, Code Practices, provider connections, and MCP servers follow you to another computer.

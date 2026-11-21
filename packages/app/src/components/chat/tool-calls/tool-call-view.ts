@@ -136,7 +136,6 @@ export type ToolCallSource = {
   update?: unknown
   running: boolean
   durationMs?: number
-  agentName?: string
   title: string
   kind: string
   detail: string

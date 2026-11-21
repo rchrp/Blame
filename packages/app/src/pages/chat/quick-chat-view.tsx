@@ -18,6 +18,8 @@ import {
 } from "@/components/ui/message-scroller"
 import { isBoolean, useUiMemory } from "@/lib/ui-memory"
 import { chatAmbitionKey } from "@/lib/conversation-ambition"
+import { chatUltraKey } from "@/lib/conversation-ultra"
+import { useConversationUltra } from "@/lib/use-conversation-ultra"
 import { cn } from "@/lib/utils"
 import { QuickChatStats } from "./quick-chat-stats"
 import { QuickChatStatus } from "./quick-chat-status"
@@ -127,8 +129,8 @@ export function QuickChatView({
                             <BranchSelector readOnly />
                           </SelectorGroup>
                         ) : null}
-                        <ModelSelector
-                          role="agent"
+                        <QuickChatModelSelector
+                          conversationId={conversationId}
                           warnOnModelChange={!emptyConversation}
                         />
                       </div>
@@ -149,5 +151,24 @@ export function QuickChatView({
       </div>
       <ProjectRunConfigurationPreviewWarmup {...preview} />
     </>
+  )
+}
+
+// The chat's model, its thinking mode and ultra mode, which the chat keeps
+// as set for its next messages.
+function QuickChatModelSelector({
+  conversationId,
+  warnOnModelChange,
+}: {
+  conversationId?: string
+  warnOnModelChange: boolean
+}) {
+  const [ultra, setUltra] = useConversationUltra(chatUltraKey(conversationId))
+  return (
+    <ModelSelector
+      role="agent"
+      ultra={{ checked: ultra, onCheckedChange: setUltra }}
+      warnOnModelChange={warnOnModelChange}
+    />
   )
 }

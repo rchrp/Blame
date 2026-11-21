@@ -1,7 +1,8 @@
 import * as React from "react"
-import type {
-  EngineMessage,
-  EngineSessionSettings,
+import {
+  helperAgentsAvailable,
+  type EngineMessage,
+  type EngineSessionSettings,
 } from "@blame/agent-runtime/engine-protocol"
 
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
@@ -22,6 +23,11 @@ import {
   conversationAmbitions,
   newChatAmbitionKey,
 } from "@/lib/conversation-ambition"
+import {
+  chatUltraKey,
+  conversationUltra,
+  newChatUltraKey,
+} from "@/lib/conversation-ultra"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import {
   generatedQuickChatTitle,
@@ -91,6 +97,7 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
       workspace: project?.path ?? null,
     })
     conversationAmbitions.move(newChatAmbitionKey, chatAmbitionKey(created.id))
+    conversationUltra.move(newChatUltraKey, chatUltraKey(created.id))
     try {
       await platform.engine!.call("createSession", {
         session: created.engineSessionId!,
@@ -122,11 +129,16 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     // The settings picked now go with the message: the engine host applies
     // them first when they changed (model, reasoning, context cap,
     // personalization, practices), so the turn runs with them.
+    const sent = await settings(target)
+    // Ultra mode is whatever the composer shows when the message goes.
+    const ultra =
+      conversationUltra.get(chatUltraKey(target.id)) &&
+      helperAgentsAvailable(sent.settings.model.providerId)
     await platform.engine!.call("send", {
       session: target.engineSessionId!,
-      message,
+      message: ultra ? { ...message, ultra } : message,
       delivery: running && steer ? "steer" : "turn",
-      settings: await settings(target),
+      settings: sent,
     })
     quickChats.touch(target.id)
   }

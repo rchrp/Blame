@@ -1002,7 +1002,8 @@ function markdownEditorPointAfter(node: Node) {
   }
 }
 
-type MarkdownAppearance = "bubble" | "subtle"
+// `plain` is text on the page: no frame, no italics.
+type MarkdownAppearance = "bubble" | "subtle" | "plain"
 
 // Markdown that is only read, such as an agent's message: the editor's
 // frame and preview without the editor, which it would never use.
@@ -1038,12 +1039,18 @@ function markdownFrameClassName(appearance: MarkdownAppearance) {
     "relative max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
     appearance === "subtle" &&
       // The agent's reasoning: quiet italic, titles included.
-      "rounded-none bg-transparent p-0 text-muted-foreground italic shadow-none ring-0 dark:bg-transparent [&_*]:font-normal"
+      "rounded-none bg-transparent p-0 text-muted-foreground italic shadow-none ring-0 dark:bg-transparent [&_*]:font-normal",
+    appearance === "plain" &&
+      "rounded-none bg-transparent p-0 shadow-none ring-0 dark:bg-transparent"
   )
 }
 
 function markdownPreviewPadding(appearance: MarkdownAppearance) {
-  return appearance === "subtle" ? "py-2" : "px-4 py-3.5"
+  return appearance === "subtle"
+    ? "py-2"
+    : appearance === "plain"
+      ? "py-0"
+      : "px-4 py-3.5"
 }
 
 export const MarkdownEditor = React.forwardRef<

@@ -1,5 +1,8 @@
 import * as React from "react"
-import type { EngineSessionSettings } from "@blame/agent-runtime/engine-protocol"
+import {
+  helperAgentsAvailable,
+  type EngineSessionSettings,
+} from "@blame/agent-runtime/engine-protocol"
 import { toast } from "sonner"
 
 import type {
@@ -9,6 +12,7 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { conversationUltra, storyUltraKey } from "@/lib/conversation-ultra"
 import { usePlatform } from "@/context/platform"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { errorMessage } from "./backlog-rotation-helpers"
@@ -58,14 +62,21 @@ export function useStoryComments({
       const running = story.agentStatus === "Running"
       try {
         const settings = await settingsFor(story)
+        // Ultra mode is whatever the composer shows when the message goes.
+        const ultra =
+          conversationUltra.get(storyUltraKey(story.id)) &&
+          helperAgentsAvailable(settings.settings.model.providerId)
         await engine.call("send", {
           session,
-          message: await storyMessage(
-            input.text,
-            input.codeSelectionAttachments,
-            input.fileAttachments,
-            (file) => readStoryAttachment(auth.apiConnection, file)
-          ),
+          message: {
+            ...(await storyMessage(
+              input.text,
+              input.codeSelectionAttachments,
+              input.fileAttachments,
+              (file) => readStoryAttachment(auth.apiConnection, file)
+            )),
+            ...(ultra ? { ultra } : {}),
+          },
           delivery: running && input.steer ? "steer" : "turn",
           settings,
         })

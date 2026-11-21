@@ -33,12 +33,20 @@ import {
   selectorChevronClassName,
   selectorSegmentClassName,
 } from "@/components/ui/selector-group"
+import { Separator } from "@/components/ui/separator"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
+import {
+  UltraGlyph,
+  UltraMark,
+  UltraToggle,
+  ultraUnavailableReason,
+  type UltraControl,
+} from "./ultra-mode"
 import {
   allProvidersValue,
   credentialLabel,
@@ -74,11 +82,14 @@ export function ModelSelector({
   modelTriggerClassName,
   role,
   scope,
+  ultra,
   warnOnModelChange,
 }: {
   modelTriggerClassName?: string
   role?: ModelPreferenceRole
   scope?: ModelSelectionScope
+  /** Ultra mode of the composer's next message, in the reasoning menu. */
+  ultra?: UltraControl
   warnOnModelChange?: boolean
 }) {
   const selection = useModelSelection({ role, scope, warnOnModelChange })
@@ -90,6 +101,7 @@ export function ModelSelector({
         modelTriggerClassName={modelTriggerClassName}
         selection={selection}
         setDialog={setDialog}
+        ultra={ultra}
       />
       <ProviderSelectDialog
         open={dialog?.type === "providers"}
@@ -123,10 +135,12 @@ function ModelPicker({
   modelTriggerClassName,
   selection,
   setDialog,
+  ultra,
 }: {
   modelTriggerClassName?: string
   selection: ModelSelection
   setDialog: (dialog: ModelDialog) => void
+  ultra?: UltraControl
 }) {
   const [open, setOpen] = React.useState(false)
   const [manualSelection, setManualSelection] = React.useState(false)
@@ -163,7 +177,7 @@ function ModelPicker({
             selection={selection}
             onWheel={onWheel}
           />
-          <ModelVariantSelector selection={selection} />
+          <ModelVariantSelector selection={selection} ultra={ultra} />
         </SelectorGroup>
       </PopoverAnchor>
       <ModelPickerContent
@@ -1088,7 +1102,13 @@ function recommendationIdentity(
     : undefined
 }
 
-function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
+function ModelVariantSelector({
+  selection,
+  ultra,
+}: {
+  selection: ModelSelection
+  ultra?: UltraControl
+}) {
   const [open, setOpen] = React.useState(false)
   const selected = selection.currentVariant ?? defaultVariant
   const onWheel = useWheelStep((direction) => {
@@ -1100,27 +1120,64 @@ function ModelVariantSelector({ selection }: { selection: ModelSelection }) {
     )
     if (variant) selectModelVariant(selection, variant)
   })
-  if (selection.variantOptions.length <= 2) return null
+  const hasVariants = selection.variantOptions.length > 2
+  if (!hasVariants && !ultra) return null
+  const unavailable =
+    selection.currentModel?.provider.id === "claude-code"
+      ? ultraUnavailableReason
+      : undefined
+  const ultraOn = Boolean(ultra?.checked && !unavailable)
+  const variantLabel = getVariantLabel(selected)
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger asChild>
             <button
-              className={cn(selectorSegmentClassName, "w-28 shrink-0 capitalize")}
+              aria-label={
+                !ultra
+                  ? undefined
+                  : hasVariants
+                    ? `Thinking mode ${variantLabel}, ultra mode ${ultraOn ? "on" : "off"}`
+                    : `Ultra mode, ${ultraOn ? "on" : "off"}`
+              }
+              className={cn(
+                selectorSegmentClassName,
+                "shrink-0 capitalize",
+                hasVariants ? "min-w-28" : "w-auto"
+              )}
               type="button"
               onWheel={onWheel}
             >
-              <span className="truncate">{getVariantLabel(selected)}</span>
+              {hasVariants ? (
+                <span className="truncate">{variantLabel}</span>
+              ) : null}
+              {ultraOn ? (
+                <UltraMark className="normal-case" compact />
+              ) : hasVariants ? (
+                ultra && !unavailable ? <UltraGlyph /> : null
+              ) : (
+                <UltraMark
+                  className="bg-transparent px-0 text-muted-foreground normal-case dark:bg-transparent dark:text-muted-foreground"
+                  compact
+                />
+              )}
               <PickerChevron open={open} />
             </button>
           </PopoverTrigger>
         </TooltipTrigger>
-        <TooltipContent side="left">Choose thinking mode</TooltipContent>
+        <TooltipContent side="left">
+          {!hasVariants
+            ? "Ultra mode"
+            : ultra
+              ? "Thinking mode and Ultra mode"
+              : "Choose thinking mode"}
+        </TooltipContent>
       </Tooltip>
       <ModelVariantContent
-        options={selection.variantOptions}
+        options={hasVariants ? selection.variantOptions : []}
         selected={selected}
+        ultra={ultra && { ...ultra, unavailable }}
         onSelect={(variant) => {
           setOpen(false)
           selectModelVariant(selection, variant)
@@ -1140,17 +1197,25 @@ function ModelVariantContent({
   onSelect,
   options,
   selected,
+  ultra,
 }: {
   onSelect: (variant: string) => void
   options: string[]
   selected: string
+  ultra?: UltraControl & { unavailable?: string }
 }) {
   return (
     <PopoverContent
-      align="start"
+      align={ultra ? "end" : "start"}
+      collisionPadding={12}
       side="top"
       sideOffset={6}
-      className="w-[var(--radix-popover-trigger-width)] min-w-36 rounded-xl p-2"
+      className={cn(
+        "rounded-xl p-2",
+        ultra
+          ? "w-72"
+          : "w-[var(--radix-popover-trigger-width)] min-w-36"
+      )}
     >
       <div className="space-y-0.5">
         {options.map((variant) => (
@@ -1166,6 +1231,8 @@ function ModelVariantContent({
             ) : null}
           </button>
         ))}
+        {ultra && options.length ? <Separator className="my-1.5" /> : null}
+        {ultra ? <UltraToggle {...ultra} /> : null}
       </div>
     </PopoverContent>
   )

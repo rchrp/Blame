@@ -27,8 +27,6 @@ The person can send you a message while you work; it reaches you after a tool re
 
 {{BLAME_PARETO}}
 
-{{BLAME_SPECIALISTS}}
-
 {{BLAME_PROPOSALS}}
 
 {{BLAME_PLAN}}

@@ -419,6 +419,12 @@
     animation: agent-thinking-mark-breath 1.25s ease-in-out infinite;
   }
 
+  /* A helper agent's flower while it works: a soft glow that breathes, in the
+     colours of the thinking mark. */
+  .helper-avatar-running {
+    animation: helper-avatar-breath 1.8s ease-in-out infinite;
+  }
+
   .agent-thinking-text {
     color: transparent;
     background: linear-gradient(
@@ -519,8 +525,13 @@
   @media (prefers-reduced-motion: reduce) {
     .agent-activity-running,
     .agent-thinking-mark,
-    .agent-thinking-text {
+    .agent-thinking-text,
+    .helper-avatar-running {
       animation: none;
+    }
+
+    .helper-avatar-running {
+      box-shadow: 0 0 0 2px oklch(0.78 0.16 230 / 70%);
     }
 
     .smart-model-slider-fill::after {
@@ -659,59 +670,6 @@
 
   .markdown-stream-block-reveal > * {
     min-height: 0;
-  }
-
-  .sub-agent-response-effect {
-    position: relative;
-    padding: 1px;
-    border-radius: var(--radius-3xl);
-  }
-
-  .sub-agent-response-effect::before {
-    position: absolute;
-    z-index: 1;
-    inset: 0;
-    padding: 1px;
-    pointer-events: none;
-    border-radius: inherit;
-    background: radial-gradient(
-      ellipse 90% 140% at top left,
-      var(--agent-response-color) 0%,
-      var(--agent-response-glow-color) 42%,
-      transparent 78%
-    );
-    content: "";
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-  }
-
-  .sub-agent-response-content {
-    position: relative;
-    z-index: 0;
-    border-radius: inherit;
-    background: oklch(from var(--background) l c h / 100%) !important;
-  }
-
-  .sub-agent-response-collapsed::after {
-    position: absolute;
-    z-index: 1;
-    right: 1px;
-    bottom: 1px;
-    left: 1px;
-    height: 9rem;
-    pointer-events: none;
-    border-radius: 0 0 calc(var(--radius-3xl) - 1px)
-      calc(var(--radius-3xl) - 1px);
-    background: linear-gradient(
-      to bottom,
-      transparent 0%,
-      color-mix(in oklch, var(--background) 35%, transparent) 28%,
-      color-mix(in oklch, var(--background) 88%, transparent) 72%,
-      var(--background) 100%
-    );
-    content: "";
   }
 
   /* The drawer's edge lit from its top left corner when a story changes
@@ -878,6 +836,22 @@
     caret-color: transparent !important;
     outline: none !important;
     resize: none !important;
+  }
+}
+
+@keyframes helper-avatar-breath {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.16 230 / 45%),
+      0 0 0 0 oklch(0.72 0.2 285 / 0%);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px oklch(0.78 0.16 230 / 85%),
+      0 0 0 4px oklch(0.72 0.2 285 / 16%),
+      0 0 12px oklch(0.62 0.22 255 / 45%);
   }
 }
 

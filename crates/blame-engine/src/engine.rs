@@ -9,6 +9,7 @@ use crate::connection::{ConnectionId, Host};
 use crate::context::HarnessContextPolicy;
 use crate::log::log;
 use crate::ports::{ClientApprover, ClientRemoteLog, ProviderRouter, RandomIds, RealClock};
+use crate::subagents::{AsLead, Caps, Fleet, SubAgents};
 use crate::tools::{Harness, SessionTools, ToolShared};
 use blame_engine_checkpoint::{BLAME_WORKSPACE_EXCLUDES, GitCheckpointer};
 use blame_engine_core::ports::{Clock, IdSource, SessionStore, StoreError};
@@ -147,6 +148,7 @@ impl Engine {
                     host: host.clone(),
                     harness: settings.harness.clone(),
                     store: store_port,
+                    subagents: Arc::new(SubAgents::new(Caps::default())),
                 },
             },
             store,
@@ -160,6 +162,8 @@ impl Engine {
             replication: Mutex::new(None),
             stopping: CancellationToken::new(),
         });
+        let fleet: Arc<dyn Fleet> = engine.clone();
+        engine.ports.tools.subagents.attach(Arc::downgrade(&fleet));
         if let Some(replicator) = engine.store.replicator() {
             let token = CancellationToken::new();
             let task = tokio::spawn(replicator.run(token.clone()));
@@ -515,6 +519,38 @@ async fn evict_idle(engine: std::sync::Weak<Engine>) {
         };
         for id in dropped {
             log!(Debug, "session {id} dropped from memory after being idle");
+        }
+    }
+}
+
+/// Helpers are tasks of this engine, asking as their lead does.
+#[async_trait::async_trait]
+impl Fleet for Engine {
+    async fn start(
+        &self,
+        lead: &SessionId,
+        id: SessionId,
+        config: SessionConfig,
+        instruction: Vec<UserBlock>,
+    ) -> Result<Session, EngineError> {
+        let _opening = self.opening.lock().await;
+        let mut ports = self.ports(&id);
+        ports.provider = Arc::new(AsLead::new(ports.provider.clone(), lead.clone()));
+        let session =
+            Session::create_task(ports, self.options.clone(), id, config, instruction).await?;
+        self.keep(session.clone());
+        Ok(session)
+    }
+
+    /// A helper that ended is dropped from memory at once, unless somebody
+    /// follows its thread: its log holds all of it.
+    fn release(&self, id: &SessionId) {
+        let mut live = self.live();
+        if live
+            .get(id)
+            .is_some_and(|entry| entry.subscribers.is_empty() && entry.session.is_idle())
+        {
+            live.remove(id);
         }
     }
 }

@@ -20,6 +20,7 @@ mod engine;
 mod log;
 mod ports;
 mod server;
+mod subagents;
 mod tools;
 mod transport;
 

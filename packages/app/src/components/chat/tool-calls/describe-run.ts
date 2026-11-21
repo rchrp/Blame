@@ -186,34 +186,6 @@ export function describeFinish(source: ToolCallSource): ToolCallView {
   }
 }
 
-export function describeSpecialist(source: ToolCallSource): ToolCallView {
-  const input = record(source.input)
-  const task = textOf(input.task)
-  const context = textOf(input.context)
-  const output = record(source.output)
-  const answer =
-    textOf(output.response) ??
-    textOf(output.answer) ??
-    textOf(output.result) ??
-    textOf(output.summary) ??
-    textOf(output.text) ??
-    textOf(record(output.output).text) ??
-    textOf(source.output)
-  const name = source.agentName ?? (str(input.specialist) ? humanize(str(input.specialist)!) : "a specialist")
-  return {
-    family: "agent",
-    verb: source.running ? "Consulting" : "Consulted",
-    target: { text: name },
-    chips: task ? [{ label: firstLine(task.text, 60), title: task.text }] : [],
-    bodies: [
-      ...(task ? [{ type: "text" as const, label: "Asked", text: task.text, truncated: task.truncated }] : []),
-      ...(context ? [{ type: "text" as const, label: "Context", text: context.text, truncated: context.truncated }] : []),
-      ...(answer ? [{ type: "text" as const, label: "Answer", text: answer.text, truncated: answer.truncated }] : []),
-    ],
-    failed: output.isError === true,
-  }
-}
-
 export function describePreview(source: ToolCallSource): ToolCallView {
   const output = record(source.output)
   const logs = source.toolName === "get_preview_container_logs"

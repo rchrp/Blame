@@ -804,6 +804,7 @@ export class EngineHost {
     }
     if (message.context?.trim())
       blocks.push({ type: "context", text: message.context });
+    if (message.ultra) blocks.push({ type: "ultra" });
     if (!blocks.length) throw new Error("The message is empty.");
     return blocks;
   }

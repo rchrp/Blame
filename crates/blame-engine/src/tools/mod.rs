@@ -9,11 +9,12 @@ pub use harness::{Harness, HarnessCommand};
 
 use crate::connection::Host;
 use crate::log::log;
+use crate::subagents::{Lead, SubAgents};
 use async_trait::async_trait;
 use blame_engine_core::ports::{
     InterruptedCall, SessionStore, ToolHost, ToolInvocation, ToolOutput, ToolProgress,
 };
-use blame_engine_protocol::{SessionConfig, SessionId, ToolSpec};
+use blame_engine_protocol::{RUN_AGENTS, SUBAGENTS, SessionConfig, SessionId, ToolSpec};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, PoisonError};
@@ -29,6 +30,7 @@ pub struct ToolShared {
     pub host: Arc<Host>,
     pub harness: Option<Arc<Harness>>,
     pub store: Arc<dyn SessionStore>,
+    pub subagents: Arc<SubAgents>,
 }
 
 /// One session's tools. The core asks for the specs when the session opens
@@ -46,6 +48,8 @@ struct State {
     harness_tools: HashSet<String>,
     /// `tool_options.harness`, with the session id filled in.
     harness_options: Value,
+    /// What the session's helpers may have, when it offers `run_agents`.
+    lead: Option<Lead>,
 }
 
 impl SessionTools {
@@ -109,6 +113,8 @@ impl ToolHost for SessionTools {
                 ),
                 // Served by the engine's core, which offers and answers it.
                 (blame_engine_core::plan::TOOL_SET, _) => {}
+                // `run_agents` is listed below, once the harness tools are known.
+                (SUBAGENTS, _) => {}
                 (other, _) => log!(
                     Warn,
                     "session {}: unknown engine tool set `{other}`",
@@ -128,9 +134,18 @@ impl ToolHost for SessionTools {
             }
             specs.push(spec.clone());
         }
+        let lead = config
+            .engine_tools
+            .iter()
+            .any(|name| name == SUBAGENTS)
+            .then(|| {
+                specs.push(crate::subagents::spec());
+                Lead::new(config, Some(&options), &harness_tools)
+            });
         let mut state = self.state();
         state.harness_tools = harness_tools;
         state.harness_options = options;
+        state.lead = lead;
         specs
     }
 
@@ -140,6 +155,15 @@ impl ToolHost for SessionTools {
         progress: ToolProgress,
         cancel: CancellationToken,
     ) -> ToolOutput {
+        if invocation.name == RUN_AGENTS {
+            let lead = self.state().lead.clone();
+            if let Some(lead) = lead {
+                let subagents = self.shared.subagents.clone();
+                return subagents
+                    .run(&self.session, &lead, invocation, progress, cancel)
+                    .await;
+            }
+        }
         let harness = {
             let state = self.state();
             state

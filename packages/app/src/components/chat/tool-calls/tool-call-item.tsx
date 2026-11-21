@@ -60,7 +60,6 @@ const familyIcons: Record<ToolCallFamily, LucideIcon> = {
 // for that tool.
 export function ToolCallItem({
   activity,
-  avatar,
   entering,
   hasFullDetail,
   onLoadDetail,
@@ -69,8 +68,6 @@ export function ToolCallItem({
   value,
 }: {
   activity: ToolCallActivity
-  // Replaces the tool icon, for specialist agents with an avatar.
-  avatar?: React.ReactNode
   entering: boolean
   hasFullDetail: boolean
   onLoadDetail: () => Promise<string>
@@ -132,7 +129,7 @@ export function ToolCallItem({
             view.failed && "text-red-600 dark:text-red-400"
           )}
         >
-          {avatar ?? <Icon className="size-4" />}
+          <Icon className="size-4" />
         </span>
         <div className="min-w-0">
           <AccordionTrigger

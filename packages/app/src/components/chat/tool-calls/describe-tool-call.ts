@@ -1,6 +1,8 @@
 import { describeEdit, describeRead, describeSearch } from "./describe-code.ts"
 import { describeWebResearch } from "./describe-web-research.ts"
 import { describePlan } from "./describe-plan.ts"
+import { describeSubAgents } from "../sub-agents/describe-sub-agents.ts"
+import { runAgentsTool } from "../sub-agents/sub-agents-view.ts"
 import { describePreviewEnvironment } from "./describe-preview-environment.ts"
 import {
   describeCommand,
@@ -10,7 +12,6 @@ import {
   describePreview,
   describeQuestion,
   describeSkill,
-  describeSpecialist,
 } from "./describe-run.ts"
 import {
   describeComponentPreview,
@@ -30,7 +31,6 @@ export type ToolCallActivity = {
   title: string
   detail: string
   toolName?: string
-  agentName?: string
 }
 
 const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
@@ -59,8 +59,7 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   read_user_story: describeStoryRead,
   propose_user_stories: describeProposal,
   propose_project_stack: describeProposal,
-  consult_specialist: describeSpecialist,
-  spawn_agent: describeSpecialist,
+  [runAgentsTool]: describeSubAgents,
   get_preview_devtools: describePreview,
   open_component_preview: describeComponentPreview,
   get_preview_container_logs: describePreview,
@@ -95,7 +94,6 @@ export function toolCallSource(
     update: parsed.update,
     running,
     durationMs: num(parsed.durationMs),
-    agentName: activity.agentName,
     title: activity.title,
     kind: activity.kind,
     detail: activity.detail,

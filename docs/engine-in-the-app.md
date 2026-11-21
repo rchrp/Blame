@@ -425,8 +425,9 @@ one cache miss).
 | `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | no | yes |
 | `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.agents/skills`… and Blame's own) | yes | yes | no | yes |
 
-Not yet client tools: `consult_specialist` and spawned agents (engine tasks),
-`finish_task` and the harness (Rust harness), project memory.
+Not client tools: `finish_task` and the harness (Rust harness), the helper
+agents of ultra mode (the engine's `run_agents`, see "Ultra mode"), project
+memory.
 
 ### Component previews
 
@@ -480,6 +481,68 @@ decision that arrives first is kept for a minute). The pending call shows in
 the transcript (`pendingApprovals`, a tool call in `awaiting_approval`), and
 the timeline shows Allow and Deny under it (`engine-approvals.tsx`; each
 surface wraps its timeline in `EngineApprovalProvider`).
+
+## Ultra mode
+
+The person checks **Ultra mode** in the composer's reasoning menu (per story,
+per chat, kept until unchecked) and each message sent then carries a
+`UserBlock::Ultra`, which the conversation shows as a small marker. The agent
+may then call `run_agents` (`crates/blame-engine/src/subagents/`): one to four
+read-only helpers, side by side, answered with each one's report (a summary
+and `path:line` or URL references).
+
+- **Roles are the engine's.** `explore` (`search_code`, `read_code`),
+  `research` (`search_web`, `read_web_page`) and `review` (the code tools; the
+  workspace's `git diff HEAD` is read once by the engine and goes in the
+  instruction). The lead picks a role and writes a title and a brief, never a
+  prompt or a permission. The tool list is the permission: a helper's
+  completion contract allows its role's tools and its `report`, so it has no
+  edit, no command, no preview, and no `run_agents` (no nesting). The prompts
+  are a few lines of what the role does, no persona.
+- **A helper is a task session** (`SessionKind::Task`, records of its own,
+  kept on this machine for the task retention, three days). Its id is
+  `<call id>.<index>`, so the app finds it from the lead's call without
+  anything stored beside it; its configuration says where it comes from in
+  `tool_options.subagent`. It uses the lead's model, asks as the lead does
+  (`AsLead`: same credential, same cache routing), and shares the lead's
+  harness workspace (the lead's task contract, so one index) with reads of its
+  own (the harness keys them by session). Reasoning: the lead's effort capped
+  at `low` (`medium` for a review).
+- **Caps** (`gate.rs`): 4 per call, 8 per turn, 4 running per session, 6
+  running per engine. Blame runs up to three stories at once; three stories
+  with four helpers each would be twelve model streams on one key and twelve
+  callers of the one harness process. Six is two per story and leaves each
+  lead its own stream; helpers past it wait for a slot (the card says
+  "Waiting"), nothing is refused for it. Each helper has its own limits: 16
+  requests, 4 minutes, 500k tokens counted.
+- **Stopping.** The call is the lead's: an interrupt, a rewind or the engine
+  stopping cancels it, and it interrupts its helpers before it answers.
+- **Prompt cache.** The tool is in the tool list of every quick chat and story
+  whose model can run helpers, whatever a message says, so toggling never
+  changes the cached prefix (tools, then system, then messages): only the new
+  message differs. The engine refuses a call made while no message of the turn
+  carries the block (`ToolInvocation::ultra`, read from the log), with the
+  reason. The cost is the tool's description on each request, cached. A test
+  (`toggling_ultra_leaves_the_cached_prefix_alone`) pins that the tool list,
+  the system prompt and every earlier message are the same on both sides of a
+  toggle.
+- **Claude Code** gets no helpers: each lane is a whole Claude Code process
+  (about 115 MB), kept for a follow-up that a helper never makes. The tool is
+  not offered there (`helperAgentsAvailable`), the engine refuses it, and the
+  menu says so.
+- **In the app** a `run_agents` call is a few lines of the conversation, no
+  frame (`chat/sub-agents/`): a sentence that opens them ("Running 3
+  helpers · 1 done", "Ran 3 helpers"), then a line per helper on the chat's own
+  background: its pixel-art flower (the flower glows while it works, a small
+  badge says done, failed or stopped), the flower's name, the title of its
+  brief, what it does now or found, its time and tokens. The flowers are given
+  by the call (a hash of its id), so a reload shows the same helpers, and no
+  two helpers of a call are alike; they are a face, not a persona (the prompt is
+  the role's and nothing else). A line opens the helper's thread in a dialog.
+  While the call runs the lines follow each helper's own session; afterwards
+  they read the call's result, so a thread the engine no longer keeps costs
+  nothing. The agent's stats island reminds the person of the helpers that
+  work: a section in the open panel, the flowers in the pill.
 
 ## Context shaping
 

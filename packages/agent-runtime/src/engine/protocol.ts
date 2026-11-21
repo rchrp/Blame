@@ -154,6 +154,8 @@ export type EngineMessage = {
   attachments?: EngineAttachment[];
   /** Read by the model with the message, never shown in the conversation. */
   context?: string;
+  /** Ultra mode is on for this message: the agent may start helper agents. */
+  ultra?: boolean;
 };
 
 export type EngineHostMethods = {
@@ -330,6 +332,15 @@ export function isEngineHostMessage(
     kind === "desktop-cancel" ||
     kind === "ready"
   );
+}
+
+/**
+ * Whether a model's conversation may start helper agents (ultra mode). Each
+ * helper of Claude Code would be a whole Claude Code process, so the engine
+ * offers the tool and refuses the call there.
+ */
+export function helperAgentsAvailable(providerId: string) {
+  return providerId !== "claude-code";
 }
 
 /**

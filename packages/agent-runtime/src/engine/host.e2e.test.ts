@@ -273,5 +273,119 @@ describe(
       );
       await host.shutdown();
     });
+
+    it("starts helper agents only for a message that asked for ultra mode", async () => {
+      const ultraSession = "qc-0193f5d2-7a1b-7c3e-9f00-000000000002";
+      const host = startHost();
+      await host.call("connect", { api: api.connection() });
+      await host.call("createSession", {
+        session: ultraSession,
+        purpose: "quick-chat",
+        settings: settings(),
+      });
+      await host.call("follow", { session: ultraSession, subscription: "ultra" });
+      const ended = () =>
+        events.filter(
+          (event) =>
+            event.type === "activity" &&
+            event.session === ultraSession &&
+            !event.running,
+        ).length;
+      const send = async (message: string, ultra: boolean) => {
+        const before = ended();
+        await host.call("send", {
+          session: ultraSession,
+          message: { text: message, ...(ultra ? { ultra } : {}) },
+          delivery: "turn",
+        });
+        await until(`"${message}" to end`, () => ended() > before);
+      };
+      const helperAsk = {
+        agents: [
+          {
+            role: "research",
+            title: "Look it up",
+            brief: "Search the web for the blame engine.",
+          },
+        ],
+      };
+
+      // Ultra mode on: the lead asks, a helper searches and reports.
+      model.script(
+        tools({ name: "run_agents", input: helperAsk }),
+        tools({ name: "search_web", input: { query: "helper blame engine" } }),
+        tools({
+          name: "report",
+          input: {
+            summary: "It is the Blame engine.",
+            references: [{ ref: "https://example.com/engine", note: "the page" }],
+          },
+        }),
+        text("The helper found it."),
+      );
+      const before = model.requests.length;
+      await send("look it up with helpers", true);
+      const first = model.requests[before]!.body as {
+        tools: Array<{ name: string }>;
+      };
+      assert.ok(
+        first.tools.some((tool) => tool.name === "run_agents"),
+        "the lead is offered the helpers' tool",
+      );
+      let transcript = view("ultra");
+      const opening = transcript.items.find((item) => item.kind === "user");
+      assert.ok(
+        opening?.kind === "user" &&
+          opening.blocks.some((block) => block.type === "ultra"),
+        "the message records that ultra mode was on",
+      );
+      const call = transcript.items.find(
+        (item) => item.kind === "tool_call" && item.name === "run_agents",
+      );
+      assert.equal(call?.kind === "tool_call" && call.state, "completed");
+      const result = JSON.parse(
+        call?.kind === "tool_call" && call.result?.[0]?.type === "text"
+          ? call.result[0].text
+          : "{}",
+      ) as {
+        agents: Array<{ status: string; session: string; report?: { summary: string } }>;
+      };
+      assert.equal(result.agents[0]?.status, "completed");
+      assert.equal(result.agents[0]?.report?.summary, "It is the Blame engine.");
+      assert.ok(
+        api.searches.includes("helper blame engine"),
+        "the helper's web search went through the app, like the lead's",
+      );
+      const [{ exists }] = await host.call("status", {
+        sessions: [result.agents[0]!.session],
+      });
+      assert.ok(exists, "the helper is a session of its own");
+
+      // The next message does not ask for it: the same call is refused.
+      model.script(
+        tools({ name: "run_agents", input: helperAsk }),
+        text("I will do it myself."),
+      );
+      const requests = model.requests.length;
+      await send("and again, without", false);
+      transcript = view("ultra");
+      const refused = [...transcript.items]
+        .reverse()
+        .find((item) => item.kind === "tool_call" && item.name === "run_agents");
+      assert.equal(refused?.kind === "tool_call" && refused.state, "denied");
+      assert.match(
+        JSON.stringify(refused?.kind === "tool_call" && refused.result),
+        /ultra mode is off for this message/,
+      );
+      const second = model.requests[requests]!.body as {
+        tools: Array<{ name: string }>;
+      };
+      assert.deepEqual(
+        second.tools.map((tool) => tool.name),
+        first.tools.map((tool) => tool.name),
+        "toggling does not change the tool list the provider caches",
+      );
+      await host.shutdown();
+    });
   },
 );

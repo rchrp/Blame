@@ -6,7 +6,8 @@ use base64::Engine;
 use base64::engine::general_purpose::STANDARD as BASE64;
 use blame_engine_core::ports::{ModelMessage, ModelRequest, ProviderError, ToolResultMessage};
 use blame_engine_protocol::{
-    AssistantBlock, BlobRef, ErrorKind, ReasoningEffort, ToolOutcome, ToolResultBlock, UserBlock,
+    AssistantBlock, BlobRef, ErrorKind, ReasoningEffort, ToolOutcome, ToolResultBlock,
+    ULTRA_NOTICE, UserBlock,
 };
 use rig_core::catalog::ReasoningSupport;
 use rig_core::completion::{
@@ -255,6 +256,7 @@ async fn user(
             UserBlock::Text { text } | UserBlock::Context { text } => {
                 UserContent::Text(Text::new(text))
             }
+            UserBlock::Ultra => UserContent::Text(Text::new(ULTRA_NOTICE)),
             UserBlock::Image { blob } => UserContent::Image(image(blob, request).await?),
             UserBlock::Document { blob, name } => {
                 UserContent::Document(document(blob, name, request, wire).await?)

@@ -29,7 +29,6 @@ export function agentRunSegments(
       !segment.acknowledgement &&
       activity.kind === "message" &&
       activity.messageKind !== "final" &&
-      !activity.parentToolCallId &&
       !segment.activities.some((earlier) => earlier.kind !== "reasoning")
     ) {
       segment.acknowledgement = activity

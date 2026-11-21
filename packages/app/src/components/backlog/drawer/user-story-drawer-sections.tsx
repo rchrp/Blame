@@ -48,6 +48,8 @@ import type { CloudAiModelPreference } from "@/context/cloud-auth"
 import { useModelSelection } from "@/components/model/model-selection"
 import { useProjects } from "@/context/projects"
 import { useCloudAuth } from "@/context/cloud-auth"
+import { storyUltraKey } from "@/lib/conversation-ultra"
+import { useConversationUltra } from "@/lib/use-conversation-ultra"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { useStoryConversation } from "./story-conversation"
 
@@ -383,10 +385,12 @@ const StoryCommentModelSelector = React.memo(function StoryCommentModelSelector(
     }),
     [preference, storyId]
   )
+  const [ultra, setUltra] = useConversationUltra(storyUltraKey(storyId))
   return (
     <ModelSelector
       role="agent"
       scope={scope}
+      ultra={{ checked: ultra, onCheckedChange: setUltra }}
       warnOnModelChange={Boolean(
         userStory.agentModels?.length || userStory.engineSessionId
       )}

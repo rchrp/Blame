@@ -13,6 +13,14 @@ import { usePlatform } from "@/context/platform"
 type Decide = (call: string, decision: "approved" | "denied") => Promise<void>
 
 const ApprovalContext = React.createContext<Decide | undefined>(undefined)
+const LocationContext = React.createContext<EngineLocation | undefined>(
+  undefined
+)
+
+/** Where the conversation's engine is, for what the timeline follows beside it. */
+export function useEngineLocation() {
+  return React.useContext(LocationContext)
+}
 
 export function EngineApprovalProvider({
   children,
@@ -43,9 +51,11 @@ export function EngineApprovalProvider({
     [engine, location, session]
   )
   return (
-    <ApprovalContext.Provider value={decide}>
-      {children}
-    </ApprovalContext.Provider>
+    <LocationContext.Provider value={location}>
+      <ApprovalContext.Provider value={decide}>
+        {children}
+      </ApprovalContext.Provider>
+    </LocationContext.Provider>
   )
 }
 

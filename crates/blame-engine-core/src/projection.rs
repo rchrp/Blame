@@ -167,6 +167,9 @@ pub struct TurnState<'a> {
     /// The model was asked to carry on after acknowledging a steer
     /// (`TurnContinued`), and the next request is not sent yet.
     pub continue_pending: bool,
+    /// A message of the turn (the one that opened it or a steer) carries
+    /// [`UserBlock::Ultra`]: helper agents may be started.
+    pub ultra: bool,
 }
 
 impl TurnState<'_> {
@@ -517,6 +520,7 @@ impl<'a> View<'a> {
             steer_in_last_request: false,
             worked_before_last_request: false,
             continue_pending: false,
+            ultra: false,
         };
         // The turn made a tool call in a reply so far.
         let mut made_calls = false;
@@ -535,16 +539,21 @@ impl<'a> View<'a> {
             };
             match &record.body {
                 RecordBody::UserMessage {
-                    turn: t, delivery, ..
-                } if t == turn => match delivery {
-                    blame_engine_protocol::Delivery::Turn => {
-                        if !opened {
-                            state.started_at_ms = record.at_ms;
+                    turn: t,
+                    delivery,
+                    input,
+                } if t == turn => {
+                    state.ultra |= input.iter().any(|block| matches!(block, UserBlock::Ultra));
+                    match delivery {
+                        blame_engine_protocol::Delivery::Turn => {
+                            if !opened {
+                                state.started_at_ms = record.at_ms;
+                            }
+                            opened = true;
                         }
-                        opened = true;
+                        blame_engine_protocol::Delivery::Steer => state.steer_pending = true,
                     }
-                    blame_engine_protocol::Delivery::Steer => state.steer_pending = true,
-                },
+                }
                 RecordBody::CheckpointCreated { turn: t, .. } if t == turn => {
                     state.checkpoint = true;
                 }

@@ -20,6 +20,10 @@ pub struct ToolInvocation {
     /// has already seen (the harness's read coverage) must forget it when
     /// this changes: the summary no longer shows what was read before.
     pub compacted_through: Option<Seq>,
+    /// A message of the turn asked for ultra mode (`UserBlock::Ultra`): the
+    /// call may start helper agents. Read from the log when the call runs,
+    /// so it is the same on a restart.
+    pub ultra: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]

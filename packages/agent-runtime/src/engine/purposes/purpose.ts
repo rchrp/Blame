@@ -5,11 +5,13 @@
 import type { SessionConfig } from "@blame/engine-client";
 import {
   engineReasoning,
+  helperAgentsAvailable,
   type EngineMessage,
   type EngineModelChoice,
   type EngineWorkspace,
 } from "../protocol.js";
 import type { ToolSet } from "../tool.js";
+import { purposeEngineTools } from "./tool-sets.js";
 
 export type PurposeContext = {
   tools: ToolSet;
@@ -56,6 +58,25 @@ export function engineModel(choice: EngineModelChoice) {
     model: { provider: choice.providerId, model: choice.modelId },
     ...(reasoning ? { reasoning } : {}),
   };
+}
+
+/**
+ * The engine's tool sets of a conversation that works in a workspace: its
+ * purpose's (the harness, the plan), and the helper agents of ultra mode
+ * (`run_agents`). The helpers' tool is offered whether or not a message
+ * turns ultra mode on, so toggling it never changes the tool list the
+ * provider caches; the engine refuses a call made while it is off. Claude
+ * Code is the exception: each helper would be a whole Claude Code process,
+ * and the engine refuses them there.
+ */
+export function workspaceEngineTools(
+  purpose: "quick-chat" | "development-story",
+  choice: EngineModelChoice,
+) {
+  const tools = [...purposeEngineTools[purpose]];
+  return helperAgentsAvailable(choice.providerId)
+    ? [...tools, "subagents"]
+    : tools;
 }
 
 /** Names of every tool a session offers: its client tools and its harness tools. */

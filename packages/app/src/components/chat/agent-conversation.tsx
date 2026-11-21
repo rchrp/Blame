@@ -2,9 +2,6 @@ import {
   AlertCircleIcon,
   CheckIcon,
   ArrowUpIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  ChevronUpIcon,
   ClockIcon,
   CopyIcon,
   LoaderCircleIcon,
@@ -64,7 +61,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { CurrentUserAvatar } from "@/components/shared/user-avatar"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import {
   chooseModelLabel,
@@ -76,16 +72,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
-import { publicAssetUrl } from "@/lib/public-asset-url"
 import { cn } from "@/lib/utils"
+import { UltraMark } from "@/components/model/ultra-mode"
+import { HelperAgents } from "./sub-agents/helper-agents"
+import { SubAgentsNotice } from "./sub-agents/sub-agents-notice"
 import {
-  isSpecialistResponseActivityId,
-  isSpecialistThreadActivityId,
-  specialistResponseActivityId,
-  specialistThreadActivityIds,
-} from "@/components/backlog/data/specialist-thread"
-import { SpecialistThreadDialog } from "./specialist-thread-dialog"
-import { record, specialistTool, textOf } from "./tool-calls/tool-call-values"
+  readSubAgentsCall,
+  readSubAgentsRefusal,
+  runAgentsTool,
+} from "./sub-agents/sub-agents-view"
 import { ToolCallItem } from "./tool-calls/tool-call-item"
 import {
   AgentScreenshotOwnerProvider,
@@ -131,40 +126,6 @@ export function screenshotOwnerFor(
 }
 import { TurnSummary } from "./turn-summary"
 
-type SpecialistAgentAppearance = {
-  avatar: string
-  color: string
-  glowColor: string
-}
-
-const specialistAgentAppearances: Record<string, SpecialistAgentAppearance> = {
-  "Codebase Analyst": {
-    avatar: publicAssetUrl("agents/codebase-analyst.png"),
-    color: "oklch(0.78 0.16 195)",
-    glowColor: "oklch(0.72 0.19 195 / 28%)",
-  },
-  "Frontend Design Specialist": {
-    avatar: publicAssetUrl("agents/frontend-design-specialist.png"),
-    color: "oklch(0.75 0.23 350)",
-    glowColor: "oklch(0.7 0.24 350 / 28%)",
-  },
-  "Risk & Review Analyst": {
-    avatar: publicAssetUrl("agents/risk-review-analyst.png"),
-    color: "oklch(0.78 0.19 55)",
-    glowColor: "oklch(0.72 0.2 55 / 28%)",
-  },
-  "Story Analyst": {
-    avatar: publicAssetUrl("agents/story-analyst.png"),
-    color: "oklch(0.72 0.22 300)",
-    glowColor: "oklch(0.67 0.23 300 / 28%)",
-  },
-  "Test & Verification Analyst": {
-    avatar: publicAssetUrl("agents/test-verification-analyst.png"),
-    color: "oklch(0.76 0.2 145)",
-    glowColor: "oklch(0.7 0.2 145 / 28%)",
-  },
-}
-
 export type AgentConversationComment = {
   author: string
   body: string
@@ -173,6 +134,8 @@ export type AgentConversationComment = {
   fileAttachments?: UserStoryFileAttachment[] | null
   id: string
   updatedAt?: string | null
+  // Ultra mode was on when it was sent: the agent could start helper agents.
+  ultra?: boolean
 }
 
 export type AgentConversationRun = {
@@ -765,6 +728,7 @@ function RunCommentItem({
                 Saved · not sent to agent
               </span>
             ) : null}
+            {comment.ultra ? <UltraMark /> : null}
             <span className="text-xs text-muted-foreground">
               {commentDateLabel(comment.createdAt)}
             </span>
@@ -869,13 +833,30 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
     .map((activityId) => registry.persistedById.get(activityId))
     .filter((activity) => isProposalActivity(activity))
     .filter((activity) => activity!.status !== "failed")
-  // A specialist's steps and answer live on its card, not in the main list.
+  // Helper agents are cards under the work, not steps in it: they stay in
+  // sight when the work folds.
+  const helperCalls = registry.activityIds.flatMap((activityId) => {
+    const activity = registry.persistedById.get(activityId)
+    const call =
+      activity?.kind === "tool" && activity.toolName === runAgentsTool
+        ? readSubAgentsCall(activity)
+        : undefined
+    return activity && call ? [{ activity, call }] : []
+  })
+  const refusedCalls = registry.activityIds.flatMap((activityId) => {
+    const activity = registry.persistedById.get(activityId)
+    const reason =
+      activity?.kind === "tool" && activity.toolName === runAgentsTool
+        ? readSubAgentsRefusal(activity)
+        : undefined
+    return activity && reason ? [{ activity, reason }] : []
+  })
   const workActivityIds = registry.activityIds.filter(
     (activityId) =>
       activityId !== responseActivityId &&
       !proposals.some((activity) => activity!.id === activityId) &&
-      !isSpecialistThreadActivityId(activityId) &&
-      !isSpecialistResponseActivityId(activityId)
+      !helperCalls.some(({ activity }) => activity.id === activityId) &&
+      !refusedCalls.some(({ activity }) => activity.id === activityId)
   )
   return (
     <div className="grid gap-2">
@@ -887,6 +868,16 @@ function AgentWorkDetails(props: AgentWorkDetailsProps) {
           {...props}
         />
       ) : null}
+      {helperCalls.map(({ activity, call }) => (
+        <HelperAgents
+          key={activity.id}
+          call={call}
+          onFileLinkClick={props.onFileLinkClick}
+        />
+      ))}
+      {refusedCalls.map(({ activity, reason }) => (
+        <SubAgentsNotice key={activity.id} reason={reason} />
+      ))}
       {responseActivityId ? (
         <AgentActivityTimeline
           activityIds={[responseActivityId]}
@@ -1090,19 +1081,6 @@ function AgentStreamActivity({
   if (activity.kind === "message") {
     return <AgentStreamMessage activity={activity} {...props} />
   }
-  if (
-    activity.kind === "tool" &&
-    specialistTool(activity.toolName) &&
-    props.registry
-  ) {
-    return (
-      <SpecialistConsultation
-        activity={activity}
-        {...props}
-        registry={props.registry}
-      />
-    )
-  }
   if (activity.kind === "tool" && activity.images?.length) {
     return (
       <div className="grid gap-1">
@@ -1122,123 +1100,6 @@ function AgentStreamActivity({
   return <AgentStreamTool activity={activity} {...props} />
 }
 
-const fallbackSpecialistAppearance = {
-  color: "oklch(0.72 0.16 250)",
-  glowColor: "oklch(0.66 0.18 250 / 28%)",
-}
-
-// A specialist consultation in the conversation: its answer, cropped with a
-// border in the specialist's color, and its full thread on demand.
-function SpecialistConsultation({
-  activity,
-  registry,
-  ...props
-}: StreamingAgentActivityItemProps & {
-  activity: UserStoryAgentActivity
-  registry: ReturnType<typeof useAgentActivityRegistry>
-}) {
-  const [open, setOpen] = React.useState(false)
-  const responseId = specialistResponseActivityId(activity.id)
-  const response = registry.persistedById.get(responseId)
-  const threadIds = activity.toolCallId
-    ? specialistThreadActivityIds(registry.activityIds, activity.toolCallId)
-    : []
-  const name = activity.agentName ?? "Specialist"
-  const appearance = specialistAgentAppearanceByName(activity.agentName)
-  const effect = appearance ?? fallbackSpecialistAppearance
-  const running =
-    activity.status === "running" && props.run.status === "running"
-  const steps = `${threadIds.length} ${threadIds.length === 1 ? "step" : "steps"}`
-  const status = running
-    ? `Working · ${steps}`
-    : activity.status === "failed" && !response
-      ? "Stopped"
-      : `Answered · ${steps}`
-  const avatarImage = activity.agentAvatar ?? appearance?.avatar
-  const avatar = (size: "sm" | "default") => (
-    <Avatar size={size} aria-label={name}>
-      {avatarImage ? <AvatarImage alt={name} src={avatarImage} /> : null}
-      <AvatarFallback>{agentInitials(name)}</AvatarFallback>
-    </Avatar>
-  )
-  return (
-    <div className="grid min-w-0 gap-2">
-      <div className="flex min-w-0 items-center gap-2 text-sm">
-        {avatar("sm")}
-        <span className="truncate font-medium">{name}</span>
-        <span
-          className={cn(
-            "shrink-0 text-muted-foreground",
-            running && "agent-activity-running"
-          )}
-        >
-          {status}
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="ml-auto h-7 shrink-0 gap-1 rounded-full px-2.5 text-xs text-muted-foreground"
-          onClick={() => setOpen(true)}
-        >
-          {running ? "Follow" : "View thread"}
-          <ChevronRightIcon className="size-3.5" />
-        </Button>
-      </div>
-      {response ? (
-        <AgentMarkdownTimelineItem
-          alwaysVisible={props.alwaysVisible}
-          createdAt={response.createdAt}
-          effectColor={effect.color}
-          effectGlowColor={effect.glowColor}
-          highlight={false}
-          markdown={response.detail}
-          onFileLinkClick={props.onFileLinkClick}
-        />
-      ) : null}
-      <SpecialistThreadDialog
-        avatar={avatar("default")}
-        name={name}
-        onOpenChange={setOpen}
-        open={open}
-        request={specialistRequest(activity.detail)}
-        status={status}
-      >
-        {threadIds.length ? (
-          <AgentActivityTimeline
-            {...props}
-            activities={[]}
-            activityIds={threadIds}
-            alwaysVisible={false}
-            registry={registry}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {running
-              ? "Waiting for the specialist's first step."
-              : "The steps of this consultation weren't recorded."}
-          </p>
-        )}
-        {response ? (
-          <AgentStreamMessage activity={response} {...props} />
-        ) : null}
-      </SpecialistThreadDialog>
-    </div>
-  )
-}
-
-// What the lead agent asked the specialist (its consult call input).
-function specialistRequest(detail: string) {
-  try {
-    const input = record(record(JSON.parse(detail)).input)
-    const task = textOf(input.task)?.text
-    const context = textOf(input.context)?.text
-    return [task, context].filter(Boolean).join("\n\n") || undefined
-  } catch {
-    return undefined
-  }
-}
-
 function AgentStreamMessage({
   activity,
   alwaysVisible,
@@ -1250,12 +1111,7 @@ function AgentStreamMessage({
   return (
     <AgentMarkdownTimelineItem
       alwaysVisible={alwaysVisible}
-      avatar={
-        <AgentResponseAvatar
-          activity={activity}
-          responseHeader={responseHeader}
-        />
-      }
+      avatar={<AgentResponseAvatar responseHeader={responseHeader} />}
       createdAt={activity.createdAt}
       highlight={highlightFinalResponse && activity.messageKind === "final"}
       images={activity.messageKind === "final" ? activity.images : undefined}
@@ -1350,19 +1206,12 @@ function AgentActivityLeafItem({
     )
   }
   if (activity.kind === "message") {
-    const specialistAppearance = specialistAgentAppearance(activity)
     return (
       <AgentMarkdownTimelineItem
         alwaysVisible={alwaysVisible}
         createdAt={activity.createdAt}
-        effectColor={specialistAppearance?.color}
-        effectGlowColor={specialistAppearance?.glowColor}
         highlight={false}
-        images={
-          activity.messageKind === "final" && !activity.parentToolCallId
-            ? activity.images
-            : undefined
-        }
+        images={activity.messageKind === "final" ? activity.images : undefined}
         markdown={activity.detail}
         onFileLinkClick={onFileLinkClick}
         showFeedback={activity.messageKind === "final"}
@@ -1437,7 +1286,6 @@ function AgentActivityDetailLeafItem({
   return (
     <ToolCallItem
       activity={activity}
-      avatar={specialistAvatar(activity)}
       entering={entering}
       hasFullDetail={Boolean(activity.detailArtifact)}
       onLoadDetail={() => onLoadDetail(activity)}
@@ -1445,23 +1293,6 @@ function AgentActivityDetailLeafItem({
       running={running}
       value={value}
     />
-  )
-}
-
-// Specialist agents show their own avatar instead of a tool icon.
-function specialistAvatar(activity: UserStoryAgentActivity) {
-  if (activity.kind !== "tool" || !specialistTool(activity.toolName))
-    return undefined
-  const name = activity.agentName ?? "Agent"
-  const avatar =
-    activity.agentAvatar ??
-    specialistAgentAppearanceByName(activity.agentName)?.avatar
-  if (!avatar) return undefined
-  return (
-    <Avatar size="sm" aria-label={name}>
-      <AvatarImage alt={name} src={avatar} />
-      <AvatarFallback>{agentInitials(name)}</AvatarFallback>
-    </Avatar>
   )
 }
 
@@ -1515,8 +1346,6 @@ function AgentMarkdownTimelineItem({
   alwaysVisible,
   avatar,
   createdAt,
-  effectColor,
-  effectGlowColor,
   highlight,
   images,
   markdown,
@@ -1528,8 +1357,6 @@ function AgentMarkdownTimelineItem({
   alwaysVisible: boolean
   avatar?: React.ReactNode
   createdAt: string
-  effectColor?: string
-  effectGlowColor?: string
   highlight: boolean
   // Screenshots the agent attached to its final reply, shown above it.
   images?: UserStoryAgentActivity["images"]
@@ -1540,40 +1367,9 @@ function AgentMarkdownTimelineItem({
   sourceRunId?: string
 }) {
   const responseRef = useAnimatedBorderEffect(
-    highlight ? "agent-response" : undefined,
-    effectColor
+    highlight ? "agent-response" : undefined
   )
-  const contentRef = React.useRef<HTMLDivElement>(null)
-  const [expanded, setExpanded] = React.useState(false)
-  const [contentOverflows, setContentOverflows] = React.useState(false)
-  const [contentHeight, setContentHeight] = React.useState(320)
-  const collapsible = Boolean(effectColor)
   const entering = useEnterAnimation(createdAt)
-  const effectStyle =
-    effectColor && effectGlowColor
-      ? ({
-          "--agent-response-color": effectColor,
-          "--agent-response-glow-color": effectGlowColor,
-        } as React.CSSProperties)
-      : undefined
-
-  React.useEffect(() => {
-    const content = contentRef.current
-    if (!collapsible || !content) {
-      setContentOverflows(false)
-      return
-    }
-
-    const updateOverflow = () => {
-      const nextHeight = content.scrollHeight
-      setContentHeight(nextHeight)
-      setContentOverflows(nextHeight > 320)
-    }
-    updateOverflow()
-    const observer = new ResizeObserver(updateOverflow)
-    observer.observe(content)
-    return () => observer.disconnect()
-  }, [collapsible, markdown])
 
   return (
     <div
@@ -1592,29 +1388,12 @@ function AgentMarkdownTimelineItem({
           ref={responseRef}
           className={cn(
             "min-w-0 [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
-            highlight && "agent-response-effect",
-            effectColor && "sub-agent-response-effect",
-            collapsible &&
-              contentOverflows &&
-              !expanded &&
-              "sub-agent-response-collapsed"
+            highlight && "agent-response-effect"
           )}
-          style={effectStyle}
         >
           <div
-            ref={contentRef}
             data-conversation-message="agent"
-            className={cn(
-              "relative [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0",
-              effectColor && "sub-agent-response-content",
-              collapsible &&
-                "overflow-hidden transition-[max-height] duration-500 ease-in-out motion-reduce:transition-none"
-            )}
-            style={
-              collapsible
-                ? { maxHeight: expanded ? `${contentHeight}px` : "20rem" }
-                : undefined
-            }
+            className="relative [&>div]:bg-transparent [&>div]:p-0 [&>div]:shadow-none [&>div]:ring-0"
           >
             <MarkdownMessage
               animateAppend={streaming}
@@ -1622,20 +1401,6 @@ function AgentMarkdownTimelineItem({
               onFileLinkClick={onFileLinkClick}
             />
           </div>
-          {collapsible && contentOverflows ? (
-            <Button
-              aria-label={
-                expanded ? "Replier la réponse" : "Afficher la réponse complète"
-              }
-              className="sub-agent-response-toggle absolute bottom-2 left-1/2 z-2 -translate-x-1/2 rounded-full shadow-sm transition-[background-color,transform] duration-300 motion-reduce:transition-none"
-              onClick={() => setExpanded((value) => !value)}
-              size="icon-sm"
-              type="button"
-              variant="outline"
-            >
-              {expanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-            </Button>
-          ) : null}
         </div>
         {sourceRunId ? (
           <SourcesSummary runId={sourceRunId} markdown={markdown} />
@@ -1760,52 +1525,18 @@ function UserMessageAvatar({ author }: { author: string }) {
 }
 
 function AgentResponseAvatar({
-  activity,
   responseHeader,
 }: {
-  activity: UserStoryAgentActivity
   responseHeader: AgentConversationResponseHeader
 }) {
-  const specialistAppearance = specialistAgentAppearance(activity)
-  const avatar = activity.agentAvatar ?? specialistAppearance?.avatar
-  if (avatar) {
-    const name = activity.agentName ?? "Agent"
-    return (
-      <Avatar aria-label={name}>
-        <AvatarImage alt={name} src={avatar} />
-        <AvatarFallback>{agentInitials(name)}</AvatarFallback>
-      </Avatar>
-    )
-  }
-
   return (
     <span
-      aria-label={activity.agentName ?? responseHeader.provider.name}
+      aria-label={responseHeader.provider.name}
       className="flex size-8 shrink-0 items-center justify-center rounded-full border bg-background"
     >
       <ProviderMark provider={responseHeader.provider} />
     </span>
   )
-}
-
-function specialistAgentAppearance(activity: UserStoryAgentActivity) {
-  if (activity.messageKind !== "intermediate" || !activity.agentName) {
-    return undefined
-  }
-  return specialistAgentAppearanceByName(activity.agentName)
-}
-
-function specialistAgentAppearanceByName(name: string | undefined) {
-  return name ? specialistAgentAppearances[name] : undefined
-}
-
-function agentInitials(name: string) {
-  return name
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("")
 }
 
 export function MarkdownMessageActions({
