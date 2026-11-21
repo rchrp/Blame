@@ -6,6 +6,7 @@
 
 import type { ErrorInfo } from "@blame/engine-client";
 
+const weekdays = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 /** The instant the plan resets, when the provider said it. */
@@ -17,16 +18,16 @@ export function usageResetAt(error: ErrorInfo, now = Date.now()): Date | undefin
 
 /**
  * "resets 1:10am (Europe/Bucharest)", "reset at 3pm (America/New_York)",
- * "resets Nov 24, 9am (Europe/Paris)": the next such wall-clock time in that
+ * "resets Nov 24, 9am (Europe/Paris)", "resets Mon 9am": the next such wall-clock time in that
  * zone (this computer's zone when none is given).
  */
 export function statedReset(text: string, now = Date.now()): Date | undefined {
   const match =
-    /\breset(?:s| at|s at)?\s+(?:([A-Za-z]{3})[a-z]*\.? (\d{1,2}),?\s+(?:at\s+)?)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b(?:\s*\(([^)]+)\))?/iu.exec(
+    /\breset(?:s| at|s at)?\s+(?:([A-Za-z]{3})[a-z]*\.? (\d{1,2}),?\s+(?:at\s+)?|(mon|tue|wed|thu|fri|sat|sun)[a-z]*,?\s+(?:at\s+)?)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b(?:\s*\(([^)]+)\))?/iu.exec(
       text,
     );
   if (!match) return undefined;
-  const [, monthName, day, hourText, minuteText, meridiem, zone] = match;
+  const [, monthName, day, weekdayName, hourText, minuteText, meridiem, zone] = match;
   const hour = (Number(hourText) % 12) + (meridiem!.toLowerCase() === "pm" ? 12 : 0);
   const minute = Number(minuteText ?? 0);
   if (hour > 23 || minute > 59) return undefined;
@@ -35,11 +36,17 @@ export function statedReset(text: string, now = Date.now()): Date | undefined {
   if (!today) return undefined;
   const month = monthName ? months.indexOf(monthName.toLowerCase()) : -1;
   if (monthName && month < 0) return undefined;
-  // A stated date is this year's or next year's; a time alone is today's or tomorrow's.
+  // A stated date is this year's or next year's, a weekday this week's or
+  // next week's; a time alone is today's or tomorrow's.
+  const weekday = weekdayName ? weekdays.indexOf(weekdayName.slice(0, 3).toLowerCase()) : -1;
+  const todayWeekday = new Date(Date.UTC(today.year, today.month, today.day)).getUTCDay();
+  const ahead = weekday >= 0 ? (weekday - todayWeekday + 7) % 7 : 0;
   const days =
     month >= 0
       ? [0, 1].map((years) => Date.UTC(today.year + years, month, Number(day)))
-      : [0, 1].map((days) => Date.UTC(today.year, today.month, today.day + days));
+      : weekday >= 0
+        ? [ahead, ahead + 7].map((days) => Date.UTC(today.year, today.month, today.day + days))
+        : [0, 1].map((days) => Date.UTC(today.year, today.month, today.day + days));
   for (const midnight of days) {
     const date = new Date(midnight);
     const instant = zonedInstant(

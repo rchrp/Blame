@@ -17,6 +17,11 @@ test("Claude Code's stated reset is the next such time in its zone", () => {
     statedReset("You've hit your weekly limit · resets Nov 24, 9am (Europe/Bucharest)", now)?.toISOString(),
     "2026-11-24T07:00:00.000Z",
   );
+  // 2026-11-20 is a Friday.
+  assert.equal(
+    statedReset("You've hit your weekly limit · resets Mon 9am (Europe/Bucharest)", now)?.toISOString(),
+    "2026-11-23T07:00:00.000Z",
+  );
   assert.equal(statedReset("You've hit your session limit", now), undefined, "no time stated");
   assert.equal(statedReset("resets 1am (Not/AZone)", now), undefined, "a zone this computer does not know");
 });
