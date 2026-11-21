@@ -1149,11 +1149,11 @@ function ModelVariantSelector({
                 <span className="truncate">{getVariantLabel(selected)}</span>
               ) : null}
               {ultraOn ? (
-                <UltraMark className="normal-case" />
+                <UltraMark className="normal-case" compact />
               ) : hasVariants ? null : (
                 <UltraMark
-                  className="bg-transparent px-0 text-muted-foreground normal-case"
-                  label="Ultra"
+                  className="bg-transparent px-0 text-muted-foreground normal-case dark:bg-transparent dark:text-muted-foreground"
+                  compact
                 />
               )}
               <PickerChevron open={open} />

@@ -8,7 +8,10 @@
 //   cargo build -p blame-engine -p blame-harness
 //   pnpm --filter @blame/desktop exec electron-vite build
 //   pnpm --filter @blame/api build
-//   node scripts/ultra-mode-drive.mjs --out /tmp/ultra-shots [--model claude-sonnet-5-5]
+//   node scripts/ultra-mode-drive.mjs --out /tmp/ultra-shots [--model claude-sonnet-5-5] [--keep]
+//
+// With --keep the app stays open when the script is done, on the DevTools port
+// it prints (`ULTRA_DRIVE_KEEP port=…`), until the script gets SIGTERM.
 //
 // The model is an Anthropic-shaped server on a `*.localhost` host that
 // decides each reply from the request itself (the lead's, or a helper's by
@@ -228,6 +231,11 @@ async function drive() {
     await until(() => output.includes("ULTRA_DRIVE_READY"), 120_000, "the app to open the project");
     const cdp = await connect(debugPort);
     await scenario(cdp, options, model, child);
+    if (options.keep) {
+      // Leave the app as the scenario left it, for a reviewer to attach to.
+      console.log(`ULTRA_DRIVE_KEEP port=${debugPort}`);
+      await new Promise((done) => process.once("SIGTERM", done));
+    }
   } catch (error) {
     console.error(output.slice(-4000));
     throw error;
@@ -241,10 +249,11 @@ async function drive() {
 }
 
 function parseOptions(argv) {
-  const options = { model: "claude-sonnet-5-5", out: resolve("ultra-shots") };
+  const options = { keep: false, model: "claude-sonnet-5-5", out: resolve("ultra-shots") };
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--out") options.out = resolve(argv[++index]);
     else if (argv[index] === "--model") options.model = argv[++index];
+    else if (argv[index] === "--keep") options.keep = true;
   }
   return options;
 }
