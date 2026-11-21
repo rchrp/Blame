@@ -455,11 +455,21 @@ async function scenario(cdp, options, model, paths) {
     const ownModel = await create({ title: "Own model", status: "ready", requestedModel: { providerId: "anthropic", modelId: "claude-opus-5-5" } });
     await evaluate(`window.blame.engine.call("storyDiscard", { storyId: ${JSON.stringify(dropped.id)}, reason: "Not needed" })`);
     await evaluate(`window.blame.engine.call("storyRefresh", {})`);
-    const card = (id) => evaluate(`document.querySelector('[data-story-id="${id}"]')?.innerText.replace(/\s+/g, " ") ?? ""`);
-    await until(async () => (await card(after.id)).includes("Starts after"), 30_000, "the waiting card to say why");
+    // The card's text as it reads (its lines kept; each wait is one line).
+    const card = (id) => evaluate(`document.querySelector('[data-story-id="${id}"]')?.innerText ?? ""`);
+    await until(async () => (await card(after.id)).includes("Starts after"), 30_000, "the waiting card to say why").catch(async (error) => {
+      console.log("card:", JSON.stringify(await card(after.id)));
+      console.log("queue:", JSON.stringify(await evaluate(`window.blame.engine.call("storyQueueState", undefined)`)));
+      console.log("board ids:", JSON.stringify(await evaluate(`[...document.querySelectorAll("[data-story-id]")].map((element) => element.getAttribute("data-story-id") + ":" + element.getAttribute("data-story-state"))`)));
+      console.log("after:", after.id, "startsAfter:", JSON.stringify(after.startsAfter ?? after.transformerData?.[0]?.startsAfter));
+      await shot("07-waiting-cards-failed");
+      throw error;
+    });
     check("a story waits for the one it starts after, and its card says so", (await card(after.id)).includes("Base API"), await card(after.id));
     await until(async () => (await card(orphan.id)).includes("Will not start"), 30_000, "the orphan's card");
     check("a story whose dependency was discarded never starts, and its card says so", true, await card(orphan.id));
+    await evaluate(`document.querySelector('[data-story-id="${after.id}"]')?.scrollIntoView({ block: "center", inline: "center" })`);
+    await delay(600);
     await shot("07-waiting-cards");
     await until(async () => (await stories(shownProject.id)).some((story) => story.id === ownModel.id && story.status === "in-review"), 60_000, "the story on its own model");
     const ownRequests = model.requests.filter((request) => request.story === "Own model");
