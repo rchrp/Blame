@@ -168,7 +168,7 @@ fn assert_no_failed_validation(state: &Json) -> Outcome<()> {
         return Ok(());
     }
     Err(Failure {
-        failing_checks: failed.clone(),
+        failing_checks: failed.clone().into(),
         ..Failure::new(format!(
             "Current validation is still failing: {}. Resolve it and run the relevant check before finishing.",
             failed.join(", ")

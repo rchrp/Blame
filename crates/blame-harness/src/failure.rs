@@ -20,7 +20,8 @@ pub struct Failure {
     /// A scoped patch's recovery text (`ScopedEditRecovery`).
     pub recovery: Option<String>,
     /// A refused finish: the checks still failing, by task.
-    pub failing_checks: Vec<String>,
+    /// Boxed so `Failure` stays small enough to return.
+    pub failing_checks: Box<[String]>,
 }
 
 pub type Outcome<T> = Result<T, Failure>;
@@ -34,7 +35,7 @@ impl Failure {
             cancelled: false,
             conflict: false,
             recovery: None,
-            failing_checks: Vec::new(),
+            failing_checks: Box::default(),
         }
     }
 

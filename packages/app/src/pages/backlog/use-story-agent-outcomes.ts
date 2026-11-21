@@ -26,6 +26,23 @@ export function useStoryAgentOutcomes(
   const platform = usePlatform()
   const settled = React.useRef(new Set<string>())
 
+  // How many turns each model answered, from the records: after every turn
+  // and every undo, so a model change and a rewind count right.
+  const countTurns = useLatestCallback(async (story: UserStory) => {
+    const engine = platform.engine
+    if (!engine || !story.engineSessionId) return
+    const [status] = await engine.call("status", {
+      sessions: [story.engineSessionId],
+      location: storyLocation(
+        story.workspaceMode ?? "direct",
+        platform.platform
+      ),
+    })
+    if (!status?.exists) return
+    const agentModels = withTurnCounts(story.agentModels, status.models)
+    if (agentModels) await backlog.update(story, { agentModels })
+  })
+
   const apply = useLatestCallback(
     (session: string, running: boolean, outcome?: TurnOutcome) => {
       // The latest callback sees the stories as they are now.
@@ -44,23 +61,6 @@ export function useStoryAgentOutcomes(
       void countTurns(story).catch(report)
     }
   )
-
-  // How many turns each model answered, from the records: after every turn
-  // and every undo, so a model change and a rewind count right.
-  const countTurns = useLatestCallback(async (story: UserStory) => {
-    const engine = platform.engine
-    if (!engine || !story.engineSessionId) return
-    const [status] = await engine.call("status", {
-      sessions: [story.engineSessionId],
-      location: storyLocation(
-        story.workspaceMode ?? "direct",
-        platform.platform
-      ),
-    })
-    if (!status?.exists) return
-    const agentModels = withTurnCounts(story.agentModels, status.models)
-    if (agentModels) await backlog.update(story, { agentModels })
-  })
 
   React.useEffect(
     () =>
