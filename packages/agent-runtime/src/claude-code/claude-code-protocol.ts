@@ -132,8 +132,18 @@ export function laneSignature(request: MessagesRequest) {
   );
 }
 
+/**
+ * The conversation's first message, which a continuation must share. Cache
+ * markers are left out: a client moves them from request to request (the
+ * engine marks the last two requests' ends, so the first message loses its
+ * marker from the third request on) without changing the conversation.
+ */
 export function conversationRoot(request: MessagesRequest) {
-  return sha256(JSON.stringify(request.messages[0]));
+  const first = request.messages[0];
+  const blocks = first
+    ? messageBlocks(first).map(({ cache_control: _marker, ...block }) => block)
+    : [];
+  return sha256(JSON.stringify({ role: first?.role, blocks }));
 }
 
 export function messageBlocks(message: AnthropicMessage): AnthropicBlock[] {

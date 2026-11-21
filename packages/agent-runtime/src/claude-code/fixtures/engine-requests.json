@@ -1,0 +1,439 @@
+[
+  {
+    "max_tokens": 1000,
+    "messages": [
+      {
+        "content": [
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "text": "check the pages",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      }
+    ],
+    "model": "claude-sonnet-4-6",
+    "stream": true,
+    "system": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "text": "You are a test agent.",
+        "type": "text"
+      }
+    ],
+    "tool_choice": {
+      "type": "auto"
+    },
+    "tools": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "description": "Shows the app.",
+        "eager_input_streaming": true,
+        "input_schema": {
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "preview"
+      }
+    ]
+  },
+  {
+    "max_tokens": 1000,
+    "messages": [
+      {
+        "content": [
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "text": "check the pages",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      },
+      {
+        "content": [
+          {
+            "id": "toolu_01A0",
+            "input": {
+              "path": "/"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          },
+          {
+            "id": "toolu_01A1",
+            "input": {
+              "path": "/about"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          }
+        ],
+        "role": "assistant"
+      },
+      {
+        "content": [
+          {
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01A0",
+            "type": "tool_result"
+          },
+          {
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/about\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01A1",
+            "type": "tool_result"
+          },
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "text": "also the contact page",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      }
+    ],
+    "model": "claude-sonnet-4-6",
+    "stream": true,
+    "system": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "text": "You are a test agent.",
+        "type": "text"
+      }
+    ],
+    "tool_choice": {
+      "type": "auto"
+    },
+    "tools": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "description": "Shows the app.",
+        "eager_input_streaming": true,
+        "input_schema": {
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "preview"
+      }
+    ]
+  },
+  {
+    "max_tokens": 1000,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "check the pages",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      },
+      {
+        "content": [
+          {
+            "id": "toolu_01A0",
+            "input": {
+              "path": "/"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          },
+          {
+            "id": "toolu_01A1",
+            "input": {
+              "path": "/about"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          }
+        ],
+        "role": "assistant"
+      },
+      {
+        "content": [
+          {
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01A0",
+            "type": "tool_result"
+          },
+          {
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/about\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01A1",
+            "type": "tool_result"
+          },
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "text": "also the contact page",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      },
+      {
+        "content": [
+          {
+            "id": "toolu_01B0",
+            "input": {
+              "path": "/contact"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          }
+        ],
+        "role": "assistant"
+      },
+      {
+        "content": [
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/contact\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01B0",
+            "type": "tool_result"
+          }
+        ],
+        "role": "user"
+      }
+    ],
+    "model": "claude-sonnet-4-6",
+    "stream": true,
+    "system": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "text": "You are a test agent.",
+        "type": "text"
+      }
+    ],
+    "tool_choice": {
+      "type": "auto"
+    },
+    "tools": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "description": "Shows the app.",
+        "eager_input_streaming": true,
+        "input_schema": {
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "preview"
+      }
+    ]
+  },
+  {
+    "max_tokens": 1000,
+    "messages": [
+      {
+        "content": [
+          {
+            "text": "check the pages",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      },
+      {
+        "content": [
+          {
+            "id": "toolu_01A0",
+            "input": {
+              "path": "/"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          },
+          {
+            "id": "toolu_01A1",
+            "input": {
+              "path": "/about"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          }
+        ],
+        "role": "assistant"
+      },
+      {
+        "content": [
+          {
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01A0",
+            "type": "tool_result"
+          },
+          {
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/about\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01A1",
+            "type": "tool_result"
+          },
+          {
+            "text": "also the contact page",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      },
+      {
+        "content": [
+          {
+            "id": "toolu_01B0",
+            "input": {
+              "path": "/contact"
+            },
+            "name": "preview",
+            "type": "tool_use"
+          }
+        ],
+        "role": "assistant"
+      },
+      {
+        "content": [
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "content": [
+              {
+                "text": "preview ran with {\"path\":\"/contact\"}",
+                "type": "text"
+              }
+            ],
+            "tool_use_id": "toolu_01B0",
+            "type": "tool_result"
+          }
+        ],
+        "role": "user"
+      },
+      {
+        "content": [
+          {
+            "text": "All three pages render.",
+            "type": "text"
+          }
+        ],
+        "role": "assistant"
+      },
+      {
+        "content": [
+          {
+            "cache_control": {
+              "type": "ephemeral"
+            },
+            "text": "thanks",
+            "type": "text"
+          }
+        ],
+        "role": "user"
+      }
+    ],
+    "model": "claude-sonnet-4-6",
+    "stream": true,
+    "system": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "text": "You are a test agent.",
+        "type": "text"
+      }
+    ],
+    "tool_choice": {
+      "type": "auto"
+    },
+    "tools": [
+      {
+        "cache_control": {
+          "ttl": "1h",
+          "type": "ephemeral"
+        },
+        "description": "Shows the app.",
+        "eager_input_streaming": true,
+        "input_schema": {
+          "properties": {
+            "path": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "name": "preview"
+      }
+    ]
+  }
+]

@@ -15,6 +15,7 @@ use rig_core::message::{
     ToolFunction, ToolName,
 };
 use serde_json::Value;
+use std::collections::HashMap;
 use std::sync::Arc;
 
 /// Who a request goes to: the context in which stored items may replay.
@@ -70,9 +71,16 @@ impl Target {
 /// signatures); otherwise it goes out from its canonical fields and the
 /// blocks with no canonical form are dropped. Returns `None` when nothing
 /// is left to send.
+///
+/// A replayed tool call goes out under the id its model gave it, which the
+/// stored item still holds, not the engine's own: the provider gets back the
+/// exact bytes it produced, and a server that keeps the conversation (the
+/// Claude Code bridge) recognises its own pending calls. `wire_ids` maps the
+/// engine's id to the one sent, for the results that answer the calls.
 pub(crate) fn to_rig_turn(
     blocks: &[AssistantBlock],
     target: &Target,
+    wire_ids: &mut HashMap<String, String>,
 ) -> Result<Option<AssistantMessage>, InvalidBlock> {
     let replay = blocks
         .iter()
@@ -91,11 +99,15 @@ pub(crate) fn to_rig_turn(
             AssistantBlock::ToolCall {
                 call, name, input, ..
             } => {
-                let canonical = tool_call(call, name, input)?;
-                content.push(match native {
-                    Some(item) => canonical.with_native(with_call_id(item, target.wire, call)),
-                    None => canonical,
-                });
+                let Some(item) = native else {
+                    content.push(tool_call(call, name, input)?);
+                    continue;
+                };
+                let wire = wire_call_id(&item, target.wire).unwrap_or_else(|| call.clone());
+                if wire != *call {
+                    wire_ids.insert(call.as_str().to_owned(), wire.as_str().to_owned());
+                }
+                content.push(tool_call(&wire, name, input)?.with_native(item));
                 continue;
             }
             // No canonical form: the item goes back to its own model, or
@@ -159,16 +171,14 @@ fn tool_call(
     )))
 }
 
-/// The item with its call id set to `call`, so the item and the result that
-/// answers it agree even when the engine renamed the call. An item that
-/// carries no id (Gemini models that send none) is left without one.
-fn with_call_id(mut item: Value, wire: Wire, call: &ToolCallId) -> Value {
-    if let Some(slot) = item.pointer_mut(wire.call_id_slot())
-        && slot.is_string()
-    {
-        *slot = Value::String(call.as_str().to_owned());
-    }
-    item
+/// The call id the model wrote in its own item; `None` for an item that
+/// carries none (Gemini models that send none), which then goes out under
+/// the engine's id.
+fn wire_call_id(item: &Value, wire: Wire) -> Option<ToolCallId> {
+    item.pointer(wire.call_id_slot())
+        .and_then(Value::as_str)
+        .filter(|id| !id.is_empty())
+        .map(|id| ToolCallId(id.to_owned()))
 }
 
 /// One block of a reply as we store it. `None` for what cannot be replayed

@@ -35,6 +35,9 @@ pub(crate) async fn to_rig(
     // A result names the tool it answers (Gemini matches by name), which
     // our result messages leave to the call before them.
     let mut tool_names: HashMap<&str, &str> = HashMap::new();
+    // The engine's call id → the one the provider sees (its own, on a turn
+    // it produced).
+    let mut wire_ids: HashMap<String, String> = HashMap::new();
     // How many user and assistant messages Rig holds after each of ours:
     // cache points count Rig's, and a turn with nothing left to send is
     // not sent.
@@ -49,12 +52,12 @@ pub(crate) async fn to_rig(
                         tool_names.insert(call.as_str(), name.as_str());
                     }
                 }
-                native::to_rig_turn(blocks, target)
+                native::to_rig_turn(blocks, target, &mut wire_ids)
                     .map_err(|error| invalid(error.0))?
                     .map(Message::Assistant)
             }
             ModelMessage::ToolResults(results) => {
-                Some(tool_results(results, &tool_names, request).await?)
+                Some(tool_results(results, &tool_names, &wire_ids, request).await?)
             }
         };
         if let Some(rig) = rig {
@@ -262,6 +265,7 @@ async fn user(
 async fn tool_results(
     results: &[ToolResultMessage],
     names: &HashMap<&str, &str>,
+    wire_ids: &HashMap<String, String>,
     request: &ModelRequest,
 ) -> Result<Message, ProviderError> {
     let mut content = Vec::with_capacity(results.len());
@@ -280,7 +284,11 @@ async fn tool_results(
             });
         }
         content.push(UserContent::ToolResult(ToolResult {
-            call: CallId::from_wire(result.call.as_str()),
+            call: CallId::from_wire(
+                wire_ids
+                    .get(result.call.as_str())
+                    .map_or(result.call.as_str(), String::as_str),
+            ),
             name,
             content: parts,
             is_error: result.outcome != ToolOutcome::Completed,
