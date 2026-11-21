@@ -3,7 +3,7 @@ import {
   nativeProjectEvidence,
 } from "./project-configuration-evidence.js";
 import { type Dirent } from "node:fs";
-import { opendir, realpath } from "node:fs/promises";
+import { opendir, readFile, realpath } from "node:fs/promises";
 import { dirname, extname, join, resolve } from "node:path";
 
 const maxDiscoveredFiles = 30_000;
@@ -350,14 +350,41 @@ async function visitDirectoryBatch(
     })),
   );
   const childGroups: PendingDirectory[][] = [];
-  for (const result of results) {
+  const worktrees = await Promise.all(
+    results.map(({ directory, entries }) =>
+      linkedWorktree(state.root, directory.path, entries.entries),
+    ),
+  );
+  for (const [index, result] of results.entries()) {
     state.scannedDirectoryCount += 1;
+    if (worktrees[index]) {
+      state.ignoredDirectoryCount += 1;
+      continue;
+    }
     if (result.entries.truncated) state.truncated = true;
     childGroups.push(
       visitDirectoryEntries(state, result.directory, result.entries.entries),
     );
   }
   appendDirectoryGroups(pending, childGroups);
+}
+
+/**
+ * A linked worktree of a repository checked out inside the project (Claude
+ * Code's `.claude/worktrees/*`, `git worktree add` in a subfolder): its
+ * `.git` file points into a repository's `worktrees/` folder. It is another
+ * copy of the code, often of the same repository, not part of the project.
+ * A submodule's `.git` file points into `modules/` and stays.
+ */
+async function linkedWorktree(root: string, path: string, entries: Dirent[]) {
+  if (!path || !entries.some((entry) => entry.isFile() && entry.name === ".git"))
+    return false;
+  try {
+    const pointer = await readFile(join(root, path, ".git"), "utf8");
+    return /^gitdir:.*[\\/]worktrees[\\/][^\\/]+\s*$/mu.test(pointer);
+  } catch {
+    return false;
+  }
 }
 
 function visitDirectoryEntries(
