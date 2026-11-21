@@ -1,8 +1,5 @@
 import * as React from "react"
-import {
-  helperAgentsAvailable,
-  type EngineSessionSettings,
-} from "@blame/agent-runtime/engine-protocol"
+import type { StoryTurnChoice } from "@blame/agent-runtime/engine-protocol"
 import { toast } from "sonner"
 
 import type {
@@ -10,17 +7,10 @@ import type {
   UserStoryCodeSelectionAttachment,
   UserStoryFileAttachment,
 } from "@/components/backlog/data/backlog-data"
-import type { useBacklogStore } from "@/components/backlog/data/backlog-store"
-import { useCloudAuth } from "@/context/cloud-auth"
+import { parseUserStory } from "@/components/backlog/data/backlog-api"
 import { conversationUltra, storyUltraKey } from "@/lib/conversation-ultra"
 import { usePlatform } from "@/context/platform"
 import { useLatestCallback } from "@/lib/use-latest-callback"
-import { errorMessage } from "./backlog-rotation-helpers"
-import {
-  storyMessage,
-  withAgentModel,
-} from "./story-engine"
-import { readStoryAttachment } from "./story-attachment"
 import { withStoryTransition } from "./story-transitions"
 
 export type StoryMessageInput = {
@@ -32,25 +22,22 @@ export type StoryMessageInput = {
 }
 
 /**
- * Sends a message to a story's agent. A paused or reviewed story resumes;
- * while its agent works, the message waits for the turn to end (the engine
- * queues it) or, with `steer`, joins the running turn.
+ * Sends a message to a story's agent through the story service. A paused
+ * or reviewed story resumes; while its agent works, the message waits for
+ * the turn to end (the engine queues it) or, with `steer`, joins the
+ * running turn.
  */
 export function useStoryComments({
-  backlog,
-  settingsFor,
+  turnFor,
 }: {
-  backlog: ReturnType<typeof useBacklogStore>
-  /** The settings of the story's next turn (its model, its preview…). */
-  settingsFor(story: UserStory): Promise<EngineSessionSettings>
+  /** What the person picked for the story's next turn (its model, its cap…). */
+  turnFor(story: UserStory): StoryTurnChoice
 }) {
-  const auth = useCloudAuth()
   const platform = usePlatform()
   const send = useLatestCallback(
     async (story: UserStory, input: StoryMessageInput) => {
       const engine = platform.engine
-      const session = story.engineSessionId
-      if (!engine || !story.worktree || !session) {
+      if (!engine || !story.engineSessionId) {
         toast.error("Unable to send your message", {
           description: !engine
             ? "The desktop agent engine is not available."
@@ -59,42 +46,25 @@ export function useStoryComments({
         })
         return undefined
       }
-      const running = story.agentStatus === "Running"
       try {
-        const settings = await settingsFor(story)
-        // Ultra mode is whatever the composer shows when the message goes.
-        const ultra =
-          conversationUltra.get(storyUltraKey(story.id)) &&
-          helperAgentsAvailable(settings.settings.model.providerId)
-        await engine.call("send", {
-          session,
+        const sent = await engine.call("storySend", {
+          storyId: story.id,
           message: {
-            ...(await storyMessage(
-              input.text,
-              input.codeSelectionAttachments,
-              input.fileAttachments,
-              (file) => readStoryAttachment(auth.apiConnection, file)
-            )),
-            ...(ultra ? { ultra } : {}),
+            text: input.text,
+            codeSelectionAttachments: input.codeSelectionAttachments,
+            fileAttachments: input.fileAttachments,
           },
-          delivery: running && input.steer ? "steer" : "turn",
-          settings,
+          steer: input.steer,
+          turn: {
+            ...turnFor(story),
+            // Ultra mode is whatever the composer shows when the message goes.
+            ultra: conversationUltra.get(storyUltraKey(story.id)),
+          },
         })
-        if (running) return story
-        const { model } = settings.settings
-        return await backlog.update(story, {
-          agentLastError: null,
-          agentModels: withAgentModel(story.agentModels, {
-            modelId: model.modelId,
-            providerId: model.providerId,
-            reasoningEffort: model.reasoning ?? null,
-          }),
-          agentStatus: "Running",
-          status: "in-progress",
-        })
+        return parseUserStory(sent)
       } catch (error) {
         toast.error("Unable to send your message", {
-          description: errorMessage(error),
+          description: error instanceof Error ? error.message : String(error),
           position: "bottom-right",
         })
         return undefined
@@ -106,7 +76,5 @@ export function useStoryComments({
       withStoryTransition(story.id, () => send(story, input)),
     [send]
   )
-  // `send` is for a caller already inside the story's transition (resume):
-  // a second transition on the same story would be refused.
-  return { requestChanges, send }
+  return { requestChanges }
 }

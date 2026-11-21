@@ -81,6 +81,32 @@ export async function engineGitFlowCall(
   return runWorkspaceTask(worktree, () => call(resolved));
 }
 
+/**
+ * A git flow the engine host runs itself (a story's Approve & Merge): what
+ * main adds to it, as `engineGitFlowCall` does for a window's call. The
+ * worktree counts as written until `endEngineGitFlow`.
+ */
+export async function beginEngineGitFlow(
+  worktree: string,
+  beforeDelivery: (worktree: string) => Promise<void>,
+) {
+  const flow = {
+    inVm: runtimeManagedPath(worktree),
+    activeWorktrees: [
+      ...agentWorkspaceWriters.activeWorkspaces(),
+      ...engineActiveWorkspaces(),
+    ],
+  };
+  await beforeDelivery(worktree);
+  const operation = `operation:${randomUUID()}`;
+  agentWorkspaceWriters.begin(operation, worktree);
+  return { ...flow, operation };
+}
+
+export function endEngineGitFlow(operation: string) {
+  agentWorkspaceWriters.forget(operation);
+}
+
 async function runWorkspaceTask<T>(workspace: string, task: () => Promise<T>) {
   const operationId = `operation:${randomUUID()}`;
   agentWorkspaceWriters.begin(operationId, workspace);

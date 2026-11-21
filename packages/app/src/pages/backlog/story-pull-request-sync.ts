@@ -1,10 +1,6 @@
 import type { PullRequestState } from "@blame/agent-runtime"
 
-import type {
-  UserStory,
-  UserStoryUpdate,
-} from "@/components/backlog/data/backlog-data"
-import { inactiveStoryFields } from "./story-runtime-state.ts"
+import type { UserStory } from "@/components/backlog/data/backlog-data"
 
 // A story in review whose pull request is open on GitHub follows what
 // happens to it there: merged is Done, closed without merge gives back Reject
@@ -16,13 +12,10 @@ export type SyncedStory = UserStory & { pullRequestUrl: string }
 export type PullRequestSyncOutcome = "merged" | "closed"
 
 export type PullRequestSyncEffects = {
-  /** The merged story's runtime cleanup: agent, setup, preview, worktree. */
-  cleanupMergedStory: (story: UserStory) => Promise<void>
-  updateStory: (
-    story: UserStory,
-    input: UserStoryUpdate,
-    options: { cleanup: false }
-  ) => Promise<UserStory>
+  /** Done, with its runtime cleaned up: agent, setup, preview, worktree (the story service). */
+  completeStory: (story: UserStory, mergedAt: string) => Promise<unknown>
+  /** The pull request's link goes, with the error it may have left. */
+  forgetPullRequest: (story: UserStory) => Promise<unknown>
 }
 
 /** A story whose pull request GitHub is asked about. */
@@ -41,28 +34,11 @@ export async function applyPullRequestState(
   effects: PullRequestSyncEffects
 ): Promise<PullRequestSyncOutcome | undefined> {
   if (state.status === "merged") {
-    await effects.updateStory(
-      story,
-      {
-        ...inactiveStoryFields(),
-        agentLastError: null,
-        mergedAt: state.mergedAt,
-        status: "done",
-      },
-      { cleanup: false }
-    )
-    await effects.cleanupMergedStory(story)
+    await effects.completeStory(story, state.mergedAt)
     return "merged"
   }
   if (state.status === "closed") {
-    await effects.updateStory(
-      story,
-      {
-        agentLastError: null,
-        pullRequestUrl: null,
-      },
-      { cleanup: false }
-    )
+    await effects.forgetPullRequest(story)
     return "closed"
   }
   return undefined

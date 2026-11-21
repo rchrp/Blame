@@ -36,16 +36,6 @@ export type EngineHostRegistration = {
   environment: NodeJS.ProcessEnv;
   /** The services the agents' tools use (engine-desktop-services.ts). */
   desktop: EngineDesktopHandlers;
-  /**
-   * What the desktop prepares before a window's call reaches the host (a
-   * story's development server, its GitHub access); `api` is the
-   * connection the windows gave the host.
-   */
-  beforeCall?(
-    method: EngineHostMethod,
-    input: unknown,
-    api: EngineHostInput<"connect">["api"] | undefined,
-  ): Promise<void>;
   /** A session's turn started or its turns all ended. */
   onActivity?(event: Extract<EngineHostEvent, { type: "activity" }>): void;
   /** Adds what only main knows to a window's call (the git flows'), then makes it. */
@@ -257,15 +247,24 @@ export function registerEngineIpcHandlers(
       known.add(viewer.id);
       viewer.once("destroyed", () => {
         known.delete(viewer.id);
+        // Its projects stop starting stories unless another window lists them.
+        const window = engine.router.storyWindow(viewer.id);
+        if (window)
+          void engine
+            .call("storyWindowClosed", { window })
+            .catch(() => undefined);
         for (const subscription of engine.router.forget(viewer.id))
           void engine.call("unfollow", { subscription }).catch(() => undefined);
+        const signOut = engine.router.signOutLeft();
+        if (signOut) void engine.call("connect", signOut).catch(() => undefined);
       });
     }
-    await registration.beforeCall?.(
-      method as EngineHostMethod,
-      input,
-      engine.router.api(),
-    );
+    if (method === "connect") {
+      // Nothing is told for a window that would sign the others out.
+      const told = engine.router.connect(viewer, input as EngineHostInput<"connect">);
+      if (!told) return null;
+      input = told;
+    }
     const call = (prepared: unknown) =>
       engine.call(method as EngineHostMethod, prepared);
     return registration.prepareCall

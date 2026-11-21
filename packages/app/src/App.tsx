@@ -11,6 +11,7 @@ import { DeployPage } from "@/pages/deploy/page"
 import { InitializationPage } from "@/pages/initialization/page"
 import { SecurityPage } from "@/pages/security/page"
 import { BacklogStoreProvider } from "@/components/backlog/data/backlog-store"
+import { StoryServiceSync } from "@/components/backlog/data/story-service-sync"
 import { QuickChatStoreProvider } from "@/components/chat/data/quick-chat-store"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { AiPreferencesSetupScreen } from "@/components/onboarding/ai-preferences-setup-screen"
@@ -207,6 +208,7 @@ export function App() {
         <QuickChatStoreProvider>
           <>
             <EngineConnection />
+            <StoryServiceSync />
             <ProjectInitializationRunner />
             <ProjectCodePracticesRunner />
             <PersonalizationSync />

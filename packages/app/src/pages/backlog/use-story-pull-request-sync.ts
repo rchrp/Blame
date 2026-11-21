@@ -7,7 +7,6 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 import type { usePlatform } from "@/context/platform"
 import type { useProjects } from "@/context/projects"
-import { cleanupMergedStory } from "./story-post-merge"
 import {
   applyPullRequestState,
   isSyncedStory,
@@ -25,11 +24,7 @@ type StoryPullRequestSyncInput = {
   projects: ReturnType<typeof useProjects>
   stories: UserStory[]
   storiesRef: { current: UserStory[] }
-  updateStory: (
-    story: UserStory,
-    input: UserStoryUpdate,
-    options: { cleanup: false }
-  ) => Promise<UserStory>
+  updateStory: (story: UserStory, input: UserStoryUpdate) => Promise<UserStory>
 }
 
 // A story in review with a pull request asks GitHub (gh pr view, on the host)
@@ -46,6 +41,7 @@ export function useStoryPullRequestSync({
   updateStory,
 }: StoryPullRequestSyncInput) {
   const agent = platform.agent
+  const engine = platform.engine
   const repositoryRoot = projects.activeProject?.path
   const watched = stories.filter(isSyncedStory)
   const watchedKey = watched
@@ -57,7 +53,7 @@ export function useStoryPullRequestSync({
 
   // False when gh cannot answer: the rest is not asked either.
   const syncStories = React.useEffectEvent(async () => {
-    if (!agent || !repositoryRoot) return false
+    if (!agent || !engine || !repositoryRoot) return false
     for (const story of storiesRef.current.filter(isSyncedStory)) {
       if (storiesInTransition().has(story.id)) continue
       const state = await agent
@@ -72,9 +68,17 @@ export function useStoryPullRequestSync({
       try {
         const outcome = await withStoryTransition(current.id, () =>
           applyPullRequestState(current, state, {
-            cleanupMergedStory: (merged) =>
-              cleanupMergedStory(merged, platform, repositoryRoot),
-            updateStory,
+            // Done: the story service cleans its runtime up.
+            completeStory: (merged, mergedAt) =>
+              engine!.call("storyComplete", { storyId: merged.id, mergedAt }),
+            forgetPullRequest: async (closed) => {
+              await updateStory(closed, { pullRequestUrl: null })
+              if (closed.agentLastError)
+                await engine!.call("storyError", {
+                  storyId: closed.id,
+                  error: null,
+                })
+            },
           })
         )
         if (outcome) notifySynced(current, outcome)

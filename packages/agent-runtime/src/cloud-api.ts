@@ -19,7 +19,7 @@ type ApiResponse<T> = {
 };
 
 export function searchWeb(connection: ApiConnection, input: { query: string; limit?: number; language?: string }, signal?: AbortSignal) {
-  return request<import('./web-research-types.js').WebSearchResult>(connection, '/web/search', {
+  return apiRequest<import('./web-research-types.js').WebSearchResult>(connection, '/web/search', {
     method: 'POST', body: JSON.stringify(input),
     signal: AbortSignal.any([AbortSignal.timeout(20_000), ...(signal ? [signal] : [])]),
   });
@@ -39,7 +39,7 @@ type ResolvedCredential = {
 /** The person's provider credentials, without their secrets. */
 export async function listProviderCredentials(connection: ApiConnection) {
   return normalizeCredentials(
-    await request<unknown>(connection, "/providers/credentials"),
+    await apiRequest<unknown>(connection, "/providers/credentials"),
   );
 }
 
@@ -61,7 +61,7 @@ export function fetchModelRecommendations(
   connection: ApiConnection,
   input: { connected: string[]; models: RecommendationCandidate[] },
 ) {
-  return request<ModelRecommendations>(
+  return apiRequest<ModelRecommendations>(
     connection,
     "/providers/recommendations",
     {
@@ -76,7 +76,7 @@ export function saveProviderCredential(
   connection: ApiConnection,
   input: SaveProviderCredentialInput,
 ) {
-  return request<ProviderCredentialSummary>(
+  return apiRequest<ProviderCredentialSummary>(
     connection,
     "/providers/credentials",
     {
@@ -90,7 +90,7 @@ export function saveOAuthCredential(
   connection: ApiConnection,
   input: SaveOAuthCredentialInput,
 ) {
-  return request<ProviderCredentialSummary>(
+  return apiRequest<ProviderCredentialSummary>(
     connection,
     "/providers/credentials/oauth",
     {
@@ -104,7 +104,7 @@ export function saveLocalProviderCredential(
   connection: ApiConnection,
   input: SaveLocalProviderCredentialInput,
 ) {
-  return request<ProviderCredentialSummary>(
+  return apiRequest<ProviderCredentialSummary>(
     connection,
     "/providers/credentials/local",
     {
@@ -118,7 +118,7 @@ export function deleteProviderCredential(
   connection: ApiConnection,
   input: DeleteProviderCredentialInput,
 ) {
-  return request<void>(connection, `/providers/credentials/${input.id}`, {
+  return apiRequest<void>(connection, `/providers/credentials/${input.id}`, {
     method: "DELETE",
   });
 }
@@ -127,7 +127,7 @@ export function resolveProviderCredential(
   connection: ApiConnection,
   input: { providerId: string; label?: string },
 ) {
-  return request<ResolvedCredential>(
+  return apiRequest<ResolvedCredential>(
     connection,
     "/providers/credentials/resolve",
     {
@@ -141,7 +141,7 @@ export function listProjectMemories(
   connection: ApiConnection,
   projectId: string,
 ) {
-  return request<ProjectMemoryRecord[]>(
+  return apiRequest<ProjectMemoryRecord[]>(
     connection,
     `/projects/${encodeURIComponent(projectId)}/agent-memories`,
     { signal: AbortSignal.timeout(1_500) },
@@ -153,7 +153,7 @@ export function saveProjectMemory(
   projectId: string,
   candidate: ProjectMemoryCandidate,
 ) {
-  return request<ProjectMemoryRecord>(
+  return apiRequest<ProjectMemoryRecord>(
     connection,
     `/projects/${encodeURIComponent(projectId)}/agent-memories`,
     {
@@ -170,20 +170,21 @@ export function listProjectUserStories(
   projectId: string,
 ) {
   const query = new URLSearchParams({ projectId, view: "summary" });
-  return request<unknown>(connection, `/projects/user-stories?${query}`, {
+  return apiRequest<unknown>(connection, `/projects/user-stories?${query}`, {
     signal: AbortSignal.timeout(8_000),
   });
 }
 
 export function getProjectUserStory(connection: ApiConnection, id: string) {
-  return request<unknown>(
+  return apiRequest<unknown>(
     connection,
     `/projects/user-stories/${encodeURIComponent(id)}`,
     { signal: AbortSignal.timeout(8_000) },
   );
 }
 
-async function request<T>(
+/** A call to the account's API, its answer unwrapped (`data`, transformers). */
+export async function apiRequest<T>(
   connection: ApiConnection,
   path: string,
   init?: RequestInit,

@@ -29,6 +29,11 @@ function readLimits(): Record<string, number> {
   }
 }
 
+/** Every story's cap, for the story service (which starts the stories). */
+export function storyContextLimits(): Record<string, number> {
+  return limits
+}
+
 export function storyContextLimit(storyId: string | undefined) {
   return storyId ? limits[storyId] : undefined
 }

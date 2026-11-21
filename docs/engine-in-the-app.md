@@ -55,6 +55,7 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | `running()` | Sessions with a turn running now. |
 | task calls (`generateTitle`…), `cancelTask({ session })`, `deleteSession({ session })` | See [Tasks](#tasks); declared in `engine/task-protocol.ts`. |
 | `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended, what the agent last reported (`lastReply`: its `finish_task` summary, or its last text) and how far its plan is (`plan`). |
+| `story*` | The story service (see "Development stories"; declared in `engine/story-protocol.ts`): `storySync`, `storyRefresh`, `storyRetry`, `storyQueueState`, `storyEnqueue`, `storySend`, `storyPause`, `storyResume`, `storyRewind`, `storyApprove`, `storyComplete`, `storyToBacklog`, `storyDiscard`, `storyDelete`, `storyError`. A story comes back as the API's payload. |
 | `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
 | `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
 | `signInChatGpt({ label })` | `blame-engine auth chatgpt login`: opens the sign-in in the browser (`openExternal`, served by main) and keeps the tokens in the API. |
@@ -78,6 +79,15 @@ Host → renderer, on `engine:event`:
   moves. A story's card and its drawer header read it (`onPlan`,
   `components/chat/plan/plan-progress-store.ts`); no transcript is read for a
   card.
+- `{ type: "story", projectId, storyId, story }`, `story-removed`,
+  `story-cleanup` and `story-queue`: what the story service wrote to a story
+  (the API's payload), a story it deleted, the removal of a story's runtime,
+  and why queued stories wait (`onStory`). The backlog of the project a
+  window shows applies them; nothing is read again.
+- An `activity` event carries the session's folder (`workspace`) when the
+  host knows it: main keeps a preview up and never moves a target branch
+  under a folder where an agent works, for sessions the host started
+  itself.
 
 ## Development stories
 
@@ -104,19 +114,137 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   A story's preview tools follow the project's saved preview environment.
 - **Project memory**: an accepted `finish_task` leaves its memory next to
   the harness journal; the host saves it to the account when the turn ends.
-- **Lifecycle**, all from the renderer through `platform.engine`
-  (`pages/backlog/story-engine.ts`, `use-backlog-rotation.ts`,
-  `use-story-comments.ts`): start creates the session and sends the brief;
-  a message while the agent works is queued by the engine (or steered into
-  the turn with Send now); Pause is `interrupt`; undo of a message is
-  `rewind` with its files; Compact is `compact`.
-- **Board state**: the renderer is the one writer of the story's agent
-  fields (`use-story-agent-outcomes.ts`). An `activity` event with
-  `running` sets `agentStatus: "Running"`; the end of a turn sets what its
-  outcome means (completed: In review; failed: Paused with
-  `agentLastError`; interrupted or limit reached: Paused). After a quit
-  mid-turn, stories left Running are settled from `status` when the backlog
-  loads.
+- **The story service** (`engine/stories/`, `EngineHost.stories`) owns a
+  story's life, for every project the windows know on this computer,
+  whatever page or project a window shows, and with no window following
+  the session. It is the one writer of a story's agent fields
+  (`agentStatus`, `agentLastError`, `engineSessionId`, `agentModels`) and of
+  its status once it is queued. Windows call it (`story*`) and show what it
+  writes; the host's own code (the orchestrator) calls its methods directly:
+  `create`, `enqueue`, `send`, `pause`, `resume`, `approve`, `complete`,
+  `discard`, `toBacklog`, `remove`, and `onTurnEnded` for one event per
+  ended turn (its id, the story, the turn's outcome and the agent's report,
+  `lastReply`). Each method checks the story is in the state it needs
+  (`enqueue` a story of the backlog, `approve` one in review), and every
+  action on a story runs after the one before it.
+- **What only a window knows**: each window sends `storySync` with its id,
+  the projects open on this computer (id and folder, from its recent
+  projects) and the person's settings kept on the device: the account's
+  agent model as the picker resolves it, personalization, the default run
+  mode, Premium, the context caps picked per story, the Blame Runtime's
+  phase and the projects whose preview environment it prepares now. The
+  queue runs for the projects the open windows list together; a project no
+  window lists any more stops starting stories, and when a window closes
+  main tells the host (`storyWindowClosed`). When the last window closes
+  its list stays, since the app runs on. The latest settings win (the
+  agent model is the latest one a window named, so a window whose picker
+  is still loading holds nothing back); main replays each open window's
+  last sync to a restarted host, the latest last, and none after a
+  sign-out. A refreshed token keeps everything; signing out or another API
+  starts over. A window still loading sends no `connect`, and main tells
+  the host a window is not signed in only once no other open window is
+  (`engine-host-router.ts`): opening or reloading a window, or one on the
+  sign-in screen, signs no one out. A window that created or edited
+  a story says so (`storyRefresh`); the service also reads every project's
+  stories again each minute. A read asked before a write's answer arrived
+  never replaces it (`stories/records.ts`).
+- **One computer, its stories**: the service settles, pauses and
+  reconciles only the stories this computer runs (it started their agent
+  or sent them a turn), kept with their project's folder in
+  `<userData>/story-turns.json` (`stories/ledger.ts`). A story another
+  computer of the account runs is left alone: its session is never read
+  here (reading it would pull it from Blame's database and end its running
+  turn as interrupted on this computer), a pause or a message to it is
+  refused, and its worktree is not removed here. A story no agent runs is
+  cleaned of what this computer has of it when it is merged, done,
+  discarded or sent back here, whoever started it (a story in review from
+  before the ledger existed included). A story at work the ledger does not
+  name (one the previous build left, or a lost ledger) is this computer's
+  when its engine runs the story's session or the story's own worktree is
+  here, the runtime VM's included (`storyWorktreeHere`; a Direct story's
+  folder proves nothing); and, for a story already at work when its
+  project is first read after the ledger started empty (no file yet, or
+  one set aside), when this computer's engine keeps its session
+  (`session/list`, never Blame's database). Only then, since a session
+  followed here from a drawer is kept here too. The service looks when a
+  project is first read and each minute (in the runtime VM only while it
+  runs, since looking there starts it), and before it refuses a pause or a
+  message or skips a cleanup; the ledger names the story from then on,
+  and the turn it was left at work for is told (`stories/ownership.ts`). Two computers starting the same queued story is
+  not prevented yet: that needs an atomic claim in the API.
+- **Reconcile** (`stories/reconcile.ts`): every path ends in one step, run
+  as the story's action: its record read now, set against what the engine
+  says of its session (`status`), and written with retries. A turn running
+  as the records say makes the story In Progress and Running (a follow-up
+  to a story in review too; a compaction is not a turn and moves nothing);
+  a turn that ended applies its outcome; a session that never got its
+  first message is dropped and the story queued again; a start or an
+  Approve & Merge cut short (a quit, a crash, a failed write) is put
+  right. A session the engine cannot read now is not taken for a lost one:
+  only "does not exist" is. It runs on each `activity` event, when a
+  project is first read (after a quit), and every minute for the stories
+  said Running whose turn does not run, one pending per story, again after
+  a failure with a pause that grows to ten minutes (`stories/reconciler.ts`),
+  and never waiting more than a minute on the API or the engine, so a
+  story's other actions are never held. So a story this computer runs is
+  never left Running with no turn running, nor In Progress with no agent.
+  The engine ends a turn a crash cut as interrupted when it opens the
+  session again, before `status` reads it.
+- **Turns told once**: each ended turn reaches `onTurnEnded` once, after
+  the story is settled, a turn that ended while Blame was closed included.
+  `status` lists a session's last 100 ended turns (`endedTurns`); the
+  service keeps the turns it told per session in the same file, so a
+  rewind and its undo tell nothing twice. A file that cannot be read is
+  kept aside (`.corrupt-<time>`), never overwritten; what it said is then
+  lost (the stories it ran are not settled here, their turns not told).
+- **The queue**: every story in `ready` whose files are uploaded starts, oldest
+  first, with no cap on how many agents work at once (preview starts and
+  builds still take turns by free memory in main, `runtime-heavy-work.ts`).
+  A story whose `startsAfter` names stories of its project starts once each
+  is `done`; one that was discarded or deleted means it never starts
+  (`dependency-dropped`). A story that cannot start yet waits with a reason
+  (`StoryWaitReason`: the stories it starts after, no model chosen, the
+  preview environment being prepared, the Blame Runtime starting or
+  missing, a missing tool on this computer, Git without a name, Cloud
+  Preview without Premium, a failed start). Its card in Agent Queue says
+  why; the window showing its project also does what only it can (start
+  the runtime, the host-dependencies or Git identity dialog, a toast), then
+  `storyRetry`. Every wait has a delay before the queue tries again.
+- **Start** (`stories/start.ts`): the details, the run mode (a project with
+  no working preview environment runs Direct), the runtime and host checks
+  (desktop services `checkHostDependencies`, `gitIdentity`), the worktree
+  (`createStoryWorktree`), the story in progress, then the session (a
+  requeued story keeps its conversation), the turn's preparation in main
+  (`prepareStoryTurn`: development server, preview sync, GitHub access) and
+  the first message with the story's attachments. Its first run uses the
+  story's `requestedModel` when set, else the account's agent model. A
+  start that fails puts the story back in the queue with the error.
+- **Turns** (`stories/turns.ts`): a message while the agent works is queued
+  by the engine (or steered into the turn with Send now); a message to a
+  paused or reviewed story makes it work again, said before the turn starts.
+  The window sends the composer's text, excerpts and files, and the model,
+  cap, personalization and Ultra mode picked; the service builds the turn's
+  settings. Pause is `interrupt`; undo of a message is `rewind` with its
+  files, then the turns are counted again; Compact is `compact`.
+- **Board state**: an `activity` event with `running` sets `agentStatus:
+  "Running"`; the end of a turn sets what its outcome means (completed: In
+  review; failed: Paused with `agentLastError`; interrupted or limit
+  reached: Paused) and how many turns each model answered. After a quit
+  mid-turn, the stories left Running are settled from `status` when the
+  service first reads their project.
+- **Endings** (`stories/endings.ts`): Approve & Merge runs the git flow
+  (`approveAndMerge`, with what main adds through `beginGitFlow`), then the
+  story is done and its runtime is cleaned as the story's next action (a
+  rework or a new start waits for it, however long the removal takes):
+  the agent
+  stopped and its session deleted (the account keeps the conversation), its
+  setup, previews and devices stopped (`stopStoryRuntime`), its worktree
+  removed (`removeStoryWorktree`). The window then says where it went and
+  checks the preview environment against the merge (with the story's own
+  repair, read from its worktree). Done without a merge here (a Direct
+  commit, a pull request merged on GitHub, nothing to merge), discarded,
+  back to the backlog and deleted stories go through the service the same
+  way; a discarded story keeps its conversation for a rework.
 - **Drawer**: `StoryConversationProvider` follows the session once for the
   timeline, the metrics and the stats island. A turn's changed files open as
   the diff from its checkpoint snapshot (a git tree) to the next turn's, or
@@ -326,9 +454,12 @@ later day does not rewrite it and the provider's prompt cache holds.
   `user_stories` holds `engine_session_id`, `agent_status`,
   `agent_last_error` and `agent_models` (the models that worked on it, for
   the board); runs, activities and story comments are records.
-- **The renderer** writes product state (create, rename, delete a chat or a
-  story, a story's agent fields above) and nothing about runs: no run rows,
-  no activities, no outboxes.
+- **The story service** in the engine host writes a story's agent fields
+  above and its status from the queue on (started, settled, merged, done,
+  discarded, back to the backlog, deleted).
+- **The renderer** writes product state (create, rename, delete a chat; create
+  a story and edit its fields) and nothing about runs: no run rows, no
+  activities, no outboxes.
 
 ## Providers and models
 
@@ -453,7 +584,10 @@ The tools ask the main process for what only it has through typed desktop
 services (`engine/desktop-services.ts`, `DesktopServices`): the preview's
 browser, readiness, logs, variables and screen, the screenshot store, the
 component preview server, the session's GitHub MCP connection (its token
-never leaves main), the project runner, Git and page rendering. The host
+never leaves main), the project runner, Git and page rendering; and for the
+story service a story's worktree, the host checks, Git's identity, a turn's
+preparation and a story's cleanup
+(`packages/desktop/src/main/engine/engine-story-services.ts`). The host
 sends `desktop-request { method, input }`; main answers it in
 `packages/desktop/src/main/engine/engine-desktop-services.ts` (the same
 functions the agent runtime host uses, which delegates to it) and an aborted
@@ -509,10 +643,10 @@ and `path:line` or URL references).
   own (the harness keys them by session). Reasoning: the lead's effort capped
   at `low` (`medium` for a review).
 - **Caps** (`gate.rs`): 4 per call, 8 per turn, 4 running per session, 6
-  running per engine. Blame runs up to three stories at once; three stories
-  with four helpers each would be twelve model streams on one key and twelve
-  callers of the one harness process. Six is two per story and leaves each
-  lead its own stream; helpers past it wait for a slot (the card says
+  running per engine. Blame runs every queued story at once; three stories
+  with four helpers each would already be twelve model streams on one key and
+  twelve callers of the one harness process. Six is two per story for three
+  stories and leaves each lead its own stream; helpers past it wait for a slot (the card says
   "Waiting"), nothing is refused for it. Each helper has its own limits: 16
   requests, 4 minutes, 500k tokens counted.
 - **Stopping.** The call is the lead's: an interrupt, a rewind or the engine
@@ -647,9 +781,10 @@ an engine task (`GitAgent`). Main adds what only it knows to these calls
 (`engineGitFlowCall` in `agent-ipc.ts`): whether the worktree is in the
 runtime VM (`inVm`), the worktrees where an agent runs (`activeWorktrees`,
 so a target branch never moves under one), the preview sync before a
-delivery, and the worktree counted as written while the flow runs. Git runs
-through main (`git` desktop service); gh runs in the host with the person's
-own sign-in. A failed commit message agent leaves Blame's own message.
+delivery, and the worktree counted as written while the flow runs. A
+story's Approve & Merge is the story service's, in the host: it asks main
+for the same (`beginGitFlow`, `endGitFlow`). Git runs through main (`git`
+desktop service); gh runs in the host with the person's own sign-in. A failed commit message agent leaves Blame's own message.
 The conflict agent cannot run git mutations (its workspace is not isolated):
 the host stages each conflicted file it left without markers, then Git says
 what is still conflicted, as before.

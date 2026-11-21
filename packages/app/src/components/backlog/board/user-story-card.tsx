@@ -24,6 +24,10 @@ import { StoryActions } from "@/components/backlog/actions/story-actions"
 import { StoryContributors } from "@/components/backlog/shared/story-contributors"
 import { StoryRunModeIcon } from "@/components/backlog/shared/story-run-mode-icon"
 import { storyStartFailure } from "@/components/backlog/shared/story-start-failure"
+import {
+  storyWaitText,
+  useStoryWait,
+} from "@/components/backlog/data/story-queue-waits"
 import { PlanProgressLine } from "@/components/chat/plan/plan-progress-line"
 import { usePlanProgress } from "@/components/chat/plan/plan-progress-store"
 import { Button } from "@/components/ui/button"
@@ -256,7 +260,7 @@ function StoryPlanProgress({ story }: { story: UserStory }) {
 
 function StoryStartFailure({ story }: { story: UserStory }) {
   const failure = storyStartFailure(story)
-  if (!failure) return null
+  if (!failure) return <StoryQueueWait story={story} />
   return (
     <CardContent>
       <p
@@ -264,6 +268,23 @@ function StoryStartFailure({ story }: { story: UserStory }) {
         title={failure}
       >
         {failure}
+      </p>
+    </CardContent>
+  )
+}
+
+// Why a queued story does not start yet, as the story service says it.
+function StoryQueueWait({ story }: { story: UserStory }) {
+  const wait = useStoryWait(story.id)
+  if (story.status !== "ready" || !wait) return null
+  const text = storyWaitText(wait)
+  return (
+    <CardContent>
+      <p
+        className="line-clamp-3 text-xs font-medium break-words text-muted-foreground"
+        title={text}
+      >
+        {text}
       </p>
     </CardContent>
   )

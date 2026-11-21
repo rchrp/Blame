@@ -27,11 +27,7 @@ type QueuedUserStoryTitleRequest = {
   model: ReturnType<typeof useModelSelection>["currentModel"]
   reasoningEffort: ReturnType<typeof useModelSelection>["currentVariant"]
   runConfigurations: ProjectRunConfiguration[]
-  updateStory: (
-    story: UserStory,
-    input: UserStoryUpdate,
-    options?: { cleanup?: boolean }
-  ) => Promise<UserStory>
+  updateStory: (story: UserStory, input: UserStoryUpdate) => Promise<UserStory>
 }
 
 export function queuedUserStoryTitleRequest(
@@ -83,16 +79,12 @@ async function persistGeneratedQueuedStoryTitle(
   request: QueuedUserStoryTitleRequest,
   generated: { title: string; runConfigurationId?: string | null }
 ) {
-  return request.updateStory(
-    request.story,
-    {
-      title: missingUserStoryTitle(request.story.title)
-        ? generated.title
-        : request.story.title,
-      runConfigurationId: generated.runConfigurationId ?? null,
-    },
-    { cleanup: false }
-  )
+  return request.updateStory(request.story, {
+    title: missingUserStoryTitle(request.story.title)
+      ? generated.title
+      : request.story.title,
+    runConfigurationId: generated.runConfigurationId ?? null,
+  })
 }
 
 function queuedStoryTitleGenerationInput(request: QueuedUserStoryTitleRequest) {

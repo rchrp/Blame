@@ -242,8 +242,6 @@ export function actionInput(
       discardedReason: "Stopped by user",
       status: "discarded",
     }
-  if (action === "Request Changes")
-    return { agentStatus: "Running", status: "in-progress" }
   if (action === "Reject")
     return { discardedReason: "Rejected during review", status: "discarded" }
   if (action === "Rework as Draft")

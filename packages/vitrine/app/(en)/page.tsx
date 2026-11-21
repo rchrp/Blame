@@ -10,7 +10,7 @@ import { homepageStructuredData } from '@/lib/structured-data'
 export const metadata = createIndexablePageMetadata({
   title: 'Blame ADE — Run coding agents in parallel, each with its own live preview',
   description:
-    'Free, open-source desktop app: run up to three coding agents at once, each with its own worktree, ports, database, and live preview. No account needed.',
+    'Free, open-source desktop app: run coding agents in parallel, each with its own worktree, ports, database, and live preview. No account needed.',
   canonicalPath: '/',
 })
 

@@ -21,7 +21,7 @@ const demoVideoUrl = "https://youtu.be/cD6jASpIKQw";
 const studyUrl = absoluteSiteUrl("/research/light-semantic-harness-study.pdf");
 
 export const productSummary =
-  "Blame ADE is a free, open-source desktop app for macOS, Windows, and Linux that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so up to three agents work at once without conflicts, and nothing merges until you approve it. No account needed: it works with your Claude or ChatGPT plan, or 50 AI providers with your own key.";
+  "Blame ADE is a free, open-source desktop app for macOS, Windows, and Linux that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so agents work side by side without conflicts, and nothing merges until you approve it. No account needed: it works with your Claude or ChatGPT plan, or 50 AI providers with your own key.";
 
 const installCommands = [
   "- macOS: `brew install --cask rchrp/tap/blame`",
@@ -46,7 +46,7 @@ export function homeMarkdown() {
 
 ${keyLinks}
 
-Plan stories in a backlog, then run up to three agents at once. Each gets its own ports, database, and services, so you try every change in its running app before you review and merge it.
+Plan stories in a backlog, then run an agent on each of them at once. Each gets its own ports, database, and services, so you try every change in its running app before you review and merge it.
 
 Free and open source · No account needed · Works with your Claude or ChatGPT plan
 
@@ -68,7 +68,7 @@ Before an agent starts, Blame gives its story:
 - its own ports;
 - its own containers for the app and its services: database, cache, workers.
 
-Up to three agents run at once, and you try each change in its own running app. Previews today cover web apps and APIs that run on Linux (the page in a built-in browser) and Linux GUI, Electron, and Tauri apps (a screen of the running app).
+Every story you queue starts at once, and you try each change in its own running app. Previews today cover web apps and APIs that run on Linux (the page in a built-in browser) and Linux GUI, Electron, and Tauri apps (a screen of the running app).
 
 ## How a story goes from backlog to merge
 
@@ -107,7 +107,7 @@ Open the running app beside the story, read the diff and the checks, then approv
 
 ## Parallel agents: run every agent on the model that fits
 
-Run up to three agents at once, each on its own model. Sign in with your Claude or ChatGPT plan, or use any of 50 AI providers, such as OpenAI, Anthropic, Google, xAI, and Mistral, with your own key, plus any OpenAI-compatible API.
+Run an agent on every story you queue, each on its own model. Sign in with your Claude or ChatGPT plan, or use any of 50 AI providers, such as OpenAI, Anthropic, Google, xAI, and Mistral, with your own key, plus any OpenAI-compatible API.
 
 ## Code Practices: same rules for every agent
 

@@ -526,16 +526,8 @@ export function registerWorkspaceIpcHandlers(
   );
   ipcMain.handle(
     "workspace:check-host-dependencies",
-    async (_event, input: CheckHostDependenciesInput) =>
-      checkHostDependencies({
-        env: await setupEnvironment(
-          input.worktree ? resolveRuntimePath(input.worktree) : "",
-        ),
-        includeRuntime: input.includeRuntime,
-        runtimeProfile: input.runtimeProfile,
-        workspaceMode: input.workspaceMode,
-        setupScript: input.setupScript ?? "",
-      }),
+    (_event, input: CheckHostDependenciesInput) =>
+      checkWorkspaceHostDependencies(input),
   );
   ipcMain.handle(
     "workspace:stop-project-setup",
@@ -637,6 +629,58 @@ async function readWorkspaceFile(input: WorkspacePathInput) {
   const fileStat = await stat(filePath);
   if (!fileStat.isFile()) throw new Error("Path is not a file");
   return readFile(filePath, "utf8");
+}
+
+/** What this computer needs to run a story or a project setup in that mode. */
+export async function checkWorkspaceHostDependencies(
+  input: CheckHostDependenciesInput,
+) {
+  return checkHostDependencies({
+    env: await setupEnvironment(
+      input.worktree ? resolveRuntimePath(input.worktree) : "",
+    ),
+    includeRuntime: input.includeRuntime,
+    runtimeProfile: input.runtimeProfile,
+    workspaceMode: input.workspaceMode,
+    setupScript: input.setupScript ?? "",
+  });
+}
+
+/** A story's worktree, for the story service in the engine host. */
+export function createStoryWorktree(input: CreateWorktreeInput) {
+  return createWorktree(input);
+}
+
+/** Stops a worktree's project setup and its local preview. */
+export function stopStoryProjectSetup(input: StopProjectSetupInput) {
+  return stopProjectSetup(input);
+}
+
+/** Removes a story's worktree with its preview; the project folder stays. */
+export function removeStoryWorktree(input: RemoveWorktreeInput) {
+  return removeWorktree(input);
+}
+
+/**
+ * Whether a story's own worktree (never the project folder) is on this
+ * computer, in the runtime VM included; throws when Git cannot tell.
+ */
+export async function storyWorktreeHere(input: {
+  repositoryRoot: string;
+  worktree: string;
+  workspaceMode?: WorkspaceMode;
+}) {
+  const { state } = await inspectWorktreeRemoval({
+    repositoryRoot: resolveRuntimePath(input.repositoryRoot),
+    worktree: resolveRuntimePath(input.worktree),
+    workspaceMode: input.workspaceMode,
+  });
+  return state === "registered" || state === "unregistered";
+}
+
+/** A file of a workspace, null when it is not there. */
+export function readStoryWorkspaceFile(input: WorkspacePathInput) {
+  return readWorkspaceFile(input).catch(() => null);
 }
 
 async function createWorktree(input: CreateWorktreeInput) {

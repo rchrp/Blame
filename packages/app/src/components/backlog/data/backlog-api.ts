@@ -62,12 +62,12 @@ export function createBacklogApi(connection: ApiConnection) {
         )
       )
     },
-    async delete(id: string) {
-      await request<void>(connection, baseUrl, `/projects/user-stories/${id}`, {
-        method: "DELETE",
-      })
-    },
   }
+}
+
+/** A story as the API sends it (the story service's events carry it so). */
+export function parseUserStory(value: unknown) {
+  return userStory(value)
 }
 
 export class BacklogApiError extends Error {

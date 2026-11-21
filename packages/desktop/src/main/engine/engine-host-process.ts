@@ -2,6 +2,7 @@
 // app's one engine. The main process forks it, relays the windows' calls
 // and serves the desktop services the client tools ask for.
 
+import { dirname, join } from "node:path";
 import {
   EngineHost,
   desktopServices,
@@ -60,6 +61,8 @@ const services = desktopServices(desktop);
 const host = new EngineHost({
   binary: config.binary,
   dataDir: config.dataDir,
+  // Beside the engine's own data: which ended story turns were told.
+  storyLedgerFile: join(dirname(config.dataDir), "story-turns.json"),
   clientVersion: config.clientVersion,
   harnessCommand: [config.harness, ...harnessServeArgs()],
   // The engine passes its environment to the harness: Electron, run as

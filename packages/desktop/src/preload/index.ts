@@ -15,14 +15,18 @@ type AuthCallbackDelivery = {
 type EngineEventListener = Parameters<BlameDesktopApi["engine"]["follow"]>[1];
 type EngineActivityListener = Parameters<BlameDesktopApi["engine"]["onActivity"]>[0];
 type EnginePlanListener = Parameters<BlameDesktopApi["engine"]["onPlan"]>[0];
+type EngineStoryListener = Parameters<BlameDesktopApi["engine"]["onStory"]>[0];
 // One listener for every engine event this window gets, dispatched here.
 const engineFollowers = new Map<string, EngineEventListener>();
 const engineActivityListeners = new Set<EngineActivityListener>();
 const enginePlanListeners = new Set<EnginePlanListener>();
+const engineStoryListeners = new Set<EngineStoryListener>();
 ipcRenderer.on("engine:event", (_event, value: EngineHostEvent) => {
   if (value.type === "follow") engineFollowers.get(value.subscription)?.(value.event);
   else if (value.type === "plan") for (const listener of enginePlanListeners) listener(value);
-  else for (const listener of engineActivityListeners) listener(value);
+  else if (value.type === "activity")
+    for (const listener of engineActivityListeners) listener(value);
+  else for (const listener of engineStoryListeners) listener(value);
 });
 
 const authCallbacks = new Set<AuthCallback>();
@@ -619,6 +623,10 @@ const api: BlameDesktopApi = {
     onPlan: (callback) => {
       enginePlanListeners.add(callback);
       return () => enginePlanListeners.delete(callback);
+    },
+    onStory: (callback) => {
+      engineStoryListeners.add(callback);
+      return () => engineStoryListeners.delete(callback);
     },
   },
   // What the app asks besides agents (they are all on platform.engine).

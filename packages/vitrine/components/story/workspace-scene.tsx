@@ -257,7 +257,7 @@ export function WorkspaceScene() {
         <p className="story-copy ws-copy mx-auto mt-6 max-w-3xl">
           Before an agent starts, Blame gives its story a branch, a worktree,
           its own ports, and containers for the app and its services: database,
-          cache, workers. Up to three agents run at once.
+          cache, workers. Every story you queue starts at once.
         </p>
       </div>
 

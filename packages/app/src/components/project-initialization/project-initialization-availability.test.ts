@@ -5,7 +5,6 @@ import {
   initializationStartsAutomatically,
   projectInitializationAvailability,
   staleInitializationMs,
-  storyInitializationDecision,
 } from "./project-initialization-availability.ts"
 
 const now = Date.parse("2026-10-28T12:00:00Z")
@@ -77,17 +76,6 @@ test("a run counts while it runs here or still reports", () => {
     projectInitializationAvailability(null, { runningHere: true, now }),
     "running"
   )
-})
-
-test("stories never wait on a missing initialization", () => {
-  assert.equal(storyInitializationDecision("unavailable", "direct"), "start")
-  assert.equal(
-    storyInitializationDecision("unavailable", "local-container"),
-    "run-direct"
-  )
-  assert.equal(storyInitializationDecision("running", "direct"), "start")
-  assert.equal(storyInitializationDecision("running", "vercel-compose"), "wait")
-  assert.equal(storyInitializationDecision("ready", "local-container"), "start")
 })
 
 test("starts by itself only for a project never analyzed or a run that stopped reporting", () => {

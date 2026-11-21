@@ -1,10 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import type {
-  UserStory,
-  UserStoryUpdate,
-} from "../../components/backlog/data/backlog-data.ts"
+import type { UserStory } from "../../components/backlog/data/backlog-data.ts"
 import {
   applyPullRequestState,
   isSyncedStory,
@@ -34,26 +31,17 @@ function reviewStory(overrides: Partial<UserStory> = {}): SyncedStory {
 }
 
 function recordedEffects() {
-  const updates: Array<{
-    input: UserStoryUpdate
-    options: { cleanup: false }
-    story: UserStory
-  }> = []
-  const cleaned: UserStory[] = []
+  const completed: Array<{ mergedAt: string; story: UserStory }> = []
+  const forgotten: UserStory[] = []
   return {
-    cleaned,
-    updates,
+    completed,
+    forgotten,
     effects: {
-      async cleanupMergedStory(story: UserStory) {
-        cleaned.push(story)
+      async completeStory(story: UserStory, mergedAt: string) {
+        completed.push({ mergedAt, story })
       },
-      async updateStory(
-        story: UserStory,
-        input: UserStoryUpdate,
-        options: { cleanup: false }
-      ) {
-        updates.push({ input, options, story })
-        return { ...story, ...input } as UserStory
+      async forgetPullRequest(story: UserStory) {
+        forgotten.push(story)
       },
     },
   }
@@ -71,9 +59,9 @@ test("watches the stories in review that have a pull request", () => {
   assert.equal(isSyncedStory(reviewStory({ status: "in-progress" })), false)
 })
 
-test("a pull request merged on GitHub makes the story done and cleans it up", async () => {
+test("a pull request merged on GitHub makes the story done, nothing merged again here", async () => {
   const story = reviewStory()
-  const { cleaned, effects, updates } = recordedEffects()
+  const { completed, effects, forgotten } = recordedEffects()
 
   const outcome = await applyPullRequestState(
     story,
@@ -82,63 +70,25 @@ test("a pull request merged on GitHub makes the story done and cleans it up", as
   )
 
   assert.equal(outcome, "merged")
-  assert.equal(updates.length, 1)
-  const [update] = updates
-  assert.equal(update?.story, story)
-  // The cleanup is the merge's own: no second one when the status changes.
-  assert.deepEqual(update?.options, { cleanup: false })
-  assert.deepEqual(update?.input, {
-    agentLastError: null,
-    agentStatus: null,
-    branch: null,
-    mergedAt: "2026-11-09T10:15:00Z",
-    previewUrl: null,
-    status: "done",
-    worktree: null,
-    workspaceMode: null,
-  })
-  // The story is cleaned up as it was in review, with its worktree and agent.
-  assert.deepEqual(cleaned, [story])
-  assert.equal(cleaned[0]?.worktree, "/worktrees/story-1")
-})
-
-test("a merged pull request is not merged again locally", async () => {
-  const { effects, updates } = recordedEffects()
-
-  await applyPullRequestState(
-    reviewStory(),
-    { status: "merged", mergedAt: "2026-11-09T10:15:00Z" },
-    effects
-  )
-
-  const [update] = updates
-  assert.equal(update?.input.mergeCommit, undefined)
-  assert.equal(update?.input.baseCommit, undefined)
-  assert.equal(update?.input.pullRequestUrl, undefined)
+  // The story service makes it done and cleans it up as it was in review.
+  assert.deepEqual(completed, [{ mergedAt: "2026-11-09T10:15:00Z", story }])
+  assert.equal(forgotten.length, 0)
 })
 
 test("a pull request closed without merge gives the story its actions back", async () => {
-  const { cleaned, effects, updates } = recordedEffects()
+  const story = reviewStory()
+  const { completed, effects, forgotten } = recordedEffects()
 
   const outcome = await applyPullRequestState(
-    reviewStory(),
+    story,
     { status: "closed" },
     effects
   )
 
   assert.equal(outcome, "closed")
-  assert.deepEqual(
-    updates.map(({ input }) => input),
-    [
-      {
-        agentLastError: null,
-        pullRequestUrl: null,
-      },
-    ]
-  )
   // The story stays in review with its worktree: only the link goes.
-  assert.equal(updates[0]?.input.status, undefined)
-  assert.equal(cleaned.length, 0)
+  assert.deepEqual(forgotten, [story])
+  assert.equal(completed.length, 0)
 })
 
 test("an open or unknown pull request leaves the story as it is", async () => {
@@ -146,32 +96,12 @@ test("an open or unknown pull request leaves the story as it is", async () => {
     { status: "open" },
     { status: "unavailable" },
   ] as const) {
-    const { cleaned, effects, updates } = recordedEffects()
+    const { completed, effects, forgotten } = recordedEffects()
     assert.equal(
       await applyPullRequestState(reviewStory(), state, effects),
       undefined
     )
-    assert.equal(updates.length, 0)
-    assert.equal(cleaned.length, 0)
+    assert.equal(completed.length, 0)
+    assert.equal(forgotten.length, 0)
   }
-})
-
-test("a story that cannot be updated is not cleaned up", async () => {
-  const cleaned: UserStory[] = []
-  await assert.rejects(
-    applyPullRequestState(
-      reviewStory(),
-      { status: "merged", mergedAt: "2026-11-09T10:15:00Z" },
-      {
-        async cleanupMergedStory(story) {
-          cleaned.push(story)
-        },
-        async updateStory() {
-          throw new Error("offline")
-        },
-      }
-    ),
-    /offline/
-  )
-  assert.equal(cleaned.length, 0)
 })

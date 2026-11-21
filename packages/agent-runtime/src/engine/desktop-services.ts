@@ -7,7 +7,10 @@
 // sends `desktop-cancel`, and the main process aborts its work.
 
 import type { EngineCommand } from "@blame/engine-client";
-import type { ApplyPreviewInitializationInput } from "../types.js";
+import type {
+  ApiConnection,
+  ApplyPreviewInitializationInput,
+} from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import type {
   ComponentPreviewHostInput,
@@ -99,6 +102,85 @@ export type DesktopServices = {
   // Reads a file in the runtime VM and removes it (what the VM's harness
   // left for the host, such as a story's project memory); null when none.
   takeVmFile?(input: { path: string }): Promise<string | null>;
+  // A story's worktree (or the project folder, in Direct mode), made or
+  // reused for its run, on its branch.
+  createStoryWorktree?(input: CreateStoryWorktreeInput): Promise<StoryWorktree>;
+  // What this computer needs to run a story in that mode (`HostDependencyReport`).
+  checkHostDependencies?(input: {
+    includeRuntime?: boolean;
+    runtimeProfile: "local-container" | "vercel-compose";
+    workspaceMode: "local-container" | "cloud-mirror" | "direct";
+  }): Promise<{ ok: boolean }>;
+  // Whether Git has a name and an email to commit with here.
+  gitIdentity?(input: {
+    root: string;
+  }): Promise<{ available: boolean; configured: boolean }>;
+  // Before a story's turn: its development server back, its preview
+  // synced, and (for a new session) its GitHub access.
+  prepareStoryTurn?(input: {
+    session: string;
+    projectId: string;
+    root: string;
+    workspaceMode: "local-container" | "cloud-mirror" | "direct";
+    created: boolean;
+    apiConnection: ApiConnection | null;
+  }): Promise<null>;
+  // Stops what a story runs besides its agent: its project setup and local
+  // preview, its devices and its cloud preview.
+  stopStoryRuntime?(input: {
+    storyId: string;
+    worktree?: string | null;
+    workspaceMode?: StoryWorktree["workspaceMode"] | null;
+  }): Promise<{ projectSetupStopped: boolean }>;
+  // Removes a story's worktree with its preview (never the project folder).
+  removeStoryWorktree?(input: {
+    repositoryRoot: string;
+    worktree: string;
+    workspaceMode?: StoryWorktree["workspaceMode"] | null;
+    projectSetupStopped?: boolean;
+  }): Promise<boolean>;
+  // Whether a story's own worktree (never the project folder) is on this
+  // computer, the runtime VM's included; it throws when Git cannot tell
+  // (the VM not running).
+  storyWorktreeHere?(input: {
+    repositoryRoot: string;
+    worktree: string;
+    workspaceMode?: StoryWorktree["workspaceMode"] | null;
+  }): Promise<boolean>;
+  // A file of a workspace (the runtime VM's included); null when there is none.
+  readWorkspaceFile?(input: {
+    root: string;
+    path: string;
+  }): Promise<string | null>;
+  // A git flow the host runs on a story's worktree: what only the desktop
+  // knows of it (in the VM, the worktrees agents write in), its preview
+  // synced first, and the worktree counted as written until `endGitFlow`.
+  beginGitFlow?(input: {
+    method: "approveAndMerge";
+    worktree: string;
+  }): Promise<{ inVm: boolean; activeWorktrees: string[]; operation: string }>;
+  endGitFlow?(input: { operation: string }): Promise<null>;
+};
+
+export type CreateStoryWorktreeInput = {
+  /** The branch the story recorded on an earlier run, if any. */
+  branch?: string | null;
+  /** Run in the project folder instead of a new worktree. */
+  direct?: boolean;
+  repositoryRoot: string;
+  runtimeProfile: "local-container" | "vercel-compose";
+  storyId: string;
+  storyReference: string;
+  /** The branch the story starts from and merges into; else the project folder's. */
+  targetBranch?: string | null;
+  title: string;
+};
+
+export type StoryWorktree = {
+  branch: string;
+  targetBranch: string | null;
+  workspaceMode: "local-container" | "cloud-mirror" | "direct";
+  worktree: string;
 };
 
 export type DesktopServiceName = keyof DesktopServices;
@@ -135,6 +217,16 @@ export const desktopServiceNames = [
   "takeVmFile",
   "commandCredentials",
   "refreshPreviewDependencies",
+  "createStoryWorktree",
+  "checkHostDependencies",
+  "gitIdentity",
+  "prepareStoryTurn",
+  "stopStoryRuntime",
+  "removeStoryWorktree",
+  "storyWorktreeHere",
+  "readWorkspaceFile",
+  "beginGitFlow",
+  "endGitFlow",
 ] as const satisfies readonly DesktopServiceName[];
 
 export type DesktopRequest = (
