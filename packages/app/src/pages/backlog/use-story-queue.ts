@@ -16,7 +16,12 @@ import { useProjects } from "@/context/projects"
 import { hostedServiceRequirement } from "@/lib/hosted-service-access"
 import type { StoryRunMode } from "@/lib/runtime-preference"
 import { refreshStoryService } from "@/lib/story-service"
-import { prepareStartingStoryPreview } from "./story-preview-preparation"
+import {
+  markStoryPreviewPending,
+  prepareStartingStoryPreview,
+} from "./story-preview-preparation"
+import { publishStoryWaits } from "@/components/backlog/data/story-queue-waits"
+import { stopManagedCloudPreview } from "@/components/backlog/drawer/use-user-story-preview-runner"
 
 type HostDependenciesWait = StoryWaiting & {
   reason: Extract<StoryWaiting["reason"], { kind: "host-dependencies" }>
@@ -67,13 +72,28 @@ export function useStoryQueue(backlog: ReturnType<typeof useBacklogStore>) {
     )
     const unsubscribe = engine.onStory((event) => {
       if (event.type === "story-queue") return setQueue(event.queue)
+      // A Cloud Preview the host stopped stays stopped in the windows too.
+      if (
+        event.type === "story-cleanup" &&
+        event.cleaning &&
+        event.workspaceMode === "cloud-mirror"
+      )
+        void stopManagedCloudPreview(platform, event.storyId).catch(
+          () => undefined
+        )
       if (event.type !== "story") return
       // Its preview gets ready in the window that shows its project.
-      if (event.started)
-        prepareStartingStoryPreview(
-          { id: event.storyId, worktree: storyWorktree(event.story) },
-          { environment: event.started.environment as never }
-        )
+      if (event.started) {
+        const story = {
+          id: event.storyId,
+          worktree: storyWorktree(event.story),
+        }
+        if (event.projectId === projectId)
+          prepareStartingStoryPreview(story, {
+            environment: event.started.environment as never,
+          })
+        else markStoryPreviewPending(story)
+      }
       if (event.directFallback && event.projectId === projectId)
         notifyDirectFallback(event.projectId, storyTitle(event.story))
     })
@@ -81,7 +101,12 @@ export function useStoryQueue(backlog: ReturnType<typeof useBacklogStore>) {
       live = false
       unsubscribe()
     }
-  }, [engine, projectId])
+  }, [engine, platform, projectId])
+
+  // Each queued card says why its story waits.
+  React.useEffect(() => {
+    publishStoryWaits(queue.waiting)
+  }, [queue.waiting])
 
   // The runtime waits to update while local stories work, whatever the project.
   React.useEffect(() => {
@@ -107,6 +132,10 @@ export function useStoryQueue(backlog: ReturnType<typeof useBacklogStore>) {
       )
     )
       void startRuntime()
+    // A wait that ended may come back later: it is said again then.
+    const current = new Set(shown.map(waitKey))
+    for (const key of [...told.current])
+      if (!current.has(key)) told.current.delete(key)
     for (const wait of shown) {
       const key = waitKey(wait)
       if (told.current.has(key)) continue
@@ -114,6 +143,12 @@ export function useStoryQueue(backlog: ReturnType<typeof useBacklogStore>) {
       const { reason } = wait
       if (reason.kind === "needs-runtime")
         promptInstall({ storyTitle: wait.title })
+      else if (reason.kind === "no-model")
+        toast.error("User story stayed in Agent Queue", {
+          description: "Choose a model before starting queued user stories.",
+          id: "story-queue-no-model",
+          position: "bottom-right",
+        })
       else if (reason.kind === "git-identity")
         void gitIdentity?.ensure({
           root: projectPath,

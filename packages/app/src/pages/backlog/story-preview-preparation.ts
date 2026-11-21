@@ -45,15 +45,20 @@ const interruptedStorageKey = "blame.story-preview-preparations.v1"
 // Written when the agent repaired the story's own setup.
 const previewRepairPath = ".blame/initialization/preview-repair.json"
 
-/**
- * Prepares the preview of a story the story service started: now, in the
- * window that shows its project, else when a window shows it.
- */
+/** Prepares the preview of a story the story service started, in this window. */
 export function prepareStartingStoryPreview(
   story: { id: string; worktree?: string | null },
   start: StoryStart
 ) {
   startingStories.set(story.id, start)
+  markStoryPreviewPending(story)
+}
+
+/** A story started in a project no window shows: its preview gets ready once one does. */
+export function markStoryPreviewPending(story: {
+  id: string
+  worktree?: string | null
+}) {
   if (story.worktree) writeInterrupted(`${story.id}:${story.worktree}`, true)
 }
 
