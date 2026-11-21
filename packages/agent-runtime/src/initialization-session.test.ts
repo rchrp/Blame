@@ -73,6 +73,29 @@ test("saves a setup whose warnings the agent confirms by resubmitting it", () =>
   assert.deepEqual(outcome.result, { id: "same", acceptedWarnings: true });
 });
 
+test("a warning rejects once: a changed setup that still has it is saved", () => {
+  // The owner's run: three [warning]s about PRODUCTION_DATABASE_URL cost two
+  // rejected submissions (about 55 s) though the agent kept its setup.
+  const session = new InitializationSession(
+    checker({ first: [install], changed: [install] }),
+  );
+  assert.throws(() => session.submit({ id: "first" }), /\[warning\]/);
+  assert.deepEqual(session.submit({ id: "changed" }), {
+    accepted: true,
+    savedWithWarnings: true,
+  });
+});
+
+test("a new warning or a blocking problem still rejects after one was shown", () => {
+  const other: PreviewSetupIssue = { ...install, rule: "must give web its database settings" };
+  const session = new InitializationSession(
+    checker({ a: [install], b: [install, other], c: [install, migrations] }),
+  );
+  assert.throws(() => session.submit({ id: "a" }));
+  assert.throws(() => session.submit({ id: "b" }), /database settings/);
+  assert.throws(() => session.submit({ id: "c" }), /\[must fix\]/);
+});
+
 test("stops after the same blocking problem three times in a row", () => {
   const session = new InitializationSession(
     checker({ a: [migrations], b: [migrations], c: [migrations] }),
