@@ -41,9 +41,23 @@ pub enum ReasoningEffort {
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum UserBlock {
-    Text { text: String },
-    Image { blob: BlobRef },
-    Document { blob: BlobRef, name: String },
+    Text {
+        text: String,
+    },
+    Image {
+        blob: BlobRef,
+    },
+    Document {
+        blob: BlobRef,
+        name: String,
+    },
+    /// Part of the person's message the model reads and the conversation
+    /// does not show, such as what became of the stories it proposed. It is
+    /// sent as text, the same bytes on every request, and is kept, undone,
+    /// forked and replayed with the rest of the message.
+    Context {
+        text: String,
+    },
 }
 
 /// What the provider itself returned for a block, kept verbatim.

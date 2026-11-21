@@ -768,6 +768,8 @@ export class EngineHost {
           : { type: "document", blob, name: attachment.name },
       );
     }
+    if (message.context?.trim())
+      blocks.push({ type: "context", text: message.context });
     if (!blocks.length) throw new Error("The message is empty.");
     return blocks;
   }

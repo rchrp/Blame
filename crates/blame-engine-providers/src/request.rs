@@ -252,7 +252,9 @@ async fn user(
     let mut content = Vec::with_capacity(blocks.len());
     for block in blocks {
         content.push(match block {
-            UserBlock::Text { text } => UserContent::Text(Text::new(text)),
+            UserBlock::Text { text } | UserBlock::Context { text } => {
+                UserContent::Text(Text::new(text))
+            }
             UserBlock::Image { blob } => UserContent::Image(image(blob, request).await?),
             UserBlock::Document { blob, name } => {
                 UserContent::Document(document(blob, name, request, wire).await?)

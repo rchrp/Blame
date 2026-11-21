@@ -545,7 +545,7 @@ export type Usage = { input_tokens?: number, output_tokens?: number, cache_read_
 cost_micro_usd?: number, };
 
 // prettier-ignore
-export type UserBlock = { "type": "text", text: string, } | { "type": "image", blob: BlobRef, } | { "type": "document", blob: BlobRef, name: string, };
+export type UserBlock = { "type": "text", text: string, } | { "type": "image", blob: BlobRef, } | { "type": "document", blob: BlobRef, name: string, } | { "type": "context", text: string, };
 
 // prettier-ignore
 export type Version = "2.0";

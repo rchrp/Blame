@@ -410,8 +410,9 @@ function userFiles(
   blocks: UserItem["blocks"],
   key: string
 ): UserStoryFileAttachment[] {
+  // Text and context (what only the model reads) are not files.
   return blocks.flatMap((block, index) =>
-    block.type === "text"
+    block.type !== "image" && block.type !== "document"
       ? []
       : [
           {

@@ -147,6 +147,8 @@ export type EngineAttachment = {
 export type EngineMessage = {
   text: string;
   attachments?: EngineAttachment[];
+  /** Read by the model with the message, never shown in the conversation. */
+  context?: string;
 };
 
 export type EngineHostMethods = {

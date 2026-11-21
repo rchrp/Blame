@@ -420,3 +420,21 @@ test("the wrap-up card leaves out the summary only once it is the reply shown", 
   assert.ok(refused.texts.includes(summary))
   assert.notEqual(refused.reply, summary)
 })
+
+test("what only the model reads with a message never shows in the conversation", () => {
+  seq = 0
+  const note = "<proposal_decisions>\n- P1 added to the backlog as US-004\n</proposal_decisions>"
+  const result = conversation([
+    record({ type: "session_created", config }),
+    record({
+      type: "user_message", turn: "t", delivery: "turn",
+      input: [{ type: "text", text: "Plan the next step" }, { type: "context", text: note }],
+    }),
+    record({ type: "request_started", turn: "t", request: "r", model, attempt: 1, prefix_digest: "d" }),
+    record({ type: "assistant_message", turn: "t", request: "r", stop: "end_turn", usage, blocks: [{ type: "text", text: "Next: invoices." }] }),
+    record({ type: "turn_ended", turn: "t", outcome: { status: "completed" } }),
+  ])
+  assert.equal(result.comments[0]!.body, "Plan the next step")
+  assert.deepEqual(result.comments[0]!.fileAttachments ?? [], [])
+  assert.doesNotMatch(JSON.stringify(result), /proposal_decisions/)
+})
