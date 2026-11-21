@@ -80,8 +80,8 @@ export type StoryServiceHost = {
   emit(event: StoryHostEvent): void;
   /** The sessions this computer's engine at a location keeps (never read from Blame's database). */
   storedSessions?(location: EngineLocation): Promise<string[]>;
-  /** A queued story held back without a reason of its own (its epic is paused or spent). */
-  holds?(story: HostStory): boolean;
+  /** Why a queued story is held back by its epic (paused, spent…), if it is. */
+  holds?(story: HostStory): StoryWaitReason | undefined;
 };
 
 export type StoryServiceOptions = {
@@ -663,8 +663,9 @@ export class StoryService {
         queued.add(story.id);
         if (this.starting.has(story.id)) continue;
         if ((this.retryAt.get(story.id) ?? 0) > now) continue;
-        if (this.host.holds?.(story)) {
-          this.waiting.delete(story.id);
+        const held = this.host.holds?.(story);
+        if (held) {
+          this.setWaiting(story, held, false);
           continue;
         }
         // Reasons seen here cost nothing to check again: no delay for them.

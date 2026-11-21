@@ -96,6 +96,10 @@ export async function startStory(
     preferences.initializingProjects?.includes(story.projectId) ?? false,
   );
   if (gate === "wait") return { wait: { kind: "initialization" } };
+  // An epic's story never runs Direct (in the person's folder, on its
+  // branch): it waits for the preview environment to be fixed.
+  if (story.epicId && (gate === "run-direct" || mode === "direct"))
+    return { wait: { kind: "epic", epicId: story.epicId, hold: "direct" } };
   // No usable preview environment: run Direct rather than wait for one.
   if (gate === "run-direct") {
     await context.patch(story, { runMode: "direct" }, { directFallback: true });
