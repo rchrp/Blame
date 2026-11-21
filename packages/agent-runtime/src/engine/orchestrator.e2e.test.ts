@@ -1457,6 +1457,105 @@ describe("the orchestrator's loop", { skip }, () => {
     assert.deepEqual(model.unscripted, []);
   });
 
+  it("talks with the person while the epic is paused: cuts only its turn then, refuses to act, sleeps, and the resume wakes it", async () => {
+    const sign = await newProject("sign");
+    await open(host);
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    model.stories.set("Paint the sign", [
+      async () => {
+        await gate;
+        return write("sign.txt", "sign\n");
+      },
+      finish("Painted the sign."),
+    ]);
+    model.orchestrator.push(
+      tool("create_stories", {
+        reason: "One sign.",
+        stories: [
+          {
+            key: "sign",
+            title: "Paint the sign",
+            brief: "Create sign.txt.",
+            intent: "balanced",
+          },
+        ],
+      }),
+      // Its turn still runs when the pause comes: the pause cuts it.
+      { stall: true },
+      // The person asks while paused: it may read and answer, not act.
+      tool("message_story", {
+        reason: "Nudge it.",
+        storyId: "US-001",
+        kind: "answer",
+        message: "Go on.",
+      }),
+      tool("epic_board", {}),
+      { text: "The epic is paused; the sign waits." },
+      tool("end_turn", { action: "wait", reason: "Paused." }),
+      // The story's wake once it is resumed and done.
+      tool("approve_story", { reason: "Verified.", storyId: "US-001" }),
+      tool("end_turn", {
+        action: "finish",
+        reason: "Done.",
+        summary: "sign.txt is on the epic's branch.",
+      }),
+    );
+    const asked = model.of("orchestrator").length;
+    const { epicId, session, settings } = await startEpic(
+      sign,
+      "Sign",
+      "Paint the sign.",
+    );
+    await until("its second request to stall", async () =>
+      model.of("orchestrator").length >= asked + 2 ? true : undefined,
+    );
+    await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+      status: "paused",
+    });
+    await until("the pause to take", async () => {
+      const now = await host.call("epicChanged", { epicId });
+      return now.pause?.phase === "paused" ? true : undefined;
+    });
+    model.stopStalls();
+    await host.call("send", {
+      session,
+      message: { text: "How is it going?" },
+      delivery: "turn",
+      settings: { purpose: "orchestrator", settings },
+    });
+    await until("it to answer and sleep while paused", async () => {
+      const now = await host.call("epicChanged", { epicId });
+      return now.conversation === "waiting" && now.pause?.phase === "paused"
+        ? true
+        : undefined;
+    });
+    const refused = model
+      .of("orchestrator")
+      .some((request) =>
+        JSON.stringify(request.body.messages).includes(
+          "US-001 gets no message: the epic is paused.",
+        ),
+      );
+    assert.ok(refused, "message_story was refused while paused");
+    await apiCall(api.connection, "PATCH", `/projects/epics/${epicId}`, {
+      status: "active",
+    });
+    await host.call("epicChanged", { epicId });
+    release();
+    await until("the epic to finish", async () =>
+      (await state(epicId)).conversation === "finished" ? true : undefined,
+    );
+    const told = await wakes(session);
+    assert.deepEqual(
+      told.map((wake) => wake.reason),
+      ["stories"],
+      "the person's turn came after the cut: no resumed wake",
+    );
+    assert.equal(git(sign.path, "show", "epic/sign:sign.txt"), "sign");
+    assert.deepEqual(model.unscripted, []);
+  });
+
   it("refuses a merge that conflicts with the epic's branch: the story's own agent brings it in, then it is merged", async () => {
     const clash = await newProject("clash");
     await open(host);
