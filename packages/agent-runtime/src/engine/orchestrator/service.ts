@@ -63,6 +63,8 @@ export type OrchestratorHost = {
   client(): Promise<EngineClient>;
   git?: GitRun;
   emit(event: EngineHostEvent): void;
+  /** The ranking stories' models are chosen from; the providers list's by default. */
+  ranking?(): Promise<ModelRecommendations>;
 };
 
 export type OrchestratorOptions = {
@@ -572,6 +574,7 @@ export class Orchestrator {
 
   /** The ranking the stories' models are chosen from (the providers list's). */
   modelRanking(): Promise<ModelRecommendations> {
+    if (this.host.ranking) return this.host.ranking();
     const known = this.recommendations;
     if (known && Date.now() - known.at < recommendationsMs) return known.value;
     const value = this.host

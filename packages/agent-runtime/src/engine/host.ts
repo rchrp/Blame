@@ -31,7 +31,7 @@ import {
   type ProjectMemoryCandidate,
   type ProjectMemoryPersistence,
 } from "../harness/project-memory.js";
-import type { ApiConnection } from "../types.js";
+import type { ApiConnection, ModelRecommendations } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
 import type { DesktopServices } from "./desktop-services.js";
@@ -120,6 +120,8 @@ export type EngineHostOptions = {
   storyLedgerFile?: string;
   /** Where the epics whose conversation runs here are kept (`orchestrator/state.ts`). */
   orchestratorStateFile?: string;
+  /** For tests: the ranking stories' models are chosen from (the providers list's by default). */
+  modelRanking?: () => Promise<ModelRecommendations>;
   /** For tests: more client tools beside the app's own. */
   extraTools?: ClientTool<never>[];
   /** For tests: more client tools, by name, for sessions of a purpose. */
@@ -253,6 +255,7 @@ export class EngineHost {
           ? { git: (cwd: string, args: string[]) => git({ cwd, args }) }
           : {}),
         emit: (event) => options.emit(event),
+        ...(options.modelRanking ? { ranking: options.modelRanking } : {}),
       },
       { stateFile: options.orchestratorStateFile },
     );
