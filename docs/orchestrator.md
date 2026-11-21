@@ -83,8 +83,14 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
   the status to the API and calls `epicChanged` (the host also reads every
   epic it runs each minute). When it reads `paused`, the host pauses the
   agents of the epic's stories at work (and one whose start was in flight,
-  once it runs) and cuts the orchestrator's own turn, and keeps which;
-  nothing starts and nothing wakes it meanwhile. When it reads `active`
+  once it runs) and cuts the orchestrator's turn running then (that turn
+  only), and keeps which; nothing starts and nothing wakes it meanwhile.
+  The person can still talk to the orchestrator while paused: a turn they
+  start runs and is answered (a message that waited through a quit goes on
+  too); its acting tools refuse with "the epic is paused" (`create_stories`
+  unless every story is held, `update_story` with `queue`, `message_story`,
+  `approve_story`), its reading tools work, and `end_turn` with `wait` is
+  accepted: the resume wakes it. When it reads `active`
   again, exactly those agents resume (each still paused where the pause
   left it) and the orchestrator's cut turn goes on (a `resumed` wake). The
   turns the pause cut are not news: no wake tells them. A story the person
@@ -101,7 +107,13 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
     message, a pause, a resume, a discard, back to the backlog) is theirs
     from then on: the resume leaves it as it is.
   - A pause's cut and its resume never count against the three resumes in
-    a row after cuts.
+    a row after cuts. The cut turn is owed its `resumed` wake only while it
+    is still the conversation's last turn and the person did not stop it;
+    otherwise (the person talked meanwhile, or stopped a turn) the pause
+    ends with the resume.
+  - A story is resumed once, whoever resumes it first: a resume of an agent
+    already running does nothing, and the person's act is heard before it
+    runs (`touched` is awaited), so the epic's resume never doubles it.
   - `epicChanged` answers whether the pause took: `EpicState.pause` is
     `{ phase: "pausing" | "paused", error? }` while the API says `paused`,
     with the reason when the host could not stop something or could not
@@ -178,9 +190,19 @@ uses them (the screen slice removes Plan Mode's interface first).
   Blame's database) is found again (`Orchestrator.adopt`): its entry is
   built from the API and the conversation's records, whose prompt names
   the branch this host made (it must be the epic's), whose config gives the
-  folder and the model, and whose `message_story` calls give the counts.
-  The merged stories' cost and what was heard are lost then (a turn may be
-  told twice).
+  folder and the model, and whose tool results give the rest: each
+  `message_story` result (one that says `changesRequested` counted as a
+  request for changes, whatever its `kind`), the turns the boards and
+  reports named (`lastTurn.turn`, `turn`: heard, while still the story
+  session's), and the cost they last showed of a story whose session is
+  gone (a merged one). Wakes are in the records already, and the turns not
+  told yet are found from the story sessions. What cannot be found again:
+  the pause's list (a story it stopped stays paused through the resume:
+  the person resumes it), what a merged story spent after the last board
+  or report showed it, the turns a pause made heard (told once more),
+  whether the person stopped the last turn (a cut last turn is left to the
+  person, shown `stopped`, rather than resumed), and the last `idle` wake
+  (told once more).
 - **What is kept of a story goes only once it is merged or rejected** (its
   heard and pending turns): no cap evicts anything else, however long the
   epic.
@@ -252,12 +274,16 @@ a crash (`resumed`: it goes on from the board), and when it waits while
 nothing of the epic works or will start by itself and no ended turn is left
 to tell (`idle`: a story deleted from the board, the budget spent, a story
 waiting for the person, a start that keeps failing). An `idle` wake is told
-once: the next needs something about the epic's stories to change (one
-started or ended, the person acted, another error), never the same states
-and reasons again, so a story whose start alternates between an error and
-another wait cannot wake the orchestrator over and over. A start counts as
-failing from its first error until it starts, whatever it waits for in
-between, and is blocked after 90 s. A message that waited behind a turn
+once for each `wait` it ended with: the same wait with the same stories'
+states and blocked reasons is not told again, so a story whose start
+alternates between an error and another wait cannot wake the orchestrator
+over and over; a `wait` accepted after it (something worked then) is
+answered by a new `idle` wake once nothing does, so an accepted wait never
+leaves the epic with nothing that can wake it. A blocked story's start
+attempt (its wait needs the person, or its start keeps failing) is not
+work: the queue keeps its wait through the attempt, and it ends with it.
+A start counts as failing from its first error until it starts, whatever
+it waits for in between, and is blocked after 90 s. A message that waited behind a turn
 through a quit is sent on (`promote`). A conversation cut again and again
 is resumed three times in a row, then left to the person (it shows
 `failed`); a pause's cut does not count.
@@ -349,7 +375,8 @@ on, and the orchestrator is woken (`idle`) to wrap up.
   `stopped`, `failed`), `error` (why it failed, or why a wake could not be
   sent), `question` (`text`, `options`) of an `ask`, `summary` of a
   `finish`, `unreported` (ended turns not told yet), `blocked` (the queued
-  stories only the person can start, with why) and `spend`. The sidebar's
+  stories only the person can start, with why; the epic's own pause is not
+  listed, since the person chose it) and `spend`. The sidebar's
   dot: working for `working`/`waiting`, needs you for `asking`, `stopped`,
   `failed` or any `blocked`, done for `finished`.
 - A queued story's card reads the `epic` wait reason (`storyWaitText`).

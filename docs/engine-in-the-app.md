@@ -243,8 +243,10 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   so the activity reads idle while a turn is open: the session hub ends a
   run on the engine's idle activity, or, for a turn the engine ended before
   it ever turned busy (an interrupt at once), on the end in the records of
-  the very turn the host sent (`hub.watch(session, turn)`), never on an
-  older turn's end met while a long log is read back in pages; the end of a turn sets what its outcome means (completed: In
+  the very turn the host sent (`hub.watch(session, turn)`; a session
+  already followed may have that end before the send returns, and `watch`
+  finds it there), never on an older turn's end met while a long log is
+  read back in pages; the end of a turn sets what its outcome means (completed: In
   review; failed: Paused with `agentLastError`; interrupted or limit
   reached: Paused) and how many turns each model answered. After a quit
   mid-turn, the stories left Running are settled from `status` when the
@@ -305,11 +307,15 @@ An epic's conversation is an `orchestrator` session
   `StoryMergeConflictError` with the files) instead of the merge agent's
   resolution: the merge is undone (`git merge --abort`, else `git reset
   --merge`), or the error says the worktree is left mid-merge and where.
-- **Pause all**: the host pauses the epic's agents at work and cuts its
-  turn, then resumes exactly those (`orchestrator/pause.ts`), written ahead
-  so a quit part way is taken up. The windows' story calls name each story
-  a person acts on (`storyHandlers`' `touched`), which the pause leaves to
-  them. `StoryService.retry` takes the stories to look at again.
+- **Pause all**: the host pauses the epic's agents at work and cuts the
+  orchestrator's turn running then (only that one: the person can talk to
+  it while paused), then resumes exactly those (`orchestrator/pause.ts`),
+  written ahead so a quit part way is taken up. The windows' story calls
+  name each story a person acts on (`storyHandlers`' `touched`, awaited
+  before the act runs), which the pause leaves to them; `resume` of an
+  agent already running does nothing, so the person's resume and the
+  epic's never double. `StoryService.retry` takes the stories to look at
+  again.
 - **Waking** (`engine/orchestrator/service.ts`): the host writes to the
   session itself, a user message of one `context` block holding
   `<orchestrator_wake>` (`parseOrchestratorWake`), when the epic's stories
