@@ -72,10 +72,9 @@ export function resolveModelIntent(
   if (inRange.length === 0) {
     return {
       intent: input.intent,
-      model: {
-        providerId: input.fallback.providerId,
-        modelId: input.fallback.modelId,
-      },
+      // Whole: the account's default names which of the person's credentials
+      // it uses and how hard it reasons.
+      model: { ...input.fallback },
       position: null,
       estimatedCost: null,
       smartScore: null,

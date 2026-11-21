@@ -313,13 +313,19 @@ describe("resolveModelIntent", () => {
     assert.equal(result.model.modelId, "account-default");
   });
 
-  it("copies only the provider and model of the fallback", () => {
+  it("keeps the fallback's credential and reasoning", () => {
+    const account = {
+      ...fallback,
+      credentialLabel: "work",
+      reasoning: "high" as const,
+    };
     const result = resolveModelIntent({
       intent: "cheaper",
       recommendations: emptyRecommendations(),
-      fallback: { ...fallback, credentialLabel: "work" },
+      fallback: account,
     });
-    assert.deepEqual(result.model, fallback);
+    assert.deepEqual(result.model, account);
+    assert.notEqual(result.model, account);
   });
 
   it("breaks ties by score, then by ids, whatever the input order", () => {
