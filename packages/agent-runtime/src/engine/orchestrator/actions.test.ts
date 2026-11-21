@@ -609,6 +609,40 @@ describe("the orchestrator's tools", () => {
     void fake;
   });
 
+  it("holds the queued stories of an epic whose conversation runs on another computer", async () => {
+    const { orchestrator } = await desk();
+    const elsewhere = {
+      ...row("s9", "a", { epicId: "epic-elsewhere" }),
+      status: "ready",
+    } as never;
+    assert.equal(orchestrator.holds(elsewhere), true);
+    const outside = { ...row("s8", "a"), status: "ready" } as never;
+    assert.equal(orchestrator.holds(outside), false);
+  });
+
+  it("refuses to sleep when the only queued story waits for the person", async () => {
+    const { run, stories } = await desk({
+      rows: [row("s1", "a", { epicId, status: "ready", requestedModel: null })],
+    });
+    // No agent model: the queue says it waits for one.
+    await sync(stories, [{ id: "a", path: "/a" }], "window", {
+      runMode: "local-container",
+      premium: false,
+      runtimePhase: "ready",
+    });
+    await settle(
+      () =>
+        stories
+          .queueState()
+          .waiting.some((wait) => wait.reason.kind === "no-model"),
+      "the story to wait for a model",
+    );
+    await assert.rejects(
+      run("end_turn", { action: "wait", reason: "r" }),
+      /Nothing of the epic works or can start/,
+    );
+  });
+
   it("asks the person before launching only when the epic says so", async () => {
     const ask = (orchestrator: Orchestrator, tool: string, input: unknown) =>
       orchestrator.approval({

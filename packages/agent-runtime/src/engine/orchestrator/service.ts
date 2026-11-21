@@ -33,7 +33,13 @@ import type { ResolvedOrchestratorSettings } from "../purposes/orchestrator.js";
 import type { StoryService } from "../stories/service.js";
 import { parseStory, type HostStory } from "../stories/story.js";
 import type { ClientTool } from "../tool.js";
-import { epicCounts, epicHasWork, wakeDue, wakeStory } from "./board.js";
+import {
+  epicCounts,
+  epicHasWork,
+  wakeDue,
+  waitsForPerson,
+  wakeStory,
+} from "./board.js";
 import {
   currentBranch,
   ensureBranch,
@@ -93,6 +99,10 @@ export class Orchestrator {
   private readonly spentEpics = new Set<string>();
   private readonly checks = new Map<string, Check>();
   private readonly published = new Map<string, string>();
+  /** The epics whose conversation runs here (from the state file); undefined until read. */
+  private local: Set<string> | undefined;
+  /** Why the last wake of an epic could not be sent. */
+  private readonly wakeErrors = new Map<string, string>();
   private recommendations:
     { at: number; value: Promise<ModelRecommendations> } | undefined;
   private readonly tickTimer: ReturnType<typeof setInterval>;
@@ -108,6 +118,13 @@ export class Orchestrator {
       options.tickMs ?? 60_000,
     );
     this.tickTimer.unref?.();
+    void this.state.all().then((entries) => {
+      this.local = new Set([
+        ...entries.map(([epicId]) => epicId),
+        ...(this.local ?? []),
+      ]);
+      host.stories.retry();
+    }, report);
   }
 
   // -------------------------------------------------------- host's hooks
@@ -192,6 +209,7 @@ export class Orchestrator {
       projectId: epic.projectId,
       session,
     });
+    (this.local ??= new Set()).add(epic.id);
     await this.state.change(epic.id, (entry) => {
       entry.settings = settings;
       entry.stopped = false;
@@ -253,14 +271,17 @@ export class Orchestrator {
 
   /**
    * The story service's gate: a queued story of an epic that is paused,
-   * over, or whose budget is spent does not start. An epic not read yet
-   * holds its stories until it is.
+   * over, or whose budget is spent does not start, and neither does one of
+   * an epic whose conversation runs on another computer (only the computer
+   * that runs a story hears of its turns, and the orchestrator is woken
+   * there). An epic not read yet holds its stories until it is.
    */
   holds(story: HostStory): boolean {
     const epicId = story.epicId;
     if (!epicId) return false;
     const epic = this.epics.get(epicId);
     if (epic === null) return false;
+    if (!this.local?.has(epicId)) return true;
     if (!epic) {
       if (Date.now() - (this.failedEpics.get(epicId) ?? 0) > epicRetryMs)
         void this.epic(epicId, true)
@@ -269,6 +290,15 @@ export class Orchestrator {
       return true;
     }
     return epic.status !== "active" || this.spentEpics.has(epicId);
+  }
+
+  /** A queued story that will not start by itself: held, or waiting for the person. */
+  blocked(story: HostStory): boolean {
+    if (this.holds(story)) return true;
+    const wait = this.host.stories
+      .queueState()
+      .waiting.find((item) => item.storyId === story.id);
+    return waitsForPerson(wait?.reason);
   }
 
   /** Signed in: every epic run here is looked at. */
@@ -374,7 +404,8 @@ export class Orchestrator {
     const entry = await this.state.get(epicId);
     if (!entry || !this.host.api()) return;
     const epic = await this.epic(epicId, true);
-    if (!epic) return;
+    // Deleted with its conversation: nothing to wake any more.
+    if (!epic) return this.state.forget(epicId);
     // Until its stories are read, what works is not known.
     if (!this.host.stories.loaded(epic.projectId)) return;
     const client = await this.host.client();
@@ -403,7 +434,7 @@ export class Orchestrator {
         : state === "waiting" &&
             !unreported.length &&
             !epicHasWork(stories, starting, (story) =>
-              this.holds(story as HostStory),
+              this.blocked(story as HostStory),
             )
           ? "idle"
           : undefined;
@@ -431,12 +462,24 @@ export class Orchestrator {
    */
   private async wake(epicId: string, session: string, wake: OrchestratorWake) {
     const settings = (await this.state.get(epicId))?.settings;
-    await this.host.call("send", {
-      session,
-      message: { text: "", context: orchestratorWakeText(wake) },
-      delivery: "turn",
-      ...(settings ? { settings: { purpose: "orchestrator", settings } } : {}),
-    });
+    try {
+      await this.host.call("send", {
+        session,
+        message: { text: "", context: orchestratorWakeText(wake) },
+        delivery: "turn",
+        ...(settings
+          ? { settings: { purpose: "orchestrator", settings } }
+          : {}),
+      });
+      this.wakeErrors.delete(epicId);
+    } catch (error) {
+      // Shown on the epic; tried again on the next look (each minute).
+      this.wakeErrors.set(
+        epicId,
+        `The orchestrator could not be woken: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      throw error;
+    }
     const told = new Set(
       wake.stories.map((story) => turnKey(story.session, story.turn)),
     );
@@ -514,10 +557,9 @@ export class Orchestrator {
     if (spend.spent) this.spentEpics.add(epic.id);
     else this.spentEpics.delete(epic.id);
     if (wasSpent !== spend.spent) this.host.stories.retry();
-    const { state, error } = conversationState(
-      conversation,
-      entry?.stopped === true,
-    );
+    const looked = conversationState(conversation, entry?.stopped === true);
+    const { state } = looked;
+    const error = looked.error ?? this.wakeErrors.get(epic.id);
     const endTurn = conversation?.last?.endTurn;
     const unreported = entry ? (await reading.unreported()).length : 0;
     const epicState: EpicState = {
@@ -598,6 +640,7 @@ export class Orchestrator {
       git: this.host.git,
       starting: () => this.starting(),
       holds: (story) => this.holds(story),
+      blocked: (story) => this.blocked(story),
     };
   }
 

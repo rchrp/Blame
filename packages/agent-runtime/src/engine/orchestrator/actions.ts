@@ -37,7 +37,10 @@ export type EpicDesk = {
   state: OrchestratorState;
   git?: GitRun;
   starting(): ReadonlySet<string>;
+  /** The queue's gate holds it (its epic paused or spent, or run elsewhere). */
   holds(story: HostStory): boolean;
+  /** It will not start by itself: held, or its wait needs the person. */
+  blocked(story: HostStory): boolean;
 };
 
 type Inputs = OrchestratorToolInputs;
@@ -404,7 +407,9 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
   const starting = desk.starting();
   if (input.action === "wait") {
     if (
-      !epicHasWork(stories, starting, (story) => desk.holds(story as HostStory))
+      !epicHasWork(stories, starting, (story) =>
+        desk.blocked(story as HostStory),
+      )
     )
       throw new Error(
         "Nothing of the epic works or can start, so nothing would wake you: approve, ask for changes, queue or create stories, ask the person, or finish.",

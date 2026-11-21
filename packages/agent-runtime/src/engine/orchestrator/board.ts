@@ -3,7 +3,11 @@
 // orchestrator, the board's counts, and an ended turn as a wake tells it.
 
 import { unverifiedChecks, type TurnOutcome } from "@blame/engine-client";
-import type { EpicBoardCounts, OrchestratorWakeStory } from "../protocol.js";
+import type {
+  EpicBoardCounts,
+  OrchestratorWakeStory,
+  StoryWaitReason,
+} from "../protocol.js";
 import { storyDisplayId, type HostStory } from "../stories/story.js";
 
 type Story = Pick<
@@ -47,6 +51,23 @@ export function storyCanStart(
       storyCanStart(dependency, stories, starting, held, seen)
     );
   });
+}
+
+// The waits of a queued story that only the person ends (or nothing does).
+const personWaits = new Set<StoryWaitReason["kind"]>([
+  "dependency-dropped",
+  "no-project",
+  "no-model",
+  "signed-out",
+  "needs-runtime",
+  "cloud-without-premium",
+  "host-dependencies",
+  "git-identity",
+]);
+
+/** The queue says the story waits for the person: it does not start by itself. */
+export function waitsForPerson(reason: StoryWaitReason | undefined) {
+  return reason !== undefined && personWaits.has(reason.kind);
 }
 
 /** Something of the epic works or will start: the orchestrator may sleep. */
