@@ -163,6 +163,15 @@ export interface ApiDefinition {
         destroy: typeof routes['projects.quick_chats.quick_chats.destroy']
       }
     }
+    epics: {
+      epics: {
+        index: typeof routes['projects.epics.epics.index']
+        store: typeof routes['projects.epics.epics.store']
+        show: typeof routes['projects.epics.epics.show']
+        update: typeof routes['projects.epics.epics.update']
+        destroy: typeof routes['projects.epics.epics.destroy']
+      }
+    }
     userStories: {
       userStories: {
         index: typeof routes['projects.user_stories.user_stories.index']

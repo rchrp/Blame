@@ -600,6 +600,36 @@ const routes = {
     tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"quick-chats"],[1,"id"]],
     types: placeholder as Registry['projects.quick_chats.quick_chats.destroy']['types'],
   },
+  'projects.epics.epics.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/epics',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"epics"]],
+    types: placeholder as Registry['projects.epics.epics.index']['types'],
+  },
+  'projects.epics.epics.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/projects/epics',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"epics"]],
+    types: placeholder as Registry['projects.epics.epics.store']['types'],
+  },
+  'projects.epics.epics.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/projects/epics/:id',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"epics"],[1,"id"]],
+    types: placeholder as Registry['projects.epics.epics.show']['types'],
+  },
+  'projects.epics.epics.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/projects/epics/:id',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"epics"],[1,"id"]],
+    types: placeholder as Registry['projects.epics.epics.update']['types'],
+  },
+  'projects.epics.epics.destroy': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/projects/epics/:id',
+    tokens: [[0,"api"],[0,"v1"],[0,"projects"],[0,"epics"],[1,"id"]],
+    types: placeholder as Registry['projects.epics.epics.destroy']['types'],
+  },
   'projects.user_stories.user_stories.index': {
     methods: ["GET","HEAD"],
     pattern: '/api/v1/projects/user-stories',

@@ -103,6 +103,11 @@ export type ScannedRoutes = {
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.epics.epics.index': { paramsTuple?: []; params?: {} }
+    'projects.epics.epics.store': { paramsTuple?: []; params?: {} }
+    'projects.epics.epics.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.epics.epics.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.epics.epics.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.index': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.store': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
@@ -150,6 +155,8 @@ export type ScannedRoutes = {
     'engine.engine_blobs.show': { paramsTuple: [ParamValue]; params: {'sha256': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.epics.epics.index': { paramsTuple?: []; params?: {} }
+    'projects.epics.epics.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.index': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.show_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
@@ -191,6 +198,8 @@ export type ScannedRoutes = {
     'engine.engine_blobs.show': { paramsTuple: [ParamValue]; params: {'sha256': ParamValue} }
     'projects.quick_chats.quick_chats.index': { paramsTuple?: []; params?: {} }
     'projects.quick_chats.quick_chats.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.epics.epics.index': { paramsTuple?: []; params?: {} }
+    'projects.epics.epics.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.index': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.show': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.show_screenshot': { paramsTuple: [ParamValue,ParamValue]; params: {'id': ParamValue,'screenshotId': ParamValue} }
@@ -245,6 +254,7 @@ export type ScannedRoutes = {
     'attachments.file_attachments.upload_content': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'engine.engine_sessions.push': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.store': { paramsTuple?: []; params?: {} }
+    'projects.epics.epics.store': { paramsTuple?: []; params?: {} }
     'projects.user_stories.user_stories.store': { paramsTuple?: []; params?: {} }
     'preview_edge_internal.resolve': { paramsTuple?: []; params?: {} }
     'preview_edge_internal.consume_ticket': { paramsTuple?: []; params?: {} }
@@ -256,6 +266,7 @@ export type ScannedRoutes = {
     'providers.provider_credentials.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'engine.engine_sessions.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.quick_chats.quick_chats.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.epics.epics.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.destroy': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
   PUT: {
@@ -277,6 +288,7 @@ export type ScannedRoutes = {
     'auth.better': { paramsTuple: [...ParamValue[]]; params: {'*': ParamValue[]} }
     'projects.project_code_practices.update': { paramsTuple: [ParamValue,ParamValue]; params: {'projectId': ParamValue,'practice': ParamValue} }
     'projects.quick_chats.quick_chats.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
+    'projects.epics.epics.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
     'projects.user_stories.user_stories.update': { paramsTuple: [ParamValue]; params: {'id': ParamValue} }
   }
 }
