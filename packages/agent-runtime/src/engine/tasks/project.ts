@@ -50,6 +50,7 @@ export async function runInitializationRepair(
   host: ProjectTaskHost & { scanRoot?: ProjectScanRootProvider },
   input: RepairProjectInitializationTask,
 ): Promise<RepairProjectInitializationResult> {
+  host.runner.assertHostScan(input.workspace.root);
   const { session, result } = await runTask(
     host,
     input,
@@ -70,6 +71,7 @@ export function projectTaskHandlers(
 > {
   return {
     initializeProject: async (input) => {
+      host.runner.assertHostScan(input.workspace.root);
       const { session, result } = await runTask(
         host,
         input,
@@ -83,6 +85,7 @@ export function projectTaskHandlers(
     repairProjectInitialization: (input) =>
       runInitializationRepair(host, input),
     assessInitializationImpact: async (input) => {
+      host.runner.assertHostScan(input.workspace.root);
       const diagnostics = await collectProjectInitializationImpactDiagnostics({
         ...input,
         cwd: input.workspace.root,
@@ -99,6 +102,7 @@ export function projectTaskHandlers(
       return { session, ...result, diagnostics };
     },
     analyzeCodePractices: async (input) => {
+      host.runner.assertHostScan(input.workspace.root);
       const { session, result } = await runTask(
         host,
         input,

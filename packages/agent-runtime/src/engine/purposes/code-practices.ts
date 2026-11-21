@@ -16,7 +16,6 @@ import { loadPrompt } from "../../prompt-loader.js";
 import type { ProjectCodePracticeResult } from "../../types.js";
 import type { AnalyzeCodePracticesTask } from "../task-protocol.js";
 import {
-  assertHostScan,
   submitTool,
   taskConfig,
   type TaskSpec,
@@ -28,8 +27,6 @@ export const CODE_PRACTICES_TOOL = "submit_project_code_practices";
 export async function codePracticesTask(
   input: AnalyzeCodePracticesTask,
 ): Promise<TaskSpec<ProjectCodePracticeResult[]>> {
-  // The scan reads the folder on this computer: never one in the VM.
-  assertHostScan(input.workspace);
   const config = taskConfig({
     purpose: "code-practices",
     model: input.model,
