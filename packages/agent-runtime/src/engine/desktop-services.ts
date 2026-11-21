@@ -96,6 +96,9 @@ export type DesktopServices = {
   // is missing or not this app's; gives the command that serves it over
   // stdio (`limactl shell`, `wsl.exe`).
   prepareVmEngine?(input: Record<string, never>): Promise<EngineCommand>;
+  // Reads a file in the runtime VM and removes it (what the VM's harness
+  // left for the host, such as a story's project memory); null when none.
+  takeVmFile?(input: { path: string }): Promise<string | null>;
 };
 
 export type DesktopServiceName = keyof DesktopServices;
@@ -129,6 +132,7 @@ export const desktopServiceNames = [
   "openExternal",
   "applyPreviewInitialization",
   "prepareVmEngine",
+  "takeVmFile",
   "commandCredentials",
   "refreshPreviewDependencies",
 ] as const satisfies readonly DesktopServiceName[];

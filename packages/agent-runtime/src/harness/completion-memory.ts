@@ -8,8 +8,13 @@ import type { ProjectMemoryCandidate } from "./project-memory.js";
 // which saves it to the account when the turn ends. One file per session,
 // next to its journal; the host removes it once it read it.
 
-function memoryFile(workspaceRoot: string, session: string) {
-  return join(
+/** Where it is, under the workspace (POSIX in the VM). */
+export function completionMemoryFile(
+  workspaceRoot: string,
+  session: string,
+  joinPath: (...parts: string[]) => string = join,
+) {
+  return joinPath(
     workspaceRoot,
     ".blame",
     "harness",
@@ -23,7 +28,7 @@ export async function leaveCompletionMemory(
   session: string,
   memory: ProjectMemoryCandidate,
 ) {
-  const file = memoryFile(workspaceRoot, session);
+  const file = completionMemoryFile(workspaceRoot, session);
   await mkdir(dirname(file), { recursive: true });
   await writeFile(file, JSON.stringify(memory));
 }
@@ -33,7 +38,7 @@ export async function takeCompletionMemory(
   workspaceRoot: string,
   session: string,
 ): Promise<ProjectMemoryCandidate | undefined> {
-  const file = memoryFile(workspaceRoot, session);
+  const file = completionMemoryFile(workspaceRoot, session);
   try {
     const memory = JSON.parse(
       await readFile(file, "utf8"),

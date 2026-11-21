@@ -13,7 +13,6 @@ import { initializationImpactTask } from "./initialization-impact.js";
 import { newProjectGenerationTask } from "./new-project-generation.js";
 import { projectInitializationRepairTask } from "./project-initialization-repair.js";
 import { projectInitializationTask } from "./project-initialization.js";
-import { VM_SCAN_UNSUPPORTED } from "../tasks/runner.js";
 import type { ClientTool, ToolCallContext } from "../tool.js";
 
 const model = { providerId: "anthropic", modelId: "claude-sonnet-4-6" };
@@ -146,15 +145,6 @@ test("a rejected setup goes back to the agent; a block is the same tool's other 
   );
 });
 
-test("an initialization of a workspace in the VM fails before it is scanned", async () => {
-  await assert.rejects(
-    projectInitializationTask({
-      model,
-      workspace: { root: "/does/not/exist", inVm: true },
-    }),
-    new RegExp(VM_SCAN_UNSUPPORTED.slice(0, 40)),
-  );
-});
 
 test("a repair may read the code and refuses a setup Blame's checks reject", async () => {
   const task = await projectInitializationRepairTask({

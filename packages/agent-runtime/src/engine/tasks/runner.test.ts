@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { EngineClient, SessionConfig } from "@blame/engine-client";
-import { EngineTaskError, TaskRunner } from "./runner.js";
+import { EngineTaskError, TaskRunner, VM_SCAN_UNSUPPORTED } from "./runner.js";
 
 const spec = {
   config: {} as SessionConfig,
@@ -55,4 +55,18 @@ test("an announced task cancelled while it is prepared never runs", async () => 
   assert.deepEqual(fake.started, []);
   runner.settled("task-b");
   assert.equal(runner.cancel("task-b"), false, "nothing left to cancel");
+});
+
+test("a project task refuses a folder the host locates in the VM, before any scan", () => {
+  const runner = new TaskRunner(
+    async () => {
+      throw new Error("no engine is asked");
+    },
+    (root) => (root.startsWith("/home/blame/") ? "vm" : "host"),
+  );
+  assert.throws(
+    () => runner.assertHostScan("/home/blame/.local/share/blame/runtime/worktrees/a"),
+    new RegExp(VM_SCAN_UNSUPPORTED.slice(0, 40)),
+  );
+  assert.doesNotThrow(() => runner.assertHostScan("/Users/me/project"));
 });

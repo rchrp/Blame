@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { test } from "node:test";
 import {
   installScript,
+  takeVmFile,
   vmHarnessLauncher,
   vmEngineDataDir,
   vmEngineInstallDir,
@@ -92,5 +93,23 @@ test("the launcher runs blame-harness with the payload the runtime installed", (
     assert.equal(output[3], join(real, "..", "node_modules").replace(/\/harness\/\.\.\//u, "/"));
   } finally {
     rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("a file the VM's harness left is taken once: read, then removed", async () => {
+  const scratch = mkdtempSync(join(tmpdir(), "vm-take-"));
+  try {
+    // The wrapper runs its arguments as given, as limactl shell does.
+    const wrapper = join(scratch, "blame-lima-runtime");
+    writeFileSync(wrapper, '#!/bin/sh\nexec "$@"\n');
+    chmodSync(wrapper, 0o755);
+    const target = { platform: "darwin" as const, wrapper, env: process.env };
+    const file = join(scratch, "space in it", "memory.json");
+    mkdirSync(join(scratch, "space in it"));
+    writeFileSync(file, '{"summary":"kept"}');
+    assert.equal(await takeVmFile(target, file), '{"summary":"kept"}');
+    assert.equal(await takeVmFile(target, file), undefined, "taken once");
+  } finally {
+    rmSync(scratch, { recursive: true, force: true });
   }
 });

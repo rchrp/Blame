@@ -18,6 +18,7 @@ import {
   gitDiffBetween,
   gitDiffStatsBetween,
   gitDiffFrom,
+  workingDiffAddPathspecs,
   gitLogArguments,
   storyWorktreeAddArguments,
   storyWorktreeRemoveArguments,
@@ -611,3 +612,7 @@ async function revision(repository: string) {
 function git(repository: string, args: string[]) {
   return execFileAsync("git", args, { cwd: repository });
 }
+
+test("the scratch index of a worktree diff is filled without attr magic, which the VM's git refuses in add", () => {
+  assert.ok(workingDiffAddPathspecs.every((pathspec) => !pathspec.includes("attr")));
+});

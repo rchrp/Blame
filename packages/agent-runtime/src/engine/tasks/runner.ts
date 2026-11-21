@@ -127,6 +127,16 @@ export class TaskRunner {
   }
 
   /**
+   * Refuses a folder in the VM for a project task, which scans its files on
+   * this computer first. A project folder is on this computer (only story
+   * worktrees live in the VM) and the app asks these tasks on the project
+   * folder: reaching this is a caller's mistake, said plainly.
+   */
+  assertHostScan(root: string) {
+    if (this.locate(root) === "vm") throw new Error(VM_SCAN_UNSUPPORTED);
+  }
+
+  /**
    * A call that runs the task `session` arrived: a follow of it waits for
    * its session (`whenCreated`) until `settled`.
    */
@@ -290,11 +300,6 @@ function cappedReasoning<M extends { reasoning?: ReasoningEffort }>(
 /** Said when a task must scan a folder on this computer that lives in the VM. */
 export const VM_SCAN_UNSUPPORTED =
   "This task scans the project folder on this computer, and this folder lives in the Blame Runtime VM.";
-
-/** Refuses a workspace in the VM for a task that scans its files here first. */
-export function assertHostScan(workspace: TaskWorkspace) {
-  if (workspace.inVm) throw new Error(VM_SCAN_UNSUPPORTED);
-}
 
 /**
  * The folder the engine works in. A task that reads files works in its
