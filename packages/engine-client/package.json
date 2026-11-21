@@ -13,6 +13,10 @@
     "./transcript": {
       "types": "./src/transcript/index.ts",
       "default": "./dist/transcript/index.js"
+    },
+    "./usage-reset": {
+      "types": "./src/usage-reset.ts",
+      "default": "./dist/usage-reset.js"
     }
   },
   "files": [

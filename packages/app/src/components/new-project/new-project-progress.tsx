@@ -4,6 +4,8 @@ import {
   type TaskProgressItem,
 } from "@/components/shared/task-progress"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ModelLimitAction } from "@/components/model/model-limit-notice"
+import { failureMessage } from "@/lib/model-limit"
 import type {
   NewProjectWizard,
   ProjectCreationStatus,
@@ -46,7 +48,10 @@ export function NewProjectProgress(props: NewProjectProgressProps) {
       {error && (
         <Alert variant="destructive">
           <AlertTitle>Unable to finish creation</AlertTitle>
-          <AlertDescription className="break-words">{error}</AlertDescription>
+          <AlertDescription className="break-words">
+            {failureMessage(error, "alternative")}
+            <ModelLimitAction message={error} />
+          </AlertDescription>
         </Alert>
       )}
       {!failed && <TaskProgress steps={creationProgressSteps(status)} />}

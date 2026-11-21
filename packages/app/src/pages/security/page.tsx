@@ -11,6 +11,13 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  chooseModelLabel,
+  failureToast,
+  openModelSettings,
+} from "@/components/model/model-limit-notice"
+import { failureMessage, modelLimit } from "@/lib/model-limit"
+
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { useModelSelection } from "@/components/model/model-selection"
 import { SecurityAuditDashboard } from "@/components/security/security-audit-dashboard"
@@ -80,9 +87,11 @@ export function SecurityPage() {
           toast.success("Security audit completed.")
       })
       .catch((error) =>
-        toast.error("Security audit failed", {
-          description: error instanceof Error ? error.message : undefined,
-        })
+        failureToast(
+          "Security audit failed",
+          error instanceof Error ? error.message : "",
+          { task: "Security audit" }
+        )
       )
   }
 
@@ -280,9 +289,16 @@ function SecurityFailedState({
           Audit interrupted
         </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          {auditError ?? "The audit could not be completed."}
+          {auditError
+            ? failureMessage(auditError, "alternative")
+            : "The audit could not be completed."}
         </p>
         <div className="mt-5 flex justify-center gap-2">
+          {modelLimit(auditError) ? (
+            <Button variant="outline" onClick={openModelSettings}>
+              {chooseModelLabel}
+            </Button>
+          ) : null}
           {onViewPrevious ? (
             <Button variant="outline" onClick={onViewPrevious}>
               View previous audit

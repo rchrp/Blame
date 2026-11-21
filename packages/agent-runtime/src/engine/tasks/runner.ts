@@ -9,8 +9,10 @@ import { tmpdir } from "node:os";
 import type {
   CompletionContract,
   EngineClient,
+  ErrorInfo,
   HostParamsOf,
   Limits,
+  ReasoningEffort,
   SessionConfig,
   TaskOutcome,
   ToolHostContext,
@@ -21,6 +23,7 @@ import type { EngineLocation, EngineModelChoice } from "../protocol.js";
 import { engineModel } from "../purposes/purpose.js";
 import type { TaskWorkspace } from "../task-protocol.js";
 import { ToolSet, type ClientTool } from "../tool.js";
+import { usageResetAt } from "@blame/engine-client/usage-reset";
 
 /** A task as a purpose describes it. */
 export type TaskSpec<R> = {
@@ -55,7 +58,7 @@ export class EngineTaskError extends Error {
 }
 
 /** Why a task did not complete, in words. */
-export function failureText(outcome: Failure): string {
+export function failureText(outcome: Failure, now = Date.now()): string {
   if (outcome.status === "interrupted") return "was stopped.";
   const { failure } = outcome;
   switch (failure.kind) {
@@ -70,8 +73,21 @@ export function failureText(outcome: Failure): string {
     case "limit_reached":
       return `stopped at its limit (${failure.limit}).`;
     case "provider_error":
-      return `failed: ${failure.error.message}`;
+      return providerFailureText(failure.error, now);
   }
+}
+
+/**
+ * A plan used up or an account out of credit cannot succeed by running the
+ * task again with the same model: the text says so, with the instant the
+ * plan resets when known (the app names the setting that picks the model,
+ * and waits for that instant before running it by itself again).
+ */
+function providerFailureText(error: ErrorInfo, now: number) {
+  if (error.kind === "billing") return `could not run: ${error.message}`;
+  if (error.kind !== "usage_limit") return `failed: ${error.message}`;
+  const resetsAt = usageResetAt(error, now);
+  return `could not run: ${error.message}${resetsAt ? ` It resets at ${resetsAt.toISOString()}.` : ""}`;
 }
 
 export type TaskRunOptions = {
@@ -228,6 +244,12 @@ export type TaskConfigInput = {
   clientTools?: ToolSpec[];
   toolOptions?: SessionConfig["tool_options"];
   limits?: Limits;
+  /**
+   * The most reasoning the task uses: a short text (a title, a commit
+   * message) gains nothing from the person's high effort and waits for it.
+   * Lower settings are kept; the engine gives the model its nearest level.
+   */
+  reasoningAtMost?: ReasoningEffort;
   maxOutputTokens?: number;
   /** Copy the log to Blame's database (a long task the person may look back at). */
   replicate?: boolean;
@@ -238,7 +260,7 @@ export function taskConfig(input: TaskConfigInput): SessionConfig {
   return {
     purpose: input.purpose,
     workspace_root: taskRoot(input.workspace, input.engineTools?.length),
-    ...engineModel(input.model),
+    ...cappedReasoning(engineModel(input.model), input.reasoningAtMost),
     system_prompt: input.systemPrompt,
     ...(input.maxOutputTokens
       ? { max_output_tokens: input.maxOutputTokens }
@@ -251,6 +273,18 @@ export function taskConfig(input: TaskConfigInput): SessionConfig {
     kind: { kind: "task", replicate: input.replicate ?? false },
     contract: input.contract,
   };
+}
+
+const efforts: ReasoningEffort[] = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
+
+function cappedReasoning<M extends { reasoning?: ReasoningEffort }>(
+  model: M,
+  most: ReasoningEffort | undefined,
+): M {
+  if (!most || !model.reasoning) return model;
+  return efforts.indexOf(model.reasoning) > efforts.indexOf(most)
+    ? { ...model, reasoning: most }
+    : model;
 }
 
 /** Said when a task must scan a folder on this computer that lives in the VM. */

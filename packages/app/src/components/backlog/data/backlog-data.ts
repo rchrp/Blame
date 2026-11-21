@@ -70,6 +70,8 @@ export type UserStoryAgentActivity = {
   images?: Array<{ caption: string; id: string }>
   // The files of a steered message ("user").
   fileAttachments?: UserStoryFileAttachment[]
+  // An error the person fixes by choosing another model (a used-up plan).
+  action?: "choose-model"
   createdAt: string
   updatedAt?: string
 }

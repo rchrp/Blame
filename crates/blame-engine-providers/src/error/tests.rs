@@ -268,3 +268,78 @@ fn failures_without_a_provider_reply() {
         ErrorKind::ContextOverflow
     );
 }
+
+/// The messages the owner's runs got, and the ChatGPT plan's: a used-up
+/// plan is not a rate limit, is not retried, and keeps what the provider
+/// said (which limit, when it resets).
+#[test]
+fn a_used_up_plan_is_told_apart_from_a_rate_limit() {
+    let anthropic = |kind: &str, message: &str| {
+        serde_json::json!({"type": "error", "error": {"type": kind, "message": message}})
+            .to_string()
+    };
+    for message in [
+        "You've hit your session limit · resets 1:10am (Europe/Bucharest)",
+        "You've hit your weekly limit · resets Mon 9am (Europe/Bucharest)",
+        "Claude AI usage limit reached|1795180000",
+    ] {
+        let error = from_rig(&reply(429, &anthropic("rate_limit_error", message), &[]));
+        assert_eq!(error.kind, ErrorKind::UsageLimit, "{message}");
+        assert!(!error.kind.is_retryable());
+        assert!(error.message.starts_with(message), "{}", error.message);
+    }
+    let chatgpt = reply(
+        429,
+        r#"{"error": {"type": "usage_limit_reached", "message": "The usage limit has been reached", "plan_type": "plus", "resets_in_seconds": 5400}}"#,
+        &[],
+    );
+    let error = from_rig(&chatgpt);
+    assert_eq!(error.kind, ErrorKind::UsageLimit);
+    assert_eq!(error.retry_after, Some(Duration::from_secs(5400)));
+    assert_eq!(error.message, "The usage limit has been reached (HTTP 429)");
+    let at = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .expect("now")
+        .as_secs()
+        + 600;
+    let chatgpt_at = reply(
+        429,
+        &format!(
+            r#"{{"detail": {{"code": "usage_limit_reached"}}, "error": {{"type": "usage_limit_reached", "message": "The usage limit has been reached", "resets_at": {at}}}}}"#
+        ),
+        &[],
+    );
+    let wait = from_rig(&chatgpt_at).retry_after.expect("reset");
+    assert!(wait <= Duration::from_secs(600) && wait > Duration::from_secs(590));
+    // A per-minute limit stays a rate limit, retried after its wait.
+    let minute = from_rig(&reply(
+        429,
+        &anthropic(
+            "rate_limit_error",
+            "Number of request tokens has exceeded your per-minute rate limit",
+        ),
+        &[("retry-after", "7")],
+    ));
+    assert_eq!(minute.kind, ErrorKind::RateLimited);
+    // An API key out of credit is billing: not a plan that resets.
+    let credit = from_rig(&reply(
+        400,
+        &anthropic(
+            "invalid_request_error",
+            "Your credit balance is too low to access the Anthropic API.",
+        ),
+        &[],
+    ));
+    assert_eq!(credit.kind, ErrorKind::Billing);
+    let quota = from_rig(&reply(
+        429,
+        r#"{"error": {"code": "insufficient_quota", "type": "insufficient_quota", "message": "You exceeded your current quota, please check your plan and billing details."}}"#,
+        &[],
+    ));
+    assert_eq!(quota.kind, ErrorKind::Billing);
+    // Said inside a reply that otherwise completed, too.
+    assert_eq!(
+        from_reported("You've hit your session limit · resets 1:10am").kind,
+        ErrorKind::UsageLimit
+    );
+}

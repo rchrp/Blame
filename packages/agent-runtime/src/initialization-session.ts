@@ -172,11 +172,15 @@ export class InitializationSession<T> {
     const signature = rejectionSignature(error);
     this.repeats = signature === this.lastSignature ? this.repeats + 1 : 1;
     const resubmitted = sameInput(input, this.previousInput);
+    const warnedBefore = onlyWarningsShown(error, this.shownWarnings);
     this.lastSignature = signature;
     this.previousInput = input;
-    // Warnings come from heuristics. Submitting the same setup again says
-    // they do not apply: it is saved, with the warnings shown to the user.
-    if (final || resubmitted || this.repeats >= repeatedRejectionLimit) {
+    for (const rule of warningRules(error)) this.shownWarnings.add(rule);
+    // Warnings come from heuristics. Each rejects once, so the agent can fix
+    // it; a submission that still has only warnings it was shown (the same
+    // setup or a changed one) says they do not apply: it is saved, with the
+    // warnings shown to the user. Blocking problems always reject.
+    if (final || resubmitted || warnedBefore || this.repeats >= repeatedRejectionLimit) {
       const saved = this.acceptWithWarnings(input);
       if (saved) return { accepted: true, savedWithWarnings: true };
       if (final || this.repeats >= repeatedRejectionLimit) {
@@ -189,6 +193,8 @@ export class InitializationSession<T> {
   }
 
   private previousInput: unknown;
+  /** The warnings the agent has read in a rejection already. */
+  private readonly shownWarnings = new Set<string>();
 
   private acceptWithWarnings(input: unknown) {
     try {
@@ -277,7 +283,7 @@ export function rejectionFeedback(
     problems.length === 1 ? "Problem:" : `Problems (${problems.length}):`,
     ...problems,
     "Fix every problem above, then call submit_project_initialization again with the complete corrected result, not a partial one.",
-    "Problems marked [warning] come from heuristics. If one does not apply to this project, submit the same result again unchanged: it is saved and the warning is shown to the user.",
+    "Problems marked [warning] come from heuristics and are raised once. Fix the ones that apply; if one does not apply to this project, submit again without changing that part: the result is saved and the warning is shown to the user.",
     "If something outside the repository and the setup blocks you, call submit_project_initialization with only `blocked` instead.",
   ].join("\n");
 }
@@ -304,6 +310,21 @@ function readableRejection(message: string) {
     .replace(/^Error:\s*/, "")
     .replace(/^Initialization result /, "The result ");
   return /[.!?]$/.test(text) ? text : `${text}.`;
+}
+
+function warningRules(error: unknown) {
+  return error instanceof PreviewSetupError
+    ? error.issues.filter((issue) => issue.severity === "warning").map(({ rule }) => rule)
+    : [];
+}
+
+/** Whether every problem is a warning the agent was shown before. */
+function onlyWarningsShown(error: unknown, shown: Set<string>) {
+  return (
+    error instanceof PreviewSetupError &&
+    error.issues.length > 0 &&
+    error.issues.every((issue) => issue.severity === "warning" && shown.has(issue.rule))
+  );
 }
 
 function rejectionSignature(error: unknown) {

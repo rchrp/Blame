@@ -201,6 +201,7 @@ function ModelPickerTrigger({
           <Button
             variant="ghost"
             className={cn(selectorSegmentClassName, "w-48 shrink", className)}
+            data-model-picker=""
             disabled={!selection.serverReady || selection.loading}
             onWheel={onWheel}
           >

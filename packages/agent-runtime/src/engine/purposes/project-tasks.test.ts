@@ -237,7 +237,7 @@ test("an impact assessment reads only the diff summary: no tool", () => {
   assert.deepEqual(config.contract?.allowed, []);
   assert.equal(config.contract?.result.name, "submit_initialization_impact");
   assert.deepEqual(unsupported(resultSchema(config)), []);
-  assert.match(task.instruction, /Changed files: \["package.json"\]/);
+  assert.match(task.instruction, /Changed files \(1\): \["package.json"\]/);
   assert.doesNotMatch(config.system_prompt, /strict JSON/);
   assert.deepEqual(
     task.result({
@@ -253,13 +253,13 @@ test("an impact assessment reads only the diff summary: no tool", () => {
   );
 });
 
-test("a code practice analysis reads the code before its engine-checked answer", async () => {
+test("a code practice analysis may answer from its evidence, with reading tools to confirm", async () => {
   const task = await codePracticesTask({ model, workspace: { root } });
   const { config } = task;
   assert.equal(config.purpose, "code-practices");
   assert.equal(config.contract?.result.source, "submit");
   assert.equal(config.contract?.result.name, "submit_project_code_practices");
-  assert.deepEqual(config.contract?.required, ["read_code"]);
+  assert.equal(config.contract?.required, undefined);
   assert.deepEqual(config.contract?.allowed, ["search_code", "read_code"]);
   assert.deepEqual(unsupported(resultSchema(config)), []);
   assert.match(task.instruction, /Project evidence: \{/);

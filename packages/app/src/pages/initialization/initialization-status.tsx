@@ -1,6 +1,9 @@
 import { ChevronRightIcon, LoaderCircleIcon } from "lucide-react"
 
-import { navigate } from "@/components/navigation/navigation"
+import {
+  ModelLimitAction,
+  openModelSettings,
+} from "@/components/model/model-limit-notice"
 import type { ProjectInitializationAvailability } from "@/components/project-initialization/project-initialization-availability"
 import type { ProjectInitializationProgress } from "@/components/project-initialization/project-initialization-progress"
 import { ProgressNotificationBody } from "@/components/shared/progress-notification"
@@ -11,6 +14,7 @@ import {
 } from "@/components/project-initialization/initialization-blocked"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 import { useNow } from "@/hooks/use-now"
+import { modelLimit } from "@/lib/model-limit"
 import { cn } from "@/lib/utils"
 import { CornerLight, type CornerTone } from "./environment-kinds"
 import { EnvironmentStartChain } from "./environment-start-chain"
@@ -254,18 +258,23 @@ function FailedStatus({
       <p className="text-foreground">
         {readableInitializationError(initialization.error)}
       </p>
-      <p>
-        Stories run in Direct mode, in your project folder, until an analysis
-        succeeds. Run it again; if it keeps failing, try another model in{" "}
-        <button
-          type="button"
-          className="text-foreground underline underline-offset-3 hover:text-foreground/80"
-          onClick={() => navigate("/settings")}
-        >
-          Settings
-        </button>
-        .
-      </p>
+      <ModelLimitAction message={initialization.error} />
+      {modelLimit(initialization.error) ? (
+        <p>Stories run in Direct mode, in your project folder, meanwhile.</p>
+      ) : (
+        <p>
+          Stories run in Direct mode, in your project folder, until an analysis
+          succeeds. Run it again; if it keeps failing, try another model in{" "}
+          <button
+            type="button"
+            className="text-foreground underline underline-offset-3 hover:text-foreground/80"
+            onClick={openModelSettings}
+          >
+            Settings
+          </button>
+          .
+        </p>
+      )}
       {initialization.error ? (
         <ErrorDetails label="Error details" text={initialization.error} />
       ) : null}

@@ -6,6 +6,7 @@ import type {
 } from "@/components/backlog/data/backlog-data"
 
 import type { useModelSelection } from "@/components/model/model-selection"
+import { reportModelLimit } from "@/components/model/model-limit-notice"
 
 import type { useCloudAuth } from "@/context/cloud-auth"
 
@@ -63,7 +64,8 @@ export async function runQueuedStoryTitleGeneration(
   try {
     const title = await generatedQueuedStoryTitle(request)
     return await persistGeneratedQueuedStoryTitle(request, title)
-  } catch {
+  } catch (error) {
+    reportModelLimit("Title generation", error)
     return undefined
   } finally {
     setGenerating(false)

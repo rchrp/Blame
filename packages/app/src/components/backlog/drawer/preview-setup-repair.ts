@@ -6,11 +6,13 @@ import type {
 import * as React from "react"
 import { toast } from "sonner"
 
+import { failureToast } from "@/components/model/model-limit-notice"
 import { useModelSelection } from "@/components/model/model-selection"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
 import { createCloudApi } from "@/lib/cloud-api"
+import { modelLimit } from "@/lib/model-limit"
 import { databaseModeForInitializationRepair } from "@/pages/backlog/project-initialization-database"
 import { lockfileBehindManifest } from "./preview-failure-message"
 
@@ -117,6 +119,13 @@ async function repairWithFeedback(
     }
   } catch (error) {
     const description = error instanceof Error ? error.message : String(error)
+    if (modelLimit(description)) {
+      failureToast("Unable to repair preview setup", description, {
+        ...options,
+        task: "Preview setup repair",
+      })
+      return
+    }
     // A repaired setup can fail at a later step; another pass sees that error.
     toast.error("Unable to repair preview setup", {
       ...options,

@@ -12,7 +12,7 @@ use blame_engine_core::ports::ProviderError;
 use blame_engine_protocol::ErrorKind;
 use rig_core::error::{ErrorReport, ProviderError as RigError};
 use serde_json::Value;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 /// `error` reworded for the person reading the transcript: which provider,
 /// which model, what went wrong in their terms, what the provider said, and
@@ -38,9 +38,15 @@ pub(crate) fn about(error: ProviderError, target: &Target) -> ProviderError {
             "{provider} refused the credential used for `{model}`: \"{said}\". \
              Reconnect {provider} in Settings, then send your message again."
         ),
-        ErrorKind::Billing => {
-            format!("{provider} refused `{model}` for billing or quota reasons: \"{said}\".")
-        }
+        ErrorKind::Billing => format!(
+            "{provider} has no credit or quota left for `{model}`: \"{said}\". \
+             Add credit with {provider}, or choose another model."
+        ),
+        ErrorKind::UsageLimit => format!(
+            "Your {provider} usage for `{model}` is used up until it resets: \"{said}\".{} \
+             Choose another model, or wait for the reset.",
+            error.retry_after.map(resets_in).unwrap_or_default()
+        ),
         ErrorKind::RateLimited => {
             format!("{provider} is limiting requests to `{model}`: \"{said}\".")
         }
@@ -60,6 +66,18 @@ pub(crate) fn about(error: ProviderError, target: &Target) -> ProviderError {
     ProviderError { message, ..error }
 }
 
+/// " It resets in about 1 h 30 min." for a reset the provider timed.
+fn resets_in(wait: Duration) -> String {
+    let minutes = wait.as_secs().div_ceil(60).max(1);
+    let (hours, minutes) = (minutes / 60, minutes % 60);
+    let span = match (hours, minutes) {
+        (0, m) => format!("{m} min"),
+        (h, 0) => format!("{h} h"),
+        (h, m) => format!("{h} h {m} min"),
+    };
+    format!(" It resets in about {span}.")
+}
+
 pub(crate) fn from_rig(error: &RigError) -> ProviderError {
     let kind = match error {
         RigError::Stalled(_) => ErrorKind::Stalled,
@@ -76,11 +94,52 @@ pub(crate) fn from_rig(error: &RigError) -> ProviderError {
         _ => ErrorKind::Internal,
     };
     let report = error.report();
+    let retry_after = report.retry_after(SystemTime::now()).or_else(|| {
+        (kind == ErrorKind::UsageLimit)
+            .then(|| usage_resets_in(&report, SystemTime::now()))
+            .flatten()
+    });
     ProviderError {
         kind,
         message: said(&report).unwrap_or_else(|| error.to_string()),
-        retry_after: report.retry_after(SystemTime::now()),
+        retry_after,
     }
+}
+
+/// When a plan's usage resets, from the ChatGPT backend's
+/// `usage_limit_reached` error (`resets_in_seconds`, or `resets_at` in
+/// seconds since the epoch). Claude Code says it in its words instead.
+fn usage_resets_in(report: &ErrorReport, now: SystemTime) -> Option<Duration> {
+    let body: Value = serde_json::from_str(report.provider_response_body()?).ok()?;
+    let error = body.get("error").unwrap_or(&body);
+    if let Some(seconds) = error.get("resets_in_seconds").and_then(Value::as_u64) {
+        return Some(Duration::from_secs(seconds));
+    }
+    let at = error.get("resets_at").and_then(Value::as_u64)?;
+    let at = SystemTime::UNIX_EPOCH + Duration::from_secs(at);
+    at.duration_since(now).ok()
+}
+
+/// A plan's usage used up, in the words each plan uses: Claude Code's
+/// "You've hit your session limit · resets 1:10am" (also weekly, and the
+/// older "Claude AI usage limit reached"), the ChatGPT backend's
+/// `usage_limit_reached` ("The usage limit has been reached").
+fn usage_exhausted(code: &str, body: &str) -> bool {
+    matches!(code, "usage_limit_reached" | "usage_not_included")
+        || [
+            "usage_limit_reached",
+            "usage limit has been reached",
+            "usage limit reached",
+            "hit your session limit",
+            "hit your weekly limit",
+            "hit your usage limit",
+            "hit your limit",
+            "session limit reached",
+            "weekly limit reached",
+            "5-hour limit reached",
+        ]
+        .iter()
+        .any(|phrase| body.contains(phrase))
 }
 
 /// What the provider itself wrote, with its status: the `message` its
@@ -144,6 +203,11 @@ pub(crate) fn classify(report: &ErrorReport) -> ErrorKind {
     // project without access to a model with a 403.
     if model_refused(report.http_status, &code, &body) {
         return ErrorKind::ModelUnavailable;
+    }
+    // Before the rate limit: Claude Code and the ChatGPT backend answer a
+    // used-up plan with a 429 that only its wording tells apart.
+    if matches!(report.http_status, Some(429) | None) && usage_exhausted(&code, &body) {
+        return ErrorKind::UsageLimit;
     }
     match report.http_status {
         Some(401 | 403) => ErrorKind::Authentication,
@@ -234,7 +298,9 @@ pub(crate) fn from_reported(message: &str) -> ProviderError {
 
 fn from_wording(text: &str) -> ErrorKind {
     let says = |phrases: &[&str]| phrases.iter().any(|phrase| text.contains(phrase));
-    if says(&[
+    if usage_exhausted("", text) {
+        ErrorKind::UsageLimit
+    } else if says(&[
         "overloaded",
         "server_error",
         "server error",

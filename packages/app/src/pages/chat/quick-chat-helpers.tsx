@@ -107,6 +107,7 @@ export async function generatedQuickChatTitle(
       workspace: input.projectPath,
     })
   } catch {
+    // A used-up plan shows on the chat's own failed turn.
     return undefined
   }
 }

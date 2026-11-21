@@ -80,20 +80,56 @@ export async function collectProjectInitializationImpactDiagnostics(
   };
 }
 
-export function projectInitializationImpactPrompt(
+const maxListedChangedFiles = 300;
+
+/**
+ * The diagnostics as an agent reads them: what it can use, once. A merge
+ * of 2,188 files listed every name (125k characters) and each strategic
+ * file twice beside its diff; the impact and repair briefs reached 413k and
+ * 562k characters. The names list keeps the runtime files and the first
+ * others; a file's content before the merge is kept only where its diff is
+ * missing or was cut (the full diff and the content after give it).
+ */
+export function diagnosticsBrief(
   diagnostics: ProjectInitializationImpactDiagnostics,
 ) {
+  const { changedFiles, relevantDiffs, strategicFilesBefore } = diagnostics;
+  const relevant = changedFiles.filter((path) => path in relevantDiffs);
+  const others = changedFiles.filter((path) => !(path in relevantDiffs));
+  const listed =
+    changedFiles.length > maxListedChangedFiles
+      ? [...relevant, ...others.slice(0, Math.max(0, maxListedChangedFiles - relevant.length))]
+      : changedFiles;
+  const before = Object.fromEntries(
+    Object.entries(strategicFilesBefore).filter(
+      ([path]) => !((relevantDiffs[path]?.length ?? maxDiffLength) < maxDiffLength),
+    ),
+  );
+  return {
+    ...diagnostics,
+    changedFiles: listed,
+    ...(listed.length < changedFiles.length
+      ? { changedFilesNotListed: changedFiles.length - listed.length }
+      : {}),
+    strategicFilesBefore: before,
+  };
+}
+
+export function projectInitializationImpactPrompt(
+  full: ProjectInitializationImpactDiagnostics,
+) {
+  const diagnostics = diagnosticsBrief(full);
   return [
     "Assess whether the changes between these commits make the persisted project initialization obsolete.",
     "Call submit_initialization_impact with the result. Do not answer with JSON text.",
     `Base commit: ${diagnostics.baseCommit}`,
     `Merge commit: ${diagnostics.mergeCommit}`,
-    `Changed files: ${JSON.stringify(diagnostics.changedFiles)}`,
+    `Changed files (${full.changedFiles.length}${diagnostics.changedFilesNotListed ? `, ${diagnostics.changedFilesNotListed} not listed` : ""}): ${JSON.stringify(diagnostics.changedFiles)}`,
     `Diff summary: ${JSON.stringify(diagnostics.diffSummary)}`,
     `Relevant diffs: ${JSON.stringify(diagnostics.relevantDiffs)}`,
     `Current previewManifest: ${JSON.stringify(diagnostics.currentPreviewManifest)}`,
     `Current runConfigurations: ${JSON.stringify(diagnostics.currentRunConfigurations)}`,
-    `Strategic files before: ${JSON.stringify(diagnostics.strategicFilesBefore)}`,
+    `Strategic files before (only those whose diff above is missing or cut): ${JSON.stringify(diagnostics.strategicFilesBefore)}`,
     `Strategic files after: ${JSON.stringify(diagnostics.strategicFilesAfter)}`,
   ].join("\n");
 }

@@ -1,6 +1,9 @@
 import type { PreviewManifest, ReasoningSelection } from "@blame/agent-runtime"
 import { toast } from "sonner"
 
+import { failureToast } from "@/components/model/model-limit-notice"
+import { modelLimit } from "@/lib/model-limit"
+
 import type {
   CloudProjectInitialization,
   useCloudAuth,
@@ -109,6 +112,15 @@ async function checkPreviewEnvironment(input: PreviewEnvironmentSyncInput) {
     return await checkCommits(input, saved, baseCommit, headCommit, toastId)
   } catch (error) {
     if (headCommit) unsettledHeads.set(input.projectId, headCommit)
+    const message = error instanceof Error ? error.message : String(error)
+    if (modelLimit(message)) {
+      failureToast("Could not check the preview environment", message, {
+        task: "Preview environment check",
+        id: toastId,
+        position,
+      })
+      return saved
+    }
     toast.warning("Could not check the preview environment", {
       id: toastId,
       description: error instanceof Error ? error.message : String(error),

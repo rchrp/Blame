@@ -15,7 +15,7 @@ Call `submit_project_initialization` with the complete initialization result. Do
 <checks_and_corrections>
 Blame checks each submission as soon as you make it. An accepted one ends the analysis. A rejected one comes back as a tool error that lists every problem, numbered:
 - `[must fix]` problems make the setup unusable. Fix all of them.
-- `[warning]` problems come from heuristics that can be wrong about a project. Fix the ones that apply. If one does not apply, submit the same result again unchanged: it is saved and the warning is shown to the user.
+- `[warning]` problems come from heuristics that can be wrong about a project, and each is raised once. Fix the ones that apply. If one does not apply, submit again without changing that part: the result is saved and the warning is shown to the user.
 Fix every listed problem in one corrected submission, always with the complete result, never a partial one. Keep what was not rejected. Read more files only when a problem needs a fact you do not have. You have 10 submissions; the same rejection three times in a row ends the analysis.
 
 Call `submit_project_initialization` with only `blocked`, instead of a setup, only when something outside the repository and the setup you write prevents a working setup: a secret only the user has, a private registry or repository you cannot reach, an image that does not exist, a project that cannot run in Linux containers, a broken repository, or a Blame rule that rejects every correct variation. Write the summary and the user action for the developer, in plain words. Never report a block to escape a `[must fix]` problem you can solve by changing the setup.
