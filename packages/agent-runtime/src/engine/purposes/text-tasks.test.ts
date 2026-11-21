@@ -33,6 +33,20 @@ test("a title is a task whose only tool is submit_title", () => {
   assert.doesNotMatch(config.system_prompt, /strict JSON/);
 });
 
+test("a title reasons at most a little; a lower setting is kept", () => {
+  const config = (reasoning: string | undefined) =>
+    titleTask({
+      context: "quick-chat",
+      model: { ...model, ...(reasoning ? { reasoning: reasoning as never } : {}) },
+      prompt: "Fix the login",
+      workspace: { root: "/projects/app" },
+    }).config;
+  assert.equal(config("high").reasoning, "low");
+  assert.equal(config("medium").reasoning, "low");
+  assert.equal(config("none").reasoning, "off");
+  assert.equal(config(undefined).reasoning, undefined, "the model's default stays");
+});
+
 test("a story's title also picks one of its run configurations, by the schema", () => {
   const task = titleTask({
     context: "user-story",

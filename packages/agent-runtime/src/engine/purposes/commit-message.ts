@@ -22,6 +22,7 @@ export function commitMessageTask(
     config: taskConfig({
       purpose: "commit-message",
       model: input.model,
+      reasoningAtMost: "low",
       systemPrompt: developmentPracticePrompt(
         input.codePractices ?? [],
         "commit_message_convention",

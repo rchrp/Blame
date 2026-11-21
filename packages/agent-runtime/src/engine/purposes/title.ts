@@ -30,6 +30,7 @@ export function titleTask(input: GenerateTitleTask): TaskSpec<GeneratedTitle> {
     config: taskConfig({
       purpose: "title",
       model: input.model,
+      reasoningAtMost: "low",
       systemPrompt: loadPrompt("title-generator-system"),
       workspace: input.workspace,
       contract: {

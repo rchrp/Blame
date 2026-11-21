@@ -34,6 +34,7 @@ export function pullRequestTextTask(
     config: taskConfig({
       purpose: "pull-request-text",
       model: input.model,
+      reasoningAtMost: "low",
       systemPrompt: loadPrompt("pull-request-text-system"),
       contract: {
         result: submitTool(
