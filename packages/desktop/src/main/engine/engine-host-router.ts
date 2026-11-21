@@ -1,5 +1,6 @@
 import {
   engineMainOnlyMethods,
+  engineStoryMainOnlyMethods,
   type EngineHostEvent,
   type EngineHostInput,
   type EngineHostMethod,
@@ -27,9 +28,10 @@ export class EngineHostRouter {
   >();
   private readonly viewers = new Map<number, EngineViewer>();
   private connection: EngineHostInput<"connect"> | undefined;
-  // The projects and settings each window gave the story service: a
-  // restarted host is told what every window knows.
-  private readonly storySyncs = new Map<string, EngineHostInput<"storySync">>();
+  // The projects and settings each open window gave the story service, the
+  // latest last: a restarted host is told what every open window knows,
+  // and the latest settings win there too.
+  private readonly storySyncs = new Map<number, EngineHostInput<"storySync">>();
   // Where each session works, from the settings its calls carry, and which
   // sessions have a turn running: the rest of the app keeps a preview up and
   // does not merge into a folder an agent is writing.
@@ -44,15 +46,21 @@ export class EngineHostRouter {
   ) {
     if (
       method === "shutdown" ||
-      (engineMainOnlyMethods as readonly string[]).includes(method)
+      (engineMainOnlyMethods as readonly string[]).includes(method) ||
+      (engineStoryMainOnlyMethods as readonly string[]).includes(method)
     )
       return false;
     this.viewers.set(viewer.id, viewer);
-    if (method === "connect")
-      this.connection = input as EngineHostInput<"connect">;
+    if (method === "connect") {
+      const next = input as EngineHostInput<"connect">;
+      // Signed out, or another API: what the windows knew is not told again.
+      if (!next.api || next.api.url !== this.connection?.api?.url)
+        this.storySyncs.clear();
+      this.connection = next;
+    }
     if (method === "storySync") {
-      const sync = input as EngineHostInput<"storySync">;
-      this.storySyncs.set(sync.window, sync);
+      this.storySyncs.delete(viewer.id);
+      this.storySyncs.set(viewer.id, input as EngineHostInput<"storySync">);
     }
     if (method === "follow") {
       const { session, subscription } = input as EngineHostInput<"follow">;
@@ -102,6 +110,7 @@ export class EngineHostRouter {
   /** The window closed: what it followed is not needed any more. */
   forget(viewerId: number): string[] {
     this.viewers.delete(viewerId);
+    this.storySyncs.delete(viewerId);
     const dropped: string[] = [];
     for (const [subscription, follow] of this.follows)
       if (follow.viewer.id === viewerId) {
@@ -109,6 +118,11 @@ export class EngineHostRouter {
         dropped.push(subscription);
       }
     return dropped;
+  }
+
+  /** The story service's id of a window, to tell the host it closed. */
+  storyWindow(viewerId: number) {
+    return this.storySyncs.get(viewerId)?.window;
   }
 
   /** What a restarted engine host is told, in order. */

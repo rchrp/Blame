@@ -4,12 +4,15 @@
 // (stories in `ready`), starts each story that can start (no cap), settles
 // each story when a turn of its agent ends, and tells its listeners of each
 // ended turn once. It is the one writer of a story's agent fields
-// (`agentStatus`, `agentLastError`, `engineSessionId`, `agentModels`).
+// (`agentStatus`, `agentLastError`, `engineSessionId`, `agentModels`) for
+// the stories this computer runs; a story another computer of the account
+// runs is left alone (`ledger.ts`).
 //
 // Every path ends in one step, `reconcile`: the story's record read now,
-// set against what the engine says of its session. It runs when a turn
-// starts or ends, when a project is first read, and every minute, so a
-// write that failed, an event that never came or a quit is settled there.
+// set against what this computer's engine says of its session. It runs when
+// a turn starts or ends, when a project is first read, and every minute,
+// so a write that failed, an event that never came or a quit is settled
+// there.
 //
 // Windows call it through `platform.engine` (`story*` methods); the
 // engine host's own code calls its methods directly.
@@ -38,9 +41,10 @@ import type {
 } from "../story-protocol.js";
 import { storyApi, type StoryRecord } from "./api.js";
 import { approveStory, cleanStory, hasRuntime } from "./endings.js";
-import { TurnLedger } from "./ledger.js";
+import { StoryLedger } from "./ledger.js";
 import { dependencyWait, queuedStories, retryDelay } from "./queue.js";
 import { reconcileDecision } from "./reconcile.js";
+import { ReconcileScheduler } from "./reconciler.js";
 import { StoryRecords } from "./records.js";
 import { storyTurnModel } from "./settings.js";
 import {
@@ -57,6 +61,7 @@ import {
   type StoryUpdate,
 } from "./story.js";
 import { pauseStory, sendStoryMessage } from "./turns.js";
+import { StoryWindows } from "./windows.js";
 
 export type StoryServiceHost = {
   api(): ApiConnection | undefined;
@@ -69,105 +74,103 @@ export type StoryServiceHost = {
   emit(event: StoryHostEvent): void;
 };
 
+export type StoryServiceOptions = {
+  /** Where what this computer runs and told is kept (`ledger.ts`). */
+  ledgerFile?: string;
+  /** How long a reconcile waits for the API or the engine (tests shorten it). */
+  deadlineMs?: number;
+  /** How long after its n-th failure a reconcile is tried again. */
+  retryMs?: (failures: number) => number;
+};
+
 // Stories are read again, and checked against the engine, this often.
 const tickMs = 60_000;
-// A reconcile that could not finish (the API or the engine did not answer).
-const reconcileRetryMs = 15_000;
-// What a window says it prepares counts this long without news.
-const initializingMs = 15 * 60_000;
 // How a write a story must not miss is tried again.
 const durableDelays = [1_000, 3_000, 7_000];
-
-type WindowSync = {
-  projects: StoryProject[];
-  preferences: StoryPreferences;
-  at: number;
-};
+// A cleanup (an agent stopped, a worktree removed) holds its story this long at most.
+const cleanupDeadlineMs = 5 * 60_000;
 
 export class StoryService {
   private readonly host: StoryServiceHost;
-  private readonly ledger: TurnLedger;
-  /** What each window said last: the projects are what they know together. */
-  private readonly windows = new Map<string, WindowSync>();
-  private readonly projects = new Map<string, string>();
-  private latest: StoryPreferences | undefined;
-  private account: string | undefined;
+  private readonly ledger: StoryLedger;
+  private readonly windows = new StoryWindows();
+  private readonly reconciler: ReconcileScheduler;
+  private readonly deadlineMs: number;
+  /** The API the service reads (its URL): another one starts over. */
+  private apiUrl: string | undefined;
   /** Each project's stories, as the API last gave them. */
   private readonly stories = new StoryRecords();
   private readonly loading = new Map<string, Promise<void>>();
   private readonly starting = new Set<string>();
   private readonly waiting = new Map<string, StoryWaiting>();
   private readonly retryAt = new Map<string, number>();
-  /** Stories whose reconcile is asked and not begun yet. */
-  private readonly toReconcile = new Set<string>();
   private readonly writes = new Map<string, Promise<unknown>>();
   /** What is asked of each story, one at a time. */
   private readonly actions = new Map<string, Promise<unknown>>();
   private readonly turnListeners = new Set<(event: StoryTurnEnded) => void>();
+  /** The folders kept with the stories this computer runs, by project. */
+  private readonly ownedPaths = new Map<string, string>();
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
   private tickTimer: ReturnType<typeof setInterval> | undefined;
   private lastQueue = "";
 
-  constructor(host: StoryServiceHost, options: { ledgerFile?: string } = {}) {
+  constructor(host: StoryServiceHost, options: StoryServiceOptions = {}) {
     this.host = host;
-    this.ledger = new TurnLedger(options.ledgerFile);
+    this.ledger = new StoryLedger(options.ledgerFile);
+    this.deadlineMs = options.deadlineMs ?? 60_000;
+    this.reconciler = new ReconcileScheduler(
+      (storyId) => this.exclusive(storyId, () => this.reconcile(storyId)),
+      options.retryMs,
+    );
   }
 
-  /**
-   * A window's projects and the person's settings. Projects are added, never
-   * dropped while the same account is signed in: a story of a project only
-   * another window (or no window now) knows keeps running and settling.
-   */
+  /** A window's projects and the person's settings: the queue of those projects runs. */
   async sync(input: {
     window: string;
     projects: StoryProject[];
     preferences: StoryPreferences;
   }) {
-    this.windows.set(input.window, {
-      projects: input.projects,
-      preferences: input.preferences,
-      at: Date.now(),
-    });
-    this.latest = input.preferences;
-    const added = input.projects.filter(
-      (project) => this.projects.get(project.id) !== project.path,
-    );
-    for (const project of input.projects)
-      this.projects.set(project.id, project.path);
+    this.windows.sync(input.window, input.projects, input.preferences);
     this.tickTimer ??= setInterval(() => void this.tick(), tickMs);
     this.tickTimer.unref?.();
     // Settings may unblock stories that wait (a model, a runtime now ready).
     this.retryAt.clear();
-    await Promise.all(added.map((project) => this.load(project.id)));
+    await Promise.all(
+      input.projects
+        .filter((project) => !this.stories.loadedOnce(project.id))
+        .map((project) => this.load(project.id)),
+    );
+    this.pump();
+  }
+
+  /** A window closed: its projects stop starting stories, unless another lists them. */
+  windowClosed(window: string) {
+    this.windows.close(window);
     this.pump();
   }
 
   /**
-   * The API connection the host has now: another account (or none) starts
-   * over, with no project and no story.
+   * The API connection the host has now. Signing out, or another API,
+   * starts over; a token refreshed for the same API keeps everything.
    */
   connected(connection: ApiConnection | undefined) {
-    const account = connection
-      ? `${connection.url}\u0000${connection.token ?? ""}`
-      : undefined;
-    if (account === this.account) return;
-    const switched = this.account !== undefined;
-    this.account = account;
-    if (switched) {
+    const url = connection?.url;
+    if (this.apiUrl !== undefined && url !== this.apiUrl) {
       this.windows.clear();
-      this.projects.clear();
       this.stories.clear();
       this.waiting.clear();
       this.retryAt.clear();
     }
-    if (account) void this.refresh().catch(report);
+    this.apiUrl = url;
+    if (url) void this.refresh().catch(report);
   }
 
-  /** Reads one project's stories again (all projects without one), then looks at the queue. */
+  /** Reads one project's stories again (all known without one), then looks at the queue. */
   async refresh(projectId?: string) {
-    const ids = projectId ? [projectId] : [...this.projects.keys()];
+    const known = await this.knownProjects();
+    const ids = projectId ? [projectId] : [...known.keys()];
     await Promise.all(
-      ids.filter((id) => this.projects.has(id)).map((id) => this.load(id)),
+      ids.filter((id) => known.has(id)).map((id) => this.load(id)),
     );
     this.pump();
   }
@@ -213,12 +216,11 @@ export class StoryService {
     runMode?: HostStory["runMode"];
     targetBranch?: string | null;
   }): Promise<HostStory> {
-    const askedAt = this.stories.now();
     const record = await this.api().create({
       ...input,
       status: input.status ?? "backlog",
     });
-    this.stories.remember(record, askedAt);
+    this.stories.remember(record, this.stories.now());
     this.emitStory(record);
     this.pump();
     return record.story;
@@ -252,7 +254,7 @@ export class StoryService {
     },
   ) {
     return this.exclusive(storyId, async () => {
-      const story = await this.read(storyId);
+      const story = await this.claim(await this.read(storyId));
       return sendStoryMessage(
         this.context(),
         story,
@@ -264,9 +266,11 @@ export class StoryService {
 
   /** Stops the running turn; the story waits, paused, where it was. */
   pause(storyId: string) {
-    return this.exclusive(storyId, async () =>
-      pauseStory(this.context(), await this.read(storyId)),
-    );
+    return this.exclusive(storyId, async () => {
+      const story = await this.read(storyId);
+      await this.assertHere(story);
+      return pauseStory(this.context(), story);
+    });
   }
 
   /** A paused agent picks its conversation back up. */
@@ -280,6 +284,7 @@ export class StoryService {
       const story = await this.read(storyId);
       if (!story.engineSessionId)
         throw new Error("This user story has no agent conversation.");
+      await this.assertHere(story);
       const rewound = await this.host.call("rewind", {
         session: story.engineSessionId,
         location: storyLocation(story.workspaceMode),
@@ -287,14 +292,14 @@ export class StoryService {
         restoreWorkspace,
       });
       // The undone turns no longer count for their model.
-      this.reconcileSoon(storyId);
+      this.reconciler.ask(storyId);
       return rewound;
     });
   }
 
   /**
    * Approve & Merge into the story's target branch; its runtime is cleaned
-   * meanwhile, and the stories that start after it can start.
+   * next, and the stories that start after it can start.
    */
   approve(
     storyId: string,
@@ -309,7 +314,7 @@ export class StoryService {
         repositoryRoot,
         input,
       );
-      this.cleanInBackground(story, { removeSession: true });
+      this.cleanNext(story, { removeSession: true });
       this.pump();
       return {
         story: this.payload(storyId),
@@ -341,13 +346,13 @@ export class StoryService {
         status: "done",
         ...definedFields(merge),
       });
-      this.cleanInBackground(story, { removeSession: true });
+      this.cleanNext(story, { removeSession: true });
       this.pump();
       return done;
     });
   }
 
-  /** Discarded: shown so at once, its runtime cleaned meanwhile. */
+  /** Discarded: shown so at once; its runtime is cleaned next, before anything else on it. */
   discard(storyId: string, reason: string) {
     return this.exclusive(storyId, async () => {
       const story = await this.read(storyId);
@@ -358,10 +363,11 @@ export class StoryService {
         status: "discarded",
       });
       if (hasRuntime(story.status))
-        this.cleanInBackground(story, {
+        this.cleanNext(story, {
           removeSession: false,
           after: inactiveStoryFields(),
         });
+      else await this.ledger.release(storyId);
       this.pump();
       return discarded;
     });
@@ -374,18 +380,13 @@ export class StoryService {
       if (story.status === "done")
         throw new Error("A story that is done stays done.");
       const working = hasRuntime(story.status);
-      if (working)
-        await cleanStory(
-          this.context(),
-          story,
-          this.projectPath(story.projectId),
-          { removeSession: false },
-        );
+      if (working) await this.clean(story, { removeSession: false });
       const backlog = await this.patch(story, {
         ...(working ? inactiveStoryFields() : {}),
         discardedReason: null,
         status: "backlog",
       });
+      await this.ledger.release(storyId);
       this.pump();
       return backlog;
     });
@@ -395,15 +396,9 @@ export class StoryService {
   remove(storyId: string) {
     return this.exclusive(storyId, async () => {
       const story = await this.read(storyId);
-      await cleanStory(
-        this.context(),
-        story,
-        this.projectPath(story.projectId),
-        { removeSession: true },
-      );
+      await this.clean(story, { removeSession: true }, false);
       await this.api().delete(storyId);
-      if (story.engineSessionId)
-        await this.ledger.forget(story.engineSessionId).catch(report);
+      await this.ledger.release(storyId);
       this.forget(story);
     });
   }
@@ -422,39 +417,33 @@ export class StoryService {
     outcome?: TurnOutcome;
   }) {
     const story = this.stories.bySession(event.session);
-    if (story) this.reconcileSoon(story.id);
+    if (story) this.reconciler.ask(story.id);
   }
 
   // ------------------------------------------------------------- reconcile
 
-  /** Reconciles the story after whatever is asked of it now. */
-  private reconcileSoon(storyId: string) {
-    if (this.toReconcile.has(storyId)) return;
-    this.toReconcile.add(storyId);
-    void this.exclusive(storyId, () => {
-      this.toReconcile.delete(storyId);
-      return this.reconcile(storyId);
-    }).catch((error: unknown) => {
-      report(error);
-      // The API or the engine did not answer: the story is looked at again.
-      setTimeout(() => this.reconcileSoon(storyId), reconcileRetryMs).unref?.();
-    });
-  }
-
   /**
-   * The story's record set against what the engine says of its session,
-   * then the turns it ended told to the listeners. Runs as the story's
-   * action: nothing else is asked of the story meanwhile.
+   * A story this computer runs, set against what its engine says of the
+   * story's session, then the turns it ended told to the listeners. Runs as
+   * the story's action, with a deadline on what it waits for.
    */
   private async reconcile(storyId: string) {
-    const story = await this.read(storyId).catch((error: unknown) => {
-      // Deleted elsewhere: nothing to settle.
-      if (/404|not found/i.test(errorMessage(error))) return undefined;
+    if (!(await this.ledger.owns(storyId))) return;
+    let story: HostStory;
+    try {
+      story = await this.within(this.read(storyId), "The account's API");
+    } catch (error) {
+      // Deleted elsewhere: nothing to settle here any more.
+      if (/404|not found/i.test(errorMessage(error))) {
+        await this.ledger.release(storyId);
+        return;
+      }
       throw error;
-    });
-    if (!story) return;
+    }
     const session = story.engineSessionId;
-    const status = session ? await this.sessionStatus(story) : undefined;
+    const status = session
+      ? await this.within(this.sessionStatus(story), "The agent engine")
+      : undefined;
     const decision = reconcileDecision(story, status);
     let settled = story;
     if (decision.update)
@@ -470,6 +459,9 @@ export class StoryService {
     } else if (session && status?.exists) {
       await this.tellEndedTurns(settled, session, status);
     }
+    // A story no longer at work here is no longer this computer's.
+    if (!hasRuntime(settled.status) && settled.agentStatus !== "Running")
+      await this.ledger.release(storyId);
     if (decision.update?.status) this.pump();
   }
 
@@ -510,39 +502,83 @@ export class StoryService {
     return status;
   }
 
+  // What a reconcile waits for, it waits for this long at most: a story's
+  // turn is never held by an engine or an API that does not answer.
+  private within<T>(work: Promise<T>, what: string): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = new Promise<never>((_, reject) => {
+      timer = setTimeout(
+        () => reject(new Error(`${what} did not answer in time.`)),
+        this.deadlineMs,
+      );
+    });
+    return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
+  }
+
   /**
-   * Every story whose record may not match the engine is reconciled: all
-   * those with a session or at work in a project read for the first time,
-   * else those said Running whose turn does not run, and those In Progress
-   * with no agent at work.
+   * The stories this computer runs that may not match its engine: all of a
+   * project read for the first time (after a quit), else those said Running
+   * whose turn does not run, and those In Progress with no agent at work.
    */
   private async reconcileAll(projectId?: string) {
-    const stories = projectId
-      ? this.stories.projectStories(projectId)
-      : this.stories.all();
+    const owned = await this.ledger.ownedStories();
     const live = new Set(
       projectId
         ? []
         : await this.host.call("running", undefined).catch(() => []),
     );
-    for (const story of stories) {
-      const active = hasRuntime(story.status);
+    for (const [storyId, entry] of owned) {
+      if (projectId && entry.projectId !== projectId) continue;
+      const story = this.stories.record(storyId)?.story;
+      if (!story) continue;
       const session = story.engineSessionId;
-      const look = projectId
-        ? active || story.agentStatus === "Running"
-        : (story.agentStatus === "Running" &&
-            !(session && live.has(session))) ||
-          (story.status === "in-progress" &&
-            story.agentStatus !== "Paused" &&
-            !this.starting.has(story.id) &&
-            !(session && live.has(session)));
-      if (look) this.reconcileSoon(story.id);
+      const working =
+        story.status === "in-progress" &&
+        story.agentStatus === "Running" &&
+        session !== undefined &&
+        session !== null &&
+        live.has(session);
+      if (projectId || (!working && !this.starting.has(storyId)))
+        this.reconciler.ask(storyId);
     }
   }
 
   private async tick() {
     await this.refresh().catch(report);
     await this.reconcileAll().catch(report);
+  }
+
+  // ------------------------------------------------------------- ownership
+
+  /**
+   * The story, for an action that runs its agent here: one this computer
+   * runs already, or one no agent runs now (it is this computer's from now).
+   */
+  private async claim(story: HostStory) {
+    await this.assertHere(story);
+    const path = this.requiredPath(story);
+    await this.ledger.own(story.id, {
+      projectId: story.projectId,
+      path,
+      ...(story.engineSessionId ? { session: story.engineSessionId } : {}),
+    });
+    return story;
+  }
+
+  private async assertHere(story: HostStory) {
+    if (story.agentStatus !== "Running") return;
+    if (await this.ledger.owns(story.id)) return;
+    throw new Error("This story's agent runs on another computer.");
+  }
+
+  /** The projects this computer reads: what the windows list, and those of the stories it runs. */
+  private async knownProjects() {
+    const known = this.windows.projects();
+    for (const [, story] of await this.ledger.ownedStories()) {
+      this.ownedPaths.set(story.projectId, story.path);
+      if (!known.has(story.projectId)) known.set(story.projectId, story.path);
+    }
+    return known;
   }
 
   // ----------------------------------------------------------------- queue
@@ -553,9 +589,10 @@ export class StoryService {
     this.retryTimer = undefined;
     const now = Date.now();
     const queued = new Set<string>();
-    const preferences = this.preferences();
+    const preferences = this.windows.preferences();
+    const startable = this.windows.projects();
     for (const [projectId, projectStories] of this.stories.projects()) {
-      const path = this.projects.get(projectId);
+      const path = startable.get(projectId);
       for (const story of queuedStories(projectStories)) {
         queued.add(story.id);
         if (this.starting.has(story.id)) continue;
@@ -590,15 +627,17 @@ export class StoryService {
     this.emitQueue();
   }
 
+  // A start keeps the reason the story waited for until it has its own
+  // answer: the same wait is not announced again at each attempt.
   private begin(story: HostStory, projectPath: string) {
     this.starting.add(story.id);
-    this.waiting.delete(story.id);
     void this.exclusive(story.id, () =>
       startStory(this.context(), story, projectPath),
     )
       .then(
         (result) => {
           if ("wait" in result) this.setWaiting(story, result.wait, true);
+          else this.waiting.delete(story.id);
           // The cache said ready, the API did not: it learnt the story's
           // status meanwhile; a short pause still keeps the queue from
           // spinning on it.
@@ -641,32 +680,6 @@ export class StoryService {
     this.host.emit({ type: "story-queue", queue });
   }
 
-  /**
-   * The person's settings as the windows said them: the latest, with the
-   * projects any window prepares now and every context cap picked.
-   */
-  private preferences(): StoryPreferences | undefined {
-    if (!this.latest) return undefined;
-    const fresh = [...this.windows.values()].filter(
-      (sync) => Date.now() - sync.at < initializingMs,
-    );
-    return {
-      ...this.latest,
-      initializingProjects: [
-        ...new Set(
-          fresh.flatMap((sync) => sync.preferences.initializingProjects ?? []),
-        ),
-      ],
-      contextLimits: Object.assign(
-        {},
-        ...[...this.windows.values()].map(
-          (sync) => sync.preferences.contextLimits ?? {},
-        ),
-        this.latest.contextLimits ?? {},
-      ),
-    };
-  }
-
   // --------------------------------------------------------------- helpers
 
   /** What a start, a turn or an ending is given. */
@@ -676,24 +689,27 @@ export class StoryService {
     return {
       api: storyApi(connection),
       connection,
-      preferences: this.preferences(),
+      preferences: this.windows.preferences(),
       desktop: this.host.desktop,
       call: (method, input) => this.host.call(method, input),
       read: (storyId) => this.read(storyId),
       patch: (story, update, extra) => this.patch(story, update, extra),
       patchDurably: (story, update) => this.patchDurably(story, update),
+      own: (story, path, session) =>
+        this.ledger.own(story.id, {
+          projectId: story.projectId,
+          path,
+          ...(session ? { session } : {}),
+        }),
+      release: (storyId) => this.ledger.release(storyId),
       sessionMade: (session) => this.ledger.begin(session),
+      sessionDropped: (session) => this.ledger.forget(session),
     };
   }
 
   /** The story's payload as the API last sent it, for the windows. */
   payload(storyId: string): unknown {
     return this.stories.record(storyId)?.payload;
-  }
-
-  /** The project folder of a story's project, when this computer has it. */
-  projectPath(projectId: string) {
-    return this.projects.get(projectId);
   }
 
   /** The story as the API keeps it now, with its details; the cache learns it. */
@@ -705,7 +721,10 @@ export class StoryService {
 
   /** The folder of the story's project, which this computer must have. */
   requiredPath(story: HostStory) {
-    const path = this.projects.get(story.projectId);
+    // A window's, else the one kept with a story this computer runs.
+    const path =
+      this.windows.projects().get(story.projectId) ??
+      this.ownedPaths.get(story.projectId);
     if (!path)
       throw new Error("This story's project is not open on this computer.");
     return path;
@@ -716,18 +735,18 @@ export class StoryService {
     const previous = this.actions.get(storyId) ?? Promise.resolve();
     const next = previous.catch(() => undefined).then(action);
     this.actions.set(storyId, next);
-    void next.then(
-      () => this.forgetAction(storyId, next),
-      () => this.forgetAction(storyId, next),
-    );
+    const forget = () => {
+      if (this.actions.get(storyId) === next) this.actions.delete(storyId);
+    };
+    next.then(forget, forget);
     return next;
   }
 
-  private forgetAction(storyId: string, action: Promise<unknown>) {
-    if (this.actions.get(storyId) === action) this.actions.delete(storyId);
-  }
-
-  /** Writes a story, one write at a time per story, and tells the windows. */
+  /**
+   * Writes a story, one write at a time per story, and tells the windows.
+   * The write's answer counts from when it arrives: a read asked before then
+   * never replaces it. It resolves with that answer.
+   */
   patch(
     story: HostStory,
     update: StoryUpdate,
@@ -737,11 +756,10 @@ export class StoryService {
     const write = previous
       .catch(() => undefined)
       .then(async () => {
-        const askedAt = this.stories.now();
         const record = await this.api().update(story.id, update);
-        const held = this.stories.remember(record, askedAt) ?? record;
-        this.emitStory(held, extra);
-        return held.story;
+        const held = this.stories.remember(record, this.stories.now());
+        this.emitStory(held ?? record, extra);
+        return record.story;
       });
     this.writes.set(story.id, write);
     const forget = () => {
@@ -766,51 +784,64 @@ export class StoryService {
   }
 
   /**
-   * Cleans what the story ran, outside its turn. What a discard still has
-   * to write is written as the story's action, and only to the story as the
-   * discard left it: a story reworked and started again meanwhile keeps its
-   * new worktree.
+   * Stops what the story runs and removes its worktree, telling the
+   * windows (a Cloud Preview's window state goes too). A story another
+   * computer runs is not touched here: its agent and worktree are there.
    */
-  private cleanInBackground(
+  private async clean(
     story: HostStory,
-    options: { removeSession: boolean; after?: StoryUpdate },
+    options: { removeSession: boolean },
+    release = true,
   ) {
+    const owned = await this.ledger.story(story.id);
     const event = {
       projectId: story.projectId,
       storyId: story.id,
       workspaceMode: story.workspaceMode ?? null,
     };
     this.host.emit({ type: "story-cleanup", ...event, cleaning: true });
-    void cleanStory(
-      this.context(),
-      story,
-      this.projectPath(story.projectId),
-      options,
-    )
-      .then(async () => {
+    try {
+      if (owned) {
+        await cleanStory(this.context(), story, owned.path, options);
         if (options.removeSession && story.engineSessionId)
           await this.ledger.forget(story.engineSessionId);
-        const after = options.after;
-        if (!after) return;
-        await this.exclusive(story.id, async () => {
+      }
+      if (release) await this.ledger.release(story.id);
+      this.host.emit({ type: "story-cleanup", ...event, cleaning: false });
+    } catch (error) {
+      this.host.emit({
+        type: "story-cleanup",
+        ...event,
+        cleaning: false,
+        error: errorMessage(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Cleans what the story ran as its next action: anything asked of the
+   * story afterwards (a rework, a start on the same worktree's path) waits
+   * for it. What a discard still has to write is written only to the story
+   * as the discard left it.
+   */
+  private cleanNext(
+    story: HostStory,
+    options: { removeSession: boolean; after?: StoryUpdate },
+  ) {
+    void this.exclusive(story.id, () =>
+      this.within(
+        (async () => {
+          await this.clean(story, options);
+          const after = options.after;
+          if (!after) return;
           const now = await this.read(story.id);
           if (now.status === "discarded" && now.worktree === story.worktree)
             await this.patchDurably(now, after);
-        });
-      })
-      .then(
-        () =>
-          this.host.emit({ type: "story-cleanup", ...event, cleaning: false }),
-        (error: unknown) => {
-          report(error);
-          this.host.emit({
-            type: "story-cleanup",
-            ...event,
-            cleaning: false,
-            error: errorMessage(error),
-          });
-        },
-      );
+        })(),
+        "Cleaning the story",
+      ),
+    ).catch(report);
   }
 
   /** A story deleted from the account: the service forgets it. */
@@ -850,13 +881,12 @@ export class StoryService {
       const first = !this.stories.loadedOnce(projectId);
       const askedAt = this.stories.now();
       const records = await this.api().list(projectId);
-      if (!this.projects.has(projectId)) return;
       const changed = this.stories.replace(projectId, records, askedAt);
       // Stories created or changed elsewhere (another window, another
       // device) show on the boards; the windows read the rest themselves.
       if (!first) for (const record of changed) this.emitStory(record);
-      // Where this project's stories were left (a quit, a crash, a turn
-      // that ended while Blame was closed) is settled once it is read.
+      // Where the stories this computer runs were left (a quit, a crash, a
+      // turn that ended while Blame was closed) is settled once read.
       if (first) await this.reconcileAll(projectId);
     })()
       .catch(report)
@@ -868,6 +898,7 @@ export class StoryService {
   stop() {
     if (this.retryTimer) clearTimeout(this.retryTimer);
     if (this.tickTimer) clearInterval(this.tickTimer);
+    this.reconciler.stop();
   }
 }
 

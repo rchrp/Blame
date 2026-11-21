@@ -133,27 +133,50 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   agent model as the picker resolves it, personalization, the default run
   mode, Premium, the context caps picked per story, the Blame Runtime's
   phase and the projects whose preview environment it prepares now. The
-  projects are what every window knows together, never dropped while the
-  same account is signed in; main replays every window's last sync to a
-  restarted host. A window that created or edited a story says so
-  (`storyRefresh`); the service also reads every project's stories again
-  each minute. A read asked before a write never replaces what the write
-  returned (`stories/records.ts`).
+  queue runs for the projects the open windows list together; a project no
+  window lists any more stops starting stories, and when a window closes
+  main tells the host (`storyWindowClosed`). When the last window closes
+  its list stays, since the app runs on. The latest settings win; main
+  replays each open window's last sync to a restarted host, the latest
+  last, and none after a sign-out. A refreshed token keeps everything;
+  signing out or another API starts over. A window that created or edited
+  a story says so (`storyRefresh`); the service also reads every project's
+  stories again each minute. A read asked before a write's answer arrived
+  never replaces it (`stories/records.ts`).
+- **One computer, its stories**: the service settles, pauses and
+  reconciles only the stories this computer runs (it started their agent
+  or sent them a turn), kept with their project's folder in
+  `<userData>/story-turns.json` (`stories/ledger.ts`). A story another
+  computer of the account runs is left alone: its session is never read
+  here (reading it would pull it from Blame's database and end its running
+  turn as interrupted on this computer), and a pause or a message to it
+  is refused. Two computers starting the same queued story is not
+  prevented yet: that needs an atomic claim in the API.
 - **Reconcile** (`stories/reconcile.ts`): every path ends in one step, run
   as the story's action: its record read now, set against what the engine
   says of its session (`status`), and written with retries. A turn running
-  makes the story In Progress and Running (a follow-up to a story in
-  review too); a turn that ended applies its outcome; a session that never
-  got its first message is dropped and the story queued again; a start or
-  an Approve & Merge cut short (a quit, a crash, a failed write) is put
-  right. It runs on each `activity` event, when a project is first read
-  (after a quit), and every minute for the stories said Running whose turn
-  does not run. So a story is never left Running with no turn running, nor
-  In Progress with no agent.
+  as the records say makes the story In Progress and Running (a follow-up
+  to a story in review too; a compaction is not a turn and moves nothing);
+  a turn that ended applies its outcome; a session that never got its
+  first message is dropped and the story queued again; a start or an
+  Approve & Merge cut short (a quit, a crash, a failed write) is put
+  right. A session the engine cannot read now is not taken for a lost one:
+  only "does not exist" is. It runs on each `activity` event, when a
+  project is first read (after a quit), and every minute for the stories
+  said Running whose turn does not run, one pending per story, again after
+  a failure with a pause that grows to ten minutes (`stories/reconciler.ts`),
+  and never waiting more than a minute on the API or the engine, so a
+  story's other actions are never held. So a story this computer runs is
+  never left Running with no turn running, nor In Progress with no agent.
+  The engine ends a turn a crash cut as interrupted when it opens the
+  session again, before `status` reads it.
 - **Turns told once**: each ended turn reaches `onTurnEnded` once, after
   the story is settled, a turn that ended while Blame was closed included.
-  `status` lists a session's last ended turns (`endedTurns`); the service
-  keeps which it told in `<userData>/story-turns.json` (`stories/ledger.ts`).
+  `status` lists a session's last 100 ended turns (`endedTurns`); the
+  service keeps the turns it told per session in the same file, so a
+  rewind and its undo tell nothing twice. A file that cannot be read is
+  kept aside (`.corrupt-<time>`), never overwritten; what it said is then
+  lost (the stories it ran are not settled here, their turns not told).
 - **The queue**: every story in `ready` whose files are uploaded starts, oldest
   first, with no cap on how many agents work at once (preview starts and
   builds still take turns by free memory in main, `runtime-heavy-work.ts`).
@@ -191,7 +214,8 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   service first reads their project.
 - **Endings** (`stories/endings.ts`): Approve & Merge runs the git flow
   (`approveAndMerge`, with what main adds through `beginGitFlow`), then the
-  story is done and its runtime is cleaned in the background: the agent
+  story is done and its runtime is cleaned as the story's next action (a
+  rework or a new start waits for it): the agent
   stopped and its session deleted (the account keeps the conversation), its
   setup, previews and devices stopped (`stopStoryRuntime`), its worktree
   removed (`removeStoryWorktree`). The window then says where it went and

@@ -96,31 +96,41 @@ it("knows the folders a running turn writes in, until it ends", () => {
   assert.deepEqual(router.activeWorkspaces(), []);
 });
 
-it("tells a restarted host what every window gave the story service", () => {
+it("tells a restarted host what each open window gave the story service, the latest last", () => {
   const router = new EngineHostRouter();
   const preferences = {
     runMode: "direct",
     premium: false,
     runtimePhase: "ready",
   } as const;
-  const first = {
-    window: "w1",
-    projects: [{ id: "a", path: "/a" }],
+  const sync = (window: string, project: string) => ({
+    window,
+    projects: [{ id: project, path: `/${project}` }],
     preferences,
-  };
-  const second = {
-    window: "w2",
-    projects: [{ id: "b", path: "/b" }],
-    preferences,
-  };
-  router.observe(viewer(1), "storySync", first);
-  router.observe(viewer(2), "storySync", second);
-  router.observe(viewer(1), "storySync", {
-    ...first,
-    projects: [{ id: "c", path: "/c" }],
   });
-  assert.deepEqual(
-    router.replay().map(({ input }) => (input as typeof first).projects[0]!.id),
-    ["c", "b"],
+  const one = viewer(1);
+  const two = viewer(2);
+  router.observe(one, "connect", { api: { url: "http://api", token: "a" } });
+  router.observe(one, "storySync", sync("w1", "a"));
+  router.observe(two, "storySync", sync("w2", "b"));
+  router.observe(one, "storySync", sync("w1", "c"));
+  const told = () =>
+    router
+      .replay()
+      .filter(({ method }) => method === "storySync")
+      .map(({ input }) => (input as ReturnType<typeof sync>).projects[0]!.id);
+  assert.deepEqual(told(), ["b", "c"], "the latest sync last");
+  assert.equal(router.storyWindow(2), "w2");
+  router.forget(2);
+  assert.deepEqual(told(), ["c"], "a closed window's sync is not told again");
+  // A refreshed token keeps them; signing out does not.
+  router.observe(one, "connect", { api: { url: "http://api", token: "b" } });
+  assert.deepEqual(told(), ["c"]);
+  router.observe(one, "connect", { api: null });
+  assert.deepEqual(told(), []);
+  assert.equal(
+    router.observe(one, "storyWindowClosed", { window: "w1" }),
+    false,
+    "main's call",
   );
 });

@@ -10,7 +10,12 @@ import {
 } from "@blame/engine-client";
 import type { EngineSessionStatus } from "./protocol.js";
 
-/** Where a session stands, from its records (it is opened if needed). */
+/**
+ * Where a session stands, from its records (it is opened if needed, and a
+ * turn a crash cut is ended there as interrupted). A session the engine
+ * does not have says `exists: false`; any other failure to read it throws:
+ * "could not read" is not "not found".
+ */
 export async function sessionStatus(
   client: EngineClient,
   session: string,
@@ -27,7 +32,8 @@ export async function sessionStatus(
       reducer.applyRecords(page.records);
       if (!page.records.length || reducer.lastSeq >= page.head) break;
     }
-  } catch {
+  } catch (error) {
+    if (!unknownSession(error)) throw error;
     return { session, exists: false, running: false, turns: 0, models: [] };
   }
   const transcript = reducer.snapshot();
@@ -40,6 +46,8 @@ export async function sessionStatus(
     session,
     exists: true,
     running: running.has(session) || transcript.runningTurn !== undefined,
+    // A turn, not a compaction or another operation of the session.
+    turnRunning: transcript.runningTurn !== undefined,
     ...(last ? { lastOutcome: last } : {}),
     ...(reply ? { lastReply: reply } : {}),
     turns: transcript.turns.length,
@@ -49,7 +57,7 @@ export async function sessionStatus(
       modelId: model.model,
       turns,
     })),
-    endedTurns: endedTurns.slice(-20).map((turn) => {
+    endedTurns: endedTurns.slice(-100).map((turn) => {
       const text = turnReply(turn, transcript.items)?.trim();
       return {
         turn: turn.turn,
@@ -58,4 +66,12 @@ export async function sessionStatus(
       };
     }),
   };
+}
+
+// The engine's answer for a session neither this computer nor Blame's
+// database has (`StoreError::UnknownSession`).
+function unknownSession(error: unknown) {
+  return (
+    error instanceof Error && /session \S+ does not exist/.test(error.message)
+  );
 }

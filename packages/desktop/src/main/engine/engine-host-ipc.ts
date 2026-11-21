@@ -247,6 +247,12 @@ export function registerEngineIpcHandlers(
       known.add(viewer.id);
       viewer.once("destroyed", () => {
         known.delete(viewer.id);
+        // Its projects stop starting stories unless another window lists them.
+        const window = engine.router.storyWindow(viewer.id);
+        if (window)
+          void engine
+            .call("storyWindowClosed", { window })
+            .catch(() => undefined);
         for (const subscription of engine.router.forget(viewer.id))
           void engine.call("unfollow", { subscription }).catch(() => undefined);
       });

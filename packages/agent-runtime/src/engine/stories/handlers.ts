@@ -17,6 +17,10 @@ export function storyHandlers(service: () => StoryService): StoryHandlers {
       await service().sync(input);
       return null;
     },
+    storyWindowClosed: async ({ window }) => {
+      service().windowClosed(window);
+      return null;
+    },
     storyRefresh: async ({ projectId }) => {
       await service().refresh(projectId);
       return null;

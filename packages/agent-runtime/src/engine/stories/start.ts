@@ -58,8 +58,14 @@ export type StoryContext = {
   ): Promise<HostStory>;
   /** The same, tried again a few times: for the writes a story must not miss. */
   patchDurably(story: HostStory, update: StoryUpdate): Promise<HostStory>;
+  /** This computer runs the story (from its start on): only it settles the story. */
+  own(story: HostStory, path: string, session?: string): Promise<void>;
+  /** The story no longer runs here. */
+  release(storyId: string): Promise<void>;
   /** A session the service made for a story: each turn it ends will be told. */
   sessionMade(session: string): Promise<void>;
+  /** A session the service deleted. */
+  sessionDropped(session: string): Promise<void>;
 };
 
 /** What a start did: started, or why the story waits. */
@@ -140,6 +146,8 @@ export async function startStory(
     targetBranch: story.targetBranch,
     title: story.title,
   });
+  // This computer runs it from now: a quit from here on is settled here.
+  await context.own(story, projectPath);
   const baseCommit = await desktop
     .git?.({ cwd: worktree.worktree, args: ["rev-parse", "HEAD"] })
     .then((hash) => hash.trim() || null)
@@ -161,16 +169,16 @@ export async function startStory(
     // Its preview waits for the environment to be checked; its agent starts.
     direct ? {} : { started: { environment: snapshot.initialization } },
   );
-  const settings = storySessionSettings({
-    story: { ...story, ...working },
-    projectPath,
-    snapshot,
-    model: turn.model,
-    maxContextTokens: turn.maxContextTokens,
-    personalization: storyPersonalization(story, preferences),
-  });
   let session: string | undefined;
   try {
+    const settings = storySessionSettings({
+      story: { ...story, ...working },
+      projectPath,
+      snapshot,
+      model: turn.model,
+      maxContextTokens: turn.maxContextTokens,
+      personalization: storyPersonalization(story, preferences),
+    });
     // A story keeps one conversation: a requeued story continues it. A
     // session that never got its first message goes, so that the new one
     // starts with the story's brief.
@@ -193,6 +201,7 @@ export async function startStory(
       await context.call("createSession", { session, ...settings });
       await context.sessionMade(session);
     }
+    await context.own(story, projectPath, session);
     const { model } = settings.settings;
     // Said before the turn starts, so that the end of the turn settles it.
     await context.patchDurably(working, {
@@ -220,14 +229,18 @@ export async function startStory(
     // Back to the queue: its worktree is reused on the next attempt, and
     // its session too once it has its first message (else it is dropped
     // then). A write that fails here is the service's reconcile's to redo.
-    await context
+    const restored = await context
       .patchDurably(working, {
         agentLastError: errorMessage(error),
         agentStatus: null,
         engineSessionId: session ?? story.engineSessionId ?? null,
         status: "ready",
       })
-      .catch(() => undefined);
+      .then(
+        () => true,
+        () => false,
+      );
+    if (restored) await context.release(story.id).catch(() => undefined);
     throw error;
   }
   return { started: true };
@@ -247,10 +260,12 @@ async function reusableSession(
     location,
   });
   if (status?.exists && status.turns > 0) return existing;
-  if (status?.exists)
+  if (status?.exists) {
     await context
       .call("deleteSession", { session: existing, location })
       .catch(() => undefined);
+    await context.sessionDropped(existing);
+  }
   return undefined;
 }
 

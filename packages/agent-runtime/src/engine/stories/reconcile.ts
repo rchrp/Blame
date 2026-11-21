@@ -56,7 +56,9 @@ export function reconcileDecision(
   }
   const agentModels = withTurnCounts(story.agentModels, status.models);
   const counted = agentModels ? { agentModels } : {};
-  if (status.running) {
+  // A turn, as the records say: a compaction (or another operation of the
+  // session) is not one, and moves nothing.
+  if (status.turnRunning ?? status.running) {
     // A turn runs: the story works, a follow-up to a story in review too.
     const active = working || story.status === "in-review";
     if (active && (story.agentStatus !== "Running" || !working))

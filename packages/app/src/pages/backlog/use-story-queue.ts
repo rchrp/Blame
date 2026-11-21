@@ -72,11 +72,13 @@ export function useStoryQueue(backlog: ReturnType<typeof useBacklogStore>) {
     )
     const unsubscribe = engine.onStory((event) => {
       if (event.type === "story-queue") return setQueue(event.queue)
-      // A Cloud Preview the host stopped stays stopped in the windows too.
+      // A Cloud Preview the host stopped stays stopped in the window that
+      // shows its project (its state there is that window's).
       if (
         event.type === "story-cleanup" &&
         event.cleaning &&
-        event.workspaceMode === "cloud-mirror"
+        event.workspaceMode === "cloud-mirror" &&
+        event.projectId === projectId
       )
         void stopManagedCloudPreview(platform, event.storyId).catch(
           () => undefined

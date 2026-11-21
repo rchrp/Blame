@@ -141,7 +141,9 @@ export type EngineSessionStatus = {
   plan?: PlanProgress;
   /** How many turns each model answered (`turnsByModel`), in order of first use. */
   models: Array<{ providerId: string; modelId: string; turns: number }>;
-  /** The last turns that ended (at most 20), oldest first, with how and what the agent said. */
+  /** A turn runs, as the records say (a compaction is not a turn). */
+  turnRunning?: boolean;
+  /** The last turns that ended (at most 100), oldest first, with how and what the agent said. */
   endedTurns?: Array<{ turn: string; outcome: TurnOutcome; reply?: string }>;
 };
 
@@ -255,6 +257,7 @@ export type EngineHostResult<M extends EngineHostMethod> =
 /** The story service's calls (`story-protocol.ts`). */
 export const engineStoryMethods = [
   "storySync",
+  "storyWindowClosed",
   "storyRefresh",
   "storyRetry",
   "storyQueueState",
@@ -269,6 +272,11 @@ export const engineStoryMethods = [
   "storyDiscard",
   "storyDelete",
   "storyError",
+] as const satisfies readonly (keyof EngineStoryMethods)[];
+
+/** Story calls only the main process makes. */
+export const engineStoryMainOnlyMethods = [
+  "storyWindowClosed",
 ] as const satisfies readonly (keyof EngineStoryMethods)[];
 
 export const engineHostMethods = [

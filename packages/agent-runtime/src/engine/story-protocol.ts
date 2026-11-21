@@ -142,6 +142,8 @@ export type EngineStoryMethods = {
     };
     result: null;
   };
+  /** A window closed (main's call): its projects stop starting stories unless another lists them. */
+  storyWindowClosed: { input: { window: string }; result: null };
   /** Reads a project's stories again (one the window changed), then looks at the queue. */
   storyRefresh: { input: { projectId?: string }; result: null };
   /** Looks at a waiting story again now (a dependency was installed, Git got a name). */
