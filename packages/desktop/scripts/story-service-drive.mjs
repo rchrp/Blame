@@ -64,6 +64,15 @@ function decide(body) {
       input: { summary: followUp ? `Followed up on: ${last.slice(0, 80)}` : `Done: ${story ?? "the story"}.` },
     };
   }
+  // Approve & Merge analyses the project's code practices first, when it never was.
+  if (tools.includes("submit_project_code_practices")) {
+    const practice = { detected: true, comment: "The project's samples follow it." };
+    return {
+      wait: 300,
+      tool: "submit_project_code_practices",
+      input: { projectState: "starter", practices: { coding_style: practice, unit_tests: practice, layered_architecture: practice, commit_message_convention: practice } },
+    };
+  }
   if (tools.includes("submit_commit_message"))
     return { wait: 300, tool: "submit_commit_message", input: { message: "Add the merged story's page" } };
   return { wait: 100, pieces: ["Story"] };
@@ -496,10 +505,13 @@ async function scenario(cdp, options, model, paths) {
       await delay(1500);
       await dismissPreviewSetup();
     });
+    // The drawer keeps showing what it showed while it slides away: it is open while it says so.
+    const openField = `[...document.querySelectorAll('[data-slot="starts-after-field"]')].find((element) => element.closest('[data-state="open"]'))`;
+    const drawerOpen = `Boolean(${openField})`;
     const openDrawer = async (story) => {
       await dismissPreviewSetup();
       await click(`[...document.querySelectorAll('[data-story-id="${story.id}"] button')].find((button) => button.innerText.trim() === ${JSON.stringify(story.title)})`);
-      await until(() => evaluate(`Boolean(document.querySelector('[data-slot="starts-after-field"]'))`), 20_000, `the drawer of ${story.title}`).catch(async (error) => {
+      await until(() => evaluate(`${drawerOpen}`), 20_000, `the drawer of ${story.title}`).catch(async (error) => {
         await shot("drawer-failed");
         console.log("dialogs:", JSON.stringify(await evaluate(`[...document.querySelectorAll("[role=dialog]")].map((dialog) => dialog.innerText.slice(0, 300))`)));
         throw error;
@@ -507,14 +519,22 @@ async function scenario(cdp, options, model, paths) {
       await delay(600);
     };
     const closeDrawer = async () => {
-      await press("Escape", "Escape", 27);
-      await until(() => evaluate(`!document.querySelector('[data-slot="starts-after-field"]')`), 10_000, "the drawer to close");
+      // The first Escape may close a list that is still open.
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        await press("Escape", "Escape", 27);
+        await delay(800);
+        if (await evaluate(`!(${drawerOpen})`)) break;
+      }
+      await until(() => evaluate(`!(${drawerOpen})`), 10_000, "the drawer to close").catch(async (error) => {
+        await shot("drawer-stuck");
+        throw error;
+      });
       await delay(500);
     };
-    const field = () => evaluate(`document.querySelector('[data-slot="starts-after-field"]')?.innerText ?? ""`);
+    const field = () => evaluate(`(${openField})?.innerText ?? ""`);
     // Picks a story in the field's list; the list closes on Escape.
     const pick = async (title) => {
-      await click(`document.querySelector('button[aria-label="Starts after"]')`);
+      await click(`(${openField})?.querySelector('button[aria-label="Starts after"]')`);
       await until(() => evaluate(`Boolean(document.querySelector('[data-slot="popover-content"] [cmdk-item]'))`), 10_000, "the stories to pick from");
       await click(`[...document.querySelectorAll('[data-slot="popover-content"] [cmdk-item]')].find((item) => item.innerText.includes(${JSON.stringify(title)}))`);
       await delay(1200);
@@ -580,7 +600,7 @@ async function scenario(cdp, options, model, paths) {
     const orphanField = await field();
     check("a dependency that was discarded is shown as such", orphanField.includes("Dropped idea (discarded)"), orphanField.replace(/\n/g, " | "));
     await shot("11-drawer-discarded-dependency");
-    await click(`document.querySelector('[data-slot="starts-after-field"] button[aria-label^="Remove"]')`);
+    await click(`(${openField})?.querySelector('button[aria-label^="Remove"]')`);
     await until(async () => ((await current(orphan.id))?.startsAfter ?? ["x"]).length === 0, 15_000, "the dependency to be removed");
     check("removing it from the field saves, and the story starts", true);
     await closeDrawer();
