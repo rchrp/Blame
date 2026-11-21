@@ -9,7 +9,9 @@ mod schema;
 
 pub use schema::{unsupported_keywords, validate};
 
-use blame_engine_protocol::{CompletionContract, Obligation, ResultTool, ToolEffect, ToolSpec};
+use blame_engine_protocol::{
+    CompletionContract, Obligation, PlanStep, ResultTool, StepStatus, ToolEffect, ToolSpec,
+};
 
 /// Text of the result of an accepted `submit` call.
 pub const ACCEPTED: &str = "Accepted: this is the result. Nothing more is needed.";
@@ -102,6 +104,34 @@ pub fn rejection_text(result_tool: &str, invalid: &[String], unmet: &[Obligation
         ));
     }
     text.push_str(&format!("\nFix this and call `{result_tool}` again."));
+    text
+}
+
+/// The steps of the agent's plan that stop it from finishing: the ones still
+/// to do or to drop, as the plan words them. Empty when it may finish.
+pub fn open_steps(plan: &[PlanStep]) -> Vec<String> {
+    plan.iter()
+        .filter(|step| step.status.is_open())
+        .map(|step| step.step.clone())
+        .collect()
+}
+
+/// The error a result call returns while the plan has open steps: they are
+/// named by their place in the plan, with the way out.
+pub fn open_plan_text(result_tool: &str, plan: &[PlanStep]) -> String {
+    let mut text =
+        format!("Not accepted: `{result_tool}` was refused: the plan still has open steps.");
+    for (index, step) in plan.iter().enumerate().filter(|(_, s)| s.status.is_open()) {
+        let state = match step.status {
+            StepStatus::InProgress => "in progress",
+            _ => "pending",
+        };
+        text.push_str(&format!("\n- {}. {} ({state})", index + 1, step.step));
+    }
+    text.push_str(&format!(
+        "\nMark each one `completed`, or `abandoned` with a one-line reason, by calling `{}` with the whole plan. Then call `{result_tool}` again.",
+        crate::plan::TOOL
+    ));
     text
 }
 

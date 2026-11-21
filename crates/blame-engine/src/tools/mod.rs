@@ -107,6 +107,8 @@ impl ToolHost for SessionTools {
                     "session {} asks for the harness, but no --harness-command was given",
                     self.session
                 ),
+                // Served by the engine's core, which offers and answers it.
+                (blame_engine_core::plan::TOOL_SET, _) => {}
                 (other, _) => log!(
                     Warn,
                     "session {}: unknown engine tool set `{other}`",

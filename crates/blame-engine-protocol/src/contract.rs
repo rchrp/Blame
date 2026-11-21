@@ -103,8 +103,9 @@ impl ResultTool {
     }
 }
 
-/// Why the result tool itself refused a call it ran, when it says so in a
-/// form the client can act on (the harness's `finish_task`).
+/// Why a call of the result tool was refused, when it is said in a form the
+/// client can act on: by the tool itself (the harness's `finish_task`), or by
+/// the engine before it ran.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "ts", derive(ts_rs::TS))]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -112,6 +113,9 @@ pub enum Refusal {
     /// Checks of the work are still failing, by task: the work is not
     /// verified.
     FailingChecks { tasks: Vec<String> },
+    /// The agent's plan still has steps to do or to drop; the engine refuses
+    /// the finish until none is open. Each is the step as the plan words it.
+    OpenPlan { steps: Vec<String> },
 }
 
 /// Something a contract asks for that the turn has not done.

@@ -15,6 +15,7 @@
 pub mod contract;
 mod digest;
 mod error;
+pub mod plan;
 pub mod policy;
 pub mod ports;
 pub mod projection;
