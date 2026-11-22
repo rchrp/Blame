@@ -22,6 +22,9 @@ export const routeShortcuts = [
   { key: "5", path: "/practices", label: "Code Practices" },
   { key: "6", path: "/security", label: "Security Audit" },
   { key: "7", path: "/deploy", label: "Deploy" },
+  // Above Backlog in the sidebar, but added after the others: ⌘0 is the
+  // window's Actual Size.
+  { key: "8", path: "/orchestrator", label: "Orchestrator" },
 ] as const
 
 export function routeShortcutLabel(path: string) {

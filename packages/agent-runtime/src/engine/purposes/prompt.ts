@@ -1,5 +1,5 @@
-// The system prompt of the agents that work in a project (quick chats,
-// stories, plan mode), from the prompt templates.
+// The system prompt of the agents that work in a project (quick chats and
+// stories), from the prompt template.
 
 import { basename } from "node:path";
 import {
@@ -22,7 +22,7 @@ export const worktreeEnvironment =
   "Commands use the current process permissions. Keep their effects within the user's authorized scope and preserve unrelated state.";
 
 export type ProjectPromptInput = {
-  template: "code-agent-system" | "plan-agent-system";
+  template: "code-agent-system";
   workspaceRoot: string;
   environment: string;
   /** Preview guidance, empty when the session has no preview tool. */
@@ -41,7 +41,6 @@ export type ProjectPromptInput = {
 
 export function projectPrompt(input: ProjectPromptInput) {
   const personalization = normalizePersonalization(input.personalization);
-  const plan = input.template === "plan-agent-system";
   const prompt = renderPrompt(loadPrompt(input.template), {
     BLAME_ENVIRONMENT: input.environment,
     // Another response style replaces the prompt's call for a concise reply.
@@ -49,7 +48,7 @@ export function projectPrompt(input: ProjectPromptInput) {
       personalization.responseStyle === "balanced"
         ? "concise factual"
         : "factual",
-    BLAME_PARETO: loadPrompt(plan ? "pareto/plan-agent" : "pareto/code-agent"),
+    BLAME_PARETO: loadPrompt("pareto/code-agent"),
     BLAME_PRACTICES: developmentPracticePrompts(input.practices ?? []),
     BLAME_PREVIEW: input.preview ?? "",
     BLAME_PLAN: input.plan ?? "",

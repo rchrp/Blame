@@ -1,7 +1,7 @@
 # The agent engine in the desktop app
 
 How the app runs agents on `blame-engine` (`crates/`). Quick chats,
-development stories, plan mode, the orchestrator of an epic and the
+development stories, the orchestrator of an epic and the
 new-project assistant are conversations on it; one-shot agents run on it as tasks (see "Tasks"). The
 engine in the Lima/WSL VM follows the same contract. Benchmarks run on it
 too: `packages/benchmark-runner` runs a story's agent as a task
@@ -45,7 +45,7 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | method | does |
 | --- | --- |
 | `connect({ api })` | The API connection (URL, user token) the host uses for credentials, logs, blobs and web search. Sent at start and on every sign-in or token change. |
-| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`, `development-story`, `plan`, `orchestrator`, `new-project`: system prompt, tools, harness options, checkpoints). The renderer never builds a `SessionConfig`. An `orchestrator` session first makes its epic's branch and writes it to the epic (see "The orchestrator"). |
+| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`, `development-story`, `orchestrator`, `new-project`: system prompt, tools, harness options, checkpoints). The renderer never builds a `SessionConfig`. An `orchestrator` session first makes its epic's branch and writes it to the epic (see "The orchestrator"). |
 | `configure({ session, purpose, settings })` | Rebuilds the config from the settings and sets it only when it differs from the session's current one (`{ changed }`). |
 | `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. It answers once the message is in the engine's records. A message whose context reads as the orchestrator's wake is refused: only the host writes one. |
 | `interrupt`, `compact`, `undoRewind({ session, location? })` | The engine calls of the same name. |
@@ -109,8 +109,9 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   as `contract_unmet`, which pauses the story with that reason.
 - **Plan**: stories and quick chats get `update_plan`
   (`purposeEngineTools`: the `plan` tool set, which the engine's core serves
-  itself, see "The agent's plan"). Plan mode and the new-project assistant do
-  not: they discuss and propose, and have no work to break into steps.
+  itself, see "The agent's plan"). The new-project assistant and the
+  orchestrator do not: they discuss and decide, and have no work to break
+  into steps.
 - **Tools**: `purposeClientTools` / `purposeHarnessTools`
   (`engine/purposes/tool-sets.ts`) name the shared tools; the host adds the
   conversation's own (`conversationTools.ensure`: preview, story history and
@@ -271,9 +272,11 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
 - **Direct commit** finds the story's files from the harness journal, which
   records each write under the engine session id.
 
-Plan mode is a `plan` session per project (its id kept in local storage);
-the new-project assistant is a `new-project` session per opening of the
-wizard, in a scratch folder the host makes.
+The new-project assistant is a `new-project` session per opening of the
+wizard, in a scratch folder the host makes. Plan Mode's `plan` sessions are
+gone; one an engine store still holds is only listed, followed, reported and
+deleted like any session (none of those reads its purpose), and no window
+sends it a message again.
 
 ## The orchestrator
 
@@ -287,8 +290,9 @@ An epic's conversation is an `orchestrator` session
   `model`, context cap, personalization. The host reads the epic before it
   builds the config (`Orchestrator.resolve`): its title, goal and branches
   go in the prompt, its `orchestratorModel` wins over the window's model.
-- **Tools**: the conversation tools of plan mode without
-  `propose_user_stories`, plus the host's own (`engine/orchestrator/tools.ts`,
+- **Tools**: the project conversation tools (web research, story history,
+  attachments, read-only GitHub, the person's MCP servers and skills)
+  without `propose_user_stories` or a preview, plus the host's own (`engine/orchestrator/tools.ts`,
   logic and refusals in `actions.ts`): `epic_board`, `create_stories`,
   `update_story`, `story_report`, `message_story`, `approve_story`,
   `reject_story`, `end_turn`. They go through `EngineHost.stories`, never

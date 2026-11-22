@@ -320,7 +320,8 @@ test("a turn the agent did not finish keeps its own message, not a limit's", () 
 
 test("an accepted finish supplies exactly one final reply in every conversation mode", () => {
   const summary = "The harness uses JSON-lines."
-  for (const purpose of ["quick-chat", "development-story", "plan", "new-project"]) {
+  // "plan": a Plan Mode conversation an engine store may still hold.
+  for (const purpose of ["quick-chat", "development-story", "new-project", "orchestrator", "plan"]) {
     for (const progress of [undefined, "I’ll check the harness.", summary]) {
       seq = 0
       const records = [

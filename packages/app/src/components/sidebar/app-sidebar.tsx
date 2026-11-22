@@ -29,10 +29,16 @@ import {
   Settings2Icon,
   ShieldCheckIcon,
   Table2Icon,
+  WorkflowIcon,
 } from "lucide-react"
 
 const data = {
   navMain: [
+    {
+      title: "Orchestrator",
+      url: "/orchestrator",
+      icon: <WorkflowIcon />,
+    },
     {
       title: "Backlog",
       url: "/backlog",

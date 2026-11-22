@@ -14,12 +14,12 @@ export function chatAmbitionKey(chatId?: string) {
   return chatId ? `chat:${chatId}` : newChatAmbitionKey
 }
 
-export function planModeAmbitionKey(projectId?: string) {
-  return `plan-mode:${projectId ?? "none"}`
+export function epicAmbitionKey(epicId: string) {
+  return `epic:${epicId}`
 }
 
-// The ambition chosen for a chat or a planning conversation, which holds for
-// the whole conversation. A conversation without one follows the account's.
+// The ambition chosen for a conversation, which holds for the whole
+// conversation. A conversation without one follows the account's.
 export function createConversationAmbitionStore(storage?: AmbitionStorage) {
   let overrides = read(storage)
   const listeners = new Set<Listener>()

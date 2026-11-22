@@ -112,15 +112,6 @@ export type DevelopmentStorySettings = {
   projectInitialization?: PreviewInitialization;
 };
 
-/** Plan mode: an agent that reads the project and proposes stories. */
-export type PlanSettings = {
-  workspace: EngineWorkspace;
-  projectId: string;
-  model: EngineModelChoice;
-  maxContextTokens?: number;
-  personalization?: Partial<AgentPersonalization>;
-};
-
 /**
  * The new-project assistant: it helps pick a stack, in a scratch folder the
  * host makes for the conversation (there is no project yet).
@@ -135,7 +126,6 @@ export type NewProjectSettings = {
 export type EngineSessionSettings =
   | { purpose: "quick-chat"; settings: QuickChatSettings }
   | { purpose: "development-story"; settings: DevelopmentStorySettings }
-  | { purpose: "plan"; settings: PlanSettings }
   | { purpose: "new-project"; settings: NewProjectSettings }
   /** An epic's conversation (docs/orchestrator.md). */
   | { purpose: "orchestrator"; settings: OrchestratorSettings };

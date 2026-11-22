@@ -7,15 +7,14 @@ import type { EnginePurpose } from "../protocol.js";
 export const purposeClientTools: Record<EnginePurpose, readonly string[]> = {
   "quick-chat": ["search_web", "read_web_page"],
   "development-story": ["search_web", "read_web_page"],
-  plan: ["search_web", "read_web_page"],
   "new-project": ["search_web", "read_web_page"],
   orchestrator: ["search_web", "read_web_page"],
 };
 
 /**
  * Harness tools (run by the engine) by purpose; undefined offers all of
- * them. Plan mode reads and runs but never edits; the new-project assistant
- * only tries commands in its scratch folder; the orchestrator only reads.
+ * them. The new-project assistant only tries commands in its scratch folder;
+ * the orchestrator only reads.
  */
 export const purposeHarnessTools: Record<
   EnginePurpose,
@@ -23,7 +22,6 @@ export const purposeHarnessTools: Record<
 > = {
   "quick-chat": undefined,
   "development-story": undefined,
-  plan: ["search_code", "read_code", "run_task", "finish_task"],
   "new-project": ["run_task", "finish_task"],
   orchestrator: ["search_code", "read_code"],
 };
@@ -31,15 +29,14 @@ export const purposeHarnessTools: Record<
 /**
  * Engine tool sets by purpose: the harness, and the plan (`update_plan`,
  * served by the engine) for the agents that do the work, a story or a chat.
- * Plan mode reads the project and proposes stories, the new-project
- * assistant only tries commands, and the orchestrator's plan is its board:
+ * The new-project assistant only tries commands, and the orchestrator's
+ * plan is its board:
  * none has work to break into steps, and a plan pinned in front of a
  * discussion would only add noise.
  */
 export const purposeEngineTools: Record<EnginePurpose, readonly string[]> = {
   "quick-chat": ["harness", "plan"],
   "development-story": ["harness", "plan"],
-  plan: ["harness"],
   "new-project": ["harness"],
   orchestrator: ["harness"],
 };

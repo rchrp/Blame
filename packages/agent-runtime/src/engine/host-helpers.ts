@@ -89,13 +89,6 @@ export function conversationToolSession(
           : {}),
       };
     }
-    case "plan":
-      return {
-        session,
-        kind: "plan",
-        workspaceRoot,
-        projectId: settings.settings.projectId,
-      };
     case "new-project":
       return { session, kind: "new-project", workspaceRoot };
     case "orchestrator":

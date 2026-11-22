@@ -166,8 +166,8 @@ pub fn tool_definitions_for(
 }
 
 /// The `describe` answer: `[{name, description, inputSchema, effect, endsTurn}]`.
-/// `tools`, when given, keeps only those (plan mode reads and runs but
-/// does not edit).
+/// `tools`, when given, keeps only those (an epic's orchestrator only reads;
+/// the new-project assistant only runs commands).
 pub fn describe(request: &Json) -> Json {
     let wanted: Option<Vec<&str>> = request
         .get("tools")

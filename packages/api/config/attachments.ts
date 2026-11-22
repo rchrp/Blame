@@ -10,8 +10,8 @@ export function attachmentsConfig() {
   return {
     driver,
     downloadUrlTtlSeconds: env.get('ATTACHMENTS_DOWNLOAD_URL_TTL_SECONDS') ?? 900,
-    // Grace for the files a kept conversation (plan mode) uploads, which no
-    // owner row links while the thread is still shown.
+    // Grace for the files a kept conversation (the new-project assistant's)
+    // uploads, which no owner row links while the thread is still shown.
     conversationOrphanGraceHours: env.get('ATTACHMENTS_CONVERSATION_ORPHAN_GRACE_HOURS') ?? 720,
     maxBytes: env.get('ATTACHMENTS_MAX_BYTES') ?? 10_485_760,
     orphanGraceHours: env.get('ATTACHMENTS_ORPHAN_GRACE_HOURS') ?? 24,

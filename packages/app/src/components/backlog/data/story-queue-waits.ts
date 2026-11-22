@@ -23,16 +23,27 @@ export function publishStoryWaits(waiting: readonly StoryWaiting[]) {
   for (const listener of listeners) listener()
 }
 
+function subscribe(listener: () => void) {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
 export function useStoryWait(storyId: string) {
   return React.useSyncExternalStore(
-    (listener) => {
-      listeners.add(listener)
-      return () => {
-        listeners.delete(listener)
-      }
-    },
+    subscribe,
     () => waits.get(storyId),
     () => undefined
+  )
+}
+
+/** Every queued story's wait: a new map each time one changes. */
+export function useStoryWaits(): ReadonlyMap<string, StoryWaitReason> {
+  return React.useSyncExternalStore(
+    subscribe,
+    () => waits,
+    () => waits
   )
 }
 

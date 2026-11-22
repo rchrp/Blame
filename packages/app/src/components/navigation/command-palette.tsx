@@ -9,6 +9,7 @@ import {
   SettingsIcon,
   SunIcon,
   CloudIcon,
+  WorkflowIcon,
 } from "lucide-react"
 
 import { backlogColumns, type UserStory } from "@/components/backlog/data/backlog-data"
@@ -16,6 +17,8 @@ import { selectBacklogStory } from "@/components/backlog/data/backlog-navigation
 import { useBacklogSelector } from "@/components/backlog/data/backlog-store"
 import { quickChatSelectedEvent } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
+import { useEpicStore } from "@/components/orchestrator/data/epic-store"
+import { startNewEpic } from "@/components/sidebar/epic-list"
 import { routeShortcuts } from "@/components/navigation/app-shortcuts"
 import { navigate } from "@/components/navigation/navigation"
 import { useTheme } from "@/components/providers/theme-provider"
@@ -53,6 +56,7 @@ export function CommandPalette({
     open ? backlog.stories : closedStories
   )
   const quickChats = useQuickChatStore()
+  const epics = useEpicStore()
   const projects = useProjects()
   const theme = useTheme()
 
@@ -119,6 +123,12 @@ export function CommandPalette({
             }
           >
             <MessageSquarePlusIcon /> New chat
+          </CommandItem>
+          <CommandItem
+            value="new epic orchestrator goal"
+            onSelect={() => run(() => startNewEpic(epics))}
+          >
+            <WorkflowIcon /> New epic
           </CommandItem>
           <CommandItem value="settings preferences models" onSelect={() => run(() => navigate("/settings"))}>
             <SettingsIcon /> Settings
@@ -194,6 +204,25 @@ export function CommandPalette({
               >
                 <MessageSquareIcon />
                 <span className="min-w-0 truncate">{chat.title}</span>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        ) : null}
+        {epics.epics.length ? (
+          <CommandGroup heading="Epics">
+            {epics.epics.slice(0, 30).map((epic) => (
+              <CommandItem
+                key={epic.id}
+                value={`epic ${epic.title} ${epic.id}`}
+                onSelect={() =>
+                  run(() => {
+                    epics.setActiveId(epic.id)
+                    navigate("/orchestrator")
+                  })
+                }
+              >
+                <WorkflowIcon />
+                <span className="min-w-0 truncate">{epic.title}</span>
               </CommandItem>
             ))}
           </CommandGroup>

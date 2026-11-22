@@ -9,7 +9,7 @@ import type {
 
 // Approving a Direct story commits its own files in the project folder, on the
 // branch checked out there. The folder is shared with the person, other Direct
-// stories, chats and Plan Mode: only the files the story wrote are committed,
+// stories and chats: only the files the story wrote are committed,
 // and the person decides about those that also hold someone else's changes.
 
 // What the person decides for the files that also hold other changes: commit

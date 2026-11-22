@@ -33,8 +33,8 @@ const emptyConversation: TranscriptConversation = {
 }
 
 /**
- * A conversation the app keeps itself (plan mode, the new-project
- * assistant) on an engine session. With a storage key the session id is
+ * A conversation the app keeps itself (the new-project assistant) on an
+ * engine session. With a storage key the session id is
  * remembered, so the conversation comes back after a restart; without one
  * it lasts as long as the view. Its turns run in the engine host, whether
  * or not the view is open.

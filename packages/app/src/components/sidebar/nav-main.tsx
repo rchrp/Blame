@@ -11,6 +11,8 @@ import { routeShortcutLabel } from "@/components/navigation/app-shortcuts"
 import { QuickChatHistory } from "@/components/sidebar/quick-chat-history"
 import { Kbd } from "@/components/ui/kbd"
 import { ActiveBacklogStories } from "@/components/sidebar/active-backlog-stories"
+import { EpicList } from "@/components/sidebar/epic-list"
+import { useEpicStore } from "@/components/orchestrator/data/epic-store"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -35,6 +37,7 @@ export function NavMain({
   pathname: string
 }) {
   const quickChats = useQuickChatStore()
+  const epics = useEpicStore()
   const selectedStoryId = React.useSyncExternalStore(
     subscribeToBacklogStorySelection,
     selectedBacklogStoryId
@@ -53,7 +56,8 @@ export function NavMain({
                 isActive={
                   pathname === item.url &&
                   (item.url !== "/chat" || !quickChats.activeId) &&
-                  (item.url !== "/backlog" || !selectedStoryId)
+                  (item.url !== "/backlog" || !selectedStoryId) &&
+                  (item.url !== "/orchestrator" || !epics.activeId)
                 }
               >
                 <AppLink
@@ -84,6 +88,9 @@ export function NavMain({
               ) : null}
               {item.url === "/backlog" ? (
                 <ActiveBacklogStories pathname={pathname} />
+              ) : null}
+              {item.url === "/orchestrator" ? (
+                <EpicList pathname={pathname} />
               ) : null}
             </SidebarMenuItem>
           ))}

@@ -7,7 +7,6 @@ import {
   missingDependencies,
   plannedStoryDraft,
   plannedStoryMarkdown,
-  proposalDecisionsNote,
   storiesToAdd,
   storyFileAttachments,
   type PlanStory,
@@ -63,11 +62,6 @@ test("the person's edits and decisions apply over the agent's proposal", () => {
   assert.equal(decided[1]!.title, "Renamed")
   assert.equal(decided[0]!.title, "Story P1")
   assert.deepEqual([...addedStoryRefs([decided]).keys()], ["P2"])
-  assert.equal(
-    proposalDecisionsNote(decided),
-    "<proposal_decisions>\nWhat I did with your latest proposed stories:\n- P2 added to the backlog as US-011\n- P4 dismissed\n</proposal_decisions>"
-  )
-  assert.equal(proposalDecisionsNote(stories), undefined)
 })
 
 test("each story drafts with only the files it names", () => {

@@ -183,10 +183,10 @@ function sessionWorkspace(settings: EngineSessionSettings) {
     case "quick-chat":
       return settings.settings.workspaceRoot;
     case "development-story":
-    case "plan":
       return settings.settings.workspace.root;
     default:
-      // The new-project assistant works in a scratch folder of its own.
+      // The new-project assistant works in a scratch folder of its own; the
+      // orchestrator only reads the project.
       return undefined;
   }
 }
