@@ -119,7 +119,7 @@ test.group('workspace transfer', (group) => {
     const bundle = await handOver(local.id)
     // MySQL hands JSON columns back as objects, SQLite as text: take both.
     const row = bundle.tables.epics?.[0]
-    row!.settings = JSON.parse(String(row!.settings))
+    if (typeof row!.settings === 'string') row!.settings = JSON.parse(row!.settings)
 
     const imported = await transfer.import(account.id, bundle)
     const again = await transfer.import(account.id, bundle)
