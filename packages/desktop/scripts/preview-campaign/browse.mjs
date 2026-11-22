@@ -46,7 +46,16 @@ const answer = async (extra = {}) => ({ ...(await read()), errors: [...errors], 
 
 const begun = Date.now();
 debug("loading");
-await window.loadURL(url).catch((error) => failedRequests.push(`loadURL ${error.message}`));
+// A Cloud Preview opens with a one-time ticket posted to its edge, as the app's
+// external launcher does; the edge answers with a session cookie and a redirect.
+const ticket = process.env.BROWSE_TICKET;
+const open = ticket
+  ? window.loadURL(url, {
+      postData: [{ type: "rawData", bytes: Buffer.from(`ticket=${encodeURIComponent(ticket)}`) }],
+      extraHeaders: "Content-Type: application/x-www-form-urlencoded\n",
+    })
+  : window.loadURL(url);
+await open.catch((error) => failedRequests.push(`loadURL ${error.message}`));
 // Frameworks keep working after load: wait for the network to settle.
 await new Promise((done) => setTimeout(done, 2500));
 console.log(`BROWSE_READY ${JSON.stringify(await answer({ loadMs: Date.now() - begun }))}`);
@@ -60,8 +69,12 @@ for await (const line of lines) {
     continue;
   }
   if (message.op === "quit") break;
+  if (message.op === "goto") {
+    await window.loadURL(new URL(message.path, window.webContents.getURL()).href).catch((error) => failedRequests.push(`loadURL ${error.message}`));
+    await new Promise((done) => setTimeout(done, 1500));
+  }
   if (message.op === "reload") {
-    await window.loadURL(url).catch((error) => failedRequests.push(`loadURL ${error.message}`));
+    await window.loadURL(window.webContents.getURL() || url).catch((error) => failedRequests.push(`loadURL ${error.message}`));
     await new Promise((done) => setTimeout(done, 1500));
   }
   console.log(`BROWSE_ANSWER ${JSON.stringify(await answer())}`);

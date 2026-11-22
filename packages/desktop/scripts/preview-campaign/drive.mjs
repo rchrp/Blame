@@ -62,6 +62,9 @@ function parseOptions(argv) {
     only: null,
     fresh: false,
     keep: false,
+    cloud: false,
+    // Where a signed-in app keeps its account session (only the Local Storage folder is copied).
+    sessionFrom: join(homedir(), "Library/Application Support/dev.blame.desktop"),
   };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
@@ -71,6 +74,8 @@ function parseOptions(argv) {
     else if (flag === "--only") options.only = argv[++index].split(",");
     else if (flag === "--fresh") options.fresh = true;
     else if (flag === "--keep") options.keep = true;
+    else if (flag === "--cloud") options.cloud = true;
+    else if (flag === "--session-from") options.sessionFrom = resolve(argv[++index]);
   }
   return options;
 }
@@ -165,11 +170,12 @@ async function until(condition, timeoutMs, what, interval = 500) {
 // ------------------------------------------------------------------ browser
 
 /** A hidden browser window on a preview URL (see browse.mjs). */
-async function openBrowser(options, url) {
+async function openBrowser(options, url, { ticket } = {}) {
   const electron = createRequire(import.meta.url)("electron");
   const environment = { ...process.env };
   delete environment.ELECTRON_RUN_AS_NODE;
-  const child = spawn(electron, [join(here, "browse.mjs"), url, join(options.root, "browser-profile")], { env: environment, stdio: ["pipe", "pipe", "pipe"] });
+  if (ticket) environment.BROWSE_TICKET = ticket;
+  const child = spawn(electron, [join(here, "browse.mjs"), url, join(options.root, ticket ? `browser-profile-${Date.now()}` : "browser-profile")], { env: environment, stdio: ["pipe", "pipe", "pipe"] });
   const waiting = [];
   let buffer = "";
   const lines = [];
@@ -194,12 +200,12 @@ async function openBrowser(options, url) {
   };
   const first = await next(60_000);
   const ask = async (op) => (child.stdin.write(`${JSON.stringify({ op })}\n`), next());
-  return { first, text: () => ask("text"), reload: () => ask("reload"), close: () => (child.stdin.write('{"op":"quit"}\n'), delay(300).then(() => child.kill("SIGKILL"))) };
+  return { first, text: () => ask("text"), reload: () => ask("reload"), goto: (path) => (child.stdin.write(`${JSON.stringify({ op: "goto", path })}\n`), next()), close: () => (child.stdin.write('{"op":"quit"}\n'), delay(300).then(() => child.kill("SIGKILL"))) };
 }
 
 // ---------------------------------------------------------------------- app
 
-async function launch(options, port) {
+async function launch(options, port, { profile = "profile", projectWindow = true } = {}) {
   const electron = createRequire(import.meta.url)("electron");
   const environment = { ...process.env };
   delete environment.ELECTRON_RUN_AS_NODE;
@@ -216,7 +222,7 @@ async function launch(options, port) {
     // resources with the packaged config (see the README next to this file).
     BLAME_RUNTIME_BIN_DIR: join(options.root, "runtime-home/bin"),
   });
-  const child = spawn(electron, [fileURLToPath(import.meta.url), join(options.root, "profile")], {
+  const child = spawn(electron, [fileURLToPath(import.meta.url), join(options.root, profile)], {
     env: environment,
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -230,6 +236,7 @@ async function launch(options, port) {
   await until(() => output.text.includes("CAMPAIGN_READY") || child.exitCode !== null, 120_000, "the app to open");
   if (child.exitCode !== null) throw new Error(`The app exited early:\n${output.text.slice(-3000)}`);
   const compact = await connect(port, { compact: true });
+  if (!projectWindow) return { child, cdp: compact, output };
   // A hidden launcher window reads previews in the background: the person's
   // own view is a project window, so open one and drive that.
   await mkdir(options.projects, { recursive: true });
@@ -930,6 +937,260 @@ fs.appendFileSync("server.js", "import isOdd from \\"is-odd\\";\\napp.get(\\"/od
   await check(`${story.name}: restart installs the new dependency`, Boolean(odd) && odd.body === "true", odd ? odd.body : "never answered");
 }
 
+// ----------------------------------------------------------------------- cloud
+//
+// Cloud Preview against the production API, with the account of the person
+// who ran the campaign. The app under test is signed in by a copy of the
+// Local Storage of an installed app (`--session-from`): the session token is
+// only ever read by the page, never printed. Every sandbox the campaign makes
+// is destroyed and every story deleted, also when a scenario fails.
+
+const cloudApi = "https://api.blame.so/api/v1";
+const cloudSessions = new Map();
+
+/** Calls the account API from the page with the app's own session. */
+async function account(app, path, method = "GET", body) {
+  return app.cdp.evaluate(`(async () => {
+    const session = JSON.parse(localStorage.getItem("blame.app.cloud-session.v1") || "null");
+    if (!session) return { status: 0, error: "no session" };
+    try {
+      const response = await fetch(${JSON.stringify(cloudApi + path)}, {
+        method: ${JSON.stringify(method)},
+        headers: { Accept: "application/json", Authorization: "Bearer " + session.token, "Content-Type": "application/json" },
+        body: ${body === undefined ? "undefined" : JSON.stringify(JSON.stringify(body))},
+      });
+      const text = await response.text();
+      let json = null;
+      try { json = JSON.parse(text); } catch {}
+      return { status: response.status, json, text: json ? undefined : text.slice(0, 300) };
+    } catch (error) {
+      return { status: 0, error: String(error && error.message || error) };
+    }
+  })()`);
+}
+
+const recordOf = (json) => json?.transformerData?.[0] ?? json?.data ?? json;
+
+/** Calls `window.blame.previewRuntime.<method>(input)`; returns the value or `{ error }`. */
+async function runtimeCall(app, method, input) {
+  return app.cdp.evaluate(`(async () => {
+    try {
+      return { value: await window.blame.previewRuntime.${method}(${input === undefined ? "" : JSON.stringify(input)}) ?? null };
+    } catch (error) {
+      return { error: String(error && error.message || error) };
+    }
+  })()`);
+}
+
+const viewState = (view) => `${view?.state?.host}/${view?.state?.engine}/${view?.state?.preview}/${view?.state?.sync}`;
+
+/** Whether the app under test opened a project workspace: the person's own, in an account session. */
+async function workspaceWindowOpen(port) {
+  const targets = await fetch(`http://127.0.0.1:${port}/json`).then((response) => response.json(), () => []);
+  return targets.some((target) => target.type === "page" && /window-role=workspace/.test(target.url));
+}
+
+async function cloudSetup(app, port) {
+  current = "cloud:setup";
+  await delay(12_000);
+  const opened = await workspaceWindowOpen(port);
+  await check("cloud: the test app did not open a workspace of the account", !opened, opened ? "a workspace window opened: stopping before it touches real stories" : "");
+  if (opened) return undefined;
+  const signedIn = await app.cdp.evaluate(`Boolean(localStorage.getItem("blame.app.cloud-session.v1"))`);
+  await check("cloud: the test app holds an account session", signedIn, signedIn ? "" : "no session in the copied Local Storage: sign in the installed app first");
+  if (!signedIn) return undefined;
+  const connected = await app.cdp.evaluate(`(async () => {
+    const session = JSON.parse(localStorage.getItem("blame.app.cloud-session.v1"));
+    return window.blame.previewRuntime.configure({ url: ${JSON.stringify(cloudApi)}, token: session.token });
+  })()`).catch((error) => String(error));
+  await check("cloud: the preview runtime is connected to the production API", connected === true, String(connected));
+  const reachable = await account(app, "/projects");
+  await check("cloud: the account API accepts the session", reachable.status === 200, `HTTP ${reachable.status} ${reachable.error ?? reachable.text ?? ""}`);
+  if (reachable.status !== 200) return undefined;
+  const project = await account(app, "/projects", "POST", { name: "[campaign] preview tests", repositoryFingerprint: null });
+  const projectId = recordOf(project.json)?.id;
+  await check("cloud: a test project exists in the account", Boolean(projectId), `HTTP ${project.status}`);
+  return projectId ? { projectId } : undefined;
+}
+
+/** Destroys the sandbox of a session and waits for it to be gone. */
+async function destroyCloudSession(app, sessionId) {
+  const done = await runtimeCall(app, "command", { sessionId, command: { type: "destroy-host" }, operationId: crypto.randomUUID() });
+  const gone = await until(async () => {
+    const view = await runtimeCall(app, "get", { sessionId });
+    if (view.error) return /not found|404/i.test(view.error);
+    return ["destroyed", "unprovisioned"].includes(view.value?.state?.host);
+  }, 180_000, "the sandbox to be destroyed", 4000).then(() => true, () => false);
+  return { requested: !done.error, gone, error: done.error };
+}
+
+async function scenarioCloud(app, options, setup, name) {
+  current = `cloud:${name}`;
+  const fixture = fixtures[name];
+  const project = await writeFixture(options.projects, name);
+  const storyResponse = await account(app, "/projects/user-stories", "POST", {
+    projectId: setup.projectId,
+    title: `[campaign] cloud ${name}`,
+    summary: "Created by the preview campaign: safe to delete.",
+    status: "backlog",
+    runMode: "vercel-compose",
+  });
+  const storyId = recordOf(storyResponse.json)?.id;
+  await check(`${name}: test story created`, Boolean(storyId), `HTTP ${storyResponse.status} ${storyResponse.text ?? ""}`);
+  if (!storyId) return;
+  const entry = { storyId, sessionId: null };
+  cloudSessions.set(storyId, entry);
+  try {
+    const made = await workspace(app, "createWorktree", { repositoryRoot: project, runtimeProfile: "vercel-compose", storyId, storyReference: `CMP-${runId}-c${++counter}`, title: `Campaign cloud ${name}` });
+    await check(`${name}: cloud worktree`, !made.error && made.value?.workspaceMode === "cloud-mirror", made.error ?? JSON.stringify(made.value));
+    if (made.error) return;
+    const worktree = made.value.worktree;
+    const configuration = fixture.runConfigurations[0];
+    const prepared = await workspace(app, "prepareProjectPreview", { worktree, previewManifest: fixture.manifest, runConfigurations: fixture.runConfigurations, runConfigurationId: configuration.id, hostDependenciesChecked: true, runtimeProfile: "vercel-compose", databaseMode: null });
+    await check(`${name}: prepare cloud preview`, !prepared.error, prepared.error ?? "");
+    if (prepared.error) return;
+    const manifestText = (await workspace(app, "readFile", { root: worktree, path: ".blame/initialization/preview-manifest.json" })).value;
+    const begun = Date.now();
+    const transitions = [];
+    const record = (view) => {
+      const key = `${viewState(view)}${view?.failure ? ` failure ${view.failure.code ?? ""} ${view.failure.message ?? ""}` : ""}`;
+      if (transitions.at(-1)?.key !== key) transitions.push({ at: Date.now() - begun, key });
+    };
+    const created = await runtimeCall(app, "create", { userStoryId: storyId, profile: "vercel-compose", previewManifest: JSON.parse(manifestText), cloudUploadConsentAt: new Date().toISOString(), operationId: crypto.randomUUID(), localPath: worktree });
+    await check(`${name}: session created`, !created.error, created.error ?? `${created.value?.id} ${viewState(created.value)}`);
+    if (created.error) return;
+    entry.sessionId = created.value.id;
+    const sessionId = entry.sessionId;
+    record(created.value);
+    let view = created.value;
+    if (view.state.host !== "running" || view.desired.host !== "active") {
+      const resumed = await runtimeCall(app, "command", { sessionId, command: { type: "resume-host" }, operationId: crypto.randomUUID() });
+      if (resumed.error) return void (await check(`${name}: resume host`, false, resumed.error));
+      view = resumed.value;
+      record(view);
+    }
+    const imported = await runtimeCall(app, "syncIn", { sessionId, localPath: worktree });
+    await check(`${name}: source uploaded to the sandbox`, !imported.error, imported.error ?? `${imported.value?.sourceRevision}`);
+    if (imported.error) return;
+    const previewService = configuration.previewService;
+    const endpoint = fixture.manifest.services.find((service) => service.id === previewService)?.endpoints?.find((candidate) => candidate.protocol === "http");
+    const started = await runtimeCall(app, "command", { sessionId, command: { type: "start-services", configurationId: configuration.id, serviceIds: configuration.services, primaryRoute: endpoint ? { serviceId: previewService, endpointId: endpoint.id } : undefined }, operationId: crypto.randomUUID() });
+    await check(`${name}: start-services accepted`, !started.error, started.error ?? "");
+    if (started.error) return;
+    const outcome = await until(async () => {
+      const current = await runtimeCall(app, "get", { sessionId });
+      if (current.error) return { error: current.error };
+      record(current.value);
+      view = current.value;
+      if (view.failure || view.state.engine === "failed" || view.state.host === "failed") return { failed: true };
+      return view.state.preview === "ready" && view.state.engine === "running" ? { ready: true } : false;
+    }, 600_000, `${name} cloud preview`, 3000).catch((error) => ({ timedOut: error.message }));
+    await note(`${name} cloud timeline: ${transitions.map((item) => `${(item.at / 1000).toFixed(0)}s ${item.key}`).join(" | ")}`);
+    const ms = Date.now() - begun;
+    if (fixture.expectFailure || name === "go-http") {
+      await check(`${name}: cloud start outcome`, Boolean(outcome.failed) || Boolean(outcome.ready), outcome.ready ? `ready in ${(ms / 1000).toFixed(0)} s` : `failed: ${view.failure?.message ?? ""}`.slice(0, 600));
+      if (!outcome.ready) return;
+    } else {
+      await check(`${name}: cloud preview ready`, Boolean(outcome.ready), outcome.ready ? `${(ms / 1000).toFixed(0)} s` : `${JSON.stringify(outcome)} ${view.failure?.message ?? ""} ${viewState(view)}`.slice(0, 800));
+      if (!outcome.ready) return;
+    }
+    const ticket = await account(app, `/preview-sessions/${sessionId}/access-ticket`, "POST", {});
+    const ticketBody = recordOf(ticket.json);
+    await check(`${name}: access ticket issued`, ticket.status === 200 && ticketBody?.openUrl, `HTTP ${ticket.status} ${ticket.text ?? ""}`);
+    if (!ticketBody?.openUrl) return;
+    let browser;
+    try {
+      browser = await openBrowser(options, ticketBody.openUrl, { ticket: ticketBody.ticket });
+      const first = browser.first;
+      const expected = fixture.visible?.before ?? fixture.page.includes;
+      let text = first;
+      if (fixture.page.path !== "/" && !fixture.visible) {
+        await browser.goto?.(fixture.page.path);
+        text = await browser.text();
+      }
+      await check(`${name}: the cloud page loads in a browser`, text.text.includes(expected) || text.html > 0 && text.text.includes(fixture.page.includes), `${first.loadMs} ms at ${new URL(first.url).origin}: ${text.text.slice(0, 120).replace(/\s+/g, " ")}`);
+      await check(`${name}: no console error or failed request`, first.errors.length === 0 && first.failedRequests.length === 0, [...first.errors, ...first.failedRequests].join(" | "));
+      // What the sandbox's own services printed, for the report (the stream ends when aborted).
+      const logs = await app.cdp.evaluate(`(async () => {
+        const session = JSON.parse(localStorage.getItem("blame.app.cloud-session.v1"));
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), 6000);
+        let text = "";
+        try {
+          const response = await fetch(${JSON.stringify(`${cloudApi}/preview-sessions/${sessionId}/logs`)}, { headers: { Authorization: "Bearer " + session.token, Accept: "text/event-stream" }, signal: controller.signal });
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          for (;;) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            text += decoder.decode(value, { stream: true });
+          }
+        } catch {}
+        return text.slice(-20000);
+      })()`).catch(() => "");
+      await writeFile(join(outDirectory, `cloud-logs-${name}.txt`), logs).catch(() => undefined);
+      if (fixture.edit && !fixture.edit.skipEdit) {
+        const path = join(worktree, fixture.edit.file);
+        const source = await readFile(path, "utf8");
+        const begunEdit = Date.now();
+        await writeFile(path, source.replace(fixture.edit.from, fixture.edit.to));
+        const after = fixture.visible?.after ?? fixture.edit.includes;
+        const seen = await until(async () => {
+          const answer = fixture.visible?.hot ? await browser.text() : await browser.reload();
+          return answer.text.includes(after) ? answer : false;
+        }, 120_000, "the local edit in the cloud preview", fixture.visible?.hot ? 1500 : 4000).then(() => true, () => false);
+        await check(`${name}: a local edit reaches the cloud preview`, seen, seen ? `${((Date.now() - begunEdit) / 1000).toFixed(1)} s` : "not within 120 s");
+        const status = await runtimeCall(app, "syncStatus", { sessionId });
+        await note(`${name} sync status after the edit: ${JSON.stringify(status.value ?? status.error)?.slice(0, 300)}`);
+      }
+    } catch (error) {
+      await check(`${name}: browser check`, false, error.message);
+    } finally {
+      await browser?.close();
+    }
+    // Stop and start again: the edit must survive.
+    const stopped = await runtimeCall(app, "command", { sessionId, command: { type: "stop-services" }, operationId: crypto.randomUUID() });
+    const down = await until(async () => {
+      const current = await runtimeCall(app, "get", { sessionId });
+      return current.value && !["running", "starting"].includes(current.value.state.engine) ? current.value : false;
+    }, 120_000, "services stopped", 3000).catch(() => null);
+    await check(`${name}: stop-services`, !stopped.error && Boolean(down), stopped.error ?? viewState(down));
+    const restartedAt = Date.now();
+    const again = await runtimeCall(app, "command", { sessionId, command: { type: "start-services", configurationId: configuration.id, serviceIds: configuration.services, primaryRoute: endpoint ? { serviceId: previewService, endpointId: endpoint.id } : undefined }, operationId: crypto.randomUUID() });
+    const back = again.error ? null : await until(async () => {
+      const current = await runtimeCall(app, "get", { sessionId });
+      if (current.value?.failure) return { failed: current.value.failure };
+      return current.value?.state.preview === "ready" && current.value.state.engine === "running" ? { ready: true } : false;
+    }, 300_000, "restart", 3000).catch(() => null);
+    await check(`${name}: restart after stop`, Boolean(back?.ready), back?.ready ? `${((Date.now() - restartedAt) / 1000).toFixed(0)} s` : JSON.stringify(again.error ?? back));
+  } finally {
+    if (entry.sessionId) {
+      const usage = (await runtimeCall(app, "get", { sessionId: entry.sessionId })).value?.usage;
+      if (usage) await note(`${name} sandbox usage: ${usage.activeSeconds} s active, about $${Number(usage.estimatedCostUsd).toFixed(4)}`);
+      const destroyed = await destroyCloudSession(app, entry.sessionId);
+      await check(`${name}: sandbox destroyed afterwards`, destroyed.gone, destroyed.error ?? "");
+    }
+    const deleted = await account(app, `/projects/user-stories/${storyId}`, "DELETE");
+    await check(`${name}: test story deleted`, deleted.status >= 200 && deleted.status < 300, `HTTP ${deleted.status}`);
+    cloudSessions.delete(storyId);
+  }
+}
+
+async function runCloud(ctx, options) {
+  const cloudNames = (options.only ?? ["vite-react", "next-app", "express-postgres", "go-http"]).filter((name) => fixtures[name]);
+  const setup = await cloudSetup(ctx.app, ctx.port);
+  if (!setup) return;
+  try {
+    for (const name of cloudNames) await guarded(`cloud ${name}`, () => scenarioCloud(ctx.app, options, setup, name));
+  } finally {
+    // Whatever failed above, no sandbox stays billed.
+    for (const [storyId, entry] of cloudSessions) {
+      if (entry.sessionId) await destroyCloudSession(ctx.app, entry.sessionId).catch(() => undefined);
+      await account(ctx.app, `/projects/user-stories/${storyId}`, "DELETE").catch(() => undefined);
+    }
+  }
+}
+
 // ----------------------------------------------------------------------- main
 
 const healthy = ["vite-react", "next-app", "next-healthpath", "express-api", "express-postgres", "flask-redis", "web-api-binding", "env-file", "pnpm-monorepo", "astro", "sveltekit", "nuxt", "go-http", "php-builtin", "next-heavy"];
@@ -946,14 +1207,37 @@ async function drive() {
     await rm(options.root, { force: true, recursive: true });
   }
   await mkdir(options.root, { recursive: true });
-  await prepareRuntimeHome(options);
+  if (!options.cloud) await prepareRuntimeHome(options);
   await rm(options.projects, { force: true, recursive: true });
   const port = 9500 + Math.floor(Math.random() * 300);
   await log(`campaign starts: root ${options.root}, debug port ${port}`);
   const ctx = { app: null, port };
   try {
-    ctx.app = await launch(options, port);
-    await run(ctx, options);
+    if (options.cloud) {
+      // A profile of its own, signed in by a copy of the account's Local Storage.
+      const profile = join(options.root, "cloud-profile");
+      await rm(profile, { force: true, recursive: true });
+      await mkdir(profile, { recursive: true });
+      await cp(join(options.sessionFrom, "Local Storage"), join(profile, "Local Storage"), { recursive: true });
+      const page = join(options.root, "blank.html");
+      await writeFile(page, "<!doctype html><title>blank</title>");
+      const electron = createRequire(import.meta.url)("electron");
+      const cleanEnvironment = { ...process.env, CAMPAIGN_CLEAN_SESSION: page };
+      delete cleanEnvironment.ELECTRON_RUN_AS_NODE;
+      const cleaned = await new Promise((done) => {
+        const child = spawn(electron, [fileURLToPath(import.meta.url), profile], { env: cleanEnvironment, stdio: ["ignore", "pipe", "pipe"] });
+        let text = "";
+        child.stdout.on("data", (data) => (text += data));
+        child.on("exit", () => done(text));
+        setTimeout(() => child.kill("SIGKILL"), 30_000).unref();
+      });
+      await log(`session cleaned: ${/CAMPAIGN_SESSION (.*)/.exec(cleaned)?.[1] ?? "no answer"}`);
+      ctx.app = await launch(options, port, { profile: "cloud-profile", projectWindow: false });
+      await runCloud(ctx, options);
+    } else {
+      ctx.app = await launch(options, port);
+      await run(ctx, options);
+    }
   } catch (error) {
     results.push({ scenario: current, name: "campaign aborted", ok: false, detail: String(error.stack ?? error) });
     await log(`ABORT [${current}] ${error.stack ?? error}`);
@@ -965,6 +1249,8 @@ async function drive() {
       await new Promise((done) => process.once("SIGTERM", done));
     }
     if (ctx.app) await quit(ctx.app);
+    // The copy of the account session does not outlive the run.
+    if (options.cloud) await rm(join(options.root, "cloud-profile"), { force: true, recursive: true }).catch(() => undefined);
     const failed = results.filter((entry) => !entry.ok);
     await log(`campaign done: ${results.length - failed.length}/${results.length} checks passed`);
     process.exit(process.exitCode ?? (failed.length ? 1 : 0));
@@ -1049,8 +1335,38 @@ async function run(ctx, options) {
 
 // ------------------------------------------------------------- inside Electron
 
+/**
+ * Keeps only the account session in a copied Local Storage: the rest (recent
+ * projects, last route) would make the app reopen the person's own workspace.
+ * It runs in a page of its own, so the token never reaches this script.
+ */
+async function cleanSession(profile, page) {
+  const { app, BrowserWindow } = await import("electron");
+  app.setPath("userData", profile);
+  app.dock?.hide();
+  // Not awaited: an ESM entry that awaits `ready` at top level never starts the app.
+  void app.whenReady().then(async () => {
+    const window = new BrowserWindow({ show: false });
+    await window.loadURL(pathToFileURL(page).href);
+    const result = await window.webContents.executeJavaScript(`(() => {
+      const key = "blame.app.cloud-session.v1";
+      const value = localStorage.getItem(key);
+      const others = localStorage.length - (value === null ? 0 : 1);
+      localStorage.clear();
+      if (value !== null) localStorage.setItem(key, value);
+      return { session: value !== null, removedKeys: others };
+    })()`);
+    console.log(`CAMPAIGN_SESSION ${JSON.stringify(result)}`);
+    // Chromium flushes Local Storage to disk a moment after a write.
+    await delay(1500);
+    window.destroy();
+    app.exit(0);
+  });
+}
+
 async function inElectron() {
   const profile = process.argv.at(-1);
+  if (process.env.CAMPAIGN_CLEAN_SESSION) return cleanSession(profile, process.env.CAMPAIGN_CLEAN_SESSION);
   const { app, BrowserWindow } = await import("electron");
   for (const name of ["appData", "userData", "sessionData"]) app.setPath(name, profile);
   app.setAppLogsPath(join(profile, "logs"));

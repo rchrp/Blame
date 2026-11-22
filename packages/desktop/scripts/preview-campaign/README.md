@@ -6,8 +6,9 @@ create a worktree, prepare the preview from a manifest, start it, follow its
 lifecycle, load the page in a browser, edit files, stop, restart, hibernate,
 crash the VM, remove. Each scenario records checks with timings.
 
-It is a smoke and stress campaign for **Local Container** previews. Cloud
-Preview needs a signed-in account and costs money: it is not driven here.
+It is a smoke and stress campaign for **Local Container** previews. With
+`--cloud` it also runs a few **Cloud Preview** sessions against the production
+API (see below): they cost money and touch the signed-in account.
 
 ```sh
 pnpm --filter @blame/desktop build:semantic-harness-payload   # payload = runtime version
@@ -36,3 +37,24 @@ node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--ke
 `fixtures.mjs` holds the projects and the manifest an initialization agent
 would write for each; `browse.mjs` is the throwaway browser that loads a
 preview, reports console errors and failed requests, and sees a hot reload.
+
+## Cloud Preview (`--cloud`)
+
+```sh
+node scripts/preview-campaign/drive.mjs --cloud --out <dir> [--only vite-react,next-app,express-postgres,go-http,crash-on-start]
+```
+
+Creates, for each fixture, a story `[campaign] cloud <name>` in the account of
+the installed app, uploads the fixture to a Vercel sandbox, starts it, opens it
+in the test browser through an access ticket, edits a file locally and waits
+for the edit in the open page, stops and restarts it, then destroys the
+sandbox and deletes the story (also when a check fails). An empty project
+`[campaign] preview tests` stays in the account (no delete route).
+
+How it signs in: only the `Local Storage` of the installed app
+(`~/Library/Application Support/dev.blame.desktop`, `--session-from`) is copied
+to a profile of its own, then reduced to the account session key by a page of
+its own, so the token never reaches the script. Copying everything makes the
+app reopen the person's own workspace and its real stories: the run stops if a
+workspace window opens. The copy is deleted at the end. The app talks to
+`https://api.blame.so` because it is a production build.
