@@ -527,8 +527,9 @@ async function stopOtherServices(
     await engine.compose(["stop", "--timeout", "5", ...running]);
 }
 
-// Docker already waited for every container healthcheck; services whose
-// image has no runtime to script one are probed from here.
+// The engine saw each service ready (Docker's verdict, or its HTTP endpoint
+// answering); the endpoints must now also answer steadily from here, which
+// is the only check for services whose image has no runtime to script one.
 async function waitUntilReady(
   engine: ComposeEngine,
   plan: PreviewExecutionPlan,

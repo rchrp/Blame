@@ -14,10 +14,19 @@ import { endpointAnswers, type EndpointTargets } from "./readiness.js";
 // status, so a port forwarder that accepts connections before the app listens
 // never makes a service ready; TCP endpoints are never judged from outside.
 
-const inspectIntervalMs = 500;
 const firstPollDelayMs = 50;
-const maxPollDelayMs = 250;
 const requestTimeoutMs = 1_000;
+
+// Polls back off as the wait lasts: a server that answers within a second
+// is seen within 250 ms, a dev server that compiles for 20 s costs two
+// requests and one container inspection per second.
+function maxPollDelayMs(elapsedMs: number) {
+  return elapsedMs < 10_000 ? 250 : elapsedMs < 60_000 ? 500 : 1_000;
+}
+
+function inspectIntervalMs(elapsedMs: number) {
+  return elapsedMs < 5_000 ? 500 : elapsedMs < 20_000 ? 1_000 : 2_000;
+}
 
 export type StartWait =
   | { outcome: "ready" }
@@ -48,12 +57,14 @@ export async function waitForServices(input: {
         : [];
     }),
   );
-  const deadline = Date.now() + input.timeoutMs;
+  const begun = Date.now();
+  const deadline = begun + input.timeoutMs;
   let states: ServiceState[] = [];
   let inspectedAt = Number.NEGATIVE_INFINITY;
   let pause = firstPollDelayMs;
   for (;;) {
-    const inspectDue = Date.now() - inspectedAt >= inspectIntervalMs;
+    const inspectDue =
+      Date.now() - inspectedAt >= inspectIntervalMs(Date.now() - begun);
     const [answered, inspected] = await Promise.all([
       Promise.all(
         [...waiting].map(async (id) => {
@@ -98,7 +109,7 @@ export async function waitForServices(input: {
       };
     }
     await delay(Math.min(pause, remaining));
-    pause = Math.min(pause * 2, maxPollDelayMs);
+    pause = Math.min(pause * 2, maxPollDelayMs(Date.now() - begun));
   }
 }
 
