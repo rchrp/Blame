@@ -1044,14 +1044,14 @@ async function scenarioSharedSetup(app, options) {
     await check("vite-react: its node_modules volume is known", Boolean(volume), project.stdout.slice(0, 200));
     if (volume) {
       // An agent installed a package in a container of another story.
-      const drift = await vm(options, `docker run --rm -v ${volume}:/m node:22-bookworm sh -c 'mkdir -p /m/installed-by-an-agent && echo {} > /m/installed-by-an-agent/package.json'`, 180_000);
+      const drift = await vm(options, `docker run --rm -v ${volume}:/m node:22-bookworm sh -c 'mkdir -p /m/agent-added-${runId} && echo {} > /m/agent-added-${runId}/package.json'`, 180_000);
       await check("vite-react: a package is added to the shared volume", drift.ok, drift.stderr.slice(0, 200));
       const changed = await sharedSetupStart(app, options, "vite-react", "s3-after-drift");
       if (changed) {
         stories.push(changed.story);
         await check("vite-react s3: the changed volume runs the install", changed.facts.ran && !changed.facts.skipped, JSON.stringify(changed.facts));
         const left = await vm(options, `docker run --rm -v ${volume}:/m node:22-bookworm ls /m`, 120_000);
-        await note(`after the rerun, the volume ${/installed-by-an-agent/.test(left.stdout) ? "still holds" : "no longer holds"} the package the agent added`);
+        await note(`after the rerun, the volume ${new RegExp(`agent-added-${runId}`).test(left.stdout) ? "still holds" : "no longer holds"} the package the agent added`);
         const again = await sharedSetupStart(app, options, "vite-react", "s4-after-repair");
         if (again) {
           stories.push(again.story);
