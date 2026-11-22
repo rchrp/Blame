@@ -1,8 +1,8 @@
 // What the screen shows of an epic (`EpicState`), from one look: the
-// conversation's state, the one error to show first, and how far the
-// epic's pause is.
+// conversation's state, its problems (and the first of them as `error`),
+// and how far the epic's pause is.
 
-import type { Epic, EpicState } from "../protocol.js";
+import type { Epic, EpicProblem, EpicState } from "../protocol.js";
 import { conversationState, type ConversationView } from "./conversation.js";
 import type { PauseProgress } from "./pause.js";
 import type { EpicEntry } from "./state.js";
@@ -21,13 +21,19 @@ export function epicStateOf(input: {
   const { epic, entry, conversation, errors, pause, blocked } = input;
   const looked = conversationState(conversation, entry?.stopped === true);
   const { state } = looked;
-  const error =
-    errors.file ??
-    looked.error ??
-    errors.wake ??
-    (entry?.branchGone
-      ? `The epic's branch ${entry.branch} is gone, and stories were already merged into it: nothing starts until it is back.`
-      : undefined);
+  const problems: EpicProblem[] = [];
+  const add = (kind: EpicProblem["kind"], message: string | undefined) => {
+    if (message) problems.push({ kind, message });
+  };
+  add("kept-file", errors.file);
+  add("turn", looked.error);
+  add("wake", errors.wake);
+  if (entry?.branchGone)
+    add(
+      "branch",
+      `The epic's branch ${entry.branch} is gone, and stories were already merged into it: nothing starts until it is back.`,
+    );
+  const error = problems[0]?.message;
   const endTurn = conversation?.last?.endTurn;
   const session = entry?.session ?? epic.engineSessionId;
   const pauseError = errors.look ?? pause?.error;
@@ -36,6 +42,7 @@ export function epicStateOf(input: {
     ...(session ? { session } : {}),
     conversation: state,
     ...(error ? { error } : {}),
+    ...(problems.length ? { problems } : {}),
     ...(state === "asking" && endTurn?.question
       ? {
           question: {
