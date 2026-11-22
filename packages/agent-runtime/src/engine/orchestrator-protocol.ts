@@ -104,8 +104,14 @@ export type EpicState = {
   /** The epic's conversation; absent before it is created. */
   session?: string;
   conversation: OrchestratorConversationState;
-  /** Why it is `failed`. */
+  /**
+   * One sentence, the first of `problems` (kept for the screens that read
+   * it): why the kept file cannot be read, else why it is `failed`, else
+   * why a wake could not be sent, else that the epic's branch is gone.
+   */
   error?: string;
+  /** Every problem of the epic's own the person must act on, in that order. */
+  problems?: EpicProblem[];
   /** The question of an `ask`, with its options. */
   question?: { text: string; options: string[] };
   /** The summary of a `finish`. */
@@ -121,6 +127,18 @@ export type EpicState = {
    */
   pause?: { phase: "pausing" | "paused"; error?: string };
   spend: EpicSpend;
+};
+
+/** A problem of the epic's own, for the person: what kind, and its sentence. */
+export type EpicProblem = {
+  /**
+   * `kept-file`: what this computer keeps of the epic cannot be read;
+   * `turn`: the conversation's last turn failed; `wake`: a wake could not
+   * be sent; `branch`: the epic's branch is gone after stories were merged
+   * into it.
+   */
+  kind: "kept-file" | "turn" | "wake" | "branch";
+  message: string;
 };
 
 /** A queued story of the epic that will not start by itself. */
@@ -245,6 +263,12 @@ export type OrchestratorWakeStory = {
  */
 export type OrchestratorWake = {
   reason: "stories" | "resumed" | "idle";
+  /**
+   * With `resumed`: what cut its turn. `pause`: the epic's pause, now
+   * resumed; `quit`: Blame stopped while it worked (a quit, a crash, the
+   * engine stopping). Absent in a wake written before this was told.
+   */
+  cut?: "pause" | "quit";
   stories: OrchestratorWakeStory[];
   board: EpicBoardCounts;
   /** Queued stories only the person can start, and why. */
@@ -261,7 +285,9 @@ const wakeClose = `</${orchestratorWakeTag}>`;
 export function orchestratorWakeText(wake: OrchestratorWake): string {
   const note =
     wake.reason === "resumed"
-      ? "Blame stopped while you were working. Read the board and go on."
+      ? wake.cut === "pause"
+        ? "The person paused the epic while you were working, and resumed it. Read the board and go on."
+        : "Blame stopped while you were working (it quit, or its engine stopped). Read the board and go on."
       : wake.reason === "idle"
         ? "No story of the epic works or will start by itself. Read the board; ask the person for what only they can fix."
         : "Stories you started ended a turn. Call story_report for one's full report.";

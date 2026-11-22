@@ -494,6 +494,8 @@ export async function rejectStory(
 ) {
   const look = await fresh(desk);
   const story = epicStory(look, input.storyId);
+  // Its worktree would go, even a story the pause itself stopped.
+  assertActive(look, `${storyDisplayId(story)} is not rejected`);
   if (story.status === "done")
     throw refused(
       `${storyDisplayId(story)} is already merged into the epic's branch, so it stays.`,
@@ -511,9 +513,10 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
   const stories = look.epicStories();
   const starting = desk.starting(stories);
   if (input.action === "wait") {
-    // The resume wakes it: what was paused goes on, or nothing works.
+    // After the resume it is woken as after any wait: the stories the
+    // resume set going end (a `stories` wake), or nothing works (`idle`).
     if (look.epic.status === "paused")
-      return "Waiting: the epic is paused. You will be woken once it is resumed and there is something to judge.";
+      return "Waiting: the epic is paused. Once the person resumes it, you are woken as after any wait: when the stories it set going end, or when nothing works any more.";
     if (
       !epicHasWork(stories, starting, (story) =>
         desk.blocked(story as HostStory),
@@ -565,7 +568,7 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
 // While the epic is paused the orchestrator reads and talks with the
 // person; nothing of the epic moves until the person resumes it.
 const pausedThen =
-  "Until the person resumes it you can read the epic and answer the person; end your turn with wait, and the resume wakes you.";
+  "Until the person resumes it you can read the epic and answer the person; end your turn with wait, and once it is resumed you are woken as after any wait.";
 
 function assertActive(look: EpicReading, what: string, then = pausedThen) {
   if (look.epic.status === "paused")

@@ -19,6 +19,7 @@ import {
 } from "./board.js";
 import { epicSlug } from "./branch.js";
 import { conversationState, type ConversationView } from "./conversation.js";
+import { epicStateOf } from "./epic-state.js";
 
 type Story = Parameters<typeof storyCanStart>[0];
 const story = (id: string, fields: Partial<Story> = {}): Story => ({
@@ -180,12 +181,134 @@ describe("the orchestrator's rules", () => {
     );
   });
 
+  it("words a resumed wake by what cut the turn, and keeps the cause", () => {
+    const board = {
+      working: 0,
+      queued: 0,
+      held: 0,
+      inReview: 0,
+      paused: 0,
+      merged: 0,
+      rejected: 0,
+    };
+    const text = (cut?: "pause" | "quit") =>
+      orchestratorWakeText({
+        reason: "resumed",
+        ...(cut ? { cut } : {}),
+        stories: [],
+        board,
+      });
+    assert.match(
+      text("pause"),
+      /The person paused the epic while you were working, and resumed it\./,
+    );
+    assert.doesNotMatch(text("pause"), /Blame stopped/);
+    assert.match(
+      text("quit"),
+      /Blame stopped while you were working \(it quit, or its engine stopped\)\./,
+    );
+    // A wake written before the cause was told reads as a quit.
+    assert.match(text(), /Blame stopped while you were working/);
+    assert.equal(
+      parseOrchestratorWake([{ type: "context", text: text("pause") }])?.cut,
+      "pause",
+    );
+  });
+
+  it("lists every problem of the epic's for the person, the first as its error", () => {
+    const failed: ConversationView = {
+      exists: true,
+      running: false,
+      queued: [],
+      last: {
+        turn: "t1",
+        outcome: {
+          status: "failed",
+          error: { kind: "overloaded", message: "The provider is overloaded." },
+        } as never,
+      },
+      reported: new Set(),
+      wakes: new Set(),
+      spentMicroUsd: 0,
+      unpricedRequests: 0,
+      messages: { all: {}, changes: {} },
+      shown: {},
+    };
+    const state = (
+      fields: { branchGone?: boolean; file?: string; wake?: string } = {},
+      conversation: ConversationView | null = failed,
+    ) =>
+      epicStateOf({
+        epic: {
+          id: "epic-1",
+          projectId: "a",
+          title: "Lost",
+          goal: "",
+          status: "active",
+          branch: "epic/lost",
+          targetBranch: "main",
+          engineSessionId: "orchestrator-1",
+          settings: {},
+          mergedAt: null,
+          mergeCommit: null,
+        },
+        entry: {
+          projectId: "a",
+          session: "orchestrator-1",
+          branch: "epic/lost",
+          ...(fields.branchGone ? { branchGone: true } : {}),
+          pending: [],
+          spend: {},
+          changes: {},
+        },
+        conversation: conversation ?? undefined,
+        spend: {
+          orchestratorMicroUsd: 0,
+          storiesMicroUsd: 0,
+          totalMicroUsd: 0,
+          spent: false,
+          unpricedRequests: 0,
+          stories: [],
+        } as never,
+        unreported: 0,
+        blocked: [],
+        errors: {
+          ...(fields.file ? { file: fields.file } : {}),
+          ...(fields.wake ? { wake: fields.wake } : {}),
+        },
+        pause: undefined,
+      });
+    // A failed turn no longer hides the lost branch, nor a wake not sent.
+    const both = state({
+      branchGone: true,
+      wake: "The orchestrator could not be woken: busy.",
+    });
+    assert.deepEqual(
+      both.problems?.map((problem) => problem.kind),
+      ["turn", "wake", "branch"],
+    );
+    assert.equal(both.error, "The provider is overloaded.");
+    assert.match(both.problems![2]!.message, /epic\/lost is gone/);
+    const unreadable = state({
+      file: "The orchestrator's file cannot be read.",
+    });
+    assert.deepEqual(
+      unreadable.problems?.map((problem) => problem.kind),
+      ["kept-file", "turn"],
+    );
+    assert.equal(unreadable.error, "The orchestrator's file cannot be read.");
+    const fine = state({}, null);
+    assert.equal(fine.problems, undefined);
+    assert.equal(fine.error, undefined);
+  });
+
   it("reads the conversation's state from its last turn", () => {
     const view = (fields: Partial<ConversationView>): ConversationView => ({
       exists: true,
       running: false,
       queued: [],
       reported: new Set(),
+      wakes: new Set(),
       spentMicroUsd: 0,
       unpricedRequests: 0,
       messages: { all: {}, changes: {} },

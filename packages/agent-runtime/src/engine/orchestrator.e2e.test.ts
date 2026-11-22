@@ -670,6 +670,10 @@ describe("the orchestrator's loop", { skip }, () => {
   }
 
   /** Every wake in the conversation's records, rewound ones included. */
+  /** A wake's reason, with what cut the turn for `resumed`. */
+  const said = (wake: OrchestratorWake) =>
+    wake.cut ? `${wake.reason}:${wake.cut}` : wake.reason;
+
   async function wakes(session: string): Promise<OrchestratorWake[]> {
     const client = await (
       host as unknown as {
@@ -1044,10 +1048,7 @@ describe("the orchestrator's loop", { skip }, () => {
     );
     assert.deepEqual(model.unscripted, []);
     const told = await wakes(session);
-    assert.deepEqual(
-      told.map((wake) => wake.reason),
-      ["stories", "resumed"],
-    );
+    assert.deepEqual(told.map(said), ["stories", "resumed:quit"]);
     const turns = told.flatMap((wake) => wake.stories.map((item) => item.turn));
     assert.equal(
       turns.length,
@@ -1129,10 +1130,10 @@ describe("the orchestrator's loop", { skip }, () => {
     const told = await wakes(session);
     assert.deepEqual(
       told.map((wake) => [
-        wake.reason,
+        said(wake),
         wake.stories.map((item) => item.outcome),
       ]),
-      [["resumed", ["completed"]]],
+      [["resumed:quit", ["completed"]]],
     );
     assert.equal(git(lost.path, "show", "epic/notice:notice.txt"), "notice");
   });
@@ -1364,11 +1365,11 @@ describe("the orchestrator's loop", { skip }, () => {
     // footer's end. The footer's cut by the pause is not news: not told.
     assert.deepEqual(
       told.map((wake) => [
-        wake.reason,
+        said(wake),
         wake.stories.map((item) => [item.title, item.outcome]),
       ]),
       [
-        ["resumed", [["Write the banner", "interrupted"]]],
+        ["resumed:pause", [["Write the banner", "interrupted"]]],
         ["stories", [["Write the footer", "completed"]]],
       ],
     );
@@ -1457,7 +1458,7 @@ describe("the orchestrator's loop", { skip }, () => {
     assert.deepEqual(model.unscripted, []);
   });
 
-  it("talks with the person while the epic is paused: cuts only its turn then, refuses to act, sleeps, and the resume wakes it", async () => {
+  it("talks with the person while the epic is paused: cuts only its turn then, refuses to act, sleeps, and is woken by the stories' end after the resume", async () => {
     const sign = await newProject("sign");
     await open(host);
     let release!: () => void;
@@ -1831,10 +1832,13 @@ describe("the orchestrator's loop", { skip }, () => {
       (await state(epicId)).conversation === "finished" ? true : undefined,
     );
     const told = await wakes(session);
-    assert.deepEqual(
-      told.map((wake) => wake.reason),
-      ["resumed", "resumed", "resumed", "resumed", "stories"],
-    );
+    assert.deepEqual(told.map(said), [
+      "resumed:pause",
+      "resumed:pause",
+      "resumed:pause",
+      "resumed:pause",
+      "stories",
+    ]);
     assert.deepEqual(model.unscripted, []);
   });
 
