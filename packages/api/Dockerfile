@@ -79,4 +79,9 @@ ENV PORT=3333
 ENV TZ=UTC
 ENV ACCOUNT_CLOSURE_LEDGER_DIRECTORY=/var/lib/blame/account-closure-ledger
 
-CMD ["node", "bin/server.js"]
+# The commit the image was built from: `docker inspect`, or `env` in the container.
+ARG BLAME_API_REVISION=unknown
+ENV BLAME_API_REVISION=${BLAME_API_REVISION}
+
+# Migrates the database, then starts the server (docker/start.sh).
+CMD ["sh", "docker/start.sh"]
