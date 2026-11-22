@@ -38,6 +38,7 @@ import {
 } from "./local-preview-files.ts";
 import {
   previewEndpoint,
+  previewLandingUrl,
   renderLocalPreview,
   type LocalRender,
 } from "./local-preview-render.ts";
@@ -600,13 +601,7 @@ function previewUrl(
   context: LocalPreviewContext,
   hostPorts: Record<string, number>,
 ) {
-  const endpoint = previewEndpoint(context.plan, context.selected);
-  if (!endpoint) return undefined;
-  const port = hostPorts[`${endpoint.serviceId}:${endpoint.endpoint.id}`];
-  if (!port) return undefined;
-  const protocol = endpoint.endpoint.protocol === "https" ? "https" : "http";
-  const path = endpoint.endpoint.healthcheck?.path ?? "/";
-  return `${protocol}://localhost:${port}${path.startsWith("/") ? path : `/${path}`}`;
+  return previewLandingUrl(context.plan, hostPorts, context.selected);
 }
 
 async function withLogExcerpt(
