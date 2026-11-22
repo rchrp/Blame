@@ -47,7 +47,8 @@ export async function dependencyInputs(
   worktree: string,
   plan: Pick<PreviewExecutionPlan, "setup">,
 ) {
-  const found = await findDependencyFiles(worktree);
+  const searched = await findDependencyFiles(worktree);
+  const found = searched ?? [];
   const isManifest = (path: string) => posix.basename(path) === "package.json";
   const manifests = found.filter(isManifest).slice(0, maxResults);
   const others = found.filter((path) => !isManifest(path));
@@ -66,10 +67,14 @@ export async function dependencyInputs(
     );
   return {
     key: dependencyKey(read([...keyed]), plan),
-    sharedInstall: sharedInstallInputs(
-      read(manifests.map((path) => [path, relativePath(worktree, path)])),
-      read(others.map((path) => [path, relativePath(worktree, path)])),
-    ),
+    // A search that failed (an unreadable folder) shows no manifest, no
+    // lifecycle script and no nested lockfile: nothing is known.
+    sharedInstall: searched
+      ? sharedInstallInputs(
+          read(manifests.map((path) => [path, relativePath(worktree, path)])),
+          read(others.map((path) => [path, relativePath(worktree, path)])),
+        )
+      : undefined,
   };
 }
 
@@ -124,7 +129,10 @@ export function sharedInstallInputs(
   manifests: DependencyFile[],
   others: DependencyFile[],
 ) {
-  if (!manifests.every(({ content }) => installsPackagesOnly(content)))
+  if (
+    !manifests.length ||
+    !manifests.every(({ content }) => installsPackagesOnly(content))
+  )
     return undefined;
   if (
     others.some(
@@ -195,7 +203,7 @@ async function findDependencyFiles(worktree: string) {
     );
     return [...new Set(stdout.split("\n").filter(Boolean))];
   } catch {
-    return [];
+    return undefined;
   }
 }
 

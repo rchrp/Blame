@@ -531,8 +531,9 @@ fixtures["nuxt"] = {
   visible: { before: "Campaign nuxt v1", after: "Campaign nuxt v2", hot: true },
 };
 
-// A project whose setup also writes into the worktree: a story that skipped
-// it would start without the file and answer 500 on /generated.
+// A project whose setup also writes into the worktree (so it is not a plain
+// install): a story that skipped it would start without the file and answer
+// 500 on /generated.
 fixtures["setup-writes"] = {
   title: "Setup that generates a file the server needs",
   install: ["express"],

@@ -119,7 +119,7 @@ for stamp in ${shellQuote(setupDirectory)}/*.stamp; do
   [ -e "$stamp" ] || continue
   key="$(basename "$stamp")"
   key="\${key%%.*}"
-  docker volume ls -q --filter "name=blame_node_modules_\${key}" | grep -q . || rm -f "$stamp"
+  docker volume ls -q --filter "name=blame_node_modules_\${key}" | grep -q . || rm -f "$stamp" "$stamp.marker"
 done
 docker image prune -f >/dev/null 2>&1 || true
 docker image prune -af --filter until=336h >/dev/null 2>&1 || true

@@ -370,6 +370,68 @@ test("only a task with no dependency on shared, filled volumes is shared", () =>
   });
 });
 
+test("only a plain install is shared: any other command may read or write the worktree", () => {
+  const task = {
+    id: "install",
+    container: { image: "node:24" },
+    workingDir: "/workspace",
+    command: "npm install",
+    runAs: "host" as const,
+    environment: {},
+    dependsOn: [],
+  };
+  const project: SharedSetupProject = {
+    serviceVolumes: { "setup-install": [nodeModules] },
+    volumeCreatedAt: { [nodeModules]: "2026-11-22T10:00:00Z" },
+    sharedVolumes: [nodeModules],
+    setupDigests: { "setup-install": "digest" },
+  };
+  const shared = (change: Partial<typeof task> & Record<string, unknown>) =>
+    Boolean(
+      sharedSetupFor({
+        host: {} as DockerHost,
+        options: { directory: "/shared", workspace: "/worktrees/a" },
+        task: { ...task, ...change } as typeof task,
+        serviceId: "setup-install",
+        project,
+        fingerprint: "fingerprint",
+        inputs: "inputs",
+        marker: "/state/marker",
+      }),
+    );
+  for (const command of [
+    "npm install",
+    "npm install --no-package-lock",
+    "npm ci",
+    "corepack pnpm install",
+    "corepack pnpm install --frozen-lockfile",
+    "corepack prepare pnpm@10.33.2 --activate && corepack pnpm install --frozen-lockfile",
+    "(corepack enable 2>/dev/null || true) && corepack pnpm install",
+    "corepack yarn install --non-interactive",
+    "yarn",
+    "bun install --frozen-lockfile",
+  ])
+    assert.ok(shared({ command }), command);
+  for (const command of [
+    "npm install && node gen.mjs",
+    "npm install && cp .env.example .env",
+    "corepack pnpm install && corepack pnpm prisma generate",
+    "npm ci && [ -f .env ] || cp .env.example .env",
+    "npm install left-pad",
+    "corepack pnpm install --filter web",
+    "npm install; touch x",
+    "npm install $(touch x)",
+    "npm install --prefix=$(id)",
+    "corepack enable",
+    "pip install -r requirements.txt",
+    "go mod download",
+    "",
+  ])
+    assert.ok(!shared({ command }), command);
+  assert.ok(!shared({ entrypoint: ["sh"] }));
+  assert.ok(!shared({ container: { build: { context: "." } } as never }));
+});
+
 test("the digest of a setup container follows what it runs with, not where", () => {
   const yaml = (environment: Record<string, string>, workspace: string) =>
     [

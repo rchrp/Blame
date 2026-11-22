@@ -172,3 +172,13 @@ for (const [name, files] of [
     assert.equal(typeof inputs.key, "string", "the key still names volumes");
   });
 }
+
+test("an install is not shared when the search for manifests failed or found none", async (t) => {
+  const missing = join(tmpdir(), "blame-deps-does-not-exist");
+  const failed = await dependencyInputs(missing, plan);
+  assert.equal(failed.sharedInstall, undefined);
+  assert.equal(typeof failed.key, "string");
+  const empty = await realpath(await mkdtemp(join(tmpdir(), "blame-deps-")));
+  t.after(() => rm(empty, { recursive: true, force: true }));
+  assert.equal((await dependencyInputs(empty, plan)).sharedInstall, undefined);
+});

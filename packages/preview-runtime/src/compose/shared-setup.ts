@@ -16,7 +16,11 @@ import type { DockerHost } from "./docker-host.js";
 //   what they hold since (a listing of their packages, see `signatures`);
 // - the run wrote nothing outside those volumes: no file in the worktree and
 //   nothing in a volume only this story has. Such a task, for example one
-//   that generates code or copies an env file, runs in every story.
+//   that generates code or copies an env file, runs in every story;
+// - the task is a plain install (`npm install`, `corepack pnpm install
+//   --frozen-lockfile`, ...). Any other command may read the worktree to fill
+//   the volume (`prisma generate`) or write somewhere only when a file is
+//   missing (`cp .env.example .env`), which one run cannot show.
 //
 // Anything that cannot be proven keeps the per-worktree stamp of the engine
 // as the only rule. A new run removes the stamp first and only a run that
@@ -68,6 +72,28 @@ type Identity = {
 
 type Step = "probe" | "claim" | "finish";
 
+// The commands that only fetch packages: optional `corepack` setup, then a
+// package manager's install with plain flags. Anything else is not shared.
+const installFlags = String.raw`(?:\s+(?:--[\w-]+(?:=[^\s;&|<>"'$\x60()]+)?|-\w))*`;
+const installSegments = [
+  String.raw`\(?\s*corepack\s+enable(?:\s+2>/dev/null)?(?:\s*\|\|\s*true)?\s*\)?`,
+  String.raw`corepack\s+prepare\s+[\w@.-]+(?:\s+--activate)?`,
+  String.raw`(?:corepack\s+)?(?:npm|pnpm|bun)\s+(?:install|i|ci)${installFlags}`,
+  String.raw`(?:corepack\s+)?yarn(?:\s+install)?${installFlags}`,
+].map((pattern) => new RegExp(`^${pattern}$`));
+
+function installsOnly(command: string) {
+  const segments = command.split("&&").map((segment) => segment.trim());
+  return (
+    segments.every((segment) =>
+      installSegments.some((pattern) => pattern.test(segment)),
+    ) &&
+    segments.some((segment) =>
+      /(?:npm|pnpm|yarn|bun)(?:\s|$)/.test(segment.replace(/^corepack\s+/, "")),
+    )
+  );
+}
+
 /** The shared stamp of a task, or undefined when it cannot be shared. */
 export function sharedSetupFor(input: SharedSetupInput) {
   const { options, task, serviceId, project } = input;
@@ -75,6 +101,10 @@ export function sharedSetupFor(input: SharedSetupInput) {
   // A task that waits for a service (a migration) or another task depends on
   // more than the volumes, and a database is not shared.
   if (task.dependsOn.length) return undefined;
+  // The digest only knows an image by name: a Dockerfile of the worktree is
+  // an input it does not hash.
+  if (task.entrypoint || task.container.build || !installsOnly(task.command))
+    return undefined;
   const digest = project.setupDigests?.[serviceId];
   if (!digest) return undefined;
   const volumes = project.serviceVolumes[serviceId] ?? [];
@@ -179,6 +209,9 @@ function script(identity: Identity, step: Step) {
       'mkdir -p "$(dirname "$stamp")" "$(dirname "$marker")" || exit 3',
       ': > "$stamp" || exit 3',
       ': > "$marker" || exit 3',
+      // The volumes are on the Docker host's disk, the worktree may not be:
+      // each is compared with a marker made on its own side.
+      ': > "$stamp.marker" || exit 3',
       "echo begun",
     ].join("\n");
   return [
@@ -198,11 +231,11 @@ function script(identity: Identity, step: Step) {
 // Blame. The volumes are mounted over directories the run cannot reach.
 function writes({ workspace, exclusive }: Identity) {
   return [
-    `hit="$(find ${quote(workspace)} \\( -path ${quote(`${workspace}/.git`)} -o -path ${quote(`${workspace}/.blame`)} \\) -prune -o -cnewer "$marker" -print -quit)" || exit 3`,
+    `hit="$(find -H ${quote(workspace)} \\( -path ${quote(`${workspace}/.git`)} -o -path ${quote(`${workspace}/.blame`)} \\) -prune -o -cnewer "$marker" -print -quit)" || exit 3`,
     `[ -z "$hit" ] || { printf 'wrote\\t%s\\n' "$hit"; exit 0; }`,
     ...exclusive.flatMap((name) => [
       `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${quote(name)})" || exit 3`,
-      `hit="$(find "$mp" -cnewer "$marker" -print -quit)" || exit 3`,
+      `hit="$(find "$mp" -cnewer "$stamp.marker" -print -quit)" || exit 3`,
       `[ -z "$hit" ] || { printf 'wrote\\t%s\\n' ${quote(name)}; exit 0; }`,
     ]),
   ];

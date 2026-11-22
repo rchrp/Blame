@@ -1016,9 +1016,8 @@ async function scenarioSharedSetup(app, options) {
   const dotNuxt = postinstall.second?.story ? await vm(options, `test -d ${sq(postinstall.second.story.worktree)}/.nuxt && echo yes || echo no`) : null;
   if (dotNuxt) await check("nuxt-postinstall s2: .nuxt exists in its own worktree", dotNuxt.stdout.trim() === "yes", dotNuxt.stdout.trim());
 
-  // Setup that generates a file: the second story needs it too.
+  // Setup that generates a file (not a plain install): the second story needs it too.
   const writes = await pair("setup-writes");
-  if (sharing && writes.first?.facts) await check("setup-writes s1: the write into the worktree is noticed", Boolean(writes.first.facts.wrote), JSON.stringify(writes.first.facts));
   if (writes.second?.facts) await check("setup-writes s2: the setup runs again", writes.second.facts.ran && !writes.second.facts.skipped, JSON.stringify(writes.second.facts));
 
   // A database: the install is shared, the migration is each story's own.

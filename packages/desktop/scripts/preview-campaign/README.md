@@ -36,8 +36,8 @@ node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--ke
   for the long scenarios (`idle` waits 8 minutes, `runtime-sleep` up to 24).
 
 `shared-setup` starts two stories of the same project one after the other
-(plain Vite, Nuxt, Nuxt with a `postinstall`, a setup that writes a file the
-server needs, a database, a failing install), then changes and removes the
+(plain Vite, Nuxt, Nuxt with a `postinstall`, an install followed by a command
+that writes a file the server needs, a database, a failing install), then changes and removes the
 shared `node_modules` volume. The second story of a project whose setup only
 fills the volume must skip the install; every other kind must run it. Run it
 with and without `BLAME_PREVIEW_SHARED_SETUP=0` to compare
