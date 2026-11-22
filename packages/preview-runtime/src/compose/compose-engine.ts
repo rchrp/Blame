@@ -12,6 +12,11 @@ import {
   type HostCommandOptions,
 } from "./docker-host.js";
 import { selectedSetupTasks } from "./service-selection.js";
+import {
+  setupServiceDigests,
+  sharedSetupFor,
+  type SharedSetupOptions,
+} from "./shared-setup.js";
 
 // Runs a rendered Compose project on a Docker host. The sandbox runner and
 // the desktop drive previews through this engine, so setup caching, image
@@ -32,6 +37,12 @@ export type WorkspaceFingerprints = {
    * rebuilt on every start and Docker's build cache makes that cheap.
    */
   buildContext?(context: string): Promise<string | undefined>;
+  /**
+   * Hash of what a dependency install reads beyond `lockfiles()`, or
+   * undefined when it reads something no hash covers. A setup task fills a
+   * volume shared with other stories only when this is known.
+   */
+  sharedInstall?(): Promise<string | undefined>;
 };
 
 export type ComposeEngineOptions = {
@@ -43,6 +54,11 @@ export type ComposeEngineOptions = {
   measure?: <T>(phase: EnginePhase, action: () => Promise<T>) => Promise<T>;
   setupTimeoutMs?: number;
   startTimeoutMs?: number;
+  /**
+   * Lets a story skip a setup task that another story already ran on the
+   * same shared volumes (see shared-setup.ts). Unset: every story runs it.
+   */
+  sharedSetup?: SharedSetupOptions;
 };
 
 export type EngineOwner = { uid: number; gid: number };
@@ -65,6 +81,10 @@ type PreparedProject = {
   serviceVolumes: RenderedCompose["serviceVolumes"];
   /** Creation time of the volumes a setup task fills, by volume name. */
   volumeCreatedAt: Record<string, string>;
+  /** The volumes other previews use too. */
+  sharedVolumes?: string[];
+  /** Digest of each setup container's environment, for shared setup. */
+  setupDigests?: Record<string, string>;
 };
 
 const ownershipImage = "busybox:1.37.0";
@@ -105,6 +125,12 @@ export class ComposeEngine {
         targets: rendered.targets,
         serviceVolumes: rendered.serviceVolumes,
         volumeCreatedAt,
+        sharedVolumes: rendered.volumes
+          .filter(({ shared }) => shared)
+          .map(({ name }) => name),
+        ...(this.options.sharedSetup
+          ? { setupDigests: setupServiceDigests(rendered.yaml) }
+          : {}),
       };
       await this.writeJson("project.json", project);
       return { changed: previous?.fingerprint !== fingerprint };
@@ -400,6 +426,9 @@ export class ComposeEngine {
       {},
     );
     const lockfiles = await fingerprints.lockfiles();
+    const inputs = this.options.sharedSetup
+      ? await fingerprints.sharedInstall?.()
+      : undefined;
     for (const task of tasks) {
       const serviceId = setupServiceId(task.id);
       const dependencies = task.dependsOn.filter((id) =>
@@ -431,13 +460,39 @@ export class ComposeEngine {
         this.options.log?.(`Setup ${task.id} is up to date.\n`);
         continue;
       }
-      this.options.log?.(`Running setup ${task.id}.\n`);
-      await this.measure("dependencies.install", () =>
-        this.compose(["run", "--rm", "--no-deps", serviceId], {
-          timeoutMs: this.options.setupTimeoutMs ?? defaultSetupTimeoutMs,
-          onOutput: this.options.log,
-        }),
-      );
+      const shared = sharedSetupFor({
+        host: this.options.host,
+        options: this.options.sharedSetup,
+        task,
+        serviceId,
+        project,
+        fingerprint,
+        inputs,
+        marker: posix.join(
+          this.options.stateDirectory,
+          `setup-${task.id.replace(/[^a-zA-Z0-9_.-]/g, "-")}.marker`,
+        ),
+      });
+      const upToDate = () =>
+        this.options.log?.(
+          `Setup ${task.id} is up to date (another story ran it).\n`,
+        );
+      if (await shared?.done()) {
+        upToDate();
+      } else {
+        this.options.log?.(`Running setup ${task.id}.\n`);
+        await this.measure("dependencies.install", async () => {
+          // A story that waited for its turn behind an identical install
+          // finds the volume filled now.
+          if (await shared?.done()) return upToDate();
+          const tracked = await shared?.begin();
+          await this.compose(["run", "--rm", "--no-deps", serviceId], {
+            timeoutMs: this.options.setupTimeoutMs ?? defaultSetupTimeoutMs,
+            onOutput: this.options.log,
+          });
+          if (tracked) await shared?.finish(this.options.log);
+        });
+      }
       stamps[task.id] = fingerprint;
       await this.writeJson("setup-fingerprints.json", stamps);
     }
