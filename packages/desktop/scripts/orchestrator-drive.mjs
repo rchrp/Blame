@@ -558,7 +558,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
   const epicOf = async (title) => (await api(`/projects/epics?projectId=${project.id}`)).find((item) => item.title === title);
   const storiesOf = async (epicId) => (await api(`/projects/user-stories?projectId=${project.id}&view=summary`)).filter((story) => story.epicId === epicId);
   const working = async (epicId) => (await storiesOf(epicId)).filter((story) => story.status === "in-progress" && story.agentStatus === "Running");
-  const wakeRows = (conversation) => (conversation.match(/finished a turn|Blame stopped while|Nothing of the epic can move/g) ?? []).length;
+  const wakeRows = (conversation) => (conversation.match(/finished a turn|resumed after its pause|Blame was restarted|Nothing of the epic can move/g) ?? []).length;
   // The epic's page, shown from the sidebar (the list names epics by title).
   const openEpic = async (title) => {
     await press("8", "Digit8", 56, 4);

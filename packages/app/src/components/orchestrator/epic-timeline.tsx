@@ -150,8 +150,9 @@ function WakeRow({
   if (wake.reason === "resumed")
     return (
       <EventRow icon={<BellRingIcon />}>
-        The orchestrator&rsquo;s turn was cut (a pause, or Blame quitting). It
-        goes on from the board.
+        {wake.cut === "pause"
+          ? "The epic was resumed after its pause: the orchestrator goes on from the board."
+          : "Blame was restarted while the orchestrator worked: it goes on from the board."}
       </EventRow>
     )
   if (wake.reason === "idle" && !wake.stories.length)

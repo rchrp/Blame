@@ -18,6 +18,7 @@ import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared
 import { AgentConversationComposer } from "@/components/chat/agent-conversation"
 import { EngineApprovalProvider } from "@/components/chat/engine/engine-approvals"
 import type { Epic } from "@/components/orchestrator/data/epic-data"
+import { epicProblems } from "@/components/orchestrator/data/epic-problems"
 import { openQuestion } from "@/components/orchestrator/data/epic-transcript"
 import { useEpicConversation } from "@/components/orchestrator/data/use-epic-conversation"
 import { useEpicStories } from "@/components/orchestrator/data/use-epic-board"
@@ -198,36 +199,36 @@ function composerPlaceholder(
 }
 
 // Why the orchestrator does nothing now, and what the person can do.
+// Why the orchestrator does nothing now, and what the person can do: every
+// problem of the epic's own, then a conversation stopped.
 function ConversationNotice({ state }: { state: EpicState | undefined }) {
-  if (state?.conversation === "failed")
-    return (
-      <p className="flex items-start gap-2 rounded-md bg-destructive/10 px-2.5 py-2 text-xs text-destructive">
-        <TriangleAlertIcon className="mt-px size-3.5 shrink-0" />
-        <span>
-          The orchestrator stopped on an error
-          {state.error ? `: ${state.error}` : ""}. Write to it to let it try
-          again, or change its model in the epic&rsquo;s settings.
-        </span>
-      </p>
-    )
-  if (state?.conversation === "stopped")
-    return (
-      <p className="flex items-start gap-2 rounded-md bg-muted px-2.5 py-2 text-xs text-muted-foreground">
-        <OctagonPauseIcon className="mt-px size-3.5 shrink-0" />
-        <span>
-          The orchestrator is stopped: by you, or its turn was cut and not
-          resumed. It is not woken until you write to it; its stories go on.
-        </span>
-      </p>
-    )
-  if (state?.error)
-    return (
-      <p className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-300">
-        <TriangleAlertIcon className="mt-px size-3.5 shrink-0" />
-        <span>{state.error}</span>
-      </p>
-    )
-  return null
+  const problems = epicProblems(state)
+  return (
+    <>
+      {problems.map((problem) => (
+        <div
+          key={`${problem.kind}:${problem.message}`}
+          className="flex items-start gap-2 rounded-md bg-destructive/10 px-2.5 py-2 text-xs text-destructive"
+          role="alert"
+        >
+          <TriangleAlertIcon className="mt-px size-3.5 shrink-0" />
+          <span className="grid gap-0.5">
+            <span className="break-words">{problem.message}</span>
+            <span className="text-foreground/80">{problem.action}</span>
+          </span>
+        </div>
+      ))}
+      {state?.conversation === "stopped" ? (
+        <p className="flex items-start gap-2 rounded-md bg-muted px-2.5 py-2 text-xs text-muted-foreground">
+          <OctagonPauseIcon className="mt-px size-3.5 shrink-0" />
+          <span>
+            The orchestrator is stopped: by you, or its turn was cut and not
+            resumed. It is not woken until you write to it; its stories go on.
+          </span>
+        </p>
+      ) : null}
+    </>
+  )
 }
 
 function EpicGoal({ goal }: { goal: string }) {
