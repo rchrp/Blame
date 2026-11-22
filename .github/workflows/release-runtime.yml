@@ -78,6 +78,10 @@ jobs:
           save-cache: "false"
 
       - run: pnpm --filter @blame/agent-runtime build
+      # The payload and install tests start blame-harness.
+      - uses: ./.github/actions/rust-binaries
+        with:
+          packages: blame-harness
       - run: pnpm test:semantic-harness-payload
       - run: node --test scripts/semantic-harness-install.test.mjs
 
