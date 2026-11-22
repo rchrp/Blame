@@ -624,6 +624,10 @@ async function scenarioParallel(app, options, names, label) {
     const page = await get(new URL(story.fixture.page.path, story.base).href, { timeoutMs: 90_000 });
     await check(`${story.name}#${index}: page loads`, page.ok && page.status === 200 && page.body.includes(story.fixture.page.includes), `${page.status} in ${page.ms} ms`);
   }
+  const facts = await Promise.all(stories.map((story) => setupFacts(options, story)));
+  await note(`parallel:${label} setup: ${stories.map((story, index) => `${story.name}#${index} ${JSON.stringify(facts[index])}`).join(" | ")}`);
+  if (process.env.BLAME_PREVIEW_SHARED_SETUP !== "0" && names[0] === names[1])
+    await check(`parallel:${label}: identical stories install once`, facts.filter((entry) => entry.ran && !entry.skipped).length <= 1, JSON.stringify(facts.map((entry) => ({ ran: entry.ran, skipped: entry.skipped }))));
   const ports = stories.filter((story) => story.url).map((story) => new URL(story.url).port);
   await check(`parallel:${label}: every story has its own port`, new Set(ports).size === ports.length, ports.join(","));
   const oom = (memoryAfter.stdout.split("\n")[2] ?? "").trim();
@@ -935,6 +939,142 @@ fs.appendFileSync("server.js", "import isOdd from \\"is-odd\\";\\napp.get(\\"/od
     return response.ok && response.status === 200 ? response : false;
   }, 180_000, "the new dependency to be installed and used", 2000).catch(() => null);
   await check(`${story.name}: restart installs the new dependency`, Boolean(odd) && odd.body === "true", odd ? odd.body : "never answered");
+}
+
+// ------------------------------------------------------------- shared setup
+//
+// Stories with the same dependencies share their node_modules volumes, so a
+// setup task that only fills them runs once. Each project below gets two
+// stories one after the other; what must happen to the second one depends on
+// what the setup does. Run it with and without `BLAME_PREVIEW_SHARED_SETUP=0`
+// to compare the installs; the facts go to `shared-setup.json` in --out.
+
+/** What a start did about its setup tasks, from the story's own logs. */
+async function setupFacts(options, story) {
+  const read = await vm(options, `cd ${sq(story.worktree)}/.blame/logs && cat timing.jsonl 2>/dev/null; printf '\n---\n'; cat *.log 2>/dev/null`, 60_000);
+  const [timing = "", log = ""] = read.stdout.split("\n---\n");
+  const installs = timing.split("\n").flatMap((line) => {
+    try {
+      const entry = JSON.parse(line);
+      return entry.label === "dependencies.install" ? [entry.durationMs] : [];
+    } catch {
+      return [];
+    }
+  });
+  return {
+    installMs: installs.reduce((sum, ms) => sum + ms, 0),
+    installs: installs.length,
+    ran: /Running setup /.test(log) && !/another story ran it/.test(log),
+    skipped: /another story ran it/.test(log),
+    wrote: /Setup \S+ also wrote ([^,\n]+)/.exec(log)?.[1] ?? null,
+  };
+}
+
+const sharedSetupRows = [];
+
+async function sharedSetupStart(app, options, name, label) {
+  const story = await openStory(app, options, name, { variant: label });
+  if (!story?.prepared) return null;
+  const start = await startAndWatch(app, story, { timeoutMs: 600_000, label });
+  await check(`${name} ${label}: preview ready`, start.ok, start.ok ? `${(start.ms / 1000).toFixed(1)} s` : JSON.stringify(start.state?.lifecycle?.failure ?? start.error ?? start.state?.lifecycle));
+  const facts = await setupFacts(options, story);
+  const row = { fixture: name, story: label, ok: start.ok, startMs: start.ms, ...facts };
+  sharedSetupRows.push(row);
+  await note(`${name} ${label}: ${JSON.stringify(row)}`);
+  if (start.ok) {
+    story.url = start.state.previewUrl;
+    story.base = new URL("/", story.url).href;
+    const page = await get(new URL(story.fixture.page.path, story.base).href, { timeoutMs: 60_000 });
+    await check(`${name} ${label}: the page works`, page.ok && page.status === 200 && page.body.includes(story.fixture.page.includes), `${page.status} ${page.body.slice(0, 100).replace(/\s+/g, " ")}`);
+  }
+  return { story, start, facts };
+}
+
+async function scenarioSharedSetup(app, options) {
+  current = "shared-setup";
+  const sharing = process.env.BLAME_PREVIEW_SHARED_SETUP !== "0";
+  await note(`shared setup is ${sharing ? "on" : "off (BLAME_PREVIEW_SHARED_SETUP=0)"}`);
+  const stories = [];
+  const pair = async (name) => {
+    const first = await sharedSetupStart(app, options, name, "s1");
+    const second = await sharedSetupStart(app, options, name, "s2");
+    for (const one of [first, second]) if (one?.story) stories.push(one.story);
+    return { first, second };
+  };
+
+  // Only fills node_modules: the second story must not run it.
+  const plain = await pair("vite-react");
+  if (plain.second?.facts)
+    await check("vite-react s2: install is skipped only when shared", plain.second.facts.skipped === sharing && plain.second.facts.ran === !sharing, JSON.stringify(plain.second.facts));
+
+  // Nuxt without a postinstall: whatever the engine decides, the page works.
+  await pair("nuxt");
+
+  // A postinstall script writes .nuxt into the worktree: every story runs it.
+  const postinstall = await pair("nuxt-postinstall");
+  if (postinstall.second?.facts) await check("nuxt-postinstall s2: the install runs again", postinstall.second.facts.ran && !postinstall.second.facts.skipped, JSON.stringify(postinstall.second.facts));
+  const dotNuxt = postinstall.second?.story ? await vm(options, `test -d ${sq(postinstall.second.story.worktree)}/.nuxt && echo yes || echo no`) : null;
+  if (dotNuxt) await check("nuxt-postinstall s2: .nuxt exists in its own worktree", dotNuxt.stdout.trim() === "yes", dotNuxt.stdout.trim());
+
+  // Setup that generates a file: the second story needs it too.
+  const writes = await pair("setup-writes");
+  if (sharing && writes.first?.facts) await check("setup-writes s1: the write into the worktree is noticed", Boolean(writes.first.facts.wrote), JSON.stringify(writes.first.facts));
+  if (writes.second?.facts) await check("setup-writes s2: the setup runs again", writes.second.facts.ran && !writes.second.facts.skipped, JSON.stringify(writes.second.facts));
+
+  // A database: the install is shared, the migration is each story's own.
+  const database = await pair("express-postgres");
+  if (database.second?.facts)
+    await check("express-postgres s2: install is skipped only when shared", database.second.facts.skipped === sharing, JSON.stringify(database.second.facts));
+
+  // A failed install leaves nothing a later story could trust.
+  for (const label of ["s1", "s2"]) {
+    const story = await openStory(app, options, "broken-install", { variant: label });
+    if (!story?.prepared) continue;
+    const start = await startAndWatch(app, story, { timeoutMs: 240_000, label });
+    const facts = await setupFacts(options, story);
+    sharedSetupRows.push({ fixture: "broken-install", story: label, ok: start.ok, startMs: start.ms, ...facts });
+    await check(`broken-install ${label}: fails on the install, not skipped`, !start.ok && facts.ran && !facts.skipped, JSON.stringify(facts));
+    stories.push(story);
+  }
+
+  // The volume was recreated or changed since the stamp: the install runs.
+  if (sharing && plain.first?.story) {
+    const project = await vm(options, `cat ${sq(plain.first.story.worktree)}/.blame/preview/project.json`);
+    const volume = Object.keys(JSON.parse(project.stdout || "{}").volumeCreatedAt ?? {})[0];
+    await check("vite-react: its node_modules volume is known", Boolean(volume), project.stdout.slice(0, 200));
+    if (volume) {
+      // An agent installed a package in a container of another story.
+      const drift = await vm(options, `docker run --rm -v ${volume}:/m node:22-bookworm sh -c 'mkdir -p /m/installed-by-an-agent && echo {} > /m/installed-by-an-agent/package.json'`, 180_000);
+      await check("vite-react: a package is added to the shared volume", drift.ok, drift.stderr.slice(0, 200));
+      const changed = await sharedSetupStart(app, options, "vite-react", "s3-after-drift");
+      if (changed) {
+        stories.push(changed.story);
+        await check("vite-react s3: the changed volume runs the install", changed.facts.ran && !changed.facts.skipped, JSON.stringify(changed.facts));
+        const left = await vm(options, `docker run --rm -v ${volume}:/m node:22-bookworm ls /m`, 120_000);
+        await note(`after the rerun, the volume ${/installed-by-an-agent/.test(left.stdout) ? "still holds" : "no longer holds"} the package the agent added`);
+        const again = await sharedSetupStart(app, options, "vite-react", "s4-after-repair");
+        if (again) {
+          stories.push(again.story);
+          await check("vite-react s4: stamped again after the repair, so skipped", again.facts.skipped, JSON.stringify(again.facts));
+        }
+      }
+      // The volume is gone: nothing may claim it is filled.
+      for (const story of stories.filter((entry) => entry.name === "vite-react")) await workspace(app, "removeWorktree", { repositoryRoot: story.project, workspaceMode: "local-container", worktree: story.worktree });
+      await delay(3000);
+      const removed = await vm(options, `docker volume rm ${volume}`);
+      await check("vite-react: the shared volume is removed", removed.ok, removed.stderr.slice(0, 200));
+      const recreated = await sharedSetupStart(app, options, "vite-react", "s5-new-volume");
+      if (recreated) {
+        stories.push(recreated.story);
+        await check("vite-react s5: a recreated volume runs the install", recreated.facts.ran && !recreated.facts.skipped, JSON.stringify(recreated.facts));
+      }
+    }
+  }
+  const median = (values) => (values.length ? [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)] : null);
+  await note(`dependencies.install per story: ${sharedSetupRows.map((row) => `${row.fixture}/${row.story} ${row.installMs} ms`).join(", ")}`);
+  await note(`median install ${median(sharedSetupRows.filter((row) => row.ok).map((row) => row.installMs))} ms over ${sharedSetupRows.filter((row) => row.ok).length} starts`);
+  await writeFile(join(outDirectory, "shared-setup.json"), JSON.stringify({ sharing, rows: sharedSetupRows }, null, 2));
+  return stories;
 }
 
 // ----------------------------------------------------------------------- cloud
@@ -1306,6 +1446,7 @@ async function run(ctx, options) {
     if (targets.length) await guarded("review-build", () => scenarioReviewBuild(ctx.app, options, targets));
   }
   if (wants("dependency") && stories["express-api"]?.url) await guarded("dependency", () => scenarioDependencyChange(ctx.app, options, stories["express-api"]));
+  if (wants("shared-setup")) await guarded("shared-setup", () => scenarioSharedSetup(ctx.app, options));
   // --- several stories at once
   if (wants("parallel")) {
     await guarded("parallel-heavy", () => scenarioParallel(ctx.app, options, ["next-heavy", "next-heavy", "next-heavy"], "heavy"));

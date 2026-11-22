@@ -20,7 +20,8 @@ node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--ke
 - `--only` takes scenario or fixture names, or prefixes: `healthy`, `edge`,
   `failing`, `slow-start`, `lifecycle`, `port-taken`, `dependency`, `edits`,
   `review-build`, `parallel`, `app-restart`, `vm-crash`, `idle`,
-  `runtime-sleep`, `remove`, `runtime`, or a fixture such as `next-app`.
+  `runtime-sleep`, `remove`, `runtime`, `shared-setup`, or a fixture such as
+  `next-app`.
   A scenario that needs a running story (`lifecycle`, `edits`, …) needs that
   story's fixture in the same `--only`.
 - State lives under `/tmp/blc` (Lima sockets need a short path): the VM, the
@@ -33,6 +34,14 @@ node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--ke
 - Never touches the real `BlameRuntime` VM or the app's own data.
 - Needs network (npm, Docker Hub). Run it on a quiet Mac, and with `caffeinate -i`
   for the long scenarios (`idle` waits 8 minutes, `runtime-sleep` up to 24).
+
+`shared-setup` starts two stories of the same project one after the other
+(plain Vite, Nuxt, Nuxt with a `postinstall`, a setup that writes a file the
+server needs, a database, a failing install), then changes and removes the
+shared `node_modules` volume. The second story of a project whose setup only
+fills the volume must skip the install; every other kind must run it. Run it
+with and without `BLAME_PREVIEW_SHARED_SETUP=0` to compare
+`dependencies.install` (`shared-setup.json` in `--out`).
 
 `fixtures.mjs` holds the projects and the manifest an initialization agent
 would write for each; `browse.mjs` is the throwaway browser that loads a

@@ -24,7 +24,16 @@ export function localPreviewSetupDirectory() {
     : "/opt/blame/preview-setup";
 }
 
-export function localSharedSetup(worktree: string): SharedSetupOptions {
+/**
+ * What the engine needs to share a setup task between stories. Setting
+ * `BLAME_PREVIEW_SHARED_SETUP=0` turns it off: every story keeps its own
+ * stamp, as before (to compare start times, or if a stamp ever misleads).
+ */
+export function localSharedSetup(
+  worktree: string,
+  environment: NodeJS.ProcessEnv = process.env,
+): SharedSetupOptions | undefined {
+  if (environment.BLAME_PREVIEW_SHARED_SETUP === "0") return undefined;
   return { directory: localPreviewSetupDirectory(), workspace: worktree };
 }
 
