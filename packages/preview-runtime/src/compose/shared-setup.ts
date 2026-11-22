@@ -7,20 +7,23 @@ import type { DockerHost } from "./docker-host.js";
 
 // A setup task that only fills the shared node_modules volumes does not need
 // to run again in every new story: the volume is already filled. The stamp
-// that says so lives next to the volumes, on the Docker host, and is trusted
-// only while everything it was written for still holds:
+// that says so lives on the Docker host next to the volumes, not in a
+// worktree, and is trusted only while everything it was written for holds:
 //
 // - the task, the dependency key, what the install reads beyond that key and
 //   the task container's environment are the ones the stamp was written for;
-// - the volumes are the ones it filled (creation time), and nobody changed
-//   what they hold since (a listing of their packages, see `signatureScript`);
+// - the volumes are the ones it filled (creation time) and nobody changed
+//   what they hold since (a listing of their packages, see `signatures`);
 // - the run wrote nothing outside those volumes: no file in the worktree and
 //   nothing in a volume only this story has. Such a task, for example one
-//   that generates code or copies an env file, runs again in every story.
+//   that generates code or copies an env file, runs in every story.
 //
 // Anything that cannot be proven keeps the per-worktree stamp of the engine
-// as the only rule. The stamp is written after a successful run only, and a
-// new run removes it first, so a failed or partial install leaves none.
+// as the only rule. A new run removes the stamp first and only a run that
+// succeeded writes it, so a failed or partial install leaves none.
+//
+// Every step is one script run on the Docker host, as root: reading the
+// volumes needs it, and the stamp stays out of reach of the worktree.
 
 export type SharedSetupOptions = {
   /** Directory on the Docker host for the stamps every story reads. */
@@ -37,14 +40,6 @@ export type SharedSetupProject = {
   setupDigests?: Record<string, string>;
 };
 
-type Stamp = { version: 1; fingerprint: string; signatures: string[] };
-
-type Probe = {
-  signatures: Record<string, string>;
-  /** First thing the run wrote outside the shared volumes, when it did. */
-  wrote?: string;
-};
-
 export type SharedSetupInput = {
   host: DockerHost;
   options: SharedSetupOptions | undefined;
@@ -55,9 +50,23 @@ export type SharedSetupInput = {
   fingerprint: string;
   /** What the install reads beyond the dependency key; undefined: unknown. */
   inputs: string | undefined;
-  /** File whose time marks the start of the run. */
+  /** File whose date marks the start of the run. */
   marker: string;
 };
+
+type Identity = {
+  taskId: string;
+  stamp: string;
+  fingerprint: string;
+  workspace: string;
+  marker: string;
+  /** Shared volumes the task fills. */
+  tracked: string[];
+  /** Volumes only this story has, which the task must not write to. */
+  exclusive: string[];
+};
+
+type Step = "probe" | "claim" | "finish";
 
 /** The shared stamp of a task, or undefined when it cannot be shared. */
 export function sharedSetupFor(input: SharedSetupInput) {
@@ -79,143 +88,122 @@ export function sharedSetupFor(input: SharedSetupInput) {
     tracked.some((name) => !shared.has(name) || !project.volumeCreatedAt[name])
   )
     return undefined;
-  return new SharedSetup(input, {
-    path: posix.join(
+  return new SharedSetup(input.host, {
+    taskId: task.id,
+    stamp: posix.join(
       options.directory,
-      `${[...keys][0]}.${sha256(task.id, ...tracked).slice(0, 16)}.json`,
+      `${[...keys][0]}.${sha256(task.id, ...tracked).slice(0, 16)}.stamp`,
     ),
     fingerprint: sha256(input.fingerprint, input.inputs, digest),
+    workspace: options.workspace,
+    marker: input.marker,
     tracked,
-    // Volumes only this story has: a run that fills one leaves the next
-    // story without it.
     exclusive: volumes.filter((name) => !shared.has(name)),
   });
 }
 
-class SharedSetup {
+export class SharedSetup {
   constructor(
-    private readonly input: SharedSetupInput,
-    private readonly identity: {
-      path: string;
-      fingerprint: string;
-      tracked: string[];
-      exclusive: string[];
-    },
+    private readonly host: DockerHost,
+    private readonly identity: Identity,
   ) {}
 
   /** Whether the volumes still hold what an identical run left in them. */
   async done() {
-    const stamp = await this.read();
-    if (stamp?.fingerprint !== this.identity.fingerprint) return false;
-    const probe = await this.probe(false);
-    return (
-      probe !== undefined &&
-      this.signatures(probe) === stamp.signatures.join("\n")
-    );
+    return (await this.run("probe")) === "valid";
   }
 
-  /** Forgets the stamp and notes when the run starts. False: do not trust it. */
-  async begin() {
-    try {
-      await this.input.host.writeFile(this.identity.path, "");
-      await this.input.host.writeFile(this.input.marker, `${Date.now()}`);
-      return true;
-    } catch {
-      return false;
-    }
+  /**
+   * Called when it is this story's turn to install. `done`: another story
+   * installed meanwhile. `run`: the stamp is removed and the run is noted;
+   * call `finish` after it succeeds. `unshared`: run it, nothing to record.
+   */
+  async claim(): Promise<"done" | "run" | "unshared"> {
+    const result = await this.run("claim");
+    if (result === "valid") return "done";
+    return result === "begun" ? "run" : "unshared";
   }
 
   /** Writes the stamp of a run that succeeded, if it wrote only the volumes. */
   async finish(log?: (message: string) => void) {
-    const probe = await this.probe(true);
-    if (!probe) return;
-    if (probe.wrote !== undefined) {
-      log?.(
-        `Setup ${this.input.task.id} also wrote ${probe.wrote}, so it runs in every story.\n`,
-      );
-      return;
-    }
-    const stamp: Stamp = {
-      version: 1,
-      fingerprint: this.identity.fingerprint,
-      signatures: this.signatures(probe).split("\n"),
-    };
-    try {
-      await this.input.host.writeFile(
-        this.identity.path,
-        JSON.stringify(stamp),
-      );
-    } catch {
-      // The next story runs the setup itself.
-    }
+    const result = await this.run("finish");
+    if (!result?.startsWith("wrote\t")) return;
+    const root = `${this.identity.workspace}/`;
+    const path = result.slice("wrote\t".length);
+    log?.(
+      `Setup ${this.identity.taskId} also wrote ${path.startsWith(root) ? path.slice(root.length) : path}, so it runs in every story.\n`,
+    );
   }
 
-  private signatures(probe: Probe) {
-    return this.identity.tracked
-      .map((name) => `${name} ${probe.signatures[name] ?? ""}`)
-      .join("\n");
-  }
-
-  private async read() {
+  private async run(step: Step) {
     try {
-      const value = await this.input.host.readFile(this.identity.path);
-      const stamp = value ? (JSON.parse(value) as Stamp) : undefined;
-      return stamp?.version === 1 && Array.isArray(stamp.signatures)
-        ? stamp
-        : undefined;
+      const result = await this.host.run(
+        "sh",
+        ["-c", script(this.identity, step)],
+        { timeoutMs: 60_000 },
+      );
+      return result.exitCode === 0 ? result.stdout.trim() : undefined;
     } catch {
       return undefined;
     }
   }
+}
 
-  private async probe(afterRun: boolean): Promise<Probe | undefined> {
-    const script = [
-      "set -u",
-      '[ "$(id -u)" = 0 ] || exit 3',
-      ...(afterRun
-        ? writeScript(
-            this.input.options!.workspace,
-            this.input.marker,
-            this.identity.exclusive,
-          )
-        : []),
-      ...this.identity.tracked.map(signatureScript),
+// One script per step. The first line names the step, for people reading
+// process lists and for test doubles of the Docker host.
+function script(identity: Identity, step: Step) {
+  const head = [
+    `# shared-setup ${step}`,
+    "set -u",
+    '[ "$(id -u)" = 0 ] || exit 3',
+    `stamp=${quote(identity.stamp)}`,
+    `fp=${quote(identity.fingerprint)}`,
+    `marker=${quote(identity.marker)}`,
+    "nl='\n'",
+  ];
+  // The stamp is for this fingerprint, and the volumes hold what it saw.
+  const unchanged = [
+    `[ "$(head -n 1 "$stamp" 2>/dev/null)" = "fingerprint $fp" ] || ${step === "claim" ? "stale=1" : "{ echo stale; exit 0; }"}`,
+    `if [ -z "\${stale:-}" ]; then`,
+    ...signatures(identity.tracked),
+    `  [ "$(cat "$stamp" 2>/dev/null)" = "\${expected%"$nl"}" ] || ${step === "claim" ? "stale=1" : "{ echo stale; exit 0; }"}`,
+    "fi",
+  ];
+  if (step === "probe") return [...head, ...unchanged, "echo valid"].join("\n");
+  if (step === "claim")
+    return [
+      ...head,
+      ...unchanged,
+      '[ -n "${stale:-}" ] || { echo valid; exit 0; }',
+      // Forget the stamp and note when the run starts.
+      'mkdir -p "$(dirname "$stamp")" "$(dirname "$marker")" || exit 3',
+      ': > "$stamp" || exit 3',
+      ': > "$marker" || exit 3',
+      "echo begun",
     ].join("\n");
-    try {
-      const result = await this.input.host.run("sh", ["-c", script], {
-        timeoutMs: 60_000,
-      });
-      if (result.exitCode !== 0) return undefined;
-      const probe: Probe = { signatures: {} };
-      for (const line of result.stdout.split("\n")) {
-        const [kind, name, value] = line.split("\t");
-        if (kind === "wrote" && name !== undefined)
-          return { signatures: {}, wrote: relativeTo(this.input, name) };
-        if (kind === "signature" && name && value)
-          probe.signatures[name] = value;
-      }
-      return this.identity.tracked.every((name) => probe.signatures[name])
-        ? probe
-        : undefined;
-    } catch {
-      return undefined;
-    }
-  }
+  return [
+    ...head,
+    ...writes(identity),
+    ...signatures(identity.tracked),
+    'mkdir -p "$(dirname "$stamp")" || exit 3',
+    'printf \'%s\' "$expected" > "$stamp.$$" || exit 3',
+    'mv -f "$stamp.$$" "$stamp" || exit 3',
+    "echo stamped",
+  ].join("\n");
 }
 
 // What a run wrote: `find` lists the first path whose status changed after
 // the marker, so a file written, replaced, renamed, deleted (its directory
 // changes) or given back its old date is seen. `.git` and `.blame` belong to
 // Blame. The volumes are mounted over directories the run cannot reach.
-function writeScript(workspace: string, marker: string, exclusive: string[]) {
-  const quotedMarker = shellQuote(marker);
+function writes({ workspace, exclusive }: Identity) {
   return [
-    `hit="$(find ${shellQuote(workspace)} \\( -path ${shellQuote(`${workspace}/.git`)} -o -path ${shellQuote(`${workspace}/.blame`)} \\) -prune -o -cnewer ${quotedMarker} -print -quit)" || exit 3`,
+    `hit="$(find ${quote(workspace)} \\( -path ${quote(`${workspace}/.git`)} -o -path ${quote(`${workspace}/.blame`)} \\) -prune -o -cnewer "$marker" -print -quit)" || exit 3`,
     `[ -z "$hit" ] || { printf 'wrote\\t%s\\n' "$hit"; exit 0; }`,
     ...exclusive.flatMap((name) => [
-      `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${shellQuote(name)})" || exit 3`,
-      `hit="$(find "$mp" -cnewer ${quotedMarker} -print -quit)" || exit 3`,
-      `[ -z "$hit" ] || { printf 'wrote\\t%s\\n' ${shellQuote(name)}; exit 0; }`,
+      `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${quote(name)})" || exit 3`,
+      `hit="$(find "$mp" -cnewer "$marker" -print -quit)" || exit 3`,
+      `[ -z "$hit" ] || { printf 'wrote\\t%s\\n' ${quote(name)}; exit 0; }`,
     ]),
   ];
 }
@@ -226,7 +214,7 @@ function writeScript(workspace: string, marker: string, exclusive: string[]) {
 // installs or removes anything, such as an agent running `npm install x` in a
 // container, and not when a tool fills its cache (`.cache`, `.vite`, ...).
 // It does not see a file edited inside a package, which an install does not
-// repair either.
+// repair either. Sets `expected`, the content of the stamp.
 const packageManagerRecords = [
   ".bin",
   ".pnpm",
@@ -236,15 +224,20 @@ const packageManagerRecords = [
   ".yarn-state.yml",
 ];
 
-function signatureScript(name: string) {
+function signatures(tracked: string[]) {
   const allowed = packageManagerRecords
     .flatMap((record) => [`! -path './${record}'`, `! -path './${record}/*'`])
     .join(" ");
   return [
-    `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${shellQuote(name)})" || exit 3`,
-    `listing="$(cd "$mp" && find . -mindepth 1 -maxdepth 2 \\( -path './.*' ${allowed} \\) -prune -o -printf '%P\\t%y\\t%s\\t%T@\\t%i\\n')" || exit 3`,
-    `printf 'signature\\t%s\\t%s\\n' ${shellQuote(name)} "$(printf '%s\\n' "$listing" | LC_ALL=C sort | sha256sum | cut -d' ' -f1)"`,
-  ].join("\n");
+    "sigs=",
+    ...tracked.flatMap((name) => [
+      `mp="$(docker volume inspect --format '{{.Mountpoint}}' ${quote(name)})" || exit 3`,
+      `listing="$(cd "$mp" && find . -mindepth 1 -maxdepth 2 \\( -path './.*' ${allowed} \\) -prune -o -printf '%P\\t%y\\t%s\\t%T@\\t%i\\n')" || exit 3`,
+      `sum="$(printf '%s\\n' "$listing" | LC_ALL=C sort | sha256sum | cut -d' ' -f1)"`,
+      `sigs="\${sigs}${name} $sum$nl"`,
+    ]),
+    `expected="fingerprint $fp$nl$sigs"`,
+  ];
 }
 
 /**
@@ -281,17 +274,12 @@ export function setupServiceDigests(yaml: string) {
   }
 }
 
-function relativeTo(input: SharedSetupInput, path: string) {
-  const root = `${input.options!.workspace}/`;
-  return path.startsWith(root) ? path.slice(root.length) : path;
-}
-
 function sha256(...parts: string[]) {
   const hash = createHash("sha256");
   for (const part of parts) hash.update(part).update("\0");
   return hash.digest("hex");
 }
 
-function shellQuote(value: string) {
+function quote(value: string) {
   return `'${value.replace(/'/g, `'\\''`)}'`;
 }

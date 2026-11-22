@@ -7,16 +7,18 @@ import { renderCompose } from "./compose-renderer.js";
 import type { LocalComposeTarget } from "./compose-target.js";
 import type { CommandResult, DockerHost } from "./docker-host.js";
 
-// One Docker daemon with its volumes and a shared directory for the stamps,
-// seen by the engines of several stories. A setup run fills the volumes; what
-// the probe scripts of shared-setup.ts print comes from this model (the
-// scripts themselves run for real in shared-setup.test.ts).
+// One Docker daemon with its volumes and the stamp directory of the Docker
+// host, seen by the engines of several stories. A setup run fills the
+// volumes; the steps of shared-setup.ts are modelled here (the scripts
+// themselves run for real in shared-setup.test.ts).
 class Daemon implements DockerHost {
   readonly commands: string[][] = [];
   readonly files = new Map<string, string>();
   readonly volumes = new Map<string, string>();
   /** What each volume holds. */
   readonly content = new Map<string, string>();
+  /** The stamp files of the Docker host. */
+  readonly stampFiles = new Map<string, string>();
   root = true;
   failInstall = false;
   /** A path the next setup runs write outside the volumes. */
@@ -28,7 +30,7 @@ class Daemon implements DockerHost {
   async run(command: string, args: string[]): Promise<CommandResult> {
     this.commands.push([command, ...args]);
     const script = command === "sh" ? args[1]! : "";
-    if (script.includes("printf 'signature")) return this.probe(script);
+    if (script.startsWith("# shared-setup")) return this.sharedSetup(script);
     if (script.includes("docker inspect")) return ok("");
     if (script.includes("docker volume create"))
       return this.createVolumes(script);
@@ -63,14 +65,12 @@ class Daemon implements DockerHost {
 
   probes() {
     return this.commands.filter((command) =>
-      command[2]?.includes("printf 'signature"),
+      command[2]?.startsWith("# shared-setup"),
     ).length;
   }
 
   stamps() {
-    return [...this.files.entries()].filter(
-      ([path, value]) => path.startsWith("/shared/") && value,
-    );
+    return [...this.stampFiles.values()].filter(Boolean);
   }
 
   private createVolumes(script: string) {
@@ -92,20 +92,35 @@ class Daemon implements DockerHost {
     );
   }
 
-  private probe(script: string): CommandResult {
+  private sharedSetup(script: string): CommandResult {
     if (!this.root) return { exitCode: 3, stdout: "", stderr: "" };
-    if (script.includes("-cnewer") && this.wrote)
-      return ok(`wrote\t${this.wrote}\n`);
-    return ok(
-      [...script.matchAll(/printf 'signature\\t%s\\t%s\\n' '([^']+)'/g)]
-        .map(
-          ([, name]) =>
-            `signature\t${name}\t${createHash("sha256")
-              .update(this.content.get(name!) ?? "")
-              .digest("hex")}\n`,
-        )
-        .join(""),
-    );
+    const step = /^# shared-setup (\w+)/.exec(script)![1];
+    const stamp = /stamp='([^']+)'/.exec(script)![1]!;
+    const fingerprint = /fp='([^']+)'/.exec(script)![1];
+    const tracked = [
+      ...script
+        .slice(script.indexOf("sigs="))
+        .matchAll(/docker volume inspect --format '[^']+' '([^']+)'/g),
+    ].map(([, name]) => name!);
+    const expected = [
+      `fingerprint ${fingerprint}`,
+      ...tracked.map(
+        (name) =>
+          `${name} ${createHash("sha256")
+            .update(this.content.get(name) ?? "")
+            .digest("hex")}`,
+      ),
+    ].join("\n");
+    const valid = this.stampFiles.get(stamp) === expected;
+    if (step === "probe") return ok(valid ? "valid" : "stale");
+    if (step === "claim") {
+      if (valid) return ok("valid");
+      this.stampFiles.set(stamp, "");
+      return ok("begun");
+    }
+    if (this.wrote) return ok(`wrote\t${this.wrote}`);
+    this.stampFiles.set(stamp, expected);
+    return ok("stamped");
   }
 }
 
@@ -191,9 +206,6 @@ test("a task that waits for a service is never shared", async () => {
   daemon.commands.length = 0;
   await start(newStory(daemon, "story-b"));
   assert.ok(daemon.composeRuns().includes("setup-migrate"));
-  assert.ok(
-    [...daemon.files.keys()].every((path) => !path.includes("migrate")),
-  );
   assert.equal(daemon.stamps().length, 1);
 });
 

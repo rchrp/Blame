@@ -13,7 +13,7 @@ import {
   readFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import test from "node:test";
 import { promisify } from "node:util";
 import type { DockerHost } from "./docker-host.js";
@@ -72,11 +72,8 @@ async function fixture(root = "0") {
         return { stdout: failure.stdout, stderr: "", exitCode: failure.code };
       }
     },
-    readFile: (path) => readFile(path, "utf8").catch(() => undefined),
-    async writeFile(path, content) {
-      await mkdir(dirname(path), { recursive: true });
-      await writeFile(path, content);
-    },
+    readFile: async () => undefined,
+    writeFile: async () => undefined,
   };
   const shared = sharedSetupFor({
     host,
@@ -119,7 +116,7 @@ async function run(
   context: Awaited<ReturnType<typeof fixture>>,
   change: () => Promise<void>,
 ) {
-  assert.equal(await context.shared.begin(), true);
+  assert.equal(await context.shared.claim(), "run");
   await pause();
   await change();
   const log: string[] = [];
@@ -275,15 +272,20 @@ test(
 );
 
 test(
-  "a new run removes the stamp, so a failed one leaves none",
+  "a stamp is claimed by the first story and a changed volume loses it",
   options,
   async (t) => {
     const context = await fixture();
     t.after(() => rm(context.base, { recursive: true, force: true }));
+    assert.equal(await context.shared.claim(), "run");
     await run(context, () => installPackage(context));
     assert.equal(await context.shared.done(), true);
-    assert.equal(await context.shared.begin(), true);
-    // The install fails here: finish is never called.
+    // Another story finds the volume filled and has nothing to run.
+    assert.equal(await context.shared.claim(), "done");
+    // The volume changed: the next run removes the stamp and, when it fails
+    // and never calls finish, no stamp is left.
+    await mkdir(context.volume("added-by-an-agent"));
+    assert.equal(await context.shared.claim(), "run");
     assert.equal(await context.shared.done(), false);
   },
 );
@@ -294,12 +296,10 @@ test(
   async (t) => {
     const context = await fixture("1000");
     t.after(() => rm(context.base, { recursive: true, force: true }));
-    await run(context, () => installPackage(context));
+    assert.equal(await context.shared.claim(), "unshared");
+    await context.shared.finish();
     assert.equal(await context.shared.done(), false);
-    for (const stamp of await readdir(join(context.base, "shared"))) {
-      const path = join(context.base, "shared", stamp);
-      assert.equal(await readFile(path, "utf8"), "", "nothing stamped");
-    }
+    await assert.rejects(readdir(join(context.base, "shared")), /ENOENT/);
   },
 );
 

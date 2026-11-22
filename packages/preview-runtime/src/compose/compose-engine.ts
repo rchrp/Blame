@@ -484,13 +484,13 @@ export class ComposeEngine {
         await this.measure("dependencies.install", async () => {
           // A story that waited for its turn behind an identical install
           // finds the volume filled now.
-          if (await shared?.done()) return upToDate();
-          const tracked = await shared?.begin();
+          const claim = await shared?.claim();
+          if (claim === "done") return upToDate();
           await this.compose(["run", "--rm", "--no-deps", serviceId], {
             timeoutMs: this.options.setupTimeoutMs ?? defaultSetupTimeoutMs,
             onOutput: this.options.log,
           });
-          if (tracked) await shared?.finish(this.options.log);
+          if (claim === "run") await shared?.finish(this.options.log);
         });
       }
       stamps[task.id] = fingerprint;
