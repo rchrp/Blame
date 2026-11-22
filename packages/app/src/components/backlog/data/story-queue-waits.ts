@@ -68,14 +68,19 @@ export function storyWaitText(reason: StoryWaitReason): string {
   }
 }
 
+/** A story as the waits and the drawer's field name it: its number and title. */
+export function storyDependencyName(
+  story: Partial<Pick<StoryDependency, "storyNumber" | "title">>
+) {
+  return story.storyNumber
+    ? `US-${String(story.storyNumber).padStart(3, "0")}${
+        story.title ? ` ${story.title}` : ""
+      }`
+    : "a deleted story"
+}
+
 function named(stories: readonly StoryDependency[]) {
-  const names = stories.map((story) =>
-    story.storyNumber
-      ? `US-${String(story.storyNumber).padStart(3, "0")}${
-          story.title ? ` ${story.title}` : ""
-        }`
-      : "a deleted story"
-  )
+  const names = stories.map(storyDependencyName)
   return names.length > 2
     ? `${names.slice(0, 2).join(", ")} and ${names.length - 2} more`
     : names.join(" and ")

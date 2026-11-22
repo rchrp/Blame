@@ -5,6 +5,10 @@
 // quit, a write that failed twice) the service's reconcile settles.
 
 import { randomUUID } from "node:crypto";
+import {
+  startsAfterBriefing,
+  type StartsAfterReport,
+} from "../../development-prompt-parts.js";
 import type { ApiConnection } from "../../types.js";
 import type { DesktopServices } from "../desktop-services.js";
 import type {
@@ -214,14 +218,26 @@ export async function startStory(
       agentStatus: "Running",
       engineSessionId: session,
     });
+    const message = await storyMessage(
+      story.summary,
+      story.codeSelectionAttachments,
+      story.fileAttachments,
+      (file) => api.attachment(file.id, file.name),
+    );
+    // What the stories it starts after delivered, told with its request.
+    const earlier = startsAfterBriefing(
+      await startsAfterReports(
+        context,
+        story,
+        worktree.worktree,
+        storyLocation(worktree.workspaceMode),
+      ),
+    );
     await context.call("send", {
       session,
-      message: await storyMessage(
-        story.summary,
-        story.codeSelectionAttachments,
-        story.fileAttachments,
-        (file) => api.attachment(file.id, file.name),
-      ),
+      message: earlier
+        ? { ...message, text: [message.text, earlier].join("\n\n") }
+        : message,
       delivery: "turn",
       settings,
     });
@@ -244,6 +260,101 @@ export async function startStory(
     throw error;
   }
   return { started: true };
+}
+
+/**
+ * What each story this one starts after delivered, for its brief: what its
+ * agent last reported and the files its merge changed. Whatever cannot be
+ * read is left out: the story starts without it.
+ */
+async function startsAfterReports(
+  context: StoryContext,
+  story: HostStory,
+  worktree: string,
+  location: ReturnType<typeof storyLocation>,
+): Promise<StartsAfterReport[]> {
+  const ids = [...new Set(story.startsAfter ?? [])].filter(
+    (id) => id !== story.id,
+  );
+  const reports = await Promise.all(
+    ids.map((id) => startsAfterReport(context, id, worktree, location)),
+  );
+  return reports.flatMap((report) => (report ? [report] : []));
+}
+
+async function startsAfterReport(
+  context: StoryContext,
+  id: string,
+  worktree: string,
+  location: ReturnType<typeof storyLocation>,
+): Promise<StartsAfterReport | undefined> {
+  try {
+    const { story, payload } = await context.api.get(id);
+    const fields = payload as { baseCommit?: unknown; mergeCommit?: unknown };
+    const baseCommit = text(fields.baseCommit);
+    const mergeCommit = text(fields.mergeCommit);
+    const [reply, files] = await Promise.all([
+      lastReply(context, story, location),
+      mergeCommit
+        ? changedFiles(context, worktree, baseCommit, mergeCommit)
+        : undefined,
+    ]);
+    return {
+      storyNumber: story.storyNumber,
+      title: story.title,
+      ...(reply ? { reply } : {}),
+      ...(files?.length ? { files } : {}),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+// What the agent said its last turn did, as its session's records say (the
+// account keeps them once the merge deleted the engine's copy). A story
+// that is done no longer says where it ran: the host's engine first, then
+// the one where this story runs.
+async function lastReply(
+  context: StoryContext,
+  story: HostStory,
+  location: ReturnType<typeof storyLocation>,
+) {
+  const session = story.engineSessionId;
+  if (!session) return undefined;
+  for (const where of new Set(["host", location] as const)) {
+    const [status] = await context
+      .call("status", { sessions: [session], location: where })
+      .catch(() => []);
+    if (status?.lastReply?.trim()) return status.lastReply;
+  }
+  return undefined;
+}
+
+// `git diff --name-status` of the merge, in the new worktree (which starts
+// from a branch that has it).
+async function changedFiles(
+  context: StoryContext,
+  worktree: string,
+  baseCommit: string | undefined,
+  mergeCommit: string,
+) {
+  const range = baseCommit
+    ? `${baseCommit}..${mergeCommit}`
+    : `${mergeCommit}^..${mergeCommit}`;
+  const output = await context.desktop
+    .git?.({
+      cwd: worktree,
+      args: ["diff", "--name-status", "--no-renames", range],
+    })
+    .catch(() => undefined);
+  return output
+    ?.split("\n")
+    .map((line) => line.trim().replace(/\s+/u, " "))
+    .filter(Boolean);
+}
+
+function text(value: unknown) {
+  return typeof value === "string" && value ? value : undefined;
 }
 
 // The story's session when it can go on: one the engine where the story now

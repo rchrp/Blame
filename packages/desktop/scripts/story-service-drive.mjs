@@ -6,10 +6,14 @@
 // deleted from its card, and a second window on the other project queues a
 // story there (while it loads and reloads, the first window's projects keep
 // starting stories), then closes while that project's stories keep running. With
-// --dependencies (an API with startsAfter and requestedModel): a story waits
-// for another and starts once it is done, one whose dependency is discarded
-// never starts, one runs on its requested model. It prints each check and
-// takes screenshots.
+// --dependencies (an API with startsAfter and requestedModel): a story's drawer
+// says it starts after another (its "Starts after" field, with the API's
+// message when it refuses a choice), the story waits in Agent Queue, says why
+// on its card and in its drawer, and starts once the other is done, told what
+// that story delivered; one whose dependency is discarded never starts until
+// the drawer's field drops it; one runs on its requested model.
+// --dependencies-only runs just that part. It prints each check and takes
+// screenshots.
 //
 //   pnpm --filter @blame/desktop exec electron-vite build
 //   pnpm --filter @blame/api build
@@ -60,6 +64,15 @@ function decide(body) {
       input: { summary: followUp ? `Followed up on: ${last.slice(0, 80)}` : `Done: ${story ?? "the story"}.` },
     };
   }
+  // Approve & Merge analyses the project's code practices first, when it never was.
+  if (tools.includes("submit_project_code_practices")) {
+    const practice = { detected: true, comment: "The project's samples follow it." };
+    return {
+      wait: 300,
+      tool: "submit_project_code_practices",
+      input: { projectState: "starter", practices: { coding_style: practice, unit_tests: practice, layered_architecture: practice, commit_message_convention: practice } },
+    };
+  }
   if (tools.includes("submit_commit_message"))
     return { wait: 300, tool: "submit_commit_message", input: { message: "Add the merged story's page" } };
   return { wait: 100, pieces: ["Story"] };
@@ -105,7 +118,8 @@ async function startModel() {
     }
     const plan = decide(body);
     const lastUser = userText((body.messages ?? []).findLast?.((message) => message.role === "user"));
-    requests.push({ story: plan.story, tool: plan.tool, lastUser, model: body.model, at: Date.now() });
+    const users = (body.messages ?? []).filter?.((message) => message.role === "user") ?? [];
+    requests.push({ story: plan.story, tool: plan.tool, lastUser, model: body.model, first: users.length === 1, firstUser: userText(users[0]), at: Date.now() });
     await delay(plan.wait);
     response.writeHead(200, { "content-type": "text/event-stream" });
     response.end(sseOf(plan));
@@ -170,12 +184,13 @@ async function drive() {
 }
 
 function parseOptions(argv) {
-  const options = { keep: false, dependencies: false, out: resolve("story-shots") };
+  const options = { keep: false, dependencies: false, dependenciesOnly: false, out: resolve("story-shots") };
   for (let index = 0; index < argv.length; index += 1) {
     if (argv[index] === "--out") options.out = resolve(argv[++index]);
     else if (argv[index] === "--keep") options.keep = true;
     // Needs an API with startsAfter and requestedModel on stories.
     else if (argv[index] === "--dependencies") options.dependencies = true;
+    else if (argv[index] === "--dependencies-only") options.dependencies = options.dependenciesOnly = true;
   }
   return options;
 }
@@ -320,6 +335,11 @@ async function scenario(cdp, options, model, paths) {
     await delay(700);
   };
   await dismissPreviewSetup();
+  if (options.dependenciesOnly) {
+    await dependencies();
+    console.log(`model requests: ${model.requests.length}; checks: ${checks.filter((item) => item.ok).length}/${checks.length}`);
+    return;
+  }
 
   // Five Direct stories queued at once: three in the shown project, two in the other.
   const titles = { shown: ["Checkout page", "Search box", "Cart badge"], hidden: ["Invoice export", "Footer links"] };
@@ -470,21 +490,94 @@ async function scenario(cdp, options, model, paths) {
 
   async function dependencies() {
     const create = (fields) => api("/projects/user-stories", "POST", { projectId: shownProject.id, summary: `Build the ${fields.title.toLowerCase()}.`, runMode: "direct", ...fields });
+    const current = async (id) => (await stories(shownProject.id)).find((story) => story.id === id);
+    // Stories wait in the backlog while the drawer says what they start after.
     const base = await create({ title: "Base API", status: "backlog" });
     const dropped = await create({ title: "Dropped idea", status: "backlog" });
-    const after = await create({ title: "After base", status: "ready", startsAfter: [base.id] });
-    const orphan = await create({ title: "Orphan", status: "ready", startsAfter: [dropped.id] });
+    const after = await create({ title: "After base", status: "backlog" });
+    const orphan = await create({ title: "Orphan", status: "backlog" });
     const ownModel = await create({ title: "Own model", status: "ready", requestedModel: { providerId: "anthropic", modelId: "claude-opus-5-5" } });
-    await evaluate(`window.blame.engine.call("storyDiscard", { storyId: ${JSON.stringify(dropped.id)}, reason: "Not needed" })`);
     await evaluate(`window.blame.engine.call("storyRefresh", {})`);
+    await until(() => evaluate(`Boolean(document.querySelector('[data-story-id="${orphan.id}"]'))`), 30_000, "the new cards").catch(async () => {
+      // The board loads a project's stories when it opens: load them again.
+      await evaluate(`window.location.reload()`);
+      await until(() => evaluate(`Boolean(document.querySelector('[data-story-id="${orphan.id}"]'))`), 40_000, "the new cards after a reload");
+      await delay(1500);
+      await dismissPreviewSetup();
+    });
+    // The drawer keeps showing what it showed while it slides away: it is open while it says so.
+    const openField = `[...document.querySelectorAll('[data-slot="starts-after-field"]')].find((element) => element.closest('[data-state="open"]'))`;
+    const drawerOpen = `Boolean(${openField})`;
+    const openDrawer = async (story) => {
+      await dismissPreviewSetup();
+      await click(`[...document.querySelectorAll('[data-story-id="${story.id}"] button')].find((button) => button.innerText.trim() === ${JSON.stringify(story.title)})`);
+      await until(() => evaluate(`${drawerOpen}`), 20_000, `the drawer of ${story.title}`).catch(async (error) => {
+        await shot("drawer-failed");
+        console.log("dialogs:", JSON.stringify(await evaluate(`[...document.querySelectorAll("[role=dialog]")].map((dialog) => dialog.innerText.slice(0, 300))`)));
+        throw error;
+      });
+      await delay(600);
+    };
+    const closeDrawer = async () => {
+      // The first Escape may close a list that is still open.
+      for (let attempt = 0; attempt < 4; attempt += 1) {
+        await press("Escape", "Escape", 27);
+        await delay(800);
+        if (await evaluate(`!(${drawerOpen})`)) break;
+      }
+      await until(() => evaluate(`!(${drawerOpen})`), 10_000, "the drawer to close").catch(async (error) => {
+        await shot("drawer-stuck");
+        throw error;
+      });
+      await delay(500);
+    };
+    const field = () => evaluate(`(${openField})?.innerText ?? ""`);
+    // Picks a story in the field's list; the list closes on Escape.
+    const pick = async (title) => {
+      await click(`(${openField})?.querySelector('button[aria-label="Starts after"]')`);
+      await until(() => evaluate(`Boolean(document.querySelector('[data-slot="popover-content"] [cmdk-item]'))`), 10_000, "the stories to pick from");
+      await click(`[...document.querySelectorAll('[data-slot="popover-content"] [cmdk-item]')].find((item) => item.innerText.includes(${JSON.stringify(title)}))`);
+      await delay(1200);
+      await press("Escape", "Escape", 27);
+      await delay(400);
+    };
+
+    // After base: picked from its drawer, saved through startsAfter.
+    await openDrawer(after);
+    await pick("Base API");
+    await until(async () => ((await current(after.id))?.startsAfter ?? []).includes(base.id), 15_000, "the choice to be saved");
+    check("a story's drawer saves the story it starts after", (await current(after.id)).startsAfter.length === 1);
+    await until(async () => (await field()).includes("Base API"), 10_000, "the field to name the story");
+    check("the field names it by its number and title", /US-\d{3} Base API/.test(await field()), (await field()).replace(/\n/g, " | "));
+    await shot("07-starts-after-field");
+    await closeDrawer();
+
+    // Base cannot start after "After base": the API refuses a cycle, and the drawer says so.
+    await openDrawer(base);
+    await pick("After base");
+    await until(async () => (await field()).includes("already waits for this story"), 15_000, "the API's message").catch(() => undefined);
+    const refused = await field();
+    check("a choice the API refuses shows its message next to the field", refused.includes("already waits for this story"), refused.replace(/\n/g, " | "));
+    check("the refused choice is not kept", !refused.includes("After base") && ((await current(base.id))?.startsAfter ?? []).length === 0);
+    await shot("08-starts-after-refused");
+    await closeDrawer();
+
+    // Orphan: its dependency is discarded afterwards.
+    await openDrawer(orphan);
+    await pick("Dropped idea");
+    await until(async () => ((await current(orphan.id))?.startsAfter ?? []).includes(dropped.id), 15_000, "the orphan's choice to be saved");
+    await closeDrawer();
+    await evaluate(`window.blame.engine.call("storyDiscard", { storyId: ${JSON.stringify(dropped.id)}, reason: "Not needed" })`);
+    await evaluate(`window.blame.engine.call("storyEnqueue", { storyId: ${JSON.stringify(after.id)} })`);
+    await evaluate(`window.blame.engine.call("storyEnqueue", { storyId: ${JSON.stringify(orphan.id)} })`);
     // The card's text as it reads (its lines kept; each wait is one line).
     const card = (id) => evaluate(`document.querySelector('[data-story-id="${id}"]')?.innerText ?? ""`);
     await until(async () => (await card(after.id)).includes("Starts after"), 30_000, "the waiting card to say why").catch(async (error) => {
       console.log("card:", JSON.stringify(await card(after.id)));
       console.log("queue:", JSON.stringify(await evaluate(`window.blame.engine.call("storyQueueState", undefined)`)));
       console.log("board ids:", JSON.stringify(await evaluate(`[...document.querySelectorAll("[data-story-id]")].map((element) => element.getAttribute("data-story-id") + ":" + element.getAttribute("data-story-state"))`)));
-      console.log("after:", after.id, "startsAfter:", JSON.stringify(after.startsAfter ?? after.transformerData?.[0]?.startsAfter));
-      await shot("07-waiting-cards-failed");
+      console.log("after:", after.id, "startsAfter:", JSON.stringify((await current(after.id))?.startsAfter));
+      await shot("09-waiting-cards-failed");
       throw error;
     });
     check("a story waits for the one it starts after, and its card says so", (await card(after.id)).includes("Base API"), await card(after.id));
@@ -492,19 +585,53 @@ async function scenario(cdp, options, model, paths) {
     check("a story whose dependency was discarded never starts, and its card says so", true, await card(orphan.id));
     await evaluate(`document.querySelector('[data-story-id="${after.id}"]')?.scrollIntoView({ block: "center", inline: "center" })`);
     await delay(600);
-    await shot("07-waiting-cards");
+    await shot("09-waiting-cards");
+
+    // Its drawer says the same, in the same words, and the field is still editable.
+    await openDrawer(after);
+    const waiting = await field();
+    const cardWait = (await card(after.id)).split("\n").find((line) => line.startsWith("Starts after")) ?? "";
+    check("a queued story's drawer says why it waits, as its card does", cardWait !== "" && waiting.includes(cardWait), waiting.replace(/\n/g, " | "));
+    await shot("10-drawer-waiting");
+    await closeDrawer();
+
+    // The orphan's drawer shows the discarded story as such, with a way to drop it.
+    await openDrawer(orphan);
+    const orphanField = await field();
+    check("a dependency that was discarded is shown as such", orphanField.includes("Dropped idea (discarded)"), orphanField.replace(/\n/g, " | "));
+    await shot("11-drawer-discarded-dependency");
+    await click(`(${openField})?.querySelector('button[aria-label^="Remove"]')`);
+    await until(async () => ((await current(orphan.id))?.startsAfter ?? ["x"]).length === 0, 15_000, "the dependency to be removed");
+    check("removing it from the field saves, and the story starts", true);
+    await closeDrawer();
+    await until(async () => (await current(orphan.id))?.status !== "ready", 60_000, "the orphan to start once it starts after nothing");
+    check("a story freed of a dependency that was dropped starts", true);
+
     await until(async () => (await stories(shownProject.id)).some((story) => story.id === ownModel.id && story.status === "in-review"), 60_000, "the story on its own model");
     const ownRequests = model.requests.filter((request) => request.story === "Own model");
     check("a story runs on the model it asked for", ownRequests.length > 0 && ownRequests.every((request) => request.model === "claude-opus-5-5"), ownRequests.map((request) => request.model).join(", "));
-    // The base runs, is done, and the story after it starts.
+
+    // The base runs, is done (with a commit of its own), and the story after it starts, told what it delivered.
     await evaluate(`window.blame.engine.call("storyEnqueue", { storyId: ${JSON.stringify(base.id)} })`);
-    await until(async () => (await stories(shownProject.id)).some((story) => story.id === base.id && story.status === "in-review"), 60_000, "the base to reach review");
-    check("the story after it has not started yet", (await stories(shownProject.id)).find((story) => story.id === after.id)?.status === "ready");
-    await evaluate(`window.blame.engine.call("storyComplete", { storyId: ${JSON.stringify(base.id)} })`);
-    await until(async () => ["in-progress", "in-review"].includes((await stories(shownProject.id)).find((story) => story.id === after.id)?.status), 60_000, "the story after it to start");
+    await until(async () => (await current(base.id))?.status === "in-review", 60_000, "the base to reach review");
+    check("the story after it has not started yet", (await current(after.id))?.status === "ready");
+    await writeFile(join(paths.shown, "src/base-api.js"), "export const baseApi = true\n");
+    const before = (await git(paths.shown, "rev-parse", "HEAD")).stdout.trim();
+    await git(paths.shown, "add", "src/base-api.js");
+    await git(paths.shown, "commit", "-q", "-m", "Add the base API");
+    const merged = (await git(paths.shown, "rev-parse", "HEAD")).stdout.trim();
+    await evaluate(`window.blame.engine.call("storyComplete", { storyId: ${JSON.stringify(base.id)}, baseCommit: ${JSON.stringify(before)}, mergeCommit: ${JSON.stringify(merged)} })`);
+    await until(async () => ["in-progress", "in-review"].includes((await current(after.id))?.status), 60_000, "the story after it to start");
     check("once it is done, the story after it starts", true);
-    const orphanNow = (await stories(shownProject.id)).find((story) => story.id === orphan.id);
-    check("the orphan is still queued", orphanNow?.status === "ready");
+    const requested = () => model.requests.find((request) => request.story === "After base" && request.first);
+    await until(() => Boolean(requested()), 30_000, "the model's first request for the story after it").catch(() => undefined);
+    const firstRequest = requested();
+    if (!firstRequest) console.log("requests:", JSON.stringify(model.requests.map(({ story, tool, first, model: name }) => ({ story, tool, first, name }))));
+    const brief = firstRequest?.firstUser ?? "";
+    console.log("the dependent's first message:\n" + brief.split("\n").map((line) => "  | " + line).join("\n"));
+    check("the model's first request for it carries what the first story reported", brief.includes("<starts_after>") && brief.includes("Done: Base API."), brief.slice(0, 80));
+    check("... and the files it changed", brief.includes("A src/base-api.js"));
+    check("... and the story's number and title", /US-\d{3} · Base API/.test(brief));
   }
 
   console.log(`model requests: ${model.requests.length}; checks: ${checks.filter((item) => item.ok).length}/${checks.length}`);
