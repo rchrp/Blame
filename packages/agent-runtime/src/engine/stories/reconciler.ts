@@ -79,3 +79,19 @@ export class ReconcileScheduler {
     this.pending.clear();
   }
 }
+
+/** The work, or a failure naming what did not answer once `ms` have passed. */
+export function withinDeadline<T>(
+  work: Promise<T>,
+  what: string,
+  ms: number,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${what} did not answer in time.`)),
+      ms,
+    );
+  });
+  return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
+}

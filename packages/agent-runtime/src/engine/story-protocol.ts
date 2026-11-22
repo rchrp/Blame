@@ -86,7 +86,23 @@ export type StoryWaitReason =
   /** Git has no name and email to commit with. */
   | { kind: "git-identity" }
   /** The start failed; it is tried again. */
-  | { kind: "error"; message: string };
+  | { kind: "error"; message: string }
+  /**
+   * Held by its epic (docs/orchestrator.md): the epic is paused or over,
+   * its budget is spent, its conversation runs on another computer, its
+   * story would run Direct (no working preview environment), or the epic
+   * is not read yet.
+   */
+  | { kind: "epic"; epicId: string; hold: StoryEpicHold };
+
+export type StoryEpicHold =
+  | "paused"
+  | "budget"
+  | "elsewhere"
+  | "direct"
+  /** The epic's branch is gone after stories were merged into it. */
+  | "branch"
+  | "unknown";
 
 export type StoryWaiting = {
   storyId: string;
@@ -243,4 +259,7 @@ export type StoryTurnEnded = {
   outcome?: TurnOutcome;
   /** What the agent reported: its finish_task summary, or its last text. */
   lastReply?: string;
+  /** What the story's session spent up to then (micro-USD), and its unpriced requests. */
+  spentMicroUsd?: number;
+  unpricedRequests?: number;
 };

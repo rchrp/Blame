@@ -4,6 +4,7 @@
 
 import { unverifiedChecks, type TurnOutcome } from "@blame/engine-client";
 import type { AgentPersonalization } from "../../personalization.js";
+import type { ModelIntent } from "../model-intent.js";
 import type { EngineLocation, EngineMessage } from "../protocol.js";
 import type { StoryRequestedModel, StoryRunMode } from "../story-protocol.js";
 
@@ -61,31 +62,52 @@ export type HostStory = {
   startsAfter?: string[] | null;
   /** The model its first run uses instead of the account's. */
   requestedModel?: StoryRequestedModel | null;
+  /** The epic it belongs to (docs/orchestrator.md). */
+  epicId?: string | null;
+  /** What the orchestrator wanted of its model; `requestedModel` is what that gave. */
+  modelIntent?: ModelIntent | null;
+  /** Where its worktree started, and its merge once merged. */
+  baseCommit?: string | null;
+  mergeCommit?: string | null;
 };
 
-/** What the service writes to a story (the API's PATCH). */
-export type StoryUpdate = Partial<
+/** What the orchestrator may change of a story that has not started. */
+export type StoryBriefUpdate = Partial<
   Pick<
     HostStory,
-    | "status"
-    | "branch"
-    | "targetBranch"
-    | "worktree"
-    | "workspaceMode"
+    | "title"
+    | "summary"
+    | "startsAfter"
+    | "modelIntent"
+    | "requestedModel"
     | "runMode"
-    | "agentStatus"
-    | "agentLastError"
-    | "engineSessionId"
-    | "agentModels"
-  > & {
-    previewUrl: string | null;
-    baseCommit: string | null;
-    mergeCommit: string | null;
-    mergedAt: string | null;
-    discardedReason: string | null;
-    pullRequestUrl: string | null;
-  }
+  >
 >;
+
+/** What the service writes to a story (the API's PATCH). */
+export type StoryUpdate = StoryBriefUpdate &
+  Partial<
+    Pick<
+      HostStory,
+      | "status"
+      | "branch"
+      | "targetBranch"
+      | "worktree"
+      | "workspaceMode"
+      | "runMode"
+      | "agentStatus"
+      | "agentLastError"
+      | "engineSessionId"
+      | "agentModels"
+    > & {
+      previewUrl: string | null;
+      baseCommit: string | null;
+      mergeCommit: string | null;
+      mergedAt: string | null;
+      discardedReason: string | null;
+      pullRequestUrl: string | null;
+    }
+  >;
 
 export function parseStory(value: unknown): HostStory {
   const story = value as Partial<HostStory> | undefined;
@@ -308,4 +330,11 @@ function isFileAttachment(value: unknown): value is FileAttachment {
     typeof item.name === "string" &&
     (item.content === undefined || typeof item.content === "string")
   );
+}
+
+/** The fields of an object that are set. */
+export function definedFields<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, field]) => field !== undefined),
+  ) as Partial<T>;
 }

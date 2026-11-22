@@ -19,7 +19,7 @@ import { mergeConflictTools } from "../purposes/merge-conflicts.js";
 import type { ApproveAndMergeTask } from "../task-protocol.js";
 import type { TaskSpec } from "../tasks/runner.js";
 import type { GitAgent } from "./agent.js";
-import { approveAndMerge } from "./story-merge.js";
+import { StoryMergeConflictError, approveAndMerge } from "./story-merge.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -845,3 +845,65 @@ async function conflictingStoryFixture() {
     },
   };
 }
+
+test("an epic's conflicting merge is refused and leaves the story's worktree as it was", async () => {
+  const fixture = await conflictingStoryFixture();
+  let resolutions = 0;
+  const runtime = mergeTestRuntime(async () => {
+    resolutions += 1;
+  });
+  try {
+    const refused = await runtime
+      .approveAndMerge({ ...fixture.input, conflicts: "refuse" })
+      .then(
+        () => undefined,
+        (error: unknown) => error as StoryMergeConflictError,
+      );
+    assert.ok(refused instanceof StoryMergeConflictError);
+    assert.equal(refused.name, "StoryMergeConflictError");
+    assert.deepEqual(refused.files, ["shared.txt"]);
+    assert.equal(refused.left, undefined);
+    assert.equal(resolutions, 0, "the merge agent never ran");
+    assert.equal(await readFile(fixture.file, "utf8"), "story\n");
+    assert.equal(
+      await git(fixture.input.worktree, ["status", "--porcelain"]),
+      "",
+    );
+    await assert.rejects(
+      git(fixture.input.worktree, ["rev-parse", "--verify", "MERGE_HEAD"]),
+    );
+    assert.equal(
+      await git(fixture.input.repositoryRoot, ["rev-parse", "HEAD"]),
+      fixture.targetCommit,
+    );
+  } finally {
+    await runtime.shutdown();
+    await rm(fixture.directory, { force: true, recursive: true });
+  }
+});
+
+test("a conflicting merge Git cannot undo says where it left the worktree", async () => {
+  const fixture = await conflictingStoryFixture();
+  setGitRunner(async (cwd, args) => {
+    const undo =
+      (args[0] === "merge" && args[1] === "--abort") ||
+      (args[0] === "reset" && args[1] === "--merge");
+    if (undo) throw new Error("fatal: cannot undo here");
+    return git(cwd, args);
+  });
+  const runtime = mergeTestRuntime();
+  try {
+    await assert.rejects(
+      runtime.approveAndMerge({ ...fixture.input, conflicts: "refuse" }),
+      (error: StoryMergeConflictError) =>
+        error.name === "StoryMergeConflictError" &&
+        /Git could not undo the merge: the story's worktree is left in the middle of it, with conflict markers in shared\.txt\./.test(
+          error.left ?? "",
+        ),
+    );
+  } finally {
+    setGitRunner(undefined);
+    await runtime.shutdown();
+    await rm(fixture.directory, { force: true, recursive: true });
+  }
+});

@@ -65,6 +65,21 @@ export function storyWaitText(reason: StoryWaitReason): string {
       return "Git needs your name and email"
     case "error":
       return `Could not start: ${reason.message}`
+    case "epic":
+      switch (reason.hold) {
+        case "paused":
+          return "Its epic is paused"
+        case "budget":
+          return "Its epic's budget is spent"
+        case "elsewhere":
+          return "Its epic runs on another computer"
+        case "direct":
+          return "Needs a working preview environment: an epic's story never runs in your project folder"
+        case "branch":
+          return "Its epic's branch is gone"
+        case "unknown":
+          return "Waits for its epic to be read"
+      }
   }
 }
 

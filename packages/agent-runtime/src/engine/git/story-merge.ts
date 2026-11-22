@@ -91,6 +91,12 @@ async function approveAndMergeOperation(
   try {
     // A previous approval may have stopped with an unresolved merge. Resolve
     // its index before the ordinary commit path can stage conflict markers.
+    if (input.conflicts === "refuse" && (await hasPendingMerge(input.worktree)))
+      throw new StoryMergeConflictError(
+        preparation.targetBranch,
+        await mergeConflictFiles(input.worktree),
+        "its worktree holds a merge that was not finished",
+      );
     await completePendingStoryMerge(input, preparation.targetBranch, agent);
     await commitStoryWork(input, agent);
     await mergeTargetIntoStory(
@@ -270,6 +276,15 @@ async function mergeTargetIntoStory(
   } catch (error) {
     if (!(await hasMergeConflicts(input.worktree))) throw error;
   }
+  if (input.conflicts === "refuse") {
+    const files = await mergeConflictFiles(input.worktree);
+    throw new StoryMergeConflictError(
+      targetBranch,
+      files,
+      undefined,
+      await undoMerge(input.worktree),
+    );
+  }
   try {
     await completePendingStoryMerge(input, targetBranch, agent);
   } catch (error) {
@@ -286,6 +301,51 @@ async function mergeTargetIntoStory(
     }
     throw error;
   }
+}
+
+/** A merge of the target into the story conflicts, and the caller refuses to have an agent resolve it. */
+export class StoryMergeConflictError extends Error {
+  /** Read by name across the host's calls: the error crosses as itself. */
+  readonly code = "story-merge-conflict";
+  readonly targetBranch: string;
+  readonly files: string[];
+  /** Where the worktree was left when Git could not undo the merge; absent: as it was. */
+  readonly left: string | undefined;
+
+  constructor(
+    targetBranch: string,
+    files: string[],
+    why?: string,
+    left?: string,
+  ) {
+    super(
+      `Merging ${targetBranch} into the story conflicts${files.length ? ` in ${files.join(", ")}` : ""}${why ? `: ${why}` : ""}.${left ? ` ${left}` : ""}`,
+    );
+    this.name = "StoryMergeConflictError";
+    this.targetBranch = targetBranch;
+    this.files = files;
+    this.left = left;
+  }
+}
+
+/**
+ * Takes a conflicting merge back so the worktree is as it was before it:
+ * `git merge --abort`, else `git reset --merge`. Undefined once undone;
+ * else what the worktree holds now, in words.
+ */
+async function undoMerge(worktree: string): Promise<string | undefined> {
+  for (const args of [
+    ["merge", "--abort"],
+    ["reset", "--merge"],
+  ])
+    try {
+      await git(worktree, args);
+      if (!(await hasPendingMerge(worktree))) return undefined;
+    } catch {
+      // The next way, or the state as it is.
+    }
+  const files = await mergeConflictFiles(worktree).catch(() => []);
+  return `Git could not undo the merge: the story's worktree is left in the middle of it${files.length ? `, with conflict markers in ${files.join(", ")}` : ""}.`;
 }
 
 async function completePendingStoryMerge(

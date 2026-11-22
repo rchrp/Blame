@@ -25,9 +25,31 @@ import type {
 } from "../types.js";
 import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
 import type { EngineStoryMethods, StoryHostEvent } from "./story-protocol.js";
+import type {
+  EpicState,
+  OrchestratorSettings,
+} from "./orchestrator-protocol.js";
 
 export type * from "./task-protocol.js";
 export type * from "./story-protocol.js";
+export type * from "./orchestrator-protocol.js";
+export {
+  orchestratorToolNames,
+  orchestratorWakeTag,
+  orchestratorWakeText,
+  parseOrchestratorWake,
+} from "./orchestrator-protocol.js";
+// The orchestrator's choice of a story's model, for the screen too (pure).
+export { escalateModel, resolveModelIntent } from "./model-intent.js";
+export type {
+  ModelEscalationInput,
+  ModelIntentInput,
+  ModelIntentResolution,
+  ModelKey,
+  ModelPool,
+  ModelRange,
+  ModelResolution,
+} from "./model-intent.js";
 export { engineMainOnlyMethods } from "./task-protocol.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
 import type { PreviewInitialization } from "../preview-selection.js";
@@ -114,7 +136,9 @@ export type EngineSessionSettings =
   | { purpose: "quick-chat"; settings: QuickChatSettings }
   | { purpose: "development-story"; settings: DevelopmentStorySettings }
   | { purpose: "plan"; settings: PlanSettings }
-  | { purpose: "new-project"; settings: NewProjectSettings };
+  | { purpose: "new-project"; settings: NewProjectSettings }
+  /** An epic's conversation (docs/orchestrator.md). */
+  | { purpose: "orchestrator"; settings: OrchestratorSettings };
 
 /** Where a session's engine is, for calls that name only the session (default: this computer). */
 export type EngineSessionRef = {
@@ -145,6 +169,10 @@ export type EngineSessionStatus = {
   turnRunning?: boolean;
   /** The last turns that ended (at most 100), oldest first, with how and what the agent said. */
   endedTurns?: Array<{ turn: string; outcome: TurnOutcome; reply?: string }>;
+  /** What its requests cost, rewound ones included (micro-USD). */
+  spentMicroUsd?: number;
+  /** Requests the catalog had no price for: `spentMicroUsd` is a floor. */
+  unpricedRequests?: number;
 };
 
 /** One file the person attached to a message, as the renderer read it. */
@@ -245,6 +273,14 @@ export type EngineHostMethods = {
     result: SubscriptionUsage | null;
   };
   shutdown: { input: undefined; result: null };
+  /** An epic's conversation, spend and unreported turns (docs/orchestrator.md). */
+  epicState: { input: { epicId: string }; result: EpicState };
+  /**
+   * The window changed an epic in the API (its settings, a pause, a
+   * resume): the host reads it again, holds or releases its queued
+   * stories, and wakes the orchestrator if that is due.
+   */
+  epicChanged: { input: { epicId: string }; result: EpicState };
 } & EngineTaskMethods &
   EngineStoryMethods;
 
@@ -303,6 +339,8 @@ export const engineHostMethods = [
   "planUsage",
   "shutdown",
   "status",
+  "epicState",
+  "epicChanged",
   ...engineTaskMethods,
   ...engineStoryMethods,
 ] as const satisfies readonly EngineHostMethod[];
@@ -321,6 +359,8 @@ export type EngineHostEvent =
     }
   /** How far a followed session's plan is, each time it moves. */
   | { type: "plan"; session: SessionId; plan: PlanProgress | undefined }
+  /** An epic's state changed (`epicState`); no `projectId`: story listeners skip it. */
+  | { type: "epic"; epicId: string; state: EpicState }
   | StoryHostEvent;
 
 /** What the host asks of the main process: desktop services its tools use. */
@@ -407,6 +447,8 @@ export type EnginePlanEvent = Extract<EngineHostEvent, { type: "plan" }>;
 
 export type EngineStoryEvent = StoryHostEvent;
 
+export type EngineEpicEvent = Extract<EngineHostEvent, { type: "epic" }>;
+
 /** `platform.engine`: the renderer's only way to the engine. */
 export type EnginePlatformClient = {
   call<M extends EngineWindowMethod>(
@@ -425,4 +467,6 @@ export type EnginePlatformClient = {
   onPlan(callback: (event: EnginePlanEvent) => void): () => void;
   /** Stories the story service changed, and its queue. */
   onStory(callback: (event: EngineStoryEvent) => void): () => void;
+  /** Epics whose state changed (the orchestrator's conversation, spend). */
+  onEpic?(callback: (event: EngineEpicEvent) => void): () => void;
 };

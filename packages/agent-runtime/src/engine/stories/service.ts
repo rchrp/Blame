@@ -21,17 +21,8 @@
 
 import type { TurnOutcome } from "@blame/engine-client";
 import type { ApiConnection } from "../../types.js";
-import type { DesktopServices } from "../desktop-services.js";
+import type { EngineModelChoice, EngineSessionStatus } from "../protocol.js";
 import type {
-  EngineHostInput,
-  EngineHostMethod,
-  EngineHostResult,
-  EngineLocation,
-  EngineModelChoice,
-  EngineSessionStatus,
-} from "../protocol.js";
-import type {
-  StoryHostEvent,
   StoryMergeOutcome,
   StoryMessageInput,
   StoryPreferences,
@@ -48,7 +39,7 @@ import { StoryLedger } from "./ledger.js";
 import { StoryOwnership } from "./ownership.js";
 import { dependencyWait, queuedStories, retryDelay } from "./queue.js";
 import { reconcileDecision } from "./reconcile.js";
-import { ReconcileScheduler } from "./reconciler.js";
+import { ReconcileScheduler, withinDeadline } from "./reconciler.js";
 import { StoryRecords } from "./records.js";
 import { storyTurnModel } from "./settings.js";
 import {
@@ -58,36 +49,19 @@ import {
   type StoryEventExtra,
 } from "./start.js";
 import {
+  definedFields,
   inactiveStoryFields,
   storyLocation,
   storyResumeMessage,
   type HostStory,
+  type StoryBriefUpdate,
   type StoryUpdate,
 } from "./story.js";
 import { pauseStory, sendStoryMessage } from "./turns.js";
+import type { StoryServiceHost, StoryServiceOptions } from "./service-host.js";
 import { StoryWindows } from "./windows.js";
 
-export type StoryServiceHost = {
-  api(): ApiConnection | undefined;
-  /** The engine host's own calls (createSession, send, status…). */
-  call<M extends EngineHostMethod>(
-    method: M,
-    input: EngineHostInput<M>,
-  ): Promise<EngineHostResult<M>>;
-  desktop: DesktopServices;
-  emit(event: StoryHostEvent): void;
-  /** The sessions this computer's engine at a location keeps (never read from Blame's database). */
-  storedSessions?(location: EngineLocation): Promise<string[]>;
-};
-
-export type StoryServiceOptions = {
-  /** Where what this computer runs and told is kept (`ledger.ts`). */
-  ledgerFile?: string;
-  /** How long a reconcile waits for the API or the engine (tests shorten it). */
-  deadlineMs?: number;
-  /** How long after its n-th failure a reconcile is tried again. */
-  retryMs?: (failures: number) => number;
-};
+export type { StoryServiceHost, StoryServiceOptions } from "./service-host.js";
 
 // Stories are read again, and checked against the engine, this often.
 const tickMs = 60_000;
@@ -188,9 +162,10 @@ export class StoryService {
   }
 
   /** Looks at a waiting story (every one without an id) again now. */
-  retry(storyId?: string) {
-    if (storyId) this.retryAt.delete(storyId);
-    else this.retryAt.clear();
+  retry(storyId?: string | readonly string[]) {
+    if (storyId === undefined) this.retryAt.clear();
+    for (const id of typeof storyId === "string" ? [storyId] : (storyId ?? []))
+      this.retryAt.delete(id);
     this.pump();
   }
 
@@ -227,6 +202,8 @@ export class StoryService {
     requestedModel?: HostStory["requestedModel"];
     runMode?: HostStory["runMode"];
     targetBranch?: string | null;
+    epicId?: string | null;
+    modelIntent?: HostStory["modelIntent"];
   }): Promise<HostStory> {
     const record = await this.api().create({
       ...input,
@@ -236,6 +213,44 @@ export class StoryService {
     this.emitStory(record);
     this.pump();
     return record.story;
+  }
+
+  /** The brief, dependencies or model of a story no agent has started yet (the orchestrator). */
+  edit(storyId: string, update: StoryBriefUpdate) {
+    return this.exclusive(storyId, async () => {
+      const story = await this.read(storyId);
+      if (story.status !== "backlog" && story.status !== "ready")
+        throw new Error("This story has started: it no longer changes.");
+      const edited = await this.patch(story, update);
+      this.retry(storyId);
+      return edited;
+    });
+  }
+
+  /** The project's stories were read at least once. */
+  loaded(projectId: string) {
+    return this.stories.loadedOnce(projectId);
+  }
+
+  /** The stories of an epic, as last read. */
+  epicStories(epicId: string) {
+    return this.stories.all().filter((story) => story.epicId === epicId);
+  }
+
+  /** The person's settings the windows gave (the account's agent model…). */
+  preferences() {
+    return this.windows.preferences();
+  }
+
+  /**
+   * Where a story's session stands, for a story this computer runs and at
+   * work (another computer's is never read: that would pull it here).
+   */
+  async storyStatus(storyId: string) {
+    const story = this.stories.record(storyId)?.story;
+    if (!story?.engineSessionId || !hasRuntime(story.status)) return undefined;
+    if (!(await this.ledger.owns(storyId))) return undefined;
+    return this.within(this.sessionStatus(story), "The agent engine");
   }
 
   /** Send to Dev Agent: a story of the backlog (or set aside) joins the queue. */
@@ -263,10 +278,14 @@ export class StoryService {
       message: StoryMessageInput;
       steer?: boolean;
       turn?: StoryTurnChoice;
+      /** Read in turn with the story's other acts: true leaves it as it is. */
+      unless?: (story: HostStory) => boolean;
     },
   ) {
     return this.exclusive(storyId, async () => {
-      const story = await this.claim(await this.read(storyId));
+      const read = await this.read(storyId);
+      if (input.unless?.(read)) return read;
+      const story = await this.claim(read);
       return sendStoryMessage(
         this.context(),
         story,
@@ -285,9 +304,17 @@ export class StoryService {
     });
   }
 
-  /** A paused agent picks its conversation back up. */
-  resume(storyId: string, turn?: StoryTurnChoice) {
-    return this.send(storyId, { message: { text: storyResumeMessage }, turn });
+  /**
+   * A paused agent picks its conversation back up, once: one already
+   * resumed (by the person, or by its epic's resume) is left as it is, as
+   * is one `still` no longer wants resumed.
+   */
+  resume(storyId: string, turn?: StoryTurnChoice, still = () => true) {
+    return this.send(storyId, {
+      message: { text: storyResumeMessage },
+      turn,
+      unless: (story) => story.agentStatus === "Running" || !still(),
+    });
   }
 
   /** Undoes a message to the agent and what followed it, files included when they were snapshotted. */
@@ -507,6 +534,8 @@ export class StoryService {
         story: this.payload(story.id),
         outcome: ended.outcome,
         ...(ended.reply ? { lastReply: ended.reply } : {}),
+        spentMicroUsd: status.spentMicroUsd,
+        unpricedRequests: status.unpricedRequests,
       };
       for (const listener of this.turnListeners) {
         try {
@@ -531,14 +560,7 @@ export class StoryService {
   // What a reconcile waits for, it waits for this long at most: a story's
   // turn is never held by an engine or an API that does not answer.
   private within<T>(work: Promise<T>, what: string): Promise<T> {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const deadline = new Promise<never>((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error(`${what} did not answer in time.`)),
-        this.deadlineMs,
-      );
-    });
-    return Promise.race([work, deadline]).finally(() => clearTimeout(timer));
+    return withinDeadline(work, what, this.deadlineMs);
   }
 
   /**
@@ -624,6 +646,11 @@ export class StoryService {
         queued.add(story.id);
         if (this.starting.has(story.id)) continue;
         if ((this.retryAt.get(story.id) ?? 0) > now) continue;
+        const held = this.host.holds?.(story);
+        if (held) {
+          this.setWaiting(story, held, false);
+          continue;
+        }
         // Reasons seen here cost nothing to check again: no delay for them.
         const reason: StoryWaitReason | undefined = !this.host.api()
           ? { kind: "signed-out" }
@@ -943,12 +970,6 @@ export class StoryService {
     if (this.tickTimer) clearInterval(this.tickTimer);
     this.reconciler.stop();
   }
-}
-
-function definedFields<T extends object>(value: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, field]) => field !== undefined),
-  ) as Partial<T>;
 }
 
 function report(error: unknown) {

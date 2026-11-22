@@ -1,8 +1,8 @@
 # The agent engine in the desktop app
 
 How the app runs agents on `blame-engine` (`crates/`). Quick chats,
-development stories, plan mode and the new-project assistant are
-conversations on it; one-shot agents run on it as tasks (see "Tasks"). The
+development stories, plan mode, the orchestrator of an epic and the
+new-project assistant are conversations on it; one-shot agents run on it as tasks (see "Tasks"). The
 engine in the Lima/WSL VM follows the same contract. Benchmarks run on it
 too: `packages/benchmark-runner` runs a story's agent as a task
 (`EngineHost.runStoryTask`, see "Benchmarks").
@@ -45,16 +45,17 @@ Renderer → main → host, all `ipcRenderer.invoke("engine:call", method, input
 | method | does |
 | --- | --- |
 | `connect({ api })` | The API connection (URL, user token) the host uses for credentials, logs, blobs and web search. Sent at start and on every sign-in or token change. |
-| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`, `development-story`, `plan`, `new-project`: system prompt, tools, harness options, checkpoints). The renderer never builds a `SessionConfig`. |
+| `createSession({ session, purpose, settings })` | `session/create` with a config the host builds from the purpose (`quick-chat`, `development-story`, `plan`, `orchestrator`, `new-project`: system prompt, tools, harness options, checkpoints). The renderer never builds a `SessionConfig`. An `orchestrator` session first makes its epic's branch and writes it to the epic (see "The orchestrator"). |
 | `configure({ session, purpose, settings })` | Rebuilds the config from the settings and sets it only when it differs from the session's current one (`{ changed }`). |
-| `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. |
+| `send({ session, message, delivery, settings })` | Applies `settings` as `configure` does, uploads attachments as blobs, then `session/send`. `delivery: "turn"` while a turn runs queues it in the engine; `"steer"` joins the running turn. It answers once the message is in the engine's records. A message whose context reads as the orchestrator's wake is refused: only the host writes one. |
 | `interrupt`, `compact`, `undoRewind({ session, location? })` | The engine calls of the same name. |
 | `rewind({ session, to, restoreWorkspace })` | `session/rewind`: undo a message and, when asked, its files. |
 | `resolveApproval({ session, call, decision })` | Answers the pending `host/approval`. |
 | `follow({ session, subscription })`, `unfollow({ subscription })` | Records and deltas of one session. The caller names the subscription, so main can follow again after a host restart. |
 | `running()` | Sessions with a turn running now. |
 | task calls (`generateTitle`…), `cancelTask({ session })`, `deleteSession({ session })` | See [Tasks](#tasks); declared in `engine/task-protocol.ts`. |
-| `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended, what the agent last reported (`lastReply`: its `finish_task` summary, or its last text) and how far its plan is (`plan`). |
+| `status({ sessions })` | For each session, from its records: whether it exists, runs, how its last turn ended, what the agent last reported (`lastReply`: its `finish_task` summary, or its last text), how far its plan is (`plan`) and what its requests cost, rewound ones included (`spentMicroUsd`, `unpricedRequests`). |
+| `epicState({ epicId })`, `epicChanged({ epicId })` | An epic's conversation state, unreported turns and spend (`EpicState`); `epicChanged` after the window wrote the epic (its settings, a pause), so the host reads it again. See `docs/orchestrator.md`. |
 | `story*` | The story service (see "Development stories"; declared in `engine/story-protocol.ts`): `storySync`, `storyRefresh`, `storyRetry`, `storyQueueState`, `storyEnqueue`, `storySend`, `storyPause`, `storyResume`, `storyRewind`, `storyApprove`, `storyComplete`, `storyToBacklog`, `storyDiscard`, `storyDelete`, `storyError`. A story comes back as the API's payload. |
 | `providers({ refresh })` | The providers and models to offer: the engine's `catalog/list` (models.dev) with the person's credentials, an OpenAI-compatible server's own `/models`, and the API's ranking. `refresh` asks models.dev first (the pickers do on opening). |
 | `saveCredential`, `deleteCredential({ id })` | The person's provider credentials, kept by the API. |
@@ -79,6 +80,9 @@ Host → renderer, on `engine:event`:
   moves. A story's card and its drawer header read it (`onPlan`,
   `components/chat/plan/plan-progress-store.ts`); no transcript is read for a
   card.
+- `{ type: "epic", epicId, state }`: an epic's `EpicState` changed
+  (`onEpic`, optional on `EnginePlatformClient`); it has no `projectId`, so
+  the story listeners skip it.
 - `{ type: "story", projectId, storyId, story }`, `story-removed`,
   `story-cleanup` and `story-queue`: what the story service wrote to a story
   (the API's payload), a story it deleted, the removal of a story's runtime,
@@ -121,12 +125,19 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   (`agentStatus`, `agentLastError`, `engineSessionId`, `agentModels`) and of
   its status once it is queued. Windows call it (`story*`) and show what it
   writes; the host's own code (the orchestrator) calls its methods directly:
-  `create`, `enqueue`, `send`, `pause`, `resume`, `approve`, `complete`,
-  `discard`, `toBacklog`, `remove`, and `onTurnEnded` for one event per
-  ended turn (its id, the story, the turn's outcome and the agent's report,
-  `lastReply`). Each method checks the story is in the state it needs
-  (`enqueue` a story of the backlog, `approve` one in review), and every
-  action on a story runs after the one before it.
+  `create` (with `epicId`, `modelIntent`, `requestedModel`, `startsAfter`,
+  `targetBranch`, `runMode`), `edit` (the title, brief, dependencies,
+  intent, model or run mode of a story not started), `enqueue`, `send`,
+  `pause`, `resume`, `approve`, `complete`, `discard`, `toBacklog`,
+  `remove`, `storyStatus` (a story's session, only for a story this
+  computer runs and at work), `epicStories`, `loaded`, `preferences`, and
+  `onTurnEnded` for one event per ended turn (its id, the story, the turn's
+  outcome, the agent's report `lastReply`, and what the session spent).
+  Each method checks the story is in the state it needs (`enqueue` a story
+  of the backlog, `edit` one not started, `approve` one in review), and
+  every action on a story runs after the one before it. The host may hold
+  a queued story without a reason of its own (`holds`): the orchestrator's
+  gate for an epic paused, spent or run on another computer.
 - **What only a window knows**: each window sends `storySync` with its id,
   the projects open on this computer (id and folder, from its recent
   projects) and the person's settings kept on the device: the account's
@@ -227,7 +238,15 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
   settings. Pause is `interrupt`; undo of a message is `rewind` with its
   files, then the turns are counted again; Compact is `compact`.
 - **Board state**: an `activity` event with `running` sets `agentStatus:
-  "Running"`; the end of a turn sets what its outcome means (completed: In
+  "Running"`. The engine reports no activity between accepting a message
+  and its turn's first request (it sets `waiting` just before the request),
+  so the activity reads idle while a turn is open: the session hub ends a
+  run on the engine's idle activity, or, for a turn the engine ended before
+  it ever turned busy (an interrupt at once), on the end in the records of
+  the very turn the host sent (`hub.watch(session, turn)`; a session
+  already followed may have that end before the send returns, and `watch`
+  finds it there), never on an older turn's end met while a long log is
+  read back in pages; the end of a turn sets what its outcome means (completed: In
   review; failed: Paused with `agentLastError`; interrupted or limit
   reached: Paused) and how many turns each model answered. After a quit
   mid-turn, the stories left Running are settled from `status` when the
@@ -255,6 +274,62 @@ A story is a `development-story` session (`engine/purposes/development-story.ts`
 Plan mode is a `plan` session per project (its id kept in local storage);
 the new-project assistant is a `new-project` session per opening of the
 wizard, in a scratch folder the host makes.
+
+## The orchestrator
+
+An epic's conversation is an `orchestrator` session
+(`engine/purposes/orchestrator.ts`, one per epic, its id in
+`epic.engineSessionId`); `docs/orchestrator.md` is its contract.
+
+- **Workspace**: the project folder, read only: harness `search_code` and
+  `read_code`, no checkpoints, no `update_plan`.
+- **Settings** (`OrchestratorSettings`): workspace, `projectId`, `epicId`,
+  `model`, context cap, personalization. The host reads the epic before it
+  builds the config (`Orchestrator.resolve`): its title, goal and branches
+  go in the prompt, its `orchestratorModel` wins over the window's model.
+- **Tools**: the conversation tools of plan mode without
+  `propose_user_stories`, plus the host's own (`engine/orchestrator/tools.ts`,
+  logic and refusals in `actions.ts`): `epic_board`, `create_stories`,
+  `update_story`, `story_report`, `message_story`, `approve_story`,
+  `reject_story`, `end_turn`. They go through `EngineHost.stories`, never
+  the API's story fields directly.
+- **Completion contract**: `end_turn` is the result tool
+  (`orchestratorCompletionContract`).
+- **Approvals**: `create_stories`, `update_story` and `approve_story`
+  declare `needs_approval`; the host's `host/approval` handler answers
+  those three at once unless the epic asks before launching (any other
+  tool's request is the person's).
+- **The queue's gate**: `StoryServiceHost.holds` gives the wait reason of a
+  story its epic holds (`{ kind: "epic", hold }`: paused, budget, elsewhere,
+  direct, unknown); an epic's story never runs Direct (`stories/start.ts`
+  waits with `hold: "direct"`), and an epic's Approve & Merge refuses a
+  conflicting merge (`conflicts: "refuse"` of `approveAndMerge`, a
+  `StoryMergeConflictError` with the files) instead of the merge agent's
+  resolution: the merge is undone (`git merge --abort`, else `git reset
+  --merge`), or the error says the worktree is left mid-merge and where.
+- **Pause all**: the host pauses the epic's agents at work and cuts the
+  orchestrator's turn running then (only that one: the person can talk to
+  it while paused), then resumes exactly those (`orchestrator/pause.ts`),
+  written ahead so a quit part way is taken up. The windows' story calls
+  name each story a person acts on (`storyHandlers`' `touched`, awaited
+  before the act runs), which the pause leaves to them; `resume` of an
+  agent already running does nothing, so the person's resume and the
+  epic's never double. `StoryService.retry` takes the stories to look at
+  again.
+- **Waking** (`engine/orchestrator/service.ts`): the host writes to the
+  session itself, a user message of one `context` block holding
+  `<orchestrator_wake>` (`parseOrchestratorWake`), when the epic's stories
+  call for it; what a wake told is read back from the records, so each
+  story turn is told once.
+- **Kept on this computer**: `<userData>/orchestrator-epics.json`, the epics
+  whose conversation runs here with the API they were made through and the
+  branch this host made, the last settings a window sent, the turns
+  waiting for a wake and those heard, each story's and the conversation's
+  spend, the messages and requests for changes sent, what a pause stopped.
+  A 404 never drops any of it.
+- **Model choice**: `resolveModelIntent` and `escalateModel`
+  (`engine/model-intent.ts`) are exported from `engine-protocol` for the
+  screen.
 
 ## Engine in the VM
 
@@ -456,7 +531,12 @@ later day does not rewrite it and the provider's prompt cache holds.
   the board); runs, activities and story comments are records.
 - **The story service** in the engine host writes a story's agent fields
   above and its status from the queue on (started, settled, merged, done,
-  discarded, back to the backlog, deleted).
+  discarded, back to the backlog, deleted); for the orchestrator it also
+  creates stories and changes the brief, dependencies and model of one not
+  started.
+- **The orchestrator** in the engine host writes an epic's `branch`,
+  `targetBranch` and `engineSessionId` when its conversation is created;
+  the screen writes the rest of the epic.
 - **The renderer** writes product state (create, rename, delete a chat; create
   a story and edit its fields) and nothing about runs: no run rows, no
   activities, no outboxes.
@@ -538,23 +618,27 @@ server dropped later fails with the server's message, a new one shows in new
 conversations, or in this one after the app restarts (one `ConfigChanged`,
 one cache miss).
 
-| tool | needs | story | plan | new project | quick chat (proposed) |
-| --- | --- | --- | --- | --- | --- |
-| `search_web`, `read_web_page` | API connection, `renderWebPage` | yes | yes | yes | yes (today) |
-| `read_attachment` | workspace (an executor for the VM) | yes | yes | yes | no: attachments are message blocks |
-| `get_preview_devtools` | `previewDevtools`, a preview without surface | yes | yes | no | no |
-| `preview_devtools__*` | `previewDevtools`, `previewDevtoolsTools`, `previewDevtoolsCall`, a preview scope | yes | yes | no | no |
-| `preview_terminal`, `preview_display`, `preview_device` | `previewSurfaceInfo`, `previewSurfaceCall` (replace the DevTools tools) | yes | yes | no | no |
-| `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no |
-| `repair_preview_initialization` | the repair task (`runInitializationRepair`), then main's `applyPreviewInitialization` (`tools/preview-repair.ts`) | yes | no | no | no |
-| `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no |
-| `open_component_preview` | `componentPreview`, and `prepareComponentPreview` saying the workspace holds a project it renders | yes | no | no | yes |
-| `propose_user_stories` | a project | yes | yes | no | yes |
-| `propose_project_stack` | nothing | no | no | yes | no |
-| `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | no | yes |
-| `github__*` | `githubMcpTools`, `githubMcpCall`: read-only GitHub access for the session id | yes | yes | no | no |
-| `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | no | yes |
-| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.agents/skills`… and Blame's own) | yes | yes | no | yes |
+| tool | needs | story | plan | orchestrator | new project | quick chat (proposed) |
+| --- | --- | --- | --- | --- | --- | --- |
+| `search_web`, `read_web_page` | API connection, `renderWebPage` | yes | yes | yes | yes | yes (today) |
+| `read_attachment` | workspace (an executor for the VM) | yes | yes | yes | yes | no: attachments are message blocks |
+| `get_preview_devtools` | `previewDevtools`, a preview without surface | yes | yes | no | no | no |
+| `preview_devtools__*` | `previewDevtools`, `previewDevtoolsTools`, `previewDevtoolsCall`, a preview scope | yes | yes | no | no | no |
+| `preview_terminal`, `preview_display`, `preview_device` | `previewSurfaceInfo`, `previewSurfaceCall` (replace the DevTools tools) | yes | yes | no | no | no |
+| `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no | no |
+| `repair_preview_initialization` | the repair task (`runInitializationRepair`), then main's `applyPreviewInitialization` (`tools/preview-repair.ts`) | yes | no | no | no | no |
+| `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no | no |
+| `open_component_preview` | `componentPreview`, and `prepareComponentPreview` saying the workspace holds a project it renders | yes | no | no | no | yes |
+| `propose_user_stories` | a project | yes | yes | no | no | yes |
+| `propose_project_stack` | nothing | no | no | no | yes | no |
+| `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | yes | no | yes |
+| `github__*` | `githubMcpTools`, `githubMcpCall`: read-only GitHub access for the session id | yes | yes | yes | no | no |
+| `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | yes | no | yes |
+| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.agents/skills`… and Blame's own) | yes | yes | yes | no | yes |
+
+The orchestrator also has its own tools, `epic_board`, `create_stories`,
+`update_story`, `story_report`, `message_story`, `approve_story`,
+`reject_story` and `end_turn` (see "The orchestrator").
 
 Not client tools: `finish_task` and the harness (Rust harness), the helper
 agents of ultra mode (the engine's `run_agents`, see "Ultra mode"), project
