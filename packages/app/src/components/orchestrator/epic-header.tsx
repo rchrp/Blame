@@ -66,14 +66,8 @@ export function EpicHeader({
             budgetMicroUsd={epic.settings.budgetMicroUsd}
             state={state}
           />
-          {epic.status === "paused" ? null : (
-            <ConversationStatus state={state} />
-          )}
-          {epic.status === "paused" ? (
-            <span className="font-medium text-amber-700 dark:text-amber-300">
-              Paused
-            </span>
-          ) : null}
+          {epic.status === "paused" ? <PauseStatus state={state} /> : null}
+          <ConversationStatus paused={epic.status === "paused"} state={state} />
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
@@ -179,29 +173,67 @@ const conversationLabels: Partial<
   failed: { text: "Orchestrator failed", tone: "text-destructive" },
 }
 
-function ConversationStatus({ state }: { state?: EpicState }) {
+// "Paused" only once the host stopped what the pause meant to stop.
+function PauseStatus({ state }: { state?: EpicState }) {
+  const pause = state?.pause
+  if (pause?.phase === "paused")
+    return (
+      <span className="font-medium text-amber-700 dark:text-amber-300">
+        Paused
+      </span>
+    )
+  if (pause?.error)
+    return (
+      <span
+        className="max-w-full font-medium break-words text-destructive"
+        role="alert"
+      >
+        Not fully paused: {pause.error}
+      </span>
+    )
+  return <span className="font-medium text-muted-foreground">Pausing…</span>
+}
+
+function ConversationStatus({
+  paused,
+  state,
+}: {
+  paused: boolean
+  state?: EpicState
+}) {
   const blocked = state?.blocked?.length ?? 0
   const quiet =
     state?.conversation === "waiting" ||
     state?.conversation === "idle" ||
     state?.conversation === "working"
-  // Stories only the person can start come before the orchestrator's state.
+  const needsYou = "text-amber-700 dark:text-amber-300"
+  // What only the person can fix comes before the orchestrator's state: a
+  // problem of the epic itself (its branch gone, its file unreadable), then
+  // stories only they can start.
   const label =
-    blocked && quiet
-      ? {
-          text:
-            blocked === 1
-              ? "1 story needs you to start"
-              : `${blocked} stories need you to start`,
-          tone: "text-amber-700 dark:text-amber-300",
-        }
-      : state
-        ? conversationLabels[state.conversation]
-        : undefined
+    state?.error && quiet
+      ? { text: "Needs you: see the conversation", tone: needsYou }
+      : blocked && quiet
+        ? {
+            text:
+              blocked === 1
+                ? "1 story needs you to start"
+                : `${blocked} stories need you to start`,
+            tone: needsYou,
+          }
+        : // Paused, a sleeping orchestrator is implied; one the person talks to is not.
+          paused &&
+            (state?.conversation === "waiting" ||
+              state?.conversation === "idle")
+          ? undefined
+          : state
+            ? conversationLabels[state.conversation]
+            : undefined
   if (!label) return null
   return (
     <span
       className={cn("inline-flex items-center gap-1.5 font-medium", label.tone)}
+      title={state?.error && quiet ? state.error : undefined}
     >
       {state?.conversation === "working" && label.tone === "text-foreground" ? (
         <span aria-hidden="true" className="agent-thinking-mark size-2!" />

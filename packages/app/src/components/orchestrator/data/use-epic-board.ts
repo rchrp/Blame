@@ -84,7 +84,12 @@ export function useEpicActivities(epics: readonly Epic[]) {
       new Map(
         epics.map((epic) => [
           epic.id,
-          epicActivity(epic, boardOf(epic), states.get(epic.id)?.conversation),
+          epicActivity(
+            epic,
+            boardOf(epic),
+            states.get(epic.id)?.conversation,
+            states.get(epic.id)?.error ?? states.get(epic.id)?.pause?.error
+          ),
         ])
       ),
     [boardOf, epics, states]

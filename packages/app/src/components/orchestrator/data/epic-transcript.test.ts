@@ -8,6 +8,7 @@ import {
   decisionStories,
   epicTranscript,
   openQuestion,
+  personSentence,
 } from "./epic-transcript.ts"
 
 const model = { provider: "anthropic", model: "claude-sonnet-5-5" }
@@ -296,4 +297,18 @@ test("a refused ending is a problem, not an ending", () => {
     ),
   ])
   assert.equal(result.at(-1)?.kind, "problem")
+})
+
+test("a refusal's first sentence is the person's", () => {
+  assert.equal(
+    personSentence(
+      "US-005 is not merged: its changes conflict with the epic's branch. Ask for changes (message_story, kind changes): its agent merges epic/x."
+    ),
+    "US-005 is not merged: its changes conflict with the epic's branch."
+  )
+  assert.equal(
+    personSentence("It costs $3.20 more. Stop."),
+    "It costs $3.20 more."
+  )
+  assert.equal(personSentence("No full stop here"), "No full stop here")
 })

@@ -91,7 +91,7 @@ test("a wait only the person can end needs them; the others stay queued", () => 
   assert.equal(groups[2]!.entries[0]!.note, "wait:dependencies")
 })
 
-test("a review is the orchestrator's only while the epic runs with a conversation", () => {
+test("a review waits for the orchestrator, during a pause too, unless it has no conversation", () => {
   const review = [story({ id: "r", status: "in-review" })]
   assert.deepEqual(ids(board(review))["working"], ["r"])
   assert.deepEqual(
@@ -100,10 +100,9 @@ test("a review is the orchestrator's only while the epic runs with a conversatio
     ],
     ["r"]
   )
-  assert.deepEqual(
-    ids(board(review, {}, { ...activeEpic, status: "paused" }))["needs-you"],
-    ["r"]
-  )
+  const paused = board(review, {}, { ...activeEpic, status: "paused" })
+  assert.deepEqual(ids(paused)["working"], ["r"])
+  assert.equal(paused[1]!.entries[0]!.note, "Reviewed once the epic resumes")
 })
 
 test("a paused agent needs the person unless the whole epic is paused", () => {
@@ -163,8 +162,8 @@ test("a review waits for the person while the orchestrator is stopped or failed"
 })
 
 test("an epic's hold keeps a story queued, or needs the person when it is theirs to fix", () => {
-  const stories = ["paused", "elsewhere", "budget", "direct"].map((hold) =>
-    story({ id: hold, status: "ready" })
+  const stories = ["paused", "elsewhere", "budget", "direct", "branch"].map(
+    (hold) => story({ id: hold, status: "ready" })
   )
   const waits = Object.fromEntries(
     stories.map((item) => [
@@ -174,7 +173,7 @@ test("an epic's hold keeps a story queued, or needs the person when it is theirs
   )
   const groups = board(stories, waits)
   assert.deepEqual(ids(groups)["queued"], ["paused", "elsewhere"])
-  assert.deepEqual(ids(groups)["needs-you"], ["budget", "direct"])
+  assert.deepEqual(ids(groups)["needs-you"], ["budget", "direct", "branch"])
   assert.equal(groups[2]!.entries[0]!.note, "wait:epic")
 })
 
@@ -197,4 +196,20 @@ test("the dot follows the orchestrator's conversation too", () => {
   assert.equal(epicActivity({ status: "active" }, empty, "waiting"), "working")
   assert.equal(epicActivity({ status: "active" }, empty, "finished"), "done")
   assert.equal(epicActivity({ status: "paused" }, empty, "waiting"), "paused")
+})
+
+test("a problem of the epic itself needs the person", () => {
+  assert.equal(
+    epicActivity(
+      { status: "active" },
+      board([]),
+      "waiting",
+      "The epic's branch is gone."
+    ),
+    "needs-you"
+  )
+  assert.equal(
+    epicActivity({ status: "paused" }, board([]), "waiting"),
+    "paused"
+  )
 })

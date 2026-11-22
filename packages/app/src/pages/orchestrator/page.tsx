@@ -9,7 +9,10 @@ import type {
   Epic,
   EpicSettings,
 } from "@/components/orchestrator/data/epic-data"
-import { useEpicStore } from "@/components/orchestrator/data/epic-store"
+import {
+  EpicChangeNotApplied,
+  useEpicStore,
+} from "@/components/orchestrator/data/epic-store"
 import { useEpicBoard } from "@/components/orchestrator/data/use-epic-board"
 import { useEpicModels } from "@/components/orchestrator/data/use-epic-models"
 import { EpicBoardView } from "@/components/orchestrator/epic-board-view"
@@ -84,28 +87,31 @@ function EpicView({
   // and resumes exactly those (the store tells it: epicChanged). A pause is
   // never the person's Stop (interrupt), which is not resumed.
   async function pauseAll() {
-    setPausing(true)
-    try {
-      await epics.update(epic, { status: "paused" })
-    } catch (error) {
-      toast.error("Couldn't pause the epic", {
-        description: error instanceof Error ? error.message : String(error),
-        position: "bottom-right",
-      })
-    } finally {
-      setPausing(false)
-    }
+    await changeStatus("paused")
   }
 
   async function resume() {
+    await changeStatus("active")
+  }
+
+  // The status goes to the API, then the host acts on it. When it cannot,
+  // the person is told, never shown a pause that did not take.
+  async function changeStatus(status: "paused" | "active") {
     setPausing(true)
     try {
-      await epics.update(epic, { status: "active" })
+      await epics.update(epic, { status })
     } catch (error) {
-      toast.error("Couldn't resume the epic", {
-        description: error instanceof Error ? error.message : String(error),
-        position: "bottom-right",
-      })
+      const message = error instanceof Error ? error.message : String(error)
+      toast.error(
+        error instanceof EpicChangeNotApplied
+          ? status === "paused"
+            ? "The epic is marked paused, but Blame could not pause its work"
+            : "The epic is marked active, but Blame could not resume its work"
+          : status === "paused"
+            ? "Couldn't pause the epic"
+            : "Couldn't resume the epic",
+        { description: message, position: "bottom-right" }
+      )
     } finally {
       setPausing(false)
     }
@@ -187,7 +193,19 @@ function EpicView({
         epic={epic}
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        onSave={(settings: EpicSettings) => epics.update(epic, { settings })}
+        onSave={(settings: EpicSettings) =>
+          epics.update(epic, { settings }).catch((error: unknown) => {
+            // Saved: only telling the host failed, which the next look repairs.
+            if (!(error instanceof EpicChangeNotApplied)) throw error
+            toast.warning(
+              "Saved, but Blame could not tell the orchestrator yet",
+              {
+                description: error.message,
+                position: "bottom-right",
+              }
+            )
+          })
+        }
       />
     </>
   )

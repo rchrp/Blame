@@ -24,6 +24,7 @@ import type { Epic } from "@/components/orchestrator/data/epic-data"
 import { modelIntentLabels } from "@/components/orchestrator/data/epic-model-range"
 import {
   decisionStories,
+  personSentence,
   type EpicEntry,
 } from "@/components/orchestrator/data/epic-transcript"
 import { Button } from "@/components/ui/button"
@@ -149,7 +150,8 @@ function WakeRow({
   if (wake.reason === "resumed")
     return (
       <EventRow icon={<BellRingIcon />}>
-        Blame stopped while the orchestrator worked. It goes on from the board.
+        The orchestrator&rsquo;s turn was cut (a pause, or Blame quitting). It
+        goes on from the board.
       </EventRow>
     )
   if (wake.reason === "idle" && !wake.stories.length)
@@ -284,12 +286,7 @@ function DecisionRow({
           <DecisionDetail decision={decision} />
         </div>
       </div>
-      {refused ? (
-        <p className="flex items-start gap-1.5 rounded-md bg-destructive/10 px-2 py-1.5 text-destructive">
-          <ShieldAlertIcon className="mt-0.5 size-3.5 shrink-0" />
-          <span className="break-words">Refused: {decision.refusal}</span>
-        </p>
-      ) : null}
+      {refused ? <Refusal text={decision.refusal!} /> : null}
       {denied ? (
         <p className="text-muted-foreground">
           You denied it; the orchestrator was told.
@@ -302,6 +299,29 @@ function DecisionRow({
           </span>
           <ApprovalDecision call={decision.call} />
         </div>
+      ) : null}
+    </div>
+  )
+}
+
+// The host's first sentence is for the person; what it told the
+// orchestrator to do instead stays one click away.
+function Refusal({ text }: { text: string }) {
+  const sentence = personSentence(text)
+  const rest = text.trim().slice(sentence.length).trim()
+  return (
+    <div className="grid gap-1 rounded-md bg-destructive/10 px-2 py-1.5 text-destructive">
+      <p className="flex items-start gap-1.5">
+        <ShieldAlertIcon className="mt-0.5 size-3.5 shrink-0" />
+        <span className="break-words">Refused: {sentence}</span>
+      </p>
+      {rest ? (
+        <details className="pl-5 text-xs text-muted-foreground">
+          <summary className="cursor-pointer select-none">
+            What the orchestrator was told
+          </summary>
+          <p className="mt-1 break-words whitespace-pre-wrap">{rest}</p>
+        </details>
       ) : null}
     </div>
   )

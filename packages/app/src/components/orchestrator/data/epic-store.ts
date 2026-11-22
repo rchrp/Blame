@@ -30,6 +30,11 @@ const EpicStoreContext = React.createContext<EpicStoreValue | undefined>(
 // The page's choice, per project, survives a restart.
 const activeEpicMemoryKey = "orchestrator.active-epic"
 
+/** The epic changed in the API, but the engine host could not act on it. */
+export class EpicChangeNotApplied extends Error {
+  override name = "EpicChangeNotApplied"
+}
+
 export function EpicStoreProvider({ children }: { children: React.ReactNode }) {
   const value = useEpicStoreValue()
   return React.createElement(EpicStoreContext.Provider, { value }, children)
@@ -166,9 +171,14 @@ function useEpicStoreValue() {
       const next = await api.update(epic.id, input)
       replace(next)
       // The host reads the epic again: a pause holds its stories, new
-      // settings apply from the orchestrator's next call.
+      // settings apply from the orchestrator's next call. The change is in
+      // the API whatever it answers; a host that could not act says so.
       if (input.status !== undefined || input.settings !== undefined)
-        await changed(epic.id).catch(() => undefined)
+        await changed(epic.id).catch((error: unknown) => {
+          throw new EpicChangeNotApplied(
+            error instanceof Error ? error.message : String(error)
+          )
+        })
       return next
     },
     [api, changed, replace]

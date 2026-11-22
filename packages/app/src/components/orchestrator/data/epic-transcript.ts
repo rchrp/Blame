@@ -153,7 +153,7 @@ function toolEntry(item: ToolCallItem): EpicEntry | undefined {
       return {
         kind: "problem",
         key: item.key,
-        text: `Could not ${String(input.action ?? "end")}: ${resultText(item)}`,
+        text: `Could not ${String(input.action ?? "end")}: ${personSentence(resultText(item))}`,
       }
     if (item.state !== "completed") return undefined
     const action = input.action
@@ -199,6 +199,15 @@ function toolEntry(item: ToolCallItem): EpicEntry | undefined {
     input: item.input,
     running: item.state === "requested" || item.state === "running",
   }
+}
+
+/**
+ * A refusal's first sentence: the host writes it for the person, the rest
+ * for the model (what to do instead).
+ */
+export function personSentence(text: string) {
+  const trimmed = text.trim()
+  return /^[\s\S]*?[.!?](?=\s|$)/.exec(trimmed)?.[0] ?? trimmed
 }
 
 /** The question still waiting for the person: the last entry, an ask. */

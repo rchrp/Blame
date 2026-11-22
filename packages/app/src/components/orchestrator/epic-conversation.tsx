@@ -215,8 +215,8 @@ function ConversationNotice({ state }: { state: EpicState | undefined }) {
       <p className="flex items-start gap-2 rounded-md bg-muted px-2.5 py-2 text-xs text-muted-foreground">
         <OctagonPauseIcon className="mt-px size-3.5 shrink-0" />
         <span>
-          You stopped the orchestrator. It is not woken until you write to it;
-          its stories go on.
+          The orchestrator is stopped: by you, or its turn was cut and not
+          resumed. It is not woken until you write to it; its stories go on.
         </span>
       </p>
     )

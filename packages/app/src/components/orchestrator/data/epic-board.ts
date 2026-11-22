@@ -116,12 +116,20 @@ function placeStory<Story extends EpicBoardStory>(
     case "discarded":
       return { group: "rejected" }
     case "in-review":
-      return running &&
-        input.epic.engineSessionId &&
-        input.orchestrator !== "stopped" &&
-        input.orchestrator !== "failed"
+      if (
+        !input.epic.engineSessionId ||
+        input.orchestrator === "stopped" ||
+        input.orchestrator === "failed"
+      )
+        return {
+          group: "needs-you",
+          note: "Ready for your review",
+          alert: true,
+        }
+      // A pause the person chose is not something they owe.
+      return running
         ? { group: "working", note: "The orchestrator reviews it" }
-        : { group: "needs-you", note: "Ready for your review", alert: true }
+        : { group: "working", note: "Reviewed once the epic resumes" }
     case "in-progress":
       if (story.agentStatus === "Paused")
         return running
@@ -138,10 +146,13 @@ function placeStory<Story extends EpicBoardStory>(
       const reason = input.wait(story.id)
       if (!reason) return { group: "queued" }
       const note = input.waitText(reason)
-      // Held by its epic: a spent budget or a missing preview environment
-      // is the person's to fix; a pause or another computer is not.
+      // Held by its epic: a spent budget, a missing preview environment or
+      // the epic's branch gone is the person's to fix; a pause is theirs
+      // already, and another computer's is not here.
       if (reason.kind === "epic")
-        return reason.hold === "budget" || reason.hold === "direct"
+        return reason.hold === "budget" ||
+          reason.hold === "direct" ||
+          reason.hold === "branch"
           ? { group: "needs-you", note, alert: true }
           : { group: "queued", note }
       return passingWaits.has(reason.kind)
@@ -159,7 +170,10 @@ export type EpicActivity = "needs-you" | "working" | "paused" | "done"
 export function epicActivity(
   epic: Pick<Epic, "status">,
   groups: readonly EpicBoardGroup[],
-  orchestrator?: OrchestratorConversationState
+  orchestrator?: OrchestratorConversationState,
+  // A problem of the epic itself the host reports (its branch gone, its
+  // kept file unreadable, a pause that could not stop something).
+  problem?: string
 ): EpicActivity | undefined {
   if (epic.status === "completed") return "done"
   if (epic.status === "discarded") return undefined
@@ -167,6 +181,7 @@ export function epicActivity(
     groups.find((group) => group.id === id)?.entries.length ?? 0
   if (
     count("needs-you") ||
+    problem ||
     orchestrator === "asking" ||
     orchestrator === "stopped" ||
     orchestrator === "failed"
