@@ -654,6 +654,7 @@ export class Orchestrator {
     const spend = await reading.spend();
     await this.wake(epicId, entry.session, {
       reason,
+      ...(reason === "resumed" ? { cut: pauseCut ? "pause" : "quit" } : {}),
       stories: unreported,
       board: epicCounts(stories, starting),
       ...(blocked.length ? { blocked } : {}),

@@ -1526,6 +1526,8 @@ describe("what holds when things go wrong", () => {
     await orchestrator.changed(epicId);
     assert.equal(written.length, 1);
     assert.match(JSON.stringify(written[0]), /\\"reason\\":\\"resumed\\"/);
+    assert.match(JSON.stringify(written[0]), /\\"cut\\":\\"pause\\"/);
+    assert.match(JSON.stringify(written[0]), /The person paused the epic/);
     assert.equal(await keptPause(stateFile), undefined);
   });
 

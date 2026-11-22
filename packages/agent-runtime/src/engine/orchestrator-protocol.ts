@@ -245,6 +245,12 @@ export type OrchestratorWakeStory = {
  */
 export type OrchestratorWake = {
   reason: "stories" | "resumed" | "idle";
+  /**
+   * With `resumed`: what cut its turn. `pause`: the epic's pause, now
+   * resumed; `quit`: Blame stopped while it worked (a quit, a crash, the
+   * engine stopping). Absent in a wake written before this was told.
+   */
+  cut?: "pause" | "quit";
   stories: OrchestratorWakeStory[];
   board: EpicBoardCounts;
   /** Queued stories only the person can start, and why. */
@@ -261,7 +267,9 @@ const wakeClose = `</${orchestratorWakeTag}>`;
 export function orchestratorWakeText(wake: OrchestratorWake): string {
   const note =
     wake.reason === "resumed"
-      ? "Blame stopped while you were working. Read the board and go on."
+      ? wake.cut === "pause"
+        ? "The person paused the epic while you were working, and resumed it. Read the board and go on."
+        : "Blame stopped while you were working (it quit, or its engine stopped). Read the board and go on."
       : wake.reason === "idle"
         ? "No story of the epic works or will start by itself. Read the board; ask the person for what only they can fix."
         : "Stories you started ended a turn. Call story_report for one's full report.";

@@ -180,6 +180,40 @@ describe("the orchestrator's rules", () => {
     );
   });
 
+  it("words a resumed wake by what cut the turn, and keeps the cause", () => {
+    const board = {
+      working: 0,
+      queued: 0,
+      held: 0,
+      inReview: 0,
+      paused: 0,
+      merged: 0,
+      rejected: 0,
+    };
+    const text = (cut?: "pause" | "quit") =>
+      orchestratorWakeText({
+        reason: "resumed",
+        ...(cut ? { cut } : {}),
+        stories: [],
+        board,
+      });
+    assert.match(
+      text("pause"),
+      /The person paused the epic while you were working, and resumed it\./,
+    );
+    assert.doesNotMatch(text("pause"), /Blame stopped/);
+    assert.match(
+      text("quit"),
+      /Blame stopped while you were working \(it quit, or its engine stopped\)\./,
+    );
+    // A wake written before the cause was told reads as a quit.
+    assert.match(text(), /Blame stopped while you were working/);
+    assert.equal(
+      parseOrchestratorWake([{ type: "context", text: text("pause") }])?.cut,
+      "pause",
+    );
+  });
+
   it("reads the conversation's state from its last turn", () => {
     const view = (fields: Partial<ConversationView>): ConversationView => ({
       exists: true,
