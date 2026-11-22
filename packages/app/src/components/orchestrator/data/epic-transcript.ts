@@ -15,8 +15,7 @@ import type {
 // The epic's conversation as its page shows it (docs/orchestrator.md, "What
 // the screen reads"): what the person wrote, the host's wakes as events, the
 // orchestrator's words, each acting tool call as a decision, and how each
-// turn ended (waiting, a question, the summary). The generic timeline folds
-// tool calls into a "worked for" panel; here they are the content.
+// turn ended (waiting, a question, the summary).
 
 export type EpicDecisionTool = Exclude<
   OrchestratorTool,
@@ -223,13 +222,18 @@ export function decisionStories(
   const input = record(entry.input)
   if (entry.tool === "create_stories") {
     const created = record(entry.result).created
-    if (Array.isArray(created))
+    const stories = Array.isArray(input.stories) ? input.stories : []
+    if (Array.isArray(created)) {
+      const titles = new Map(
+        stories.map((item) => [record(item).key, text(record(item).title)])
+      )
       return created.flatMap((item) => {
         const story = record(item)
         const ref = text(story.id) ?? text(story.number)
-        return ref ? [{ ref }] : []
+        const title = titles.get(story.key) ?? text(story.number)
+        return ref ? [{ ref, title }] : []
       })
-    const stories = Array.isArray(input.stories) ? input.stories : []
+    }
     return stories.flatMap((item) => {
       const title = text(record(item).title)
       return title ? [{ ref: "", title }] : []

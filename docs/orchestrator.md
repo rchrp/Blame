@@ -397,8 +397,8 @@ on, and the orchestrator is woken (`idle`) to wrap up.
   kept for compatibility: one shows, the others hide behind it), `question` (`text`, `options`) of an `ask`, `summary` of a
   `finish`, `unreported` (ended turns not told yet), `blocked` (the queued
   stories only the person can start, with why; the epic's own pause is not
-  listed, since the person chose it) and `spend`. The sidebar's
-  dot: working for `working`/`waiting`, needs you for `asking`, `stopped`,
+  listed, since the person chose it) and `spend`. The epic switcher shows
+  working for `working`/`waiting`, needs you for `asking`, `stopped`,
   `failed` or any `blocked`, done for `finished`.
 - A queued story's card reads the `epic` wait reason (`storyWaitText`).
 - `resolveModelIntent` and `escalateModel` come from `engine-protocol`, so
@@ -416,19 +416,18 @@ on, and the orchestrator is woken (`idle`) to wrap up.
 
 ## The screen
 
-- **Sidebar**: an Orchestrator entry at the top of the main navigation,
-  above Backlog, with the project's epics under it (a dot for its state:
-  working, needs you, done) and New epic (⌘8). Plan Mode's interface is
-  deleted; `propose_user_stories` and its cards stay for stories and quick
-  chats.
-- **An epic's page**: the conversation on one side (the engine transcript,
-  with each tool call as a decision row: what, on which story, the reason)
-  and the epic's board on the other, grouped by what the person owes: Needs
-  you, Working, Queued (with the wait reason), In the epic branch, Rejected.
-  A story opens in the existing drawer.
-- **Header**: the epic's title and branch, spend against the budget, Pause
-  all, and the settings above (the range is the smart slider with two
-  handles; providers; the orchestrator's model; ask before launching).
+- Select **Orchestrator** in the sidebar to return to the current epic.
+  The title at the top opens the project's epic history and **New epic**.
+  The command palette also offers **New epic**.
+- An open epic uses the chat timeline. The agent introduces the work and each
+  created story appears as a link to its session. Open the work log to inspect
+  tool calls and decisions. Story updates are grouped by report. Questions
+  accept a suggested answer or a reply in the composer. Press Command+Enter
+  on macOS or Ctrl+Enter elsewhere to send the first suggestion.
+- The statistics panel stays expanded. It shows the orchestrator's model and
+  context, total epic spend, branch, status, and changes reported by the stories.
+  Stories are grouped by status and open in the backlog drawer. Pause, resume
+  and settings are available in the panel. The title can be edited in settings.
 - The screen reads and writes epics through the API, stories through the
   backlog store filtered by `epicId`, and the queue's wait reasons through
   the story service's events.
@@ -443,16 +442,15 @@ on, and the orchestrator is woken (`idle`) to wrap up.
    page with its board and settings, the conversation, the removal of Plan
    Mode's interface and of the `plan` purpose.
 
-   What a window has proven: one run of
-   `packages/desktop/scripts/orchestrator-drive.mjs` against the engine's
-   first round showed the loop (two dependent stories, two wakes, two
-   merges into the epic's branch, the summary), the refusal to approve
-   failed checks, and an `ask`. Nothing later was run in a window: the
-   drive's nine scenarios as they are now, Allow and Deny of an approval,
-   Pause all and resume, the single wake after a quit and relaunch, blocked
-   stories, a conflicting merge. Never tried at all: a Local Container
-   (runtime VM) or real Cloud Preview story in an epic, and two computers
-   on one epic.
+   The Electron drive (`packages/desktop/scripts/orchestrator-drive.mjs`)
+   exercises the conversation and statistics panel with the real engine,
+   local API, Git worktrees and a scripted model. Verified scenarios include
+   two dependent stories merging, failed checks, questions, allowing and
+   denying approvals, pausing and resuming an epic, a blocked story, and
+   resolving a conflict before retrying the merge.
+   Quitting while a story runs can leave it paused after relaunch. Actual
+   Local Container and Cloud Preview execution and two computers sharing an
+   epic still need a separate run.
 3. **Epic review**: checks on the epic's branch after each merge, a preview
    of the epic's branch, and the person's merge of the epic into its target
    (or a pull request).

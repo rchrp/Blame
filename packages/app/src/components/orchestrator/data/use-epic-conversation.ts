@@ -1,13 +1,11 @@
 import * as React from "react"
-import type {
-  EngineSessionSettings,
-  EpicState,
-} from "@blame/agent-runtime/engine-protocol"
+import type { EngineSessionSettings } from "@blame/agent-runtime/engine-protocol"
 import { toast } from "sonner"
 
 import { storyMaxInputTokens } from "@/components/backlog/data/story-context-limit"
 import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import type { EngineConversationMessage } from "@/components/chat/engine/use-engine-conversation"
+import { transcriptConversation } from "@/components/chat/engine/transcript-conversation"
 import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import {
   modelForPreference,
@@ -15,10 +13,7 @@ import {
 } from "@/components/model/model-selection"
 import type { Epic } from "@/components/orchestrator/data/epic-data"
 import { useEpicStore } from "@/components/orchestrator/data/epic-store"
-import {
-  epicTranscript,
-  type EpicEntry,
-} from "@/components/orchestrator/data/epic-transcript"
+import { epicTranscript } from "@/components/orchestrator/data/epic-transcript"
 import { orchestratorPreference } from "@/components/orchestrator/data/use-epic-models"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { usePlatform } from "@/context/platform"
@@ -34,17 +29,6 @@ import { storyMessage } from "@/pages/backlog/story-engine"
 // writes the session to the epic); each message goes with the purpose's
 // settings. The host's state of the epic (`epicState`, the `epic` event)
 // comes from the epic store.
-
-export type EpicConversation = {
-  entries: EpicEntry[]
-  loaded: boolean
-  running: boolean
-  session?: string
-  state?: EpicState
-  send: (message: EngineConversationMessage) => boolean
-  stop: () => void
-  unavailableReason?: string
-}
 
 /** Sending to an epic's orchestrator, its session created on the first message. */
 export function useEpicMessenger() {
@@ -122,13 +106,17 @@ export function useEpicMessenger() {
   return { deliver, unavailable }
 }
 
-export function useEpicConversation(epic: Epic): EpicConversation {
+export function useEpicConversation(epic: Epic) {
   const platform = usePlatform()
   const epics = useEpicStore()
   const messenger = useEpicMessenger()
   const session = epic.engineSessionId ?? undefined
   const view = useEngineSession(session)
   const transcript = view.transcript
+  const conversation = React.useMemo(
+    () => transcript && transcriptConversation(transcript, "You"),
+    [transcript]
+  )
   const entries = React.useMemo(
     () => (transcript ? epicTranscript(transcript) : []),
     [transcript]
@@ -139,15 +127,18 @@ export function useEpicConversation(epic: Epic): EpicConversation {
     (transcript?.activity.state ?? "idle") !== "idle"
   const unavailableReason = messenger.unavailable(epic)
 
-  const send = (message: EngineConversationMessage) => {
+  const send = async (message: EngineConversationMessage) => {
     if (unavailableReason) return false
-    void messenger.deliver(epic, message).catch((error: unknown) =>
+    try {
+      await messenger.deliver(epic, message)
+      return true
+    } catch (error) {
       toast.error("Unable to send your message", {
         description: error instanceof Error ? error.message : String(error),
         position: "bottom-right",
       })
-    )
-    return true
+      return false
+    }
   }
 
   const stop = () => {
@@ -155,6 +146,21 @@ export function useEpicConversation(epic: Epic): EpicConversation {
   }
 
   return {
+    conversation,
+    queue: {
+      remove: async (turn: string) => {
+        await platform.engine!.call("withdraw", { session: session!, turn })
+      },
+      sendNow: async (turn: string) => {
+        await platform.engine!.call("promote", { session: session!, turn })
+      },
+      edit: async (turn: string, text: string) => {
+        await platform.engine!.call("withdraw", { session: session!, turn })
+        await messenger.deliver(epic, { text })
+      },
+    },
+    transcript,
+    error: view.error,
     entries,
     loaded: !session || view.loaded,
     running,

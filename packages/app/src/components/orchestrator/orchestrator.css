@@ -1,0 +1,55 @@
+/* Give the preview's launch clouds more room to drift behind the empty composer. */
+.epic-clouds {
+  position: absolute;
+  inset: -24% -20%;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 400ms ease, visibility 0s 400ms;
+}
+
+.epic-clouds[data-visible="true"] {
+  opacity: 0.27;
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+.dark .epic-clouds[data-visible="true"] {
+  opacity: 0.19;
+}
+
+.epic-clouds .preview-ambilight-patch {
+  filter: blur(clamp(64px, 7vw, 128px)) saturate(0.72);
+}
+
+.epic-clouds[data-visible="true"] .preview-ambilight-patch {
+  animation-play-state: running;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .epic-clouds {
+    transition: none;
+  }
+}
+
+/* Short windows keep a reading pane below the expanded, scrollable summary. */
+@container epic (width < 48rem) {
+  .epic-statistics .epic-stories {
+    grid-row-start: 3;
+  }
+}
+@container epic (32rem <= width < 48rem) {
+  .epic-statistics aside {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+  .epic-statistics aside > * {
+    grid-column: 1;
+  }
+  .epic-statistics .epic-stories {
+    grid-column: 2;
+    grid-row: 1 / span 4;
+    border-top: 0;
+    padding-top: 0;
+  }
+}

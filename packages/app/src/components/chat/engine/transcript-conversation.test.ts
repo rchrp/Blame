@@ -318,6 +318,36 @@ test("a turn the agent did not finish keeps its own message, not a limit's", () 
   assert.equal(error.action, undefined)
 })
 
+test("an unfinished orchestrator turn names the epic tool in the shared timeline", () => {
+  const result = conversation([
+    record({ type: "session_created", config: { ...config, purpose: "orchestrator" } }),
+    record({ type: "user_message", turn: "epic", input: [{ type: "text", text: "go" }], delivery: "turn" }),
+    record({ type: "turn_ended", turn: "epic", outcome: { status: "contract_unmet" } }),
+  ])
+  assert.match(result.runs[0]!.activities!.at(-1)!.detail, /end_turn/)
+})
+
+test("an epic's introduction stays before its launch when the completed turn is replayed", () => {
+  seq = 0
+  const blocks = [
+    { type: "text", text: "I’ll start the exporter." },
+    { type: "tool_call", call: "launch", name: "create_stories", input: {} },
+    { type: "tool_call", call: "end", name: "end_turn", input: { action: "wait" } },
+  ]
+  const turn = "epic"
+  const [run] = conversation([
+    record({ type: "session_created", config: { ...config, purpose: "orchestrator" } }),
+    record({ type: "user_message", turn, delivery: "turn", input: [{ type: "text", text: "Export orders" }] }),
+    record({ type: "request_started", turn, request: "r", model, attempt: 1, prefix_digest: "d" }),
+    record({ type: "assistant_message", turn, request: "r", stop: "tool_use", usage, blocks }),
+    ...["launch", "end"].map(call => record({ type: "tool_call_finished", turn, call, outcome: "completed", content: [] })),
+    record({ type: "turn_ended", turn, outcome: { status: "completed" } }),
+  ]).runs
+  assert.deepEqual(run?.activities?.map(activity => activity.toolName ?? activity.detail), [
+    "I’ll start the exporter.", "create_stories", "end_turn",
+  ])
+})
+
 test("an accepted finish supplies exactly one final reply in every conversation mode", () => {
   const summary = "The harness uses JSON-lines."
   // "plan": a Plan Mode conversation an engine store may still hold.

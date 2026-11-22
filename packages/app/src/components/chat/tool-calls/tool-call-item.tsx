@@ -55,6 +55,23 @@ const familyIcons: Record<ToolCallFamily, LucideIcon> = {
   web: GlobeIcon,
 }
 
+// Domain tools can supply human-readable details while keeping the shared work log.
+export type ToolCallDetail = {
+  family: ToolCallFamily
+  verb: string
+  content: React.ReactNode
+  inlineContent?: React.ReactNode
+  needsAttention?: boolean
+  failed?: boolean
+}
+const ToolCallDetails = React.createContext<
+  ReadonlyMap<string, ToolCallDetail> | undefined
+>(undefined)
+export const ToolCallDetailsProvider = ToolCallDetails.Provider
+export function useToolCallDetails() {
+  return React.useContext(ToolCallDetails)
+}
+
 // One tool call in the agent's work log. Collapsed, it reads as a sentence
 // ("Edited sync-service.ts +12 −3"); opened, it shows the detail that matters
 // for that tool.
@@ -79,7 +96,7 @@ export function ToolCallItem({
   const [fullDetail, setFullDetail] = React.useState<string>()
   const { details, rememberDetail } = useWebResearch()
   const researchDetail = details.get(
-    (activity as ToolCallActivity & { id?: string }).id ?? ""
+    activity.id ?? ""
   )
   const [loading, setLoading] = React.useState(false)
   const view = React.useMemo(
@@ -94,8 +111,11 @@ export function ToolCallItem({
       ),
     [activity, fullDetail, researchDetail, running]
   )
-  const Icon = familyIcons[view.family]
-  const expandable = view.bodies.length > 0 || hasFullDetail
+  const detail = useToolCallDetails()?.get(activity.id ?? "")
+  const Icon = familyIcons[detail?.family ?? view.family]
+  const expandable = detail
+    ? !detail.needsAttention
+    : view.bodies.length > 0 || hasFullDetail
   const screenshots = view.bodies.find((body) => body.type === "screenshot")
 
   async function loadDetail() {
@@ -103,7 +123,7 @@ export function ToolCallItem({
     try {
       const detail = await onLoadDetail()
       setFullDetail(detail)
-      const id = (activity as ToolCallActivity & { id?: string }).id
+      const id = activity.id
       if (view.family === "web" && id) rememberDetail(id, detail)
     } finally {
       setLoading(false)
@@ -126,7 +146,7 @@ export function ToolCallItem({
           className={cn(
             "flex size-8 items-center justify-center text-muted-foreground",
             running ? "chat-step-running" : entering && "chat-step-done",
-            view.failed && "text-red-600 dark:text-red-400"
+            (detail?.failed || view.failed) && "text-red-600 dark:text-red-400"
           )}
         >
           <Icon className="size-4" />
@@ -146,9 +166,9 @@ export function ToolCallItem({
                   running && "agent-activity-running"
                 )}
               >
-                {view.verb}
+                {detail?.verb ?? view.verb}
               </span>
-              {view.target ? (
+              {!detail && view.target ? (
                 <span
                   className={cn(
                     "max-w-full min-w-0 truncate text-foreground",
@@ -173,6 +193,7 @@ export function ToolCallItem({
               ) : null}
             </span>
           </AccordionTrigger>
+          {detail?.needsAttention ? detail.content : null}
           {screenshots ? (
             // Always in sight; the opened call shows it larger instead.
             <ToolCallScreenshots
@@ -183,13 +204,15 @@ export function ToolCallItem({
           ) : null}
           {expandable ? (
             <AccordionContent className="grid gap-2 pt-1.5 pb-1">
-              {view.bodies.map((body, index) => (
-                <ToolCallBodyView
-                  key={`${body.type}-${index}`}
-                  body={body}
-                  onOpenFile={onOpenFile}
-                />
-              ))}
+              {detail
+                ? detail.content
+                : view.bodies.map((body, index) => (
+                    <ToolCallBodyView
+                      key={`${body.type}-${index}`}
+                      body={body}
+                      onOpenFile={onOpenFile}
+                    />
+                  ))}
               {hasFullDetail && !fullDetail ? (
                 <Button
                   className="justify-self-start"

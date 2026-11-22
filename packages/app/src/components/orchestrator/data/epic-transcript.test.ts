@@ -172,7 +172,7 @@ test("the person's message, the decisions and the wait, in order", () => {
   if (decision?.kind !== "decision") return
   assert.equal(decision.tool, "create_stories")
   assert.equal(decision.refusal, undefined)
-  assert.deepEqual(decisionStories(decision), [{ ref: "s1" }])
+  assert.deepEqual(decisionStories(decision), [{ ref: "s1", title: "Writer" }])
   const end = result[4]
   assert.equal(end?.kind === "end" && end.action, "wait")
 })

@@ -74,7 +74,7 @@ export function useEpicBoard(epic: Epic | undefined) {
   return React.useMemo(() => (epic ? boardOf(epic) : []), [boardOf, epic])
 }
 
-/** Each epic's sidebar dot, by id. */
+/** Each epic's activity in the history menu, by id. */
 export function useEpicActivities(epics: readonly Epic[]) {
   const stories = useEpicStories()
   const boardOf = useBoardOf(stories)

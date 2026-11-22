@@ -61,7 +61,7 @@ export function EpicSettingsDialog({
   epic: Epic
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (settings: EpicSettings) => Promise<unknown>
+  onSave: (settings: EpicSettings, title: string) => Promise<unknown>
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -85,10 +85,11 @@ function EpicSettingsForm({
 }: {
   epic: Epic
   onDone: () => void
-  onSave: (settings: EpicSettings) => Promise<unknown>
+  onSave: (settings: EpicSettings, title: string) => Promise<unknown>
 }) {
   const models = useEpicModels()
   const [draft, setDraft] = React.useState(() => draftOf(epic.settings))
+  const [title, setTitle] = React.useState(epic.title)
   const [saving, setSaving] = React.useState(false)
   const hidden = models.hiddenModels()
   const budgetInvalid =
@@ -97,7 +98,7 @@ function EpicSettingsForm({
     setDraft((current) => ({ ...current, ...patch }))
 
   async function save() {
-    if (budgetInvalid) return
+    if (saving || !title.trim() || budgetInvalid) return
     // The whole object: a PATCH replaces it, other keys are kept as read.
     const {
       budgetMicroUsd: _budget,
@@ -120,7 +121,7 @@ function EpicSettingsForm({
     }
     setSaving(true)
     try {
-      await onSave(settings)
+      await onSave(settings, title.trim())
       onDone()
     } catch (error) {
       toast.error("Unable to save the epic's settings", {
@@ -143,10 +144,20 @@ function EpicSettingsForm({
       <DialogHeader className="shrink-0 border-b px-5 py-4 pr-12">
         <DialogTitle>Epic settings</DialogTitle>
         <DialogDescription>
-          What the orchestrator may use and spend on {epic.title}.
+          Choose the models, budget and approvals for this epic.
         </DialogDescription>
       </DialogHeader>
       <div className="grid min-h-0 flex-1 gap-6 overflow-y-auto overscroll-contain px-5 py-5">
+        <label className="grid gap-2 text-sm font-medium">
+          Epic title
+          <InputGroup>
+            <InputGroupInput
+              value={title}
+              maxLength={255}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+          </InputGroup>
+        </label>
         <Section
           title="Models for stories"
           description="For each story the orchestrator picks Cheaper, Balanced or Smarter, inside this range."
@@ -251,7 +262,10 @@ function EpicSettingsForm({
         <Button type="button" variant="outline" onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" disabled={saving || budgetInvalid}>
+        <Button
+          type="submit"
+          disabled={saving || !title.trim() || budgetInvalid}
+        >
           Save
         </Button>
       </DialogFooter>

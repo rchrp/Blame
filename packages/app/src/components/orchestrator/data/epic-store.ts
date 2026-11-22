@@ -71,8 +71,7 @@ function useEpicStoreValue() {
       return
     }
     setState((current) => ({
-      ...current,
-      epics: current.projectId === projectId ? current.epics : [],
+      ...(current.projectId === projectId ? current : { epics: [] }),
       loading: true,
       projectId,
     }))
@@ -81,8 +80,8 @@ function useEpicStoreValue() {
       if (loadRequestId.current !== requestId) return
       setState((current) => ({
         activeId: activeEpicId(
-          current.projectId === projectId && current.activeId
-            ? current.activeId
+          current.projectId === projectId && "activeId" in current
+            ? (current.activeId ?? null)
             : rememberedEpicId(projectId),
           epics
         ),
@@ -247,7 +246,10 @@ function memoryKey(projectId: string) {
 }
 
 function rememberedEpicId(projectId: string) {
-  return readUiMemory(memoryKey(projectId), isEpicId)
+  return readUiMemory(
+    memoryKey(projectId),
+    (value): value is string | null => value === null || isEpicId(value)
+  )
 }
 
 function isEpicId(value: unknown): value is string {
@@ -255,7 +257,8 @@ function isEpicId(value: unknown): value is string {
 }
 
 // The remembered epic while it exists, else the latest one still going.
-function activeEpicId(remembered: string | undefined, epics: Epic[]) {
+function activeEpicId(remembered: string | null | undefined, epics: Epic[]) {
+  if (remembered === null) return undefined
   if (remembered && epics.some((epic) => epic.id === remembered))
     return remembered
   return [...epics]

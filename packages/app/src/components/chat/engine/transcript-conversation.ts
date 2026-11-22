@@ -111,7 +111,11 @@ export function transcriptConversation(
       })
       if (opening.rewind) rewindTargets.set(opening.key, opening.rewind)
     }
-    const reply = turnReply(turn, items)
+    // The orchestrator ends with a structured outcome. Its own text stays where
+    // it was spoken, including before a story launch in the same turn.
+    const endedByOrchestrator = transcript.config?.purpose === "orchestrator" &&
+      items.some(item => item.kind === "tool_call" && item.name === "end_turn" && item.state === "completed")
+    const reply = endedByOrchestrator ? undefined : turnReply(turn, items)
     const activities = turnActivities(transcript, turn, items, author, reply)
     // The screenshots finish_task attached go above the final reply.
     const images = turnReplyImages(turn, items)
@@ -276,7 +280,9 @@ function itemActivity(
           ...base,
           kind: "error",
           title: "Not finished",
-          detail: unfinishedTurnDetail(item.outcome.refused),
+          detail: transcript.config?.purpose === "orchestrator"
+            ? "The orchestrator stopped before completing its turn with end_turn."
+            : unfinishedTurnDetail(item.outcome.refused),
           status: "failed",
         }
       return undefined

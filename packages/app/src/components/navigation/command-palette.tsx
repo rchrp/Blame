@@ -18,7 +18,6 @@ import { useBacklogSelector } from "@/components/backlog/data/backlog-store"
 import { quickChatSelectedEvent } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
 import { useEpicStore } from "@/components/orchestrator/data/epic-store"
-import { startNewEpic } from "@/components/sidebar/epic-list"
 import { routeShortcuts } from "@/components/navigation/app-shortcuts"
 import { navigate } from "@/components/navigation/navigation"
 import { useTheme } from "@/components/providers/theme-provider"
@@ -126,7 +125,10 @@ export function CommandPalette({
           </CommandItem>
           <CommandItem
             value="new epic orchestrator goal"
-            onSelect={() => run(() => startNewEpic(epics))}
+            onSelect={() => run(() => {
+              epics.setActiveId(undefined)
+              navigate("/orchestrator")
+            })}
           >
             <WorkflowIcon /> New epic
           </CommandItem>

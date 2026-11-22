@@ -11,8 +11,6 @@ import { routeShortcutLabel } from "@/components/navigation/app-shortcuts"
 import { QuickChatHistory } from "@/components/sidebar/quick-chat-history"
 import { Kbd } from "@/components/ui/kbd"
 import { ActiveBacklogStories } from "@/components/sidebar/active-backlog-stories"
-import { EpicList } from "@/components/sidebar/epic-list"
-import { useEpicStore } from "@/components/orchestrator/data/epic-store"
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -37,7 +35,6 @@ export function NavMain({
   pathname: string
 }) {
   const quickChats = useQuickChatStore()
-  const epics = useEpicStore()
   const selectedStoryId = React.useSyncExternalStore(
     subscribeToBacklogStorySelection,
     selectedBacklogStoryId
@@ -48,52 +45,66 @@ export function NavMain({
       {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                tooltip={item.title}
-                isActive={
-                  pathname === item.url &&
-                  (item.url !== "/chat" || !quickChats.activeId) &&
-                  (item.url !== "/backlog" || !selectedStoryId) &&
-                  (item.url !== "/orchestrator" || !epics.activeId)
-                }
-              >
-                <AppLink
-                  href={item.url}
-                  onClick={() => {
-                    if (item.url === "/chat") {
-                      quickChats.setActiveId(undefined)
-                      window.dispatchEvent(new Event(quickChatSelectedEvent))
-                    }
-                    if (item.url === "/backlog") selectBacklogStory(undefined)
-                  }}
+          {items.map((item) =>
+            item.url === "/orchestrator" ? (
+              <SidebarMenuItem key={item.url} className="mb-3">
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === item.url}
+                  tooltip={`${item.title} · ${routeShortcutLabel(item.url)}`}
+                  className="justify-center bg-sidebar-foreground/[0.07] hover:bg-sidebar-foreground/12 data-[active=true]:bg-sidebar-foreground/15"
                 >
-                  {item.icon}
-                  <span className="min-w-0 truncate">{item.title}</span>
-                  {item.status ? (
-                    <span className="ml-auto inline-flex shrink-0 items-center">
-                      {item.status}
+                  <AppLink href={item.url} aria-label={item.title}>
+                    {item.icon}
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      {item.title}
                     </span>
-                  ) : routeShortcutLabel(item.url) ? (
-                    <Kbd className="ml-auto bg-transparent opacity-0 transition-opacity duration-150 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100">
-                      {routeShortcutLabel(item.url)}
-                    </Kbd>
-                  ) : null}
-                </AppLink>
-              </SidebarMenuButton>
-              {item.url === "/chat" ? (
-                <QuickChatHistory pathname={pathname} />
-              ) : null}
-              {item.url === "/backlog" ? (
-                <ActiveBacklogStories pathname={pathname} />
-              ) : null}
-              {item.url === "/orchestrator" ? (
-                <EpicList pathname={pathname} />
-              ) : null}
-            </SidebarMenuItem>
-          ))}
+                  </AppLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ) : (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={
+                    pathname === item.url &&
+                    (item.url !== "/chat" || !quickChats.activeId) &&
+                    (item.url !== "/backlog" || !selectedStoryId)
+                  }
+                >
+                  <AppLink
+                    href={item.url}
+                    onClick={() => {
+                      if (item.url === "/chat") {
+                        quickChats.setActiveId(undefined)
+                        window.dispatchEvent(new Event(quickChatSelectedEvent))
+                      }
+                      if (item.url === "/backlog") selectBacklogStory(undefined)
+                    }}
+                  >
+                    {item.icon}
+                    <span className="min-w-0 truncate">{item.title}</span>
+                    {item.status ? (
+                      <span className="ml-auto inline-flex shrink-0 items-center">
+                        {item.status}
+                      </span>
+                    ) : routeShortcutLabel(item.url) ? (
+                      <Kbd className="ml-auto bg-transparent opacity-0 transition-opacity duration-150 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100">
+                        {routeShortcutLabel(item.url)}
+                      </Kbd>
+                    ) : null}
+                  </AppLink>
+                </SidebarMenuButton>
+                {item.url === "/chat" ? (
+                  <QuickChatHistory pathname={pathname} />
+                ) : null}
+                {item.url === "/backlog" ? (
+                  <ActiveBacklogStories pathname={pathname} />
+                ) : null}
+              </SidebarMenuItem>
+            )
+          )}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

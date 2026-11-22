@@ -15,7 +15,7 @@ export type ComposerDraft = {
 
 export function composerDraftStorageKey(
   projectId: string,
-  kind: "backlog" | "chat",
+  kind: "backlog" | "chat" | "epic",
   targetId?: string
 ) {
   return `blame.app.composer-draft.v1:${projectId}:${kind}:${targetId ?? "new"}`

@@ -27,7 +27,7 @@ import {
 } from "@/components/backlog/data/backlog-navigation"
 import { useBacklogStore } from "@/components/backlog/data/backlog-store"
 import { storyContextAttachment } from "@/components/backlog/data/user-story-context"
-import { useUserStoryDiffStats } from "@/components/backlog/development/user-story-diff-stats"
+import { useProjectDiffStats } from "@/components/backlog/development/project-diff-stats"
 import { UserStoryDrawer } from "@/components/backlog/drawer/user-story-drawer"
 import { UserStoryPreviewWarmup } from "@/components/backlog/drawer/user-story-preview"
 import { drawerTargetForAction } from "@/components/backlog/shared/backlog-helpers"
@@ -116,11 +116,7 @@ export function BacklogPage({
   )
   const projectInitialization = useProjectInitialization()
   const queueInitializing = projectInitialization?.availability === "running"
-  const userStoryDiffStats = useUserStoryDiffStats(
-    backlog.stories,
-    platform.workspace,
-    projects.activeProject?.path
-  )
+  const userStoryDiffStats = useProjectDiffStats()
   const serializedStatusPipStories = JSON.stringify(
     backlogStatusPipStories(backlog.stories)
   )

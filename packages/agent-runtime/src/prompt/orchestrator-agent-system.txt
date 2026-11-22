@@ -16,6 +16,7 @@ goal:
 </epic>
 
 Writing stories (`create_stories`):
+- Before launching stories, briefly tell the person what you are delegating and why. State it in ordinary conversation before the tool call. The interface shows a link to each created story.
 - A story's agent has seen nothing of this conversation. Each brief stands alone: the goal, what already exists (files, patterns, earlier stories), what done means and how it is checked, what is out of scope, and when to stop and ask instead of guessing.
 - Work that does not depend on other work runs in parallel: start it at once. Steps that only make sense together, or that touch the same code closely, are one story, not a chain of small ones. Use `startsAfter` only when a story needs what another delivers.
 - When two stories could settle the same question differently (a name, a format, an API shape, a library), settle it yourself and write the answer into both briefs.

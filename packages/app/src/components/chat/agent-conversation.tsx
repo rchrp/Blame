@@ -81,7 +81,7 @@ import {
   readSubAgentsRefusal,
   runAgentsTool,
 } from "./sub-agents/sub-agents-view"
-import { ToolCallItem } from "./tool-calls/tool-call-item"
+import { ToolCallItem, useToolCallDetails } from "./tool-calls/tool-call-item"
 import {
   AgentScreenshotOwnerProvider,
   ScreenshotGroupProvider,
@@ -175,6 +175,7 @@ type AgentConversationVisibleMessage =
 
 export function AgentConversationTimeline({
   comments,
+  turnContent,
   unsentComments = [],
   loadChangedFileDiffs,
   onChangedFileClick,
@@ -188,6 +189,10 @@ export function AgentConversationTimeline({
   screenshotOwner,
 }: {
   comments: AgentConversationComment[]
+  turnContent?: ReadonlyMap<
+    string,
+    { opening?: React.ReactNode; outcome?: React.ReactNode }
+  >
   unsentComments?: AgentConversationComment[]
   loadChangedFileDiffs?: (
     from: string,
@@ -253,6 +258,8 @@ export function AgentConversationTimeline({
             {runs.map((run, index) => (
               <AgentConversationTurn
                 key={run.id}
+                opening={turnContent?.get(run.id)?.opening}
+                outcome={turnContent?.get(run.id)?.outcome}
                 activityAlwaysVisible={
                   lastVisibleMessage?.type === "activity" &&
                   lastVisibleMessage.runId === run.id
@@ -303,6 +310,8 @@ export function AgentConversationTimeline({
 // it gets stays the same until its own run or comment changes.
 const AgentConversationTurn = React.memo(function AgentConversationTurn({
   activityAlwaysVisible,
+  opening,
+  outcome,
   checkpointRunCount,
   comment,
   commentAlwaysVisible,
@@ -317,6 +326,8 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
   responseHeaderForRun,
   run,
 }: {
+  opening?: React.ReactNode
+  outcome?: React.ReactNode
   // Its last message keeps its actions shown (the conversation's last one).
   activityAlwaysVisible: boolean
   checkpointRunCount?: number
@@ -362,17 +373,19 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
 
   return (
     <section className="grid gap-5" aria-label="Conversation turn">
-      <RunCommentItem
-        alwaysVisible={commentAlwaysVisible}
-        comment={comment}
-        run={run}
-        onFileLinkClick={onFileLinkClick}
-        onUndo={
-          comment && onUserMessageUndo && checkpointRunCount
-            ? () => onUserMessageUndo({ checkpointRunCount, comment, run })
-            : undefined
-        }
-      />
+      {opening ?? (
+        <RunCommentItem
+          alwaysVisible={commentAlwaysVisible}
+          comment={comment}
+          run={run}
+          onFileLinkClick={onFileLinkClick}
+          onUndo={
+            comment && onUserMessageUndo && checkpointRunCount
+              ? () => onUserMessageUndo({ checkpointRunCount, comment, run })
+              : undefined
+          }
+        />
+      )}
       {modelSwitch ? (
         <ModelSwitchNote responseHeader={turnResponseHeader} run={run} />
       ) : null}
@@ -423,6 +436,7 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
           />
         </div>
       </ScreenshotGroupProvider>
+      {outcome}
     </section>
   )
 })
@@ -433,6 +447,7 @@ export function AgentConversationComposer({
   codeSelectionAttachments = [],
   disabled,
   submitting = false,
+  submitDisabled = false,
   speechSessionKey,
   speechTarget,
   editorKey,
@@ -467,6 +482,7 @@ export function AgentConversationComposer({
   codeSelectionAttachments?: PendingCodeSelectionAttachment[]
   disabled?: boolean
   submitting?: boolean
+  submitDisabled?: boolean
   speechSessionKey?: string
   speechTarget?: SpeechTarget
   editorKey: number
@@ -508,7 +524,7 @@ export function AgentConversationComposer({
 
   // ↵ (and the send button): now, into the running turn when there is one.
   function submitMessage() {
-    if (disabled || submitting || !hasMessageBody) return
+    if (disabled || submitting || submitDisabled || !hasMessageBody) return
     if (sendWhileRunning && onMessageSendNow) onMessageSendNow()
     else onMessageSubmit()
   }
@@ -594,7 +610,7 @@ export function AgentConversationComposer({
               disabled={
                 stopAction
                   ? cancelingAgent || !onAgentCancel
-                  : disabled || submitting || !hasMessageBody
+                  : disabled || submitting || submitDisabled || !hasMessageBody
               }
               size="icon-sm"
               type="button"
@@ -822,12 +838,50 @@ type AgentWorkDetailsProps = {
 
 function AgentWorkDetails(props: AgentWorkDetailsProps) {
   const registry = useAgentActivityRegistry(props.activities, props.run)
+  const toolDetails = useToolCallDetails()
   if (!registry.activityIds.length) {
     return props.run.status === "running" && !props.earlier ? (
       <AgentThinkingTimelineItem />
     ) : null
   }
   const responseActivityId = terminalResponseActivityId(props, registry)
+  if (toolDetails) {
+    // An orchestrated turn keeps its narration and launches in transcript order.
+    // Technical calls remain available together underneath.
+    const work: string[] = []
+    const conversation: React.ReactNode[] = []
+    for (const activity of props.activities) {
+      const inline = toolDetails.get(activity.id)?.inlineContent
+      const inConversation = ["message", "error", "approval"].includes(activity.kind)
+      if (!inConversation) work.push(activity.id)
+      if (inline || inConversation) {
+        conversation.push(
+          <React.Fragment key={activity.id}>
+            {inline ?? (
+              <AgentActivityTimeline
+                {...props}
+                registry={registry}
+                activityIds={[activity.id]}
+              />
+            )}
+          </React.Fragment>
+        )
+      }
+    }
+    return (
+      <div className="grid min-w-0 gap-3">
+        {conversation}
+        {work.length > 0 && (
+          <AgentWorkAccordion
+            {...props}
+            activityIds={work}
+            registry={registry}
+            responseActivityId={responseActivityId}
+          />
+        )}
+      </div>
+    )
+  }
   // Proposals (stories, a stack) are cards under the reply, not steps.
   const proposals = registry.activityIds
     .map((activityId) => registry.persistedById.get(activityId))
@@ -1034,7 +1088,7 @@ function AgentWorkState({
             ? "agent-thinking-mark"
             : status === "failed"
               ? "bg-destructive"
-              : "bg-emerald-500"
+              : "bg-[var(--work-completed-color,var(--color-emerald-500))]"
         )}
         aria-hidden="true"
       />

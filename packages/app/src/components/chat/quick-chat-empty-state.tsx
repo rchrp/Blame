@@ -4,13 +4,15 @@ import {
   FlaskConicalIcon,
   PaletteIcon,
   WrenchIcon,
+  type LucideIcon,
 } from "lucide-react"
 
 const suggestions = [
   {
     icon: CompassIcon,
     label: "Explain this project",
-    prompt: "Give me a quick tour of this project: its structure, main modules and how they fit together.",
+    prompt:
+      "Give me a quick tour of this project: its structure, main modules and how they fit together.",
   },
   {
     icon: BugIcon,
@@ -35,18 +37,37 @@ export function QuickChatEmptyState({
   onSuggestion?: (prompt: string) => void
 }) {
   return (
+    <ConversationEmptyState
+      icon={WrenchIcon}
+      title="What would you like to adjust?"
+      description="Fix a bug, tweak a detail, or ask about your code. Chat is for focused changes; use the backlog to plan larger features."
+      suggestions={suggestions}
+      onSuggestion={onSuggestion}
+    />
+  )
+}
+
+export function ConversationEmptyState({
+  icon: Icon,
+  title,
+  description,
+  suggestions,
+  onSuggestion,
+}: {
+  icon: LucideIcon
+  title: string
+  description: string
+  suggestions: readonly { icon: LucideIcon; label: string; prompt: string }[]
+  onSuggestion?: (prompt: string) => void
+}) {
+  return (
     <div className="onboarding-stagger grid place-items-center gap-5 pb-6">
       <span className="flex size-12 items-center justify-center rounded-2xl border bg-muted text-muted-foreground shadow-sm">
-        <WrenchIcon className="size-5" />
+        <Icon className="size-5" />
       </span>
       <div className="grid max-w-md gap-1 text-center">
-        <h2 className="font-heading text-xl font-semibold">
-          What would you like to adjust?
-        </h2>
-        <p className="text-sm text-muted-foreground">
-          Fix a bug, tweak a detail, or ask about your code. Chat is for
-          focused changes; use the backlog to plan larger features.
-        </p>
+        <h2 className="font-heading text-xl font-semibold">{title}</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </div>
       {onSuggestion ? (
         <div className="flex flex-wrap justify-center gap-2">
@@ -54,7 +75,7 @@ export function QuickChatEmptyState({
             <button
               key={suggestion.label}
               type="button"
-              className="group inline-flex h-8 items-center gap-1.5 rounded-full border bg-background/60 px-3 text-xs font-medium text-muted-foreground shadow-xs outline-none transition-[transform,color,background-color,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-background hover:text-foreground hover:shadow-sm focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-0 active:scale-[0.98]"
+              className="group inline-flex h-8 items-center gap-1.5 rounded-full border bg-background/60 px-3 text-xs font-medium text-muted-foreground shadow-xs transition-[transform,color,background-color,box-shadow] duration-200 outline-none hover:-translate-y-0.5 hover:bg-background hover:text-foreground hover:shadow-sm focus-visible:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-0 active:scale-[0.98]"
               onClick={() => onSuggestion(suggestion.prompt)}
             >
               <suggestion.icon className="size-3.5 transition-colors group-hover:text-primary" />

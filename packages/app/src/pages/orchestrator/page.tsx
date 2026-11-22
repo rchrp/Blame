@@ -1,30 +1,26 @@
 import * as React from "react"
 import { toast } from "sonner"
+import "@/components/orchestrator/orchestrator.css"
 
 import {
   selectBacklogStory,
   selectedBacklogStoryId,
 } from "@/components/backlog/data/backlog-navigation"
-import type {
-  Epic,
-  EpicSettings,
-} from "@/components/orchestrator/data/epic-data"
+import type { Epic } from "@/components/orchestrator/data/epic-data"
 import {
   EpicChangeNotApplied,
   useEpicStore,
 } from "@/components/orchestrator/data/epic-store"
+import { useEpicConversation } from "@/components/orchestrator/data/use-epic-conversation"
 import { useEpicBoard } from "@/components/orchestrator/data/use-epic-board"
-import { useEpicModels } from "@/components/orchestrator/data/use-epic-models"
-import { EpicBoardView } from "@/components/orchestrator/epic-board-view"
 import { EpicConversation } from "@/components/orchestrator/epic-conversation"
-import { EpicHeader } from "@/components/orchestrator/epic-header"
+import { EpicStats } from "@/components/orchestrator/epic-stats"
 import { EpicSettingsDialog } from "@/components/orchestrator/epic-settings-dialog"
 import { NewEpic } from "@/components/orchestrator/new-epic"
 import { OpenProjectEmptyState } from "@/components/shared/open-project-empty-state"
 import { Skeleton } from "@/components/ui/skeleton"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
-import { cn } from "@/lib/utils"
 
 export function OrchestratorPage() {
   const project = useProjects().activeProject
@@ -32,17 +28,20 @@ export function OrchestratorPage() {
   const openStory = useStoriesOpenedHere()
 
   return (
-    <div className="@container/epic flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
+    <div className="@container/epic flex h-svh min-h-0 min-w-0 flex-col overflow-hidden [--chat-stats-inset:0px] md:h-[calc(100svh_-_1rem)]">
       {!project ? (
         <OpenProjectEmptyState description="Open a project to hand a goal to the orchestrator." />
       ) : epics.loading && !epics.epics.length ? (
-        <div className="mx-auto grid w-full max-w-2xl gap-3 py-10">
+        <div className="mx-auto grid w-full max-w-2xl gap-3 px-4 pt-[calc(var(--header-height)+2rem)]">
           <Skeleton className="h-8 w-2/3" />
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-28 w-full" />
         </div>
       ) : epics.error && !epics.epics.length ? (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div
+          role="alert"
+          className="mx-4 mt-[calc(var(--header-height)+1rem)] rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
           {epics.error}
         </div>
       ) : epics.activeEpic ? (
@@ -52,18 +51,15 @@ export function OrchestratorPage() {
           onOpenStory={openStory}
         />
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <NewEpic
-            firstEpic={!epics.epics.length}
-            onCreated={(epic) => epics.setActiveId(epic.id)}
-          />
-        </div>
+        <NewEpic
+          key={project.id}
+          projectId={project.id}
+          onCreated={(epic) => epics.setActiveId(epic.id)}
+        />
       )}
     </div>
   )
 }
-
-type Pane = "conversation" | "board"
 
 function EpicView({
   epic,
@@ -74,26 +70,10 @@ function EpicView({
 }) {
   const epics = useEpicStore()
   const platform = usePlatform()
-  const models = useEpicModels()
+  const chat = useEpicConversation(epic)
   const groups = useEpicBoard(epic)
   const [settingsOpen, setSettingsOpen] = React.useState(false)
   const [pausing, setPausing] = React.useState(false)
-  // A narrow window shows one pane at a time.
-  const [pane, setPane] = React.useState<Pane>("conversation")
-  const needsYou =
-    groups.find((group) => group.id === "needs-you")?.entries.length ?? 0
-
-  // The host pauses the epic's running agents and the orchestrator's turn,
-  // and resumes exactly those (the store tells it: epicChanged). A pause is
-  // never the person's Stop (interrupt), which is not resumed.
-  async function pauseAll() {
-    await changeStatus("paused")
-  }
-
-  async function resume() {
-    await changeStatus("active")
-  }
-
   // The status goes to the API, then the host acts on it. When it cannot,
   // the person is told, never shown a pause that did not take.
   async function changeStatus(status: "paused" | "active") {
@@ -119,82 +99,37 @@ function EpicView({
 
   return (
     <>
-      <EpicHeader
-        epic={epic}
-        state={epics.states.get(epic.id)}
-        pausing={pausing || !platform.engine}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onPauseAll={() => void pauseAll()}
-        onRename={(title) =>
-          epics.update(epic, { title }).catch((error: unknown) => {
-            toast.error("Couldn't rename the epic", {
-              description:
-                error instanceof Error ? error.message : String(error),
-              position: "bottom-right",
-            })
-          })
-        }
-        onResume={() => void resume()}
-      />
-      <div
-        aria-label="Show"
-        className="inline-flex w-fit shrink-0 rounded-lg bg-muted p-0.5 @4xl/epic:hidden"
-        role="tablist"
-      >
-        {(["conversation", "board"] as const).map((item) => (
-          <button
-            key={item}
-            aria-selected={pane === item}
-            className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-              pane === item && "bg-background text-foreground shadow-xs"
-            )}
-            role="tab"
-            type="button"
-            onClick={() => setPane(item)}
-          >
-            {item === "conversation" ? "Conversation" : "Stories"}
-            {item === "board" && needsYou ? (
-              <span
-                aria-label={`${needsYou} need you`}
-                className="rounded-full bg-amber-500/15 px-1.5 text-xs text-amber-700 tabular-nums dark:text-amber-300"
-              >
-                {needsYou}
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </div>
-      <div className="grid min-h-0 flex-1 gap-4 @4xl/epic:grid-cols-[minmax(22rem,2fr)_3fr]">
-        <section
-          aria-label="Conversation with the orchestrator"
-          className={cn(
-            "min-h-0 flex-col rounded-xl border bg-card/60 p-3",
-            pane === "conversation" ? "flex" : "hidden @4xl/epic:flex"
-          )}
+      <div className="flex min-h-0 flex-1 flex-col gap-2 pt-[calc(var(--header-height)+0.25rem)] [--conversation-top:0px] @min-[48rem]/epic:flex-row-reverse @min-[48rem]/epic:gap-0">
+        <div
+          aria-label="Epic statistics"
+          role="region"
+          className="epic-statistics mx-4 flex max-h-[32%] min-h-0 shrink-0 flex-col @min-[48rem]/epic:mr-4 @min-[48rem]/epic:mb-4 @min-[48rem]/epic:ml-0 @min-[48rem]/epic:max-h-none @min-[48rem]/epic:w-80"
         >
-          <EpicConversation epic={epic} onOpenStory={onOpenStory} />
-        </section>
-        <section
-          aria-label="The epic's stories"
-          className={cn(
-            "@container/board min-h-0 overflow-y-auto overscroll-contain pr-1",
-            pane === "board" ? "block" : "hidden @4xl/epic:block"
-          )}
-        >
-          <EpicBoardView
+          <EpicStats
+            epic={epic}
+            chat={chat}
             groups={groups}
-            modelName={models.modelName}
+            pausing={pausing || !platform.engine}
+            onChangeStatus={() =>
+              void changeStatus(epic.status === "paused" ? "active" : "paused")
+            }
+            onOpenSettings={() => setSettingsOpen(true)}
             onOpenStory={onOpenStory}
           />
-        </section>
+        </div>
+        <EpicConversation
+          epic={epic}
+          chat={chat}
+          groups={groups}
+          onOpenStory={onOpenStory}
+        />
       </div>
       <EpicSettingsDialog
         epic={epic}
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
-        onSave={(settings: EpicSettings) =>
-          epics.update(epic, { settings }).catch((error: unknown) => {
+        onSave={(settings, title) =>
+          epics.update(epic, { settings, title }).catch((error: unknown) => {
             // Saved: only telling the host failed, which the next look repairs.
             if (!(error instanceof EpicChangeNotApplied)) throw error
             toast.warning(

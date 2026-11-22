@@ -1,4 +1,4 @@
-import type { ComponentProps, CSSProperties } from "react"
+import type { ComponentProps } from "react"
 import {
   AgentConversationComposer,
   AgentConversationTimeline,
@@ -9,13 +9,7 @@ import { ConversationPersonalizationMenu } from "@/components/personalization/pe
 import { ProjectRunConfigurationPreviewWarmup } from "@/components/backlog/board/project-run-preview-warmup"
 import { BranchSelector } from "@/components/backlog/drawer/branch-selector"
 import { SelectorGroup } from "@/components/ui/selector-group"
-import {
-  MessageScroller,
-  MessageScrollerButton,
-  MessageScrollerContent,
-  MessageScrollerProvider,
-  MessageScrollerViewport,
-} from "@/components/ui/message-scroller"
+import { ConversationSurface } from "@/components/chat/conversation-surface"
 import { isBoolean, useUiMemory } from "@/lib/ui-memory"
 import { chatAmbitionKey } from "@/lib/conversation-ambition"
 import { chatUltraKey } from "@/lib/conversation-ultra"
@@ -23,12 +17,6 @@ import { useConversationUltra } from "@/lib/use-conversation-ultra"
 import { cn } from "@/lib/utils"
 import { QuickChatStats } from "./quick-chat-stats"
 import { QuickChatStatus } from "./quick-chat-status"
-
-const bottomBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-} satisfies CSSProperties
 
 type QuickChatViewProps = {
   conversationId?: string
@@ -72,73 +60,44 @@ export function QuickChatView({
               stats && statsExpanded && "@4xl:[--chat-stats-inset:21rem]"
             )}
           >
-            <MessageScrollerProvider
-              key={conversationId ?? "new-chat"}
-              memoryKey={conversationId}
-            >
-              <MessageScroller>
-                <MessageScrollerViewport>
-                  <MessageScrollerContent
-                    aria-busy={composer.agentRunning}
-                    className={cn(
-                      "mx-auto w-full max-w-[calc(56rem+var(--chat-stats-inset))] gap-10 px-4 pt-[calc(var(--header-height)+1rem)] pb-48 transition-[max-width,padding] duration-500 ease-out md:px-8 md:pr-[calc(2rem+var(--chat-stats-inset))]",
-                      // The first message starts below the folded pill.
-                      stats && !statsExpanded && "pt-[calc(var(--header-height)+4rem)]"
-                    )}
-                  >
-                    <QuickChatStatus {...status} />
-                    {timeline ? <AgentConversationTimeline {...timeline} /> : null}
-                  </MessageScrollerContent>
-                </MessageScrollerViewport>
-                <MessageScrollerButton className="bottom-40 md:bottom-44" />
-              </MessageScroller>
-            </MessageScrollerProvider>
-            <div
-              className={
-                emptyConversation
-                  ? "absolute inset-0 z-20 flex flex-col justify-center overflow-y-auto px-3 pt-[calc(var(--header-height)+1rem)] pb-5 md:px-5"
-                  : "pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-10 md:pt-12"
+            <ConversationSurface
+              conversationId={conversationId}
+              running={composer.agentRunning}
+              clearPill={Boolean(stats && !statsExpanded)}
+              emptyState={
+                emptyConversation ? (
+                  <QuickChatEmptyState onSuggestion={onSuggestion} />
+                ) : undefined
+              }
+              composer={
+                <AgentConversationComposer
+                  {...composer}
+                  personalizationMenu={
+                    <ConversationPersonalizationMenu
+                      ambitionKey={chatAmbitionKey(conversationId)}
+                    />
+                  }
+                  minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
+                  toolbarEnd={
+                    <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
+                      {/* A chat works in the project folder, on its branch. */}
+                      {emptyConversation ? (
+                        <SelectorGroup>
+                          <BranchSelector readOnly />
+                        </SelectorGroup>
+                      ) : null}
+                      <QuickChatModelSelector
+                        conversationId={conversationId}
+                        warnOnModelChange={!emptyConversation}
+                      />
+                    </div>
+                  }
+                />
               }
             >
-              <div
-                className={
-                  emptyConversation
-                    ? "hidden"
-                    : "absolute inset-0 bg-background/40 backdrop-blur-xl"
-                }
-                style={bottomBlurMask}
-              />
-              <div className="pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5">
-                <div className="mx-auto w-full max-w-[calc(56rem+var(--chat-stats-inset))] pr-(--chat-stats-inset) transition-[max-width,padding] duration-500 ease-out">
-                  {emptyConversation ? (
-                    <QuickChatEmptyState onSuggestion={onSuggestion} />
-                  ) : null}
-                  <AgentConversationComposer
-                    {...composer}
-                    personalizationMenu={
-                      <ConversationPersonalizationMenu
-                        ambitionKey={chatAmbitionKey(conversationId)}
-                      />
-                    }
-                    minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
-                    toolbarEnd={
-                      <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
-                        {/* A chat works in the project folder, on its branch. */}
-                        {emptyConversation ? (
-                          <SelectorGroup>
-                            <BranchSelector readOnly />
-                          </SelectorGroup>
-                        ) : null}
-                        <QuickChatModelSelector
-                          conversationId={conversationId}
-                          warnOnModelChange={!emptyConversation}
-                        />
-                      </div>
-                    }
-                  />
-                </div>
-              </div>
-            </div>
+              <QuickChatStatus {...status} />
+              {timeline ? <AgentConversationTimeline {...timeline} /> : null}
+            </ConversationSurface>
             {stats ? (
               <QuickChatStats
                 {...stats}

@@ -1,5 +1,6 @@
 import * as React from "react"
 
+import { ProjectDiffStatsProvider } from "@/components/backlog/development/project-diff-stats"
 import { BacklogPage } from "@/pages/backlog/page"
 import { BacklogStatusPipPage } from "@/pages/backlog/status-pip-page"
 import { ChatPage } from "@/pages/chat/page"
@@ -223,20 +224,22 @@ export function App() {
             <ProjectCodePracticesRunner />
             <PersonalizationSync />
             <SecurityAuditRecorder />
-            <AppLayout
-              pathname={pathname}
-              persistent={
-                <BacklogPage
-                  active={backlogActive}
-                  drawerShown={backlogDrawerShown}
-                />
-              }
-              persistentActive={backlogActive}
-              routeKey={activeRoute.path}
-              title={activeRoute.title}
-            >
-              {backlogActive ? null : activeRoute.element}
-            </AppLayout>
+            <ProjectDiffStatsProvider>
+              <AppLayout
+                pathname={pathname}
+                persistent={
+                  <BacklogPage
+                    active={backlogActive}
+                    drawerShown={backlogDrawerShown}
+                  />
+                }
+                persistentActive={backlogActive}
+                routeKey={activeRoute.path}
+                title={activeRoute.title}
+              >
+                {backlogActive ? null : activeRoute.element}
+              </AppLayout>
+            </ProjectDiffStatsProvider>
             <SettingsDialog open={settingsOpen} onOpenChange={closeSettings} />
             <AccountDialog flow={accountFlow} onPremiumClose={closePremium} />
             <StarInvite />

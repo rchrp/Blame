@@ -1,11 +1,20 @@
 import * as React from "react"
 import {
-  ArrowRightIcon,
-  GitMergeIcon,
-  ListChecksIcon,
-  SparklesIcon,
+  BlocksIcon,
+  GitPullRequestIcon,
+  RouteIcon,
   WorkflowIcon,
 } from "lucide-react"
+import { AgentConversationComposer } from "@/components/chat/agent-conversation"
+import { PreviewLaunchClouds } from "@/components/backlog/drawer/preview-idle-state"
+import { ConversationSurface } from "@/components/chat/conversation-surface"
+import { ConversationEmptyState } from "@/components/chat/quick-chat-empty-state"
+import { ModelSelector } from "@/components/model/model-selector"
+import {
+  composerDraftStorageKey,
+  writeComposerDraft,
+} from "@/components/backlog/drawer/composer-draft-storage"
+import { useEpicDraft } from "./use-epic-draft"
 import { toast } from "sonner"
 
 import {
@@ -19,37 +28,32 @@ import { useEpicModels } from "@/components/orchestrator/data/use-epic-models"
 import { useEpicMessenger } from "@/components/orchestrator/data/use-epic-conversation"
 import { AppLink } from "@/components/navigation/app-link"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { usePlatform } from "@/context/platform"
 import { useProjects } from "@/context/projects"
-import { hasModKey } from "@/lib/keyboard"
 
-const steps = [
+const suggestions = [
   {
-    icon: ListChecksIcon,
-    title: "Plans the stories",
-    text: "Splits your goal into user stories and starts an agent on each, with a model it picks inside the range you allow.",
+    icon: BlocksIcon,
+    label: "Build a feature",
+    prompt: "Build a feature that lets people ",
   },
   {
-    icon: SparklesIcon,
-    title: "Reviews every result",
-    text: "Merges a verified story, asks for changes, or rejects it. A story whose checks failed is never merged.",
+    icon: RouteIcon,
+    label: "Plan a migration",
+    prompt: "Migrate this project from ",
   },
   {
-    icon: GitMergeIcon,
-    title: "Leaves the last word to you",
-    text: "Stories merge into the epic's own branch. Your branch only moves when you approve the epic.",
+    icon: GitPullRequestIcon,
+    label: "Refactor a module",
+    prompt: "Refactor the following module while preserving its behavior: ",
   },
 ] as const
 
-// The page with no epic chosen: what the orchestrator does, and the one
-// thing it needs to start, a goal. The title comes from the goal.
 export function NewEpic({
-  firstEpic,
+  projectId,
   onCreated,
 }: {
-  firstEpic: boolean
+  projectId: string
   onCreated: (epic: Epic) => void
 }) {
   const epics = useEpicStore()
@@ -62,7 +66,8 @@ export function NewEpic({
   // environment (they would run Direct, not on the epic's branch): the same
   // condition as its `initializationDecision`, said before the goal.
   const noPreviewEnvironment = initialization?.availability === "unavailable"
-  const [goal, setGoal] = React.useState("")
+  const draft = useEpicDraft(projectId)
+  const goal = draft.message.text
   const [creating, setCreating] = React.useState(false)
   const title = epicTitleFromGoal(goal)
 
@@ -76,11 +81,27 @@ export function NewEpic({
         targetBranch: await currentBranch(platform, project?.path),
         title,
       })
-      setGoal("")
-      onCreated(epic)
-      // The goal is the conversation's first message.
-      if (!messenger.unavailable(epic))
-        await messenger.deliver(epic, { text: epic.goal ?? title })
+      // Keep the goal and its attachments available in the epic if delivery fails.
+      let delivered = false
+      try {
+        if (!messenger.unavailable(epic)) {
+          await messenger.deliver(epic, draft.message)
+          delivered = true
+        }
+      } finally {
+        if (!delivered)
+          writeComposerDraft(
+            localStorage,
+            composerDraftStorageKey(projectId, "epic", epic.id),
+            {
+              markdown: goal,
+              codeSelectionAttachments: draft.message.codeSelectionAttachments,
+              fileAttachments: draft.message.fileAttachments,
+            }
+          )
+        draft.clear()
+        onCreated(epic)
+      }
     } catch (error) {
       toast.error("Unable to start the epic", {
         description: error instanceof Error ? error.message : String(error),
@@ -92,84 +113,67 @@ export function NewEpic({
   }
 
   return (
-    <div className="mx-auto grid w-full max-w-2xl content-start gap-8 py-6 lg:py-10">
-      <div className="onboarding-stagger grid gap-2">
-        <span className="mb-2 flex size-12 items-center justify-center rounded-2xl border bg-muted text-muted-foreground shadow-sm">
-          <WorkflowIcon className="size-5" />
-        </span>
-        <h2 className="font-heading text-2xl font-semibold tracking-normal">
-          {firstEpic ? "Hand a goal to the orchestrator" : "New epic"}
-        </h2>
-        <p className="max-w-prose text-sm text-muted-foreground">
-          An epic is one goal, worked on by several agents at once. The
-          orchestrator runs it for you and never writes code itself.
-        </p>
-      </div>
-      <ol className="grid gap-4 sm:grid-cols-3">
-        {steps.map((step, index) => (
-          <li key={step.title} className="grid content-start gap-1.5">
-            <span className="flex items-center gap-2 text-sm font-medium">
-              <step.icon className="size-4 text-muted-foreground" />
-              <span className="sr-only">{index + 1}.</span>
-              {step.title}
-            </span>
-            <span className="text-sm text-muted-foreground">{step.text}</span>
-          </li>
-        ))}
-      </ol>
-      {noPreviewEnvironment ? (
-        <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2.5 text-sm">
-          An epic needs this project&rsquo;s preview environment: its stories
-          run in worktrees of the epic&rsquo;s branch, never in your folder.{" "}
-          <AppLink
-            className="font-medium text-primary underline-offset-4 hover:underline"
-            href="/initialization"
+    <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
+      <ConversationSurface
+        background={
+          <div
+            aria-hidden="true"
+            className="epic-clouds"
+            data-visible={
+              !goal &&
+              !draft.message.fileAttachments.length &&
+              !draft.message.codeSelectionAttachments.length
+            }
           >
-            Set up the preview environment
-          </AppLink>
-        </p>
-      ) : null}
-      <form
-        className="grid gap-3"
-        onSubmit={(event) => {
-          event.preventDefault()
-          void start()
-        }}
-      >
-        <label className="grid gap-2">
-          <span className="text-sm font-medium">
-            What should this epic achieve?
-          </span>
-          <Textarea
-            autoFocus
-            className="min-h-28 bg-background"
-            disabled={!project || noPreviewEnvironment}
-            placeholder="For example: let people export their projects as a ZIP, from the project menu, with a progress bar."
-            value={goal}
-            onChange={(event) => setGoal(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" && hasModKey(event)) {
-                event.preventDefault()
-                void start()
-              }
-            }}
+            <PreviewLaunchClouds filling={false} />
+          </div>
+        }
+        emptyState={
+          <ConversationEmptyState
+            icon={WorkflowIcon}
+            title="What should this epic achieve?"
+            description="Give the orchestrator a goal. It plans the user stories, coordinates their agents, and brings the work together on a branch for you to review."
+            suggestions={suggestions}
+            onSuggestion={
+              noPreviewEnvironment || creating
+                ? undefined
+                : draft.applySuggestion
+            }
           />
-        </label>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xs text-muted-foreground">
-            It may use any model from Cheaper to Smarter on your connected
-            providers, with no budget. Change that in the epic&rsquo;s settings.
-          </p>
-          <Button
-            disabled={!title || creating || !project || noPreviewEnvironment}
-            type="submit"
-          >
-            Start epic
-            <ArrowRightIcon />
-          </Button>
-        </div>
-      </form>
-    </div>
+        }
+        composer={
+          <div className="grid gap-3">
+            {noPreviewEnvironment ? (
+              <p
+                className="rounded-lg border border-amber-500/35 bg-background/90 px-3 py-2.5 text-sm"
+                role="status"
+              >
+                An epic needs this project’s preview environment to run its
+                stories.{" "}
+                <AppLink
+                  className="font-medium underline underline-offset-4"
+                  href="/initialization"
+                >
+                  Set up the preview environment
+                </AppLink>
+              </p>
+            ) : null}
+            <AgentConversationComposer
+              {...draft.composer}
+              disabled={!project || noPreviewEnvironment}
+              submitting={creating}
+              submitDisabled={!title}
+              mentionDirectory={project?.path}
+              minHeight="min-h-44"
+              onMessageSubmit={() => void start()}
+              placeholder="Describe the outcome you want to build together…"
+              submitLabel="Start epic"
+              toolbarEnd={<ModelSelector role="agent" />}
+            />
+          </div>
+        }
+      />
+    </main>
   )
 }
 

@@ -166,7 +166,7 @@ function placeStory<Story extends EpicBoardStory>(
 
 export type EpicActivity = "needs-you" | "working" | "paused" | "done"
 
-/** The dot of the epic in the sidebar; none while nothing happens. */
+/** The activity shown next to an epic in the history menu. */
 export function epicActivity(
   epic: Pick<Epic, "status">,
   groups: readonly EpicBoardGroup[],

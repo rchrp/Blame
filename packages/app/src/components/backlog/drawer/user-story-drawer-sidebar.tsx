@@ -80,6 +80,45 @@ export type AgentStatsSource = StoryModelSource & {
 
 // The agent at a glance, floating at the top right of the story drawer or
 // the chat: the full panel, or a small pill with the context donut.
+const statsPanelClass =
+  "overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted"
+
+// The expanded face can also live in the layout, with no minimize control.
+export function ExpandedAgentStats({
+  source,
+  contextLimitKey,
+  compaction,
+  diffStats,
+  cost,
+  summary,
+  children,
+}: {
+  source: AgentStatsSource
+  contextLimitKey: string
+  compaction: StoryContextCompaction
+  diffStats?: UserStoryDiffStats
+  cost?: React.ReactNode
+  summary: React.ReactNode
+  children: React.ReactNode
+}) {
+  const stats = useStoryStats(source, contextLimitKey, false, compaction)
+  return (
+    <div className={cn(statsPanelClass, "min-h-0 overflow-y-auto overscroll-contain")}>
+      <DrawerSidebar
+        buttons={0}
+        helpers={[]}
+        source={source}
+        stats={stats}
+        diffStats={diffStats}
+        cost={cost}
+        summary={summary}
+      >
+        {children}
+      </DrawerSidebar>
+    </div>
+  )
+}
+
 export function StoryStatsIsland({
   buttons = 2,
   className,
@@ -127,7 +166,8 @@ export function StoryStatsIsland({
   return (
     <motion.div
       className={cn(
-        "absolute top-4 right-4 z-20 max-w-[calc(100%-2rem)] overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted",
+        statsPanelClass,
+        "absolute top-4 right-4 z-20 max-w-[calc(100%-2rem)]",
         className
       )}
       initial={false}
@@ -361,11 +401,17 @@ function PreparationStats({
 
 function DrawerSidebar({
   buttons,
+  children,
+  cost,
+  summary,
   diffStats,
   helpers,
   source,
   stats: { budget, compaction, context, planUsage, totals },
 }: {
+  children?: React.ReactNode
+  cost?: React.ReactNode
+  summary?: React.ReactNode
   buttons: number
   diffStats?: UserStoryDiffStats
   helpers: readonly SubAgentRow[]
@@ -375,13 +421,14 @@ function DrawerSidebar({
   return (
     <aside className="grid gap-4 p-4">
       <ModelHeader buttons={buttons} source={source} />
+      {summary}
       <ContextGauge budget={budget} compaction={compaction} context={context} />
       {helpers.length ? <HelpersSection helpers={helpers} /> : null}
       {planUsage ? <PlanUsageSection usage={planUsage} /> : null}
       <div className="grid grid-cols-3 gap-2">
         <Pop className="grid min-w-0">
           <Stat label="Cost">
-            {formatCurrency(totals?.totalCost ?? totals?.cost)}
+            {cost ?? formatCurrency(totals?.totalCost ?? totals?.cost)}
           </Stat>
         </Pop>
         <Pop className="grid min-w-0">
@@ -393,6 +440,7 @@ function DrawerSidebar({
           </Stat>
         </Pop>
       </div>
+      {children}
     </aside>
   )
 }
@@ -603,7 +651,7 @@ function ModelHeader({
     <Pop
       className="flex min-w-0 items-center gap-2"
       // Past the panel's own padding, clear of the host's buttons.
-      style={{ paddingRight: buttonsWidth(buttons) - 12 }}
+      style={{ paddingRight: Math.max(0, buttonsWidth(buttons) - 12) }}
     >
       <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-foreground/[0.06] ring-1 ring-foreground/10">
         <ProviderIcon className="size-4" providerId={providerId} />

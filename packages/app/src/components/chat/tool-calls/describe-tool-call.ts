@@ -27,6 +27,7 @@ import { num, record, str, textOf } from "./tool-call-values.ts"
 import type { ToolCallSource, ToolCallView } from "./tool-call-view.ts"
 
 export type ToolCallActivity = {
+  id?: string
   kind: string
   title: string
   detail: string

@@ -1,6 +1,7 @@
 import * as React from "react"
 
 import { ProjectRunnerProvider } from "@/components/backlog/board/project-runner-context"
+import { EpicSwitcher } from "@/components/orchestrator/epic-switcher"
 import { SiteHeader, WindowControls } from "@/components/layout/site-header"
 import {
   KeyboardShortcutsDialog,
@@ -125,7 +126,7 @@ export function AppLayout({
           data-window-shell-inset
           className="z-[1] min-w-0 overflow-hidden"
         >
-          <SiteHeader title={headerTitle} />
+          <SiteHeader title={pathname === "/orchestrator" && projects.activeProject ? <EpicSwitcher /> : headerTitle} />
           {persistent ? (
             // Becoming visible again replays the page-enter animation.
             <div

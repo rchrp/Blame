@@ -21,7 +21,7 @@
 // - relaunch: a quit and a relaunch while a story works; the orchestrator
 //   is woken exactly once.
 // - blocked: a story only the person can start (Local Container with no
-//   runtime), under Needs you, in the dot, the header and the wake.
+//   runtime), under Needs you, in the epic switcher, the statistics panel and the wake.
 // - conflict: two stories change one line; the second merge is refused by
 //   the host and sent back to its agent, which merges the epic's branch in.
 //
@@ -51,7 +51,7 @@
 import { execFile, execFileSync, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createServer } from "node:http";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -102,7 +102,8 @@ class ScriptedModel {
           // Not a model request.
         }
         const { who, step } = this.route(body);
-        this.requests.push({ who, model: body.model, body, at: Date.now() });
+        const cwd = who.startsWith("story:") && workspaceOf(body);
+        this.requests.push({ who, model: body.model, body, cwd: cwd && existsSync(cwd) ? realpathSync(cwd) : undefined, at: Date.now() });
         void Promise.resolve(typeof step === "function" ? step(body) : step)
           .then((reply) => this.answer(response, reply))
           .catch((error) => {
@@ -119,6 +120,13 @@ class ScriptedModel {
       typeof body.system === "string"
         ? body.system
         : (body.system ?? []).map((part) => part.text ?? "").join("");
+    if (tools.includes("submit_project_code_practices")) {
+      const practice = { detected: true, comment: "Starter default." };
+      return { who: "practices", step: tool("submit_project_code_practices", {
+        projectState: "starter",
+        practices: { coding_style: practice, unit_tests: practice, layered_architecture: practice, commit_message_convention: practice },
+      }) };
+    }
     if (tools.includes("submit_commit_message"))
       return { who: "commit", step: { tool: "submit_commit_message", input: { message: "feat: the story's work" } } };
     if (system.includes("# Blame Orchestrator")) {
@@ -502,10 +510,11 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await send("Input.dispatchKeyEvent", { type, key, code, windowsVirtualKeyCode: keyCode, modifiers, ...(type === "keyDown" && typed ? { text: typed } : {}) });
   };
   const click = async (expression) => {
-    const point = await evaluate(`(() => {
+    const point = await evaluate(`(async () => {
       const element = ${expression};
       if (!element) return null;
-      element.scrollIntoView({ block: "center", inline: "center" });
+      element.scrollIntoView({ behavior: "instant", block: "nearest", inline: "nearest" });
+      await new Promise(done => requestAnimationFrame(() => done()));
       const box = element.getBoundingClientRect();
       return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
     })()`);
@@ -520,7 +529,18 @@ async function scenario(initial, options, model, projectPath, relaunch) {
   const text = () => evaluate(`document.body.innerText`);
   const pane = () => evaluate(`${paneSelector}?.innerText ?? ""`);
   const board = () => evaluate(`${boardSelector}?.innerText ?? ""`);
-  const dots = () => evaluate(`[...document.querySelectorAll("[role=img][aria-label]")].map((e) => e.getAttribute("aria-label")).join(",")`);
+  const startButton = `document.querySelector('button[aria-label="Start epic"]')`;
+  const editor = `document.querySelector('[data-markdown-editor-input="true"][contenteditable="true"]')`;
+  const statsPanel = `document.querySelector('[aria-label="Epic statistics"]')`;
+  // Chat folds completed work. Read the decisions after opening the work log.
+  const readWork = async () => {
+    await evaluate(`[...(${paneSelector}?.querySelectorAll('button[aria-expanded="false"]') ?? [])]
+      .filter(b => /^Work (completed|stopped)/.test(b.innerText)).forEach(b => b.click())`);
+    await evaluate(`new Promise(done => requestAnimationFrame(() => requestAnimationFrame(() => done(true))))`);
+    return pane();
+  };
+  const switcher = `document.querySelector('button[aria-label^="Switch epic,"]')`;
+  const dots = () => evaluate(`${switcher}?.querySelector('[role="img"]')?.getAttribute('aria-label') ?? ""`);
   const api = (path, method = "GET", body) =>
     evaluate(`(async () => {
       const session = await window.blame.localApi.session();
@@ -558,22 +578,27 @@ async function scenario(initial, options, model, projectPath, relaunch) {
   const epicOf = async (title) => (await api(`/projects/epics?projectId=${project.id}`)).find((item) => item.title === title);
   const storiesOf = async (epicId) => (await api(`/projects/user-stories?projectId=${project.id}&view=summary`)).filter((story) => story.epicId === epicId);
   const working = async (epicId) => (await storiesOf(epicId)).filter((story) => story.status === "in-progress" && story.agentStatus === "Running");
-  const wakeRows = (conversation) => (conversation.match(/finished a turn|resumed after its pause|Blame was restarted|Nothing of the epic can move/g) ?? []).length;
-  // The epic's page, shown from the sidebar (the list names epics by title).
+  const wakeRows = (conversation) => (conversation.match(/story updates?|resumed after its pause|Blame was restarted|Nothing of the epic can move/g) ?? []).length;
   const openEpic = async (title) => {
     await press("8", "Digit8", 56, 4);
-    await until(async () => evaluate(`[...document.querySelectorAll('[data-sidebar=menu-sub] a[href="/orchestrator"]')].some((a) => a.innerText.trim() === ${JSON.stringify(title)})`), 15_000, `${title} in the sidebar`);
-    await click(`[...document.querySelectorAll('[data-sidebar=menu-sub] a[href="/orchestrator"]')].find((a) => a.innerText.trim() === ${JSON.stringify(title)})`);
-    await until(async () => evaluate(`document.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)}`), 10_000, `the page of ${title}`);
+    await click(switcher);
+    const row = `[...document.querySelectorAll('[role="menuitemradio"]')].find(r => r.firstElementChild?.textContent === ${JSON.stringify(title)} || r.textContent.startsWith(${JSON.stringify(title)}))`;
+    await until(async () => evaluate(`Boolean(${row})`), 10_000, `${title} in the epic history`);
+    await click(row);
+    await until(async () => evaluate(`Boolean(${paneSelector}) && ${switcher}?.innerText.trim() === ${JSON.stringify(title)}`), 10_000, `the page of ${title}`);
   };
   const startEpicThroughUi = async (title, goal) => {
-    await press("8", "Digit8", 56, 4);
-    await click(button("New epic"));
+    await click(`document.querySelector('a[data-sidebar="menu-button"][href="/orchestrator"]')`);
+    await until(async () => evaluate(`Boolean(${switcher})`), 10_000, "the epic switcher");
+    if (await evaluate(`Boolean(${paneSelector})`)) {
+      await click(switcher);
+      await click(`[...document.querySelectorAll('[role="menuitem"]')].find(b => b.textContent.trim() === "New epic")`);
+    }
     await until(async () => (await text()).includes("What should this epic achieve?"), 15_000, "the New epic page");
     await dismissPreviewSetup();
-    await click(`document.querySelector("textarea")`);
+    await click(editor);
     await send("Input.insertText", { text: `${title}\n${goal}` });
-    await click(button("Start epic"));
+    await click(startButton);
     await until(async () => Boolean(await epicOf(title)), 15_000, `the epic ${title}`);
     return epicOf(title);
   };
@@ -603,7 +628,8 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await press("8", "Digit8", 56, 4);
       await until(async () => (await text()).includes("What should this epic achieve?"), 15_000, "the New epic page");
       await until(async () => (await text()).includes("Set up the preview environment"), 30_000, "the preview environment notice");
-      const blocked = await evaluate(`${button("Start epic")}?.disabled === true && document.querySelector("textarea")?.disabled === true`);
+      await dismissPreviewSetup(3000);
+      const blocked = await evaluate(`(!${startButton} || ${startButton}.disabled) && !${editor}`);
       check("without a working preview environment, Start epic is refused before the goal", blocked && (await text()).includes("An epic needs this project"));
       await shot("01-no-preview-environment");
       await api(`/projects/${project.id}/initialization/start`, "POST", { providerId: "anthropic", modelId: "claude-sonnet-5-5" }).catch(() => undefined);
@@ -621,9 +647,23 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       });
       // What the window does once its analysis completes: it reads the project's environment again.
       await evaluate(`window.dispatchEvent(new CustomEvent("project-initialization:updated", { detail: ${JSON.stringify(project.id)} })); true`);
-      await until(async () => (await evaluate(`${button("Start epic")} !== undefined`)) && !(await text()).includes("An epic needs this project"), 30_000, "the notice to go");
+      await until(async () => (await evaluate(`Boolean(${startButton})`)) && !(await text()).includes("An epic needs this project"), 30_000, "the notice to go");
       check("with a preview environment, the notice goes", true);
       await dismissPreviewSetup(3000);
+      await shot("01-new-epic");
+      const clouds = `document.querySelector('.epic-clouds')`;
+      const drift = `${clouds}.querySelector('.preview-ambilight-patch')`;
+      await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+      check("the empty composer uses the drifting preview clouds", await evaluate(`getComputedStyle(${drift}).animationName === "preview-ambilight-drift" && getComputedStyle(${drift}).animationPlayState === "running"`));
+      await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }, { name: "prefers-reduced-motion", value: "reduce" }] });
+      check("the clouds stay still with reduced motion", await evaluate(`getComputedStyle(${drift}).animationName === "none"`));
+      await shot("01-new-epic-light");
+      await send("Emulation.setEmulatedMedia", { features: [] });
+      await click(editor);
+      await send("Input.insertText", { text: "A" });
+      await until(() => evaluate(`getComputedStyle(${clouds}).visibility === "hidden"`), 5_000, "the clouds to fade out while drafting");
+      await press("Backspace", "Backspace", 8);
+      await until(() => evaluate(`${clouds}.dataset.visible === "true"`), 5_000, "the clouds to return to the empty composer");
       await cloudWindow();
       keepCloud = setInterval(() => void cloudWindow().catch(() => undefined), 1500);
     },
@@ -659,29 +699,49 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await until(async () => (await api(`/projects/epics/${epic.id}`)).engineSessionId, 30_000, "the conversation to be created");
       const created = await api(`/projects/epics/${epic.id}`);
       check("Start epic creates the conversation and the epic's branch", created.branch?.startsWith("epic/") && created.targetBranch === "main", `${created.branch} -> ${created.targetBranch}`);
-      await until(async () => (await text()).includes(created.branch), 15_000, "the header to name the branch").catch(() => undefined);
-      check("the header names the epic's branch, not 'created when it starts'", (await text()).includes(created.branch) && !(await text()).includes("Branch created when it starts"));
+      await until(async () => (await text()).includes(created.branch), 15_000, "the statistics panel to name the branch").catch(() => undefined);
+      check("the statistics panel names the epic's branch", (await text()).includes(created.branch) && !(await text()).includes("Branch created when it starts"));
       await waitState(epic.id, "waiting");
-      await until(async () => (await pane()).includes("Created 2 stories"), 20_000, "the decision row");
+      const launched = `${paneSelector}?.querySelector('ul[aria-label="Created stories"]')`;
+      await until(async () => evaluate(`(${launched}?.querySelectorAll("button").length ?? 0) === 2`), 20_000, "both story cards before opening tools");
+      check("the agent introduces the stories before the launch cards", await evaluate(`${paneSelector}.innerText.indexOf("I will write the CSV writer first") >= 0 && ${paneSelector}.innerText.indexOf("I will write the CSV writer first") < ${paneSelector}.innerText.indexOf("CSV writer\\nUS-")`));
       await shot("02-loop-waiting");
+      await click(`${launched}.querySelector('button')`);
+      await until(async () => evaluate(`Boolean(document.querySelector("[data-slot=drawer-content]"))`), 10_000, "the story launched in the conversation");
+      await press("Escape", "Escape", 27);
+      await until(async () => evaluate(`!document.querySelector("[data-slot=drawer-content]")`), 10_000, "the opened story to close");
       await waitState(epic.id, "finished", 240_000);
-      await until(async () => (await pane()).includes("The orchestrator’s part is done"), 15_000, "the summary");
+      await until(async () => (await pane()).includes("Ready for your review"), 15_000, "the summary");
+      await readWork();
+      await evaluate(`[...(${paneSelector}?.querySelectorAll('button[aria-expanded="false"]') ?? [])].filter(b => b.innerText.includes("Approved and merged")).forEach(b => b.click())`);
       const conversation = await pane();
       check("each decision shows, with its reason", conversation.includes("Created 2 stories") && (conversation.match(/Approved and merged into epic\//g) ?? []).length === 2 && conversation.includes("Verified, and only csv.js changed."));
       check("the wakes are events, never the person's messages", wakeRows(conversation) === 2 && !conversation.includes("orchestrator_wake"));
-      check("the summary shows, with what is left to the person", conversation.includes("Left to you"));
+      check("the summary shows, with what is left to the person", conversation.includes("before merging into"));
       const finished = await state(epic.id);
-      const header = await evaluate(`document.body.innerText.match(/\\$\\d+\\.\\d\\d[^\\n]*/)?.[0] ?? ""`);
-      check("the header shows the spend from the host", finished.spend.totalMicroUsd > 0 && /\$\d/.test(header), `${finished.spend.totalMicroUsd} µ$ / "${header}"`);
+      const cost = await evaluate(`(${statsPanel}?.innerText ?? "").match(/\\$\\d+\\.\\d\\d[^\\n]*/)?.[0] ?? ""`);
+      check("the statistics panel shows the spend from the host", finished.spend.totalMicroUsd > 0 && /\$\d/.test(cost), `${finished.spend.totalMicroUsd} µ$ / "${cost}"`);
       check("the epic's branch has both merges", gitShow(projectPath, created.branch, "csv.js").includes("csv") && gitShow(projectPath, created.branch, "button.js").includes("Export"));
       check("the target branch did not move", gitSync(projectPath, "rev-parse", "main") === mainBefore);
       const stories = await storiesOf(epic.id);
-      const detail = await api(`/projects/user-stories/${stories[0]?.id}`);
-      check("the stories' worktrees were inside the drive's profile, never the person's folders", typeof detail.worktree === "string" && detail.worktree.includes("cloud-worktrees") && !detail.worktree.includes("Library/Application Support/Blame"), detail.worktree);
+      // Merging releases the worktree. Check where each agent actually ran.
+      const roots = ["story:CSV writer", "story:Export button"].map(who => model.of(who)[0]?.cwd);
+      const worktreeRoot = join(realpathSync(projectPath), "..", "profile", "cloud-worktrees");
+      check("both stories ran inside the drive's isolated worktree folder", roots.every(root => root && resolve(root).startsWith(worktreeRoot + "/")), roots.join(", "));
       check("both stories are merged", stories.length === 2 && stories.every((story) => story.status === "done"));
-      check("the sidebar dot says done", (await dots()).includes("Done"));
+      check("the epic switcher shows the finished state", (await dots()).includes("Done"));
       await shot("03-loop-finished");
-      await click(`${paneSelector}?.querySelector('button[title^="Open US-"]')`);
+      await send("Emulation.setDeviceMetricsOverride", { width: 880, height: 720, deviceScaleFactor: 1, mobile: false });
+      await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "light" }] });
+      await shot("03-loop-narrow");
+      check("in a narrow window the stats and composer have separate space", await evaluate(`(() => {
+        const panel = ${statsPanel}.firstElementChild.getBoundingClientRect();
+        const conversation = ${paneSelector}.getBoundingClientRect();
+        return panel.height > 0 && panel.bottom <= conversation.top && conversation.height >= 250;
+      })()`));
+      await send("Emulation.setEmulatedMedia", { features: [] });
+      await send("Emulation.setDeviceMetricsOverride", { width: 1600, height: 950, deviceScaleFactor: 1, mobile: false });
+      await click(`${boardSelector}?.querySelector('button[title^="Open US-"]')`);
       await until(async () => evaluate(`Boolean(document.querySelector("[data-slot=drawer-content]"))`), 10_000, "the drawer from a row");
       check("a story in a row opens in the drawer", true);
       await press("Escape", "Escape", 27);
@@ -717,8 +777,8 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       ]);
       const epic = await startEpicThroughUi(title, "Make the build pass.");
       await waitState(epic.id, "finished", 240_000);
-      await until(async () => (await pane()).includes("The orchestrator’s part is done"), 15_000, "the summary");
-      const conversation = await pane();
+      await until(async () => (await pane()).includes("Ready for your review"), 15_000, "the summary");
+      const conversation = await readWork();
       check("the host refused to approve a story whose checks failed", refusal.length > 0 && !/"merged":\s*true/.test(refusal), refusal.slice(0, 200));
       check("the row says the approval was refused, with the host's sentence", conversation.includes("Refused:"));
       check("changes were requested, on a smarter model", conversation.includes("Asked for changes on a smarter model"));
@@ -740,11 +800,40 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       const epic = await startEpicThroughUi(title, "Choose the export format.");
       await waitState(epic.id, "asking");
       await until(async () => (await pane()).includes("Which format should the export use?"), 15_000, "the question");
+      check("Orchestrator uses the same button dimensions as Backlog", await evaluate(`(() => {
+        const box = path => document.querySelector('a[data-sidebar="menu-button"][href="/' + path + '"]').getBoundingClientRect();
+        return box("orchestrator").height === box("backlog").height && box("orchestrator").width === box("backlog").width;
+      })()`));
       check("the dot says the epic needs the person", (await dots()).includes("Needs you"));
+      const other = (await api(`/projects/epics?projectId=${project.id}`)).find(item => item.id !== epic.id);
+      if (other) await openEpic(other.title);
+      await openEpic(title);
+      await click(switcher);
+      await press("Home", "Home", 36);
+      check("the epic menu can be navigated by keyboard", await evaluate(`document.activeElement?.textContent.trim() === "New epic"`));
+      await shot("05-epic-history");
+      await press("Escape", "Escape", 27);
+      await until(async () => evaluate(`!document.querySelector('[role="menu"]')`), 5000, "the epic history to close");
+      const replyModifier = process.platform === "darwin" ? 4 : 2;
+      await click(`document.querySelector('button[aria-label="Epic settings"]')`);
+      await until(async () => evaluate(`Boolean(document.querySelector('[role="dialog"][data-state="open"]'))`), 5000, "epic settings to open");
+      await press("Enter", "Enter", 13, replyModifier);
+      check("the shortcut leaves a question pending beneath a dialog", (await state(epic.id)).conversation === "asking");
+      await press("Escape", "Escape", 27);
+      await until(async () => evaluate(`!document.querySelector('[data-slot="dialog-content"]')`), 5000, "epic settings to close");
+      await click(button("Write a reply", paneSelector));
+      check("Write a reply focuses the existing composer", await evaluate(`document.activeElement?.matches('[data-markdown-editor-input="true"]')`));
+      check("the reply options sit just above the composer", await evaluate(`(() => {
+        const actions = document.querySelector('[aria-label="Reply to the orchestrator"]').getBoundingClientRect();
+        const gap = ${editor}.getBoundingClientRect().top - actions.bottom;
+        return gap >= 0 && gap < 110;
+      })()`));
       await shot("05-ask");
-      await click(button("CSV", paneSelector));
+      await send("Input.insertText", { text: "Add XLSX later." });
+      await press("Enter", "Enter", 13, replyModifier);
       await waitState(epic.id, "finished");
-      check("the answer is the person's message, and restarts the turn", answer.includes("CSV"), JSON.stringify(answer.slice(-80)));
+      check("the shortcut sends the primary answer once", answer.trim().endsWith("CSV") && model.of(`orchestrator:${title}`).length === 2);
+      check("choosing a suggestion preserves a typed draft", await evaluate(`${editor}.textContent.includes("Add XLSX later.")`));
     },
 
     // "Ask me before launching": nothing starts before Allow; Deny is told.
@@ -771,6 +860,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await click(`[...document.querySelectorAll('[role=dialog] label')].find((l) => l.innerText.includes("Ask me before launching"))?.querySelector('[role=switch]')`);
       await click(button("Save", `document.querySelector('[role=dialog]')`));
       await until(async () => (await api(`/projects/epics/${epic.id}`)).settings.askBeforeLaunch === true, 10_000, "the setting saved");
+      await until(async () => evaluate(`!document.querySelector('[data-slot=dialog-content]')`), 5_000, "the settings to close");
       // The person's own message, typed in the composer.
       await click(`${paneSelector}?.querySelector('[data-markdown-editor-input="true"]')`);
       await send("Input.insertText", { text: "Yes, go ahead." });
@@ -829,7 +919,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       check("Pause all: the host paused both working agents", (await storiesOf(epic.id)).every((story) => story.agentStatus === "Paused"));
       await until(async () => (await state(epic.id)).pause?.phase === "paused", 30_000, "the host to say the pause took");
       await until(async () => (await text()).includes("Resume"), 5_000, "Resume");
-      check("the header says Paused once the pause took", /\bPaused\b/.test(await evaluate(`document.querySelector("h2")?.parentElement?.innerText ?? ""`)));
+      check("the statistics panel says Paused once the pause took", /\bPaused\b/.test(await evaluate(`${statsPanel}?.innerText ?? ""`)));
       check("a pause is not 'needs you'", !(await dots()).includes("Needs you") && !((await state(epic.id)).blocked?.length));
       await shot("08-paused");
       // The person can still talk to the orchestrator.
@@ -840,8 +930,8 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await until(async () => /paused/i.test(pausedRefusal), 60_000, "the orchestrator's answer during the pause");
       await waitState(epic.id, "waiting");
       check("during the pause the orchestrator answers the person", model.of(`orchestrator:${title}`).length >= asked + 2);
-      check("its acting call is refused because the epic is paused, and the row says so", /paused/i.test(pausedRefusal) && /Refused:[^\n]*paused/i.test(await pane()), pausedRefusal.slice(0, 160));
-      check("the header still says Paused", (await state(epic.id)).pause?.phase === "paused" && (await text()).includes("Resume"));
+      check("its acting call is refused because the epic is paused, and the row says so", /paused/i.test(pausedRefusal) && /Refused:[^\n]*paused/i.test(await readWork()), pausedRefusal.slice(0, 160));
+      check("the statistics panel still says Paused", (await state(epic.id)).pause?.phase === "paused" && (await text()).includes("Resume"));
       await click(button("Resume"));
       await until(async () => (await api(`/projects/epics/${epic.id}`)).status === "active", 15_000, "the epic to resume");
       await until(async () => (await working(epic.id)).length === 2, 60_000, "the host to resume both agents");
@@ -849,7 +939,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       check("the orchestrator was woken neither by the pause nor by the resume", model.of(`orchestrator:${title}`).length === atPause + 2, `${model.of(`orchestrator:${title}`).length - atPause} requests since the pause, 2 of them the person's`);
       gate.open();
       await waitState(epic.id, "finished", 240_000);
-      await until(async () => (await pane()).includes("The orchestrator’s part is done"), 15_000, "the summary");
+      await until(async () => (await pane()).includes("Ready for your review"), 15_000, "the summary");
       check("one wake after the pause and the resume", wakeRows(await pane()) === 1, `${wakeRows(await pane())} wake rows`);
     },
 
@@ -877,12 +967,12 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       check("the story works again after the relaunch", true);
       gate.open();
       await waitState(epic.id, "finished", 240_000);
-      await until(async () => (await pane()).includes("The orchestrator’s part is done"), 15_000, "the summary");
+      await until(async () => (await pane()).includes("Ready for your review"), 15_000, "the summary");
       check("after the relaunch the orchestrator is woken exactly once", wakeRows(await pane()) === 1, `${wakeRows(await pane())} wake rows`);
       await shot("09-after-relaunch");
     },
 
-    // A story only the person can start: shown under Needs you, in the header and the wake.
+    // A story only the person can start: shown under Needs you, in the statistics panel and the wake.
     async blocked() {
       const title = "Orders labels";
       const second = model.gate("blocked");
@@ -907,11 +997,11 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await until(async () => (await state(epic.id)).blocked?.length === 1, 90_000, "the host to call the layout story blocked");
       const blocked = (await state(epic.id)).blocked[0];
       check("the host says why only the person can start it", /runtime/i.test(blocked.reason), blocked.reason);
-      await until(async () => (await board()).includes(blocked.reason), 15_000, "the board's Needs you");
-      check("the board lists it under Needs you, with the reason", (await board()).startsWith("Needs you"));
+      await until(async () => (await board()).includes(blocked.reason), 15_000, "the Needs you story group");
+      check("the statistics panel lists it under Needs you, with the reason", (await board()).includes("Needs you"));
       check("the dot says the epic needs the person", (await dots()).includes("Needs you"));
       await waitState(epic.id, "waiting");
-      check("the header says a story needs the person to start", (await text()).includes("needs you to start"));
+      check("the statistics panel says a story needs the person to start", (await text()).includes("needs you to start"));
       printer.open();
       await waitState(epic.id, "asking", 180_000);
       const conversation = await pane();
@@ -919,6 +1009,12 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await shot("10-blocked");
       windowPreferences = { runMode: "vercel-compose", premium: true, runtimePhase: "ready" };
       await cloudWindow();
+      // Dismiss the install offer that covered the sidebar while the runtime was missing.
+      const installOffer = `[...document.querySelectorAll('[role="dialog"]')].find(d => d.innerText.includes("Install Blame Runtime"))`;
+      if (await evaluate(`Boolean(${installOffer})`)) {
+        await click(`(${installOffer}).querySelector('[data-slot="dialog-close"]')`);
+        await until(async () => !await evaluate(`Boolean(document.querySelector('[data-slot="dialog-overlay"]'))`), 5_000, "the runtime offer to close");
+      }
     },
 
     // Two stories change the same line: the second merge conflicts, is refused
@@ -964,7 +1060,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       branch = (await api(`/projects/epics/${epic.id}`)).branch;
       await until(async () => /conflict/i.test(refusal), 180_000, "the conflicting merge to be refused");
       check("the host refused the conflicting merge", /conflict/i.test(refusal), refusal.slice(0, 200));
-      await until(async () => (await pane()).includes("Refused:"), 15_000, "the refusal row");
+      await until(async () => (await readWork()).includes("Refused:"), 15_000, "the refusal row");
       check("the refusal row reads the host's first sentence", /Refused: [^\n]+/.test(await pane()));
       await shot("11-conflict-refused");
       await waitState(epic.id, "finished", 300_000);
@@ -1050,6 +1146,8 @@ async function inElectron() {
   app.getAppPath = () => application;
   app.setAsDefaultProtocolClient = () => false;
   app.commandLine.appendSwitch("remote-debugging-port", process.env.DRIVE_PORT);
+  // Screenshots and DOM assertions still need paint frames when the test window is covered.
+  app.on("browser-window-created", (_event, window) => window.webContents.setBackgroundThrottling(false));
   process.env.LIMA_HOME = join(profile, "lima");
   process.env.BLAME_WSL_DISTRO = "BlameOrchestratorDrive";
   process.env.BLAME_CLAUDE_CODE_STATE_DIR = join(profile, "claude-code");

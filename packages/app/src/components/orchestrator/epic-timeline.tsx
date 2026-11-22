@@ -2,24 +2,29 @@ import * as React from "react"
 import type { OrchestratorWake } from "@blame/agent-runtime/engine-protocol"
 import {
   BellRingIcon,
-  CheckCircle2Icon,
-  EyeIcon,
-  FlagIcon,
-  GitMergeIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
+  CheckCheckIcon,
   HourglassIcon,
-  LoaderCircleIcon,
-  MessageSquareReplyIcon,
-  PencilIcon,
-  PlusIcon,
   ShieldAlertIcon,
-  TriangleAlertIcon,
-  XIcon,
 } from "lucide-react"
 
 import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
 import { MarkdownMessage } from "@/components/backlog/drawer/markdown-editor"
 import { ApprovalDecision } from "@/components/chat/engine/engine-approvals"
-import type { EpicBoardStory } from "@/components/orchestrator/data/epic-board"
+import { AgentConversationTimeline } from "@/components/chat/agent-conversation"
+import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
+import { QueuedMessages } from "@/components/chat/engine/queued-messages"
+import {
+  ToolCallDetailsProvider,
+  type ToolCallDetail,
+} from "@/components/chat/tool-calls/tool-call-item"
+import type { useEpicConversation } from "./data/use-epic-conversation"
+import { useEpicModels } from "./data/use-epic-models"
+import type {
+  EpicBoardGroup,
+  EpicBoardStory,
+} from "@/components/orchestrator/data/epic-board"
 import type { Epic } from "@/components/orchestrator/data/epic-data"
 import { modelIntentLabels } from "@/components/orchestrator/data/epic-model-range"
 import {
@@ -27,102 +32,134 @@ import {
   personSentence,
   type EpicEntry,
 } from "@/components/orchestrator/data/epic-transcript"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
 
 type Decision = Extract<EpicEntry, { kind: "decision" }>
-type Lookup = Extract<EpicEntry, { kind: "lookup" }>
 
 type TimelineContext = {
   epic: Epic
-  stories: readonly EpicBoardStory[]
+  stories: ReadonlyMap<string, { story: EpicBoardStory; state: string }>
   onOpenStory: (storyId: string) => void
 }
 
-// The epic's conversation: the person's messages, the host's wakes as
-// events, the orchestrator's words and each decision it took, with Allow and
-// Deny on those that wait for the person.
+// The same turns and work log as Chat. Host wakes replace the user bubble,
+// and completed end_turn calls leave an actionable outcome below the turn.
 export function EpicTimeline({
-  entries,
+  chat,
   epic,
-  onAnswer,
+  groups,
   onOpenStory,
   openQuestionKey,
-  stories,
-}: TimelineContext & {
-  entries: EpicEntry[]
-  // The question still open, whose options answer it.
+  onFileLinkClick,
+}: Omit<TimelineContext, "stories"> & {
+  groups: EpicBoardGroup[]
+  chat: ReturnType<typeof useEpicConversation>
   openQuestionKey?: string
-  onAnswer: (answer: string) => void
+  onFileLinkClick: (path: string) => void
 }) {
-  const context = { epic, onOpenStory, stories }
-  return (
-    <ol className="grid gap-3">
-      {groupLookups(entries).map((entry) => (
-        <li key={Array.isArray(entry) ? entry[0]!.key : entry.key}>
-          {Array.isArray(entry) ? (
-            <LookupRow lookups={entry} context={context} />
-          ) : (
-            <EntryRow
+  const models = useEpicModels()
+  const stories = React.useMemo(() => {
+    const byRef = new Map<string, { story: EpicBoardStory; state: string }>()
+    for (const group of groups)
+      for (const { story, note } of group.entries) {
+        const item = { story, state: note ?? group.title }
+        byRef.set(story.id, item)
+        byRef.set(userStoryDisplayId(story), item)
+      }
+    return byRef
+  }, [groups])
+  const context = { epic, stories, onOpenStory }
+  const conversation = chat.conversation
+  if (!conversation) return null
+  const entries = new Map(chat.entries.map((entry) => [entry.key, entry]))
+  const turnContent = new Map<
+    string,
+    { opening?: React.ReactNode; outcome?: React.ReactNode }
+  >()
+  const tools = new Map<string, ToolCallDetail>()
+  for (const run of conversation.runs) {
+    const start = run.commentId && entries.get(run.commentId)
+    const opening =
+      start && start.kind === "wake" ? (
+        <WakeRow context={context} wake={start.wake} />
+      ) : undefined
+    let outcome: React.ReactNode
+    let narrated = false
+    for (const activity of run.activities ?? []) {
+      if (activity.kind === "message") narrated = true
+      const entry = entries.get(activity.id)
+      if (entry?.kind === "end") {
+        if (openQuestionKey !== entry.key)
+          outcome = <EndRow context={context} end={entry} />
+      } else if (entry?.kind === "decision") {
+        const attention =
+          entry.state === "awaiting_approval" ||
+          entry.state === "denied" ||
+          Boolean(entry.refusal)
+        let inlineContent: React.ReactNode
+        if (entry.state === "awaiting_approval") {
+          inlineContent = (
+            <div className="grid gap-2 text-sm">
+              <p className="font-medium">{decisionTitle(entry, epic)}?</p>
+              <DecisionContent decision={entry} context={context} />
+              <ApprovalDecision call={entry.call} neutral />
+            </div>
+          )
+        } else if (
+          entry.tool === "create_stories" &&
+          entry.state === "completed"
+        ) {
+          inlineContent = (
+            <CreatedStories
+              decision={entry}
               context={context}
-              entry={entry}
-              open={entry.key === openQuestionKey}
-              onAnswer={onAnswer}
+              narrated={narrated}
             />
-          )}
-        </li>
-      ))}
-    </ol>
-  )
-}
-
-function EntryRow({
-  context,
-  entry,
-  open,
-  onAnswer,
-}: {
-  context: TimelineContext
-  entry: Exclude<EpicEntry, Lookup>
-  open: boolean
-  onAnswer: (answer: string) => void
-}) {
-  switch (entry.kind) {
-    case "person":
-      return (
-        <div className="ml-auto w-fit max-w-[85%] rounded-2xl rounded-br-md bg-primary/10 px-3.5 py-2 text-sm break-words whitespace-pre-wrap">
-          {entry.text}
-          {entry.files ? (
-            <span className="mt-1 block text-xs text-muted-foreground">
-              {entry.files === 1 ? "1 file" : `${entry.files} files`} attached
-            </span>
-          ) : null}
-        </div>
-      )
-    case "wake":
-      return <WakeRow wake={entry.wake} context={context} />
-    case "message":
-      return (
-        <MarkdownMessage
-          animateAppend={entry.streaming}
-          appearance="plain"
-          markdown={entry.text}
-        />
-      )
-    case "decision":
-      return <DecisionRow decision={entry} context={context} />
-    case "end":
-      return (
-        <EndRow end={entry} context={context} open={open} onAnswer={onAnswer} />
-      )
-    case "problem":
-      return (
-        <p className="flex items-start gap-2 text-sm text-destructive">
-          <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
-          <span className="break-words">{entry.text}</span>
-        </p>
-      )
+          )
+          narrated = false
+        }
+        tools.set(entry.key, {
+          inlineContent,
+          family: entry.tool === "create_stories" ? "plan" : "agent",
+          verb: decisionTitle(entry, epic),
+          failed: Boolean(entry.refusal) || entry.state === "denied",
+          needsAttention: attention,
+          content: <DecisionContent decision={entry} context={context} />,
+        })
+      }
+    }
+    if (opening || outcome) turnContent.set(run.id, { opening, outcome })
   }
+  const header = (model?: {
+    providerId?: string | null
+    modelId?: string | null
+  }) =>
+    agentConversationResponseHeader({
+      providerId:
+        model?.providerId ?? epic.settings.orchestratorModel?.providerId,
+      modelId: model?.modelId ?? epic.settings.orchestratorModel?.modelId,
+      fallbackName: "Orchestrator",
+      providers: models.allProviders,
+    })
+  return (
+    <ToolCallDetailsProvider value={tools}>
+      <AgentConversationTimeline
+        comments={conversation.comments}
+        runs={conversation.runs}
+        responseHeader={header(conversation.runs.at(-1))}
+        responseHeaderForRun={header}
+        onFileLinkClick={onFileLinkClick}
+        turnContent={turnContent}
+        queued={
+          <QueuedMessages
+            controls={chat.queue}
+            queued={conversation.queued.filter(
+              (item) => entries.get(item.comment.id)?.kind !== "wake"
+            )}
+          />
+        }
+      />
+    </ToolCallDetailsProvider>
+  )
 }
 
 function EventRow({
@@ -133,7 +170,7 @@ function EventRow({
   icon: React.ReactNode
 }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-dashed px-3 py-2 text-sm text-muted-foreground [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0">
+    <div className="flex items-start gap-2 px-1 py-1 text-sm text-muted-foreground [&>svg]:mt-0.5 [&>svg]:size-4 [&>svg]:shrink-0">
       {icon}
       <div className="grid min-w-0 gap-1">{children}</div>
     </div>
@@ -168,30 +205,32 @@ function WakeRow({
     )
   const count = wake.stories.length
   return (
-    <EventRow icon={<BellRingIcon />}>
-      <span>
-        {count === 1 ? "1 story" : `${count} stories`} finished a turn:
-      </span>
-      <ul className="grid gap-0.5">
-        {wake.stories.map((story) => (
-          <li
-            key={`${story.session}:${story.turn}`}
-            className="flex flex-wrap gap-x-1.5"
-          >
-            <StoryChip
-              context={context}
-              storyRef={story.storyId}
-              fallback={story.number}
-            />
-            <span className={wakeOutcomeClass(story)}>
-              {wakeOutcome(story)}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div className="grid min-w-0 gap-2 text-sm text-muted-foreground">
+      <details open className="group/reports">
+        <summary className="flex w-fit cursor-pointer list-none items-center gap-1 rounded-sm outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+          {count} {count === 1 ? "story update" : "story updates"}
+          <ChevronDownIcon className="size-3.5 -rotate-90 group-open/reports:rotate-0" />
+        </summary>
+        <ul className="mt-2 divide-y rounded-lg border border-border/70">
+          {wake.stories.map((story) => (
+            <li
+              key={`${story.session}:${story.turn}`}
+              className="flex flex-wrap items-baseline gap-x-2 gap-y-1 px-3 py-2"
+            >
+              <span>Update from</span>
+              <StoryChip
+                context={context}
+                storyRef={story.storyId}
+                fallback={story.number}
+              />
+              <span className="ml-auto text-xs">{wakeOutcome(story)}</span>
+            </li>
+          ))}
+        </ul>
+      </details>
       <WakeBlocked context={context} wake={wake} />
-      {wake.budget?.spent ? <span>The budget is spent.</span> : null}
-    </EventRow>
+      {wake.budget?.spent && <span>The budget is spent.</span>}
+    </div>
   )
 }
 
@@ -215,9 +254,7 @@ function WakeBlocked({
               storyRef={story.storyId}
               fallback={story.number}
             />
-            <span className="text-amber-700 dark:text-amber-300">
-              {story.reason}
-            </span>
+            <span className="text-muted-foreground">{story.reason}</span>
           </li>
         ))}
       </ul>
@@ -236,71 +273,81 @@ function wakeOutcome(story: OrchestratorWake["stories"][number]) {
   return "ended without verified work"
 }
 
-function wakeOutcomeClass(story: OrchestratorWake["stories"][number]) {
-  return story.verified
-    ? "text-emerald-700 dark:text-emerald-300"
-    : "text-amber-700 dark:text-amber-300"
+function CreatedStories({
+  decision,
+  context,
+  narrated,
+}: {
+  decision: Decision
+  context: TimelineContext
+  narrated: boolean
+}) {
+  const created = decisionStories(decision)
+  if (!created.length) return null
+  return (
+    <div className="grid min-w-0 gap-2">
+      {!narrated && decision.input.reason && (
+        <p className="text-sm leading-relaxed">{decision.input.reason}</p>
+      )}
+      <ul className="grid w-full max-w-md gap-1.5" aria-label="Created stories">
+        {created.map(({ ref, title }) => {
+          const item = context.stories.get(ref)
+          const content = (
+            <>
+              <span className="grid min-w-0 gap-0.5">
+                <span className="truncate text-sm font-medium">
+                  {item?.story.title ?? title ?? ref}
+                </span>
+                {item && (
+                  <span className="truncate text-xs text-muted-foreground">
+                    {userStoryDisplayId(item.story)} · {item.state}
+                  </span>
+                )}
+              </span>
+              {item && (
+                <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground" />
+              )}
+            </>
+          )
+          return (
+            <li key={ref || title}>
+              {item ? (
+                <button
+                  type="button"
+                  onClick={() => context.onOpenStory(item.story.id)}
+                  className="group flex w-full items-center justify-between gap-3 rounded-lg bg-muted/65 px-3 py-2.5 text-left transition-colors outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {content}
+                </button>
+              ) : (
+                <span className="flex rounded-lg bg-muted/65 px-3 py-2.5">
+                  {content}
+                </span>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
 }
 
-function DecisionRow({
-  context,
+function DecisionContent({
   decision,
+  context,
 }: {
-  context: TimelineContext
   decision: Decision
+  context: TimelineContext
 }) {
-  const waiting = decision.state === "awaiting_approval"
-  const running = decision.state === "requested" || decision.state === "running"
-  const refused = Boolean(decision.refusal)
-  const denied = decision.state === "denied"
   return (
-    <div
-      className={cn(
-        "grid gap-1.5 rounded-lg border bg-background px-3 py-2.5 text-sm shadow-xs",
-        waiting && "border-amber-500/50 bg-amber-500/5",
-        (refused || denied) && "border-dashed"
+    <div className="grid gap-1.5 py-1 text-sm text-muted-foreground">
+      <DecisionStories context={context} decision={decision} />
+      {decision.input.reason && <p>{decision.input.reason}</p>}
+      <DecisionDetail decision={decision} />
+      {decision.refusal && <Refusal text={decision.refusal} />}
+      {decision.state === "denied" && (
+        <p>You denied it. The orchestrator was told.</p>
       )}
-    >
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 shrink-0 text-muted-foreground [&>svg]:size-4">
-          {running ? (
-            <LoaderCircleIcon className="animate-spin" />
-          ) : (
-            decisionIcon(decision)
-          )}
-        </span>
-        <div className="grid min-w-0 flex-1 gap-1">
-          <span
-            className={cn(
-              "font-medium",
-              (refused || denied) && "text-muted-foreground"
-            )}
-          >
-            {decisionTitle(decision, context.epic)}
-          </span>
-          <DecisionStories context={context} decision={decision} />
-          {decision.input.reason ? (
-            <span className="text-muted-foreground">
-              {decision.input.reason}
-            </span>
-          ) : null}
-          <DecisionDetail decision={decision} />
-        </div>
-      </div>
-      {refused ? <Refusal text={decision.refusal!} /> : null}
-      {denied ? (
-        <p className="text-muted-foreground">
-          You denied it; the orchestrator was told.
-        </p>
-      ) : null}
-      {waiting ? (
-        <div className="grid gap-1 border-t pt-2">
-          <span className="text-xs text-muted-foreground">
-            Waiting for you: nothing happens until you allow it.
-          </span>
-          <ApprovalDecision call={decision.call} />
-        </div>
-      ) : null}
     </div>
   )
 }
@@ -311,7 +358,7 @@ function Refusal({ text }: { text: string }) {
   const sentence = personSentence(text)
   const rest = text.trim().slice(sentence.length).trim()
   return (
-    <div className="grid gap-1 rounded-md bg-destructive/10 px-2 py-1.5 text-destructive">
+    <div className="grid gap-1 border-l-2 border-muted-foreground/40 pl-3 text-foreground">
       <p className="flex items-start gap-1.5">
         <ShieldAlertIcon className="mt-0.5 size-3.5 shrink-0" />
         <span className="break-words">Refused: {sentence}</span>
@@ -326,21 +373,6 @@ function Refusal({ text }: { text: string }) {
       ) : null}
     </div>
   )
-}
-
-function decisionIcon(decision: Decision) {
-  switch (decision.tool) {
-    case "create_stories":
-      return <PlusIcon />
-    case "update_story":
-      return <PencilIcon />
-    case "message_story":
-      return <MessageSquareReplyIcon />
-    case "approve_story":
-      return <GitMergeIcon />
-    case "reject_story":
-      return <XIcon />
-  }
 }
 
 function decisionTitle(decision: Decision, epic: Epic) {
@@ -448,22 +480,22 @@ function StoryChip({
   fallback?: string
   storyRef: string
 }) {
-  const story = context.stories.find(
-    (item) => item.id === storyRef || userStoryDisplayId(item) === storyRef
-  )
+  const story = context.stories.get(storyRef)?.story
   if (!story)
     return <span className="text-xs font-medium">{fallback ?? storyRef}</span>
   return (
     <button
-      className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-left text-xs outline-none hover:bg-muted/70 hover:text-blue-600 focus-visible:ring-2 focus-visible:ring-ring/50 dark:hover:text-blue-300"
+      className="inline-flex max-w-full min-w-0 items-baseline gap-1.5 rounded-sm text-left text-sm outline-none hover:underline focus-visible:ring-2 focus-visible:ring-ring"
       title={`Open ${userStoryDisplayId(story)}`}
       type="button"
       onClick={() => context.onOpenStory(story.id)}
     >
-      <span className="shrink-0 font-medium tabular-nums">
+      <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
         {userStoryDisplayId(story)}
       </span>
-      <span className="truncate">{story.title}</span>
+      <span className="truncate text-foreground underline decoration-border underline-offset-2">
+        {story.title}
+      </span>
     </button>
   )
 }
@@ -471,13 +503,9 @@ function StoryChip({
 function EndRow({
   context,
   end,
-  open,
-  onAnswer,
 }: {
   context: TimelineContext
   end: Extract<EpicEntry, { kind: "end" }>
-  open: boolean
-  onAnswer: (answer: string) => void
 }) {
   if (end.action === "wait")
     return (
@@ -487,117 +515,24 @@ function EndRow({
       </EventRow>
     )
   if (end.action === "ask")
-    return (
-      <div className="grid gap-2 rounded-lg border border-amber-500/50 bg-amber-500/5 p-3 text-sm">
-        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-          {open ? "The orchestrator asks you" : "The orchestrator asked"}
-        </span>
-        <MarkdownMessage appearance="plain" markdown={end.question ?? ""} />
-        {end.options.length ? (
-          <div className="flex flex-wrap gap-2">
-            {end.options.map((option) => (
-              <Button
-                key={option}
-                disabled={!open}
-                size="sm"
-                type="button"
-                variant="outline"
-                onClick={() => onAnswer(option)}
-              >
-                {option}
-              </Button>
-            ))}
-          </div>
-        ) : null}
-        {open ? (
-          <span className="text-xs text-muted-foreground">
-            Pick an answer, or write your own below.
-          </span>
-        ) : null}
-      </div>
-    )
+    return <MarkdownMessage appearance="plain" markdown={end.question ?? ""} />
   const { epic } = context
   return (
-    <div className="grid gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-3 text-sm">
-      <span className="flex items-center gap-1.5 font-medium text-emerald-700 dark:text-emerald-300">
-        <FlagIcon className="size-4" />
-        The orchestrator&rsquo;s part is done
+    <div className="grid gap-2 text-sm">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <CheckCheckIcon className="size-4" /> Ready for your review
       </span>
       <MarkdownMessage appearance="plain" markdown={end.summary ?? ""} />
-      <p className="flex items-start gap-1.5 border-t pt-2 text-muted-foreground">
-        <EyeIcon className="mt-0.5 size-4 shrink-0" />
-        <span>
-          Left to you: review what landed on{" "}
-          <span className="font-mono text-xs">
-            {epic.branch ?? "the epic's branch"}
-          </span>
-          {epic.targetBranch ? (
-            <>
-              . Nothing reached{" "}
-              <span className="font-mono text-xs">{epic.targetBranch}</span>:
-              merge the epic&rsquo;s branch into it yourself once you are
-              satisfied.
-            </>
-          ) : (
-            "."
-          )}
-        </span>
+      <p className="text-muted-foreground">
+        Review <code>{epic.branch ?? "the epic branch"}</code>
+        {epic.targetBranch && (
+          <>
+            {" "}
+            before merging into <code>{epic.targetBranch}</code>
+          </>
+        )}
+        .
       </p>
     </div>
   )
-}
-
-function LookupRow({
-  context,
-  lookups,
-}: {
-  context: TimelineContext
-  lookups: Lookup[]
-}) {
-  const running = lookups.some((lookup) => lookup.running)
-  const labels = [
-    ...new Set(lookups.map((lookup) => lookupLabel(lookup, context))),
-  ]
-  return (
-    <p className="flex items-start gap-2 text-xs text-muted-foreground">
-      {running ? (
-        <LoaderCircleIcon className="mt-px size-3.5 shrink-0 animate-spin" />
-      ) : (
-        <CheckCircle2Icon className="mt-px size-3.5 shrink-0" />
-      )}
-      <span>Looked at {labels.join(", ")}</span>
-    </p>
-  )
-}
-
-function lookupLabel(lookup: Lookup, context: TimelineContext) {
-  const input = (lookup.input ?? {}) as Record<string, unknown>
-  switch (lookup.tool) {
-    case "epic_board":
-      return "the board"
-    case "story_report": {
-      const ref = String(input.storyId ?? "")
-      const story = context.stories.find(
-        (item) => item.id === ref || userStoryDisplayId(item) === ref
-      )
-      return `${story ? userStoryDisplayId(story) : ref}'s report`
-    }
-    case "search_code":
-    case "read_code":
-      return "the code"
-    default:
-      return lookup.tool.replace(/_/g, " ")
-  }
-}
-
-// Looks in a row read as one line.
-function groupLookups(entries: EpicEntry[]) {
-  const grouped: (Exclude<EpicEntry, Lookup> | Lookup[])[] = []
-  for (const entry of entries) {
-    const last = grouped.at(-1)
-    if (entry.kind !== "lookup") grouped.push(entry)
-    else if (Array.isArray(last)) last.push(entry)
-    else grouped.push([entry])
-  }
-  return grouped
 }

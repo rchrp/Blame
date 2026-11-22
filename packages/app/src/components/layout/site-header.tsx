@@ -13,7 +13,7 @@ const siteHeaderBlurMask = {
   WebkitMaskImage: "linear-gradient(to bottom, black 5%, transparent 72%)",
 } satisfies React.CSSProperties
 
-export function SiteHeader({ title }: { title: string }) {
+export function SiteHeader({ title }: { title: React.ReactNode }) {
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
       <div
@@ -29,8 +29,8 @@ export function SiteHeader({ title }: { title: string }) {
             orientation="vertical"
             className="mx-2 my-auto data-[orientation=vertical]:h-4"
           />
-          <h1 className="truncate text-base font-medium">{title}</h1>
-          <div className="ml-auto">
+          <h1 className="min-w-0 flex-1 truncate text-base font-medium">{title}</h1>
+          <div className="ml-auto shrink-0">
             <ProjectRunnerButton />
           </div>
         </div>

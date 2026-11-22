@@ -4,7 +4,7 @@ import {
   GitMergeIcon,
   ListTodoIcon,
   LoaderCircleIcon,
-  PauseIcon,
+  ChevronRightIcon,
   XIcon,
 } from "lucide-react"
 
@@ -21,14 +21,10 @@ import { ProviderIcon } from "@/components/model/model-selector"
 import { cn } from "@/lib/utils"
 
 const groupIcons: Record<EpicBoardGroupId, React.ReactNode> = {
-  "needs-you": (
-    <CircleAlertIcon className="text-amber-600 dark:text-amber-400" />
-  ),
-  working: (
-    <LoaderCircleIcon className="text-emerald-600 dark:text-emerald-400" />
-  ),
-  queued: <ListTodoIcon className="text-blue-600 dark:text-blue-400" />,
-  merged: <GitMergeIcon className="text-violet-600 dark:text-violet-400" />,
+  "needs-you": <CircleAlertIcon />,
+  working: <LoaderCircleIcon />,
+  queued: <ListTodoIcon />,
+  merged: <GitMergeIcon />,
   rejected: <XIcon className="text-muted-foreground" />,
 }
 
@@ -44,40 +40,39 @@ export function EpicBoardView({
   onOpenStory: (storyId: string) => void
 }) {
   const shown = groups.filter((group) => group.entries.length)
-  if (!shown.length) {
-    return (
-      <div className="grid h-full place-items-center px-6 py-12 text-center">
-        <div className="grid max-w-sm gap-1.5">
-          <h3 className="font-heading text-base font-semibold">
-            No stories yet
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            The orchestrator writes the epic&rsquo;s user stories from your
-            conversation, then starts an agent on each. They show here as they
-            move.
-          </p>
-        </div>
-      </div>
-    )
-  }
+  const total = shown.reduce((count, group) => count + group.entries.length, 0)
   return (
-    <div className="grid gap-6">
+    <section
+      aria-label="The epic's stories"
+      className="epic-stories grid min-w-0 gap-3 border-t pt-3"
+    >
+      <h3 className="flex items-baseline justify-between text-sm font-semibold">
+        User stories{" "}
+        <span className="text-xs font-normal text-muted-foreground tabular-nums">
+          {total}
+        </span>
+      </h3>
+      {!total ? (
+        <p className="text-xs text-muted-foreground">
+          Stories appear here as the orchestrator plans the work.
+        </p>
+      ) : null}
       {shown.map((group) => (
-        <section key={group.id} aria-label={group.title} className="grid gap-2">
-          <h3 className="flex items-center gap-2 text-sm font-medium [&>svg]:size-4">
-            {groupIcons[group.id]}
-            {group.title}
-            <span className="text-muted-foreground tabular-nums">
-              {group.entries.length}
-            </span>
-          </h3>
-          <ul className="grid gap-2 @2xl/board:grid-cols-2">
+        <section
+          key={group.id}
+          aria-label={group.title}
+          className="grid min-w-0 gap-1"
+        >
+          <h4 className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground [&>svg]:size-3.5">
+            {groupIcons[group.id]} {group.title}{" "}
+            <span className="tabular-nums">· {group.entries.length}</span>
+          </h4>
+          <ul className="grid divide-y divide-border/50">
             {group.entries.map((entry) => (
               <li key={entry.story.id}>
-                <EpicStoryCard
+                <EpicStoryRow
                   entry={entry}
                   modelName={modelName}
-                  muted={group.id === "rejected"}
                   onOpen={onOpenStory}
                 />
               </li>
@@ -85,78 +80,61 @@ export function EpicBoardView({
           </ul>
         </section>
       ))}
-    </div>
+    </section>
   )
 }
 
-function EpicStoryCard({
+function EpicStoryRow({
   entry,
   modelName,
-  muted,
   onOpen,
 }: {
   entry: EpicBoardEntry
   modelName: (key: EpicModelKey) => string
-  muted: boolean
   onOpen: (storyId: string) => void
 }) {
   const { story } = entry
   const model = storyModel(story)
-  const paused =
-    story.status === "in-progress" && story.agentStatus === "Paused"
   return (
     <button
-      className={cn(
-        "group/epic-story grid w-full gap-1.5 rounded-lg border bg-white p-3 text-left shadow-xs transition-[border-color,box-shadow] outline-none hover:border-foreground/20 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring/50 dark:bg-neutral-900",
-        muted && "opacity-70"
-      )}
+      className="group/story -mx-1 grid w-[calc(100%+0.5rem)] grid-cols-[minmax(0,1fr)_auto] items-center gap-x-1 gap-y-0.5 rounded-md px-1.5 py-2 text-left outline-none hover:bg-foreground/5 focus-visible:ring-2 focus-visible:ring-ring"
+      title={`Open ${userStoryDisplayId(story)}`}
       type="button"
       onClick={() => onOpen(story.id)}
     >
-      <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
+      <span className="text-sm leading-snug font-medium break-words">
+        {story.title}
+      </span>
+      <ChevronRightIcon className="row-span-2 size-3.5 text-muted-foreground group-hover/story:text-foreground" />
+      <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
         <span className="shrink-0 tabular-nums">
           {userStoryDisplayId(story)}
         </span>
-        {story.status === "in-progress" && !paused ? (
-          <span
-            aria-label="Agent working"
-            className="agent-thinking-mark size-2 rounded-full"
-          />
-        ) : null}
-        {paused ? <PauseIcon aria-label="Paused" className="size-3" /> : null}
-        {story.modelIntent ? (
-          <span className="ml-auto shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-[11px] text-foreground/80">
+        {model && (
+          <>
+            <ProviderIcon
+              className="size-3 shrink-0"
+              providerId={model.providerId}
+            />
+            <span className="truncate">{modelName(model)}</span>
+          </>
+        )}
+        {story.modelIntent && (
+          <span className="ml-auto">
             {modelIntentLabels[story.modelIntent]}
           </span>
-        ) : null}
-      </span>
-      <span
-        className={cn(
-          "text-sm leading-snug font-medium break-words text-card-foreground transition-colors group-hover/epic-story:text-blue-600 dark:group-hover/epic-story:text-blue-300",
-          muted && "line-through decoration-muted-foreground/50"
         )}
-      >
-        {story.title}
       </span>
-      {model ? (
-        <span className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
-          <ProviderIcon className="shrink-0" providerId={model.providerId} />
-          <span className="truncate">{modelName(model)}</span>
-        </span>
-      ) : null}
-      {entry.note ? (
+      {entry.note && (
         <span
           className={cn(
-            "line-clamp-2 text-xs font-medium break-words",
-            entry.alert
-              ? "text-amber-700 dark:text-amber-300"
-              : "text-muted-foreground"
+            "col-span-2 text-xs break-words text-muted-foreground",
+            entry.alert && "font-medium"
           )}
-          title={entry.note}
         >
           {entry.note}
         </span>
-      ) : null}
+      )}
     </button>
   )
 }
