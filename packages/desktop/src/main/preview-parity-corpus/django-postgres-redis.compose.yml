@@ -6,7 +6,7 @@ services:
       - setup
     command:
       - /bin/sh
-      - -lc
+      - -c
       - pip install -r requirements.txt && python manage.py migrate --noinput
     working_dir: /workspace
     environment:
@@ -82,7 +82,7 @@ services:
     image: python:3.13-bookworm
     command:
       - /bin/sh
-      - -lc
+      - -c
       - celery -A app worker
     working_dir: /workspace
     environment:
@@ -110,7 +110,7 @@ services:
     image: python:3.13-bookworm
     command:
       - /bin/sh
-      - -lc
+      - -c
       - python manage.py runserver 0.0.0.0:8000
     working_dir: /workspace
     environment:

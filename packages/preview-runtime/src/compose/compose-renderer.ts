@@ -569,8 +569,15 @@ function containerSource(
   };
 }
 
+// A manifest command runs as `docker run <image> /bin/sh -c <command>` would:
+// with the PATH its image sets. A login shell (`-l`) must not be used: the
+// /etc/profile of Debian and Alpine rebuilds PATH from scratch, which drops
+// what an image adds with ENV, such as /usr/local/go/bin, /usr/local/cargo/bin,
+// /opt/java/openjdk/bin or /usr/local/bundle/bin. Node and Python images keep
+// their tools in /usr/local/bin, which both PATHs hold. HOME is a bare
+// directory, so no ~/.profile was read either.
 function shellCommand(command: string) {
-  return ["/bin/sh", "-lc", composeLiteral(command)];
+  return ["/bin/sh", "-c", composeLiteral(command)];
 }
 
 // Compose interpolates `$NAME`; the plan's values are literal, except for an
