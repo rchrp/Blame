@@ -1,5 +1,6 @@
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import { pipeline } from "node:stream/promises";
+import { nextDevResourceOrigin } from "./next-dev-origin.js";
 
 const maximumBodyBytes = 50 * 1024 * 1024;
 
@@ -21,7 +22,7 @@ export async function forwardHttpRequest(
   route: GatewayRoute,
 ) {
   const path = gatewayRequestTarget(request.url);
-  const headers = forwardedRequestHeaders(request.headers, route);
+  const headers = forwardedRequestHeaders(request.headers, route, path);
   const upstream = http.request({
     host: route.targetHost,
     port: route.targetPort,
@@ -78,6 +79,7 @@ export function gatewayRequestTarget(value: string | undefined) {
 export function forwardedRequestHeaders(
   source: IncomingMessage["headers"],
   route: GatewayRoute,
+  target = "/",
 ) {
   const headers: Record<string, string | string[]> = {};
   for (const [name, value] of Object.entries(source)) {
@@ -97,6 +99,8 @@ export function forwardedRequestHeaders(
   }
   const logicalOrigin = `http://localhost:${route.logicalPort}`;
   headers.host = `localhost:${route.logicalPort}`;
+  const devOrigin = nextDevResourceOrigin(source, target, logicalOrigin);
+  if (devOrigin) headers.origin = devOrigin;
   headers["x-forwarded-proto"] = "http";
   headers["x-forwarded-host"] = `localhost:${route.logicalPort}`;
   headers["x-forwarded-port"] = String(route.logicalPort);
