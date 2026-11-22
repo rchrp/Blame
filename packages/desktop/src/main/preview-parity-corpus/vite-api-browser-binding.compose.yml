@@ -6,7 +6,7 @@ services:
       - setup
     command:
       - /bin/sh
-      - -lc
+      - -c
       - npm ci
     working_dir: /workspace
     environment:
@@ -30,7 +30,7 @@ services:
     image: node:24-bookworm
     command:
       - /bin/sh
-      - -lc
+      - -c
       - npm run dev
     working_dir: /workspace/api
     environment:
@@ -69,7 +69,7 @@ services:
     image: node:24-bookworm
     command:
       - /bin/sh
-      - -lc
+      - -c
       - npm run dev -- --host 0.0.0.0 --port 5173
     working_dir: /workspace/web
     environment:

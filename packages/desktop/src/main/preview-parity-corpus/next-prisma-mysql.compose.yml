@@ -6,7 +6,7 @@ services:
       - setup
     command:
       - /bin/sh
-      - -lc
+      - -c
       - mkdir -p "$$COREPACK_HOME/bin" && corepack enable --install-directory "$$COREPACK_HOME/bin" && export PATH="$$COREPACK_HOME/bin:$$PATH" && corepack prepare pnpm@10.33.2 --activate && corepack pnpm install --frozen-lockfile
     working_dir: /workspace
     environment:
@@ -32,7 +32,7 @@ services:
       - setup
     command:
       - /bin/sh
-      - -lc
+      - -c
       - (corepack enable 2>/dev/null || true) && corepack pnpm prisma generate && corepack pnpm prisma db push --skip-generate
     working_dir: /workspace
     environment:
@@ -88,7 +88,7 @@ services:
     image: node:22-bookworm
     command:
       - /bin/sh
-      - -lc
+      - -c
       - (corepack enable 2>/dev/null || true) && corepack pnpm dev --webpack
     working_dir: /workspace
     environment:

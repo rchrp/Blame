@@ -116,12 +116,7 @@ test("builds a story in review next to its development server, then serves the b
   );
   const [build] = host.builds();
   assert.ok(build, "one build ran");
-  assert.deepEqual(build.slice(-4), [
-    "web",
-    "/bin/sh",
-    "-lc",
-    "npx next build",
-  ]);
+  assert.deepEqual(build.slice(-4), ["web", "/bin/sh", "-c", "npx next build"]);
   assert.ok(
     build.join(" ").includes("/.blame/preview/review-build/compose.yaml"),
   );

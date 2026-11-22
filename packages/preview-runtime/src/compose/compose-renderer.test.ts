@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { parse } from "yaml";
 import type { PreviewExecutionPlan } from "../domain/execution-plan.js";
@@ -57,7 +61,7 @@ test("renders hardened sandbox services with a shared loopback", () => {
   assert.equal(environment.TOKEN, "price-$$5");
   assert.deepEqual(frontend!.command, [
     "/bin/sh",
-    "-lc",
+    "-c",
     'printf "%s" "$$COREPACK_HOME:$${TOKEN}:$$PATH"',
   ]);
   assert.ok(
@@ -199,6 +203,47 @@ test("one plan renders the same services and wiring for both targets", () => {
     assert.deepEqual(service.healthcheck, other.healthcheck, `${id} health`);
   }
 });
+
+test("commands run in a plain shell, not a login shell", () => {
+  for (const target of [sandbox, local]) {
+    const { services } = render(plan(), target);
+    for (const id of ["setup-install", "setup-migrate", "frontend"]) {
+      const command = services[id]!.command as string[];
+      // `-l` makes /etc/profile rebuild PATH and drop what the image's ENV
+      // added: go, cargo, java and bundler binaries.
+      assert.deepEqual(command.slice(0, 2), ["/bin/sh", "-c"], id);
+      assert.equal(command.length, 3, id);
+    }
+  }
+});
+
+test(
+  "a command finds the binaries of the PATH the image sets",
+  { skip: process.platform === "win32" },
+  () => {
+    const directory = mkdtempSync(join(tmpdir(), "blame-image-path-"));
+    try {
+      const tool = join(directory, "image-only-tool");
+      writeFileSync(tool, "#!/bin/sh\nprintf 'tool ran'\n");
+      chmodSync(tool, 0o755);
+      const value = plan();
+      value.services[0]!.command = "image-only-tool";
+      const command = render(value, local).services.frontend!
+        .command as string[];
+      // The container's initial PATH holds an entry no profile knows. A
+      // Debian login shell loses it (exit 127); macOS's keeps it, so the
+      // argv test above is what fails everywhere.
+      const result = spawnSync(command[0]!, command.slice(1), {
+        encoding: "utf8",
+        env: { PATH: `${directory}:/usr/bin:/bin` },
+      });
+      assert.equal(result.stdout, "tool ran");
+      assert.equal(result.status, 0, result.stderr);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  },
+);
 
 test("rejects build contexts that leave the workspace", () => {
   const escaping = plan();
