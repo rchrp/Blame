@@ -27,7 +27,7 @@ export function forwardWebSocket(
   const upstream = net.connect(route.targetPort, route.targetHost);
   upstream.setTimeout(10 * 60_000);
   upstream.once("connect", () => {
-    const headers = forwardedRequestHeaders(request.headers, route);
+    const headers = forwardedRequestHeaders(request.headers, route, requestTarget);
     headers.connection = "Upgrade";
     headers.upgrade = request.headers.upgrade ?? "websocket";
     const lines = [
