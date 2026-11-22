@@ -274,7 +274,9 @@ async function buildServices(
       // dependencies are already running.
       const result = await engine
         .compose(
-          ["run", "--rm", "--no-deps", "-T", id, "/bin/sh", "-lc", command],
+          // A plain shell, like the service's own command: a login shell
+          // rebuilds PATH and loses what the image's ENV adds.
+          ["run", "--rm", "--no-deps", "-T", id, "/bin/sh", "-c", command],
           {
             timeoutMs: buildTimeoutMs,
             onOutput: (chunk) => deps.log(worktree, chunk),
