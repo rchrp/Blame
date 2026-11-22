@@ -165,9 +165,11 @@ are recreated once on their next start.
   while the task, the dependency key, the install inputs the key misses
   (lockfiles at any depth, `.npmrc` and other package manager settings), the
   task container's environment and the volumes (creation time, and a listing
-  of their packages) are unchanged. Only a task with no dependency qualifies,
-  and only when its run wrote nothing in the worktree or in a volume only its
-  story has; a manifest with a lifecycle script (`postinstall`, `prepare`, ...)
+  of their packages) are unchanged. Only a plain install qualifies (`npm
+  install`, `corepack pnpm install --frozen-lockfile`, ...; anything else may
+  read the worktree to fill the volume), with no dependency on a service or
+  another task, no Dockerfile of the worktree, and only when its run wrote
+  nothing in the worktree or in a volume only its story has; a manifest with a lifecycle script (`postinstall`, `prepare`, ...)
   or a dependency that is a folder of the worktree never qualifies. A new run
   removes the stamp and only a successful one writes it; a story that waited
   in the install queue checks again on its turn. Every other task keeps the
