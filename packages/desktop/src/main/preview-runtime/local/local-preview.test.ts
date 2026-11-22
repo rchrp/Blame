@@ -215,6 +215,55 @@ test("renders the worktree with its env files bound to the published ports", asy
   );
 });
 
+// Compose interpolates `$NAME` in the file the engine reads: a worktree in a
+// folder named `cost $HOME app` must still be the one that is mounted.
+test("renders a worktree whose path holds a `$` so Compose reads it literally", async (t) => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-local-preview-"));
+  t.after(() => rm(parent, { recursive: true, force: true }));
+  const worktree = join(parent, "cost $HOME app", "story-$$1");
+  await mkdir(join(worktree, "apps/$api"), { recursive: true });
+  await writeFile(join(worktree, "package.json"), '{"name":"fixture"}');
+  await writeFile(
+    join(worktree, ".env"),
+    "PUBLIC_API_URL=http://localhost:4000\n",
+  );
+  const withDollar = {
+    ...manifest,
+    services: manifest.services.map((service) =>
+      service.id === "api"
+        ? { ...service, workingDir: "/workspace/apps/$api" }
+        : service,
+    ),
+  };
+  const plan = compilePreviewManifest(parsePreviewManifest(withDollar));
+  const local = await renderLocalPreview({ worktree, plan });
+  const compose = parseYaml(local.rendered.yaml) as {
+    services: Record<
+      string,
+      { volumes?: string[]; working_dir?: string; env_file?: unknown }
+    >;
+  };
+  const escaped = worktree.replace(/\$/g, "$$$$");
+  const override = join(escaped, ".blame/env-overrides/.env");
+  const { web, api } = compose.services;
+  assert.equal(web!.volumes![0], `${escaped}:/workspace`);
+  assert.ok(web!.volumes!.includes(`${override}:/workspace/.env:ro`));
+  assert.equal(api!.working_dir, "/workspace/apps/$$api");
+  assert.ok(
+    api!.volumes!.includes("deps-apps--api:/workspace/apps/$$api/node_modules"),
+  );
+  // After Compose reads the file, no `$` is left to a shell or a variable.
+  for (const service of Object.values(compose.services)) {
+    for (const volume of service.volumes ?? [])
+      assert.ok(!volume.replace(/\$\$/g, "").includes("$"), volume);
+  }
+  // Mount targets are created under their real, unescaped names.
+  assert.ok(
+    (await stat(join(worktree, "apps/$api/node_modules"))).isDirectory(),
+  );
+  await assert.rejects(stat(join(worktree, "apps/$$api")), { code: "ENOENT" });
+});
+
 test("worktrees with the same dependency manifests share their installs", async (t) => {
   const plan = compilePreviewManifest(parsePreviewManifest(manifest));
   const first = await renderLocalPreview({

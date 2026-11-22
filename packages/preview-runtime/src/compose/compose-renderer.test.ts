@@ -346,6 +346,102 @@ function plan(options: { loopback?: boolean } = {}): PreviewExecutionPlan {
   }
 }
 
+// Compose interpolates `$NAME` in every string of its file, paths included:
+// a project folder named `cost $HOME app` would mount the wrong directory.
+test("keeps a `$` in host and workspace paths literal", () => {
+  const workspacePath = "/home/blame/worktrees/cost $HOME app/story-$$x";
+  const toolsPath = "/home/dev/$TOOLS/tools";
+  const fileMounts = [
+    { source: `${workspacePath}/../env/.env`, target: "apps/$lib/.env" },
+  ];
+  const source = plan();
+  source.services[0]!.surface = {
+    type: "terminal",
+    columns: 80,
+    rows: 24,
+    endpointId: "terminal",
+  };
+  source.services[0]!.workingDir = "/workspace/apps/$web";
+  source.services[1]!.container = {
+    build: { context: "apps/$api", dockerfile: "docker/$env/Dockerfile" },
+  };
+  source.setup[0]!.workingDir = "/workspace/apps/$web";
+  source.caches.push({ name: "next", target: "/workspace/apps/$web/.next" });
+  const rendered = renderCompose(source, {
+    ...local,
+    workspacePath,
+    toolsPath,
+    fileMounts,
+  });
+  const compose = parse(rendered.yaml) as Compose;
+  assertNoInterpolation(compose);
+  const { frontend, backend } = compose.services;
+  assert.deepEqual(frontend!.volumes, [
+    "/home/blame/worktrees/cost $$HOME app/story-$$$$x:/workspace",
+    "cache-blame_corepack_cache:/tmp/corepack-cache",
+    "cache-blame_node_modules:/workspace/node_modules",
+    "cache-next:/workspace/apps/$$web/.next",
+    "deps-apps--web:/workspace/apps/$$web/node_modules",
+    "deps-apps-api:/workspace/apps/api/node_modules",
+    "/home/blame/worktrees/cost $$HOME app/story-$$$$x/../env/.env:/workspace/apps/$$lib/.env:ro",
+    "/home/dev/$$TOOLS/tools:/opt/blame/tools:ro",
+  ]);
+  assert.equal(frontend!.working_dir, "/workspace/apps/$$web");
+  assert.deepEqual(backend!.build, {
+    context: "/home/blame/worktrees/cost $$HOME app/story-$$$$x/apps/$$api",
+    dockerfile: "docker/$$env/Dockerfile",
+  });
+  const install = compose.services["setup-install"]!;
+  assert.equal(install.working_dir, "/workspace/apps/$$web");
+});
+
+test("keeps a `$` in the paths of a sandbox literal", () => {
+  const compose = render(plan(), {
+    ...sandbox,
+    proxyCertificatePath: "/etc/$ca/proxy.pem",
+    environmentFiles: { backend: "/run/blame/$env/backend.env" },
+    fileMounts: [{ source: "/run/blame/$env/.env", target: "apps/$web/.env" }],
+  });
+  assertNoInterpolation(compose);
+  const backend = compose.services.backend!;
+  assert.deepEqual(backend.env_file, [
+    { path: "/run/blame/$$env/backend.env", format: "raw" },
+  ]);
+  assert.deepEqual(
+    (backend.volumes as string[]).filter((volume) => volume.includes("$$")),
+    [
+      "/etc/$$ca/proxy.pem:/etc/$$ca/proxy.pem:ro",
+      "/run/blame/$$env/.env:/workspace/apps/$$web/.env:ro",
+    ],
+  );
+});
+
+test("renders a plain workspace path unchanged", () => {
+  const compose = render(plan(), local);
+  assert.equal(
+    (compose.services.frontend!.volumes as string[])[0],
+    "/home/blame/worktrees/story:/workspace",
+  );
+});
+
+// What Compose does with a string: `$$` becomes `$`, any other `$` starts a
+// variable.
+function assertNoInterpolation(value: unknown, where = "compose") {
+  if (typeof value === "string") {
+    assert.ok(
+      !value.replace(/\$\$/g, "").includes("$"),
+      `${where} would be interpolated: ${value}`,
+    );
+  } else if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      assertNoInterpolation(item, `${where}[${index}]`),
+    );
+  } else if (value && typeof value === "object") {
+    for (const [key, item] of Object.entries(value))
+      assertNoInterpolation(item, `${where}.${key}`);
+  }
+}
+
 test("maps the developer's computer into every local container but loopback members", () => {
   const extraHosts = { "host.docker.internal": "192.168.5.2" };
   const shared = render(plan({ loopback: true }), { ...local, extraHosts });
