@@ -9,6 +9,7 @@ Everything is built on GitHub-hosted runners and published as a GitHub Release. 
 | [Release cache](.github/workflows/release-cache.yml)       | Lockfile changes, twice a week  | pnpm store caches on `main` for the macOS and Windows release runners    |
 | [Release packages](.github/workflows/release-packages.yml) | Stable release published        | Homebrew tap commit, winget-pkgs pull request, and AUR push              |
 | [Release runtime](.github/workflows/release-runtime.yml)   | Tag `runtime-v<version>`        | Published release with the four runtime images and their `manifest.json` |
+| [Deploy API](.github/workflows/deploy-api.yml)             | Pushes to `main` that change it | The API image on `ghcr.io`, then a Dokploy deployment                    |
 
 Users never download from GitHub URLs directly. [`download.blame.so`](deploy/downloads) is a stable redirector, so you can change the hosting later without breaking installed apps:
 
@@ -139,6 +140,10 @@ The Windows (WSL rootfs) and macOS (Lima image) runtimes are versioned separatel
 The macOS images are provisioned natively in a chroot on runners of their architecture; only the final verification boots them, under emulation on the Arm runner, which has no KVM. To build and verify the images without publishing, run **Release runtime** manually from the Actions tab.
 
 Never delete a runtime release that a published desktop version still references.
+
+## API
+
+The API is not released with a tag: every push to `main` that changes it builds its image and deploys it. See [deploy/operations/api](deploy/operations/api/README.md) for the image, the migrations, going back to an earlier version, and the one-time setup.
 
 ## Local builds
 

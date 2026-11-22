@@ -1,0 +1,126 @@
+# Builds the API image on GitHub's runners, publishes it to GitHub's container
+# registry and asks Dokploy to deploy it (deploy/operations/api/README.md).
+# The production server never builds anything: it pulls the image.
+name: Deploy API
+
+on:
+  push:
+    branches: [main]
+    # The API and what its image is built from: its workspace dependencies,
+    # the lockfile and the patches pnpm applies.
+    paths:
+      - packages/api/**
+      - packages/deploy-contract/**
+      - packages/preview-contract/**
+      - packages/preview-runtime/**
+      - patches/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - package.json
+      - .dockerignore
+      - .github/workflows/deploy-api.yml
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy the image after publishing it
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# One deployment at a time, in order: a newer push waits for the running one.
+concurrency:
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  image:
+    name: Build and publish the image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.name.outputs.image }}
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # Registry names are lower case, whatever the owner's name is.
+      - id: name
+        run: echo "image=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/blame-api" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # `latest` is what Dokploy deploys; the commit tag is there to go back
+      # to an earlier image.
+      - id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: packages/api/Dockerfile
+          platforms: ${{ vars.API_IMAGE_PLATFORMS || 'linux/amd64' }}
+          push: true
+          build-args: |
+            BLAME_API_REVISION=${{ github.sha }}
+          tags: |
+            ${{ steps.name.outputs.image }}:latest
+            ${{ steps.name.outputs.image }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=Blame API
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - run: |
+          {
+            echo "Published \`${{ steps.name.outputs.image }}:latest\`"
+            echo "and \`${{ steps.name.outputs.image }}:${{ github.sha }}\`"
+            echo "(digest \`${{ steps.build.outputs.digest }}\`)."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy with Dokploy
+    needs: image
+    if: github.event_name == 'push' || inputs.deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Holds the Dokploy secrets; add required reviewers to it to approve
+    # each deployment by hand.
+    environment: api-production
+    steps:
+      - name: Ask Dokploy to deploy the image
+        env:
+          DOKPLOY_URL: ${{ vars.DOKPLOY_URL }}
+          DOKPLOY_APPLICATION_ID: ${{ vars.DOKPLOY_API_APPLICATION_ID }}
+          DOKPLOY_API_KEY: ${{ secrets.DOKPLOY_API_KEY }}
+        run: |
+          if [ -z "$DOKPLOY_URL" ] || [ -z "$DOKPLOY_APPLICATION_ID" ] || [ -z "$DOKPLOY_API_KEY" ]; then
+            echo "::notice title=Not deployed::The image is published, but Dokploy is not configured: set the variables DOKPLOY_URL and DOKPLOY_API_APPLICATION_ID and the secret DOKPLOY_API_KEY in the api-production environment."
+            exit 0
+          fi
+          # Dokploy pulls the image named in the application and restarts it.
+          # The call returns once the deployment is queued: its progress and
+          # its outcome are in Dokploy's Deployments tab.
+          status=$(curl --silent --show-error --max-time 60 \
+            --output response.json --write-out '%{http_code}' \
+            --request POST "${DOKPLOY_URL%/}/api/application.deploy" \
+            --header 'Content-Type: application/json' \
+            --header "x-api-key: $DOKPLOY_API_KEY" \
+            --data "{\"applicationId\":\"$DOKPLOY_APPLICATION_ID\"}")
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error title=Dokploy refused the deployment::HTTP $status"
+            # The answer names the problem (a wrong key or application id).
+            head -c 2000 response.json || true
+            exit 1
+          fi
+          echo "Dokploy queued the deployment of \`${{ needs.image.outputs.image }}@${{ needs.image.outputs.digest }}\`." >> "$GITHUB_STEP_SUMMARY"
