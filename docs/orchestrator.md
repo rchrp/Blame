@@ -93,7 +93,10 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
   resume); its acting tools refuse with "the epic is paused" (`create_stories`
   unless every story is held, `update_story` with `queue`, `message_story`,
   `approve_story`, `reject_story`), its reading tools work, and `end_turn` with `wait` is
-  accepted: the resume wakes it. When it reads `active`
+  accepted. The resume itself wakes it only when the pause cut its turn (a
+  `resumed` wake, `cut: "pause"`); after a `wait`, it is woken as after any
+  wait: a `stories` wake when the stories the resume set going end, or an
+  `idle` wake when nothing works or will start. When it reads `active`
   again, exactly those agents resume (each still paused where the pause
   left it) and the orchestrator's cut turn goes on (a `resumed` wake). The
   turns the pause cut are not news: no wake tells them. A story the person
@@ -314,6 +317,10 @@ nor make a turn count as told. The screen shows it as an event row, never
 as something the person wrote. It carries:
 
 - `reason`: `stories`, `resumed` or `idle`;
+- `cut?` (with `resumed`): what cut the turn, `pause` (the epic's pause,
+  now resumed) or `quit` (Blame stopped while it worked: a quit, a crash,
+  the engine stopping); the model's line says which, and a wake written
+  before this field reads as `quit`;
 - `stories`: each story turn that ended since the orchestrator last heard of
   it: `storyId`, `number`, `title`, `session`, `turn`, `outcome` (the turn's
   status), `verified`, `failingChecks?`, `error?`, `status` (the story's,
@@ -380,8 +387,14 @@ on, and the orchestrator is woken (`idle`) to wrap up.
   (`onEpic`, `{ type: "epic", epicId, state }`, sent when the state
   changes): an `EpicState` (`engine/orchestrator-protocol.ts`):
   `conversation` (`idle`, `working`, `waiting`, `asking`, `finished`,
-  `stopped`, `failed`), `error` (why it failed, or why a wake could not be
-  sent), `question` (`text`, `options`) of an `ask`, `summary` of a
+  `stopped`, `failed`), `problems` (every problem of the epic's own the
+  person must act on, each `{ kind, message }`, in this order: `kept-file`
+  when what this computer keeps cannot be read, `turn` when the last turn
+  failed, `wake` when a wake could not be sent, `branch` when the epic's
+  branch is gone after stories were merged into it; a queued story that
+  waits for the person is in `blocked`, and why a pause did not take is
+  `pause.error`, neither in `problems`), `error` (the first of `problems`,
+  kept for compatibility: one shows, the others hide behind it), `question` (`text`, `options`) of an `ask`, `summary` of a
   `finish`, `unreported` (ended turns not told yet), `blocked` (the queued
   stories only the person can start, with why; the epic's own pause is not
   listed, since the person chose it) and `spend`. The sidebar's

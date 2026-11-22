@@ -1769,7 +1769,7 @@ describe("what holds when things go wrong", () => {
     );
     assert.match(
       String(await run("end_turn", { action: "wait", reason: "Paused." })),
-      /^Waiting: the epic is paused\. You will be woken once it is resumed/,
+      /^Waiting: the epic is paused\. Once the person resumes it, you are woken as after any wait/,
     );
   });
 

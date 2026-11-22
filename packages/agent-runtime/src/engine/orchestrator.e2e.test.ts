@@ -1458,7 +1458,7 @@ describe("the orchestrator's loop", { skip }, () => {
     assert.deepEqual(model.unscripted, []);
   });
 
-  it("talks with the person while the epic is paused: cuts only its turn then, refuses to act, sleeps, and the resume wakes it", async () => {
+  it("talks with the person while the epic is paused: cuts only its turn then, refuses to act, sleeps, and is woken by the stories' end after the resume", async () => {
     const sign = await newProject("sign");
     await open(host);
     let release!: () => void;
