@@ -142,8 +142,9 @@ are recreated once on their next start.
   one-shot services of the `setup` profile, health-conditioned
   `depends_on`, `init` and a 5 s stop grace. `ComposeEngine` runs a
   rendered project on any `DockerHost` (prepare, fingerprinted setup,
-  images, `up --wait`, inspect, logs, exec); readiness and functional
-  probes live there too. The sandbox runner uses both.
+  images, `up --detach`, then its own wait for the services, inspect, logs,
+  exec); readiness and functional probes live there too. The sandbox runner
+  uses both.
 - Launch commands are normalized by the compiler (corepack pnpm, npm
   install without lockfile writes, no numeric su, CI for installs).
 - Instead of shipping the runner binary into the VM, the desktop runs the
@@ -158,6 +159,21 @@ are recreated once on their next start.
   deleted worktrees' previews, unused node_modules volumes and old images.
 - Initialization no longer produces a Compose file or setup script; its
   checks read the manifest.
+
+- Start wait (2026-11-22, `compose/start-readiness.ts`). `up --wait` returned
+  on Docker's health timer (`start_interval: 1s`, plus a `node -e` probe
+  process): 1.6 s for a server that listens after 0.15 s. `up --detach` now
+  starts the services (Compose still orders them with `service_healthy`),
+  and the engine waits itself: a service whose container healthcheck is the
+  shared HTTP probe (`httpHealthcheckEndpoint`) is ready when that endpoint
+  answers from outside (below 500, the same rule as `probeServices`, polled
+  every 50 to 250 ms), or when Docker says healthy, whichever comes first.
+  Databases, display sidecars, TCP endpoints and runtimes without a scripted
+  probe are only judged by Docker (health status, or "running" without
+  one), as Compose did, so a forwarder accepting a connection early never
+  makes a service ready. An exited, dead or unhealthy container fails the
+  start with its last lines, a service not ready in `startTimeoutMs` too.
+  Both targets run it: it lives in the engine.
 
 ### Resource use (2026-10-24, hibernation 2026-11-15)
 
