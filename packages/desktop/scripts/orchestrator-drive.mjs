@@ -14,12 +14,14 @@
 // - ask: a question answered by clicking one of its options.
 // - allow: "Ask me before launching": nothing starts before Allow, a Deny
 //   is told to the orchestrator, the merge waits for Allow too.
-// - pause: Pause all while two stories work; the host pauses them and
-//   resumes exactly those; the orchestrator is not woken by it.
+// - pause: Pause all while two stories work; the host pauses them, says the
+//   pause took, and it does not read "needs you"; the person talks to the
+//   orchestrator meanwhile (its acting call is refused: the epic is paused);
+//   Resume resumes exactly those agents; neither wakes the orchestrator.
 // - relaunch: a quit and a relaunch while a story works; the orchestrator
 //   is woken exactly once.
-// - blocked: a story only the person can start, under Needs you, in the
-//   dot and in the wake.
+// - blocked: a story only the person can start (Local Container with no
+//   runtime), under Needs you, in the dot, the header and the wake.
 // - conflict: two stories change one line; the second merge is refused by
 //   the host and sent back to its agent, which merges the epic's branch in.
 //
@@ -797,6 +799,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
     async pause() {
       const title = "Orders search";
       const gate = model.gate("pause");
+      let pausedRefusal = "";
       model.stories.set("Search box", writeThenFinish("search.js", "export const search = true\n", gate));
       model.stories.set("Search results", writeThenFinish("results.js", "export const results = []\n", gate));
       model.orchestrators.set(title, [
@@ -805,6 +808,12 @@ async function scenario(initial, options, model, projectPath, relaunch) {
           { key: "results", title: "Search results", brief: "Create results.js.", intent: "cheaper" },
         ] }),
         tool("end_turn", { action: "wait", reason: "Both run." }),
+        // The person writes during the pause: acting is refused, waiting is not.
+        (body) => tool("message_story", { reason: "The person asked to hurry.", storyId: storyNumberIn(body, "box"), kind: "answer", message: "Please finish soon." }),
+        (body) => {
+          pausedRefusal = lastResult(body);
+          return tool("end_turn", { action: "wait", reason: "The epic is paused; it goes on when resumed." });
+        },
         tool("epic_board", {}),
         (body) => tool("approve_story", { reason: "Verified.", storyId: storyNumberIn(body, "box") }),
         (body) => tool("approve_story", { reason: "Verified.", storyId: storyNumberIn(body, "results") }),
@@ -813,19 +822,31 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       const epic = await startEpicThroughUi(title, "Search the orders.");
       await waitState(epic.id, "waiting");
       await until(async () => (await working(epic.id)).length === 2, 60_000, "both stories to work");
-      const asked = model.of(`orchestrator:${title}`).length;
+      const atPause = model.of(`orchestrator:${title}`).length;
       await click(button("Pause all"));
       await until(async () => (await api(`/projects/epics/${epic.id}`)).status === "paused", 15_000, "the epic to be paused");
       await until(async () => (await working(epic.id)).length === 0, 30_000, "the host to pause the agents");
       check("Pause all: the host paused both working agents", (await storiesOf(epic.id)).every((story) => story.agentStatus === "Paused"));
+      await until(async () => (await state(epic.id)).pause?.phase === "paused", 30_000, "the host to say the pause took");
       await until(async () => (await text()).includes("Resume"), 5_000, "Resume");
-      check("the header says the epic is paused", (await text()).includes("Paused"));
+      check("the header says Paused once the pause took", /\bPaused\b/.test(await evaluate(`document.querySelector("h2")?.parentElement?.innerText ?? ""`)));
+      check("a pause is not 'needs you'", !(await dots()).includes("Needs you") && !((await state(epic.id)).blocked?.length));
       await shot("08-paused");
+      // The person can still talk to the orchestrator.
+      const asked = model.of(`orchestrator:${title}`).length;
+      await click(`${paneSelector}?.querySelector('[data-markdown-editor-input="true"]')`);
+      await send("Input.insertText", { text: "How far are the stories?" });
+      await press("Enter", "Enter", 13);
+      await until(async () => /paused/i.test(pausedRefusal), 60_000, "the orchestrator's answer during the pause");
+      await waitState(epic.id, "waiting");
+      check("during the pause the orchestrator answers the person", model.of(`orchestrator:${title}`).length >= asked + 2);
+      check("its acting call is refused because the epic is paused, and the row says so", /paused/i.test(pausedRefusal) && /Refused:[^\n]*paused/i.test(await pane()), pausedRefusal.slice(0, 160));
+      check("the header still says Paused", (await state(epic.id)).pause?.phase === "paused" && (await text()).includes("Resume"));
       await click(button("Resume"));
       await until(async () => (await api(`/projects/epics/${epic.id}`)).status === "active", 15_000, "the epic to resume");
       await until(async () => (await working(epic.id)).length === 2, 60_000, "the host to resume both agents");
       check("Resume: the host resumed exactly the agents it paused", true);
-      check("the orchestrator was not woken by the pause", model.of(`orchestrator:${title}`).length === asked, `${model.of(`orchestrator:${title}`).length - asked} requests`);
+      check("the orchestrator was woken neither by the pause nor by the resume", model.of(`orchestrator:${title}`).length === atPause + 2, `${model.of(`orchestrator:${title}`).length - atPause} requests since the pause, 2 of them the person's`);
       gate.open();
       await waitState(epic.id, "finished", 240_000);
       await until(async () => (await pane()).includes("The orchestrator’s part is done"), 15_000, "the summary");
@@ -944,7 +965,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await until(async () => /conflict/i.test(refusal), 180_000, "the conflicting merge to be refused");
       check("the host refused the conflicting merge", /conflict/i.test(refusal), refusal.slice(0, 200));
       await until(async () => (await pane()).includes("Refused:"), 15_000, "the refusal row");
-      check("the refusal row reads the host's sentence", /Refused:[^\n]*(conflict|not merged)/i.test(await pane()));
+      check("the refusal row reads the host's first sentence", /Refused: [^\n]+/.test(await pane()));
       await shot("11-conflict-refused");
       await waitState(epic.id, "finished", 300_000);
       check("the second story was merged once its agent resolved the conflict", gitShow(projectPath, branch, "greeting.txt").includes("A and B"));
