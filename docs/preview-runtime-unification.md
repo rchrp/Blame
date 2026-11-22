@@ -173,7 +173,15 @@ are recreated once on their next start.
   one), as Compose did, so a forwarder accepting a connection early never
   makes a service ready. An exited, dead or unhealthy container fails the
   start with its last lines, a service not ready in `startTimeoutMs` too.
-  Both targets run it: it lives in the engine.
+  Both targets run it: it lives in the engine. Measured in the campaign VM
+  (6 vCPU, 4 GiB, runtime v15, 2026-11-22, before and after on the same
+  fixtures): `services.start` of a fast single-service server 1.64 s →
+  0.34 s (median of 8), a restart to `ready` 3.0 s → 1.5 s, a Next.js
+  restart 1.64 s → 0.5 s; with PostgreSQL 2.2 s → 0.9 s; a crash at start,
+  a wrong port, a loopback-only server, a 25 s start and a failing probe
+  fail or pass as before, with the same messages. The VM's CPU over a
+  7 s window around a start is the same (52 jiffies, median of 8, both
+  ways): Docker's own probes run until the container is healthy either way.
 
 ### Resource use (2026-10-24, hibernation 2026-11-15)
 
