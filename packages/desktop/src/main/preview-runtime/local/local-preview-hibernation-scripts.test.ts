@@ -1,14 +1,16 @@
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { execFile, spawn } from "node:child_process";
+import { mkdtemp, mkdir, rm, utimes, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { promisify } from "node:util";
 import {
   parseHibernation,
   parsePausedPreviews,
   parseWake,
   wakeRestartReason,
+  wakeScript,
   watchScript,
 } from "./local-preview-hibernation-scripts.ts";
 
@@ -85,6 +87,44 @@ test("the watcher wakes on a request waiting on a kept-alive connection", async 
     await rm(root, { recursive: true, force: true });
   }
 });
+
+// The script reads the worktree from its arguments: a `$` in the folder name
+// stays literal.
+test(
+  "the wake script reads the files of a worktree named with a `$`",
+  { skip: process.platform === "win32" },
+  async () => {
+    const root = await mkdtemp(join(tmpdir(), "blame-wake-"));
+    try {
+      const worktree = join(root, "cost $HOME app");
+      await mkdir(worktree);
+      const marker = join(root, "marker");
+      await writeFile(marker, "");
+      const past = new Date(Date.now() - 60_000);
+      await utimes(marker, past, past);
+      await writeFile(join(worktree, "package.json"), "{}");
+      const { stdout } = await promisify(execFile)(
+        "sh",
+        [
+          "-c",
+          `docker() { :; }\n${wakeScript}`,
+          "sh",
+          "blame_x",
+          marker,
+          worktree,
+        ],
+        { env: { ...process.env, HOME: "/nonexistent-home" } },
+      );
+      const report = parseWake(stdout);
+      assert.ok((report.changed ?? 0) > 0);
+      assert.deepEqual(report.dependencyInputs, [
+        join(worktree, "package.json"),
+      ]);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  },
+);
 
 test("reads what a hibernation and a wake reported", () => {
   assert.deepEqual(

@@ -139,7 +139,7 @@ function setupService(task: SetupTaskPlan, context: RenderContext) {
     profiles: [setupProfile],
     entrypoint: task.entrypoint,
     command: shellCommand(task.command),
-    working_dir: task.workingDir,
+    working_dir: composePath(task.workingDir),
     environment: containerEnvironment(
       environmentFile(setupServiceId(task.id), context.target)
         ? {}
@@ -184,7 +184,7 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
     working_dir:
       service.kind === "dependency" && !service.command
         ? undefined
-        : service.workingDir,
+        : composePath(service.workingDir),
     environment: { ...environment, ...tuning?.environment },
     env_file: environmentFile(service.id, context.target),
     depends_on: dependencyConditions(
@@ -210,7 +210,7 @@ function runtimeService(service: ServiceLaunchPlan, context: RenderContext) {
               context,
               needsWorkspace(service),
             ) ?? []),
-            `${context.target.kind === "local" ? (context.target.toolsPath ?? "/opt/blame/tools") : "/opt/blame/tools"}:/opt/blame/tools:ro`,
+            `${composePath(context.target.kind === "local" ? (context.target.toolsPath ?? "/opt/blame/tools") : "/opt/blame/tools")}:/opt/blame/tools:ro`,
           ]
         : serviceVolumes(service, service.id, context, needsWorkspace(service)),
     shm_size:
@@ -494,17 +494,18 @@ function serviceVolumes(
     ? []
     : target.kind === "sandbox"
       ? ["/workspace:/workspace:rw", "/workspace/.git:/workspace/.git:ro"]
-      : [`${target.workspacePath}:/workspace`];
+      : [`${composePath(target.workspacePath)}:/workspace`];
   const files = workspace
-    ? (target.fileMounts ?? []).map(
-        ({ source: path, target: file }) =>
-          `${path}:${posix.join("/workspace", file)}:ro`,
+    ? (target.fileMounts ?? []).map(({ source: path, target: file }) =>
+        composePath(`${path}:${posix.join("/workspace", file)}:ro`),
       )
     : [];
   return nonEmpty([
     ...source,
     ...baseVolumes(target),
-    ...volumes.map(({ alias, target: path }) => `${alias}:${path}`),
+    ...volumes.map(({ alias, target: path }) =>
+      composePath(`${alias}:${path}`),
+    ),
     ...files,
   ]);
 }
@@ -516,7 +517,7 @@ function environmentFile(serviceId: string, target: ComposeTarget) {
     target.kind === "sandbox"
       ? target.environmentFiles?.[serviceId]
       : undefined;
-  return path ? [{ path, format: "raw" }] : undefined;
+  return path ? [{ path: composePath(path), format: "raw" }] : undefined;
 }
 
 function extraHosts(target: ComposeTarget) {
@@ -529,7 +530,11 @@ function extraHosts(target: ComposeTarget) {
 
 function baseVolumes(target: ComposeTarget) {
   return target.kind === "sandbox"
-    ? [`${target.proxyCertificatePath}:${target.proxyCertificatePath}:ro`]
+    ? [
+        composePath(
+          `${target.proxyCertificatePath}:${target.proxyCertificatePath}:ro`,
+        ),
+      ]
     : [];
 }
 
@@ -562,8 +567,10 @@ function containerSource(
   const root = target.kind === "sandbox" ? "/workspace" : target.workspacePath;
   return {
     build: withoutEmpty({
-      context: relative === "." ? root : posix.join(root, relative),
-      dockerfile,
+      context: composePath(
+        relative === "." ? root : posix.join(root, relative),
+      ),
+      dockerfile: composePath(dockerfile),
       target: source.build.target,
     }),
   };
@@ -584,6 +591,19 @@ function shellCommand(command: string) {
 // already escaped `$$`.
 export function composeLiteral(value: string) {
   return value.replace(/(?<!\$)\$(?!\$)/g, () => "$$");
+}
+
+// A path is always literal, even when a folder is named `$$`: every `$` of it
+// is doubled. Compose interpolates the paths of volumes, working directories
+// and build contexts as it does the values, so `cost $HOME app` would mount
+// the folder named after the variable's value.
+export function composePath(path: string) {
+  return path.replace(/\$/g, () => "$$");
+}
+
+/** What Compose reads from `composeLiteral` and `composePath` output. */
+export function composeUnescape(value: string) {
+  return value.replace(/\$\$/g, () => "$");
 }
 
 function loopbackAnchors(plan: PreviewExecutionPlan) {

@@ -4,7 +4,7 @@ import { stat } from "node:fs/promises";
 import { posix, relative, sep } from "node:path";
 import type { ProjectRunConfiguration } from "@blame/agent-runtime";
 import type { PreviewExecutionPlan } from "@blame/preview-runtime";
-import { renderCompose } from "@blame/preview-runtime/compose";
+import { composeUnescape, renderCompose } from "@blame/preview-runtime/compose";
 import { parse as parseYaml } from "yaml";
 import { previewComposeProjectName } from "../../preview-readiness.ts";
 import {
@@ -214,7 +214,9 @@ async function createMountTargets(worktree: string, yaml: string) {
     for (const volume of service.volumes ?? []) {
       const [source, target] = volume.split(":");
       if (!source || source.startsWith("/") || !target) continue;
-      if (target.startsWith("/workspace/")) directories.add(target);
+      // The file holds the target as Compose reads it: `$` doubled.
+      if (target.startsWith("/workspace/"))
+        directories.add(composeUnescape(target));
     }
   }
   await Promise.all(
