@@ -1,7 +1,9 @@
 // Where an epic's conversation stands, from its records: whether a turn
 // runs or waits behind one, how its last turn ended (through which
 // `end_turn`), what it spent, and every story turn a wake told it, rewound
-// wakes included (a turn is told once, whatever the conversation undoes).
+// wakes included (a turn is told once, whatever the conversation undoes);
+// a wake whose turn ended before it ever ran (withdrawn, or dropped behind
+// an interrupted turn) told nothing.
 // Records are read once each: a session's reducer is kept and fed the new
 // ones.
 
@@ -33,6 +35,8 @@ export type ConversationView = {
   last?: { turn: string; outcome: TurnOutcome; endTurn?: EndTurn };
   /** `session\nturn` of each story turn a wake carried. */
   reported: ReadonlySet<string>;
+  /** The turns whose message is a host's wake (never the person's). */
+  wakes: ReadonlySet<string>;
   spentMicroUsd: number;
   unpricedRequests: number;
   /** The config in effect (the folder it reads, its model, its prompt). */
@@ -54,7 +58,14 @@ export function turnKey(session: string, turn: string) {
   return `${session}\n${turn}`;
 }
 
-type Held = { reducer: TranscriptReducer; reported: Set<string> };
+type Held = {
+  reducer: TranscriptReducer;
+  /** Each wake's turn → the story turns it carried. */
+  wakes: Map<string, string[]>;
+  /** Turns that sent a request, and turns that ended. */
+  ran: Set<string>;
+  ended: Set<string>;
+};
 
 export class ConversationReader {
   private readonly sessions = new Map<string, Held>();
@@ -62,7 +73,12 @@ export class ConversationReader {
   async read(client: EngineClient, session: string): Promise<ConversationView> {
     let held = this.sessions.get(session);
     if (!held) {
-      held = { reducer: new TranscriptReducer(), reported: new Set() };
+      held = {
+        reducer: new TranscriptReducer(),
+        wakes: new Map(),
+        ran: new Set(),
+        ended: new Set(),
+      };
       this.sessions.set(session, held);
     }
     try {
@@ -72,7 +88,7 @@ export class ConversationReader {
           after: held.reducer.lastSeq,
           limit: 1000,
         });
-        for (const record of page.records) noteWake(record, held.reported);
+        for (const record of page.records) noteWake(record, held);
         held.reducer.applyRecords(page.records);
         if (!page.records.length || held.reducer.lastSeq >= page.head) break;
       }
@@ -84,6 +100,7 @@ export class ConversationReader {
         running: false,
         queued: [],
         reported: new Set(),
+        wakes: new Set(),
         spentMicroUsd: 0,
         unpricedRequests: 0,
         messages: { all: {}, changes: {} },
@@ -98,15 +115,24 @@ export class ConversationReader {
   }
 }
 
-function noteWake(record: SessionRecord, reported: Set<string>) {
+function noteWake(record: SessionRecord, held: Held) {
+  if (record.type === "request_started") held.ran.add(record.turn);
+  if (record.type === "turn_ended") held.ended.add(record.turn);
   if (record.type !== "user_message") return;
   const wake = parseOrchestratorWake(record.input);
-  for (const story of wake?.stories ?? [])
+  if (!wake) return;
+  const told = held.wakes.get(record.turn) ?? [];
+  for (const story of wake.stories)
     if (typeof story.turn === "string" && typeof story.session === "string")
-      reported.add(turnKey(story.session, story.turn));
+      told.push(turnKey(story.session, story.turn));
+  held.wakes.set(record.turn, told);
 }
 
-function view({ reducer, reported }: Held): ConversationView {
+function view({ reducer, wakes, ran, ended: over }: Held): ConversationView {
+  const reported = new Set<string>();
+  for (const [turn, told] of wakes)
+    if (ran.has(turn) || !over.has(turn))
+      for (const key of told) reported.add(key);
   const transcript = reducer.snapshot();
   const open = transcript.turns.filter((turn) => !turn.outcome);
   const ended = transcript.turns.filter(
@@ -141,6 +167,7 @@ function view({ reducer, reported }: Held): ConversationView {
         }
       : {}),
     reported,
+    wakes: new Set(wakes.keys()),
     spentMicroUsd: transcript.usage.spent.costMicroUsd,
     unpricedRequests: transcript.usage.spent.unpricedRequests,
     ...(transcript.config ? { config: transcript.config } : {}),

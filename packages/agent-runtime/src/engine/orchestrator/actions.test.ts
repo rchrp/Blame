@@ -10,7 +10,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, it } from "node:test";
 import type { EngineClient } from "@blame/engine-client";
-import type { Epic, OrchestratorSettings } from "../protocol.js";
+import {
+  orchestratorWakeText,
+  type Epic,
+  type OrchestratorSettings,
+} from "../protocol.js";
 import {
   fakeApi,
   fakeHost,
@@ -347,6 +351,40 @@ const conversation = (bodies: Array<Record<string, unknown>>, after = 0) =>
     ...body,
   }));
 const text = (value: string) => [{ type: "text", text: value }];
+// A wake that told s1's turn a1, as the host writes it.
+const queuedWake = [
+  {
+    type: "context",
+    text: orchestratorWakeText({
+      reason: "stories",
+      stories: [
+        {
+          storyId: "s1",
+          number: "US-001",
+          title: "a",
+          session: "session-s1",
+          turn: "a1",
+          outcome: "completed",
+          verified: true,
+          status: "in-review",
+        },
+      ],
+      board: {
+        working: 0,
+        queued: 0,
+        held: 0,
+        inReview: 1,
+        paused: 0,
+        merged: 0,
+        rejected: 0,
+      },
+    }),
+  },
+];
+const endedA1 = {
+  lastOutcome: { status: "completed" },
+  endedTurns: [{ turn: "a1", outcome: { status: "completed" } }],
+} as never;
 const requestStarted = (turn: string) => ({
   type: "request_started",
   turn,
@@ -1568,6 +1606,115 @@ describe("what holds when things go wrong", () => {
         .map((item) => item.input),
       [{ session, turn: "t2" }],
     );
+  });
+
+  it("lets only the person's queued message go on while paused, and tells the queued wake's stories after the resume", async () => {
+    const records = conversation([
+      {
+        type: "user_message",
+        turn: "t1",
+        input: text("Go."),
+        delivery: "turn",
+      },
+      requestStarted("t1"),
+      // Queued behind it when Blame quit: a wake, then the person.
+      {
+        type: "user_message",
+        turn: "w2",
+        input: queuedWake,
+        delivery: "turn",
+      },
+      {
+        type: "user_message",
+        turn: "t3",
+        input: text("Where are we?"),
+        delivery: "turn",
+      },
+      { type: "turn_ended", turn: "t1", outcome: { status: "interrupted" } },
+    ]);
+    const { orchestrator, epics, fake, written } = await desk({
+      records,
+      epic: { status: "paused" },
+      rows: [inReview("s1")],
+      owned: { s1: "session-s1" },
+      statuses: { "session-s1": endedA1 },
+    });
+    epics.get(epicId)!.status = "paused";
+    await orchestrator.changed(epicId);
+    const queueCalls = () =>
+      fake.calls
+        .filter(
+          (item) => item.method === "withdraw" || item.method === "promote",
+        )
+        .map((item) => [item.method, (item.input as { turn: string }).turn]);
+    // The wake is taken back before the person's message goes on (each
+    // look does so while the engine's log has not moved yet).
+    assert.deepEqual(queueCalls().slice(0, 2), [
+      ["withdraw", "w2"],
+      ["promote", "t3"],
+    ]);
+    assert.ok(
+      queueCalls().every(
+        ([method, turn]) =>
+          (method === "withdraw" && turn === "w2") ||
+          (method === "promote" && turn === "t3"),
+      ),
+    );
+    assert.deepEqual(written, [], "no wake while paused");
+    // The engine takes the wake back; the person's turn runs and ends.
+    records.push(
+      ...conversation(
+        [
+          { type: "turn_ended", turn: "w2", outcome: { status: "withdrawn" } },
+          requestStarted("t3"),
+          { type: "turn_ended", turn: "t3", outcome: { status: "completed" } },
+        ],
+        records.length,
+      ),
+    );
+    epics.get(epicId)!.status = "active";
+    await orchestrator.changed(epicId);
+    assert.equal(written.length, 1, "what the wake carried is told once");
+    assert.match(JSON.stringify(written[0]), /a1/);
+  });
+
+  it("keeps a queue of wakes only for the resume, then sends it on", async () => {
+    const records = conversation([
+      {
+        type: "user_message",
+        turn: "t1",
+        input: text("Go."),
+        delivery: "turn",
+      },
+      requestStarted("t1"),
+      {
+        type: "user_message",
+        turn: "w2",
+        input: queuedWake,
+        delivery: "turn",
+      },
+      { type: "turn_ended", turn: "t1", outcome: { status: "interrupted" } },
+    ]);
+    const { orchestrator, epics, fake, written } = await desk({
+      records,
+      epic: { status: "paused" },
+      rows: [inReview("s1")],
+      owned: { s1: "session-s1" },
+      statuses: { "session-s1": endedA1 },
+    });
+    const promoted = () =>
+      fake.calls
+        .filter(
+          (item) => item.method === "promote" || item.method === "withdraw",
+        )
+        .map((item) => (item.input as { turn: string }).turn);
+    epics.get(epicId)!.status = "paused";
+    await orchestrator.changed(epicId);
+    assert.deepEqual(promoted(), []);
+    epics.get(epicId)!.status = "active";
+    await orchestrator.changed(epicId);
+    assert.deepEqual(promoted(), ["w2"]);
+    assert.deepEqual(written, [], "the queued wake goes on: no second one");
   });
 
   it("refuses what would move a paused epic, and reads, talks and sleeps", async () => {

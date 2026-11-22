@@ -555,14 +555,23 @@ export class Orchestrator {
       await this.publish(
         this.lookAt(epic, await this.entry(epicId), conversation),
       );
-      // The person may talk to it while paused: a message that waited
-      // through a quit goes on (wakes are not sent meanwhile).
-      const waiting = conversation.queued[0];
-      if (conversation.exists && !conversation.running && waiting)
+      // The person may talk to it while paused: their message that waited
+      // through a quit goes on. The queue goes on from its first message,
+      // so a wake that waited too is taken back first: nothing wakes it
+      // while paused, and what it carried is told after the resume, once.
+      // A queue of wakes only waits for the resume.
+      const person = conversation.queued.find(
+        (turn) => !conversation.wakes.has(turn),
+      );
+      if (conversation.exists && !conversation.running && person) {
+        for (const turn of conversation.queued)
+          if (conversation.wakes.has(turn))
+            await this.host.call("withdraw", { session: entry.session, turn });
         await this.host.call("promote", {
           session: entry.session,
-          turn: waiting,
+          turn: person,
         });
+      }
       return;
     }
     this.pauses.delete(epicId);

@@ -86,8 +86,11 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
   once it runs) and cuts the orchestrator's turn running then (that turn
   only), and keeps which; nothing starts and nothing wakes it meanwhile.
   The person can still talk to the orchestrator while paused: a turn they
-  start runs and is answered (a message that waited through a quit goes on
-  too); its acting tools refuse with "the epic is paused" (`create_stories`
+  start runs and is answered (a message of theirs that waited through a
+  quit goes on too; the engine's queue goes on from its first message, so
+  a wake that waited with it is taken back first, and what it carried is
+  told after the resume, once; a queue of wakes only waits for the
+  resume); its acting tools refuse with "the epic is paused" (`create_stories`
   unless every story is held, `update_story` with `queue`, `message_story`,
   `approve_story`, `reject_story`), its reading tools work, and `end_turn` with `wait` is
   accepted: the resume wakes it. When it reads `active`
@@ -114,6 +117,9 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
   - A story is resumed once, whoever resumes it first: a resume of an agent
     already running does nothing, and the person's act is heard before it
     runs (`touched` is awaited), so the epic's resume never doubles it.
+    Since this branch, Resume on any story whose agent already runs does
+    nothing, an ordinary story's too (it used to queue the resume message
+    behind the running turn).
   - `epicChanged` answers whether the pause took: `EpicState.pause` is
     `{ phase: "pausing" | "paused", error? }` while the API says `paused`,
     with the reason when the host could not stop something or could not
@@ -323,7 +329,9 @@ The orchestrator calls `story_report` for more.
 
 **Each ended turn is told exactly once, across a quit.** What a wake
 carried is in the conversation's records (rewound wakes included), which
-the host reads back: that set is what was reported. An ended turn not in it
+the host reads back: that set is what was reported. A wake whose turn
+ended before it ever ran (taken back, or dropped behind an interrupted
+turn) told nothing: what it carried is told again. An ended turn not in it
 is told by the next wake. The candidates are the turns the story service
 told, kept here before the wake goes and dropped once the records have
 them, and the ended turns of the sessions of the epic's stories this

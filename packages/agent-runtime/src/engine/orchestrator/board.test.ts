@@ -186,6 +186,7 @@ describe("the orchestrator's rules", () => {
       running: false,
       queued: [],
       reported: new Set(),
+      wakes: new Set(),
       spentMicroUsd: 0,
       unpricedRequests: 0,
       messages: { all: {}, changes: {} },
