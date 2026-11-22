@@ -1110,6 +1110,13 @@ describe("the budget, the gate and what is kept", () => {
     // Before the epic is read: held.
     assert.equal(second.orchestrator.holds(story)?.kind, "epic");
     await second.orchestrator.epic(epicId, true);
+    // `unknown` until the kept file is read (the constructor reads it).
+    await settle(
+      () =>
+        JSON.stringify(second.orchestrator.holds(story)) !==
+        JSON.stringify({ kind: "epic", epicId, hold: "unknown" }),
+      "the kept file to be read",
+    );
     assert.deepEqual(second.orchestrator.holds(story), {
       kind: "epic",
       epicId,
