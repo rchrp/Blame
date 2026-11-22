@@ -42,7 +42,7 @@ const vmRuntimeWorktreeRoot =
   "/home/blame/.local/share/blame/runtime/worktrees";
 const macosRuntimeWorktreeSegment =
   "/Library/Application Support/Blame/runtime/worktrees";
-const ignoredProjectSearchDirectories = [
+export const ignoredProjectSearchDirectories = [
   ".blame",
   ".blame-preview",
   ".cache",

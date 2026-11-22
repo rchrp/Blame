@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -112,5 +112,48 @@ docker() {
     };
     await collectPreviewGarbage(["/nonexistent-blame-root"], host);
     assert.deepEqual(removed, ["blame_compile_cache_bbb"]);
+  },
+);
+
+test(
+  "shared setup stamps go with the last node_modules volume of their key",
+  { skip: process.platform === "win32" },
+  async () => {
+    const directory = await mkdtemp(join(tmpdir(), "blame-stamps-"));
+    for (const name of ["aaa.1.stamp", "aaa.2.stamp", "bbb.1.stamp"])
+      await writeFile(join(directory, name), "fingerprint x\n");
+    const host: DockerHost = {
+      readFile: async () => undefined,
+      writeFile: async () => undefined,
+      async run(_command, args) {
+        const fixture = `
+docker() {
+  case "$1 $2" in
+    'volume ls')
+      case "$*" in
+        *name=blame_node_modules_aaa*) echo blame_node_modules_aaa_apps_web ;;
+      esac ;;
+  esac
+}
+`;
+        const { stdout, stderr } = await promisify(execFile)("sh", [
+          "-c",
+          fixture + args[1],
+          ...args.slice(2),
+        ]);
+        return { stdout, stderr, exitCode: 0 };
+      },
+    };
+    await collectPreviewGarbage(["/nonexistent-blame-root"], host, directory);
+    assert.deepEqual((await readdir(directory)).sort(), [
+      "aaa.1.stamp",
+      "aaa.2.stamp",
+    ]);
+    // No stamp yet: nothing to clean, nothing to fail.
+    await collectPreviewGarbage(
+      ["/nonexistent-blame-root"],
+      host,
+      join(directory, "none"),
+    );
   },
 );

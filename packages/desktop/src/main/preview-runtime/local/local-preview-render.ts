@@ -1,7 +1,5 @@
 import { localPreviewToolsPath } from "./local-preview-tools.ts";
-import { createHash } from "node:crypto";
 import { stat } from "node:fs/promises";
-import { posix, relative, sep } from "node:path";
 import type { ProjectRunConfiguration } from "@blame/agent-runtime";
 import type { PreviewExecutionPlan } from "@blame/preview-runtime";
 import { composeUnescape, renderCompose } from "@blame/preview-runtime/compose";
@@ -12,13 +10,12 @@ import {
   materializedPreviewEnvHostFileMounts,
 } from "../../workspace-env.ts";
 import {
-  findProjectFilesByName,
   joinWorkspacePath,
   mkdir,
-  readExistingFiles,
   run,
   runtimeManagedPath,
 } from "../../workspace-runtime.ts";
+import { dependencyInputs } from "./local-preview-dependency-files.ts";
 import { allocatePreviewHostPorts } from "./local-preview-ports.ts";
 import {
   previewDatabaseMode,
@@ -45,17 +42,6 @@ import {
 // originals, with the stronger values written in. Every container reaches
 // the developer's computer at the host gateway's alias.
 
-const dependencyManifestFiles = [
-  "package.json",
-  "pnpm-lock.yaml",
-  "pnpm-workspace.yaml",
-  "package-lock.json",
-  "npm-shrinkwrap.json",
-  "yarn.lock",
-  "bun.lock",
-  "bun.lockb",
-];
-
 export type LocalRender = Awaited<ReturnType<typeof renderLocalPreview>>;
 
 export async function renderLocalPreview(input: {
@@ -70,14 +56,15 @@ export async function renderLocalPreview(input: {
 }) {
   const { worktree, plan } = input;
   const databaseMode = previewDatabaseMode(plan, input.databaseMode);
-  const [projectUser, hostPorts, dependencyKey, symlinkMounts, declarations] =
+  const [projectUser, hostPorts, dependencies, symlinkMounts, declarations] =
     await Promise.all([
       worktreeOwner(worktree),
       allocatePreviewHostPorts(worktree, plan, input.ownPorts),
-      dependencyHash(worktree, plan),
+      dependencyInputs(worktree, plan),
       envHostFileMounts(worktree),
       worktreeEnvDeclarations(worktree),
     ]);
+  const dependencyKey = dependencies.key;
   const target = {
     kind: "local" as const,
     projectName: previewComposeProjectName(worktree),
@@ -132,6 +119,8 @@ export async function renderLocalPreview(input: {
     owner: projectUser,
     hostPorts,
     dependencyKey,
+    /** What an install reads beyond the key; see local-preview-dependency-files. */
+    sharedInstall: dependencies.sharedInstall,
     previewOrigin: origin,
     databaseMode,
     environment,
@@ -264,35 +253,4 @@ function worktreeOwner(worktree: string) {
     });
   owners.set(worktree, owner);
   return owner;
-}
-
-// Worktrees whose dependency manifests are identical share installs.
-async function dependencyHash(worktree: string, plan: PreviewExecutionPlan) {
-  const manifests = await findProjectFilesByName(worktree, "package.json", {
-    run: (command, args) => run(command, args, { cwd: worktree }),
-  });
-  const paths = new Map<string, string>();
-  for (const file of dependencyManifestFiles)
-    paths.set(joinWorkspacePath(worktree, file), file);
-  for (const path of manifests) paths.set(path, relativePath(worktree, path));
-  const contents = await readExistingFiles([...paths.keys()]);
-  const inputs = [...paths]
-    .flatMap(([path, file]) =>
-      typeof contents[path] === "string"
-        ? [{ file, content: contents[path] as string }]
-        : [],
-    )
-    .sort((left, right) => left.file.localeCompare(right.file));
-  const hash = createHash("sha256");
-  if (!inputs.length) hash.update(JSON.stringify(plan.setup));
-  for (const { file, content } of inputs) {
-    hash.update(file).update("\0").update(content).update("\0");
-  }
-  return hash.digest("hex").slice(0, 12);
-}
-
-function relativePath(root: string, path: string) {
-  return root.startsWith("/")
-    ? posix.relative(root, path)
-    : relative(root, path).split(sep).join("/");
 }

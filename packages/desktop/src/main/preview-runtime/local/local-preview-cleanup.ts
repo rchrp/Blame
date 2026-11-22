@@ -1,10 +1,13 @@
 import type { DockerHost } from "@blame/preview-runtime/compose";
+import { localPreviewSetupDirectory } from "./local-preview-shared-setup.ts";
 import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
 
 // Keeps the Blame Runtime small. A preview's containers, network and own
 // volumes go with its worktree; shared node_modules volumes go once no
 // worktree uses them, and the compile cache snapshots of their dependency
-// key with them; images built over two weeks ago that no container uses
+// key with them, and so do the stamps of shared setup (a stamp only holds
+// for the volumes it was written for); images built over two weeks ago that no
+// container uses
 // are pruned. Database volumes of existing worktrees are never touched.
 // The desktop never runs this while a preview starts.
 
@@ -30,10 +33,11 @@ export async function removePreviewProject(
 export async function collectPreviewGarbage(
   worktreeRoots: string[],
   host: DockerHost = blameRuntimeDockerHost,
+  setupDirectory = localPreviewSetupDirectory(),
 ) {
   const result = await host.run(
     "sh",
-    ["-c", collectGarbageScript, "sh", ...worktreeRoots],
+    ["-c", collectGarbageScript(setupDirectory), "sh", ...worktreeRoots],
     { timeoutMs: 10 * 60_000 },
   );
   return result.stdout
@@ -80,7 +84,7 @@ volumes="$(docker volume ls -q --filter "name=^\${project}_")"
 [ -z "$volumes" ] || docker volume rm -f $volumes >/dev/null
 `;
 
-const collectGarbageScript = `
+const collectGarbageScript = (setupDirectory: string) => `
 set -u
 live="$(for root in "$@"; do
   find "$root" -mindepth 1 -maxdepth 3 -name .git 2>/dev/null
@@ -110,7 +114,18 @@ for volume in $(docker volume ls -q --filter dangling=true --filter name=blame_c
   key="\${volume#blame_compile_cache_}"
   docker volume ls -q --filter "name=blame_node_modules_\${key}" | grep -q . || docker volume rm "$volume" >/dev/null 2>&1 || true
 done
+# A shared setup stamp goes with the last node_modules volume of its key.
+for stamp in ${shellQuote(setupDirectory)}/*.stamp; do
+  [ -e "$stamp" ] || continue
+  key="$(basename "$stamp")"
+  key="\${key%%.*}"
+  docker volume ls -q --filter "name=blame_node_modules_\${key}" | grep -q . || rm -f "$stamp"
+done
 docker image prune -f >/dev/null 2>&1 || true
 docker image prune -af --filter until=336h >/dev/null 2>&1 || true
 [ "$(id -u)" != 0 ] || fstrim -a >/dev/null 2>&1 || true
 `;
+
+function shellQuote(value: string) {
+  return `'${value.replace(/'/g, `'\\''`)}'`;
+}

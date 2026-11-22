@@ -45,6 +45,10 @@ import {
 import { blameRuntimeDockerHost } from "./vm-docker-host.ts";
 import { queueDependencyInstall } from "./local-preview-install-queue.ts";
 import {
+  localSharedSetup,
+  localWorkspaceFingerprints,
+} from "./local-preview-shared-setup.ts";
+import {
   prepareColdStart,
   type ColdStart,
 } from "./local-preview-cold-start.ts";
@@ -99,6 +103,7 @@ export function localPreviewEngine(
   return new ComposeEngine({
     host: dockerHost,
     stateDirectory: localPreviewPaths(worktree).engineState,
+    sharedSetup: localSharedSetup(worktree),
     log: (chunk) => {
       options.log?.(chunk);
       if (chunk.includes("Waiting for the app window"))
@@ -250,9 +255,11 @@ async function startSelectedServices(
     step: options.step,
     timing: options.timing,
   });
-  await engine.start(context.plan, serviceIds, {
-    lockfiles: async () => local.dependencyKey,
-  });
+  await engine.start(
+    context.plan,
+    serviceIds,
+    localWorkspaceFingerprints(local),
+  );
   if (!serviceIds.length || !(await wanted(options))) return undefined;
   const targets = local.rendered.targets;
   options.step?.("Waiting for the app to answer");
@@ -311,9 +318,7 @@ export async function prefetchLocalPreview(
     tunedDependencies: await localTunedDependencies(worktree, context.plan),
   });
   await engine.prepare(local.rendered, local.owner);
-  await engine.prefetch(context.plan, {
-    lockfiles: async () => local.dependencyKey,
-  });
+  await engine.prefetch(context.plan, localWorkspaceFingerprints(local));
 }
 
 export async function stopLocalPreview(
