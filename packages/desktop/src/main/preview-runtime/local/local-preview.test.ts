@@ -236,33 +236,7 @@ test("worktrees with the same dependency manifests share their installs", async 
 });
 
 test("restarts the selected run configuration and returns its preview URL", async (t) => {
-  const worktree = await worktreeFixture(t);
-  const plan = compilePreviewManifest(parsePreviewManifest(manifest));
-  const ports = await allocatePreviewHostPorts(worktree, plan);
-  const host = new FakeDockerHost();
-  useLocalDockerHost(host);
-  await listen(ports["web:http"]!, t);
-  await listen(ports["api:http"]!, t);
-  await writeLocalFiles(worktree, {
-    desiredStatus: "running",
-    selectedConfigurationId: "web",
-  });
-  // A restart: the running containers already publish these ports.
-  await mkdir(join(worktree, ".blame/preview"), { recursive: true });
-  await writeFile(
-    join(worktree, ".blame/preview/project.json"),
-    JSON.stringify({
-      projectName: "blame_000000000000",
-      targets: Object.fromEntries(
-        Object.entries(ports).map(([key, port]) => [
-          key,
-          { host: "127.0.0.1", port },
-        ]),
-      ),
-      serviceVolumes: {},
-      volumeCreatedAt: {},
-    }),
-  );
+  const { worktree, ports, host } = await restartedPreview(t);
   const steps: string[] = [];
   const url = await startLocalPreview(worktree, {
     step: (step) => steps.push(step),
@@ -287,6 +261,39 @@ test("restarts the selected run configuration and returns its preview URL", asyn
   const inspected = host.commands.length;
   assert.equal(await localPreviewUrl(worktree, inspection), url);
   assert.equal(host.commands.length, inspected);
+});
+
+test("opens the preview on the page of its run configuration, not on the healthcheck route", async (t) => {
+  const health = {
+    type: "http",
+    path: "/api/health",
+    timeoutMs: 10_000,
+  };
+  const withHealth = {
+    ...manifest,
+    services: manifest.services.map((service) => ({
+      ...service,
+      endpoints: service.endpoints.map((endpoint) => ({
+        ...endpoint,
+        healthcheck: health,
+      })),
+    })),
+  };
+  for (const [previewUrl, path] of [
+    [undefined, "/"],
+    ["http://localhost:3000/dashboard?tab=1", "/dashboard?tab=1"],
+  ] as const) {
+    const { worktree, ports } = await restartedPreview(t, {
+      manifest: withHealth,
+      configurations: runConfigurations.map((configuration) => ({
+        ...configuration,
+        ...(previewUrl ? { previewUrl } : {}),
+      })),
+    });
+    const url = `http://localhost:${ports["web:http"]}${path}`;
+    assert.equal(await startLocalPreview(worktree), url);
+    assert.equal(await localPreviewUrl(worktree), url);
+  }
 });
 
 test("keeps preview state when Docker removal fails so deletion can be retried", async (t) => {
@@ -347,19 +354,64 @@ class FakeDockerHost implements DockerHost {
   }
 }
 
+// A worktree whose containers already run and publish the ports of the
+// selected run configuration, as after an app restart.
+async function restartedPreview(
+  t: { after: (fn: () => void) => void },
+  files: {
+    manifest?: unknown;
+    configurations?: ProjectRunConfiguration[];
+  } = {},
+) {
+  const worktree = await worktreeFixture(t);
+  const plan = compilePreviewManifest(
+    parsePreviewManifest(files.manifest ?? manifest),
+  );
+  const ports = await allocatePreviewHostPorts(worktree, plan);
+  const host = new FakeDockerHost();
+  useLocalDockerHost(host);
+  await listen(ports["web:http"]!, t);
+  await listen(ports["api:http"]!, t);
+  await writeLocalFiles(
+    worktree,
+    { desiredStatus: "running", selectedConfigurationId: "web" },
+    files,
+  );
+  await mkdir(join(worktree, ".blame/preview"), { recursive: true });
+  await writeFile(
+    join(worktree, ".blame/preview/project.json"),
+    JSON.stringify({
+      projectName: "blame_000000000000",
+      targets: Object.fromEntries(
+        Object.entries(ports).map(([key, port]) => [
+          key,
+          { host: "127.0.0.1", port },
+        ]),
+      ),
+      serviceVolumes: {},
+      volumeCreatedAt: {},
+    }),
+  );
+  return { worktree, ports, host };
+}
+
 async function writeLocalFiles(
   worktree: string,
   state: Record<string, unknown>,
+  files: {
+    manifest?: unknown;
+    configurations?: ProjectRunConfiguration[];
+  } = {},
 ) {
   const directory = join(worktree, ".blame/initialization");
   await mkdir(directory, { recursive: true });
   await writeFile(
     join(directory, "preview-manifest.json"),
-    JSON.stringify(parsePreviewManifest(manifest)),
+    JSON.stringify(parsePreviewManifest(files.manifest ?? manifest)),
   );
   await writeFile(
     join(directory, "run-configurations.json"),
-    JSON.stringify(runConfigurations),
+    JSON.stringify(files.configurations ?? runConfigurations),
   );
   await writeFile(
     join(directory, "preview-runtime-state.json"),

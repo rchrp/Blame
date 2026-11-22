@@ -152,6 +152,44 @@ export function previewOrigin(
   return `${protocol}://localhost:${port}`;
 }
 
+/**
+ * The page a person lands on in the selected configuration's browser
+ * preview: the path and query of its own `previewUrl`, else the root. The
+ * endpoint's healthcheck path only tells readiness (often a JSON route),
+ * so it never decides the landing page.
+ */
+export function previewLandingUrl(
+  plan: PreviewExecutionPlan,
+  hostPorts: Record<string, number>,
+  selected?: ProjectRunConfiguration,
+) {
+  const origin = previewOrigin(plan, hostPorts, selected);
+  const endpoint = previewEndpoint(plan, selected);
+  if (!origin || !endpoint) return undefined;
+  return `${origin}${landingPath(selected?.previewUrl, endpoint.endpoint.port)}`;
+}
+
+// A configuration's previewUrl names the page for the port it serves on;
+// when it names another port it belongs to another endpoint of the service.
+function landingPath(previewUrl: string | undefined, endpointPort: number) {
+  const value = previewUrl?.trim();
+  if (!value) return "/";
+  try {
+    const url = new URL(
+      value.startsWith("/")
+        ? `http://localhost${value}`
+        : /^[a-z][a-z\d+.-]*:\/\//i.test(value)
+          ? value
+          : `http://${value}`,
+    );
+    if (url.protocol !== "http:" && url.protocol !== "https:") return "/";
+    if (url.port && Number(url.port) !== endpointPort) return "/";
+    return `${url.pathname}${url.search}`;
+  } catch {
+    return "/";
+  }
+}
+
 export function previewEndpoint(
   plan: PreviewExecutionPlan,
   selected?: ProjectRunConfiguration,
