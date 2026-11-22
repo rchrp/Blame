@@ -89,7 +89,7 @@ An epic is a row of the API's `epics` (`title`, `goal`, `status`, `branch`,
   start runs and is answered (a message that waited through a quit goes on
   too); its acting tools refuse with "the epic is paused" (`create_stories`
   unless every story is held, `update_story` with `queue`, `message_story`,
-  `approve_story`), its reading tools work, and `end_turn` with `wait` is
+  `approve_story`, `reject_story`), its reading tools work, and `end_turn` with `wait` is
   accepted: the resume wakes it. When it reads `active`
   again, exactly those agents resume (each still paused where the pause
   left it) and the orchestrator's cut turn goes on (a `resumed` wake). The

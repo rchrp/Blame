@@ -1571,7 +1571,7 @@ describe("what holds when things go wrong", () => {
   });
 
   it("refuses what would move a paused epic, and reads, talks and sleeps", async () => {
-    const { epics, report, run } = await desk({
+    const { api, epics, report, run } = await desk({
       rows: [
         inReview("s1"),
         row("s2", "a", { epicId, status: "backlog", storyNumber: 2 }),
@@ -1595,6 +1595,11 @@ describe("what holds when things go wrong", () => {
       run("update_story", { reason: "Now.", storyId: "s2", queue: true }),
       /US-002 is not queued: the epic is paused\./,
     );
+    await assert.rejects(
+      run("reject_story", { reason: "Not needed.", storyId: "s1" }),
+      /US-001 is not rejected: the epic is paused\./,
+    );
+    assert.equal(api.stories.get("s1")!.status, "in-review");
     await assert.rejects(
       run("create_stories", {
         reason: "More.",

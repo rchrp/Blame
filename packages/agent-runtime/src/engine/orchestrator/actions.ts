@@ -494,6 +494,8 @@ export async function rejectStory(
 ) {
   const look = await fresh(desk);
   const story = epicStory(look, input.storyId);
+  // Its worktree would go, even a story the pause itself stopped.
+  assertActive(look, `${storyDisplayId(story)} is not rejected`);
   if (story.status === "done")
     throw refused(
       `${storyDisplayId(story)} is already merged into the epic's branch, so it stays.`,
