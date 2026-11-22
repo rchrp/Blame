@@ -157,6 +157,11 @@ export class SharedSetup {
   /** Writes the stamp of a run that succeeded, if it wrote only the volumes. */
   async finish(log?: (message: string) => void) {
     const result = await this.run("finish");
+    if (result === undefined)
+      // The install ran, so the next story runs it too: say why.
+      log?.(
+        `Setup ${this.identity.taskId} could not be recorded for other stories (${this.failure}).\n`,
+      );
     if (!result?.startsWith("wrote\t")) return;
     const root = `${this.identity.workspace}/`;
     const path = result.slice("wrote\t".length);
@@ -165,6 +170,8 @@ export class SharedSetup {
     );
   }
 
+  private failure = "";
+
   private async run(step: Step) {
     try {
       const result = await this.host.run(
@@ -172,8 +179,10 @@ export class SharedSetup {
         ["-c", script(this.identity, step)],
         { timeoutMs: 60_000 },
       );
+      this.failure = `exit code ${result.exitCode} ${result.stderr.trim().slice(-300)}`;
       return result.exitCode === 0 ? result.stdout.trim() : undefined;
-    } catch {
+    } catch (error) {
+      this.failure = String(error);
       return undefined;
     }
   }

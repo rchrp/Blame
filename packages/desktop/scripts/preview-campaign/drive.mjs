@@ -967,6 +967,7 @@ async function setupFacts(options, story) {
     ran: /Running setup /.test(log) && !/another story ran it/.test(log),
     skipped: /another story ran it/.test(log),
     wrote: /Setup \S+ also wrote ([^,\n]+)/.exec(log)?.[1] ?? null,
+    unrecorded: /could not be recorded for other stories \(([^)]*)\)/.exec(log)?.[1] ?? null,
   };
 }
 
@@ -1060,6 +1061,8 @@ async function scenarioSharedSetup(app, options) {
       // The volume is gone: nothing may claim it is filled.
       for (const story of stories.filter((entry) => entry.name === "vite-react")) await workspace(app, "removeWorktree", { repositoryRoot: story.project, workspaceMode: "local-container", worktree: story.worktree });
       await delay(3000);
+      // Containers of earlier stories may still mount it.
+      await vm(options, `docker ps -aq --filter volume=${volume} | xargs -r docker rm -f`, 120_000);
       const removed = await vm(options, `docker volume rm ${volume}`);
       await check("vite-react: the shared volume is removed", removed.ok, removed.stderr.slice(0, 200));
       const recreated = await sharedSetupStart(app, options, "vite-react", "s5-new-volume");
