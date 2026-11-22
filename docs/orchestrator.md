@@ -435,16 +435,24 @@ on, and the orchestrator is woken (`idle`) to wrap up.
 
 ## Slices
 
-1. **Engine** (done on `feat/orchestrator-engine`): the purpose, the tools,
-   the waking, the epic's branch, the budget refusals. Proven with the real
-   engine, real git, the local API and a scripted model, no window
-   (`orchestrator.e2e.test.ts`). Unproven until the screen exists: the
-   person's own messages, answers to an `ask`, Allow and Deny of an
-   approval, Pause all and resume, the `epic` event reaching a window, and a
-   Local Container (runtime VM) or real Cloud Preview story in an epic.
-2. **Screen**: the sidebar entry, the epic page with its board and
-   settings, the removal of Plan Mode's interface, the conversation and the
-   removal of the `plan` purpose (done on `feat/orchestrator-screen`).
+1. **Engine** (in `main` since 2026-11-22): the purpose, the tools, the
+   waking, the epic's branch, the budget refusals, the host's pause. Proven
+   with the real engine, real git, the local API and a scripted model, no
+   window (`orchestrator.e2e.test.ts`).
+2. **Screen** (in `main` since 2026-11-22): the sidebar entry, the epic
+   page with its board and settings, the conversation, the removal of Plan
+   Mode's interface and of the `plan` purpose.
+
+   What a window has proven: one run of
+   `packages/desktop/scripts/orchestrator-drive.mjs` against the engine's
+   first round showed the loop (two dependent stories, two wakes, two
+   merges into the epic's branch, the summary), the refusal to approve
+   failed checks, and an `ask`. Nothing later was run in a window: the
+   drive's nine scenarios as they are now, Allow and Deny of an approval,
+   Pause all and resume, the single wake after a quit and relaunch, blocked
+   stories, a conflicting merge. Never tried at all: a Local Container
+   (runtime VM) or real Cloud Preview story in an epic, and two computers
+   on one epic.
 3. **Epic review**: checks on the epic's branch after each merge, a preview
    of the epic's branch, and the person's merge of the epic into its target
    (or a pull request).
