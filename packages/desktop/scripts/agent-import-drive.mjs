@@ -12,14 +12,25 @@
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
 import { createRequire } from "node:module";
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  readdir,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const execFileAsync = promisify(execFile);
 const resultPrefix = "AGENT_IMPORT_DRIVE ";
-const secrets = ["sk-fake-dokploy-0001", "ghp_fakeGithubToken0002", "fake-bearer-0003"];
+const secrets = [
+  "sk-fake-dokploy-0001",
+  "ghp_fakeGithubToken0002",
+  "fake-bearer-0003",
+];
 
 if (process.versions.electron) await runInElectron();
 else await runDrive();
@@ -46,9 +57,14 @@ async function runDrive() {
       stream.on("data", (data) => (output = (output + data).slice(-100_000)));
     const code = await new Promise((done) => child.once("close", done));
     clearTimeout(timeout);
-    const line = output.split("\n").find((entry) => entry.startsWith(resultPrefix));
-    if (code !== 0 || !line) throw new Error(`Drive failed (${code}):\n${output.slice(-4000)}`);
-    console.log(JSON.stringify(JSON.parse(line.slice(resultPrefix.length)), null, 2));
+    const line = output
+      .split("\n")
+      .find((entry) => entry.startsWith(resultPrefix));
+    if (code !== 0 || !line)
+      throw new Error(`Drive failed (${code}):\n${output.slice(-4000)}`);
+    console.log(
+      JSON.stringify(JSON.parse(line.slice(resultPrefix.length)), null, 2),
+    );
   } finally {
     await rm(scratch, { force: true, recursive: true });
   }
@@ -56,25 +72,56 @@ async function runDrive() {
 
 async function fakeHome(home) {
   const files = {
-    "Library/Application Support/Claude/claude_desktop_config.json": JSON.stringify({
-      mcpServers: {
-        filesystem: { command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "/Users/me/Documents"] },
-        github: { command: "docker", args: ["run", "-i", "ghcr.io/github/github-mcp-server"], env: { GITHUB_PERSONAL_ACCESS_TOKEN: secrets[1] } },
-      },
-    }),
+    "Library/Application Support/Claude/claude_desktop_config.json":
+      JSON.stringify({
+        mcpServers: {
+          filesystem: {
+            command: "npx",
+            args: [
+              "-y",
+              "@modelcontextprotocol/server-filesystem",
+              "/Users/me/Documents",
+            ],
+          },
+          github: {
+            command: "docker",
+            args: ["run", "-i", "ghcr.io/github/github-mcp-server"],
+            env: { GITHUB_PERSONAL_ACCESS_TOKEN: secrets[1] },
+          },
+        },
+      }),
     ".claude.json": JSON.stringify({
       mcpServers: {
-        dokploy: { type: "stdio", command: "npx", args: ["-y", "@dokploy/mcp"], env: { DOKPLOY_API_KEY: secrets[0] } },
+        dokploy: {
+          type: "stdio",
+          command: "npx",
+          args: ["-y", "@dokploy/mcp"],
+          env: { DOKPLOY_API_KEY: secrets[0] },
+        },
         linear: { type: "http", url: "https://mcp.linear.app/mcp" },
       },
-      projects: { "/Users/me/app": { mcpServers: { postgres: { command: "npx", args: ["-y", "pg-mcp", "--url=postgres://u:p@localhost/db"] } } } },
+      projects: {
+        "/Users/me/app": {
+          mcpServers: {
+            postgres: {
+              command: "npx",
+              args: ["-y", "pg-mcp", "--url=postgres://u:p@localhost/db"],
+            },
+          },
+        },
+      },
     }),
     ".claude/CLAUDE.md": "Always answer in French.\n",
-    ".claude/commands/review.md": "---\ndescription: Review the diff\n---\nReview it.\n",
-    ".claude/skills/synced/org_user/pdf/SKILL.md": "---\nname: pdf\ndescription: Work with PDFs\n---\nUse pdftotext.\n",
+    ".claude/commands/review.md":
+      "---\ndescription: Review the diff\n---\nReview it.\n",
+    ".claude/skills/synced/org_user/pdf/SKILL.md":
+      "---\nname: pdf\ndescription: Work with PDFs\n---\nUse pdftotext.\n",
     ".codex/config.toml": `[mcp_servers.home_assistant]\nurl = "https://ha.example.com/api/mcp"\nbearer_token_env_var = "HA_TOKEN"\n\n[mcp_servers.remote]\nurl = "https://remote.example.com/mcp"\nhttp_headers = { Authorization = "Bearer ${secrets[2]}" }\n\n[mcp_servers.node_repl]\ncommand = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl"\n`,
-    ".codex/skills/release-notes/SKILL.md": "---\nname: release-notes\ndescription: Write release notes\n---\nBody\n",
-    ".cursor/mcp.json": JSON.stringify({ mcpServers: { figma: { url: "http://127.0.0.1:3845/sse" } } }),
+    ".codex/skills/release-notes/SKILL.md":
+      "---\nname: release-notes\ndescription: Write release notes\n---\nBody\n",
+    ".cursor/mcp.json": JSON.stringify({
+      mcpServers: { figma: { url: "http://127.0.0.1:3845/sse" } },
+    }),
   };
   for (const [path, content] of Object.entries(files)) {
     await mkdir(join(home, path, ".."), { recursive: true });
@@ -91,7 +138,8 @@ async function runInElectron() {
   const [profile, shots, home] = process.argv.slice(-3);
   const application = resolve(import.meta.dirname, "..");
   const { app, BrowserWindow, dialog } = await import("electron");
-  for (const name of ["appData", "userData", "sessionData"]) app.setPath(name, profile);
+  for (const name of ["appData", "userData", "sessionData"])
+    app.setPath(name, profile);
   app.setAppLogsPath(join(profile, "logs"));
   app.getAppPath = () => application;
   app.setAsDefaultProtocolClient = () => false;
@@ -125,27 +173,42 @@ async function runInElectron() {
     window.webContents.reload();
     window = await showing("Bring your setup");
     await delay(1500);
-    const html = await window.webContents.executeJavaScript("document.body.innerHTML");
+    const html = await window.webContents.executeJavaScript(
+      "document.body.innerHTML",
+    );
     report.secretsInPage = secrets.filter((secret) => html.includes(secret));
     report.progress = await window.webContents.executeJavaScript(
       `[...document.querySelectorAll('[aria-label="Setup progress"] li')].map((li) => li.innerText.trim())`,
     );
-    report.reviewText = await window.webContents.executeJavaScript(`document.body.innerText.slice(0, 2500)`);
+    report.reviewText = await window.webContents.executeJavaScript(
+      `document.body.innerText.slice(0, 2500)`,
+    );
     await shot(window, join(shots, "1-review.png"));
 
     await click(window, "Import ");
     await delay(1500);
-    report.resultText = await window.webContents.executeJavaScript(`document.body.innerText.slice(0, 1200)`);
+    report.resultText = await window.webContents.executeJavaScript(
+      `document.body.innerText.slice(0, 1200)`,
+    );
     await shot(window, join(shots, "2-result.png"));
 
     const settings = JSON.parse(
-      await readFile(join(profile, "dev.blame.desktop.development", "mcp-settings.json"), "utf8").catch(() => '{"mcpServers":{}}'),
+      await readFile(
+        join(profile, "dev.blame.desktop.development", "mcp-settings.json"),
+        "utf8",
+      ).catch(() => '{"mcpServers":{}}'),
     );
     report.importedServers = Object.fromEntries(
-      Object.entries(settings.mcpServers).map(([name, value]) => [name, { type: value.type, disabled: value.disabled }]),
+      Object.entries(settings.mcpServers).map(([name, value]) => [
+        name,
+        { type: value.type, disabled: value.disabled },
+      ]),
     );
-    report.keptTheSecret = settings.mcpServers.dokploy?.env?.DOKPLOY_API_KEY === secrets[0];
-    report.skillFolders = await readdir(join(home, ".agents", "skills")).catch(() => []);
+    report.keptTheSecret =
+      settings.mcpServers.dokploy?.env?.DOKPLOY_API_KEY === secrets[0];
+    report.skillFolders = await readdir(join(home, ".agents", "skills")).catch(
+      () => [],
+    );
 
     // The renderer's second look: everything is already there.
     report.rescan = await window.webContents.executeJavaScript(
@@ -153,15 +216,23 @@ async function runInElectron() {
     );
     await click(window, "Continue");
     await delay(1200);
-    report.afterContinue = await window.webContents.executeJavaScript(`document.body.innerText.slice(0, 200)`);
+    report.afterContinue = await window.webContents.executeJavaScript(
+      `document.body.innerText.slice(0, 200)`,
+    );
 
     // Later, from Settings → MCP: a project is open, and the same review
     // only offers what Blame does not have yet.
     const project = join(profile, "project");
     await mkdir(project, { recursive: true });
-    await writeFile(join(project, "package.json"), '{"name":"drive-project"}\n');
+    await writeFile(
+      join(project, "package.json"),
+      '{"name":"drive-project"}\n',
+    );
     await execFileAsync("git", ["init", "-q", "-b", "main"], { cwd: project });
-    dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [project] });
+    dialog.showOpenDialog = async () => ({
+      canceled: false,
+      filePaths: [project],
+    });
     await click(window, "Open Project");
     window = await showing("Agent Queue");
     await window.webContents.executeJavaScript(
@@ -200,16 +271,23 @@ async function runInElectron() {
     while (Date.now() - startedAt < timeoutMs) {
       for (const window of BrowserWindow.getAllWindows()) {
         if (window.isDestroyed() || window.webContents.isLoading()) continue;
-        if (await window.webContents.executeJavaScript(check).catch(() => false)) return window;
+        if (
+          await window.webContents.executeJavaScript(check).catch(() => false)
+        )
+          return window;
       }
       await delay(100);
     }
     const screens = await Promise.all(
       BrowserWindow.getAllWindows().map((window) =>
-        window.webContents.executeJavaScript("document.body?.innerText.slice(0, 600)").catch(String),
+        window.webContents
+          .executeJavaScript("document.body?.innerText.slice(0, 600)")
+          .catch(String),
       ),
     );
-    throw new Error(`Timed out waiting for "${text}", on:\n${screens.join("\n---\n")}`);
+    throw new Error(
+      `Timed out waiting for "${text}", on:\n${screens.join("\n---\n")}`,
+    );
   }
 
   await import(pathToFileURL(join(application, "out/main/index.js")).href);
