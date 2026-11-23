@@ -3,6 +3,11 @@ import { describeWebResearch } from "./describe-web-research.ts"
 import { describePlan } from "./describe-plan.ts"
 import { describeSubAgents } from "../sub-agents/describe-sub-agents.ts"
 import { runAgentsTool } from "../sub-agents/sub-agents-view.ts"
+import {
+  describeBlameConfigure,
+  describeBlameInspect,
+  describeBlameRepair,
+} from "./describe-blame.ts"
 import { describePreviewEnvironment } from "./describe-preview-environment.ts"
 import {
   describeCommand,
@@ -66,6 +71,9 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   get_preview_container_logs: describePreview,
   repair_preview_initialization: describePreview,
   preview_environment: describePreviewEnvironment,
+  blame_inspect: describeBlameInspect,
+  blame_configure: describeBlameConfigure,
+  blame_repair: describeBlameRepair,
   get_code_minimal_context: describeGraph,
   get_code_review_context: describeGraph,
   get_code_impact_radius: describeGraph,

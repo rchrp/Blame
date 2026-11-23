@@ -101,6 +101,8 @@ export type ToolCallBody =
   | { type: "list"; label?: string; items: string[] }
   | { type: "error"; message: string; recovery?: string }
   | { type: "screenshot"; screenshots: ScreenshotRef[]; pending?: boolean }
+  // A step handed to the person: a button that opens that Settings section.
+  | { type: "settings-link"; section: string }
 
 // A screenshot stored by the desktop app, as referenced by a tool result.
 export type ScreenshotRef = {
