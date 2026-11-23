@@ -32,13 +32,15 @@ export type CollectedSource = {
 
 /** Everything the other tools keep that Blame can see. Read-only. */
 export async function collectSources(scan: ScanEnvironment) {
-  const sources = await Promise.all([
-    claudeDesktop(scan),
-    claudeCode(scan),
-    codex(scan),
-    cursor(scan),
-    vscode(scan),
-  ]);
+  const sources = (
+    await Promise.all([
+      claudeDesktop(scan),
+      claudeCode(scan),
+      codex(scan),
+      cursor(scan),
+      vscode(scan),
+    ])
+  ).map(withoutCredentialUrls);
   return sources.filter(
     (source): source is CollectedSource =>
       source !== undefined &&
@@ -47,6 +49,40 @@ export async function collectSources(scan: ScanEnvironment) {
         source.inPlace.length ||
         source.unsupported.length) > 0,
   );
+}
+
+// Settings → MCP syncs a signed-in account's server addresses with Blame's
+// cloud and refuses an address that carries a login or a query, so a server
+// whose token sits in its URL is left to be added by hand.
+function withoutCredentialUrls(source: CollectedSource): CollectedSource {
+  const kept = source.servers.filter(
+    (server) => !server.url || !carriesCredential(server.url),
+  );
+  const left = source.servers.length - kept.length;
+  return {
+    ...source,
+    servers: kept,
+    unsupported: left
+      ? [
+          ...source.unsupported,
+          {
+            label: "Servers with a token in their address",
+            count: left,
+            reason:
+              "Add them in Settings → MCP and put the token in a header, so it is not synced with the address.",
+          },
+        ]
+      : source.unsupported,
+  };
+}
+
+function carriesCredential(value: string) {
+  try {
+    const url = new URL(value);
+    return Boolean(url.username || url.password || url.search || url.hash);
+  } catch {
+    return true;
+  }
 }
 
 async function claudeDesktop(scan: ScanEnvironment) {

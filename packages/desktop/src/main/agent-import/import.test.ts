@@ -241,18 +241,15 @@ test("a scan lists every source, category and item, and hides every secret", asy
 
     const code = byId("claude-code");
     const servers = code.items.filter((item) => item.category === "mcp");
-    // dokploy, linear, events, and postgres once: the same project server twice is one.
+    // dokploy, linear and postgres once (the same project server twice is one);
+    // the SSE server with its key in the address is left out.
     assert.deepEqual(
       servers.map((item) => item.name),
-      ["dokploy", "linear", "events", "postgres"],
+      ["dokploy", "linear", "postgres"],
     );
-    assert.equal(
-      servers[2]!.summary,
-      "https://events.example.com/sse?key=••••",
-    );
-    assert.equal(servers[3]!.defaultSelected, false);
-    assert.equal(servers[3]!.scope, "/Users/me/app");
-    assert.match(servers[3]!.summary, /--url=postgres:\/\/••••@localhost\/db$/);
+    assert.equal(servers[2]!.defaultSelected, false);
+    assert.equal(servers[2]!.scope, "/Users/me/app");
+    assert.match(servers[2]!.summary, /--url=postgres:\/\/••••@localhost\/db$/);
     assert.equal(servers[0]!.defaultSelected, true);
     const inPlace = code.items
       .filter((item) => item.state === "in-place")
@@ -266,7 +263,13 @@ test("a scan lists every source, category and item, and hides every secret", asy
     );
     assert.deepEqual(
       code.unsupported.map((entry) => entry.label),
-      ["Global instructions (CLAUDE.md)", "Subagents", "Plugins", "Hooks"],
+      [
+        "Global instructions (CLAUDE.md)",
+        "Subagents",
+        "Plugins",
+        "Hooks",
+        "Servers with a token in their address",
+      ],
     );
 
     const codex = byId("codex");
