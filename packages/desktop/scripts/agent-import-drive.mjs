@@ -126,6 +126,13 @@ async function fakeHome(home) {
     ".gemini/settings.json": JSON.stringify({
       mcpServers: { gem: { command: "node", args: ["gem.js"], env: { API_KEY: "gm-fake-secret-0009" } } },
     }),
+    ".cline/data/settings/cline_mcp_settings.json": JSON.stringify({
+      mcpServers: { clinefs: { command: "npx", args: ["-y", "fs-mcp"] } },
+    }),
+    ".config/zed/settings.json": JSON.stringify({
+      context_servers: { zedfs: { command: { path: "npx", args: ["-y", "fs-mcp"] } } },
+    }),
+    ".qwen/settings.json": JSON.stringify({ mcpServers: { qwenfs: { command: "qwen-mcp" } } }),
     ".cursor/mcp.json": JSON.stringify({
       mcpServers: { figma: { url: "http://127.0.0.1:3845/sse" } },
     }),

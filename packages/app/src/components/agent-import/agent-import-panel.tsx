@@ -120,7 +120,7 @@ export function AgentImportPanel({
         <p className="text-sm text-foreground/65">
           Pick the tools to bring your setup from.
         </p>
-        <ul className="grid max-h-[22rem] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
+        <ul className="grid max-h-[24rem] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
           {sortedSources(scan.sources).map((source) => (
             <SourceTile
               key={source.id}

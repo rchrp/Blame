@@ -1,29 +1,39 @@
-import { ProviderIcon } from "@/components/model/model-selector"
 import { cn } from "@/lib/utils"
 
-// How each source looks on the first screen. A source with a logo in the
-// provider sprite uses it; the others show their initials.
+// How each source looks on the first screen (logos in ./icons, see NOTICE.md).
+// A coloured logo is drawn as it is on a light tile; a single-colour one is
+// drawn white on the tool's colour; a tool without a logo shows its initials.
 const looks: Record<
   string,
-  { provider?: string; letters: string; color: string }
+  { logo?: "colour" | "mono"; letters: string; color: string }
 > = {
-  "claude-desktop": { provider: "anthropic", letters: "Cl", color: "#d97757" },
-  "claude-code": { provider: "anthropic", letters: "CC", color: "#c4623f" },
-  codex: { provider: "openai", letters: "Cx", color: "#10a37f" },
-  cursor: { letters: "Cu", color: "#4b5563" },
+  "claude-desktop": { logo: "colour", letters: "Cl", color: "#d97757" },
+  "claude-code": { logo: "colour", letters: "CC", color: "#c4623f" },
+  codex: { logo: "colour", letters: "Cx", color: "#10a37f" },
+  gemini: { logo: "colour", letters: "Ge", color: "#4285f4" },
+  qwen: { logo: "colour", letters: "Qw", color: "#6d28d9" },
+  cursor: { logo: "mono", letters: "Cu", color: "#27272a" },
+  cline: { logo: "mono", letters: "Cl", color: "#7c3aed" },
+  opencode: { logo: "mono", letters: "OC", color: "#2563eb" },
+  kilo: { logo: "mono", letters: "Ki", color: "#d97706" },
+  roo: { logo: "mono", letters: "Ro", color: "#db2777" },
+  goose: { logo: "mono", letters: "Go", color: "#0284c7" },
+  zed: { logo: "mono", letters: "Z", color: "#0f766e" },
   vscode: { letters: "VS", color: "#2f80ed" },
-  opencode: { provider: "opencode", letters: "OC", color: "#3b82f6" },
-  cline: { letters: "Cl", color: "#8b5cf6" },
-  kilo: { provider: "kilo", letters: "Ki", color: "#f59e0b" },
-  roo: { letters: "Ro", color: "#ec4899" },
-  gemini: { provider: "google", letters: "Ge", color: "#4285f4" },
-  qwen: { letters: "Qw", color: "#6d28d9" },
-  goose: { letters: "Go", color: "#0ea5e9" },
   continue: { letters: "Co", color: "#16a34a" },
-  zed: { letters: "Z", color: "#0f766e" },
 }
 
 const fallbackColor = "#6b7280"
+
+const logos = import.meta.glob("./icons/*.svg", {
+  eager: true,
+  import: "default",
+  query: "?url",
+}) as Record<string, string>
+
+function logoUrl(id: string) {
+  return logos[`./icons/${id}.svg`]
+}
 
 export function AgentImportSourceIcon({
   id,
@@ -38,19 +48,35 @@ export function AgentImportSourceIcon({
   className?: string
 }) {
   const look = looks[id]
+  const url = look?.logo ? logoUrl(id) : undefined
+  const colour = Boolean(url) && look?.logo === "colour"
   const color = look?.color ?? fallbackColor
   return (
     <span
       aria-hidden="true"
       className={cn(
         "flex size-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold transition-[filter,opacity,background-color] duration-300",
-        active ? "text-white" : "bg-foreground/10 text-foreground/45 grayscale",
+        !active && "bg-foreground/10 text-foreground/45 grayscale",
+        active && (colour ? "bg-white text-foreground" : "text-white"),
         className
       )}
-      style={active ? { backgroundColor: color } : undefined}
+      style={active && !colour ? { backgroundColor: color } : undefined}
     >
-      {look?.provider ? (
-        <ProviderIcon className="size-6" providerId={look.provider} />
+      {url ? (
+        <img
+          alt=""
+          className={cn(
+            "size-6",
+            // Single-colour logos are black: white on the tool's colour,
+            // a soft grey when the tool is not found.
+            !colour &&
+              (active
+                ? "brightness-0 invert"
+                : "opacity-40 brightness-0 dark:invert")
+          )}
+          draggable={false}
+          src={url}
+        />
       ) : (
         (look?.letters ?? label.slice(0, 2))
       )}
