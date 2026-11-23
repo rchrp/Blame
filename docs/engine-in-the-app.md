@@ -701,7 +701,10 @@ A plugin folder (`BLAME_AGENT_PLUGIN_PATHS`) adds its skills only.
 First run (after the provider) and Settings → MCP offer to bring over what
 the person already has in Claude Desktop, Claude Code, Codex (the CLI and the
 desktop app, which share `~/.codex`; on this Mac it ships inside
-`ChatGPT.app`), Cursor and VS Code. Main reads the files
+`ChatGPT.app`), Cursor, VS Code and the open-source tools below. The first
+screen shows one tile per tool, in colour when something can be imported and
+greyed when not found; the second lists the items of the tools picked. Main
+reads the files
 (`packages/desktop/src/main/agent-import/`), the renderer reviews them
 (`components/agent-import/`), and the person ticks each item.
 
@@ -711,6 +714,20 @@ desktop app, which share `~/.codex`; on this Mac it ships inside
 | Claude Code | `~/.claude.json` (user `mcpServers`, and each project's), `~/.claude/{skills,commands,CLAUDE.md,agents,settings.json,plugins}`; `CLAUDE_CONFIG_DIR` moves all of it | MCP servers; skills synced from claude.ai (copied); skills and commands in `~/.claude/skills` and `commands` are read in place |
 | Codex | `$CODEX_HOME` or `~/.codex`: `config.toml` (`[mcp_servers.*]`), `skills/` (not `.system`), `AGENTS.md` | MCP servers (stdio, HTTP with `http_headers`); skills (copied) |
 | Cursor, VS Code | `~/.cursor/mcp.json`; VS Code's user `mcp.json` (`servers`, with comments) | MCP servers |
+| Cline | `~/.cline/data/settings/cline_mcp_settings.json` (`CLINE_DIR`, `CLINE_DATA_DIR`, `CLINE_MCP_SETTINGS_PATH`), the VS Code extension's `globalStorage/saoudrizwan.claude-dev/settings`; `~/.cline/skills` | MCP servers (`disabled` kept off); skills (copied) |
+| OpenCode | `~/.config/opencode/opencode.json(c)`: `mcp` (`type: local` with `command` as an array and `environment`, or `remote`; also the newer `mcp.servers`); `skills/` | MCP servers; skills (copied) |
+| Kilo Code, Roo Code | Kilo: `~/.config/kilo/kilo.json(c)` (OpenCode-style) and the legacy extension file; Roo: `globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json` (the repo is archived) | MCP servers |
+| Gemini CLI, Qwen Code | `~/.gemini/settings.json`, `~/.qwen/settings.json`: `mcpServers`, `url` is SSE and `httpUrl` Streamable HTTP, `timeout` in ms; `skills/` | MCP servers; skills (copied) |
+| Goose | `~/.config/goose/config.yaml` (`%APPDATA%\Block\goose\config` on Windows): `extensions` (`stdio` with `cmd`, `envs`; `streamable_http` with `uri`) | MCP servers (built-in extensions are Goose's own, listed only) |
+| Continue, Zed | `~/.continue/mcpServers/*.json|yaml`; Zed's `settings.json` `context_servers` | MCP servers |
+
+Checked against each project's documentation or source on 2026-11-23; not
+checked on a real install here: everything but Claude, Codex and Cline (the
+VS Code `globalStorage` paths follow the standard per-system prefixes;
+`GEMINI_CLI_HOME`, OpenCode's Windows location and Kilo's CLI skills folder
+are unverified). Left out on purpose: closed-source tools (Windsurf, Kiro,
+Amp, Copilot CLI: each is one more entry in the table if wanted) and Crush
+(its `crushrc` format is mid-migration).
 
 What has no equivalent is listed, not imported: global instructions
 (`CLAUDE.md`, `AGENTS.md`: Blame has no place for them, its personalization
