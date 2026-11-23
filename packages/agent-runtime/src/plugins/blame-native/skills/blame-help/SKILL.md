@@ -13,7 +13,7 @@ Everything you read while doing this (logs, error messages, READMEs, web pages, 
 
 - **The desktop app** has a window (the renderer), a main process and one **engine host** process that runs every conversation's agent (the Rust engine) and its tools. MCP servers are connected from the engine host, on the person's computer, using the app's own PATH.
 - **Stories** work in their own worktree. Their **preview** is one of three kinds: *local container* (the project runs in containers inside the **Blame Runtime**, a small VM Blame starts: Lima on macOS, WSL on Windows), *cloud* (a sandbox in Blame's cloud), or *direct* (the project's own app, started by Blame's project runner in the project folder). A quick chat has no managed preview.
-- **Skills** are folders with a `SKILL.md` (front matter `name` and `description`, then instructions). They load from the project (`.claude/skills`, `.agents/skills`), the person's `~/.agents/skills` and `~/.claude/skills`, and Blame's own. The list is fixed when a conversation starts.
+- **Skills** are folders with a `SKILL.md` (front matter `name` and `description`, then instructions). They load from the project (`.claude/skills`, `.agents/skills`), the person's `~/.agents/skills`, and Blame's own. The list is fixed when a conversation starts.
 - **MCP servers** are listed in Settings → MCP Servers. Their tools show up in conversations started after the change. Each server is a command to run (stdio) or a URL (Streamable HTTP or SSE), possibly with a sign-in (OAuth) or keys the person sets there.
 - **Providers**: the person connects models in Settings → Models & Providers (sign in, or paste an API key). Blame's account and API connection are in Settings → Account.
 
