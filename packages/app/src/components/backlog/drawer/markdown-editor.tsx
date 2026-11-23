@@ -1206,7 +1206,7 @@ export const MarkdownEditor = React.forwardRef<
   const mentionActive =
     mention.active &&
     Boolean(mentionDirectory && platform.workspace) &&
-    (mention.kind !== "skill" || Boolean(platform.workspace?.listSkills))
+    (mention.kind !== "skill" || Boolean(platform.engine))
   // A `/` that names no skill is an ordinary message: no empty list.
   const mentionOpen =
     mentionActive && (mention.kind !== "skill" || mentionResults.length > 0)
@@ -1222,15 +1222,16 @@ export const MarkdownEditor = React.forwardRef<
       try {
         if (search !== mentionSearchRef.current) return
         if (!mentionDirectory || !platform.workspace) return
-        const workspace = platform.workspace
+        const { engine, workspace } = platform
         const results: FileMentionResult[] =
           mention.kind === "skill"
             ? matchingSkills(
-                await workspaceSkills(
-                  mentionDirectory,
-                  () =>
-                    workspace.listSkills?.({ root: mentionDirectory }) ??
-                    Promise.resolve([])
+                await workspaceSkills(mentionDirectory, async () =>
+                  engine
+                    ? engine.call("listSkills", {
+                        workspaceRoot: mentionDirectory,
+                      })
+                    : []
                 ),
                 mention.query
               ).map((skill) => ({

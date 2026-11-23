@@ -4,7 +4,6 @@ import type {
   ProjectRunConfiguration,
 } from "@blame/agent-runtime";
 import { parsePreviewManifest } from "@blame/agent-runtime/preview-manifest";
-import { pickerSkills } from "@blame/agent-runtime/skills";
 import {
   manifestWithProjectPackageManager,
   projectPackageManager,
@@ -379,10 +378,6 @@ export function registerWorkspaceIpcHandlers(
   ipcMain.handle(
     "workspace:search-files",
     (_event, input: WorkspaceSearchInput) => searchWorkspaceFiles(input),
-  );
-  // The skills the `/` picker offers in a workspace's composers.
-  ipcMain.handle("workspace:list-skills", (_event, input: { root: string }) =>
-    pickerSkills({ workspaceRoot: input.root }),
   );
   // The board's polls send `background`: they leave a stopped runtime stopped.
   ipcMain.handle(
