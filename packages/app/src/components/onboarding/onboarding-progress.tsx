@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils"
 const steps = [
   { id: "account", label: "Account" },
   { id: "provider", label: "Provider" },
-  { id: "models", label: "Models" },
   { id: "runtime", label: "Runtime" },
 ] as const
 
