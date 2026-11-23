@@ -41,6 +41,7 @@ mountApp(root, {
     windowControls: window.blame.windowControls,
     projectApp: window.blame.projectApp,
     gitIdentity: window.blame.gitIdentity,
+    speechKey: window.blame.speechKey,
     privacy: window.blame.privacy,
     whatsNew: window.blame.whatsNew,
     projectWindows: window.blame.projectWindows,

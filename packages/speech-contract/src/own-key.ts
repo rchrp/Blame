@@ -4,8 +4,7 @@ import { defaultSpeechTranscriptionModel } from "./limits.js";
 // catch a pasted URL or a stray space, OpenRouter has the last word.
 
 export type SpeechInputCheck<T> =
-  | { ok: true; value: T }
-  | { ok: false; message: string };
+  { ok: true; value: T } | { ok: false; message: string };
 
 const openRouterKeyShape = /^sk-or-[A-Za-z0-9_-]{16,}$/;
 const modelIdShape =

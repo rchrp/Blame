@@ -18,7 +18,7 @@ export type SpeechFailureCode =
 export type SpeechFailure = { code: SpeechFailureCode; message: string };
 
 const messages: Record<SpeechFailureCode, string> = {
-  "forbidden": "OpenRouter refused the request made with your key.",
+  forbidden: "OpenRouter refused the request made with your key.",
   "invalid-audio": "The recording could not be read. Try again.",
   "invalid-key": "OpenRouter did not accept your API key.",
   "keychain-unavailable":
@@ -26,12 +26,12 @@ const messages: Record<SpeechFailureCode, string> = {
   "model-unavailable": "OpenRouter cannot use this model for transcription.",
   "no-credits": "Your OpenRouter account is out of credits.",
   "not-configured": "No OpenRouter key is saved on this computer.",
-  "offline": "Blame could not reach OpenRouter. Check your connection.",
+  offline: "Blame could not reach OpenRouter. Check your connection.",
   "rate-limited":
     "OpenRouter is limiting requests with this key. Try again in a moment.",
-  "timeout": "OpenRouter took too long to answer. Try again.",
+  timeout: "OpenRouter took too long to answer. Try again.",
   "too-large": "This recording is too large to transcribe.",
-  "unavailable": "OpenRouter is not available right now. Try again later.",
+  unavailable: "OpenRouter is not available right now. Try again later.",
 };
 
 export function speechFailure(code: SpeechFailureCode): SpeechFailure {

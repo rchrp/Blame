@@ -14,13 +14,9 @@ export type SpeechOwnKeyStatus = {
 };
 
 export type SpeechOwnKeyChange =
-  | { ok: true; status: SpeechOwnKeyStatus }
-  | ({ ok: false } & SpeechFailure);
+  { ok: true; status: SpeechOwnKeyStatus } | ({ ok: false } & SpeechFailure);
 
-export type SpeechOwnKeyTest =
-  | { ok: true }
-  | ({ ok: false } & SpeechFailure);
+export type SpeechOwnKeyTest = { ok: true } | ({ ok: false } & SpeechFailure);
 
 export type SpeechOwnKeyTranscription =
-  | { ok: true; text: string }
-  | ({ ok: false } & SpeechFailure);
+  { ok: true; text: string } | ({ ok: false } & SpeechFailure);

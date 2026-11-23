@@ -52,10 +52,16 @@ function redactLogValue(
   );
 }
 
+// OpenRouter keys (sk-or-v1-…): the one saved for voice input never reaches a
+// log, however short the value that was logged.
+const openRouterKey = /\bsk-or-[A-Za-z0-9_-]{8,}/g;
+
 function redactText(text: string, tokens: string[]) {
   const withoutGranted = tokens.reduce(
     (current, token) => current.replaceAll(token, "<REDACTED_SECRET:GH_TOKEN>"),
     text,
   );
-  return redactSecuritySecrets(withoutGranted);
+  return redactSecuritySecrets(
+    withoutGranted.replace(openRouterKey, "<REDACTED_SECRET:OPENROUTER_API_KEY>"),
+  );
 }

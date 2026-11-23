@@ -112,6 +112,8 @@ export type Platform = {
   // Desktop: the open project's app beyond Blame's own runner.
   projectApp?: ProjectAppClient
   gitIdentity?: import("./platform-git-identity").GitIdentityClient
+  // Desktop: voice input with the person's own OpenRouter key.
+  speechKey?: import("./platform-speech-key").SpeechOwnKeyClient
   openDirectoryPickerDialog?(
     options?: OpenDirectoryPickerOptions
   ): Promise<PickerPaths>

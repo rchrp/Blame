@@ -14,7 +14,10 @@ test("maps OpenRouter's statuses to what the person can do about them", () => {
   assert.equal(code(402), "no-credits");
   assert.equal(code(403), "forbidden");
   assert.equal(code(404), "model-unavailable");
-  assert.equal(code(400, "foo/bar is not a valid model ID"), "model-unavailable");
+  assert.equal(
+    code(400, "foo/bar is not a valid model ID"),
+    "model-unavailable",
+  );
   assert.equal(code(400, "Invalid audio data"), "invalid-audio");
   assert.equal(code(413), "too-large");
   assert.equal(code(429), "rate-limited");

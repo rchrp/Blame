@@ -15,7 +15,15 @@ test("accepts an OpenRouter key and trims what was pasted around it", () => {
 });
 
 test("refuses what is not an OpenRouter key", () => {
-  for (const input of ["", "   ", "sk-proj-abcdefghijklmnopqrstuvwx", "sk-or-", "sk-or-v1-short", `${key} ${key}`, "https://openrouter.ai/keys"]) {
+  for (const input of [
+    "",
+    "   ",
+    "sk-proj-abcdefghijklmnopqrstuvwx",
+    "sk-or-",
+    "sk-or-v1-short",
+    `${key} ${key}`,
+    "https://openrouter.ai/keys",
+  ]) {
     assert.equal(checkOpenRouterKey(input).ok, false, input);
   }
 });
@@ -32,12 +40,23 @@ test("accepts model ids as OpenRouter writes them", () => {
     "nvidia/nemotron-3.5-asr-streaming-multilingual-0.6b",
     "openai/gpt-4o-mini-transcribe:free",
   ]) {
-    assert.deepEqual(checkSpeechModel(` ${model} `), { ok: true, value: model });
+    assert.deepEqual(checkSpeechModel(` ${model} `), {
+      ok: true,
+      value: model,
+    });
   }
 });
 
 test("refuses what is not a model id", () => {
-  for (const model of ["gpt-transcribe", "openai/", "/gpt", "openai/gpt transcribe", "Openai/gpt", "https://openrouter.ai/openai/gpt-transcribe", "a/b/c d"]) {
+  for (const model of [
+    "gpt-transcribe",
+    "openai/",
+    "/gpt",
+    "openai/gpt transcribe",
+    "Openai/gpt",
+    "https://openrouter.ai/openai/gpt-transcribe",
+    "a/b/c d",
+  ]) {
     assert.equal(checkSpeechModel(model).ok, false, model);
   }
 });

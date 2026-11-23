@@ -5,6 +5,22 @@ import { redactLogData } from "./desktop-log-redaction.ts";
 const granted = "0123456789abcdef0123456789abcdef01234567";
 const shaped = "ghp_LoggedToken0123456789abcdefABCDEFGH";
 
+test("desktop logs never carry an OpenRouter key", () => {
+  const key = `sk-or-v1-${"0123456789abcdef".repeat(4)}`;
+  const error = new Error(`Bearer ${key} was refused`);
+  const [message, object, logged] = redactLogData(
+    [`key ${key} and short sk-or-v1-abcd1234`, { headers: { Authorization: `Bearer ${key}` } }, error],
+    [],
+  ) as [string, { headers: { Authorization: string } }, Error];
+
+  assert.equal(
+    message,
+    "key <REDACTED_SECRET:OPENROUTER_API_KEY> and short <REDACTED_SECRET:OPENROUTER_API_KEY>",
+  );
+  assert.equal(object.headers.Authorization, "Bearer <REDACTED_SECRET:OPENROUTER_API_KEY>");
+  assert.doesNotMatch(`${logged.message}\n${logged.stack}`, /sk-or-/);
+});
+
 test("desktop logs never carry a GitHub token", () => {
   const error = new Error(`request failed with ${shaped}`);
   const circular: Record<string, unknown> = { env: { GH_TOKEN: "plain-value", PATH: "/bin" } };
