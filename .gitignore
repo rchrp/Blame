@@ -45,6 +45,9 @@ yarn-error.log*
 .idea/
 .blame/
 
+# Local Claude Code files
+/.claude/
+
 # Added by code-review-graph
 .code-review-graph/
 .env*
