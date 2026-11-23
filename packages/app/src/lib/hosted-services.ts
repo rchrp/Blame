@@ -1,3 +1,4 @@
+import * as React from "react"
 import { toast } from "sonner"
 
 import type { CloudAuthContextValue } from "@/context/cloud-auth"
@@ -24,15 +25,32 @@ export function requestHostedService(
   if (access === "available") return true
   const { description, message, ownKey } = hostedServiceOffer(auth, service)
   if (ownKey) {
-    // Two ways forward, none pushed: the person's own key, or Blame Cloud.
-    toast.info(message, {
-      description,
+    // Two ways forward, none pushed: the person's own key (the button), or
+    // Blame Cloud (a link). Two buttons would squeeze the text to nothing.
+    const id = toast.info(message, {
+      description: React.createElement(
+        "span",
+        null,
+        description,
+        " ",
+        React.createElement(
+          "button",
+          {
+            className: "font-medium underline underline-offset-2",
+            onClick: () => {
+              toast.dismiss(id)
+              openHostedServicesOffer()
+            },
+            type: "button",
+          },
+          "View Blame Cloud"
+        )
+      ),
       duration: 12_000,
       action: {
         label: "Add your OpenRouter key",
         onClick: openSpeechKeySettings,
       },
-      cancel: { label: "View Blame Cloud", onClick: openHostedServicesOffer },
     })
   } else if (hostedServiceIsPremium(service)) {
     toast.info(message, {

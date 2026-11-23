@@ -41,12 +41,22 @@ export function SpeechOwnKeyGroup({
   openRouterConnected: boolean
 }) {
   const { client, status, store } = useSpeechOwnKey()
-  const [openItem, setOpenItem] = React.useState(() =>
-    requestedSettingsItem() === "speech-own-key" ? "speech-own-key" : ""
+  const [requested] = React.useState(
+    () => requestedSettingsItem() === "speech-own-key"
   )
+  const [openItem, setOpenItem] = React.useState(
+    requested ? "speech-own-key" : ""
+  )
+  const section = React.useRef<HTMLElement>(null)
+  const present = Boolean(client && store)
+  // Settings opened on this accordion: bring it into view.
+  React.useEffect(() => {
+    if (requested && present)
+      section.current?.scrollIntoView({ block: "start" })
+  }, [requested, present])
   if (!client || !store) return null
   return (
-    <section className="border-t pt-5">
+    <section ref={section} className="border-t pt-5">
       <div className="mb-1">
         <h3 className="text-sm font-semibold">Voice input</h3>
         <p className="mt-1 text-sm text-muted-foreground">
