@@ -49,7 +49,7 @@ export function AgentImportButton({ onImported }: { onImported(): void }) {
           <DialogHeader>
             <DialogTitle>Import from other tools</DialogTitle>
             <DialogDescription>
-              MCP servers and skills from Claude, Codex, Cursor and VS Code.
+              MCP servers and skills from the agent tools on this computer.
               Nothing is imported until you tick it.
             </DialogDescription>
           </DialogHeader>
