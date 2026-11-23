@@ -566,3 +566,103 @@ test("a grep that matched nothing is not shown as a failure", () => {
   assert.match(row(result), /^Ran grep -c missing notes\.txt \| sort No match 1\.3/u)
   assert.equal(result.failed, false)
 })
+
+test("blame_configure shows the exact command, URL or source while it waits for approval", () => {
+  const add = view("blame_configure", {
+    action: "add_mcp",
+    name: "notes",
+    command: "npx",
+    args: ["-y", "notes-mcp"],
+    env: ["NOTES_KEY"],
+  }, undefined, true)
+  assert.equal(row(add), "Adding MCP server notes: npx -y notes-mcp needs variables")
+  assert.deepEqual(add.bodies[0], {
+    type: "fields",
+    fields: [
+      { label: "Runs", value: "npx -y notes-mcp", mono: true },
+      { label: "You fill in", value: "NOTES_KEY", mono: true },
+    ],
+  })
+  const remote = view("blame_configure", { action: "add_mcp", name: "docs", url: "https://mcp.example.com/mcp" }, undefined, true)
+  assert.match(remote.target!.text, /docs: https:\/\/mcp\.example\.com\/mcp/)
+  const skill = view(
+    "blame_configure",
+    { action: "install_skill", source: "o/r/skills/pdf" },
+    { installed: "pdf", files: 3, path: "/h/.agents/skills/pdf", scripts: ["run.sh"] },
+  )
+  assert.equal(row(skill), "Installed skill o/r/skills/pdf pdf")
+  assert.deepEqual(skill.bodies.at(-1), { type: "list", label: "Scripts, copied and never run", items: ["run.sh"] })
+  assert.equal(view("blame_configure", { action: "remove_mcp", name: "notes" }, { removed: "notes" }).verb, "Removed MCP server")
+  assert.equal(view("blame_configure", { action: "add_mcp", name: "x" }, { outcome: "failed", error: "No." }).failed, true)
+})
+
+test("blame_repair reads as a repair with before, after and a hand-over button", () => {
+  const fixed = view("blame_repair", { action: "restart_preview" }, {
+    outcome: "fixed",
+    before: { status: "failed" },
+    after: { status: "ready" },
+    next: "The preview is ready.",
+  })
+  assert.equal(row(fixed), "Restarted the preview Fixed")
+  assert.equal(fixed.chips[0]!.tone, "success")
+  const failing = view("blame_repair", { action: "reconnect_mcp", name: "notes" }, {
+    outcome: "still_failing",
+    before: { state: "failed" },
+    after: { state: "failed" },
+    logExcerpt: ["boom"],
+  })
+  assert.equal(row(failing), "Reconnected MCP server notes Still failing")
+  assert.equal(failing.chips[0]!.tone, "danger")
+  const handOver = view("blame_repair", { action: "hand_over", where: "mcp", why: "authorize Linear" }, {
+    handedOver: true,
+    where: "Settings → MCP Servers",
+  })
+  assert.equal(row(handOver), "Asked you to authorize Linear Settings → MCP Servers")
+  assert.deepEqual(handOver.bodies[0], { type: "settings-link", section: "mcp" })
+})
+
+test("blame_inspect reads as a check of one area", () => {
+  const overview = view("blame_inspect", { area: "overview" }, {
+    summary: "1 area to look at: mcp",
+    areas: [{ area: "mcp", status: "problem", summary: "1 server, 1 to fix" }],
+    next: "blame_inspect area=mcp",
+  })
+  assert.equal(row(overview), "Checked Blame's state 1 area to look at: mcp")
+  assert.equal(overview.chips[0]!.tone, "danger")
+  const logs = view("blame_inspect", { area: "logs", search: "boom" }, { source: "app", lines: ["a", "b"] })
+  assert.equal(row(logs), 'Checked Blame\'s logs for "boom" app')
+  assert.deepEqual(logs.bodies[0], { type: "terminal", output: "a\nb" })
+  const refused = view("blame_inspect", { area: "skills", source: "o/r" }, { candidate: null, refused: "No SKILL.md" })
+  assert.deepEqual(refused.bodies[0], { type: "error", message: "No SKILL.md" })
+})
+
+test("a call waiting for approval shows what the person would allow", () => {
+  const waiting = describeToolCall(
+    toolCallSource(
+      {
+        kind: "approval",
+        title: "blame_configure needs your approval",
+        toolName: "blame_configure",
+        detail: JSON.stringify({
+          toolName: "blame_configure",
+          input: { action: "add_mcp", name: "notes", command: "npx", args: ["-y", "notes-mcp"] },
+        }),
+      },
+      true
+    )
+  )
+  assert.equal(row(waiting), "Adding MCP server notes: npx -y notes-mcp needs your approval")
+  assert.equal(waiting.chips[0]!.tone, "warning")
+  assert.deepEqual(waiting.bodies[0], {
+    type: "fields",
+    fields: [{ label: "Runs", value: "npx -y notes-mcp", mono: true }],
+  })
+  // A tool without a view of its own keeps the plain title.
+  const plain = describeToolCall(
+    toolCallSource(
+      { kind: "approval", title: "deploy needs your approval", toolName: "deploy", detail: JSON.stringify({ toolName: "deploy", input: {} }) },
+      true
+    )
+  )
+  assert.equal(plain.verb, "deploy needs your approval")
+})

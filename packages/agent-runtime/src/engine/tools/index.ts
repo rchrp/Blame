@@ -9,6 +9,8 @@ import type { ApiConnection } from "../../types.js";
 import type { DesktopServices } from "../desktop-services.js";
 import type { ClientTool, ToolSet } from "../tool.js";
 import { attachmentTool } from "./attachments.js";
+import { blameClientTools } from "./blame.js";
+import type { BlameToolServices } from "./blame-types.js";
 import {
   componentPreviewTool,
   componentPreviewToolName,
@@ -43,7 +45,11 @@ export type ConversationKind =
 
 /** What the tools need from the app; a missing service leaves its tools out. */
 export type ConversationToolServices = PreviewToolServices &
-  PreviewRepairServices & {
+  PreviewRepairServices &
+  Pick<
+    BlameToolServices,
+    "blameHost" | "home" | "fetch" | "mcpSettingsPath"
+  > & {
     /** Git where the worktree is (story history lists a merged story's files). */
     git?: DesktopServices["git"];
     /** The user's API connection now (story history goes through it). */
@@ -134,6 +140,16 @@ export async function conversationClientTools(
     session.projectId ? storyProposalTool() : undefined,
     ...github,
     ...mcp,
+    // Blame's own state and settings: where a person talks to an agent that
+    // works for them (the orchestrator coordinates and the new-project
+    // assistant has nothing to repair yet).
+    ...(session.kind === "story" || session.kind === "quick-chat"
+      ? blameClientTools(services, {
+          session: session.session,
+          workspaceRoot: session.workspaceRoot,
+          preview,
+        })
+      : []),
     ...(session.kind === "orchestrator" && session.epicId
       ? (services.orchestratorTools?.(session.session, session.epicId) ?? [])
       : []),

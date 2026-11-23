@@ -20,6 +20,7 @@ import { defineTool, type ClientTool } from "../tool.js";
 import { remoteTransport, SettingsOAuthProvider } from "./mcp-oauth.js";
 import {
   enabledMcpServers,
+  mcpServerEntries,
   mcpSettingsPath,
   type McpServer,
 } from "./mcp-settings.js";
@@ -30,6 +31,11 @@ const connectTimeoutMs = 30_000;
 // Names Blame gives its own MCP tools; a user's server cannot take them.
 const reservedServers = new Set(["github", "preview_devtools"]);
 
+/** Whether Blame's own MCP tools hold this server name. */
+export function reservedMcpName(name: string) {
+  return reservedServers.has(serverPrefix(name));
+}
+
 type Connection = { client: Client; key: string };
 
 export type McpTool = {
@@ -39,8 +45,29 @@ export type McpTool = {
   annotations?: { readOnlyHint?: boolean };
 };
 
+/** What the host knows of one configured server (`blame_inspect`, `blame_repair`). */
+export type McpServerStatus = {
+  name: string;
+  /** The command line or the URL, without credentials. */
+  target: string;
+  state:
+    | "connected"
+    | "failed"
+    | "idle"
+    | "disabled"
+    | "needs_setup"
+    | "needs_authorization";
+  tools?: number;
+  /** Why the last connection failed, as the server or the system said. */
+  error?: string;
+  /** Environment variables that still have no value: the person fills them in. */
+  missingEnv?: string[];
+};
+
 export class McpConnections {
   private readonly connections = new Map<string, Promise<Connection>>();
+  private readonly failures = new Map<string, string>();
+  private readonly toolCounts = new Map<string, number>();
   private readonly settingsPath: () => string;
   private readonly log: (
     message: string,
@@ -87,6 +114,70 @@ export class McpConnections {
     });
   }
 
+  /**
+   * Every configured server with its connection as this host has it. It
+   * connects to nothing: a server no conversation used yet is `idle`.
+   */
+  async status(): Promise<McpServerStatus[]> {
+    const entries = await mcpServerEntries(this.settingsPath());
+    return Promise.all(
+      entries.map(
+        async ({ server, disabled, needsLocalSetup, emptyEnv, oauth }) => {
+          const failure = this.failures.get(server.name);
+          const open = this.connections.get(server.name);
+          const connected = open
+            ? await open.then(
+                () => true,
+                () => false,
+              )
+            : false;
+          const state: McpServerStatus["state"] = needsLocalSetup
+            ? "needs_setup"
+            : disabled
+              ? "disabled"
+              : oauth.authorizationRequired
+                ? "needs_authorization"
+                : connected
+                  ? "connected"
+                  : failure
+                    ? "failed"
+                    : "idle";
+          const tools = this.toolCounts.get(server.name);
+          return {
+            name: server.name,
+            target: describeTarget(server),
+            state,
+            ...(connected && tools !== undefined ? { tools } : {}),
+            ...(state === "failed" || oauth.lastError
+              ? { error: failure ?? oauth.lastError }
+              : {}),
+            ...(emptyEnv.length ? { missingEnv: emptyEnv } : {}),
+          };
+        },
+      ),
+    );
+  }
+
+  /**
+   * Drops the server's connection and opens it again, which starts a stdio
+   * server's process anew; the answer is its status and what went wrong.
+   */
+  async reconnect(name: string, signal?: AbortSignal) {
+    const entry = (await mcpServerEntries(this.settingsPath())).find(
+      (candidate) => candidate.server.name === name,
+    );
+    if (!entry) throw new Error(`MCP server "${name}" is not configured.`);
+    if (entry.disabled)
+      throw new Error(`MCP server "${name}" is turned off in Settings → MCP.`);
+    this.forget(name);
+    try {
+      await this.listTools(entry.server, signal);
+    } catch {
+      // The failure is recorded; the status says it.
+    }
+    return (await this.status()).find((status) => status.name === name)!;
+  }
+
   async listTools(server: McpServer, signal?: AbortSignal): Promise<McpTool[]> {
     const { client } = await this.connection(server);
     const tools: McpTool[] = [];
@@ -107,6 +198,7 @@ export class McpConnections {
         });
       cursor = page.nextCursor;
     } while (cursor);
+    this.toolCounts.set(server.name, tools.length);
     return tools;
   }
 
@@ -151,16 +243,27 @@ export class McpConnections {
       });
     const opened = connect(server, this.settingsPath(), key);
     this.connections.set(server.name, opened);
-    opened.catch(() => {
-      if (this.connections.get(server.name) === opened)
-        this.connections.delete(server.name);
-    });
+    opened.then(
+      () => this.failures.delete(server.name),
+      (error: unknown) => {
+        this.failures.set(server.name, errorMessage(error));
+        if (this.connections.get(server.name) === opened)
+          this.connections.delete(server.name);
+      },
+    );
     return opened;
+  }
+
+  /** Closes a server's connection (it was removed or turned off). */
+  disconnect(name: string) {
+    this.forget(name);
   }
 
   private forget(name: string) {
     const known = this.connections.get(name);
     this.connections.delete(name);
+    this.failures.delete(name);
+    this.toolCounts.delete(name);
     void known
       ?.then((connection) => connection.client.close())
       .catch(() => undefined);
@@ -194,6 +297,20 @@ async function connect(
         );
   await client.connect(transport, { timeout: connectTimeoutMs });
   return { client, key };
+}
+
+function describeTarget(server: McpServer) {
+  const transport = server.transport;
+  if (transport.type === "stdio")
+    return [transport.command, ...(transport.args ?? [])]
+      .join(" ")
+      .slice(0, 200);
+  try {
+    const url = new URL(transport.url);
+    return `${url.origin}${url.pathname}`;
+  } catch {
+    return "(invalid URL)";
+  }
 }
 
 function timeoutMs(server: McpServer) {

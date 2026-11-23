@@ -27,6 +27,7 @@ async function nativeSkills() {
 test("discovers and invokes Impeccable from Blame's own skills", async () => {
   const skills = await loadSkills([blameNativeSkillsDirectory()]);
   assert.deepEqual(skills.map((skill) => skill.name).sort(), [
+    "blame-help",
     "component-preview",
     "impeccable",
   ]);
@@ -130,6 +131,7 @@ test("the user's own skill folders are found, and the workspace's win over their
     });
     const skills = await loadSkills(directories);
     assert.deepEqual(skills.map((skill) => skill.name).sort(), [
+      "blame-help",
       "component-preview",
       "impeccable",
       "legacy",

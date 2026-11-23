@@ -12,6 +12,7 @@ import type {
   ApplyPreviewInitializationInput,
 } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
+import type { BlameAppRequest } from "./tools/blame-types.js";
 import type {
   ComponentPreviewHostInput,
   GithubMcpCallInput,
@@ -63,6 +64,10 @@ export type DesktopServices = {
     worktree: string;
     signal?: AbortSignal;
   }): Promise<boolean>;
+  // What only the app knows for the self-repair tools (`blame_inspect`,
+  // `blame_repair`): its version and runtime VM, its own log, a preview's
+  // restart, a stopped runtime's start. JSON in, JSON out.
+  blameApp?(input: BlameAppRequest): Promise<unknown>;
   githubMcpTools?(input: {
     sessionId: string;
   }): Promise<readonly GithubMcpToolDescriptor[]>;
@@ -208,6 +213,7 @@ export const desktopServiceNames = [
   "projectApp",
   "componentPreview",
   "prepareComponentPreview",
+  "blameApp",
   "githubMcpTools",
   "githubMcpCall",
   "git",

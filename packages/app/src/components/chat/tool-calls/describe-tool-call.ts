@@ -3,6 +3,11 @@ import { describeWebResearch } from "./describe-web-research.ts"
 import { describePlan } from "./describe-plan.ts"
 import { describeSubAgents } from "../sub-agents/describe-sub-agents.ts"
 import { runAgentsTool } from "../sub-agents/sub-agents-view.ts"
+import {
+  describeBlameConfigure,
+  describeBlameInspect,
+  describeBlameRepair,
+} from "./describe-blame.ts"
 import { describePreviewEnvironment } from "./describe-preview-environment.ts"
 import {
   describeCommand,
@@ -66,6 +71,9 @@ const describers: Record<string, (source: ToolCallSource) => ToolCallView> = {
   get_preview_container_logs: describePreview,
   repair_preview_initialization: describePreview,
   preview_environment: describePreviewEnvironment,
+  blame_inspect: describeBlameInspect,
+  blame_configure: describeBlameConfigure,
+  blame_repair: describeBlameRepair,
   get_code_minimal_context: describeGraph,
   get_code_review_context: describeGraph,
   get_code_impact_radius: describeGraph,
@@ -103,6 +111,20 @@ export function toolCallSource(
 }
 
 export function describeToolCall(source: ToolCallSource): ToolCallView {
+  // A call waiting for the person's decision reads like the call, so they
+  // see exactly what they allow (a command, a URL, a source), plus a chip.
+  const waiting =
+    source.kind === "approval" && describers[source.toolName ?? ""]
+      ? describeToolCall({ ...source, kind: "tool", running: true })
+      : undefined
+  if (waiting)
+    return {
+      ...waiting,
+      chips: [
+        { label: "needs your approval", tone: "warning" },
+        ...waiting.chips,
+      ],
+    }
   if (source.kind !== "tool") {
     const text = textOf(source.detail)
     const isJson = source.detail.trim().startsWith("{")

@@ -10,6 +10,10 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import {
+  openSettings,
+  type SettingsSectionId,
+} from "@/pages/settings/settings-section"
 
 import { ScreenshotToolCallBody } from "../screenshots/screenshot-tool-call"
 import type {
@@ -59,7 +63,34 @@ export function ToolCallBodyView({
         screenshots={body.screenshots}
       />
     )
+  if (body.type === "settings-link")
+    return <SettingsLinkBody section={body.section} />
   return <ErrorBody message={body.message} recovery={body.recovery} />
+}
+
+const settingsSectionLabels: Record<string, string> = {
+  models: "Models & Providers",
+  mcp: "MCP Servers",
+  desktop: "Desktop",
+  account: "Account",
+  general: "General",
+}
+
+// A step only the person can take (blame_repair hand_over): one click opens
+// the Settings section, so nothing moves under them before they choose.
+function SettingsLinkBody({ section }: { section: string }) {
+  const label = settingsSectionLabels[section]
+  if (!label) return null
+  return (
+    <button
+      type="button"
+      className="inline-flex w-fit items-center gap-1.5 rounded-lg border bg-background px-3 py-1.5 text-xs font-medium hover:bg-muted"
+      onClick={() => openSettings(section as SettingsSectionId)}
+    >
+      Open Settings → {label}
+      <ExternalLinkIcon className="size-3" />
+    </button>
+  )
 }
 
 function Panel({

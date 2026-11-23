@@ -632,6 +632,7 @@ one cache miss).
 | `get_preview_container_logs`, `preview_environment` | `previewContainerLogs`, `previewEnvironment`, a managed preview | yes | yes | no | no | no |
 | `repair_preview_initialization` | the repair task (`runInitializationRepair`), then main's `applyPreviewInitialization` (`tools/preview-repair.ts`) | yes | no | no | no | no |
 | `project_app` | `projectApp`, a story in the project folder | yes | yes | no | no | no |
+| `blame_inspect`, `blame_configure`, `blame_repair` | `blameApp` (main), `McpConnections`, `blameHost` (host); `refreshPreviewDependencies` and the preview services for a preview | yes | yes | no | no | yes (no preview actions) |
 | `open_component_preview` | `componentPreview`, and `prepareComponentPreview` saying the workspace holds a project it renders | yes | no | no | no | yes |
 | `propose_user_stories` | a project | yes | yes | no | no | yes |
 | `propose_project_stack` | nothing | no | no | no | yes | no |
@@ -647,6 +648,72 @@ The orchestrator also has its own tools, `epic_board`, `create_stories`,
 Not client tools: `finish_task` and the harness (Rust harness), the helper
 agents of ultra mode (the engine's `run_agents`, see "Ultra mode"), project
 memory.
+
+### Self-repair tools
+
+Three tools let an agent understand and repair Blame's own state, in a story
+or a quick chat (`tools/blame*.ts`, wired in `index.ts` when the app serves
+`blameApp`). "Repair Blame" means the installed app's runtime state and
+configuration: never Blame's source or binary. They are few and multi-action
+on purpose: every spec is in each conversation's cached prompt (about 900
+tokens for the three, pinned under 3,600 characters by a test) and each extra
+tool makes the model worse at choosing. What Blame is, where its evidence
+lives, the usual failures in order and the install recipes are in the
+`blame-help` skill (`plugins/blame-native/skills/blame-help`), loaded on
+demand, not in the schemas.
+
+| tool | actions | effect, approval |
+| --- | --- | --- |
+| `blame_inspect` `{area, source?, search?, lines?}` | `overview` (one line per area, the next step), `preview` (state, last failure, log excerpt, diagnosis), `mcp` (state and error per server), `skills` (what loads, why a folder does not; with `source`, a GitHub skill read and checked, nothing written), `providers` (credentials without secrets, this conversation's recent request failures), `runtime` (app version, VM state), `logs` (Blame's log or the preview's, searched, bounded) | read-only |
+| `blame_configure` `{action, name, command, args, url, env, enabled, source, scope}` | `add_mcp`, `remove_mcp`, `set_mcp_enabled`, `install_skill` | external, **approval on every call** |
+| `blame_repair` `{action, name, where, why}` | `restart_preview`, `refresh_dependencies`, `start_runtime`, `reconnect_mcp`, `hand_over` | command, no approval |
+
+- **Where each piece runs.** The tools run in the engine host. What only main
+  knows goes through one desktop service, `blameApp` (`state`, `log`,
+  `restart_preview`, `start_runtime`; `engine/blame-app-service.ts`): the
+  app's version, the runtime VM (`getRuntimeStatus`), the tail of
+  `blame-live.log` (`live-log-reader.ts`, through the desktop log's redaction)
+  and the two repairs. The host owns the MCP connections (`McpConnections.status`
+  and `reconnect`, which also remember why a server failed), the skills and the
+  provider list (`blameHost`, also the conversation's `request_failed`
+  records). MCP settings are written by the host in the format Settings → MCP
+  uses (one file, atomic rename, mode 600).
+- **Repairs are an allowlist, each reversible, with before and after.** A
+  restart of this conversation's local preview, a dependency refresh, booting
+  the VM only when it is installed and stopped (main refuses any other state),
+  and reopening one MCP server. The agent never restarts a running runtime or
+  the engine (it would interrupt other conversations), installs or repairs the
+  runtime, nor touches approvals, permissions, credentials or the API
+  connection: those steps go to the person with `hand_over`.
+- **A hand-over names the Settings section** (`Settings → MCP Servers`) in the
+  result, and the timeline shows it as a button (`settings-link` body) that
+  opens the section when the person clicks, so nothing moves under them while
+  they read. The agent is told to wait, not to retry or work around it.
+- **Approval shows what will run.** `blame_configure` is the only tool that
+  asks. The timeline puts the exact command and arguments, URL or skill source
+  in the call's row while it waits (`describe-blame.ts`). A server's secrets
+  never pass through the agent: `env` takes variable names, the server is saved
+  turned off with empty values, and the person fills them in Settings → MCP. A
+  shell as the command (`bash -c …`), a URL with credentials or a query, and
+  Blame's reserved names are refused. A skill is fetched and its `SKILL.md`
+  checked before anything is written (name, description, instructions, safe
+  paths, at most 40 files and 1 MB), read at one commit, copied as plain files
+  (never executable, never run), and never over an existing skill; scripts
+  among its files are reported.
+- **What it reads is data.** Logs, errors, READMEs and skill text reach the
+  model inside JSON answers, masked (`redactSecurityValue`, the desktop log
+  redaction), and the tool descriptions say so. A page that tells the agent to
+  install something can at most make it ask: the person approves each change.
+  The code states this where the tools are defined (`blame-configure.ts`,
+  `blame-repair.ts`).
+- **Static tool list.** Nothing is added mid-conversation. A server or skill
+  added now shows in new conversations (the answer says so); the call that
+  adds a server tests it and reports the connection.
+- **Not covered.** The orchestrator and the new-project assistant do not get
+  them. A quick chat has no managed preview, so `restart_preview`,
+  `refresh_dependencies` and the preview area say so; the project-level
+  initialization repair stays `repair_preview_initialization` in stories (a
+  chat's settings do not carry the project's saved setup).
 
 ### Component previews
 
@@ -672,7 +739,8 @@ The tools ask the main process for what only it has through typed desktop
 services (`engine/desktop-services.ts`, `DesktopServices`): the preview's
 browser, readiness, logs, variables and screen, the screenshot store, the
 component preview server, the session's GitHub MCP connection (its token
-never leaves main), the project runner, Git and page rendering; and for the
+never leaves main), the project runner, Git, page rendering and the app's
+own state for the self-repair tools (`blameApp`); and for the
 story service a story's worktree, the host checks, Git's identity, a turn's
 preparation and a story's cleanup
 (`packages/desktop/src/main/engine/engine-story-services.ts`). The host
@@ -777,7 +845,8 @@ skill are not inside the VM, so they cannot run there).
 decision that arrives first is kept for a minute). The pending call shows in
 the transcript (`pendingApprovals`, a tool call in `awaiting_approval`), and
 the timeline shows Allow and Deny under it (`engine-approvals.tsx`; each
-surface wraps its timeline in `EngineApprovalProvider`).
+surface wraps its timeline in `EngineApprovalProvider`). Among a conversation's
+client tools only `blame_configure` asks (see "Self-repair tools").
 
 ## Ultra mode
 

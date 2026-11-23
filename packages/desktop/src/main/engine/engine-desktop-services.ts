@@ -111,6 +111,7 @@ export function engineDesktopServices(
     githubMcpTools: async (input) =>
       githubMcpService.listTools(optionalText(record(input).sessionId)),
     githubMcpCall: (input, signal) => githubMcpCall(input, signal),
+    blameApp: async (input) => (await import("./blame-app-service.ts")).blameApp(input),
     git: (input) => agentGit(input),
     applyPreviewInitialization: (input) => applyPreviewInitialization(input),
     prepareVmEngine: () => prepareThisVmEngine(),

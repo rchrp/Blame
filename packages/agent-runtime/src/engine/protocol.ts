@@ -51,6 +51,8 @@ export type {
   ModelResolution,
 } from "./model-intent.js";
 export { engineMainOnlyMethods } from "./task-protocol.js";
+// What the app answers the self-repair tools (`blameApp` service).
+export type { BlameAppLog, BlameAppState } from "./tools/blame-types.js";
 import type { DesktopServiceMethods } from "./desktop-services.js";
 import type { PreviewInitialization } from "../preview-selection.js";
 
