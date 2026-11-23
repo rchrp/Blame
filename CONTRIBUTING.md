@@ -157,5 +157,6 @@ The development setup is not yet a turnkey self-hosted distribution. Desktop bac
 | [`packages/preview-contract`](packages/preview-contract), [`packages/preview-runtime`](packages/preview-runtime) | Shared preview contracts and lifecycle coordination                                   |
 | [`packages/sandbox-runner`](packages/sandbox-runner), [`packages/preview-edge`](packages/preview-edge)           | Managed sandbox execution and preview gateway                                         |
 | [`packages/deploy-contract`](packages/deploy-contract)                                                         | Shared deployment contract                                                            |
+| [`packages/speech-contract`](packages/speech-contract)                                                         | Speech to text limits, key and model checks and failures shared by the API and desktop |
 | [`packages/vitrine`](packages/vitrine)                                                                           | Public website and download pages                                                     |
 | [`packages/benchmark-runner`](packages/benchmark-runner), [`tools/terminal_bench`](tools/terminal_bench)         | Agent evaluation tools and benchmark evidence                                         |

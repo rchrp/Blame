@@ -42,6 +42,7 @@
     "@blame/harness-core": "workspace:*",
     "@blame/preview-contract": "workspace:*",
     "@blame/preview-runtime": "workspace:*",
+    "@blame/speech-contract": "workspace:*",
     "@grpc/grpc-js": "1.14.7",
     "@grpc/proto-loader": "0.8.0",
     "@modelcontextprotocol/sdk": "^1.32.2",
