@@ -152,6 +152,16 @@ args = ["mcp"]
     ".codex/skills/.system/imagegen/SKILL.md": "---\nname: imagegen\n---\n",
     ".codex/skills/release-notes/SKILL.md":
       "---\nname: release-notes\ndescription: Write release notes\n---\nBody\n",
+    ".cline/data/settings/cline_mcp_settings.json": JSON.stringify({
+      mcpServers: {
+        Stripe: {
+          disabled: true,
+          type: "streamableHttp",
+          url: "https://mcp.stripe.com",
+        },
+        "cline-fs": { command: "npx", args: ["-y", "fs-mcp"], type: "stdio" },
+      },
+    }),
     ".cursor/mcp.json": JSON.stringify({
       mcpServers: { figma: { url: "http://127.0.0.1:3845/sse" } },
     }),
@@ -226,7 +236,7 @@ test("a scan lists every source, category and item, and hides every secret", asy
     assert.equal(json.includes("u:p@"), false);
     assert.deepEqual(
       scan.sources.map((source) => source.id),
-      ["claude-desktop", "claude-code", "codex", "cursor", "vscode"],
+      ["claude-desktop", "claude-code", "codex", "cursor", "vscode", "cline"],
     );
 
     const byId = (id: string) =>
@@ -297,6 +307,14 @@ test("a scan lists every source, category and item, and hides every secret", asy
       true,
     );
     assert.equal(byId("cursor").items[0]!.summary, "http://127.0.0.1:3845/sse");
+    // Cline: a server it switched off is offered, unticked.
+    assert.deepEqual(
+      byId("cline").items.map((item) => [item.name, item.defaultSelected]),
+      [
+        ["Stripe", false],
+        ["cline-fs", true],
+      ],
+    );
   } finally {
     await rm(home, { recursive: true, force: true });
   }
@@ -462,6 +480,7 @@ test("missing and corrupt files are tolerated and nothing is created by a scan",
         ["codex", true, 0],
         ["cursor", false, 0],
         ["vscode", false, 0],
+        ["cline", false, 0],
       ],
     );
     assert.equal(

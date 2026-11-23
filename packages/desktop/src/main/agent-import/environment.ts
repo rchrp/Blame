@@ -106,3 +106,34 @@ export function displayPath(scan: ScanEnvironment, value: string) {
   if (relative.startsWith("..") || p.isAbsolute(relative)) return value;
   return `~${p.sep}${relative}`;
 }
+
+/**
+ * Cline keeps its servers in `cline_mcp_settings.json`: the CLI under
+ * `~/.cline/data/settings` (`CLINE_DATA_DIR` moves it), the VS Code extension
+ * in its global storage. Roo Code and Kilo Code are forks with their own
+ * extension ids and `mcp_settings.json`.
+ */
+export function vscodeExtensionSettings(
+  scan: ScanEnvironment,
+  extensionId: string,
+  file: string,
+) {
+  const p = pathsFor(scan.platform);
+  const folder = p.join(
+    appDataFolder(scan),
+    "Code",
+    "User",
+    "globalStorage",
+    extensionId,
+    "settings",
+  );
+  return { folder, file: p.join(folder, file) };
+}
+
+export function clineCliSettings(scan: ScanEnvironment) {
+  const p = pathsFor(scan.platform);
+  const data =
+    scan.env.CLINE_DATA_DIR?.trim() || p.join(scan.home, ".cline", "data");
+  const folder = p.join(data, "settings");
+  return { folder, file: p.join(folder, "cline_mcp_settings.json") };
+}

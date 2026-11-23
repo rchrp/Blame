@@ -11,6 +11,7 @@ export type AgentImportSourceId =
   | "codex"
   | "cursor"
   | "vscode"
+  | "cline"
 
 export type AgentImportCategory = "mcp" | "skill" | "command"
 

@@ -3,10 +3,12 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import {
   claudeCodePaths,
   claudeDesktopFolders,
+  clineCliSettings,
   codexFolder,
   cursorMcpFile,
   displayPath,
   pathsFor,
+  vscodeExtensionSettings,
   vscodeMcpFile,
   type ScanEnvironment,
 } from "./environment.ts";
@@ -41,6 +43,7 @@ export async function collectSources(scan: ScanEnvironment) {
       codex(scan),
       cursor(scan),
       vscode(scan),
+      cline(scan),
     ])
   ).map(withoutCredentialUrls);
   return sources;
@@ -236,6 +239,28 @@ async function vscode(scan: ScanEnvironment) {
   source.servers.push(
     ...parseServersTable(record(await readJson(file)).servers).servers,
   );
+  return source;
+}
+
+async function cline(scan: ScanEnvironment) {
+  const locations = [
+    clineCliSettings(scan),
+    vscodeExtensionSettings(
+      scan,
+      "saoudrizwan.claude-dev",
+      "cline_mcp_settings.json",
+    ),
+  ];
+  const source = emptySource("cline", "Cline", scan, locations[0]!.folder);
+  for (const location of locations) {
+    if (!(await exists(location.folder))) continue;
+    if (!source.detected) source.location = displayPath(scan, location.folder);
+    source.detected = true;
+    source.servers.push(
+      ...parseServersTable(record(await readJson(location.file)).mcpServers)
+        .servers,
+    );
+  }
   return source;
 }
 
