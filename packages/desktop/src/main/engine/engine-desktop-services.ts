@@ -20,6 +20,7 @@ import {
   storePreviewDevtoolsScreenshots,
 } from "../agent-screenshots/agent-screenshots-service.ts";
 import { screenshotSessions } from "../agent-screenshots/agent-screenshot-store.ts";
+import { deviceCredentialServices } from "../device-credentials/device-credential-service.ts";
 import { githubMcpService } from "../github-access/github-mcp-service.ts";
 import { hostGitCommand } from "../host-git.ts";
 import {
@@ -118,7 +119,9 @@ export function engineDesktopServices(
     takeVmFile: async (input) => {
       const target = vmEngineTarget();
       if ("missing" in target) return null;
-      return (await takeVmFile(target, String(record(input).path ?? ""))) ?? null;
+      return (
+        (await takeVmFile(target, String(record(input).path ?? ""))) ?? null
+      );
     },
     commandCredentials: async (input) => {
       const { harnessCommandCredentials } =
@@ -129,6 +132,7 @@ export function engineDesktopServices(
         request.location === "vm" ? "vm" : "host",
       );
     },
+    ...deviceCredentialServices,
     ...engineStoryServices(previews),
     refreshPreviewDependencies: (input, signal) =>
       refreshPreviewDependencies(input, signal, harness, previews),

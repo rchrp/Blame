@@ -164,8 +164,10 @@ const api: BlameDesktopApi = {
     disconnectOAuth: (name) => ipcRenderer.invoke("mcp:disconnect-oauth", name),
     detachCloud: (userId) => ipcRenderer.invoke("mcp:detach-cloud", userId),
     list: () => ipcRenderer.invoke("mcp:list"),
-    mergeCloud: (userId, servers, adoptLocal) =>
-      ipcRenderer.invoke("mcp:merge-cloud", userId, servers, adoptLocal),
+    mergeCloud: (userId, servers) =>
+      ipcRenderer.invoke("mcp:merge-cloud", userId, servers),
+    recovery: () => ipcRenderer.invoke("mcp:recovery"),
+    dismissRecovery: () => ipcRenderer.invoke("mcp:dismiss-recovery"),
     save: (server, previousName) =>
       ipcRenderer.invoke("mcp:save", server, previousName),
     remove: (name) => ipcRenderer.invoke("mcp:remove", name),

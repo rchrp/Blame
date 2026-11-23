@@ -20,6 +20,10 @@ import {
 import { readClaudeCodeUsage, readCodexUsage } from "../subscription-usage.js";
 import type {
   ApiConnection,
+  CredentialStorage,
+  DeviceCredential,
+  DeviceCredentialInput,
+  MoveProviderCredentialInput,
   ProviderCredentialSummary,
   ProviderListResponse,
   SaveProviderCredentialInput,
@@ -32,8 +36,22 @@ import {
   type CompatibleModels,
 } from "./provider-list.js";
 
+/** The credentials kept on this computer only: the desktop's keychain store. */
+export type DeviceCredentials = {
+  available(): Promise<boolean>;
+  list(): Promise<ProviderCredentialSummary[]>;
+  resolve(input: {
+    providerId: string;
+    label?: string;
+  }): Promise<DeviceCredential | null>;
+  save(input: DeviceCredentialInput): Promise<ProviderCredentialSummary>;
+  remove(id: string): Promise<void>;
+};
+
 export type ProviderServices = {
   connection(): ApiConnection | undefined;
+  /** Absent where there is no desktop (tests, the benchmark runner). */
+  device?: DeviceCredentials;
   catalog(refresh: boolean): Promise<ModelCatalog>;
   credentials: CredentialResolver;
   /** The engine binary, for the ChatGPT sign-in. */
@@ -46,6 +64,14 @@ export type ProviderServices = {
 // A sign-in left open in the browser this long is given up.
 const signInTimeoutMs = 10 * 60_000;
 
+const noKeychain =
+  "This computer cannot keep credentials in its keychain, so this one has to be saved to your Blame account.";
+
+/** The ids of credentials kept on this computer. */
+export function isDeviceCredentialId(id: string) {
+  return id.startsWith("device-");
+}
+
 export class EngineProviders {
   private readonly services: ProviderServices;
 
@@ -54,19 +80,21 @@ export class EngineProviders {
   }
 
   async list(refresh: boolean): Promise<ProviderListResponse> {
-    const connection = this.connection();
+    const connection = this.services.connection();
     const [catalog, credentials] = await Promise.all([
       this.services.catalog(refresh),
-      listProviderCredentials(connection),
+      this.allCredentials(connection),
     ]);
     const compatibleModels = await this.compatibleModels(credentials);
     const offered = providerList({ catalog, credentials, compatibleModels });
     // Ranked by the API from what the engine offers; without it the list
     // is still whole, newest first.
-    const recommendations = await fetchModelRecommendations(connection, {
-      connected: offered.connected,
-      models: candidates(offered),
-    }).catch(() => emptyRecommendations());
+    const recommendations = connection
+      ? await fetchModelRecommendations(connection, {
+          connected: offered.connected,
+          models: candidates(offered),
+        }).catch(() => emptyRecommendations())
+      : emptyRecommendations();
     return providerList({
       catalog,
       credentials,
@@ -75,13 +103,119 @@ export class EngineProviders {
     });
   }
 
-  saveCredential(input: SaveProviderCredentialInput) {
-    return saveProviderCredential(this.connection(), input);
+  /**
+   * The account's credentials and the ones kept on this computer. The
+   * account being out of reach hides only its own: what is on this computer
+   * still shows and still works.
+   */
+  private async allCredentials(
+    connection: ApiConnection | undefined,
+  ): Promise<ProviderCredentialSummary[]> {
+    const device = await this.services.device?.list().catch(() => []);
+    let account: ProviderCredentialSummary[] = [];
+    if (connection) {
+      try {
+        account = (await listProviderCredentials(connection)).map(
+          (credential) => ({ ...credential, storage: "account" as const }),
+        );
+      } catch (error) {
+        if (!device?.length) throw error;
+      }
+    } else if (!device?.length) {
+      throw new Error("Sign in to Blame to manage providers.");
+    }
+    return [...account, ...(device ?? [])];
+  }
+
+  /** Whether this computer can keep a credential in its keychain. */
+  async credentialStorage() {
+    return { device: (await this.services.device?.available()) ?? false };
+  }
+
+  async saveCredential(input: SaveProviderCredentialInput) {
+    const { storage, ...credential } = input;
+    if (storage === "device") return this.device().save(credential);
+    return saveProviderCredential(this.connection(), credential);
   }
 
   async deleteCredential(id: string) {
-    await deleteProviderCredential(this.connection(), { id });
+    if (isDeviceCredentialId(id)) await this.device().remove(id);
+    else await deleteProviderCredential(this.connection(), { id });
     return null;
+  }
+
+  /**
+   * Moves a credential between the account and this computer: it is saved
+   * in its new place first, then removed from the old one, so a failure
+   * never leaves the person without it.
+   */
+  async moveCredential(
+    input: MoveProviderCredentialInput,
+  ): Promise<ProviderCredentialSummary> {
+    const { providerId, label } = input;
+    // Both places save by provider and name: moving onto one that exists
+    // there would replace its key, which is nobody's intent.
+    const taken = `A "${label}" connection already exists ${
+      input.to === "device" ? "on this device" : "in your Blame account"
+    } for this provider. Rename or remove one of them first.`;
+    if (input.to === "device") {
+      const connection = this.connection();
+      if (await this.services.device?.resolve({ providerId, label }))
+        throw new Error(taken);
+      const found = await resolveProviderCredential(connection, {
+        providerId,
+        label,
+      });
+      if (found.authMethod === "local-cli")
+        throw new Error("This connection already lives on this computer.");
+      const saved = await this.device().save({
+        providerId,
+        label: found.label,
+        apiKey: found.apiKey,
+        baseUrl: found.baseUrl,
+        modelIds: found.modelIds,
+        ...(found.oauthCredentials
+          ? { oauthCredentials: found.oauthCredentials }
+          : {}),
+      });
+      await deleteProviderCredential(connection, { id: input.id });
+      return saved;
+    }
+    const found = await this.device().resolve({ providerId, label });
+    if (!found)
+      throw new Error("This credential is no longer on this computer.");
+    const connection = this.connection();
+    const existing = await listProviderCredentials(connection);
+    if (
+      existing.some(
+        (credential) =>
+          credential.providerId === providerId && credential.label === label,
+      )
+    )
+      throw new Error(taken);
+    const saved = found.oauthCredentials
+      ? await saveOAuthCredential(connection, {
+          providerId,
+          label: found.label,
+          apiKey: found.apiKey,
+          oauthCredentials: found.oauthCredentials,
+          baseUrl: found.baseUrl,
+        })
+      : await saveProviderCredential(connection, {
+          providerId,
+          label: found.label,
+          apiKey: found.apiKey,
+          baseUrl: found.baseUrl,
+          modelIds: found.modelIds,
+        });
+    await this.device().remove(input.id);
+    return { ...saved, storage: "account" };
+  }
+
+  private device() {
+    const device = this.services.device;
+    if (!device) throw new Error(noKeychain);
+    return device;
   }
 
   claudeCodeStatus() {
@@ -110,10 +244,29 @@ export class EngineProviders {
    * keeps the tokens in the API, where the engine host reads them for every
    * conversation.
    */
-  async signInChatGpt(label?: string): Promise<ProviderCredentialSummary> {
-    const connection = this.connection();
+  async signInChatGpt(
+    label?: string,
+    storage?: CredentialStorage,
+  ): Promise<ProviderCredentialSummary> {
+    const connection = storage === "device" ? undefined : this.connection();
+    if (storage === "device" && !(await this.device().available()))
+      throw new Error(noKeychain);
     const tokens = await this.runSignIn();
     const expires = tokens.expires_at_s * 1000;
+    if (!connection) {
+      return this.device().save({
+        providerId: "chatgpt",
+        label: label?.trim() || undefined,
+        apiKey: tokens.access_token,
+        oauthCredentials: {
+          access: tokens.access_token,
+          refresh: tokens.refresh_token,
+          expires,
+          ...(tokens.account_id ? { accountId: tokens.account_id } : {}),
+        },
+        baseUrl: null,
+      });
+    }
     return saveOAuthCredential(connection, {
       providerId: "chatgpt",
       label: label?.trim() || undefined,
@@ -154,7 +307,6 @@ export class EngineProviders {
   private async compatibleModels(
     credentials: ProviderCredentialSummary[],
   ): Promise<CompatibleModels> {
-    const connection = this.connection();
     const servers = credentials.filter(
       (credential) =>
         credential.providerId === openAICompatibleProviderId &&
@@ -164,14 +316,15 @@ export class EngineProviders {
     const lists = await Promise.all(
       servers.map(async (credential) => {
         try {
-          const resolved = await resolveProviderCredential(connection, {
-            providerId: openAICompatibleProviderId,
-            label: credential.label,
-          });
+          const resolved = await this.services.credentials.lookup(
+            openAICompatibleProviderId,
+            credential.label,
+          );
+          if (!resolved) return [credential.label, []] as const;
           const url = `${credential.baseUrl!.replace(/\/+$/, "")}/models`;
           const response = await fetcher(url, {
-            headers: resolved.apiKey
-              ? { Authorization: `Bearer ${resolved.apiKey}` }
+            headers: resolved.credential.apiKey
+              ? { Authorization: `Bearer ${resolved.credential.apiKey}` }
               : {},
             signal: AbortSignal.timeout(3_000),
           });

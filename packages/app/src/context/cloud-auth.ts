@@ -6,6 +6,7 @@ import type {
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import type { ReasoningSelection } from "@blame/agent-runtime"
+import type { CloudMcpServerConfig } from "./platform"
 import type { SignInGreeting } from "./workspace-start"
 import type { Personalization } from "@/lib/personalization"
 
@@ -47,14 +48,7 @@ export type CloudAiPreferences = {
   updatedAt: string | null
 }
 
-export type CloudMcpServer = {
-  command?: string
-  disabled: boolean
-  name: string
-  timeout?: number
-  transport: "stdio" | "streamableHttp" | "sse"
-  url?: string
-}
+export type CloudMcpServer = CloudMcpServerConfig
 
 export type CloudMcpConfiguration = {
   createdAt: string
@@ -186,6 +180,14 @@ export type CloudAuthContextValue = {
   saveAiPreferences(input: SaveAiPreferencesInput): Promise<void>
   savePersonalization(personalization: Personalization): Promise<void>
   saveMcpConfiguration(servers: CloudMcpServer[]): Promise<void>
+  /**
+   * Saves the list `build` makes from what the account holds right now (read
+   * again, never the copy fetched at sign-in), one save at a time, so a change
+   * made on another device meanwhile is not overwritten.
+   */
+  updateMcpConfiguration(
+    build: (current: CloudMcpServer[]) => CloudMcpServer[]
+  ): Promise<CloudMcpServer[]>
   refreshAiPreferences(): Promise<void>
   refreshLicense(): Promise<CloudLicense | undefined>
   startCheckout(cycle: "monthly" | "yearly"): Promise<void>

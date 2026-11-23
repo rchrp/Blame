@@ -7,6 +7,7 @@ import {
 import * as React from "react"
 import type {
   BlameProvider as Provider,
+  CredentialStorage,
   ProviderCredentialSummary,
 } from "@blame/agent-runtime"
 
@@ -33,6 +34,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { SyncBadge, SyncChoice } from "@/components/sync-choice"
+import {
+  defaultStorage,
+  movesTo,
+  noKeychainNotice,
+  storageCopy,
+  storageToSend,
+} from "@/components/model/provider-storage"
+import { useCloudAuth } from "@/context/cloud-auth"
 
 const openAICompatibleProviderID = "openai-compatible"
 const claudeCodeProviderID = "claude-code"
@@ -115,7 +125,10 @@ export function ConnectProviderDialog({
 
   return (
     <Dialog open={!!providerID} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg" onCloseAutoFocus={onCloseAutoFocus}>
+      <DialogContent
+        className="sm:max-w-lg"
+        onCloseAutoFocus={onCloseAutoFocus}
+      >
         <ProviderConnectionsContent
           provider={provider}
           credentials={credentials}
@@ -141,6 +154,7 @@ function ProviderConnectionsContent({
   provider: Provider
   selection: ModelSelection
 }) {
+  const accountMode = useCloudAuth().mode === "account"
   const [editingCredential, setEditingCredential] = React.useState<
     ProviderCredentialSummary | undefined
   >()
@@ -210,6 +224,11 @@ function ProviderConnectionsContent({
                 {connectionDescription(credential)}
               </span>
             </span>
+            {accountMode && credential.authMethod !== "local-cli" ? (
+              <SyncBadge
+                mode={credential.storage === "device" ? "device" : "account"}
+              />
+            ) : null}
           </button>
         ))}
       </div>
@@ -250,6 +269,28 @@ function ConnectProviderContent({
   const oauth = provider.capabilities?.includes("oauth")
   const openAICompatible = provider.id === openAICompatibleProviderID
   const showBaseUrl = openAICompatible
+  const accountMode = useCloudAuth().mode === "account"
+  const providerClient = selection.providers
+  const [keychain, setKeychain] = React.useState<boolean>()
+  const [storageChoice, setStorageChoice] = React.useState<CredentialStorage>()
+  React.useEffect(() => {
+    if (!accountMode || !providerClient) return
+    void providerClient
+      .credentialStorage()
+      .then((status) => setKeychain(status.device))
+      .catch(() => setKeychain(false))
+  }, [accountMode, providerClient])
+  const storage: CredentialStorage =
+    storageChoice ??
+    defaultStorage({
+      accountMode,
+      keychain,
+      existing: credential ? (credential.storage ?? "account") : undefined,
+    })
+  const moved =
+    Boolean(credential) && movesTo(credential?.storage, storage, accountMode)
+  const sendStorage = storageToSend(storage, accountMode)
+  const copy = storageCopy(oauth ? "sign-in" : "key")
 
   return (
     <>
@@ -276,6 +317,29 @@ function ConnectProviderContent({
         className="grid gap-4"
         onSubmit={(event) => {
           event.preventDefault()
+          if (credential && moved && !apiKey.trim()) {
+            // Only the place changes: the key itself moves, nobody retypes it.
+            setError(undefined)
+            setSaving(true)
+            void selection.providers
+              ?.moveCredential({
+                id: credential.id,
+                providerId: credential.providerId,
+                label: credential.label,
+                to: storage,
+              })
+              .then(() => selection.refreshProviders())
+              .then(onDone)
+              .catch((error) =>
+                setError(
+                  error instanceof Error
+                    ? error.message
+                    : "Unable to move this connection"
+                )
+              )
+              .finally(() => setSaving(false))
+            return
+          }
           if (oauth) {
             return
           }
@@ -291,6 +355,21 @@ function ConnectProviderContent({
             setError("At least one model ID is required")
             return
           }
+          if (
+            accountMode &&
+            selection.credentials.some(
+              (item) =>
+                item.providerId === provider.id &&
+                item.label === label.trim() &&
+                item.id !== credential?.id &&
+                (item.storage ?? "account") !== storage
+            )
+          ) {
+            setError(
+              `A “${label.trim()}” connection already exists for ${provider.name} in the other place. Choose another name.`
+            )
+            return
+          }
           setError(undefined)
           setSaving(true)
           void selection.providers
@@ -300,7 +379,14 @@ function ConnectProviderContent({
               apiKey,
               baseUrl: showBaseUrl ? baseUrl.trim() || null : null,
               modelIds: openAICompatible ? modelIds : undefined,
+              storage: sendStorage,
             })
+            // A new key in the other place: the old copy goes with it.
+            .then(() =>
+              credential && moved
+                ? selection.providers?.deleteCredential(credential.id)
+                : undefined
+            )
             .then(() => selection.refreshProviders())
             .then(onDone)
             .catch((error) =>
@@ -334,7 +420,12 @@ function ConnectProviderContent({
               setError(undefined)
               setOauthLoading(true)
               void selection.providers
-                ?.signInChatGpt(label.trim())
+                ?.signInChatGpt(label.trim(), sendStorage)
+                .then(() =>
+                  credential && moved
+                    ? selection.providers?.deleteCredential(credential.id)
+                    : undefined
+                )
                 .then(() => selection.refreshProviders())
                 .then(onDone)
                 .catch((error) =>
@@ -359,6 +450,8 @@ function ConnectProviderContent({
             </label>
             <Input
               id="provider-api-key"
+              type="password"
+              autoComplete="off"
               value={apiKey}
               placeholder="Enter API key"
               onChange={(event) => setApiKey(event.currentTarget.value)}
@@ -432,6 +525,26 @@ function ConnectProviderContent({
             </div>
           </div>
         ) : null}
+        {accountMode && keychain !== undefined ? (
+          <SyncChoice
+            label={
+              oauth ? "Where to keep this sign-in" : "Where to keep this key"
+            }
+            accountLabel={copy.accountLabel}
+            accountHint={copy.accountHint}
+            deviceLabel={copy.deviceLabel}
+            deviceHint={keychain ? copy.deviceHint : noKeychainNotice}
+            deviceDisabled={!keychain}
+            value={keychain ? storage : "account"}
+            onChange={setStorageChoice}
+          />
+        ) : null}
+        {moved ? (
+          <p className="text-xs text-muted-foreground">
+            Saving moves this connection to{" "}
+            {storage === "device" ? "this device" : "your Blame account"}.
+          </p>
+        ) : null}
         <div className="flex items-center justify-between gap-2">
           {credential ? (
             <Button
@@ -468,16 +581,22 @@ function ConnectProviderContent({
           <Button
             type="submit"
             disabled={
-              oauth ||
               saving ||
               !selection.providers ||
               !label.trim() ||
-              !apiKey.trim() ||
-              (openAICompatible && !modelIds.length)
+              (moved && !apiKey.trim()
+                ? false
+                : oauth ||
+                  !apiKey.trim() ||
+                  (openAICompatible && !modelIds.length))
             }
           >
             {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
-            {credential ? "Save" : "Continue"}
+            {credential
+              ? moved && !apiKey.trim()
+                ? "Move"
+                : "Save"
+              : "Continue"}
           </Button>
         </div>
       </form>
@@ -518,6 +637,11 @@ function connectionDescription(credential: ProviderCredentialSummary) {
     return credential.modelIds.join(", ")
   }
   if (credential.baseUrl) return credential.baseUrl
-  if (credential.authMethod === "local-cli") return "Claude Code on this computer"
-  return credential.authMethod === "oauth" ? "OAuth account" : "API key"
+  if (credential.authMethod === "local-cli")
+    return "Claude Code on this computer"
+  if (credential.authMethod === "oauth") return "OAuth account"
+  // Only the end of a key kept on this device is shown, to recognise it.
+  return credential.lastFour
+    ? `API key ending in ${credential.lastFour}`
+    : "API key"
 }

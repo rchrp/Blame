@@ -21,6 +21,8 @@ import type {
   ProviderListResponse,
   ReasoningSelection,
   SaveProviderCredentialInput,
+  CredentialStorage,
+  MoveProviderCredentialInput,
   SubscriptionUsage,
 } from "../types.js";
 import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
@@ -250,9 +252,16 @@ export type EngineHostMethods = {
     result: ProviderCredentialSummary;
   };
   deleteCredential: { input: { id: string }; result: null };
-  /** The ChatGPT sign-in in the browser, kept in the API. */
+  /** Moves a credential to Blame's account or to this computer's keychain. */
+  moveCredential: {
+    input: MoveProviderCredentialInput;
+    result: ProviderCredentialSummary;
+  };
+  /** Whether this computer can keep credentials in its keychain. */
+  credentialStorage: { input: undefined; result: { device: boolean } };
+  /** The ChatGPT sign-in in the browser, kept in the API or on this computer. */
   signInChatGpt: {
-    input: { label?: string };
+    input: { label?: string; storage?: CredentialStorage };
     result: ProviderCredentialSummary;
   };
   claudeCodeStatus: { input: undefined; result: ClaudeCodeStatus };
@@ -334,6 +343,8 @@ export const engineHostMethods = [
   "providers",
   "saveCredential",
   "deleteCredential",
+  "moveCredential",
+  "credentialStorage",
   "signInChatGpt",
   "claudeCodeStatus",
   "connectClaudeCode",

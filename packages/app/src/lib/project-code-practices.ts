@@ -11,4 +11,6 @@ export function projectCodePractices(
   return createCloudApi(auth.apiConnection)
     .projectInitialization(projects.activeProject.id)
     .then((snapshot) => effectiveProjectCodePractices(snapshot.practices))
+    // The API being out of reach must not stop a message: the defaults apply.
+    .catch(() => effectiveProjectCodePractices([]))
 }

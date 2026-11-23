@@ -1,24 +1,34 @@
+import {
+  readMcpSettings,
+  updateMcpSettings,
+} from "@blame/agent-runtime/mcp-settings-store";
 import assert from "node:assert/strict";
+import { mkdtemp, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 
 import {
   cloudDisabled,
   cloudOwner,
   completedCloudMetadata,
+  detachCloudServers,
+  localPartsOf,
   localSetupRequired,
   mergeCloudServers,
+  missingLocalParts,
+  metadataWithSyncChoice,
+  syncMode,
+  syncsSecrets,
   type McpSettings,
 } from "./mcp-cloud-sync.ts";
 
 const userId = "01981221-2b74-7bc0-a1f5-9f9c58f0e050";
 
 test("disables a cloud server until its local setup is completed", () => {
-  const merged = mergeCloudServers(
-    emptySettings(),
-    userId,
-    [cloudServer(false)],
-    false,
-  );
+  const merged = mergeCloudServers(emptySettings(), userId, [
+    cloudServer(false),
+  ]);
   const server = merged.mcpServers.Dokploy;
 
   assert.ok(server);
@@ -30,18 +40,12 @@ test("disables a cloud server until its local setup is completed", () => {
 });
 
 test("keeps a cloud placeholder incomplete across repeated merges", () => {
-  const firstMerge = mergeCloudServers(
-    emptySettings(),
-    userId,
-    [cloudServer(false)],
-    false,
-  );
-  const secondMerge = mergeCloudServers(
-    firstMerge,
-    userId,
-    [cloudServer(false)],
-    false,
-  );
+  const firstMerge = mergeCloudServers(emptySettings(), userId, [
+    cloudServer(false),
+  ]);
+  const secondMerge = mergeCloudServers(firstMerge, userId, [
+    cloudServer(false),
+  ]);
   const server = secondMerge.mcpServers.Dokploy;
 
   assert.ok(server);
@@ -51,12 +55,9 @@ test("keeps a cloud placeholder incomplete across repeated merges", () => {
 });
 
 test("preserves a disabled cloud state while local setup is incomplete", () => {
-  const merged = mergeCloudServers(
-    emptySettings(),
-    userId,
-    [cloudServer(true)],
-    false,
-  );
+  const merged = mergeCloudServers(emptySettings(), userId, [
+    cloudServer(true),
+  ]);
   const server = merged.mcpServers.Dokploy;
 
   assert.ok(server);
@@ -78,12 +79,7 @@ test("adopts a matching local server without losing local-only fields", () => {
     },
   };
 
-  const merged = mergeCloudServers(
-    settings,
-    userId,
-    [cloudServer(false)],
-    true,
-  );
+  const merged = mergeCloudServers(settings, userId, [cloudServer(false)]);
   const server = merged.mcpServers.Dokploy;
 
   assert.ok(server);
@@ -94,17 +90,16 @@ test("adopts a matching local server without losing local-only fields", () => {
 });
 
 test("clears setup metadata while preserving cloud ownership", () => {
-  const merged = mergeCloudServers(
-    emptySettings(),
-    userId,
-    [cloudServer(false)],
-    false,
-  );
+  const merged = mergeCloudServers(emptySettings(), userId, [
+    cloudServer(false),
+  ]);
   const server = merged.mcpServers.Dokploy;
 
   assert.ok(server);
   const metadata = completedCloudMetadata(server);
-  assert.deepEqual(metadata, { blameCloudUserId: userId });
+  assert.equal(metadata?.blameCloudUserId, userId);
+  assert.equal(metadata?.blameCloudLocalSetupRequired, undefined);
+  assert.equal(metadata?.blameCloudDisabled, undefined);
 });
 
 function emptySettings(): McpSettings {
@@ -120,3 +115,564 @@ function cloudServer(disabled: boolean) {
     transport: "stdio" as const,
   };
 }
+
+// Reproduction of the "Setup required" that came back after every update.
+
+test("a server added by hand after the first sync keeps its arguments and secrets", () => {
+  // `mcp:save` writes no owner metadata for a new server, and the panel merges
+  // again as soon as the cloud copy it just saved comes back.
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        args: ["-y", "@dokploy/mcp"],
+        command: "npx",
+        disabled: false,
+        env: { DOKPLOY_TOKEN: "fake-token" },
+        type: "stdio",
+      },
+    },
+  };
+  const merged = mergeCloudServers(settings, userId, [cloudServer(false)]);
+  const server = merged.mcpServers.Dokploy;
+  assert.ok(server);
+  assert.deepEqual(server.args, ["-y", "@dokploy/mcp"]);
+  assert.deepEqual(server.env, { DOKPLOY_TOKEN: "fake-token" });
+  assert.equal(server.disabled, false);
+  assert.equal(localSetupRequired(server), false);
+});
+
+test("a server written without a transport type is still recognized as a command", () => {
+  // Files written by hand or imported from other tools say `command` and no
+  // `type`; Settings reads them as local commands.
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        args: ["-y", "@dokploy/mcp"],
+        command: "npx",
+        env: { DOKPLOY_TOKEN: "fake-token" },
+        metadata: { blameCloudUserId: userId },
+      },
+    },
+  };
+  const merged = mergeCloudServers(settings, userId, [cloudServer(false)]);
+  const server = merged.mcpServers.Dokploy;
+  assert.ok(server);
+  assert.deepEqual(server.args, ["-y", "@dokploy/mcp"]);
+  assert.equal(localSetupRequired(server), false);
+});
+
+test("a server another account synced is not rebuilt by the next account", () => {
+  const otherUser = "01981221-2b74-7bc0-a1f5-000000000001";
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        args: ["-y", "@dokploy/mcp"],
+        command: "npx",
+        disabled: false,
+        env: { DOKPLOY_TOKEN: "fake-token" },
+        metadata: { blameCloudUserId: otherUser },
+        type: "stdio",
+      },
+    },
+  };
+  const merged = mergeCloudServers(settings, userId, [cloudServer(false)]);
+  const server = merged.mcpServers.Dokploy;
+  assert.ok(server);
+  assert.deepEqual(server.env, { DOKPLOY_TOKEN: "fake-token" });
+  assert.equal(localSetupRequired(server), false);
+});
+
+// What the rules promise once a server is set up on this computer.
+
+const configured = {
+  args: ["-y", "@dokploy/mcp"],
+  command: "npx",
+  cwd: "/work",
+  disabled: false,
+  env: { DOKPLOY_TOKEN: "fake-token" },
+  oauth: { tokens: { access_token: "fake-access" } },
+  timeout: 45,
+  type: "stdio",
+};
+
+test("every merge keeps a configured server whole, whatever the account holds", () => {
+  const cloudShapes = [
+    [],
+    [cloudServer(true)],
+    [{ ...cloudServer(false), command: "uvx" }],
+    [
+      {
+        ...cloudServer(false),
+        transport: "streamableHttp" as const,
+        url: "https://x.example/mcp",
+      },
+    ],
+  ];
+  for (const owner of [
+    undefined,
+    userId,
+    "01981221-2b74-7bc0-a1f5-000000000001",
+  ]) {
+    for (const cloud of cloudShapes) {
+      const settings: McpSettings = {
+        mcpServers: {
+          Dokploy: owner
+            ? { ...configured, metadata: { blameCloudUserId: owner } }
+            : { ...configured },
+        },
+      };
+      const merged = mergeCloudServers(settings, userId, cloud).mcpServers
+        .Dokploy;
+      assert.ok(
+        merged,
+        `kept (owner ${owner}, cloud ${JSON.stringify(cloud)})`,
+      );
+      for (const key of ["args", "cwd", "env", "oauth"] as const) {
+        assert.deepEqual(merged[key], configured[key]);
+      }
+      assert.equal(localSetupRequired(merged), false);
+    }
+  }
+});
+
+test("migrates an old file: owner, setup and disabled flags survive untouched", () => {
+  // The shape older versions wrote: one synced and completed, one still a
+  // placeholder from the account, one added by hand.
+  const old: McpSettings = {
+    mcpServers: {
+      Done: {
+        ...configured,
+        metadata: { blameCloudUserId: userId },
+      },
+      Waiting: {
+        command: "npx",
+        disabled: true,
+        timeout: 30,
+        type: "stdio",
+        metadata: {
+          blameCloudUserId: userId,
+          blameCloudLocalSetupRequired: true,
+          blameCloudDisabled: false,
+        },
+      },
+      ByHand: { command: "node", args: ["server.js"], type: "stdio" },
+    },
+  };
+  const merged = mergeCloudServers(old, userId, [
+    { ...cloudServer(false), name: "Done" },
+    { ...cloudServer(false), name: "Waiting", timeout: 30 },
+  ]);
+  assert.deepEqual(merged.mcpServers.Done.env, configured.env);
+  assert.equal(cloudOwner(merged.mcpServers.Done), userId);
+  assert.equal(localSetupRequired(merged.mcpServers.Waiting), true);
+  assert.equal(cloudDisabled(merged.mcpServers.Waiting), false);
+  assert.deepEqual(merged.mcpServers.ByHand, old.mcpServers.ByHand);
+  assert.equal(syncMode(merged.mcpServers.Done), "account");
+});
+
+test("signing out removes only what was never set up here", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Done: { ...configured, metadata: { blameCloudUserId: userId } },
+      Waiting: {
+        command: "npx",
+        disabled: true,
+        type: "stdio",
+        metadata: {
+          blameCloudUserId: userId,
+          blameCloudLocalSetupRequired: true,
+        },
+      },
+      Other: { command: "node", type: "stdio" },
+    },
+  };
+  const detached = detachCloudServers(settings, userId);
+  assert.deepEqual(Object.keys(detached.mcpServers), ["Done", "Other"]);
+  assert.deepEqual(detached.mcpServers.Done.env, configured.env);
+});
+
+test("a server kept on this device is never touched by the account", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        ...configured,
+        metadata: metadataWithSyncChoice(undefined, {
+          mode: "device",
+          secrets: true,
+        }),
+      },
+    },
+  };
+  const merged = mergeCloudServers(settings, userId, [
+    { ...cloudServer(true), command: "uvx" },
+  ]);
+  assert.deepEqual(merged.mcpServers.Dokploy, settings.mcpServers.Dokploy);
+  assert.equal(syncMode(merged.mcpServers.Dokploy), "device");
+});
+
+test("a change made on another device arrives, the local setup stays", () => {
+  const first = mergeCloudServers(
+    { mcpServers: { Dokploy: { ...configured } } },
+    userId,
+    [cloudServer(false)],
+  );
+  const second = mergeCloudServers(first, userId, [
+    { ...cloudServer(false), command: "pnpx", timeout: 90 },
+  ]);
+  const server = second.mcpServers.Dokploy;
+  assert.equal(server.command, "pnpx");
+  assert.equal(server.timeout, 90);
+  assert.deepEqual(server.env, configured.env);
+  assert.deepEqual(server.args, configured.args);
+});
+
+test("a change made here, not uploaded yet, wins over the account", () => {
+  const first = mergeCloudServers(
+    { mcpServers: { Dokploy: { ...configured } } },
+    userId,
+    [cloudServer(false)],
+  );
+  const edited: McpSettings = {
+    mcpServers: { Dokploy: { ...first.mcpServers.Dokploy, command: "bunx" } },
+  };
+  const merged = mergeCloudServers(edited, userId, [cloudServer(false)]);
+  assert.equal(merged.mcpServers.Dokploy.command, "bunx");
+});
+
+test("a server removed from the account stays here when it works here", () => {
+  const first = mergeCloudServers(
+    {
+      mcpServers: {
+        Dokploy: { ...configured },
+        Waiting: { command: "npx", type: "stdio" },
+      },
+    },
+    userId,
+    [cloudServer(false), { ...cloudServer(false), name: "Waiting" }],
+  );
+  const placeholderOnly = mergeCloudServers(
+    {
+      mcpServers: {
+        ...first.mcpServers,
+        Fresh: {
+          command: "npx",
+          disabled: true,
+          type: "stdio",
+          metadata: {
+            blameCloudUserId: userId,
+            blameCloudLocalSetupRequired: true,
+          },
+        },
+      },
+    },
+    userId,
+    [],
+  );
+  assert.deepEqual(placeholderOnly.mcpServers.Dokploy.env, configured.env);
+  assert.equal(syncMode(placeholderOnly.mcpServers.Dokploy), "device");
+  assert.equal(placeholderOnly.mcpServers.Fresh, undefined);
+});
+
+test("names are matched ignoring case, so a rename of case never duplicates", () => {
+  const merged = mergeCloudServers(
+    { mcpServers: { dokploy: { ...configured } } },
+    userId,
+    [cloudServer(false)],
+  );
+  assert.deepEqual(Object.keys(merged.mcpServers), ["dokploy"]);
+  assert.deepEqual(merged.mcpServers.dokploy.env, configured.env);
+});
+
+test("an old file on disk goes through the store and the merge without losing a field", async () => {
+  const path = join(
+    await mkdtemp(join(tmpdir(), "mcp-merge-")),
+    "mcp-settings.json",
+  );
+  const oldFile = {
+    mcpServers: {
+      Dokploy: {
+        args: ["-y", "@dokploy/mcp"],
+        command: "npx",
+        disabled: false,
+        env: { DOKPLOY_TOKEN: "fake-token" },
+        metadata: { blameCloudUserId: userId },
+        oauth: { tokens: { access_token: "fake-access" } },
+        type: "stdio",
+      },
+      Linear: {
+        disabled: true,
+        headers: { Authorization: "Bearer fake" },
+        metadata: {
+          blameCloudUserId: userId,
+          blameCloudLocalSetupRequired: true,
+          blameCloudDisabled: false,
+        },
+        type: "streamableHttp",
+        url: "https://mcp.linear.example/mcp",
+      },
+    },
+  };
+  await writeFile(path, JSON.stringify(oldFile, null, 2));
+  const cloud = [
+    cloudServer(false),
+    {
+      disabled: false,
+      name: "Linear",
+      transport: "streamableHttp" as const,
+      url: "https://mcp.linear.example/mcp",
+    },
+  ];
+  for (let run = 0; run < 3; run++) {
+    await updateMcpSettings(path, (settings) =>
+      mergeCloudServers(settings as McpSettings, userId, cloud),
+    );
+  }
+  const after = (await readMcpSettings(path)) as McpSettings;
+  assert.deepEqual(
+    after.mcpServers.Dokploy.env,
+    oldFile.mcpServers.Dokploy.env,
+  );
+  assert.deepEqual(
+    after.mcpServers.Dokploy.oauth,
+    oldFile.mcpServers.Dokploy.oauth,
+  );
+  assert.equal(after.mcpServers.Dokploy.disabled, false);
+  assert.equal(localSetupRequired(after.mcpServers.Linear), true);
+  assert.equal(cloudDisabled(after.mcpServers.Linear), false);
+});
+
+// Secrets travel only when the person chose so, and only into empty places.
+
+test("the names of what stays on the device are sent, never the values", () => {
+  const parts = localPartsOf({ ...configured, cwd: undefined });
+  assert.deepEqual(parts, { args: true, env: ["DOKPLOY_TOKEN"] });
+  assert.doesNotMatch(JSON.stringify(parts), /fake-token/);
+});
+
+test("choosing this device only turns secret sync off with it", () => {
+  const metadata = metadataWithSyncChoice(
+    {
+      blameSyncSecrets: true,
+      blameSecretsBase: "abc",
+      blameCloudUserId: userId,
+    },
+    { mode: "device", secrets: true },
+  );
+  assert.equal(metadata?.blameSync, "device");
+  assert.equal(metadata?.blameSyncSecrets, undefined);
+  assert.equal(metadata?.blameSecretsBase, undefined);
+  assert.equal(metadata?.blameCloudUserId, userId);
+});
+
+test("an account server that needs nothing outside the account is usable at once", () => {
+  const merged = mergeCloudServers(emptySettings(), userId, [
+    { ...cloudServer(false), localParts: {} },
+  ]).mcpServers.Dokploy;
+  assert.equal(localSetupRequired(merged), false);
+  assert.equal(merged.disabled, false);
+});
+
+test("an account server that needs values says which, by name", () => {
+  const merged = mergeCloudServers(emptySettings(), userId, [
+    {
+      ...cloudServer(false),
+      localParts: { args: true, env: ["DOKPLOY_TOKEN"] },
+    },
+  ]).mcpServers.Dokploy;
+  assert.equal(localSetupRequired(merged), true);
+  assert.equal(merged.disabled, true);
+  assert.deepEqual(missingLocalParts(merged), {
+    args: true,
+    env: ["DOKPLOY_TOKEN"],
+  });
+});
+
+test("a server whose secrets were synced arrives complete and on", () => {
+  const merged = mergeCloudServers(emptySettings(), userId, [
+    {
+      ...cloudServer(false),
+      secrets: { args: ["-y", "@dokploy/mcp"], env: { DOKPLOY_TOKEN: "fake" } },
+    },
+  ]).mcpServers.Dokploy;
+  assert.equal(localSetupRequired(merged), false);
+  assert.equal(merged.disabled, false);
+  assert.deepEqual(merged.args, ["-y", "@dokploy/mcp"]);
+  assert.deepEqual(merged.env, { DOKPLOY_TOKEN: "fake" });
+  assert.equal(syncsSecrets(merged), true);
+});
+
+test("synced secrets fill an empty place and never replace a local value", () => {
+  const local: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        command: "npx",
+        disabled: false,
+        env: { DOKPLOY_TOKEN: "local-token" },
+        timeout: 45,
+        type: "stdio",
+      },
+    },
+  };
+  const merged = mergeCloudServers(local, userId, [
+    {
+      ...cloudServer(false),
+      secrets: { args: ["-y", "pkg"], env: { DOKPLOY_TOKEN: "cloud-token" } },
+    },
+  ]).mcpServers.Dokploy;
+  assert.deepEqual(merged.args, ["-y", "pkg"]);
+  assert.deepEqual(merged.env, { DOKPLOY_TOKEN: "local-token" });
+});
+
+test("a secret changed on another device arrives when it was not changed here", () => {
+  const first = mergeCloudServers(emptySettings(), userId, [
+    { ...cloudServer(false), secrets: { env: { DOKPLOY_TOKEN: "one" } } },
+  ]);
+  const second = mergeCloudServers(first, userId, [
+    { ...cloudServer(false), secrets: { env: { DOKPLOY_TOKEN: "two" } } },
+  ]).mcpServers.Dokploy;
+  assert.deepEqual(second.env, { DOKPLOY_TOKEN: "two" });
+  // Edited here since: the account's older value does not come back.
+  const edited: McpSettings = {
+    mcpServers: { Dokploy: { ...second, env: { DOKPLOY_TOKEN: "mine" } } },
+  };
+  const third = mergeCloudServers(edited, userId, [
+    { ...cloudServer(false), secrets: { env: { DOKPLOY_TOKEN: "two" } } },
+  ]).mcpServers.Dokploy;
+  assert.deepEqual(third.env, { DOKPLOY_TOKEN: "mine" });
+});
+
+// Findings of the review: opt-outs hold, nothing crosses accounts.
+
+const otherUser = "01981221-2b74-7bc0-a1f5-000000000001";
+
+test("turning secret sync off on one device turns it off on the next", () => {
+  const synced = mergeCloudServers(emptySettings(), userId, [
+    { ...cloudServer(false), secrets: { env: { DOKPLOY_TOKEN: "one" } } },
+  ]);
+  assert.equal(syncsSecrets(synced.mcpServers.Dokploy), true);
+  // The account forgot them (another device unticked the box).
+  const after = mergeCloudServers(synced, userId, [cloudServer(false)]);
+  assert.equal(syncsSecrets(after.mcpServers.Dokploy), false);
+  assert.deepEqual(after.mcpServers.Dokploy.env, { DOKPLOY_TOKEN: "one" });
+});
+
+test("a part removed on another device is removed here when not changed here", () => {
+  const first = mergeCloudServers(emptySettings(), userId, [
+    {
+      ...cloudServer(false),
+      secrets: { args: ["-y"], env: { DOKPLOY_TOKEN: "one" } },
+    },
+  ]);
+  const second = mergeCloudServers(first, userId, [
+    { ...cloudServer(false), secrets: { args: ["-y"] } },
+  ]).mcpServers.Dokploy;
+  assert.equal(second.env, undefined);
+  assert.deepEqual(second.args, ["-y"]);
+});
+
+test("a device with its own different secrets does not start sharing them", () => {
+  const local: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        command: "npx",
+        disabled: false,
+        env: { DOKPLOY_TOKEN: "mine" },
+        timeout: 45,
+        type: "stdio",
+      },
+    },
+  };
+  const merged = mergeCloudServers(local, userId, [
+    {
+      ...cloudServer(false),
+      secrets: { args: ["-y"], env: { DOKPLOY_TOKEN: "theirs" } },
+    },
+  ]).mcpServers.Dokploy;
+  assert.deepEqual(merged.env, { DOKPLOY_TOKEN: "mine" });
+  assert.equal(syncsSecrets(merged), false);
+});
+
+test("what stays after signing out never goes to the next account", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        ...configured,
+        metadata: {
+          blameCloudUserId: userId,
+          blameSyncSecrets: true,
+          blameSecretsBase: "abc",
+        },
+      },
+    },
+  };
+  const detached = detachCloudServers(settings, userId);
+  assert.equal(syncMode(detached.mcpServers.Dokploy), "device");
+  assert.equal(syncsSecrets(detached.mcpServers.Dokploy), false);
+  // The next account has a server of that name: this one is left alone.
+  const merged = mergeCloudServers(detached, otherUser, [cloudServer(false)]);
+  assert.deepEqual(merged.mcpServers.Dokploy.env, configured.env);
+  assert.equal(syncMode(merged.mcpServers.Dokploy), "device");
+});
+
+test("a server of another account that was never signed out is kept on this device", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        ...configured,
+        metadata: { blameCloudUserId: userId, blameSyncSecrets: true },
+      },
+    },
+  };
+  const merged = mergeCloudServers(settings, otherUser, []);
+  assert.equal(syncMode(merged.mcpServers.Dokploy), "device");
+  assert.equal(syncsSecrets(merged.mcpServers.Dokploy), false);
+  assert.deepEqual(merged.mcpServers.Dokploy.env, configured.env);
+});
+
+test("a placeholder that receives its secrets stops waiting for setup", () => {
+  const waiting = mergeCloudServers(emptySettings(), userId, [
+    { ...cloudServer(false), localParts: { env: ["DOKPLOY_TOKEN"] } },
+  ]);
+  assert.equal(localSetupRequired(waiting.mcpServers.Dokploy), true);
+  const done = mergeCloudServers(waiting, userId, [
+    { ...cloudServer(false), secrets: { env: { DOKPLOY_TOKEN: "one" } } },
+  ]).mcpServers.Dokploy;
+  assert.equal(localSetupRequired(done), false);
+  assert.equal(cloudDisabled(done), undefined);
+  assert.equal(missingLocalParts(done), undefined);
+  assert.equal(done.disabled, false);
+});
+
+test("a merge that removes the last placeholders leaves an empty list, through the store", async () => {
+  const path = join(
+    await mkdtemp(join(tmpdir(), "mcp-merge-")),
+    "mcp-settings.json",
+  );
+  const placeholders = mergeCloudServers(emptySettings(), userId, [
+    cloudServer(false),
+  ]);
+  await writeFile(path, JSON.stringify(placeholders));
+  await updateMcpSettings(
+    path,
+    (settings) => mergeCloudServers(settings as McpSettings, userId, []),
+    { allowEmpty: true },
+  );
+  assert.deepEqual((await readMcpSettings(path)).mcpServers, {});
+});
+
+test("the same account signing back in takes its servers up again", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        ...configured,
+        metadata: { blameCloudUserId: userId, blameSyncSecrets: true },
+      },
+    },
+  };
+  const detached = detachCloudServers(settings, userId);
+  assert.equal(syncMode(detached.mcpServers.Dokploy), "device");
+  const back = mergeCloudServers(detached, userId, [cloudServer(false)]);
+  assert.equal(syncMode(back.mcpServers.Dokploy), "account");
+  assert.deepEqual(back.mcpServers.Dokploy.env, configured.env);
+  assert.equal(cloudOwner(back.mcpServers.Dokploy), userId);
+});

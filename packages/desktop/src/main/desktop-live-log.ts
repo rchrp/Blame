@@ -2,6 +2,7 @@ import { appendFile, mkdir, rename, rm, stat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { app, type BrowserWindow } from "electron";
 import { redactLogData } from "./desktop-log-redaction";
+import { deviceSecrets } from "./device-credentials/device-secret-redaction.ts";
 import { grantedGithubTokens } from "./github-access/agent-github-access.ts";
 
 type ConsoleMethod = "debug" | "error" | "info" | "log" | "warn";
@@ -58,7 +59,10 @@ export function attachLiveLogWindow(window: BrowserWindow) {
 
 function appendLiveLog(scope: string, data: unknown[]) {
   try {
-    const values = redactLogData(data, grantedGithubTokens());
+    const values = redactLogData(data, [
+      ...grantedGithubTokens(),
+      ...deviceSecrets(),
+    ]);
     writeLogLine(
       `[${new Date().toISOString()}] [${scope}] ${values.map(formatLogValue).join(" ")}\n`,
     );

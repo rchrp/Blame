@@ -13,7 +13,13 @@ import {
   resolveProviderCredential,
   saveOAuthCredential,
 } from "../cloud-api.js";
-import type { ApiConnection, OAuthCredentials } from "../types.js";
+import type {
+  ApiConnection,
+  DeviceCredential,
+  DeviceCredentialInput,
+  OAuthCredentials,
+  ProviderCredentialSummary,
+} from "../types.js";
 
 type ResolvedCredential = Awaited<ReturnType<typeof resolveProviderCredential>>;
 
@@ -25,8 +31,22 @@ type ChatGptTokens = {
   expires_at_s: number;
 };
 
+/** Where a stored credential came from: Blame's API, or this computer's keychain. */
+export type CredentialOrigin = "account" | "device";
+
 export type CredentialServices = {
   connection(): ApiConnection | undefined;
+  /**
+   * The credentials kept on this computer only. They answer first and
+   * without the API: it may be unreachable, or know nothing of them.
+   */
+  device?: {
+    resolve(input: {
+      providerId: string;
+      label?: string;
+    }): Promise<DeviceCredential | null>;
+    save(input: DeviceCredentialInput): Promise<ProviderCredentialSummary>;
+  };
   /** The credential label the session's model was chosen with, if any. */
   label?(session: string, provider: string): string | undefined;
   /** Refreshes ChatGPT tokens; by default with the engine binary. */
@@ -58,21 +78,15 @@ export class CredentialResolver {
   async resolve(params: HostParamsOf<"host/credential">): Promise<Credential> {
     const provider = params.provider;
     if (provider === "claude-code") return this.claudeCode(params.session);
-    const connection = this.services.connection();
-    if (!connection) return { type: "missing" };
-    let credential: ResolvedCredential;
-    try {
-      credential = await resolveProviderCredential(connection, {
-        providerId: provider,
-        label: this.services.label?.(params.session, provider),
-      });
-    } catch {
-      // No credential for this provider: the turn fails with an
-      // authentication error the person can act on.
-      return { type: "missing" };
-    }
-    if (params.provider === "chatgpt")
-      return this.chatGpt(connection, credential);
+    const found = await this.lookup(
+      provider,
+      this.services.label?.(params.session, provider),
+    );
+    // No credential for this provider: the turn fails with an
+    // authentication error the person can act on.
+    if (!found) return { type: "missing" };
+    const { credential } = found;
+    if (params.provider === "chatgpt") return this.chatGpt(found);
     return {
       type: "api_key",
       key: credential.apiKey,
@@ -80,17 +94,47 @@ export class CredentialResolver {
     };
   }
 
-  private async chatGpt(
-    connection: ApiConnection,
-    credential: ResolvedCredential,
-  ): Promise<Credential> {
+  /**
+   * The stored credential for a provider and label: the one kept on this
+   * computer first, then the account's. Never throws.
+   */
+  async lookup(
+    providerId: string,
+    label?: string,
+  ): Promise<
+    { credential: ResolvedCredential; origin: CredentialOrigin } | undefined
+  > {
+    const device = await this.services.device
+      ?.resolve({ providerId, label })
+      .catch(() => null);
+    if (device) return { credential: device, origin: "device" };
+    const connection = this.services.connection();
+    if (!connection) return undefined;
+    try {
+      return {
+        credential: await resolveProviderCredential(connection, {
+          providerId,
+          label,
+        }),
+        origin: "account",
+      };
+    } catch {
+      return undefined;
+    }
+  }
+
+  private async chatGpt(found: {
+    credential: ResolvedCredential;
+    origin: CredentialOrigin;
+  }): Promise<Credential> {
+    const { credential } = found;
     let tokens = credential.oauthCredentials;
     if (!tokens) return { type: "missing" };
     // The engine asks for ChatGPT once, then again only when the token
     // was refused: the same token asked twice is a refused one.
     const refused = this.handedChatGpt === tokens.access;
     if (refused || tokens.expires < Date.now() + refreshMarginMs)
-      tokens = await this.refreshChatGpt(connection, credential, tokens);
+      tokens = await this.refreshChatGpt(found, tokens);
     this.handedChatGpt = tokens.access;
     return {
       type: "bearer",
@@ -104,23 +148,18 @@ export class CredentialResolver {
    * usage; `undefined` without a ChatGPT sign-in.
    */
   async chatGptToken(label?: string): Promise<OAuthCredentials | undefined> {
-    const connection = this.services.connection();
-    if (!connection) return undefined;
-    const credential = await resolveProviderCredential(connection, {
-      providerId: "chatgpt",
-      label,
-    }).catch(() => undefined);
-    const tokens = credential?.oauthCredentials;
-    if (!credential || !tokens) return undefined;
+    const found = await this.lookup("chatgpt", label);
+    const tokens = found?.credential.oauthCredentials;
+    if (!found || !tokens) return undefined;
     if (tokens.expires >= Date.now() + refreshMarginMs) return tokens;
-    return this.refreshChatGpt(connection, credential, tokens);
+    return this.refreshChatGpt(found, tokens);
   }
 
   private async refreshChatGpt(
-    connection: ApiConnection,
-    credential: ResolvedCredential,
+    found: { credential: ResolvedCredential; origin: CredentialOrigin },
     tokens: OAuthCredentials,
   ): Promise<OAuthCredentials> {
+    const { credential, origin } = found;
     const refresh =
       this.services.refreshChatGpt ??
       ((token) => this.refreshWithEngine(token));
@@ -141,6 +180,20 @@ export class CredentialResolver {
     };
     // The refresh token turns over: the new one must be kept, or the next
     // refresh fails and the person has to sign in again.
+    // It goes back where it came from: a sign-in kept on this computer
+    // never reaches the API.
+    if (origin === "device" && this.services.device) {
+      await this.services.device.save({
+        providerId: credential.providerId,
+        label: credential.label,
+        apiKey: next.access,
+        oauthCredentials: next,
+        baseUrl: credential.baseUrl,
+      });
+      return next;
+    }
+    const connection = this.services.connection();
+    if (!connection) return next;
     await saveOAuthCredential(connection, {
       providerId: credential.providerId,
       label: credential.label,

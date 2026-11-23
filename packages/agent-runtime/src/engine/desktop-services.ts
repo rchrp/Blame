@@ -10,6 +10,9 @@ import type { EngineCommand } from "@blame/engine-client";
 import type {
   ApiConnection,
   ApplyPreviewInitializationInput,
+  DeviceCredential,
+  DeviceCredentialInput,
+  ProviderCredentialSummary,
 } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import type { BlameAppRequest } from "./tools/blame-types.js";
@@ -165,6 +168,22 @@ export type DesktopServices = {
     worktree: string;
   }): Promise<{ inVm: boolean; activeWorktrees: string[]; operation: string }>;
   endGitFlow?(input: { operation: string }): Promise<null>;
+  // The credentials the person keeps on this computer only (the desktop's
+  // keychain store): never sent to the API, answered without it.
+  deviceCredentialStatus?(
+    input: Record<string, never>,
+  ): Promise<{ available: boolean }>;
+  deviceCredentialList?(
+    input: Record<string, never>,
+  ): Promise<ProviderCredentialSummary[]>;
+  deviceCredentialResolve?(input: {
+    providerId: string;
+    label?: string;
+  }): Promise<DeviceCredential | null>;
+  deviceCredentialSave?(
+    input: DeviceCredentialInput,
+  ): Promise<ProviderCredentialSummary>;
+  deviceCredentialRemove?(input: { id: string }): Promise<null>;
 };
 
 export type CreateStoryWorktreeInput = {
@@ -233,6 +252,11 @@ export const desktopServiceNames = [
   "readWorkspaceFile",
   "beginGitFlow",
   "endGitFlow",
+  "deviceCredentialStatus",
+  "deviceCredentialList",
+  "deviceCredentialResolve",
+  "deviceCredentialSave",
+  "deviceCredentialRemove",
 ] as const satisfies readonly DesktopServiceName[];
 
 export type DesktopRequest = (

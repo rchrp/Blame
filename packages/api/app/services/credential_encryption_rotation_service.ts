@@ -1,4 +1,5 @@
 import ProviderCredential from '#models/provider_credential'
+import UserMcpConfiguration from '#models/user_mcp_configuration'
 import encryption from '@adonisjs/core/services/encryption'
 import db from '@adonisjs/lucid/services/db'
 
@@ -11,6 +12,12 @@ export default class CredentialEncryptionRotationService {
         await this.decrypt(credential.encryptedOauthCredentials, credential.id)
       }
     }
+    // The synced MCP secrets share the key and must stay readable with it.
+    for (const configuration of await UserMcpConfiguration.query().whereNotNull(
+      'encryptedSecrets'
+    )) {
+      await this.decrypt(configuration.encryptedSecrets!, configuration.userId)
+    }
     return credentials.length
   }
 
@@ -19,6 +26,15 @@ export default class CredentialEncryptionRotationService {
       const credentials = await ProviderCredential.query({ client: transaction }).forUpdate()
       for (const credential of credentials) {
         await this.rotateCredential(credential, transaction)
+      }
+      const configurations = await UserMcpConfiguration.query({ client: transaction })
+        .whereNotNull('encryptedSecrets')
+        .forUpdate()
+      for (const configuration of configurations) {
+        const secrets = await this.decrypt(configuration.encryptedSecrets!, configuration.userId)
+        configuration.useTransaction(transaction)
+        configuration.encryptedSecrets = await encryption.encrypt(secrets)
+        await configuration.save()
       }
       return credentials.length
     })

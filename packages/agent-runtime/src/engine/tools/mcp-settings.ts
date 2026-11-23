@@ -3,9 +3,13 @@
 // each a command (stdio) or a URL (Streamable HTTP or SSE), with the OAuth
 // state of the servers the user authorized kept next to it.
 
-import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
+
+import {
+  readMcpSettings,
+  updateMcpSettings,
+} from "../../mcp-settings-store.js";
 
 export type McpTransport =
   | {
@@ -40,8 +44,6 @@ export type McpOAuthState = {
   authorizationRequired?: boolean;
 };
 
-type Settings = { mcpServers: Record<string, Record<string, unknown>> };
-
 /**
  * Where the file is: `BLAME_MCP_SETTINGS_PATH` (the desktop app sets it to
  * its data folder's `mcp-settings.json`), else `~/.blame/mcp-settings.json`.
@@ -52,23 +54,11 @@ export function mcpSettingsPath() {
   return join(homedir(), ".blame", "mcp-settings.json");
 }
 
-async function readSettings(path: string): Promise<Settings> {
-  try {
-    const parsed = JSON.parse(await readFile(path, "utf8")) as unknown;
-    const servers = record(record(parsed).mcpServers);
-    return { ...record(parsed), mcpServers: { ...servers } } as Settings;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT")
-      return { mcpServers: {} };
-    throw error;
-  }
-}
-
 /** The servers the user enabled, in the file's order. */
 export async function enabledMcpServers(
   path = mcpSettingsPath(),
 ): Promise<McpServer[]> {
-  const settings = await readSettings(path);
+  const settings = await readMcpSettings(path);
   return Object.entries(settings.mcpServers).flatMap(([name, value]) => {
     const server = mcpServer(name, value);
     return server && !disabled(value) ? [server] : [];
@@ -77,7 +67,7 @@ export async function enabledMcpServers(
 
 /** Every configured server, enabled or not. */
 export async function configuredMcpServers(path = mcpSettingsPath()) {
-  const settings = await readSettings(path);
+  const settings = await readMcpSettings(path);
   return Object.entries(settings.mcpServers).flatMap(([name, value]) => {
     const server = mcpServer(name, value);
     return server ? [{ server, oauth: oauthState(value) }] : [];
@@ -88,52 +78,32 @@ export async function readMcpOAuthState(
   serverName: string,
   path = mcpSettingsPath(),
 ): Promise<McpOAuthState> {
-  const settings = await readSettings(path);
+  const settings = await readMcpSettings(path);
   return oauthState(settings.mcpServers[serverName]);
 }
 
-let writing: Promise<unknown> = Promise.resolve();
-
-// Every change goes through this one chain: read the file, change it, write
-// it whole (mode 600) next to a temporary file.
-function changeSettings<T>(
-  path: string,
-  change: (settings: Settings) => T,
-): Promise<T> {
-  const next = writing.then(async () => {
-    const settings = await readSettings(path);
-    const result = change(settings);
-    await mkdir(dirname(path), { recursive: true });
-    const temporary = `${path}.${process.pid}.tmp`;
-    await writeFile(temporary, `${JSON.stringify(settings, null, 2)}\n`, {
-      encoding: "utf8",
-      mode: 0o600,
-    });
-    await rename(temporary, path);
-    if (process.platform !== "win32") await chmod(path, 0o600);
-    return result;
-  });
-  writing = next.catch(() => undefined);
-  return next;
-}
-
-/** Changes one server's OAuth state; the file is rewritten whole, mode 600. */
-export function updateMcpOAuthState(
+/**
+ * Changes one server's OAuth state, under the lock the desktop's Settings
+ * share, so a token refreshed here and a server saved there never overwrite
+ * each other. The file is never replaced when it cannot be read.
+ */
+export async function updateMcpOAuthState(
   serverName: string,
   update: (state: McpOAuthState) => McpOAuthState,
   path = mcpSettingsPath(),
 ): Promise<McpOAuthState> {
-  return changeSettings(path, (settings) => {
+  let state: McpOAuthState = {};
+  await updateMcpSettings(path, (settings) => {
     const server = settings.mcpServers[serverName];
     if (!server)
       throw new Error(`MCP server "${serverName}" is not configured.`);
-    const state = update(oauthState(server));
+    state = update(oauthState(server));
     settings.mcpServers[serverName] = {
       ...server,
       oauth: Object.keys(state).length ? state : undefined,
     };
-    return state;
   });
+  return state;
 }
 
 /** One configured server as the settings file holds it, enabled or not. */
@@ -151,7 +121,7 @@ export type McpServerEntry = {
 export async function mcpServerEntries(
   path = mcpSettingsPath(),
 ): Promise<McpServerEntry[]> {
-  const settings = await readSettings(path);
+  const settings = await readMcpSettings(path);
   return Object.entries(settings.mcpServers).flatMap(([name, value]) => {
     const server = mcpServer(name, value);
     if (!server) return [];
@@ -181,11 +151,11 @@ export type NewMcpServer = {
 };
 
 /** Adds a server in the format Settings → MCP writes; never replaces one. */
-export function addMcpServer(
+export async function addMcpServer(
   server: NewMcpServer,
   path = mcpSettingsPath(),
 ): Promise<void> {
-  return changeSettings(path, (settings) => {
+  await updateMcpSettings(path, (settings) => {
     const taken = Object.keys(settings.mcpServers).some(
       (name) => name.toLowerCase() === server.name.toLowerCase(),
     );
@@ -211,24 +181,31 @@ export function addMcpServer(
 }
 
 /** Removes a server and its saved sign-in; false when it was not there. */
-export function removeMcpServer(
+export async function removeMcpServer(
   name: string,
   path = mcpSettingsPath(),
 ): Promise<boolean> {
-  return changeSettings(path, (settings) => {
-    if (!settings.mcpServers[name]) return false;
-    delete settings.mcpServers[name];
-    return true;
-  });
+  let removed = false;
+  // The person approved this removal, so it may leave the file empty.
+  await updateMcpSettings(
+    path,
+    (settings) => {
+      if (!settings.mcpServers[name]) return;
+      delete settings.mcpServers[name];
+      removed = true;
+    },
+    { allowEmpty: true },
+  );
+  return removed;
 }
 
 /** Turns a server on or off, as its switch in Settings → MCP does. */
-export function setMcpServerDisabled(
+export async function setMcpServerDisabled(
   name: string,
   disabled: boolean,
   path = mcpSettingsPath(),
 ): Promise<void> {
-  return changeSettings(path, (settings) => {
+  await updateMcpSettings(path, (settings) => {
     const server = settings.mcpServers[name];
     if (!server) throw new Error(`MCP server "${name}" is not configured.`);
     if (!disabled && record(server.metadata).blameCloudLocalSetupRequired)

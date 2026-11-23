@@ -19,6 +19,7 @@ import {
   ConnectProviderDialog,
   ProviderSelectDialog,
 } from "@/components/model/connect-provider-dialog"
+import { ProviderStorageBadges } from "@/components/model/provider-storage-badges"
 import { ModelSelector, ProviderMark } from "@/components/model/model-selector"
 import { PlanUsageGlance, usePlanUsage } from "@/components/model/plan-usage"
 import { ModelProviderScope, type ModelSelection, useModelSelection } from "@/components/model/model-selection"
@@ -588,6 +589,11 @@ function ProviderConnectionRow({
           <div className="truncate text-sm font-medium">{provider.name}</div>
           <div className="truncate text-sm text-muted-foreground">
             {providerConnectionLabel(connectionCount)}
+            <ProviderStorageBadges
+              credentials={selection.credentials.filter(
+                (credential) => credential.providerId === provider.id
+              )}
+            />
             {planType ? <span className="capitalize"> · {planType}</span> : null}
           </div>
         </div>

@@ -20,6 +20,7 @@ import {
   removeCloudSession,
   writeCloudSession,
 } from "@/context/cloud-auth-storage"
+import { sessionRejected } from "@/context/cloud-session-restore"
 import { configureStoredAttachmentUrls } from "@/components/attachments/stored-attachment-url"
 import { planUsages } from "@/components/model/plan-usage-cache"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -43,8 +44,10 @@ type SessionState = {
   // The API holding this workspace: the account's, or the local one.
   apiUrl: string
   session: CloudSession
-  aiPreferences: CloudAiPreferences | null
-  mcpConfiguration: CloudMcpConfiguration | null
+  /** null: none saved yet; undefined: it could not be read (API unreachable). */
+  aiPreferences: CloudAiPreferences | null | undefined
+  /** null: the account has none; undefined: it could not be read. */
+  mcpConfiguration: CloudMcpConfiguration | null | undefined
   license?: CloudLicense
 }
 
@@ -171,7 +174,16 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
             writeCloudSession(restored.session)
             return restored
           })
-          .catch(() => {
+          .catch((error) => {
+            // Blame's servers being out of reach is not a sign-out: the
+            // workspace opens with the stored profile, and what lives on this
+            // computer (keys, servers) keeps working.
+            if (!sessionRejected(error)) {
+              return hydrateSession(apiForToken(stored.token), stored, {
+                mode: "account",
+                apiUrl: accountUrl,
+              })
+            }
             void platform.mcp?.detachCloud(stored.user.id)
             removeCloudSession()
             writeWorkspaceStart("signed-out")
@@ -420,6 +432,25 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     [sessionApi, token, updateSession]
   )
 
+  const mcpSaves = React.useRef<Promise<unknown>>(Promise.resolve())
+  const updateMcpConfiguration = React.useCallback(
+    (build: (current: CloudMcpServer[]) => CloudMcpServer[]) => {
+      const run = async () => {
+        if (!token) return []
+        const fresh = await sessionApi.mcpConfiguration()
+        const servers = build(fresh?.servers ?? [])
+        updateSession({
+          mcpConfiguration: await sessionApi.saveMcpConfiguration(servers),
+        })
+        return servers
+      }
+      const result = mcpSaves.current.then(run, run)
+      mcpSaves.current = result.catch(() => undefined)
+      return result
+    },
+    [sessionApi, token, updateSession]
+  )
+
   /** Opens the workspace on this computer and remembers the choice. */
   const continueLocally = React.useCallback(async () => {
     const pending = pendingLocal.current ?? openLocalSession()
@@ -487,6 +518,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         saveAiPreferences,
         savePersonalization,
         saveMcpConfiguration,
+        updateMcpConfiguration,
         signup,
         socialLogin,
         startCheckout,
@@ -553,8 +585,12 @@ async function hydrateSession(
     options.mode === "account"
       ? api.license().catch(() => unavailableLicense)
       : undefined,
-    api.aiPreferences().catch(() => null),
-    api.mcpConfiguration().catch(() => null),
+    // An unreadable answer is not "no preferences": that would send someone
+    // with the API unreachable back through the setup.
+    api.aiPreferences().catch(() => undefined),
+    // A failed read must not look like "no configuration": the first-sync
+    // path would then replace the account's list with this device's.
+    api.mcpConfiguration().catch(() => undefined),
   ])
   return {
     status: "authenticated",
