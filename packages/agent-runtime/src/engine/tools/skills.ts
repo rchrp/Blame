@@ -312,6 +312,7 @@ function nameList(value: unknown): string[] {
 // Skills that only apply through a tool the session may not have.
 const skillRequiredTools: ReadonlyMap<string, string> = new Map([
   ["component-preview", "open_component_preview"],
+  ["blame-help", "blame_inspect"],
 ]);
 
 /** The skills a conversation with these tools can use. */
