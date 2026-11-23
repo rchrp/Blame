@@ -299,6 +299,7 @@ export type BlameDesktopApi = {
   windowControls: WindowControls;
   projectApp: ProjectApp;
   gitIdentity: GitIdentityClient;
+  speechKey: import("@blame/app").SpeechOwnKeyClient;
   privacy: PrivacyClient;
   whatsNew: WhatsNewClient;
   projectWindows: ProjectWindows;

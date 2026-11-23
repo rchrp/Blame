@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "start": "node bin/server.js",
-    "predev": "pnpm --filter @blame/deploy-contract build && pnpm --filter @blame/preview-contract build",
+    "predev": "pnpm --filter @blame/deploy-contract build && pnpm --filter @blame/preview-contract build && pnpm --filter @blame/speech-contract build",
     "build": "node ace.js build",
     "dev": "node ace.js serve --hmr",
     "email:dev": "email dev --dir app/mails",
@@ -84,6 +84,7 @@
     "@blame/deploy-contract": "workspace:*",
     "@blame/preview-contract": "workspace:*",
     "@blame/preview-runtime": "workspace:*",
+    "@blame/speech-contract": "workspace:*",
     "@japa/api-client": "^3.2.1",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/api-logs": "0.223.0",

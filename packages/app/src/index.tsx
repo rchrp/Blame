@@ -45,6 +45,7 @@ export type {
   SecurityAuditClient,
 } from "./context/platform"
 export type { LocalApiClient } from "./context/platform-local-api"
+export type { SpeechOwnKeyClient } from "./context/platform-speech-key"
 
 export type MountAppOptions = {
   platform?: Platform

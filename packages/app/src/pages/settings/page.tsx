@@ -58,6 +58,7 @@ import { PersonalizationSettingsPanel } from "@/components/personalization/perso
 import { OpenProjectTargetRow } from "./open-project-target-row"
 import { PreviewSetupPolicyRow } from "./preview-setup-policy-row"
 import { StoryPreviewAutoStartRow } from "./story-preview-auto-start-row"
+import { SpeechOwnKeyGroup } from "./speech-own-key-group"
 import {
   clearRequestedSettingsSection,
   requestedSettingsSection,
@@ -381,6 +382,13 @@ function AiSettingsPanel() {
         <div className="border-t pt-5">
           <ModelPreferences />
         </div>
+        <SpeechOwnKeyGroup
+          openRouterConnected={selection.credentials.some(
+            (credential) =>
+              credential.providerId === "openrouter" &&
+              credential.authMethod !== "oauth"
+          )}
+        />
         <ProviderDialogs
           dialog={dialog}
           selection={selection}

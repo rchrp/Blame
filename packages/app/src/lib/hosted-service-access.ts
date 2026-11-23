@@ -28,12 +28,21 @@ export type HostedService = keyof typeof hostedServices
 export type HostedServiceAccess =
   "available" | "account-required" | "premium-required"
 
-export type SessionAccess = Pick<CloudAuthContextValue, "license" | "mode">
+export type SessionAccess = Pick<CloudAuthContextValue, "license" | "mode"> & {
+  /**
+   * Whether the person saved their own OpenRouter key for voice input on
+   * this computer. Absent where the desktop cannot keep one.
+   */
+  ownSpeechKey?: "set" | "unset"
+}
 
 export function hostedServiceAccess(
   auth: SessionAccess,
   service: HostedService
 ): HostedServiceAccess {
+  // The person's own key needs neither an account nor Blame Premium.
+  if (service === "voice-transcription" && auth.ownSpeechKey === "set")
+    return "available"
   if (auth.mode !== "account") return "account-required"
   if (hostedServices[service].premium && auth.license?.licensed !== true)
     return "premium-required"
@@ -58,4 +67,41 @@ export function hostedServiceRequirement(
   return hostedServiceAccess(auth, service) === "account-required" && !premium
     ? `${name} ${plural ? "need" : "needs"} a Blame account`
     : `${name} ${plural ? "require" : "requires"} Blame Cloud`
+}
+
+export type HostedServiceOffer = {
+  message: string
+  description?: string
+  /** Whether Settings can take the person's own key to unlock the service. */
+  ownKey: boolean
+}
+
+/**
+ * What to tell the person when the service cannot be used: the way forward
+ * is Blame Cloud, and for voice input also their own OpenRouter key. Not
+ * pushy: a free account is mentioned only where there is none.
+ */
+export function hostedServiceOffer(
+  auth: SessionAccess,
+  service: HostedService
+): HostedServiceOffer {
+  const withoutAccount = auth.mode !== "account"
+  if (service === "voice-transcription" && auth.ownSpeechKey === "unset") {
+    return {
+      message: "Voice input is not set up yet",
+      description: withoutAccount
+        ? "Use your own OpenRouter key, or get it with Blame Cloud, which comes with a free account. Everything else keeps working without one."
+        : "Use your own OpenRouter key, or get it with Blame Cloud.",
+      ownKey: true,
+    }
+  }
+  return {
+    message: `${hostedServiceRequirement(auth, service)}.`,
+    description: hostedServiceIsPremium(service)
+      ? withoutAccount
+        ? "Blame Cloud comes with a free account. Everything else keeps working without one."
+        : undefined
+      : "Everything else keeps working without one.",
+    ownKey: false,
+  }
 }

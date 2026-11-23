@@ -271,6 +271,15 @@ const api: BlameDesktopApi = {
     read: (input) => ipcRenderer.invoke("git-identity:read", input),
     save: (input) => ipcRenderer.invoke("git-identity:save", input),
   },
+  speechKey: {
+    status: () => ipcRenderer.invoke("speech-key:status"),
+    save: (input) => ipcRenderer.invoke("speech-key:save", input),
+    remove: () => ipcRenderer.invoke("speech-key:remove"),
+    useProviderKey: (connection) =>
+      ipcRenderer.invoke("speech-key:use-provider-key", connection),
+    test: () => ipcRenderer.invoke("speech-key:test"),
+    transcribe: (input) => ipcRenderer.invoke("speech-key:transcribe", input),
+  },
   projectWindows: {
     onMenuAction: (callback) => {
       const handler = (_event: unknown, action: "new" | "open") =>

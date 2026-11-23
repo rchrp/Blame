@@ -11,6 +11,11 @@ import { appendComposerDraftText } from "./composer-draft-storage"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { requestHostedService } from "@/lib/hosted-services"
+import { ownSpeechKeyAccess } from "@/lib/speech-own-key-store"
+import {
+  useSpeechOwnKey,
+  useSpeechOwnKeyRefresh,
+} from "@/lib/use-speech-own-key"
 import { toast } from "sonner"
 
 const SpeechContext = React.createContext<ReturnType<
@@ -40,6 +45,7 @@ export function SpeechToTextProvider({
   children: React.ReactNode
 }) {
   const session = useSpeechSession()
+  useSpeechOwnKeyRefresh()
   return (
     <SpeechContext.Provider value={session}>
       {children}
@@ -136,12 +142,18 @@ type SpeechControlProps = {
 
 export function SpeechToTextControl(properties: SpeechControlProps) {
   const auth = useCloudAuth()
+  const ownKey = useSpeechOwnKey()
   const session = React.useContext(SpeechContext)!
   const fallbackKey = React.useId()
   const key = properties.sessionKey ?? fallbackKey
   const slot = useSpeechSlot(key, properties)
-  const startRecording = () => {
-    if (!requestHostedService(auth, "voice-transcription")) return
+  const startRecording = async () => {
+    // Own key first: with one, no account or Premium is asked for.
+    const ownSpeechKey = ownSpeechKeyAccess(
+      ownKey.status ?? (await ownKey.store?.current())
+    )
+    if (!requestHostedService({ ...auth, ownSpeechKey }, "voice-transcription"))
+      return
     properties.onStartRecording?.()
     session.setActiveKey(key)
   }
@@ -150,7 +162,7 @@ export function SpeechToTextControl(properties: SpeechControlProps) {
       {session.activeKey !== key ? (
         <SpeechStartButton
           disabled={properties.disabled || Boolean(session.activeKey)}
-          onClick={startRecording}
+          onClick={() => void startRecording()}
         />
       ) : null}
     </div>

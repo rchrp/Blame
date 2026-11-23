@@ -8,7 +8,7 @@ The API runs as a Dokploy application from a container image. GitHub Actions bui
 | The image is published | Same workflow, job `deploy`                                             | Calls Dokploy's API (`POST /api/application.deploy`): Dokploy pulls the image and restarts the application |
 | The container starts   | [`packages/api/docker/start.sh`](../../../packages/api/docker/start.sh) | Runs the database migrations, then starts the server                                                       |
 
-The workflow runs when the API, one of its workspace dependencies (`deploy-contract`, `preview-contract`, `preview-runtime`), the lockfile or the patches change. To deploy anything else, or again, run **Deploy API** from the Actions tab.
+The workflow runs when the API, one of its workspace dependencies (`deploy-contract`, `preview-contract`, `preview-runtime`, `speech-contract`), the lockfile or the patches change. To deploy anything else, or again, run **Deploy API** from the Actions tab.
 
 It does not wait for CI. The build is its own gate: an image that does not build is never published. To approve each deployment by hand, add required reviewers to the `api-production` environment.
 

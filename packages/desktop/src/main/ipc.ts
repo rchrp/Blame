@@ -26,6 +26,8 @@ import { registerAgentGithubAccessIpcHandlers } from "./ipc/agent-github-access-
 import { registerAgentImportIpcHandlers } from "./ipc/agent-import-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
+import { registerSpeechIpcHandlers } from "./ipc/speech-ipc";
+import { SpeechOwnKeyStore } from "./speech/speech-own-key-store";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
 import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
 import { registerLocalApiIpcHandlers } from "./local-api/local-api-ipc";
@@ -184,6 +186,13 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerProjectAppIpcHandlers({ isAppWindow: options.isAppWindow });
   registerGitIdentityIpcHandlers({ isAppWindow: options.isAppWindow });
   registerAgentGithubAccessIpcHandlers({ isAppWindow: options.isAppWindow });
+  registerSpeechIpcHandlers({
+    isAppWindow: options.isAppWindow,
+    store: new SpeechOwnKeyStore(
+      join(dirname(options.localApi.dataDirectory), "speech"),
+      options.localApi.secrets,
+    ),
+  });
   registerPreviewEnvironmentIpcHandlers({ isAppWindow: options.isAppWindow });
   registerMcpIpcHandlers();
   registerAgentImportIpcHandlers({ isAppWindow: options.isAppWindow });

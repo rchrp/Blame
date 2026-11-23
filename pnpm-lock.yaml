@@ -362,6 +362,9 @@ importers:
       '@blame/preview-runtime':
         specifier: workspace:*
         version: link:../preview-runtime
+      '@blame/speech-contract':
+        specifier: workspace:*
+        version: link:../speech-contract
       '@japa/api-client':
         specifier: ^3.2.1
         version: 3.2.1(@japa/assert@4.2.0(@japa/runner@5.4.0))(@japa/runner@5.4.0)(supports-color@10.2.2)
@@ -537,6 +540,9 @@ importers:
       '@blame/pricing-card':
         specifier: workspace:*
         version: link:../pricing-card
+      '@blame/speech-contract':
+        specifier: workspace:*
+        version: link:../speech-contract
       '@dnd-kit/core':
         specifier: 6.3.1
         version: 6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -792,6 +798,9 @@ importers:
       '@blame/preview-runtime':
         specifier: workspace:*
         version: link:../preview-runtime
+      '@blame/speech-contract':
+        specifier: workspace:*
+        version: link:../speech-contract
       '@grpc/grpc-js':
         specifier: 1.14.7
         version: 1.14.7
@@ -1087,6 +1096,18 @@ importers:
       esbuild:
         specifier: 0.28.2
         version: 0.28.2
+      typescript:
+        specifier: npm:@typescript/typescript6@6.0.2
+        version: '@typescript/typescript6@6.0.2'
+
+  packages/speech-contract:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.12.0
+        version: 24.12.4
+      '@typescript/native':
+        specifier: npm:typescript@7.0.2
+        version: typescript@7.0.2
       typescript:
         specifier: npm:@typescript/typescript6@6.0.2
         version: '@typescript/typescript6@6.0.2'
