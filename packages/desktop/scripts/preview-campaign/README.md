@@ -20,7 +20,8 @@ node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--ke
 - `--only` takes scenario or fixture names, or prefixes: `healthy`, `edge`,
   `failing`, `slow-start`, `lifecycle`, `port-taken`, `dependency`, `edits`,
   `review-build`, `parallel`, `app-restart`, `vm-crash`, `idle`,
-  `runtime-sleep`, `remove`, `runtime`, or a fixture such as `next-app`.
+  `runtime-sleep`, `remove`, `runtime`, `shared-setup`, or a fixture such as
+  `next-app`.
   A scenario that needs a running story (`lifecycle`, `edits`, …) needs that
   story's fixture in the same `--only`.
 - State lives under `/tmp/blc` (Lima sockets need a short path): the VM, the
@@ -31,8 +32,20 @@ node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--ke
   checkout: its Lima bundle runs the VM and its Lima config downloads the baked
   image (the repository's config builds from the plain Ubuntu image).
 - Never touches the real `BlameRuntime` VM or the app's own data.
+- Quitting the app stops the VM a few seconds to a minute later. A second `drive.mjs` started right after
+  can find the VM `Running` while it shuts down: its first worktree then fails (`git branch --show-current`),
+  or the run stalls (the app's runtime agent then logs `ERR_STREAM_WRITE_AFTER_END`). Between two runs wait
+  for `limactl list` to say `Stopped`. `--only runtime` also selects `runtime-sleep` (about 18 minutes).
 - Needs network (npm, Docker Hub). Run it on a quiet Mac, and with `caffeinate -i`
   for the long scenarios (`idle` waits 8 minutes, `runtime-sleep` up to 24).
+
+`shared-setup` starts two stories of the same project one after the other
+(plain Vite, Nuxt, Nuxt with a `postinstall`, an install followed by a command
+that writes a file the server needs, a database, a failing install), then changes and removes the
+shared `node_modules` volume. The second story of a project whose setup only
+fills the volume must skip the install; every other kind must run it. Run it
+with and without `BLAME_PREVIEW_SHARED_SETUP=0` to compare
+`dependencies.install` (`shared-setup.json` in `--out`).
 
 `fixtures.mjs` holds the projects and the manifest an initialization agent
 would write for each; `browse.mjs` is the throwaway browser that loads a

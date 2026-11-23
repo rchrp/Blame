@@ -159,6 +159,23 @@ are recreated once on their next start.
   deleted worktrees' previews, unused node_modules volumes and old images.
 - Initialization no longer produces a Compose file or setup script; its
   checks read the manifest.
+- Shared setup (2026-11-22): a new story skips a setup task another story ran
+  on the same shared `node_modules` volumes. The stamp lives in the Blame
+  Runtime (`/opt/blame/preview-setup`, written by scripts run as root,
+  `preview-runtime/src/compose/shared-setup.ts`), not in a worktree, and holds
+  while the task, the dependency key, the install inputs the key misses
+  (lockfiles at any depth, `.npmrc` and other package manager settings), the
+  task container's environment and the volumes (creation time, and a listing
+  of their packages) are unchanged. Only a plain install qualifies (`npm
+  install`, `corepack pnpm install --frozen-lockfile`, ...; anything else may
+  read the worktree to fill the volume), with no dependency on a service or
+  another task, no Dockerfile of the worktree, and only when its run wrote
+  nothing in the worktree or in a volume only its story has; a manifest with a lifecycle script (`postinstall`, `prepare`, ...)
+  or a dependency that is a folder of the worktree never qualifies. A new run
+  removes the stamp and only a successful one writes it; a story that waited
+  in the install queue checks again on its turn. Every other task keeps the
+  per-worktree stamp. `BLAME_PREVIEW_SHARED_SETUP=0` turns it off. Cloud
+  sandboxes do not share volumes and are unchanged.
 
 - Start wait (2026-11-22, `compose/start-readiness.ts`). `up --wait` returned
   on Docker's health timer (`start_interval: 1s`, plus a `node -e` probe
