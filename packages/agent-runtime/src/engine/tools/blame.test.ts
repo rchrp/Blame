@@ -18,6 +18,7 @@ import { McpConnections } from "./mcp.js";
 import { clientToolPolicy } from "./policy.js";
 import type { PreviewDevtoolsTarget } from "./preview-types.js";
 import { parseGithubSource } from "./skill-install.js";
+import { blameNativeSkillsDirectory, loadSkills } from "./skills.js";
 import { callThroughToolSet } from "./testing.js";
 
 const serverScript = fileURLToPath(
@@ -976,6 +977,24 @@ describe("Blame's self-repair tools", () => {
       });
       assert.ok(nothing.failed);
     });
+  });
+
+  it("has a skill that names every tool and action it can use", async () => {
+    const skill = (await loadSkills([blameNativeSkillsDirectory()])).find(
+      (candidate) => candidate.name === "blame-help",
+    );
+    assert.ok(skill, "blame-help loads");
+    for (const tool of tools()) {
+      assert.match(skill.instructions, new RegExp(tool.name));
+      const properties = tool.inputSchema.properties as Record<string, any>;
+      const actions: string[] =
+        properties.action?.enum ?? properties.area?.enum ?? [];
+      for (const action of actions)
+        assert.ok(
+          skill.instructions.includes(action),
+          `${tool.name} ${action} is in the skill`,
+        );
+    }
   });
 
   it("recognizes the usual failures", () => {
