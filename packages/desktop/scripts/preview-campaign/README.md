@@ -32,6 +32,10 @@ node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--ke
   checkout: its Lima bundle runs the VM and its Lima config downloads the baked
   image (the repository's config builds from the plain Ubuntu image).
 - Never touches the real `BlameRuntime` VM or the app's own data.
+- Quitting the app stops the VM a few seconds to a minute later. A second `drive.mjs` started right after
+  can find the VM `Running` while it shuts down: its first worktree then fails (`git branch --show-current`),
+  or the run stalls (the app's runtime agent then logs `ERR_STREAM_WRITE_AFTER_END`). Between two runs wait
+  for `limactl list` to say `Stopped`. `--only runtime` also selects `runtime-sleep` (about 18 minutes).
 - Needs network (npm, Docker Hub). Run it on a quiet Mac, and with `caffeinate -i`
   for the long scenarios (`idle` waits 8 minutes, `runtime-sleep` up to 24).
 
