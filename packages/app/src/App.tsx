@@ -18,6 +18,8 @@ import { QuickChatStoreProvider } from "@/components/chat/data/quick-chat-store"
 import { EpicStoreProvider } from "@/components/orchestrator/data/epic-store"
 import { ConnectScreen } from "@/components/onboarding/connect-screen"
 import { AiPreferencesSetupScreen } from "@/components/onboarding/ai-preferences-setup-screen"
+import { useAgentImportOffer } from "@/components/agent-import/agent-import-offer"
+import { ImportSetupScreen } from "@/components/onboarding/import-setup-screen"
 import {
   navigate,
   navigationPathname,
@@ -146,6 +148,14 @@ export function App() {
   )
   const runtime = useBlameRuntime()
   const runtimeOfferOpen = useRuntimeOfferPending(runtime.phase)
+  // After the provider, before a first project: bring the other tools' setup.
+  const importOffer = useAgentImportOffer(
+    platform.agentImport,
+    !loading &&
+      auth.status === "authenticated" &&
+      auth.aiPreferences !== null &&
+      !projects.activeProject
+  )
   const accountFlow = useAccountFlow(premiumOpen)
   const closePremium = () => navigate(previousRoute.path)
   const windowRole = appWindowRole({
@@ -198,6 +208,7 @@ export function App() {
       activeProject: Boolean(projects.activeProject),
       aiPreferencesMissing: auth.aiPreferences === null,
       authStatus: auth.status,
+      importOffer,
       loading,
       runtimeOfferOpen,
     }),
@@ -256,12 +267,15 @@ function resolveOnboardingScreen(input: {
   activeProject: boolean
   aiPreferencesMissing: boolean
   authStatus: "authenticated" | "loading" | "unauthenticated"
+  importOffer: "checking" | "offer" | "none"
   loading: boolean
   runtimeOfferOpen: boolean
 }): OnboardingScreen | undefined {
   if (input.loading || input.authStatus === "loading") return "loading"
   if (input.authStatus === "unauthenticated") return "connect"
   if (input.aiPreferencesMissing) return "ai-setup"
+  if (input.importOffer === "checking" && !input.activeProject) return "loading"
+  if (input.importOffer === "offer") return "import-setup"
   if (!input.activeProject && input.runtimeOfferOpen) return "runtime-setup"
   if (!input.activeProject) return "welcome"
   return undefined
@@ -292,6 +306,7 @@ function onboardingElement(
     )
   }
   if (screen === "ai-setup") return <AiPreferencesSetupScreen />
+  if (screen === "import-setup") return <ImportSetupScreen />
   if (screen === "runtime-setup") return <RuntimeSetupScreen />
   return <WelcomeScreen />
 }

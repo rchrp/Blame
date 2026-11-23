@@ -839,6 +839,88 @@ project skills of a VM worktree (the host reads the workspace path it is
 given; the user's folders apply either way, but the scripts of a user-level
 skill are not inside the VM, so they cannot run there).
 
+### Bringing the setup of other tools
+
+First run (after the provider) and Settings → MCP offer to bring over what
+the person already has in Claude Desktop, Claude Code, Codex (the CLI and the
+desktop app, which share `~/.codex`; on this Mac it ships inside
+`ChatGPT.app`), Cursor, VS Code and the open-source tools below. The first
+screen shows one tile per tool, in colour when something can be imported and
+greyed when not found; the second lists the items of the tools picked. Main
+reads the files
+(`packages/desktop/src/main/agent-import/`), the renderer reviews them
+(`components/agent-import/`), and the person ticks each item.
+
+| source | read | importable |
+| --- | --- | --- |
+| Claude Desktop | `claude_desktop_config.json` (`mcpServers`) in `~/Library/Application Support/Claude`, `%APPDATA%\Claude` (and the Store build's redirected copy), `~/.config/Claude` | MCP servers |
+| Claude Code | `~/.claude.json` (user `mcpServers`, and each project's), `~/.claude/{skills,commands,CLAUDE.md,agents,settings.json,plugins}`; `CLAUDE_CONFIG_DIR` moves all of it | MCP servers; skills synced from claude.ai (copied); skills and commands in `~/.claude/skills` and `commands` are read in place |
+| Codex | `$CODEX_HOME` or `~/.codex`: `config.toml` (`[mcp_servers.*]`), `skills/` (not `.system`), `AGENTS.md` | MCP servers (stdio, HTTP with `http_headers`); skills (copied) |
+| Cursor, VS Code | `~/.cursor/mcp.json`; VS Code's user `mcp.json` (`servers`, with comments) | MCP servers |
+| Cline | `~/.cline/data/settings/cline_mcp_settings.json` (`CLINE_DIR`, `CLINE_DATA_DIR`, `CLINE_MCP_SETTINGS_PATH`), the VS Code extension's `globalStorage/saoudrizwan.claude-dev/settings`; `~/.cline/skills` | MCP servers (`disabled` kept off); skills (copied) |
+| OpenCode | `~/.config/opencode/opencode.json(c)`: `mcp` (`type: local` with `command` as an array and `environment`, or `remote`; also the newer `mcp.servers`); `skills/` | MCP servers; skills (copied) |
+| Kilo Code, Roo Code | Kilo: `~/.config/kilo/kilo.json(c)` (OpenCode-style) and the legacy extension file; Roo: `globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json` (the repo is archived) | MCP servers |
+| Antigravity (desktop IDE and `agy` CLI) | `~/.gemini/config/mcp_config.json`, shared by both (the IDE's older `~/.gemini/antigravity/mcp_config.json` is probed too); `mcpServers` with `command`/`args`/`env`/`cwd` or `serverUrl` (Streamable HTTP only), `disabled`, `timeoutSeconds`; skills in `config/skills`, `antigravity-cli/skills`, `antigravity/skills` | MCP servers; skills (copied) |
+| Gemini CLI (legacy), Qwen Code | `~/.gemini/settings.json`, `~/.qwen/settings.json`: `mcpServers`, `url` is SSE and `httpUrl` Streamable HTTP, `timeout` in ms; `skills/` | MCP servers; skills (copied) |
+| Goose | `~/.config/goose/config.yaml` (`%APPDATA%\Block\goose\config` on Windows): `extensions` (`stdio` with `cmd`, `envs`; `streamable_http` with `uri`) | MCP servers (built-in extensions are Goose's own, listed only) |
+| Continue, Zed | `~/.continue/mcpServers/*.json|yaml`; Zed's `settings.json` `context_servers` | MCP servers |
+
+Checked against each project's documentation or source on 2026-11-23; not
+checked on a real install here: everything but Claude, Codex and Cline (the
+VS Code `globalStorage` paths follow the standard per-system prefixes;
+`GEMINI_CLI_HOME`, OpenCode's Windows location, Kilo's CLI skills folder and
+Antigravity's per-system paths, which its docs do not state, are unverified).
+Google is retiring Gemini CLI for Antigravity: Antigravity does not migrate
+`mcpServers` by itself, so the legacy source stays for people who never moved. Left out on purpose: closed-source tools (Windsurf, Kiro,
+Amp, Copilot CLI: each is one more entry in the table if wanted) and Crush
+(its `crushrc` format is mid-migration).
+
+What has no equivalent is listed, not imported: global instructions
+(`CLAUDE.md`, `AGENTS.md`: Blame has no place for them, its personalization
+is four notches), Claude subagents, plugins, hooks, settings, Claude desktop
+extensions (`.mcpb`), servers the Codex app bundles. Connectors kept on
+claude.ai or in ChatGPT are server-side and not on the disk at all. OAuth
+sessions are not copied (the tokens sit in each tool's keychain): the person
+authorizes again.
+
+Decisions:
+
+- **Own parsers, not a library.** The surveyed projects (rulesync, ruler,
+  ai-rulez, add-mcp, vercel-labs/skills, openskills, vibe-rules, install-mcp)
+  mostly generate configurations for many tools from one source; only
+  rulesync (MIT, 23 MB, 15 dependencies, built around its `.rulesync` tree)
+  and add-mcp (Apache-2.0, install-first) read native files, and none reads
+  Claude Code's per-project servers, `CLAUDE_CONFIG_DIR`, VS Code's `servers`
+  key with comments, or skills. The mapping is a few hundred lines. We took
+  the path tables as a cross-check only. One dependency was added:
+  `smol-toml` (BSD-3-Clause, no dependencies) for Codex's `config.toml`.
+- **Deterministic, no agent.** Every importable thing maps 1:1: a server is a
+  command (stdio) or a URL (Streamable HTTP, SSE) with `env` and `headers`; a
+  skill is a `SKILL.md` folder. The only agent-shaped material is free-form
+  instructions, and Blame has nowhere to put them, so there is nothing for an
+  agent task to produce. If Blame gains global instructions, the conversion
+  is a task like the others (`submit_*` result, no tools, the text in the
+  instruction) and must stay away from the server files, which hold secrets.
+- **Secrets never reach the renderer.** The scan sends masked summaries
+  (names of hidden values, URLs and arguments with their tokens replaced);
+  `apply` takes item ids and main reads the files again, so no secret crosses
+  IPC, goes to the API, to telemetry or into a prompt. Servers are written to
+  `mcp-settings.json` through the same queue as Settings (mode 600).
+- **Nothing is started and nothing is overwritten.** A scan only reads. A
+  server or skill of the same name that differs is a conflict: skipped unless
+  ticked, then imported as `<name>-<source>`; an identical one is shown as
+  already there, so re-running adds nothing. A server that uses `${VAR}` or
+  an environment variable for its token (Blame expands none) is imported
+  switched off. A server whose token is in its URL is left to be added by
+  hand: Settings → MCP syncs addresses with the account and refuses those.
+- **Skills**: ones Blame reads in place (`~/.claude/skills/<name>`, with the
+  skills loader) are only shown as available; others (Codex's, the ones
+  claude.ai syncs under `~/.claude/skills/synced`) are copied into
+  `~/.agents/skills`, without overwriting.
+- **Testing**: `BLAME_AGENT_IMPORT_HOME` points the scan (and the copy
+  destination) at a fake home and hides `CODEX_HOME`, `APPDATA` and the like;
+  `HOME` is never changed.
+
 ## Approvals
 
 `host/approval` waits in the host until `resolveApproval` answers it (a

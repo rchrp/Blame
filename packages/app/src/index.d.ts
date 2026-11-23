@@ -6,6 +6,19 @@ export type { LocalApiClient } from "./context/platform-local-api"
 export type { PreviewEnvironmentClient } from "./context/platform-preview-environment"
 export type { PreviewServingSettingsClient } from "./context/platform-preview-serving"
 export type { AgentGithubAccessClient } from "./context/platform-agent-github-access"
+export type {
+  AgentImportChoice,
+  AgentImportClient,
+  AgentImportCategory,
+  AgentImportItem,
+  AgentImportItemState,
+  AgentImportOutcome,
+  AgentImportResult,
+  AgentImportScan,
+  AgentImportSource,
+  AgentImportSourceId,
+  AgentImportUnsupported,
+} from "./context/platform-agent-import"
 export type { RunLogsClient } from "./context/platform-run-logs"
 export type {
   PreviewTerminalClient,

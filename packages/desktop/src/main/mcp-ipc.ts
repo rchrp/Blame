@@ -140,6 +140,46 @@ export function registerMcpIpcHandlers() {
   );
 }
 
+/** What the settings file holds, for the import of other tools' servers. */
+export function readMcpServersForImport() {
+  return runSettingsOperation(async (): Promise<McpServerConfig[]> => {
+    const settings = await readSettings();
+    return Object.entries(settings.mcpServers).map(([name, value]) => {
+      try {
+        return deserializeServer(name, value);
+      } catch {
+        // An entry Settings cannot read still holds its name.
+        return {
+          disabled: true,
+          name,
+          oauth: { configured: false, supported: false },
+          requiresLocalSetup: false,
+          transport: "stdio",
+        };
+      }
+    });
+  });
+}
+
+/**
+ * Adds servers the person chose to import, through the same file and queue as
+ * Settings. A name already taken is never overwritten (the case is ignored).
+ */
+export function addImportedMcpServers(servers: McpServerConfig[]) {
+  return runSettingsOperation(async () => {
+    const settings = await readSettings();
+    const added: string[] = [];
+    for (const input of servers) {
+      const server = validateServer(input);
+      if (hasNameConflict(settings, server.name)) continue;
+      settings.mcpServers[server.name] = serializeServer(server);
+      added.push(server.name);
+    }
+    if (added.length) await writeSettings(settings);
+    return added;
+  });
+}
+
 async function runSettingsOperation<T>(
   operation: () => Promise<T>,
 ): Promise<T> {

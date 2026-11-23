@@ -86,6 +86,8 @@ export type Platform = {
   localApi?: import("./platform-local-api").LocalApiClient
   previewServing?: import("./platform-preview-serving").PreviewServingSettingsClient
   agentGithubAccess?: import("./platform-agent-github-access").AgentGithubAccessClient
+  // Desktop: bring the MCP servers and skills of other agent tools.
+  agentImport?: import("./platform-agent-import").AgentImportClient
   previewEnvironment?: import("./platform-preview-environment").PreviewEnvironmentClient
   appStatus?: AppStatusClient
   appearance?: AppearanceClient
@@ -174,6 +176,20 @@ export type RuntimeStatusReport = {
   // Installed VM is stopped and only needs to be started.
   startRequired?: boolean
 }
+
+export type {
+  AgentImportCategory,
+  AgentImportChoice,
+  AgentImportClient,
+  AgentImportItem,
+  AgentImportItemState,
+  AgentImportOutcome,
+  AgentImportResult,
+  AgentImportScan,
+  AgentImportSource,
+  AgentImportSourceId,
+  AgentImportUnsupported,
+} from "./platform-agent-import"
 
 export type McpTransport = "stdio" | "streamableHttp" | "sse"
 

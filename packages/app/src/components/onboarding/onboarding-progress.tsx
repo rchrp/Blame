@@ -1,6 +1,7 @@
 import { CheckIcon } from "lucide-react"
 import { motion } from "motion/react"
 
+import { useAgentImportStepShown } from "@/components/agent-import/agent-import-offer"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { springSnappy } from "@/lib/motion"
 import { cn } from "@/lib/utils"
@@ -8,6 +9,7 @@ import { cn } from "@/lib/utils"
 const steps = [
   { id: "account", label: "Account" },
   { id: "provider", label: "Provider" },
+  { id: "import", label: "Import" },
   { id: "runtime", label: "Runtime" },
 ] as const
 
@@ -23,8 +25,10 @@ export function OnboardingProgress({
   className?: string
 }) {
   const auth = useCloudAuth()
+  const importShown = useAgentImportStepShown()
   const journey = steps
     .filter(({ id }) => auth.mode === "account" || id !== "account")
+    .filter(({ id }) => importShown || id !== "import")
     .map(({ label }) => label)
   const current = journey.indexOf(steps.find(({ id }) => id === step)!.label)
   return (
