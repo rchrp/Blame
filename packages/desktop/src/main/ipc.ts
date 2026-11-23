@@ -27,6 +27,7 @@ import { registerAgentImportIpcHandlers } from "./ipc/agent-import-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
 import { registerSpeechIpcHandlers } from "./ipc/speech-ipc";
+import { deviceCredentialServices } from "./device-credentials/device-credential-service";
 import { SpeechOwnKeyStore } from "./speech/speech-own-key-store";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
 import { registerCloudAuthIpcHandlers } from "./cloud-auth-ipc";
@@ -188,6 +189,12 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerAgentGithubAccessIpcHandlers({ isAppWindow: options.isAppWindow });
   registerSpeechIpcHandlers({
     isAppWindow: options.isAppWindow,
+    deviceProviderKey: async () =>
+      (
+        await deviceCredentialServices.deviceCredentialResolve({
+          providerId: "openrouter",
+        })
+      )?.apiKey || undefined,
     store: new SpeechOwnKeyStore(
       join(dirname(options.localApi.dataDirectory), "speech"),
       options.localApi.secrets,

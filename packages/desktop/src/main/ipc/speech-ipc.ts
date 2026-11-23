@@ -20,6 +20,8 @@ import type { SpeechOwnKeyStore } from "../speech/speech-own-key-store.ts";
  */
 export function registerSpeechIpcHandlers(input: {
   isAppWindow(sender: WebContents): boolean;
+  /** The OpenRouter key kept on this computer for model providers, if any. */
+  deviceProviderKey?(): Promise<string | undefined>;
   options?: OpenRouterSpeechOptions;
   store: SpeechOwnKeyStore;
 }) {
@@ -52,6 +54,10 @@ export function registerSpeechIpcHandlers(input: {
     async (event, value: unknown): Promise<SpeechOwnKeyChange> => {
       owner(event);
       const body = record(value);
+      // A provider key kept on this computer comes first: it never reached
+      // the account, so the API could not hand it back.
+      const deviceKey = await input.deviceProviderKey?.();
+      if (deviceKey) return input.store.save({ key: deviceKey });
       if (typeof body.url !== "string" || !body.url)
         return { ok: false, ...speechFailure("not-configured") };
       const key = await resolveOpenRouterProviderKey({
