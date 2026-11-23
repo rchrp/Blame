@@ -327,8 +327,10 @@ export function usableSkills(
 
 /** The prompt section that lists each skill's scope. */
 export function skillScopeSection(skills: readonly Skill[]) {
+  // A skill only the user may run still gets the section: the user's
+  // `/name` is what names it.
+  if (!skills.some((skill) => !skill.disabled)) return "";
   const enabled = skills.filter(modelListed);
-  if (!enabled.length) return "";
   const descriptions: string[] = [];
   let remaining = 16_384;
   for (const skill of enabled) {
@@ -349,8 +351,8 @@ export function skillScopeSection(skills: readonly Skill[]) {
   }
   return (
     "\n\n## Skill selection\n" +
-    "Invoke explicitly requested skills. Otherwise load a skill when its described scope applies to the current request; frontend files elsewhere in the workspace do not make a backend or mechanical task frontend design work. These descriptions are a startup snapshot; the skills tool loads current instructions. Inspect the skill if relevance is uncertain.\n" +
-    descriptions.join("\n")
+    "Invoke explicitly requested skills: when the user writes `/name`, optionally with arguments, that is a request to run the skill of that name with the skills tool, the rest of their message as its args, even when it is not listed here. Otherwise load a skill when its described scope applies to the current request; frontend files elsewhere in the workspace do not make a backend or mechanical task frontend design work. These descriptions are a startup snapshot; the skills tool loads current instructions. Inspect the skill if relevance is uncertain." +
+    (descriptions.length ? "\n" + descriptions.join("\n") : "")
   );
 }
 
@@ -572,4 +574,34 @@ function uniqueSources(sources: SkillSource[]) {
 
 function textField(value: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+/** A skill as the user's `/` picker shows it. */
+export type SkillPickerItem = {
+  name: string;
+  description?: string;
+  argumentHint?: string;
+};
+
+/**
+ * The skills a user may start with `/name` in a workspace: Blame's own and
+ * the folders of `skillDirectories`, but the model's own
+ * (`user-invocable: false`) and those that need a tool the conversation may
+ * not have.
+ */
+export async function pickerSkills(input: {
+  workspaceRoot: string;
+  home?: string;
+}): Promise<SkillPickerItem[]> {
+  const skills = await loadSkills(
+    skillDirectories({ ...input, builtIn: true }),
+  );
+  return userInvocableSkills(skills)
+    .filter((skill) => !skillRequiredTools.has(skill.id))
+    .map((skill) => ({
+      name: skill.name,
+      ...(skill.description ? { description: skill.description } : {}),
+      ...(skill.argumentHint ? { argumentHint: skill.argumentHint } : {}),
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name));
 }

@@ -396,6 +396,14 @@ export type BlameDesktopApi = {
       query: string;
       limit?: number;
     }): Promise<WorkspaceEntry[]>;
+    // The skills a user may start with `/name` in this workspace.
+    listSkills(input: { root: string }): Promise<
+      {
+        name: string;
+        description?: string;
+        argumentHint?: string;
+      }[]
+    >;
     // `background`: a poll that neither starts the runtime nor counts as its use.
     gitDiff(input: { background?: boolean; root: string }): Promise<string>;
     gitDiffStats(input: {

@@ -17,6 +17,10 @@
       "types": "./src/index.ts",
       "default": "./dist/index.js"
     },
+    "./skills": {
+      "types": "./src/engine/tools/skills.ts",
+      "default": "./dist/engine/tools/skills.js"
+    },
     "./project-name": {
       "types": "./src/project-name.ts",
       "default": "./dist/project-name.js"

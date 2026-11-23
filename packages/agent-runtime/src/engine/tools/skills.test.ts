@@ -8,6 +8,7 @@ import {
   blameNativeSkillsDirectory,
   conversationSkills,
   loadSkills,
+  pickerSkills,
   runSkill,
   skillDirectories,
   skillInstructions,
@@ -614,7 +615,9 @@ test("the tool exists when every skill is the user's to run", async () => {
         { workspaceRoot: folders.workspace, home: folders.home },
         [],
       );
-      assert.equal(conversation.prompt, "");
+      // The prompt only says how a `/name` is run, and names nothing.
+      assert.match(conversation.prompt, /when the user writes `\/name`/);
+      assert.doesNotMatch(conversation.prompt, /Deploy/);
       assert.ok(conversation.tool);
       assert.doesNotMatch(conversation.tool.description, /Available skills/);
     },
@@ -840,6 +843,37 @@ test("a skill with references and scripts hands its folder to the model and read
         await call({ skill: "late", file: "SKILL.md" }),
         /not found/,
       );
+    },
+  );
+});
+
+test("the picker lists what the user may start with /name", async () => {
+  await withFolders(
+    {
+      "home/.claude/skills/deploy/SKILL.md":
+        "---\ndescription: Deploy\nargument-hint: [environment]\ndisable-model-invocation: true\n---\nDeploy.\n",
+      "home/.claude/skills/background/SKILL.md":
+        "---\ndescription: Facts\nuser-invocable: false\n---\nFacts.\n",
+      "repo/.claude/commands/fix-issue.md":
+        "---\ndescription: Fix a GitHub issue\nargument-hint: [issue-number]\n---\nFix $ARGUMENTS.\n",
+    },
+    async (folders) => {
+      const items = await pickerSkills({
+        workspaceRoot: folders.workspace,
+        home: folders.home,
+      });
+      const names = items.map((item) => item.name);
+      assert.deepEqual(names.slice(0, 2), ["deploy", "fix-issue"]);
+      assert.ok(names.includes("impeccable"));
+      assert.ok(!names.includes("background"));
+      // Needs a tool the conversation may not have.
+      assert.ok(!names.includes("component-preview"));
+      assert.deepEqual(items[0], {
+        name: "deploy",
+        description: "Deploy",
+        argumentHint: "[environment]",
+      });
+      assert.equal(items[1]!.argumentHint, "[issue-number]");
     },
   );
 });
