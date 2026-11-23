@@ -71,6 +71,9 @@ export function previewRuntimeConfig() {
         new Set([
           'registry.npmjs.org',
           '*.npmjs.org',
+          // pip reads the index on PyPI and downloads distributions from its file host.
+          'pypi.org',
+          'files.pythonhosted.org',
           'github.com',
           // The GitHub CLI calls the REST and GraphQL APIs.
           'api.github.com',

@@ -27,6 +27,11 @@ test.group('preview runtime security', () => {
     assert.properties(policy.allow, ['github.com', 'api.github.com'])
   })
 
+  test('lets pip fetch both the PyPI index and its distributions', ({ assert }) => {
+    const policy = vercelNetworkPolicy(previewRuntimeConfig().sandbox.egressAllowlist)
+    assert.properties(policy.allow, ['pypi.org', 'files.pythonhosted.org'])
+  })
+
   test('accepts a bounded source archive with its canonical manifest', async ({ assert }) => {
     const content = await archive([
       { name: '.blame/source-manifest.json', content: '{}' },
