@@ -26,8 +26,13 @@ type Input = {
 
 export async function inspectSkills(input: Input): Promise<SkillsReport> {
   const home = input.home ?? homedir();
-  const directories = skillDirectories({ ...input, home, builtIn: true });
-  const skills = await loadSkills(directories);
+  const sources = skillDirectories({ ...input, home, builtIn: true });
+  const skills = await loadSkills(sources);
+  // Only skill folders can hold a folder that failed to load; the command
+  // folders (`.claude/commands`) are flat files.
+  const directories = sources.filter(
+    (source): source is string => typeof source === "string",
+  );
   const loadedFiles = new Set(skills.map((skill) => skill.file));
   const scope = (path: string) => scopeOf(path, input.workspaceRoot, home);
   const problems: SkillsReport["problems"] = [];
@@ -99,7 +104,11 @@ async function whyNotLoaded(
 
 function scopeOf(file: string, workspaceRoot: string, home: string) {
   if (file.startsWith(blameNativeSkillsDirectory())) return "built-in";
-  if (file.startsWith(join(home, ".agents"))) return "user";
+  if (
+    file.startsWith(join(home, ".agents")) ||
+    file.startsWith(join(home, ".claude"))
+  )
+    return "user";
   if (file.startsWith(workspaceRoot)) return "project";
   return "plugin";
 }
