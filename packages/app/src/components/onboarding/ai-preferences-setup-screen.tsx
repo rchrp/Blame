@@ -1,31 +1,21 @@
 import * as React from "react"
-import type {
-  BlameProvider as Provider,
-  ReasoningSelection,
-} from "@blame/agent-runtime"
-import {
-  CheckIcon,
-  CopyIcon,
-  LoaderCircleIcon,
-  PlusIcon,
-  RefreshCwIcon,
-} from "lucide-react"
+import type { BlameProvider as Provider, ReasoningSelection } from "@blame/agent-runtime"
+import { CheckIcon, LoaderCircleIcon, PlusIcon, RefreshCwIcon } from "lucide-react"
 import { AnimatePresence, motion } from "motion/react"
 import { toast } from "sonner"
 
 import {
+  type AutoModelChoice,
+  chooseAutoModels,
+  supportedVariant,
+} from "@/components/model/auto-model-choice"
+import {
   ConnectProviderDialog,
   ProviderSelectDialog,
 } from "@/components/model/connect-provider-dialog"
-import {
-  ModelTags,
-  ProviderMark,
-  modelDisplayName,
-  modelReactKey,
-} from "@/components/model/model-selector"
+import { ProviderMark, modelDisplayName } from "@/components/model/model-selector"
 import {
   allProvidersValue,
-  type ModelPreferenceRole,
   recommendedApiKeyProviders,
   subscriptionProviders,
   type ModelSelection,
@@ -42,25 +32,10 @@ import { OnboardingProgress } from "@/components/onboarding/onboarding-progress"
 import { GlassPanel } from "@/components/onboarding/stage/glass-panel"
 import { useOnboardingStage } from "@/components/onboarding/stage/onboarding-stage"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
 import { Kbd } from "@/components/ui/kbd"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useCloudAuth } from "@/context/cloud-auth"
-import { useRovingFocus, useWizardKeys } from "@/lib/keyboard"
-import { springSnappy, springSoft, stepVariants } from "@/lib/motion"
+import { useWizardKeys } from "@/lib/keyboard"
+import { springSnappy, springSoft } from "@/lib/motion"
 import { cn } from "@/lib/utils"
 
 type SetupDialog =
@@ -68,60 +43,41 @@ type SetupDialog =
   | { type: "connect"; providerID: string }
   | undefined
 
-type RoleSelection = {
-  model?: SelectableModel
-  variant?: string
-}
-
-const defaultVariant = "default"
-const lastStep = 2
-
+// Connect a provider, and Blame picks the models: the coding agent and the
+// alternative model are chosen from what Smart Selection ranks (see
+// `chooseAutoModels`). Both stay changeable afterwards, in a story's model
+// picker and in Settings.
 export function AiPreferencesSetupScreen() {
   const auth = useCloudAuth()
   const stage = useOnboardingStage()
   const selection = useModelSelection({ role: "agent" })
-  const [alternative, setAlternative] = React.useState<RoleSelection>({})
-  const [agent, setAgent] = React.useState<RoleSelection>({})
   const [dialog, setDialog] = React.useState<SetupDialog>()
   const [saving, setSaving] = React.useState(false)
-  const [step, setStepState] = React.useState(0)
-  const [direction, setDirection] = React.useState(1)
   const connected = selection.connectedProviderIDs.size > 0
-  const ready = connected && alternative.model && agent.model
-  const recommended = useRecommendedModels(selection)
+  const choice = chooseAutoModels(
+    selection.recommendedModels(allProvidersValue),
+    selection.currentModel
+  )
+  const canContinue = connected && !!choice && !selection.loading
 
   React.useEffect(() => {
-    stage.setStepProgress(step / lastStep)
-  }, [stage, step])
-
-  function goTo(next: number) {
-    const bounded = Math.min(Math.max(next, 0), lastStep)
-    if (bounded === step) return
-    setDirection(bounded > step ? 1 : -1)
-    // Arrive on each model step with a sensible choice already made, so
-    // Enter alone can carry someone through setup.
-    if (bounded === 1 && !agent.model && recommended[0]) {
-      setAgent({ model: recommended[0] })
-    }
-    if (bounded === 2 && !alternative.model && agent.model) {
-      setAlternative({ model: agent.model, variant: agent.variant })
-    }
-    setStepState(bounded)
-  }
-
-  const canContinue = step === 0 ? connected : step === 1 ? !!agent.model : !!ready
+    stage.setStepProgress(saving ? 1 : connected ? 0.5 : 0)
+  }, [stage, connected, saving])
 
   async function save() {
-    if (auth.status !== "authenticated" || !ready || saving) return
+    if (auth.status !== "authenticated" || !choice || saving) return
     setSaving(true)
     try {
       await auth.saveAiPreferences({
-        alternativeModel: preferencePayload(alternative),
-        agentModel: preferencePayload(agent),
+        agentModel: preferencePayload(choice.agent, choice.agentVariant),
+        alternativeModel: preferencePayload(
+          choice.alternative,
+          choice.alternativeVariant
+        ),
       })
       stage.celebrate()
       toast.success("You're all set", {
-        description: "Your models are ready.",
+        description: "Blame picked your models. Change them anytime in Settings.",
         position: "bottom-right",
       })
     } catch (error) {
@@ -135,13 +91,11 @@ export function AiPreferencesSetupScreen() {
   }
 
   function next() {
-    if (!canContinue) return
-    if (step < lastStep) goTo(step + 1)
-    else void save()
+    if (canContinue) void save()
   }
 
-  // One rule for the keyboard: once a choice is made, focus lands on
-  // Continue, so Enter always means "next".
+  // Once a provider is connected, focus lands on Continue, so Enter always
+  // means "next".
   const continueRef = React.useRef<HTMLButtonElement>(null)
   const canContinueRef = React.useRef(canContinue)
   React.useEffect(() => {
@@ -150,19 +104,6 @@ export function AiPreferencesSetupScreen() {
   const focusContinue = React.useCallback(() => {
     requestAnimationFrame(() => continueRef.current?.focus())
   }, [])
-  React.useEffect(() => {
-    if (canContinueRef.current) focusContinue()
-  }, [focusContinue, step])
-
-  function pickAgent(value: RoleSelection) {
-    setAgent(value)
-    focusContinue()
-  }
-
-  function pickAlternative(value: RoleSelection) {
-    setAlternative(value)
-    focusContinue()
-  }
 
   function handleDialogCloseAutoFocus(event: Event) {
     if (!canContinueRef.current) return
@@ -170,82 +111,27 @@ export function AiPreferencesSetupScreen() {
     focusContinue()
   }
 
-  useWizardKeys({
-    enabled: !dialog,
-    onNext: next,
-    onBack: step > 0 ? () => goTo(step - 1) : undefined,
-  })
+  useWizardKeys({ enabled: !dialog, onNext: next })
 
   return (
     <section className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-6 pt-10 pb-12">
-      <OnboardingProgress
-        step={step === 0 ? "provider" : "models"}
-        className="mb-4"
-      />
+      <OnboardingProgress step="provider" className="mb-4" />
       <GlassPanel
         layout
         transition={{ layout: springSoft }}
         className="flex min-h-0 flex-1 flex-col overflow-hidden"
       >
         <div className="relative min-h-[26rem] flex-1 overflow-hidden px-6 pt-5 pb-4">
-          <AnimatePresence mode="wait" initial={false} custom={direction}>
-            <motion.div
-              key={step}
-              custom={direction}
-              variants={stepVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="h-full"
-            >
-              {step === 0 ? (
-                <ProviderStep
-                  selection={selection}
-                  onConnect={(providerID) =>
-                    setDialog({ type: "connect", providerID })
-                  }
-                  onBrowse={() => setDialog({ type: "providers" })}
-                />
-              ) : step === 1 ? (
-                <ModelStep
-                  eyebrow="Step 2 of 3"
-                  title="Pick your coding agent"
-                  description="Plans, writes and verifies code. Choose your strongest model."
-                  role="agent"
-                  recommended={recommended}
-                  selection={selection}
-                  value={agent}
-                  onChange={setAgent}
-                  onPick={pickAgent}
-                />
-              ) : (
-                <ModelStep
-                  eyebrow="Step 3 of 3"
-                  title="And one for everything else"
-                  description="Project setup, titles and lighter tasks. A faster model works well."
-                  role="alternative"
-                  recommended={recommended}
-                  selection={selection}
-                  value={alternative}
-                  onChange={setAlternative}
-                  onPick={pickAlternative}
-                  sameAs={agent.model ? agent : undefined}
-                />
-              )}
-            </motion.div>
-          </AnimatePresence>
+          <ProviderStep
+            selection={selection}
+            choice={choice}
+            onConnect={(providerID) =>
+              setDialog({ type: "connect", providerID })
+            }
+            onBrowse={() => setDialog({ type: "providers" })}
+          />
         </div>
-        <footer className="flex items-center justify-between gap-3 border-t border-foreground/[0.06] bg-foreground/[0.02] px-6 py-3.5">
-          <Button
-            type="button"
-            variant="ghost"
-            className={cn(step === 0 && "invisible")}
-            tabIndex={step === 0 ? -1 : undefined}
-            onClick={() => goTo(step - 1)}
-          >
-            Back
-            <Kbd className="ml-1 bg-foreground/[0.06]">Esc</Kbd>
-          </Button>
+        <footer className="flex items-center justify-end gap-3 border-t border-foreground/[0.06] bg-foreground/[0.02] px-6 py-3.5">
           <Button
             ref={continueRef}
             type="button"
@@ -254,7 +140,7 @@ export function AiPreferencesSetupScreen() {
             onClick={next}
           >
             {saving ? <LoaderCircleIcon className="animate-spin" /> : null}
-            {step < lastStep ? "Continue" : "Finish setup"}
+            Finish setup
             <Kbd className="ml-1 bg-primary-foreground/15 text-primary-foreground/80">↵</Kbd>
           </Button>
         </footer>
@@ -281,34 +167,13 @@ export function AiPreferencesSetupScreen() {
   )
 }
 
-function StepHeader({
-  description,
-  eyebrow,
-  title,
-  action,
-}: {
-  description: string
-  eyebrow: string
-  title: string
-  action?: React.ReactNode
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="grid gap-1">
-        <p className="text-xs font-semibold text-primary dark:text-indigo-300">{eyebrow}</p>
-        <h1 className="font-heading text-2xl font-bold tracking-tight">{title}</h1>
-        <p className="text-sm text-foreground/60">{description}</p>
-      </div>
-      {action}
-    </div>
-  )
-}
-
 function ProviderStep({
+  choice,
   onBrowse,
   onConnect,
   selection,
 }: {
+  choice: AutoModelChoice<SelectableModel> | undefined
   onBrowse(): void
   onConnect(providerID: string): void
   selection: ModelSelection
@@ -336,23 +201,27 @@ function ProviderStep({
 
   return (
     <div className="grid content-start gap-5" onKeyDown={moveProviderFocus}>
-      <StepHeader
-        eyebrow="Step 1 of 3"
-        title="Connect your AI provider"
-        description="Blame runs on your own credentials. Your provider bills you directly."
-        action={
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => void selection.refreshProviders()}
-            disabled={selection.loading}
-            aria-label="Refresh providers"
-          >
-            <RefreshCwIcon className={cn(selection.loading && "animate-spin")} />
-            Refresh
-          </Button>
-        }
-      />
+      <div className="flex items-start justify-between gap-4">
+        <div className="grid gap-1">
+          <h1 className="font-heading text-2xl font-bold tracking-tight">
+            Connect your AI provider
+          </h1>
+          <p className="text-sm text-foreground/60">
+            Blame runs on your own credentials. Your provider bills you
+            directly, and Blame picks the models for you.
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => void selection.refreshProviders()}
+          disabled={selection.loading}
+          aria-label="Refresh providers"
+        >
+          <RefreshCwIcon className={cn(selection.loading && "animate-spin")} />
+          Refresh
+        </Button>
+      </div>
       <ProviderSection label="Use your subscription" className="sm:grid-cols-2">
         {loading
           ? tileSkeletons(subscriptionProviders.length, "subscription")
@@ -381,7 +250,7 @@ function ProviderStep({
                 <span className="font-medium text-foreground">
                   {connectedCount} provider{connectedCount > 1 ? "s" : ""} connected.
                 </span>{" "}
-                Continue to choose your models.
+                Change the models Blame picks anytime in Settings.
               </>
             ) : (
               "Use the arrow keys to move between providers, Enter to connect."
@@ -402,7 +271,39 @@ function ProviderStep({
           </Button>
         ) : null}
       </div>
+      <AnimatePresence initial={false}>
+        {choice ? <ChosenModels choice={choice} /> : null}
+      </AnimatePresence>
     </div>
+  )
+}
+
+function ChosenModels({ choice }: { choice: AutoModelChoice<SelectableModel> }) {
+  const rows = [
+    { label: "Coding agent", model: choice.agent },
+    { label: "Everything else", model: choice.alternative },
+  ]
+  return (
+    <motion.dl
+      aria-label="Models Blame picked"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -4 }}
+      transition={springSoft}
+      className="grid gap-3 rounded-2xl border border-foreground/[0.08] bg-background/55 p-3 sm:grid-cols-2"
+    >
+      {rows.map(({ label, model }) => (
+        <div key={label} className="flex min-w-0 items-center gap-2.5">
+          <ProviderMark provider={model.provider} />
+          <div className="grid min-w-0">
+            <dt className="text-[11px] text-foreground/50">{label}</dt>
+            <dd className="truncate text-sm font-semibold">
+              {modelDisplayName(model)}
+            </dd>
+          </div>
+        </div>
+      ))}
+    </motion.dl>
   )
 }
 
@@ -568,249 +469,14 @@ function moveProviderFocus(event: React.KeyboardEvent<HTMLElement>) {
   row[0]?.item.focus()
 }
 
-function ModelStep({
-  description,
-  eyebrow,
-  onChange,
-  onPick,
-  recommended,
-  role,
-  sameAs,
-  selection,
-  title,
-  value,
-}: {
-  description: string
-  eyebrow: string
-  onChange: (value: RoleSelection) => void
-  // A deliberate choice (card, list or shortcut): also moves focus on.
-  onPick: (value: RoleSelection) => void
-  recommended: SelectableModel[]
-  role: ModelPreferenceRole
-  sameAs?: RoleSelection
-  selection: ModelSelection
-  title: string
-  value: RoleSelection
-}) {
-  const selectedKey = value.model ? modelReactKey(value.model) : undefined
-  const handleKeyDown = useRovingFocus(3)
-  const picks = recommended.slice(0, 3)
-
-  return (
-    <div className="grid content-start gap-3">
-      <StepHeader eyebrow={eyebrow} title={title} description={description} />
-      {picks.length > 0 ? (
-        <div className="grid gap-2">
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground/55">
-            Recommended for you
-          </span>
-          <div
-            role="radiogroup"
-            aria-label="Recommended models"
-            className="grid gap-2 sm:grid-cols-3"
-            onKeyDown={handleKeyDown}
-          >
-            {picks.map((model, index) => {
-              const selected = modelReactKey(model) === selectedKey
-              return (
-                <motion.button
-                  key={modelReactKey(model)}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  data-roving-item
-                  autoFocus={!selectedKey && index === 0}
-                  whileHover={{ y: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={cn(
-                    "relative flex min-w-0 flex-col items-start gap-2 rounded-2xl border border-foreground/[0.08] bg-background/55 p-3 text-left outline-none transition-[border-color,background-color] duration-200 hover:bg-background/90 focus-visible:ring-3 focus-visible:ring-primary/25",
-                    selected && "border-transparent"
-                  )}
-                  onClick={() => onPick({ model })}
-                >
-                  {selected ? (
-                    <motion.span
-                      layoutId={`model-pick-${role}`}
-                      transition={springSnappy}
-                      className="absolute inset-0 rounded-2xl border-2 border-primary bg-primary/[0.07]"
-                    />
-                  ) : null}
-                  <span className="relative flex w-full items-center justify-between gap-2">
-                    <ProviderMark provider={model.provider} />
-                    {index === 0 ? (
-                      <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground">
-                        Top pick
-                      </span>
-                    ) : (
-                      <ModelTags model={model} />
-                    )}
-                  </span>
-                  <span className="relative grid w-full min-w-0 gap-0.5">
-                    <span className="truncate text-sm font-semibold">
-                      {modelDisplayName(model)}
-                    </span>
-                    <span className="truncate text-[11px] text-foreground/50">
-                      {model.provider.name}
-                    </span>
-                  </span>
-                </motion.button>
-              )
-            })}
-          </div>
-        </div>
-      ) : null}
-      <div className="grid gap-2">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-semibold text-foreground/55">All models</span>
-          {sameAs?.model ? (
-            <Button
-              variant="ghost"
-              size="xs"
-              className="text-xs"
-              onClick={() => onPick({ ...sameAs })}
-            >
-              <CopyIcon /> Same as coding agent
-            </Button>
-          ) : null}
-        </div>
-        <Command className="min-h-0 rounded-2xl border border-foreground/[0.08] bg-background/55">
-          <CommandInput placeholder="Search models" />
-          <CommandList className="h-28 max-h-28 overscroll-contain">
-            <CommandEmpty>{selection.emptyMessage}</CommandEmpty>
-            {selection.providerGroups.map((group) => (
-              <CommandGroup
-                key={`${role}-${group.provider.id}`}
-                heading={group.provider.name}
-              >
-                {group.models.map((model) => (
-                  <CommandItem
-                    key={`${role}-${modelReactKey(model)}`}
-                    value={`${model.provider.name} ${model.name} ${model.id}`}
-                    onSelect={() => onPick({ model })}
-                  >
-                    <ProviderMark provider={model.provider} />
-                    <span className="min-w-0 flex-1 truncate">
-                      {modelDisplayName(model)}
-                    </span>
-                    <ModelTags model={model} />
-                    {modelReactKey(model) === selectedKey ? (
-                      <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} transition={springSnappy}>
-                        <CheckIcon className="size-4 text-primary dark:text-indigo-300" />
-                      </motion.span>
-                    ) : null}
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            ))}
-          </CommandList>
-        </Command>
-      </div>
-      <SelectedModel value={value} onChange={onChange} />
-    </div>
-  )
-}
-
-function SelectedModel({
-  onChange,
-  value,
-}: {
-  onChange: (value: RoleSelection) => void
-  value: RoleSelection
-}) {
-  return (
-    <div className="flex min-h-10 min-w-0 items-center gap-3 rounded-xl bg-foreground/[0.04] px-3 py-1.5">
-      <span className="text-xs font-medium text-foreground/50">Selected</span>
-      <AnimatePresence mode="popLayout" initial={false}>
-        <motion.span
-          key={value.model ? modelReactKey(value.model) : "none"}
-          initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
-          transition={{ duration: 0.25 }}
-          className="flex min-w-0 flex-1 items-center gap-2"
-        >
-          {value.model ? <ProviderMark provider={value.model.provider} /> : null}
-          <span className="min-w-0 truncate text-sm font-semibold">
-            {value.model ? modelDisplayName(value.model) : "No model selected"}
-          </span>
-        </motion.span>
-      </AnimatePresence>
-      <VariantSelect value={value} onChange={onChange} />
-    </div>
-  )
-}
-
-function VariantSelect({
-  onChange,
-  value,
-}: {
-  onChange: (value: RoleSelection) => void
-  value: RoleSelection
-}) {
-  const variants = [defaultVariant, ...Object.keys(value.model?.variants ?? {})]
-  if (variants.length <= 1) return null
-
-  return (
-    <Select
-      value={value.variant ?? defaultVariant}
-      onValueChange={(variant) =>
-        onChange({
-          ...value,
-          variant: variant === defaultVariant ? undefined : variant,
-        })
-      }
-    >
-      <SelectTrigger
-        aria-label="Reasoning effort"
-        className="h-7 w-auto max-w-36 border-0 bg-background/70 px-2 text-xs shadow-none"
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {variants.map((variant) => (
-          <SelectItem key={variant} value={variant} className="capitalize">
-            {variantLabel(variant)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  )
-}
-
-function useRecommendedModels(selection: ModelSelection) {
-  return selection
-    .recommendedModels(allProvidersValue)
-    .map((recommendation) => recommendation.model)
-    .filter((model) => selection.connectedProviderIDs.has(model.provider.id))
-}
-
-function preferencePayload(value: RoleSelection) {
+function preferencePayload(
+  model: SelectableModel,
+  variant: ReasoningSelection | undefined
+) {
   return {
-    providerId: value.model!.provider.id,
-    modelId: value.model!.id,
-    credentialLabel: value.model!.credentialLabel ?? null,
-    reasoningEffort: reasoningEffort(value.variant),
+    providerId: model.provider.id,
+    modelId: model.id,
+    credentialLabel: model.credentialLabel ?? null,
+    reasoningEffort: supportedVariant(model.variants, variant),
   }
-}
-
-function reasoningEffort(value: string | undefined): ReasoningSelection | null {
-  if (
-    value === "none" ||
-    value === "enabled" ||
-    value === "minimal" ||
-    value === "low" ||
-    value === "medium" ||
-    value === "high" ||
-    value === "xhigh" ||
-    value === "max"
-  ) {
-    return value
-  }
-  return null
-}
-
-function variantLabel(variant: string) {
-  if (variant === defaultVariant) return "Default"
-  if (variant === "xhigh") return "X High"
-  return variant.charAt(0).toUpperCase() + variant.slice(1)
 }
