@@ -1222,7 +1222,8 @@ export const MarkdownEditor = React.forwardRef<
       try {
         if (search !== mentionSearchRef.current) return
         if (!mentionDirectory || !platform.workspace) return
-        const { engine, workspace } = platform
+        const engine = platform.engine
+        const workspace = platform.workspace
         const results: FileMentionResult[] =
           mention.kind === "skill"
             ? matchingSkills(
@@ -1261,6 +1262,7 @@ export const MarkdownEditor = React.forwardRef<
     mention.query,
     mentionActive,
     mentionDirectory,
+    platform.engine,
     platform.workspace,
   ])
 
