@@ -10,8 +10,10 @@ import {
   loadSkills,
   runSkill,
   skillDirectories,
+  skillInstructions,
   skillScopeSection,
   usableSkills,
+  userInvocableSkills,
   type Skill,
 } from "./skills.js";
 import { callThroughToolSet } from "./testing.js";
@@ -423,4 +425,272 @@ test("the component preview skill makes the component preview the default visual
       /When `open_component_preview` is available, check the component's states, themes and widths there[^\n]*Use the app's preview for the requested workflow, navigation and the component's integration/,
     );
   }
+});
+
+async function withFolders(
+  files: Record<string, string>,
+  check: (folders: { workspace: string; home: string }) => Promise<void>,
+) {
+  const root = await mkdtemp(join(tmpdir(), "blame-skills-"));
+  try {
+    for (const [path, text] of Object.entries(files)) {
+      await mkdir(join(root, path, ".."), { recursive: true });
+      await writeFile(join(root, path), text);
+    }
+    await check({ workspace: join(root, "repo"), home: join(root, "home") });
+  } finally {
+    await rm(root, { force: true, recursive: true });
+  }
+}
+
+async function loaded(folders: { workspace: string; home: string }) {
+  return loadSkills(
+    skillDirectories({ workspaceRoot: folders.workspace, home: folders.home }),
+  );
+}
+
+test("Claude's own folders are read: the project's skills beat the user's, and a skill beats a command", async () => {
+  await withFolders(
+    {
+      "home/.claude/skills/deploy/SKILL.md":
+        "---\nname: deploy\ndescription: Home deploy\n---\nHome deploy body.\n",
+      "home/.claude/skills/notes/SKILL.md":
+        "---\ndescription: Home notes\n---\nTake notes.\n",
+      "home/.agents/skills/agents-only/SKILL.md":
+        "---\ndescription: Agents folder\n---\nBody.\n",
+      "home/.claude/commands/notes.md": "Home command notes.\n",
+      "home/.claude/commands/ship.md": "Home ship command.\n",
+      "repo/.claude/skills/deploy/SKILL.md":
+        "---\nname: deploy\ndescription: Project deploy\n---\nProject deploy body.\n",
+      "repo/.claude/commands/ship.md":
+        "---\ndescription: Ship it\nargument-hint: [env]\n---\nShip to $ARGUMENTS.\n",
+      "repo/.claude/commands/frontend/component.md":
+        "Build a component named $0.\n",
+    },
+    async (folders) => {
+      const skills = await loaded(folders);
+      const byId = new Map(skills.map((skill) => [skill.id, skill]));
+      assert.deepEqual([...byId.keys()].sort(), [
+        "agents-only",
+        "deploy",
+        "frontend:component",
+        "notes",
+        "ship",
+      ]);
+      assert.match(byId.get("deploy")!.instructions, /^Project deploy/);
+      // The home's folder and command of one name: the folder.
+      assert.equal(byId.get("notes")!.command, undefined);
+      assert.match(byId.get("notes")!.instructions, /Take notes/);
+      // The project's command beats the user's of the same name.
+      assert.match(byId.get("ship")!.instructions, /^Ship to/);
+      assert.equal(byId.get("ship")!.command, true);
+      assert.equal(byId.get("ship")!.argumentHint, "[env]");
+      // A command without a description describes itself by its first line.
+      assert.equal(
+        byId.get("frontend:component")!.description,
+        "Build a component named $0.",
+      );
+      assert.match(
+        runSkill(skills, "frontend:component", "Card"),
+        /Build a component named Card\./,
+      );
+    },
+  );
+});
+
+test("a skill folder beats a command of the same name inside one scope", async () => {
+  await withFolders(
+    {
+      "repo/.claude/skills/review/SKILL.md": "---\nname: review\n---\nSkill.\n",
+      "repo/.claude/commands/review.md": "Command.\n",
+    },
+    async (folders) => {
+      const skills = await loaded(folders);
+      assert.equal(skills.length, 1);
+      assert.equal(skills[0]!.instructions, "Skill.");
+    },
+  );
+});
+
+test("front matter the loader does not know, or cannot parse, never drops a skill", async () => {
+  await withFolders(
+    {
+      "repo/.claude/skills/odd/SKILL.md":
+        "---\nname: odd\ndescription: Use when: the user says odd\nallowed-tools: Bash(git *)\ncontext: fork\nhooks:\n  PreToolUse: []\nmodel: haiku\npaths: src/**\nfuture-key: 1\n---\nOdd body.\n",
+      "repo/.claude/skills/folded/SKILL.md":
+        "---\ndescription: >\n  Folded text\n  over lines\nwhen_to_use: When asked.\n---\nFolded body.\n",
+      "repo/.claude/skills/no-front-matter/SKILL.md":
+        "# Plain title\n\nJust text.\n",
+      "repo/.claude/skills/empty-front-matter/SKILL.md": "---\n---\nBody.\n",
+      "repo/.claude/skills/late-marker/SKILL.md":
+        "\n---\nname: ignored\n---\nBody.\n",
+      "repo/.claude/skills/bad-name/SKILL.md":
+        '---\nname: "bad<name>"\n---\nBody.\n',
+    },
+    async (folders) => {
+      const skills = await loaded(folders);
+      const byId = new Map(skills.map((skill) => [skill.id, skill]));
+      assert.deepEqual([...byId.keys()].sort(), [
+        "bad-name",
+        "empty-front-matter",
+        "folded",
+        "late-marker",
+        "no-front-matter",
+        "odd",
+      ]);
+      // The YAML did not parse (a colon in a plain scalar): the lines did.
+      assert.equal(byId.get("odd")!.description, "Use when: the user says odd");
+      assert.equal(byId.get("odd")!.instructions, "Odd body.");
+      assert.equal(
+        byId.get("folded")!.description,
+        "Folded text over lines When asked.",
+      );
+      assert.equal(byId.get("no-front-matter")!.description, "Plain title");
+      assert.equal(byId.get("empty-front-matter")!.instructions, "Body.");
+      assert.equal(byId.get("late-marker")!.name, "late-marker");
+    },
+  );
+});
+
+test("a skill only the user may run is not shown to the model but runs by name", async () => {
+  await withFolders(
+    {
+      "repo/.claude/skills/deploy/SKILL.md":
+        "---\ndescription: Deploy to production\ndisable-model-invocation: true\nargument-hint: [environment]\n---\nDeploy $0 now.\n",
+      "repo/.claude/skills/background/SKILL.md":
+        "---\ndescription: How the legacy billing works\nuser-invocable: false\n---\nBilling facts.\n",
+      "repo/.claude/skills/lint/SKILL.md":
+        "---\ndescription: Lint the code\ndisable-model-invocation: Yes\n---\nLint.\n",
+      "repo/.claude/skills/normal/SKILL.md":
+        "---\ndescription: Normal skill\nuser-invocable: true\ndisable-model-invocation: false\n---\nNormal.\n",
+    },
+    async (folders) => {
+      const conversation = await conversationSkills(
+        { workspaceRoot: folders.workspace, home: folders.home },
+        [],
+      );
+      // Not in the prompt, not in the tool's description.
+      assert.doesNotMatch(
+        conversation.prompt,
+        /Deploy to production|Lint the code/,
+      );
+      assert.match(conversation.prompt, /legacy billing/);
+      assert.match(conversation.prompt, /Normal skill/);
+      assert.ok(conversation.tool);
+      assert.match(
+        conversation.tool.description,
+        /Available skills: background, normal\.$/,
+      );
+      // The user's picker: everything but the model's own.
+      assert.deepEqual(
+        userInvocableSkills(conversation.skills)
+          .map((skill) => skill.id)
+          .sort(),
+        ["deploy", "lint", "normal"],
+      );
+      // Still run when asked for by name.
+      const result = await callThroughToolSet([conversation.tool], "skills", {
+        skill: "deploy",
+        args: "staging",
+      });
+      assert.match(JSON.stringify(result.content), /Deploy staging now\./);
+      // And the model is not told they exist when it asks for a wrong name.
+      assert.doesNotMatch(
+        runSkill(conversation.skills, "missing"),
+        /deploy|lint/,
+      );
+    },
+  );
+});
+
+test("the tool exists when every skill is the user's to run", async () => {
+  await withFolders(
+    {
+      "repo/.claude/skills/deploy/SKILL.md":
+        "---\ndescription: Deploy\ndisable-model-invocation: true\n---\nDeploy.\n",
+    },
+    async (folders) => {
+      const conversation = await conversationSkills(
+        { workspaceRoot: folders.workspace, home: folders.home },
+        [],
+      );
+      assert.equal(conversation.prompt, "");
+      assert.ok(conversation.tool);
+      assert.doesNotMatch(conversation.tool.description, /Available skills/);
+    },
+  );
+});
+
+function skill(instructions: string, extra: Partial<Skill> = {}): Skill {
+  return {
+    id: "s",
+    name: "s",
+    instructions,
+    file: "/skills/s/SKILL.md",
+    ...extra,
+  };
+}
+
+test("arguments are substituted as Claude Code does", () => {
+  assert.equal(
+    skillInstructions(skill("Fix $ARGUMENTS now."), "issue 12  fast"),
+    "Fix issue 12  fast now.",
+  );
+  assert.equal(
+    skillInstructions(skill("From $0 to $1, then $ARGUMENTS[0]."), "a b"),
+    "From a to b, then a.",
+  );
+  assert.equal(
+    skillInstructions(skill("Move $0 to $1."), '"hello world" second'),
+    "Move hello world to second.",
+  );
+  assert.equal(
+    skillInstructions(skill("Move $0 to $1."), "'it is' two"),
+    "Move it is to two.",
+  );
+  // An indexed argument nobody gave stays as written; a named one is empty.
+  assert.equal(skillInstructions(skill("A $0, B $2."), "x"), "A x, B $2.");
+  assert.equal(
+    skillInstructions(
+      skill("In $env on $branch.", { argumentNames: ["env", "branch"] }),
+      "prod",
+    ),
+    "In prod on .",
+  );
+  // An undeclared name is plain text.
+  assert.equal(
+    skillInstructions(skill("Cost: $price"), "x"),
+    "Cost: $price\n\nARGUMENTS: x",
+  );
+  // Escapes, and values read once.
+  assert.equal(
+    skillInstructions(skill("Costs \\$1.00; ask $0."), "$1"),
+    "Costs $1.00; ask $1.",
+  );
+  assert.equal(skillInstructions(skill("\\\\$0"), "x"), "\\\\x");
+  assert.equal(
+    skillInstructions(skill("$ARGUMENTS"), "$ARGUMENTS"),
+    "$ARGUMENTS",
+  );
+  assert.equal(
+    skillInstructions(skill("Cost is \\$USD."), "x"),
+    "Cost is \\$USD.\n\nARGUMENTS: x",
+  );
+  // No placeholder: the arguments follow the instructions.
+  assert.equal(
+    skillInstructions(skill("Do the thing."), "now please"),
+    "Do the thing.\n\nARGUMENTS: now please",
+  );
+  assert.equal(
+    skillInstructions(skill("Do the thing."), "  "),
+    "Do the thing.",
+  );
+  assert.equal(skillInstructions(skill("Do the thing.")), "Do the thing.");
+  // No arguments: the placeholders stay for an indexed one, vanish otherwise.
+  assert.equal(skillInstructions(skill("Run $ARGUMENTS."), ""), "Run .");
+  // The skill's folder.
+  assert.equal(
+    skillInstructions(skill("Run ${CLAUDE_SKILL_DIR}/scripts/x.sh"), undefined),
+    "Run /skills/s/scripts/x.sh",
+  );
 });
