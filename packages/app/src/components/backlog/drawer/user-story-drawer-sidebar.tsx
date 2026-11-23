@@ -84,7 +84,10 @@ const statsPanelClass =
   "overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted"
 
 // The expanded face can also live in the layout, with no minimize control.
+// Its own buttons (`actions`) sit at the top right, where the drawer and the
+// chat put their toggle: same size and look, pinned while the panel scrolls.
 export function ExpandedAgentStats({
+  actions = [],
   source,
   contextLimitKey,
   compaction,
@@ -93,6 +96,7 @@ export function ExpandedAgentStats({
   summary,
   children,
 }: {
+  actions?: readonly React.ReactNode[]
   source: AgentStatsSource
   contextLimitKey: string
   compaction: StoryContextCompaction
@@ -103,18 +107,23 @@ export function ExpandedAgentStats({
 }) {
   const stats = useStoryStats(source, contextLimitKey, false, compaction)
   return (
-    <div className={cn(statsPanelClass, "min-h-0 overflow-y-auto overscroll-contain")}>
-      <DrawerSidebar
-        buttons={0}
-        helpers={[]}
-        source={source}
-        stats={stats}
-        diffStats={diffStats}
-        cost={cost}
-        summary={summary}
-      >
-        {children}
-      </DrawerSidebar>
+    <div className={cn(statsPanelClass, "relative flex min-h-0 flex-col")}>
+      <div className="min-h-0 overflow-y-auto overscroll-contain">
+        <DrawerSidebar
+          buttons={actions.length}
+          helpers={[]}
+          source={source}
+          stats={stats}
+          diffStats={diffStats}
+          cost={cost}
+          summary={summary}
+        >
+          {children}
+        </DrawerSidebar>
+      </div>
+      {actions.length ? (
+        <div className="absolute top-4 right-4 z-10 flex gap-3">{actions}</div>
+      ) : null}
     </div>
   )
 }

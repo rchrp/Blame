@@ -530,6 +530,9 @@ async function scenario(initial, options, model, projectPath, relaunch) {
   const pane = () => evaluate(`${paneSelector}?.innerText ?? ""`);
   const board = () => evaluate(`${boardSelector}?.innerText ?? ""`);
   const startButton = `document.querySelector('button[aria-label="Start epic"]')`;
+  // The statistics panel's icon buttons have no text: they are found by label.
+  const pauseButton = `document.querySelector('button[aria-label="Pause all"]')`;
+  const resumeButton = `document.querySelector('button[aria-label="Resume all"]')`;
   const editor = `document.querySelector('[data-markdown-editor-input="true"][contenteditable="true"]')`;
   const statsPanel = `document.querySelector('[aria-label="Epic statistics"]')`;
   // Chat folds completed work. Read the decisions after opening the work log.
@@ -913,12 +916,12 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await waitState(epic.id, "waiting");
       await until(async () => (await working(epic.id)).length === 2, 60_000, "both stories to work");
       const atPause = model.of(`orchestrator:${title}`).length;
-      await click(button("Pause all"));
+      await click(pauseButton);
       await until(async () => (await api(`/projects/epics/${epic.id}`)).status === "paused", 15_000, "the epic to be paused");
       await until(async () => (await working(epic.id)).length === 0, 30_000, "the host to pause the agents");
       check("Pause all: the host paused both working agents", (await storiesOf(epic.id)).every((story) => story.agentStatus === "Paused"));
       await until(async () => (await state(epic.id)).pause?.phase === "paused", 30_000, "the host to say the pause took");
-      await until(async () => (await text()).includes("Resume"), 5_000, "Resume");
+      await until(async () => evaluate(`Boolean(${resumeButton})`), 5_000, "Resume all");
       check("the statistics panel says Paused once the pause took", /\bPaused\b/.test(await evaluate(`${statsPanel}?.innerText ?? ""`)));
       check("a pause is not 'needs you'", !(await dots()).includes("Needs you") && !((await state(epic.id)).blocked?.length));
       await shot("08-paused");
@@ -931,8 +934,8 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await waitState(epic.id, "waiting");
       check("during the pause the orchestrator answers the person", model.of(`orchestrator:${title}`).length >= asked + 2);
       check("its acting call is refused because the epic is paused, and the row says so", /paused/i.test(pausedRefusal) && /Refused:[^\n]*paused/i.test(await readWork()), pausedRefusal.slice(0, 160));
-      check("the statistics panel still says Paused", (await state(epic.id)).pause?.phase === "paused" && (await text()).includes("Resume"));
-      await click(button("Resume"));
+      check("the statistics panel still says Paused", (await state(epic.id)).pause?.phase === "paused" && (await evaluate(`Boolean(${resumeButton})`)));
+      await click(resumeButton);
       await until(async () => (await api(`/projects/epics/${epic.id}`)).status === "active", 15_000, "the epic to resume");
       await until(async () => (await working(epic.id)).length === 2, 60_000, "the host to resume both agents");
       check("Resume: the host resumed exactly the agents it paused", true);

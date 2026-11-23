@@ -426,8 +426,11 @@ on, and the orchestrator is woken (`idle`) to wrap up.
   on macOS or Ctrl+Enter elsewhere to send the first suggestion.
 - The statistics panel stays expanded. It shows the orchestrator's model and
   context, total epic spend, branch, status, and changes reported by the stories.
-  Stories are grouped by status and open in the backlog drawer. Pause, resume
-  and settings are available in the panel. The title can be edited in settings.
+  Stories are grouped by status and open in the backlog drawer. Pause (Resume
+  while paused) and settings are two icon buttons at the panel's top right,
+  the look of the fold button the story drawer and the chat give their own
+  panel, and stay in place while the panel scrolls. The title can be edited
+  in settings.
 - The screen reads and writes epics through the API, stories through the
   backlog store filtered by `epicId`, and the queue's wait reasons through
   the story service's events.

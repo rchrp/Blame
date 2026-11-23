@@ -93,6 +93,37 @@ export function EpicStats({
   const closed = epic.status === "completed" || epic.status === "discarded"
   return (
     <ExpandedAgentStats
+      actions={[
+        ...(closed
+          ? []
+          : [
+              <Button
+                key="pause"
+                type="button"
+                className="border bg-background/90 shadow-sm"
+                size="icon-sm"
+                variant="outline"
+                disabled={pausing}
+                aria-label={paused ? "Resume all" : "Pause all"}
+                title={paused ? "Resume all" : "Pause all"}
+                onClick={onChangeStatus}
+              >
+                {paused ? <PlayIcon /> : <PauseIcon />}
+              </Button>,
+            ]),
+        <Button
+          key="settings"
+          type="button"
+          className="border bg-background/90 shadow-sm"
+          size="icon-sm"
+          variant="outline"
+          aria-label="Epic settings"
+          title="Epic settings"
+          onClick={onOpenSettings}
+        >
+          <Settings2Icon />
+        </Button>,
+      ]}
       source={source}
       contextLimitKey={epicAmbitionKey(epic.id)}
       compaction={compaction}
@@ -111,37 +142,13 @@ export function EpicStats({
       }
       summary={
         <div className="grid min-w-0 gap-1.5 border-b pb-3 text-xs text-muted-foreground">
-          <div className="flex items-center justify-between gap-2">
-            <div className="grid min-w-0 gap-0.5" role="status">
-              {paused && <PauseStatus state={state} />}
-              {closed ? (
-                <span className="capitalize">{epic.status}</span>
-              ) : (
-                <ConversationStatus paused={paused} state={state} />
-              )}
-            </div>
-            <div className="flex shrink-0 items-center gap-0.5">
-              {!closed && (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  disabled={pausing}
-                  onClick={onChangeStatus}
-                >
-                  {paused ? <PlayIcon /> : <PauseIcon />}
-                  {paused ? "Resume" : "Pause all"}
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon-xs"
-                aria-label="Epic settings"
-                title="Epic settings"
-                onClick={onOpenSettings}
-              >
-                <Settings2Icon />
-              </Button>
-            </div>
+          <div className="grid min-w-0 gap-0.5" role="status">
+            {paused && <PauseStatus state={state} />}
+            {closed ? (
+              <span className="capitalize">{epic.status}</span>
+            ) : (
+              <ConversationStatus paused={paused} state={state} />
+            )}
           </div>
           <div
             className="flex min-w-0 items-start gap-1.5"
