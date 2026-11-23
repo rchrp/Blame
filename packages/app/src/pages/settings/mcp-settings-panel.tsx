@@ -71,7 +71,11 @@ export function McpSettingsPanel() {
     void client
       .list()
       .then(async (localServers) => {
-        if (cloudStatus !== "authenticated" || !cloudUserId) {
+        if (
+          cloudStatus !== "authenticated" ||
+          !cloudUserId ||
+          cloudMcpConfiguration === undefined
+        ) {
           return setServers(localServers)
         }
         if (cloudMcpConfiguration) {
@@ -106,7 +110,10 @@ export function McpSettingsPanel() {
       return false
     }
     setServers(updated)
-    if (cloud.status === "authenticated") {
+    if (
+      cloud.status === "authenticated" &&
+      cloudMcpConfiguration !== undefined
+    ) {
       try {
         await cloud.saveMcpConfiguration(toCloudServers(updated))
       } catch (reason) {

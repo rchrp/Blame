@@ -44,7 +44,8 @@ type SessionState = {
   apiUrl: string
   session: CloudSession
   aiPreferences: CloudAiPreferences | null
-  mcpConfiguration: CloudMcpConfiguration | null
+  /** null: the account has none; undefined: it could not be read. */
+  mcpConfiguration: CloudMcpConfiguration | null | undefined
   license?: CloudLicense
 }
 
@@ -554,7 +555,9 @@ async function hydrateSession(
       ? api.license().catch(() => unavailableLicense)
       : undefined,
     api.aiPreferences().catch(() => null),
-    api.mcpConfiguration().catch(() => null),
+    // A failed read must not look like "no configuration": the first-sync
+    // path would then replace the account's list with this device's.
+    api.mcpConfiguration().catch(() => undefined),
   ])
   return {
     status: "authenticated",
