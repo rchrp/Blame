@@ -5,13 +5,16 @@ import type {
   EpicModelKey,
   EpicOrchestratorModel,
 } from "@/components/orchestrator/data/epic-data"
-import { useModelSelection } from "@/components/model/model-selection"
+import {
+  useModelSelection,
+  type ModelSelectionScope,
+} from "@/components/model/model-selection"
 import type { CloudAiModelPreference } from "@/context/cloud-auth"
 
 // What the orchestrator's screen needs of the person's models: their names,
 // the ones hidden in the model selector, the ranking and the providers.
-export function useEpicModels() {
-  const selection = useModelSelection({ role: "agent" })
+export function useEpicModels(scope?: ModelSelectionScope) {
+  const selection = useModelSelection({ role: "agent", scope })
   const allModels = React.useMemo(
     () => selection.allProviderGroups.flatMap((group) => group.models),
     [selection.allProviderGroups]
@@ -46,6 +49,7 @@ export function useEpicModels() {
     connectedProviders: selection.connectedProviders,
     currentModel: selection.currentModel,
     currentVariant: selection.currentVariant,
+    loading: selection.loading,
     hiddenModels,
     modelName,
     recommendations: selection.recommendations,

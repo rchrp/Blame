@@ -14,7 +14,8 @@ import {
   useEpicModels,
 } from "@/components/orchestrator/data/use-epic-models"
 import { EpicModelRangeField } from "@/components/orchestrator/epic-model-range-field"
-import { ModelSelector, ProviderIcon } from "@/components/model/model-selector"
+import { EpicProviderField } from "./epic-provider-field"
+import { ModelSelector } from "@/components/model/model-selector"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -32,7 +33,6 @@ import {
 } from "@/components/ui/input-group"
 import { Switch } from "@/components/ui/switch"
 import type { CloudAiModelPreference } from "@/context/cloud-auth"
-import { cn } from "@/lib/utils"
 
 type Draft = {
   askBeforeLaunch: boolean
@@ -179,34 +179,11 @@ function EpicSettingsForm({
               : "Stories may run on any connected provider. Select some to keep to them."
           }
         >
-          <div className="flex flex-wrap gap-2">
-            {models.connectedProviders.map((provider) => {
-              const selected = draft.providers.includes(provider.id)
-              return (
-                <button
-                  key={provider.id}
-                  aria-pressed={selected}
-                  className={cn(
-                    "inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-                    selected
-                      ? "border-primary bg-primary/10 text-foreground"
-                      : "bg-background text-muted-foreground hover:text-foreground"
-                  )}
-                  type="button"
-                  onClick={() =>
-                    change({
-                      providers: selected
-                        ? draft.providers.filter((id) => id !== provider.id)
-                        : [...draft.providers, provider.id],
-                    })
-                  }
-                >
-                  <ProviderIcon providerId={provider.id} />
-                  {provider.name}
-                </button>
-              )
-            })}
-          </div>
+          <EpicProviderField
+            connected={models.connectedProviders}
+            value={draft.providers}
+            onChange={(providers) => change({ providers })}
+          />
         </Section>
         <Section
           title="The orchestrator's model"

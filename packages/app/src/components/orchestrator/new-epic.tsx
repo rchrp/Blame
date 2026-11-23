@@ -10,6 +10,8 @@ import { PreviewLaunchClouds } from "@/components/backlog/drawer/preview-idle-st
 import { ConversationSurface } from "@/components/chat/conversation-surface"
 import { ConversationEmptyState } from "@/components/chat/quick-chat-empty-state"
 import { ModelSelector } from "@/components/model/model-selector"
+import { NewEpicModelFields } from "./new-epic-model-fields"
+import { useNewEpicModels } from "./use-new-epic-models"
 import {
   composerDraftStorageKey,
   writeComposerDraft,
@@ -19,12 +21,9 @@ import { toast } from "sonner"
 
 import {
   epicTitleFromGoal,
-  wholeModelRange,
   type Epic,
-  type EpicSettings,
 } from "@/components/orchestrator/data/epic-data"
 import { useEpicStore } from "@/components/orchestrator/data/epic-store"
-import { useEpicModels } from "@/components/orchestrator/data/use-epic-models"
 import { useEpicMessenger } from "@/components/orchestrator/data/use-epic-conversation"
 import { AppLink } from "@/components/navigation/app-link"
 import { useProjectInitialization } from "@/components/project-initialization/use-project-initialization"
@@ -59,7 +58,7 @@ export function NewEpic({
   const epics = useEpicStore()
   const platform = usePlatform()
   const project = useProjects().activeProject
-  const models = useEpicModels()
+  const choices = useNewEpicModels(projectId)
   const messenger = useEpicMessenger()
   const initialization = useProjectInitialization()
   // The host refuses to create an epic's stories without a working preview
@@ -77,7 +76,7 @@ export function NewEpic({
     try {
       const epic = await epics.create({
         goal: goal.trim(),
-        settings: defaultSettings(models),
+        settings: choices.settings,
         targetBranch: await currentBranch(platform, project?.path),
         title,
       })
@@ -99,6 +98,7 @@ export function NewEpic({
               fileAttachments: draft.message.fileAttachments,
             }
           )
+        choices.clear()
         draft.clear()
         onCreated(epic)
       }
@@ -158,49 +158,34 @@ export function NewEpic({
                 </AppLink>
               </p>
             ) : null}
-            <AgentConversationComposer
-              {...draft.composer}
-              disabled={!project || noPreviewEnvironment}
-              submitting={creating}
-              submitDisabled={!title}
-              mentionDirectory={project?.path}
-              minHeight="min-h-44"
-              onMessageSubmit={() => void start()}
-              placeholder="Describe the outcome you want to build together…"
-              submitLabel="Start epic"
-              toolbarEnd={<ModelSelector role="agent" />}
-            />
+            <div className="epic-setup mx-auto w-full max-w-3xl rounded-3xl border border-foreground/15 bg-card">
+              <AgentConversationComposer
+                {...draft.composer}
+                disabled={!project || noPreviewEnvironment}
+                submitting={creating}
+                submitDisabled={!title}
+                mentionDirectory={project?.path}
+                minHeight="min-h-32"
+                onMessageSubmit={() => void start()}
+                placeholder="Describe the outcome you want to build together…"
+                submitLabel="Start epic"
+                toolbarEnd={
+                  <div
+                    role="group"
+                    aria-label="Orchestrator model"
+                    className="max-w-full min-w-0"
+                  >
+                    <ModelSelector role="agent" scope={choices.scope} />
+                  </div>
+                }
+              />
+              <NewEpicModelFields choices={choices} disabled={creating} />
+            </div>
           </div>
         }
       />
     </main>
   )
-}
-
-function defaultSettings(
-  models: ReturnType<typeof useEpicModels>
-): EpicSettings {
-  const model = models.currentModel
-  return {
-    askBeforeLaunch: false,
-    hiddenModels: models.hiddenModels(),
-    modelRange: { ...wholeModelRange },
-    providers: [],
-    ...(model
-      ? {
-          orchestratorModel: {
-            providerId: model.provider.id,
-            modelId: model.id,
-            ...(model.credentialLabel
-              ? { credentialLabel: model.credentialLabel }
-              : {}),
-            ...(models.currentVariant
-              ? { reasoning: models.currentVariant }
-              : {}),
-          },
-        }
-      : {}),
-  }
 }
 
 // The epic merges where the project folder is now.

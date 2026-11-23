@@ -36,9 +36,9 @@ export function EpicModelRangeField({
   const picks = intentModels(pool, range)
   if (!ranked.length) {
     return (
-      <p className="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
-        No ranked models for these providers. Stories will use your default
-        agent model.
+      <p className="text-sm text-muted-foreground">
+        No ranked models available. Stories can use your default agent model if
+        these providers allow it.
       </p>
     )
   }
@@ -52,7 +52,7 @@ export function EpicModelRangeField({
     return modelName(item)
   }
   return (
-    <div className="grid gap-3">
+    <div className="@container/model-range grid min-w-0 gap-3">
       <div className="flex justify-between text-sm text-muted-foreground">
         <span>Cheaper</span>
         <span>Smarter</span>
@@ -65,11 +65,11 @@ export function EpicModelRangeField({
         onChange={onChange}
       />
       {picks ? (
-        <dl className="grid gap-1.5 rounded-lg bg-muted/50 p-3 text-sm sm:grid-cols-3 sm:gap-3">
+        <dl className="grid gap-1.5 rounded-lg bg-muted/50 p-3 text-sm @sm/model-range:grid-cols-3 @sm/model-range:gap-3">
           {modelIntents.map((intent) => (
             <div
               key={intent}
-              className="flex min-w-0 items-center justify-between gap-2 sm:grid sm:justify-start sm:gap-0.5"
+              className="flex min-w-0 items-center justify-between gap-2 @sm/model-range:grid @sm/model-range:justify-start @sm/model-range:gap-0.5"
             >
               <dt className="text-xs text-muted-foreground">
                 {modelIntentLabels[intent]}

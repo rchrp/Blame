@@ -423,6 +423,12 @@ on, and the orchestrator is woken (`idle`) to wrap up.
 - Select **Orchestrator** in the sidebar to return to the current epic.
   The title at the top opens the project's epic history and **New epic**.
   The command palette also offers **New epic**.
+- Choose the orchestrator's model in the goal editor's Markdown toolbar.
+  Under **Story agents**, choose the providers and model range. Drag the two
+  handles to set the range, or focus a handle and use the arrow keys. The
+  model names below the slider update as you move it. Bring the handles
+  together to use a single model.
+  These choices stay with the project's draft and apply from the first turn.
 - An open epic uses the chat timeline. The orchestrator writes ordinary
   messages, before, between and after its tool calls, and its last one is
   its answer: no card is needed to say something. Each created story appears

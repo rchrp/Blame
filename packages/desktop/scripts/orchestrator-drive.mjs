@@ -6,6 +6,8 @@
 //
 // - preview: without a working preview environment Start epic is refused
 //   before the goal; once the project has one, the notice goes.
+// - models: choose models before launch, revisit the draft and check the
+//   first orchestrator turn and the model assigned to its first held story.
 // - loop: a goal; two stories, the second after the first; two wakes, two
 //   merges into the epic's branch, the summary; the target branch did not
 //   move.
@@ -486,7 +488,7 @@ async function connect(port) {
 
 // ------------------------------------------------------------------ scenario
 
-const scenarioNames = ["preview", "loop", "checks", "reply", "ask", "allow", "pause", "relaunch", "blocked", "conflict"];
+const scenarioNames = ["preview", "models", "loop", "checks", "reply", "ask", "allow", "pause", "relaunch", "blocked", "conflict"];
 
 async function scenario(initial, options, model, projectPath, relaunch) {
   let cdp = initial;
@@ -499,10 +501,10 @@ async function scenario(initial, options, model, projectPath, relaunch) {
   };
   const evaluate = (expression) => cdp.evaluate(expression);
   const send = (method, params) => cdp.send(method, params);
-  const shot = async (name) => {
+  const shot = async (name, clip) => {
     // One frame for what was just rendered to be painted.
     await evaluate(`new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => done(true))))`);
-    const { data } = await send("Page.captureScreenshot", { format: "png" });
+    const { data } = await send("Page.captureScreenshot", { format: "png", clip });
     await writeFile(join(options.out, `${name}.png`), Buffer.from(data, "base64"));
     console.log(`shot ${join(options.out, `${name}.png`)}`);
   };
@@ -592,7 +594,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
     await click(row);
     await until(async () => evaluate(`Boolean(${paneSelector}) && ${switcher}?.innerText.trim() === ${JSON.stringify(title)}`), 10_000, `the page of ${title}`);
   };
-  const startEpicThroughUi = async (title, goal) => {
+  const startEpicThroughUi = async (title, goal, configure) => {
     await click(`document.querySelector('a[data-sidebar="menu-button"][href="/orchestrator"]')`);
     await until(async () => evaluate(`Boolean(${switcher})`), 10_000, "the epic switcher");
     if (await evaluate(`Boolean(${paneSelector})`)) {
@@ -603,6 +605,7 @@ async function scenario(initial, options, model, projectPath, relaunch) {
     await dismissPreviewSetup();
     await click(editor);
     await send("Input.insertText", { text: `${title}\n${goal}` });
+    if (configure) await configure();
     await click(startButton);
     await until(async () => Boolean(await epicOf(title)), 15_000, `the epic ${title}`);
     return epicOf(title);
@@ -656,6 +659,13 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       check("with a preview environment, the notice goes", true);
       await dismissPreviewSetup(3000);
       await shot("01-new-epic");
+      const setupClip = await evaluate(`(() => {
+        const frame = document.querySelector('.epic-setup').getBoundingClientRect();
+        const heading = document.querySelector('.epic-setup').closest('main').querySelector('h2').getBoundingClientRect();
+        const x = Math.max(0, Math.floor(frame.left - 56)), y = Math.max(0, Math.floor(heading.top - 100));
+        return { x, y, width: Math.min(innerWidth - x, Math.ceil(frame.width + 112)), height: Math.min(innerHeight - y, Math.ceil(frame.bottom + 48 - y)), scale: 1.5 };
+      })()`);
+      await shot("01-epic-model-setup", setupClip);
       const clouds = `document.querySelector('.epic-clouds')`;
       const drift = `${clouds}.querySelector('.preview-ambilight-patch')`;
       await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
@@ -671,6 +681,72 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       await until(() => evaluate(`${clouds}.dataset.visible === "true"`), 5_000, "the clouds to return to the empty composer");
       await cloudWindow();
       keepCloud = setInterval(() => void cloudWindow().catch(() => undefined), 1500);
+    },
+
+    async models() {
+      const title = "Choose the export models";
+      const goal = "Plan a review of the export format.";
+      const preferences = () => api("/account/ai-preferences");
+      const accountBefore = (await preferences()).agentModel;
+      const fields = `document.querySelector('fieldset[aria-label="Story agents"]')`;
+      const provider = button("Anthropic", fields);
+      const composer = `document.querySelector('.epic-setup [data-slot="markdown-editor"]')`;
+      const picker = `${composer}.querySelector('[aria-label="Orchestrator model"] [data-model-picker]')`;
+      const range = `${fields}.querySelector('[aria-label="Models stories may use"]')`;
+      const ceiling = `${range}?.querySelector('[data-handle="max"]')`;
+      let pickedName, storyName;
+      model.orchestrators.set(title, [
+        tool("create_stories", { reason: "Prepare a review.", stories: [{ key: "review", title: "Review the export", brief: "Review the export format.", intent: "smarter", hold: true }] }),
+        tool("end_turn", { action: "reply", reason: "The review is ready." }),
+      ]);
+      const epic = await startEpicThroughUi(title, goal, async () => {
+        check("the orchestrator model sits beside the Markdown toolbar actions", await evaluate(`(() => {
+          const model = ${picker}.getBoundingClientRect();
+          const attach = ${composer}.querySelector('button[aria-label="Attach files"]').getBoundingClientRect();
+          return model.left > attach.right && Math.abs((model.top + model.height / 2) - (attach.top + attach.height / 2)) <= 1;
+        })()`));
+        check("the story model and provider controls share the form's right edge", await evaluate(`(() => {
+          const form = ${fields}, right = form.getBoundingClientRect().right;
+          const controls = form.querySelectorAll('[aria-label="Models stories may use"], [aria-label="Story providers"] button:last-child');
+          return controls.length >= 2 && [...controls].every(control => Math.abs(control.getBoundingClientRect().right - right) <= 1);
+        })()`));
+        await click(provider);
+        const currentName = await evaluate(`${picker}.innerText.trim()`);
+        const point = await evaluate(`(() => { const r = ${picker}.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+        for (const deltaY of [90, -90]) {
+          await send("Input.dispatchMouseEvent", { type: "mouseWheel", ...point, deltaX: 0, deltaY });
+          if (await until(() => evaluate(`${picker}.innerText.trim() !== ${JSON.stringify(currentName)}`), 1000, "a model change").then(() => true, () => false)) break;
+        }
+        pickedName = await evaluate(`${picker}.innerText.trim()`);
+        check("the orchestrator picker changes the draft's model", pickedName !== currentName);
+        await until(() => evaluate(`Boolean(${ceiling})`), 10_000, "the story model range slider");
+        const [cheapest, smartest] = await evaluate(`[...${range}.querySelectorAll('[role="slider"]')].map(thumb => {
+          const box = thumb.getBoundingClientRect();
+          return { x: box.x + box.width / 2, y: box.y + box.height / 2, name: thumb.getAttribute("aria-valuetext") };
+        })`);
+        storyName = cheapest.name;
+        await send("Input.dispatchMouseEvent", { type: "mousePressed", x: smartest.x, y: smartest.y, button: "left", buttons: 1, clickCount: 1 });
+        await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: cheapest.x, y: cheapest.y, button: "left", buttons: 1 });
+        await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: cheapest.x, y: cheapest.y, button: "left", clickCount: 1 });
+        await until(() => evaluate(`${ceiling}.getAttribute("aria-valuetext") === ${JSON.stringify(storyName)}`), 3_000, "the upper handle to reach the cheapest model");
+        const picks = await evaluate(`[...${fields}.querySelectorAll("dd")].map(item => item.textContent.trim())`);
+        check("dragging the handles together updates all three model previews", picks.length === 3 && picks.every(name => name === storyName));
+        await click(`document.querySelector('a[data-sidebar="menu-button"][href="/backlog"]')`);
+        await click(`document.querySelector('a[data-sidebar="menu-button"][href="/orchestrator"]')`);
+        await until(() => evaluate(`Boolean(${fields}) && ${editor}?.innerText.includes(${JSON.stringify(goal)})`), 10_000, "the goal and its model fields to return");
+        check("the draft keeps its orchestrator and story choices when revisited", await evaluate(`${picker}.innerText.trim() === ${JSON.stringify(pickedName)} && ${provider}.getAttribute("aria-pressed") === "true" && ${ceiling}?.getAttribute("aria-valuetext") === ${JSON.stringify(storyName)}`));
+        await send("Emulation.setDeviceMetricsOverride", { width: 760, height: 750, deviceScaleFactor: 1, mobile: false });
+        check("the model fields fit a narrow window", await evaluate(`${fields}.scrollWidth <= ${fields}.clientWidth`));
+        await send("Emulation.setDeviceMetricsOverride", { width: 1600, height: 950, deviceScaleFactor: 1, mobile: false });
+      });
+      await waitState(epic.id, "replied");
+      const saved = epic.settings;
+      const list = await engine("providers", { refresh: false });
+      const nameOf = choice => list.all.find(p => p.id === choice?.providerId)?.models[choice?.modelId]?.name;
+      check("the first orchestrator turn uses the chosen model", nameOf(saved.orchestratorModel) === pickedName && model.of(`orchestrator:${title}`)[0]?.model === saved.orchestratorModel.modelId);
+      const story = (await storiesOf(epic.id))[0];
+      check("the first story uses the chosen provider and model range", saved.providers.join() === "anthropic" && story?.requestedModel?.providerId === "anthropic" && nameOf(story.requestedModel) === storyName);
+      check("choosing models for the epic preserves the account preference", JSON.stringify((await preferences()).agentModel) === JSON.stringify(accountBefore));
     },
 
     // A goal, two stories one after the other, two wakes, two merges, the summary.
@@ -1235,6 +1311,7 @@ async function inElectron() {
       const model = { providerId: "anthropic", modelId: "claude-sonnet-5-5", credentialLabel: null, reasoningEffort: null };
       await api("/account/ai-preferences", "PUT", { agentModel: model, alternativeModel: model });
       localStorage.setItem("blame.app.workspace-start.v1", "local");
+      localStorage.setItem("blame.agent-import-done.v1", "true");
       localStorage.setItem("blame.runtime-offer-done.v1", "true");
       localStorage.setItem("blame.runtime-preference.v1", JSON.stringify({ profile: "direct", source: "account-default" }));
     })()`);

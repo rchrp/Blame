@@ -18,6 +18,14 @@
   opacity: 0.19;
 }
 
+/* The goal and its model fields share the new epic's outer frame. */
+.epic-setup [data-slot="markdown-editor"]:not(.ring-2) {
+  background: transparent;
+  box-shadow: none;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
 .epic-clouds .preview-ambilight-patch {
   filter: blur(clamp(64px, 7vw, 128px)) saturate(0.72);
 }
