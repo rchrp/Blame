@@ -1,5 +1,6 @@
 import type { LogMessage } from "electron-log";
 import { redactSecuritySecrets } from "@blame/agent-runtime/security-secret-redaction";
+import { deviceSecrets } from "./device-credentials/device-secret-redaction.ts";
 import { grantedGithubTokens } from "./github-access/agent-github-access.ts";
 
 // Desktop logs (electron-log's file and console) never carry a GitHub token:
@@ -13,7 +14,7 @@ export function registerDesktopLogRedaction(logger: {
 }) {
   logger.hooks.push((message) => ({
     ...message,
-    data: redactLogData(message.data, grantedGithubTokens()),
+    data: redactLogData(message.data, [...grantedGithubTokens(), ...deviceSecrets()]),
   }));
 }
 
