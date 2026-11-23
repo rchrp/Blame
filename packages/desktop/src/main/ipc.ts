@@ -23,6 +23,7 @@ import { registerAgentScreenshotIpcHandlers } from "./ipc/agent-screenshots-ipc"
 import { registerPreviewServingIpcHandlers } from "./ipc/preview-serving-ipc";
 import { useServingAgentCheck } from "./preview-runtime/local/local-preview-serving";
 import { registerAgentGithubAccessIpcHandlers } from "./ipc/agent-github-access-ipc";
+import { registerAgentImportIpcHandlers } from "./ipc/agent-import-ipc";
 import { registerProjectAppIpcHandlers } from "./ipc/project-app-ipc";
 import { registerGitIdentityIpcHandlers } from "./ipc/git-identity-ipc";
 import { registerBacklogStatusPipIpcHandlers } from "./backlog-status-pip-ipc";
@@ -185,6 +186,7 @@ export function registerDesktopIpcHandlers(options: DesktopIpcOptions) {
   registerAgentGithubAccessIpcHandlers({ isAppWindow: options.isAppWindow });
   registerPreviewEnvironmentIpcHandlers({ isAppWindow: options.isAppWindow });
   registerMcpIpcHandlers();
+  registerAgentImportIpcHandlers({ isAppWindow: options.isAppWindow });
   registerTerminalIpcHandlers();
   registerRunLogIpcHandlers();
   registerPrivacyIpcHandlers();

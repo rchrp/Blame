@@ -316,6 +316,10 @@ const api: BlameDesktopApi = {
     getLevel: (input) => ipcRenderer.invoke("agent-github-access:get", input),
     setLevel: (input) => ipcRenderer.invoke("agent-github-access:set", input),
   },
+  agentImport: {
+    apply: (choices) => ipcRenderer.invoke("agent-import:apply", choices),
+    scan: () => ipcRenderer.invoke("agent-import:scan"),
+  },
   previewEnvironment: {
     describe: (input) =>
       ipcRenderer.invoke("preview-environment:describe", input),
