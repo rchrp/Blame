@@ -301,7 +301,7 @@ describe("Blame's self-repair tools", () => {
         value.details.find((server: any) => server.name === "good").tools > 0,
       );
       assert.equal(value.status, "problem");
-      assert.match(value.next, /Check the command exists/);
+      assert.match(value.next, /Check the program exists/);
     });
 
     it("lists skills and says why a folder does not load", async () => {
@@ -929,7 +929,7 @@ describe("Blame's self-repair tools", () => {
       });
       assert.equal(bad.value.outcome, "still_failing");
       assert.equal(bad.value.after.state, "failed");
-      assert.match(bad.value.next, /Check the command exists/);
+      assert.match(bad.value.next, /Check the program exists/);
       assert.ok(
         (
           await call(list, "blame_repair", {

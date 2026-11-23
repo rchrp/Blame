@@ -70,7 +70,7 @@ const mcpRules: Rule[] = [
   {
     pattern: /ENOENT|not found|command not found|spawn .* ENOENT/i,
     cause: "the server's command is not installed here",
-    next: "Check the command exists (the runtime's tools: node, npx, uvx); install what it needs or remove the server.",
+    next: "Check the program exists on this computer (node, npx, uvx…); the person installs what it needs, or remove the server.",
   },
   {
     pattern:

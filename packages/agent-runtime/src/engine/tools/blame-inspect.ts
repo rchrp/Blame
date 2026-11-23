@@ -104,6 +104,7 @@ async function report(
   services: BlameToolServices,
   session: BlameInspectSession,
   signal: AbortSignal,
+  state: Promise<BlameAppState | undefined> = appState(services),
 ): Promise<AreaReport> {
   switch (area) {
     case "preview":
@@ -115,7 +116,7 @@ async function report(
     case "providers":
       return providersReport(services, session);
     case "runtime":
-      return runtimeReport(services);
+      return runtimeReport(await state);
   }
 }
 
@@ -125,23 +126,26 @@ async function overview(
   signal: AbortSignal,
 ) {
   const names = ["preview", "mcp", "skills", "providers", "runtime"] as const;
+  // The app is asked once: the runtime and the log errors both read it.
+  const asked = appState(services);
   const reports = await Promise.all(
     names.map((area) =>
-      settle(report(area, services, session, signal), areaTimeoutMs).then(
-        (result): AreaReport =>
-          result.ok
-            ? result.value
-            : {
-                area,
-                status: "unknown",
-                summary: `could not be read: ${result.error}`,
-              },
+      settle(
+        report(area, services, session, signal, asked),
+        areaTimeoutMs,
+      ).then((result): AreaReport =>
+        result.ok
+          ? result.value
+          : {
+              area,
+              status: "unknown",
+              summary: `could not be read: ${result.error}`,
+            },
       ),
     ),
   );
-  const state = await settle(appState(services), areaTimeoutMs);
-  const recentErrors =
-    state.ok && state.value ? state.value.log.errors : undefined;
+  const state = await settle(asked, areaTimeoutMs);
+  const recentErrors = state.ok ? state.value?.log?.errors : undefined;
   const problems = reports.filter((entry) => entry.status === "problem");
   return {
     summary: problems.length
@@ -366,12 +370,13 @@ async function providersReport(
 }
 
 async function appState(services: BlameToolServices) {
-  const state = await services.blameApp?.({ action: "state" });
-  return state as BlameAppState | undefined;
+  const state = (await services.blameApp?.({ action: "state" })) as
+    BlameAppState | undefined;
+  // Something other than the app's answer is no state.
+  return state?.app ? state : undefined;
 }
 
-async function runtimeReport(services: BlameToolServices): Promise<AreaReport> {
-  const state = await appState(services);
+function runtimeReport(state: BlameAppState | undefined): AreaReport {
   if (!state)
     return {
       area: "runtime",

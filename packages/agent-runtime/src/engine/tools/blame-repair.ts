@@ -284,6 +284,7 @@ async function reconnectMcp(
     },
     after,
     outcome: fixed ? "fixed" : "still_failing",
+    ...(diagnosis ? { cause: diagnosis.cause } : {}),
     next: fixed
       ? `Connected with ${after.tools ?? 0} tools; they show in new conversations.`
       : (diagnosis?.next ??
