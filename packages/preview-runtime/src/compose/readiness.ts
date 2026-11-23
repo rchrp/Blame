@@ -76,7 +76,7 @@ async function waitForHealthyEndpoint(
   return false;
 }
 
-async function endpointAnswers(
+export async function endpointAnswers(
   target: EndpointTarget,
   path: string,
   timeoutMs: number,

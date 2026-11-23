@@ -13,7 +13,11 @@ class FakeHost implements DockerHost {
   readonly files = new Map<string, string>();
   readonly volumes = new Map<string, string>();
   databaseContainer = "db-1";
-  containers: string[] = [];
+  // One running row per service, as Docker reports it once `up` returned.
+  containers: string[] = [
+    "web\tFalse\trunning\t0\t",
+    "db\tFalse\trunning\t0\t",
+  ];
 
   async run(command: string, args: string[]): Promise<CommandResult> {
     this.commands.push([command, ...args]);
@@ -84,7 +88,7 @@ test("reruns the install when its node_modules volume is recreated", async () =>
   assert.deepEqual(host.composeRuns(), ["setup-install", "setup-migrate"]);
 });
 
-test("starts services with Docker waiting for health", async () => {
+test("starts services with Compose ordering them by health, then waits itself", async () => {
   const host = new FakeHost();
   const engine = engineFor(host, "story-a");
   await engine.prepare(renderCompose(plan(), target("story-a")), owner);
@@ -95,9 +99,6 @@ test("starts services with Docker waiting for health", async () => {
   assert.deepEqual(up.slice(up.indexOf("up")), [
     "up",
     "--detach",
-    "--wait",
-    "--wait-timeout",
-    "600",
     "--remove-orphans",
     "--no-build",
     "web",
@@ -337,5 +338,59 @@ test("a failed start without a failed service keeps Compose's message", async ()
   await assert.rejects(
     engine.start(plan(), ["web"], fingerprints),
     /Compose up failed \(exit code 1\): dependency failed to start/,
+  );
+});
+
+// `up` succeeds, then a container exits or never gets ready: the engine's
+// own wait fails the start with the service's last lines, like a failed `up`.
+class CrashingHost extends FakeHost {
+  override async run(command: string, args: string[]): Promise<CommandResult> {
+    if (args.includes("logs") && args.includes("web")) {
+      this.commands.push([command, ...args]);
+      return ok(
+        "web-1  | Error: SESSION_SECRET is required\nweb-1  | at boot (server.js:2)",
+      );
+    }
+    return super.run(command, args);
+  }
+}
+
+test("a service that exits after `up` fails the start with its last lines", async () => {
+  const host = new CrashingHost();
+  const engine = engineFor(host, "story-a");
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  host.containers = [
+    "web\tFalse\texited\t1\t",
+    "db\tFalse\trunning\t0\thealthy",
+  ];
+  await assert.rejects(
+    engine.start(plan(), ["web", "db"], fingerprints),
+    (error: Error & { runnerCode?: string }) =>
+      error.runnerCode === "SERVICE_FAILED" &&
+      error.message.startsWith(
+        "Service web stopped (exit code 1). Its last lines: Error: SESSION_SECRET is required",
+      ),
+  );
+});
+
+test("a service that is not ready in time fails the start with its last lines", async () => {
+  const host = new CrashingHost();
+  const engine = new ComposeEngine({
+    host,
+    stateDirectory: "/state/story-a",
+    startTimeoutMs: 600,
+  });
+  await engine.prepare(renderCompose(plan(), target("story-a")), owner);
+  host.containers = [
+    "web\tFalse\trunning\t0\tstarting",
+    "db\tFalse\trunning\t0\thealthy",
+  ];
+  await assert.rejects(
+    engine.start(plan(), ["web", "db"], fingerprints),
+    (error: Error & { runnerCode?: string }) =>
+      error.runnerCode === "SERVICE_FAILED" &&
+      error.message.startsWith(
+        "Service web did not become ready within 1 s. Its last lines: Error: SESSION_SECRET is required",
+      ),
   );
 });

@@ -12,6 +12,7 @@ import {
   type HostCommandOptions,
 } from "./docker-host.js";
 import { selectedSetupTasks } from "./service-selection.js";
+import { waitForServices, type StartWait } from "./start-readiness.js";
 
 // Runs a rendered Compose project on a Docker host. The sandbox runner and
 // the desktop drive previews through this engine, so setup caching, image
@@ -111,7 +112,7 @@ export class ComposeEngine {
     });
   }
 
-  /** Runs the setup the services need, then starts them once healthy. */
+  /** Runs the setup the services need, then starts them once ready. */
   async start(
     plan: PreviewExecutionPlan,
     serviceIds: string[],
@@ -121,21 +122,17 @@ export class ComposeEngine {
     await this.runSetup(plan, serviceIds, fingerprints);
     await this.prepareImages(plan, serviceIds, fingerprints);
     await this.measure("services.start", async () => {
+      // No `--wait`: Compose still starts each service once the
+      // dependencies it needs are healthy, but it would only return on
+      // Docker's health timer. The wait below sees the services ready as
+      // soon as they answer.
       const result = await this.compose(
-        [
-          "up",
-          "--detach",
-          "--wait",
-          "--wait-timeout",
-          String(Math.ceil(this.startTimeoutMs / 1_000)),
-          "--remove-orphans",
-          "--no-build",
-          ...serviceIds,
-        ],
+        ["up", "--detach", "--remove-orphans", "--no-build", ...serviceIds],
         { timeoutMs: this.startTimeoutMs + 30_000 },
         true,
       );
       if (result.exitCode !== 0) throw await this.startFailure(plan, result);
+      await this.waitUntilStarted(plan, serviceIds);
     });
     await waitForDisplayWindows(
       plan,
@@ -146,6 +143,35 @@ export class ComposeEngine {
         stopped: (id) => this.stoppedReason(plan, id),
       },
     );
+  }
+
+  private async waitUntilStarted(
+    plan: PreviewExecutionPlan,
+    serviceIds: string[],
+  ) {
+    const project = await this.requiredPrepared();
+    const wait = await waitForServices({
+      plan,
+      serviceIds,
+      targets: project.targets,
+      inspect: () => this.inspect(plan, { project }),
+      timeoutMs: this.startTimeoutMs,
+    });
+    if (wait.outcome !== "ready") throw await this.waitFailure(wait);
+  }
+
+  /** Why the services stopped or never became ready, with their own last lines. */
+  private async waitFailure(wait: Exclude<StartWait, { outcome: "ready" }>) {
+    const what =
+      wait.outcome === "timeout"
+        ? `did not become ready within ${Math.ceil(this.startTimeoutMs / 1_000)} s`
+        : undefined;
+    const causes = await Promise.all(
+      wait.services
+        .slice(0, 2)
+        .map((service) => this.serviceFailure(service, what)),
+    );
+    return new ComposeEngineError("SERVICE_FAILED", causes.join("\n"));
   }
 
   /**
@@ -178,11 +204,12 @@ export class ComposeEngine {
     );
   }
 
-  private async serviceFailure(service: ServiceState) {
+  private async serviceFailure(service: ServiceState, reason?: string) {
     const what =
-      service.health === "unhealthy"
+      reason ??
+      (service.health === "unhealthy"
         ? "failed its healthcheck"
-        : `stopped (${service.exitCode === undefined ? service.state : `exit code ${service.exitCode}`})`;
+        : `stopped (${service.exitCode === undefined ? service.state : `exit code ${service.exitCode}`})`);
     const logs = await this.logs(service.id, { tail: 80, timeoutMs: 15_000 })
       .then(({ stdout, stderr }) => `${stdout}\n${stderr}`)
       .catch(() => "");

@@ -1,4 +1,8 @@
-import type { ProbePlan, ServiceLaunchPlan } from "../domain/execution-plan.js";
+import type {
+  ProbePlan,
+  ServiceEndpointPlan,
+  ServiceLaunchPlan,
+} from "../domain/execution-plan.js";
 import { serviceProbeCommand } from "../domain/functional-probes.js";
 
 export type ComposeHealthcheck = {
@@ -55,6 +59,26 @@ export function serviceHealthcheck(
   };
   const command = serviceProbeCommand(service, probe, declared, "127.0.0.1");
   return command ? timing(["CMD", ...command], startMs) : undefined;
+}
+
+// The endpoint whose container healthcheck is the shared HTTP probe. What
+// that probe answers from inside the container, a request to the published
+// port answers too, so a start may learn the service is ready as soon as
+// that endpoint replies instead of waiting for Docker's next check.
+// Everything else (databases, display sidecars, TCP endpoints, containers
+// with no runtime to script the probe) is only known to Docker.
+export function httpHealthcheckEndpoint(
+  service: ServiceLaunchPlan,
+): ServiceEndpointPlan | undefined {
+  if (
+    service.surface?.type === "display" &&
+    service.id === service.surface.sidecarServiceId
+  )
+    return undefined;
+  const declared = service.endpoints.find(({ healthcheck }) => healthcheck);
+  if (declared?.healthcheck?.type !== "http" || knownServiceCheck(service))
+    return undefined;
+  return serviceHealthcheck(service) ? declared : undefined;
 }
 
 // Docker checks every second while the service starts, so a dependent
