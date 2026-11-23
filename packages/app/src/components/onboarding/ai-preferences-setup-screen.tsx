@@ -207,8 +207,7 @@ function ProviderStep({
             Connect your AI provider
           </h1>
           <p className="text-sm text-foreground/60">
-            Blame runs on your own credentials. Your provider bills you
-            directly, and Blame picks the models for you.
+            Blame runs on your own credentials. Your provider bills you directly.
           </p>
         </div>
         <Button
@@ -236,44 +235,46 @@ function ProviderStep({
               tile(provider, subscriptions.length + index, "api-key")
             )}
       </ProviderSection>
-      <div className="flex min-h-8 items-center justify-between gap-3">
-        <AnimatePresence initial={false} mode="wait">
-          <motion.p
-            key={connectedCount > 0 ? "connected" : "empty"}
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            className="text-sm text-foreground/60"
-          >
-            {connectedCount > 0 ? (
-              <>
-                <span className="font-medium text-foreground">
-                  {connectedCount} provider{connectedCount > 1 ? "s" : ""} connected.
-                </span>{" "}
-                Change the models Blame picks anytime in Settings.
-              </>
-            ) : (
-              "Use the arrow keys to move between providers, Enter to connect."
-            )}
-          </motion.p>
+      <div className="grid gap-1">
+        <div className="flex min-h-8 items-center justify-between gap-3">
+          <AnimatePresence initial={false} mode="wait">
+            <motion.p
+              key={connectedCount > 0 ? "connected" : "empty"}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="text-sm text-foreground/60"
+            >
+              {connectedCount > 0 ? (
+                <>
+                  <span className="font-medium text-foreground">
+                    {connectedCount} provider{connectedCount > 1 ? "s" : ""} connected.
+                  </span>{" "}
+                  Change the models Blame picks anytime in Settings.
+                </>
+              ) : (
+                "Use the arrow keys to move between providers, Enter to connect."
+              )}
+            </motion.p>
+          </AnimatePresence>
+          {moreCount > 0 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              data-roving-item
+              className="shrink-0 text-foreground/70"
+              onClick={onBrowse}
+            >
+              <PlusIcon />
+              {moreCount} more provider{moreCount > 1 ? "s" : ""}
+            </Button>
+          ) : null}
+        </div>
+        <AnimatePresence initial={false}>
+          {choice ? <ChosenModels choice={choice} /> : null}
         </AnimatePresence>
-        {moreCount > 0 ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            data-roving-item
-            className="shrink-0 text-foreground/70"
-            onClick={onBrowse}
-          >
-            <PlusIcon />
-            {moreCount} more provider{moreCount > 1 ? "s" : ""}
-          </Button>
-        ) : null}
       </div>
-      <AnimatePresence initial={false}>
-        {choice ? <ChosenModels choice={choice} /> : null}
-      </AnimatePresence>
     </div>
   )
 }
@@ -286,21 +287,19 @@ function ChosenModels({ choice }: { choice: AutoModelChoice<SelectableModel> }) 
   return (
     <motion.dl
       aria-label="Models Blame picked"
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -4 }}
       transition={springSoft}
-      className="grid gap-3 rounded-2xl border border-foreground/[0.08] bg-background/55 p-3 sm:grid-cols-2"
+      className="flex flex-wrap items-center gap-x-6 gap-y-1.5"
     >
       {rows.map(({ label, model }) => (
-        <div key={label} className="flex min-w-0 items-center gap-2.5">
+        <div key={label} className="flex min-w-0 items-center gap-2">
           <ProviderMark provider={model.provider} />
-          <div className="grid min-w-0">
-            <dt className="text-[11px] text-foreground/50">{label}</dt>
-            <dd className="truncate text-sm font-semibold">
-              {modelDisplayName(model)}
-            </dd>
-          </div>
+          <dt className="text-xs text-foreground/50">{label}</dt>
+          <dd className="truncate text-sm font-semibold">
+            {modelDisplayName(model)}
+          </dd>
         </div>
       ))}
     </motion.dl>
