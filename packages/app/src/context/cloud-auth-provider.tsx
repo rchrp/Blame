@@ -44,7 +44,8 @@ type SessionState = {
   // The API holding this workspace: the account's, or the local one.
   apiUrl: string
   session: CloudSession
-  aiPreferences: CloudAiPreferences | null
+  /** null: none saved yet; undefined: it could not be read (API unreachable). */
+  aiPreferences: CloudAiPreferences | null | undefined
   /** null: the account has none; undefined: it could not be read. */
   mcpConfiguration: CloudMcpConfiguration | null | undefined
   license?: CloudLicense
@@ -584,7 +585,9 @@ async function hydrateSession(
     options.mode === "account"
       ? api.license().catch(() => unavailableLicense)
       : undefined,
-    api.aiPreferences().catch(() => null),
+    // An unreadable answer is not "no preferences": that would send someone
+    // with the API unreachable back through the setup.
+    api.aiPreferences().catch(() => undefined),
     // A failed read must not look like "no configuration": the first-sync
     // path would then replace the account's list with this device's.
     api.mcpConfiguration().catch(() => undefined),

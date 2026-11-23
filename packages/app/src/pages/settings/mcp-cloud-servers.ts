@@ -138,3 +138,30 @@ function syncableUrl(value: string | undefined) {
     return undefined
   }
 }
+
+/** Whether two lists say the same thing to the account, whatever their order. */
+export function sameCloudServers(
+  left: CloudMcpServer[],
+  right: CloudMcpServer[]
+) {
+  return canonical(left) === canonical(right)
+}
+
+function canonical(servers: CloudMcpServer[]) {
+  const sorted = (value: unknown): unknown =>
+    Array.isArray(value)
+      ? value.map(sorted)
+      : value && typeof value === "object"
+        ? Object.fromEntries(
+            Object.entries(value as Record<string, unknown>)
+              .filter(([, item]) => item !== undefined)
+              .sort(([a], [b]) => a.localeCompare(b))
+              .map(([key, item]) => [key, sorted(item)])
+          )
+        : value
+  return JSON.stringify(
+    [...servers]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((server) => sorted(server))
+  )
+}

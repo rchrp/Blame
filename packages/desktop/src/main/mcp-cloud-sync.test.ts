@@ -659,3 +659,20 @@ test("a merge that removes the last placeholders leaves an empty list, through t
   );
   assert.deepEqual((await readMcpSettings(path)).mcpServers, {});
 });
+
+test("the same account signing back in takes its servers up again", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        ...configured,
+        metadata: { blameCloudUserId: userId, blameSyncSecrets: true },
+      },
+    },
+  };
+  const detached = detachCloudServers(settings, userId);
+  assert.equal(syncMode(detached.mcpServers.Dokploy), "device");
+  const back = mergeCloudServers(detached, userId, [cloudServer(false)]);
+  assert.equal(syncMode(back.mcpServers.Dokploy), "account");
+  assert.deepEqual(back.mcpServers.Dokploy.env, configured.env);
+  assert.equal(cloudOwner(back.mcpServers.Dokploy), userId);
+});

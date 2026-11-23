@@ -28,6 +28,9 @@ const SYNC_SECRETS = "blameSyncSecrets";
 const SECRETS_BASE = "blameSecretsBase";
 // What the account said still has to be added on this device (names only).
 const CLOUD_MISSING = "blameCloudMissing";
+// Set when an account signed out and left this server on the computer: the
+// same account signing back in takes it up again.
+const DETACHED_FROM = "blameDetachedFrom";
 
 export type McpSyncMode = "account" | "device";
 
@@ -54,6 +57,10 @@ export function mergeCloudServers(
     const local = merged[name];
     if (!local) {
       merged[cloud.name] = placeholder(cloud, userId);
+      continue;
+    }
+    if (detachedFrom(local) === userId) {
+      merged[name] = mergeCloudServer(resumed(local), cloud, userId);
       continue;
     }
     if (syncMode(local) === "device") continue;
@@ -99,10 +106,27 @@ export function detachCloudServers(
         // next account to sign in never receives it.
         .map(([name, server]) => [
           name,
-          cloudOwner(server) === userId ? keptOnThisDevice(server) : server,
+          cloudOwner(server) === userId
+            ? withMetadata(keptOnThisDevice(server), {
+                [DETACHED_FROM]: userId,
+              })
+            : server,
         ]),
     ),
   };
+}
+
+function detachedFrom(server: McpSettingsServer) {
+  const value = serverMetadata(server)?.[DETACHED_FROM];
+  return typeof value === "string" ? value : undefined;
+}
+
+/** The account that signed out is back: its server syncs again. */
+function resumed(server: McpSettingsServer): McpSettingsServer {
+  return withMetadata(server, {
+    [DETACHED_FROM]: undefined,
+    [SYNC_MODE]: undefined,
+  });
 }
 
 function belongsToAnotherAccount(server: McpSettingsServer, userId: string) {

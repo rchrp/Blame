@@ -6,6 +6,7 @@ import {
   cloudServerFor,
   describeMissing,
   nextCloudServers,
+  sameCloudServers,
 } from "./mcp-cloud-servers.ts"
 import type { McpServerConfig } from "../../context/platform.ts"
 
@@ -125,4 +126,15 @@ test("the prompt names what is missing, never values", () => {
     "its arguments, DOKPLOY_TOKEN"
   )
   assert.equal(describeMissing(undefined), "its arguments and secrets")
+})
+
+test("two lists with the same content in another order are the same", () => {
+  const a = cloudServerFor(stdio())
+  const b = { ...cloudServerFor(stdio()), name: "Other" }
+  assert.equal(
+    sameCloudServers([a, b], [b, { ...a, timeout: undefined }]),
+    true
+  )
+  assert.equal(sameCloudServers([a], [a, b]), false)
+  assert.equal(sameCloudServers([a], [{ ...a, disabled: true }]), false)
 })

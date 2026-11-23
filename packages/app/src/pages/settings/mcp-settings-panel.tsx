@@ -17,7 +17,12 @@ import {
   type McpSettingsRecovery,
   type McpTransport,
 } from "@/context/platform"
-import { canSync, describeMissing, nextCloudServers } from "./mcp-cloud-servers"
+import {
+  canSync,
+  describeMissing,
+  nextCloudServers,
+  sameCloudServers,
+} from "./mcp-cloud-servers"
 import { McpServerForm, Notice, errorMessage } from "./mcp-server-form"
 
 export function McpSettingsPanel() {
@@ -35,6 +40,8 @@ export function McpSettingsPanel() {
   const [loading, setLoading] = React.useState(Boolean(client))
   const [error, setError] = React.useState<string>()
   const [recovery, setRecovery] = React.useState<McpSettingsRecovery | null>()
+  // The last list pushed after a merge: the same one is never pushed twice.
+  const pushed = React.useRef<string | undefined>(undefined)
 
   React.useEffect(() => {
     if (!client) return
@@ -50,9 +57,28 @@ export function McpSettingsPanel() {
           return setServers(localServers)
         }
         if (cloudMcpConfiguration) {
-          return setServers(
-            await client.mergeCloud(cloudUserId, cloudMcpConfiguration.servers)
+          const merged = await client.mergeCloud(
+            cloudUserId,
+            cloudMcpConfiguration.servers
           )
+          setServers(merged)
+          // What this device syncs and the account does not hold yet (a
+          // server added by hand, one resumed after a sign-out) goes up once.
+          const wanted = nextCloudServers({
+            current: cloudMcpConfiguration.servers,
+            local: merged,
+          })
+          const key = JSON.stringify(wanted)
+          if (
+            !sameCloudServers(wanted, cloudMcpConfiguration.servers) &&
+            pushed.current !== key
+          ) {
+            pushed.current = key
+            await updateCloudMcpConfiguration((current) =>
+              nextCloudServers({ current, local: merged })
+            )
+          }
+          return
         }
         const first = await updateCloudMcpConfiguration((current) =>
           nextCloudServers({ current, local: localServers })

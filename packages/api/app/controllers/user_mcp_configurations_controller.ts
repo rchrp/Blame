@@ -5,13 +5,16 @@ import { saveUserMcpConfigurationValidator } from '#validators/user_mcp_configur
 import type { HttpContext } from '@adonisjs/core/http'
 
 export default class UserMcpConfigurationsController {
-  async show({ auth, serialize }: HttpContext) {
+  async show({ auth, response, serialize }: HttpContext) {
+    // The answer holds the secrets the person chose to sync: never cached.
+    response.header('Cache-Control', 'no-store')
     const configuration = await new UserMcpConfigurationsService().get(auth.getUserOrFail().id)
     if (!configuration) return { data: null }
     return serialize(await this.present(configuration))
   }
 
   async update({ auth, request, response, serialize }: HttpContext) {
+    response.header('Cache-Control', 'no-store')
     let configuration
     try {
       configuration = await new UserMcpConfigurationsService().save(
