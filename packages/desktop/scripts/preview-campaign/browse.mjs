@@ -69,6 +69,16 @@ for await (const line of lines) {
     continue;
   }
   if (message.op === "quit") break;
+  if (message.op === "click") {
+    const found = await window.webContents.executeJavaScript(`(() => {
+      const target = document.querySelector(${JSON.stringify(message.selector)});
+      if (!target) return false;
+      target.click();
+      return true;
+    })()`);
+    console.log(`BROWSE_ANSWER ${JSON.stringify(await answer({ clicked: found }))}`);
+    continue;
+  }
   if (message.op === "goto") {
     await window.loadURL(new URL(message.path, window.webContents.getURL()).href).catch((error) => failedRequests.push(`loadURL ${error.message}`));
     await new Promise((done) => setTimeout(done, 1500));

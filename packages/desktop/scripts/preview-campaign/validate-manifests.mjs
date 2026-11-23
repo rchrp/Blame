@@ -16,6 +16,7 @@ let failures = 0;
 for (const name of names) {
   const fixture = fixtures[name];
   if (!fixture) {
+    failures += 1;
     console.log(`?    ${name}: unknown fixture`);
     continue;
   }
@@ -33,3 +34,4 @@ for (const name of names) {
   }
 }
 console.log(`${names.length - failures}/${names.length} fixtures pass the initialization checks`);
+process.exitCode = failures ? 1 : 0;

@@ -6,6 +6,7 @@ import { execFile } from "node:child_process";
 import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { promisify } from "node:util";
+import { advancedFixtures } from "./advanced-fixtures.mjs";
 
 const run = promisify(execFile);
 
@@ -68,6 +69,7 @@ const deps = (command = "npm install --no-package-lock") => ({
 });
 
 export const fixtures = {
+  ...advancedFixtures,
   "vite-react": {
     title: "Vite + React (npm)",
     install: ["vite", "@vitejs/plugin-react", "react", "react-dom"],
@@ -95,6 +97,7 @@ export const fixtures = {
 
   "next-app": {
     title: "Next.js app router (npm)",
+    initializationFile: "package.json",
     install: ["next", "react", "react-dom"],
     scripts: { dev: "next dev", build: "next build", start: "next start" },
     files: {
@@ -125,6 +128,7 @@ export const fixtures = {
     page: { path: "/", includes: "Campaign next v1" },
     edit: { file: "app/page.jsx", from: "next v1", to: "next v2", served: "/", includes: "next v2" },
     visible: { before: "Campaign next v1", after: "Campaign next v2", hot: true },
+    browserFlow: { initial: "count 0", click: "button", result: "count 1" },
   },
 
   "express-api": {

@@ -5,7 +5,7 @@
 // files, stop, restart, remove. Each scenario records checks with timings.
 //
 //   pnpm --filter @blame/desktop exec electron-vite build
-//   node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--keep]
+//   node packages/desktop/scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--keep]
 //
 // State lives under --root (default /tmp/blc: Lima sockets need a short
 // path), so the runtime VM and the images survive between runs.
@@ -17,6 +17,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { fixtures, writeFixture } from "./fixtures.mjs";
+import { advancedFixtures } from "./advanced-fixtures.mjs";
+import { editFixture, initializeFixture } from "./scripted-agent.mjs";
 
 const execFileAsync = promisify(execFile);
 const delay = (ms) => new Promise((done) => setTimeout(done, ms));
@@ -63,6 +65,7 @@ function parseOptions(argv) {
     fresh: false,
     keep: false,
     cloud: false,
+    scriptedAgents: false,
     // Where a signed-in app keeps its account session (only the Local Storage folder is copied).
     sessionFrom: join(homedir(), "Library/Application Support/dev.blame.desktop"),
   };
@@ -75,6 +78,7 @@ function parseOptions(argv) {
     else if (flag === "--fresh") options.fresh = true;
     else if (flag === "--keep") options.keep = true;
     else if (flag === "--cloud") options.cloud = true;
+    else if (flag === "--scripted-agents") options.scriptedAgents = true;
     else if (flag === "--session-from") options.sessionFrom = resolve(argv[++index]);
   }
   return options;
@@ -175,7 +179,17 @@ async function openBrowser(options, url, { ticket } = {}) {
   const environment = { ...process.env };
   delete environment.ELECTRON_RUN_AS_NODE;
   if (ticket) environment.BROWSE_TICKET = ticket;
-  const child = spawn(electron, [join(here, "browse.mjs"), url, join(options.root, ticket ? `browser-profile-${Date.now()}` : "browser-profile")], { env: environment, stdio: ["pipe", "pipe", "pipe"] });
+  const profile = join(options.root, ticket ? `browser-profile-${crypto.randomUUID()}` : "browser-profile");
+  const child = spawn(electron, [join(here, "browse.mjs"), url, profile], { env: environment, stdio: ["pipe", "pipe", "ignore"] });
+  const running = () => child.exitCode === null && child.signalCode === null;
+  child.stdin.on("error", () => undefined);
+  const close = async () => {
+    if (running()) {
+      child.stdin.end('{"op":"quit"}\n');
+      await until(() => !running(), 1000, "the test browser to quit", 100).catch(() => child.kill("SIGKILL"));
+    }
+    if (ticket) await rm(profile, { force: true, recursive: true });
+  };
   const waiting = [];
   let buffer = "";
   const lines = [];
@@ -193,14 +207,21 @@ async function openBrowser(options, url, { ticket } = {}) {
   const next = async (timeoutMs = 45_000) => {
     const begun = Date.now();
     while (!lines.length) {
-      if (child.exitCode !== null || Date.now() - begun > timeoutMs) throw new Error("the test browser did not answer");
+      if (!running() || Date.now() - begun > timeoutMs) throw new Error("the test browser did not answer");
       await new Promise((done) => (waiting.push(done), setTimeout(done, 300)));
     }
     return lines.shift();
   };
-  const first = await next(60_000);
-  const ask = async (op) => (child.stdin.write(`${JSON.stringify({ op })}\n`), next());
-  return { first, text: () => ask("text"), reload: () => ask("reload"), goto: (path) => (child.stdin.write(`${JSON.stringify({ op: "goto", path })}\n`), next()), close: () => (child.stdin.write('{"op":"quit"}\n'), delay(300).then(() => child.kill("SIGKILL"))) };
+  const first = await next(60_000).catch(async (error) => {
+    await close();
+    throw error;
+  });
+  const ask = async (op, input) => (child.stdin.write(`${JSON.stringify({ op, ...input })}\n`), next());
+  return {
+    first, text: () => ask("text"), reload: () => ask("reload"), goto: (path) => ask("goto", { path }),
+    click: (selector) => ask("click", { selector }),
+    close,
+  };
 }
 
 // ---------------------------------------------------------------------- app
@@ -323,6 +344,7 @@ const uniqueStory = () => `00000000-0000-4000-8000-${String(Date.now()).slice(-8
 async function openStory(app, options, name, { variant } = {}) {
   const fixture = fixtures[name];
   const project = await writeFixture(options.projects, name);
+  const setup = await fixtureSetup(options, name, project);
   const storyId = uniqueStory();
   const created = await timed(`${name}: create worktree`, () =>
     workspace(app, "createWorktree", {
@@ -343,9 +365,9 @@ async function openStory(app, options, name, { variant } = {}) {
   const prepared = await timed(`${name}: prepare preview`, () =>
     workspace(app, "prepareProjectPreview", {
       worktree,
-      previewManifest: fixture.manifest,
-      runConfigurations: fixture.runConfigurations,
-      runConfigurationId: fixture.runConfigurations[0].id,
+      previewManifest: setup.previewManifest,
+      runConfigurations: setup.runConfigurations,
+      runConfigurationId: setup.runConfigurations[0].id,
       hostDependenciesChecked: true,
       runtimeProfile: "local-container",
       databaseMode: null,
@@ -356,7 +378,17 @@ async function openStory(app, options, name, { variant } = {}) {
     return { name, worktree, project, storyId, fixture, prepared: false };
   }
   await check(`${name}: prepare preview`, true, `${prepared.ms} ms`);
-  return { name, worktree, project, storyId, fixture, prepared: true, configurationId: fixture.runConfigurations[0].id };
+  return { name, worktree, project, storyId, fixture, prepared: true, configurationId: setup.runConfigurations[0].id };
+}
+
+async function fixtureSetup(options, name, project) {
+  const fixture = fixtures[name];
+  if (!options.scriptedAgents || !fixture.initializationFile) {
+    return { previewManifest: fixture.manifest, runConfigurations: fixture.runConfigurations };
+  }
+  const { result, ms } = await timed("initialization", () => initializeFixture(project, fixture));
+  await check(`${name}: the initialization agent's setup was accepted`, true, `${ms} ms`);
+  return result;
 }
 
 async function timed(label, action) {
@@ -413,15 +445,14 @@ async function collectDiagnostics(app, options, story, label) {
   const lines = [];
   const state = await readState(app, story).catch(() => null);
   lines.push(`state: ${JSON.stringify(state)?.slice(0, 1500)}`);
-  const containers = await vm(options, "docker ps -a --format '{{.Names}} {{.Status}}' | head -30");
+  const containers = await storyContainers(options, story);
   lines.push(`containers:\n${containers.stdout}`);
   const names = containers.stdout
     .split("\n")
     .map((line) => line.split(" ")[0])
     .filter(Boolean)
-    .filter((nameValue) => nameValue.includes(story.name.replace(/[^a-z0-9]/g, "")) || true)
-    .slice(0, 8);
-  for (const containerName of names.slice(0, 6)) {
+    .slice(0, 6);
+  for (const containerName of names) {
     const logs = await vm(options, `docker logs --tail 25 ${containerName} 2>&1`);
     lines.push(`--- ${containerName}\n${logs.stdout || logs.stderr}`);
   }
@@ -456,9 +487,37 @@ async function scenarioHealthy(app, options, name) {
     await check(`${name}: ${extra} answers`, response.ok && response.status === 200, `${response.status} in ${response.ms} ms`);
   }
   story.base = base;
+  if (advancedFixtures[name]) await checkEmbeddedPreview(app, story);
   if (fixture.visible) await browserCheck(options, story);
   else if (fixture.edit && !fixture.edit.skipEdit) await editAndCheck(app, options, story);
   return story;
+}
+
+async function checkEmbeddedPreview(app, story, sessionId) {
+  const context = sessionId ? { previewSessionId: sessionId } : { previewWorktree: story.worktree };
+  const result = await app.cdp.evaluate(`(async () => {
+    const browser = window.blame.previewBrowser;
+    const { id } = await browser.create(${JSON.stringify({ storageKey: story.storyId, ...context })});
+    let state;
+    const unsubscribe = browser.onState({ id }, (update) => { state = update; });
+    try {
+      const url = ${JSON.stringify(story.url)};
+      await browser.setBounds({ id, visible: false, bounds: { x: 0, y: 0, width: 900, height: 640 } });
+      const loaded = await browser.load({ id, url });
+      const deadline = Date.now() + 15_000;
+      while (!state?.application && !state?.error && Date.now() < deadline)
+        await new Promise((done) => setTimeout(done, 100));
+      return { loaded, state };
+    } catch (error) {
+      return { error: String(error), state };
+    } finally {
+      unsubscribe();
+      await browser.destroy({ id });
+    }
+  })()`);
+  await check(`${story.name}: desktop's embedded preview reports a loaded app`, result.loaded &&
+    !result.state?.loading && !result.state?.error && result.state?.application?.status === "ready" &&
+    result.state?.url === story.url, JSON.stringify(result.state ?? result.error));
 }
 
 /** What a person sees in a browser: the page, no errors, a source edit appearing. */
@@ -475,6 +534,7 @@ async function browserCheck(options, story) {
       const titled = await until(async () => ((await browser.text()).title === visible.title ? true : false), 15_000, "the page title").catch(() => false);
       await check(`${story.name}: page script ran (title ${JSON.stringify(visible.title)})`, titled, (await browser.text()).title);
     }
+    if (story.fixture.browserFlow) await verifyBrowserFlow(browser, story.name, story.fixture.browserFlow);
     if (edit && !edit.skipEdit) {
       const begun = Date.now();
       const sed = `cd ${sq(story.worktree)} && sed -i 's/${edit.from}/${edit.to}/' '${edit.file}'`;
@@ -500,6 +560,23 @@ async function browserCheck(options, story) {
   } finally {
     await browser?.close();
   }
+}
+
+async function verifyBrowserFlow(browser, name, flow) {
+  const waiting = await until(async () => {
+    const page = await browser.text();
+    return page.text.includes(flow.initial) ? page : false;
+  }, 15_000, flow.initial).catch(() => null);
+  await check(`${name}: browser shows the initial state`, waiting, waiting?.text ?? flow.initial);
+  if (!waiting) return;
+  const clicked = await browser.click(flow.click);
+  const result = clicked.clicked ? await until(async () => {
+    const page = await browser.text();
+    return page.text.includes(flow.result) ? page : false;
+  }, 20_000, flow.result).catch(() => null) : null;
+  const last = result ?? await browser.text();
+  await check(`${name}: browser action returns the expected result`, result, last.text);
+  await check(`${name}: browser action has no console error or failed request`, last.errors.length === 0 && last.failedRequests.length === 0, [...last.errors, ...last.failedRequests].join(" | "));
 }
 
 async function editAndCheck(app, options, story, { suffix = "" } = {}) {
@@ -583,19 +660,76 @@ async function scenarioLifecycle(app, options, story) {
   await check(`${story.name}: ready after restart action`, Boolean(again) && !again.failed, JSON.stringify(again?.failed?.lifecycle ?? ""));
 }
 
+async function scenarioIsolation(app, options, first) {
+  current = "isolation:django-celery";
+  if (!first?.url) return void (await check("the first story has a running preview", false));
+  const second = await openStory(app, options, first.name, { variant: "isolated" });
+  if (!second?.prepared) return;
+  try {
+    const started = await startAndWatch(app, second);
+    await check("the second story also starts", started.ok, JSON.stringify(started.state?.lifecycle?.failure ?? started.error ?? ""));
+    if (!started.ok) return;
+    second.url = started.state.previewUrl;
+    const [firstPage, secondPage, firstDb, secondDb] = await Promise.all([
+      get(first.url), get(second.url),
+      get(new URL("/status", first.url).href), get(new URL("/status", second.url).href),
+    ]);
+    await check("the concurrent stories have separate preview ports", new URL(first.url).port !== new URL(second.url).port);
+    await check("the edit is isolated to its worktree", firstPage.body.includes("Django queue v2") && secondPage.body.includes("Django queue v1"));
+    await check("the worker's database mutation survived restart and stayed in its story",
+      firstDb.status === 200 && /"processed":\s*1/.test(firstDb.body) &&
+      secondDb.status === 200 && /"processed":\s*0/.test(secondDb.body), `${firstDb.body} / ${secondDb.body}`);
+  } finally {
+    await scenarioRemove(app, options, second);
+  }
+}
+
+async function scenarioMigrationRecovery(app, options) {
+  const name = "django-celery";
+  current = "migration-recovery";
+  const story = await openStory(app, options, name, { variant: "recover" });
+  if (!story?.prepared) return;
+  const settings = sq(join(story.worktree, "settings.py"));
+  try {
+    const broken = await vm(options, `printf '\\nraise RuntimeError("campaign broken migration settings")\\n' >> ${settings}`, 10_000, "blame");
+    if (!(await check("migration failure installed in the story", broken.ok, broken.stderr))) return;
+    const failed = await startAndWatch(app, story, { timeoutMs: 90_000 });
+    await check("failed migration is surfaced as a setup failure", !failed.ok && !failed.timedOut &&
+      /migrate|migration/i.test(JSON.stringify(failed.state?.lifecycle) + failed.error), JSON.stringify(failed.state?.lifecycle ?? failed.error));
+    const repaired = await vm(options, `git -C ${sq(story.worktree)} restore -- settings.py`, 10_000, "blame");
+    if (!(await check("restored the settings in the same worktree", repaired.ok, repaired.stderr))) return;
+    const restarted = await workspace(app, "controlProjectPreview", { action: "restart", configurationId: story.configurationId, worktree: story.worktree });
+    const state = restarted.value;
+    story.url = state?.previewUrl;
+    await check("restart completes after the correction", state?.lifecycle?.status === "ready" && story.url, restarted.error ?? JSON.stringify(state?.lifecycle));
+    if (!story.url) return;
+    const page = await get(story.url);
+    await check("the repaired preview serves the application", page.status === 200 && page.body.includes(story.fixture.visible.before));
+  } finally {
+    await scenarioRemove(app, options, story);
+  }
+}
+
 async function scenarioRemove(app, options, story) {
   current = `remove:${story.name}`;
-  const before = await vm(options, "docker ps -a --format '{{.Names}}' | wc -l; docker volume ls -q | wc -l");
+  const before = await storyContainers(options, story);
   const removed = await workspace(app, "removeWorktree", { repositoryRoot: story.project, workspaceMode: "local-container", worktree: story.worktree });
   await check(`${story.name}: removeWorktree`, !removed.error && removed.value !== false, removed.error ?? String(removed.value));
   await delay(3000);
   const gone = await vm(options, `test -e ${sq(story.worktree)} && echo present || echo gone`);
   await check(`${story.name}: worktree directory gone`, gone.stdout.trim() === "gone", gone.stdout.trim());
-  const containers = await vm(options, "docker ps -a --format '{{.Names}} {{.Label \"com.docker.compose.project\"}}'");
-  const leftover = containers.stdout.split("\n").filter((line) => line.includes(story.storyId.slice(-12)));
-  await check(`${story.name}: its containers are gone`, leftover.length === 0, leftover.join("; ") || `before: ${before.stdout.replace(/\n/g, " ")}`);
-  const down = await get(story.url ?? "http://127.0.0.1:1", { timeoutMs: 4_000 });
-  await check(`${story.name}: url dead after removal`, !down.ok, `${down.status}`);
+  const containers = await storyContainers(options, story);
+  await check(`${story.name}: its containers are gone`, containers.ok && !containers.stdout.trim(),
+    containers.stderr || containers.stdout || `${before.stdout.trim().split("\n").filter(Boolean).length} before removal`);
+  if (story.url) {
+    const down = await get(story.url, { timeoutMs: 4_000 });
+    await check(`${story.name}: url dead after removal`, !down.ok, `${down.status}`);
+  }
+}
+
+function storyContainers(options, story) {
+  const label = sq(`label=com.docker.compose.project.working_dir=${join(story.worktree, ".blame/preview")}`);
+  return vm(options, `docker ps -a --filter ${label} --format '{{.Names}} {{.Status}}'`);
 }
 
 // Scenario: several stories start at once (a person queues a few stories).
@@ -1111,7 +1245,11 @@ async function account(app, path, method = "GET", body) {
   })()`);
 }
 
-const recordOf = (json) => json?.transformerData?.[0] ?? json?.data ?? json;
+function recordOf(json) {
+  if (Array.isArray(json?.transformerData)) return recordOf(json.transformerData[0]);
+  if (json && typeof json === "object" && "data" in json) return recordOf(json.data);
+  return json;
+}
 
 /** Calls `window.blame.previewRuntime.<method>(input)`; returns the value or `{ error }`. */
 async function runtimeCall(app, method, input) {
@@ -1149,7 +1287,14 @@ async function cloudSetup(app, port) {
   const reachable = await account(app, "/projects");
   await check("cloud: the account API accepts the session", reachable.status === 200, `HTTP ${reachable.status} ${reachable.error ?? reachable.text ?? ""}`);
   if (reachable.status !== 200) return undefined;
-  const project = await account(app, "/projects", "POST", { name: "[campaign] preview tests", repositoryFingerprint: null });
+  const projectName = "[campaign] preview tests";
+  const projects = recordOf(reachable.json);
+  const existing = Array.isArray(projects) ? projects.find((project) => project.name === projectName) : undefined;
+  if (existing?.id) {
+    await check("cloud: reusing the campaign project", true);
+    return { projectId: existing.id };
+  }
+  const project = await account(app, "/projects", "POST", { name: projectName, repositoryFingerprint: null });
   const projectId = recordOf(project.json)?.id;
   await check("cloud: a test project exists in the account", Boolean(projectId), `HTTP ${project.status}`);
   return projectId ? { projectId } : undefined;
@@ -1170,9 +1315,11 @@ async function scenarioCloud(app, options, setup, name) {
   current = `cloud:${name}`;
   const fixture = fixtures[name];
   const project = await writeFixture(options.projects, name);
+  const initialization = await fixtureSetup(options, name, project);
+  const storyTitle = `[campaign] cloud ${name}`;
   const storyResponse = await account(app, "/projects/user-stories", "POST", {
     projectId: setup.projectId,
-    title: `[campaign] cloud ${name}`,
+    title: storyTitle,
     summary: "Created by the preview campaign: safe to delete.",
     status: "backlog",
     runMode: "vercel-compose",
@@ -1187,8 +1334,8 @@ async function scenarioCloud(app, options, setup, name) {
     await check(`${name}: cloud worktree`, !made.error && made.value?.workspaceMode === "cloud-mirror", made.error ?? JSON.stringify(made.value));
     if (made.error) return;
     const worktree = made.value.worktree;
-    const configuration = fixture.runConfigurations[0];
-    const prepared = await workspace(app, "prepareProjectPreview", { worktree, previewManifest: fixture.manifest, runConfigurations: fixture.runConfigurations, runConfigurationId: configuration.id, hostDependenciesChecked: true, runtimeProfile: "vercel-compose", databaseMode: null });
+    const configuration = initialization.runConfigurations[0];
+    const prepared = await workspace(app, "prepareProjectPreview", { worktree, previewManifest: initialization.previewManifest, runConfigurations: initialization.runConfigurations, runConfigurationId: configuration.id, hostDependenciesChecked: true, runtimeProfile: "vercel-compose", databaseMode: null });
     await check(`${name}: prepare cloud preview`, !prepared.error, prepared.error ?? "");
     if (prepared.error) return;
     const manifestText = (await workspace(app, "readFile", { root: worktree, path: ".blame/initialization/preview-manifest.json" })).value;
@@ -1215,7 +1362,7 @@ async function scenarioCloud(app, options, setup, name) {
     await check(`${name}: source uploaded to the sandbox`, !imported.error, imported.error ?? `${imported.value?.sourceRevision}`);
     if (imported.error) return;
     const previewService = configuration.previewService;
-    const endpoint = fixture.manifest.services.find((service) => service.id === previewService)?.endpoints?.find((candidate) => candidate.protocol === "http");
+    const endpoint = initialization.previewManifest.services.find((service) => service.id === previewService)?.endpoints?.find((candidate) => candidate.protocol === "http");
     const started = await runtimeCall(app, "command", { sessionId, command: { type: "start-services", configurationId: configuration.id, serviceIds: configuration.services, primaryRoute: endpoint ? { serviceId: previewService, endpointId: endpoint.id } : undefined }, operationId: crypto.randomUUID() });
     await check(`${name}: start-services accepted`, !started.error, started.error ?? "");
     if (started.error) return;
@@ -1236,6 +1383,13 @@ async function scenarioCloud(app, options, setup, name) {
       await check(`${name}: cloud preview ready`, Boolean(outcome.ready), outcome.ready ? `${(ms / 1000).toFixed(0)} s` : `${JSON.stringify(outcome)} ${view.failure?.message ?? ""} ${viewState(view)}`.slice(0, 800));
       if (!outcome.ready) return;
     }
+    if (fixture.visible) {
+      const route = view.endpointMap?.routes.find((route) => route.routeId === view.endpointMap.primaryRouteId);
+      if (route?.publicUrl) {
+        const url = new URL(fixture.visible.path ?? fixture.page.path, route.publicUrl).href;
+        await checkEmbeddedPreview(app, { name, storyId, url }, sessionId);
+      }
+    }
     const ticket = await account(app, `/preview-sessions/${sessionId}/access-ticket`, "POST", {});
     const ticketBody = recordOf(ticket.json);
     await check(`${name}: access ticket issued`, ticket.status === 200 && ticketBody?.openUrl, `HTTP ${ticket.status} ${ticket.text ?? ""}`);
@@ -1252,6 +1406,7 @@ async function scenarioCloud(app, options, setup, name) {
       }
       await check(`${name}: the cloud page loads in a browser`, text.text.includes(expected) || text.html > 0 && text.text.includes(fixture.page.includes), `${first.loadMs} ms at ${new URL(first.url).origin}: ${text.text.slice(0, 120).replace(/\s+/g, " ")}`);
       await check(`${name}: no console error or failed request`, first.errors.length === 0 && first.failedRequests.length === 0, [...first.errors, ...first.failedRequests].join(" | "));
+      if (fixture.browserFlow) await verifyBrowserFlow(browser, name, fixture.browserFlow);
       // What the sandbox's own services printed, for the report (the stream ends when aborted).
       const logs = await app.cdp.evaluate(`(async () => {
         const session = JSON.parse(localStorage.getItem("blame.app.cloud-session.v1"));
@@ -1272,16 +1427,25 @@ async function scenarioCloud(app, options, setup, name) {
       })()`).catch(() => "");
       await writeFile(join(outDirectory, `cloud-logs-${name}.txt`), logs).catch(() => undefined);
       if (fixture.edit && !fixture.edit.skipEdit) {
-        const path = join(worktree, fixture.edit.file);
-        const source = await readFile(path, "utf8");
         const begunEdit = Date.now();
-        await writeFile(path, source.replace(fixture.edit.from, fixture.edit.to));
+        if (options.scriptedAgents) {
+          await editFixture(worktree, fixture.edit, { projectId: setup.projectId, storyId, title: storyTitle });
+          await check(`${name}: the story agent wrote the expected change`, true, `${Date.now() - begunEdit} ms`);
+        } else {
+          const path = join(worktree, fixture.edit.file);
+          const source = await readFile(path, "utf8");
+          await writeFile(path, source.replace(fixture.edit.from, fixture.edit.to));
+        }
         const after = fixture.visible?.after ?? fixture.edit.includes;
         const seen = await until(async () => {
           const answer = fixture.visible?.hot ? await browser.text() : await browser.reload();
           return answer.text.includes(after) ? answer : false;
         }, 120_000, "the local edit in the cloud preview", fixture.visible?.hot ? 1500 : 4000).then(() => true, () => false);
-        await check(`${name}: a local edit reaches the cloud preview`, seen, seen ? `${((Date.now() - begunEdit) / 1000).toFixed(1)} s` : "not within 120 s");
+        await check(`${name}: the ${options.scriptedAgents ? "agent's" : "local"} edit reaches the cloud preview`, seen, seen ? `${((Date.now() - begunEdit) / 1000).toFixed(1)} s` : "not within 120 s");
+        if (!seen && fixture.visible?.hot) {
+          const refreshed = await browser.reload();
+          await check(`${name}: the cloud preview shows the edit after reload`, refreshed.text.includes(after), refreshed.text.slice(0, 150));
+        }
         const status = await runtimeCall(app, "syncStatus", { sessionId });
         await note(`${name} sync status after the edit: ${JSON.stringify(status.value ?? status.error)?.slice(0, 300)}`);
       }
@@ -1305,16 +1469,29 @@ async function scenarioCloud(app, options, setup, name) {
       return current.value?.state.preview === "ready" && current.value.state.engine === "running" ? { ready: true } : false;
     }, 300_000, "restart", 3000).catch(() => null);
     await check(`${name}: restart after stop`, Boolean(back?.ready), back?.ready ? `${((Date.now() - restartedAt) / 1000).toFixed(0)} s` : JSON.stringify(again.error ?? back));
+    if (back?.ready && fixture.browserFlow && fixture.edit) {
+      const reopen = recordOf((await account(app, `/preview-sessions/${sessionId}/access-ticket`, "POST", {})).json);
+      let restartedBrowser;
+      try {
+        if (!reopen?.ticket || !reopen?.openUrl) throw new Error("No access ticket for the restarted preview");
+        restartedBrowser = await openBrowser(options, reopen.openUrl, { ticket: reopen.ticket });
+        await check(`${name}: restarted preview still shows the change`, restartedBrowser.first.text.includes(fixture.visible.after), restartedBrowser.first.text);
+      } finally {
+        await restartedBrowser?.close();
+      }
+    }
   } finally {
+    let gone = !entry.sessionId;
     if (entry.sessionId) {
       const usage = (await runtimeCall(app, "get", { sessionId: entry.sessionId })).value?.usage;
       if (usage) await note(`${name} sandbox usage: ${usage.activeSeconds} s active, about $${Number(usage.estimatedCostUsd).toFixed(4)}`);
       const destroyed = await destroyCloudSession(app, entry.sessionId);
+      gone = destroyed.gone;
       await check(`${name}: sandbox destroyed afterwards`, destroyed.gone, destroyed.error ?? "");
     }
     const deleted = await account(app, `/projects/user-stories/${storyId}`, "DELETE");
     await check(`${name}: test story deleted`, deleted.status >= 200 && deleted.status < 300, `HTTP ${deleted.status}`);
-    cloudSessions.delete(storyId);
+    if (gone && deleted.status >= 200 && deleted.status < 300) cloudSessions.delete(storyId);
   }
 }
 
@@ -1433,6 +1610,10 @@ async function run(ctx, options) {
     if (!wants(name) && !wants("edge")) continue;
     stories[name] = await guarded(name, () => scenarioHealthy(ctx.app, options, name));
   }
+  for (const name of Object.keys(advancedFixtures)) {
+    if (!wants(name) && !wants("advanced")) continue;
+    stories[name] = await guarded(name, () => scenarioHealthy(ctx.app, options, name));
+  }
   for (const name of failing) {
     if (!wants(name) && !wants("failing")) continue;
     stories[name] = await guarded(name, () => scenarioFailure(ctx.app, options, name));
@@ -1440,7 +1621,9 @@ async function run(ctx, options) {
   if (wants("slow-start") || wants("failing")) stories["slow-start"] = await guarded("slow-start", () => scenarioSlow(ctx.app, options, "slow-start"));
   // --- lifecycle, ports and dependency changes on running ones
   if (wants("lifecycle"))
-    for (const name of ["vite-react", "next-app", "express-api"]) if (stories[name]?.url) await guarded(name, () => scenarioLifecycle(ctx.app, options, stories[name]));
+    for (const name of ["vite-react", "next-app", "express-api", ...Object.keys(advancedFixtures)]) if (stories[name]?.url) await guarded(name, () => scenarioLifecycle(ctx.app, options, stories[name]));
+  if (wants("isolation")) await guarded("isolation", () => scenarioIsolation(ctx.app, options, stories["django-celery"]));
+  if (wants("migration-recovery")) await guarded("migration-recovery", () => scenarioMigrationRecovery(ctx.app, options));
   if (wants("port-taken") && stories["express-api"]?.url) await guarded("port-taken", () => scenarioPortTaken(ctx.app, options, stories["express-api"]));
   if (wants("edits")) for (const name of ["vite-react", "next-app"]) if (stories[name]?.url) await guarded(`edits-${name}`, () => scenarioEdits(ctx.app, options, stories[name]));
   if (wants("review-build")) {

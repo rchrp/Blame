@@ -14,7 +14,7 @@ API (see below): they cost money and touch the signed-in account.
 pnpm --filter @blame/desktop build:semantic-harness-payload   # payload = runtime version
 pnpm --filter @blame/desktop exec electron-vite build
 pnpm --filter @blame/api build
-node scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--keep]
+node packages/desktop/scripts/preview-campaign/drive.mjs --out <dir> [--only a,b] [--fresh] [--keep]
 ```
 
 - `--only` takes scenario or fixture names, or prefixes: `healthy`, `edge`,
@@ -51,10 +51,45 @@ with and without `BLAME_PREVIEW_SHARED_SETUP=0` to compare
 would write for each; `browse.mjs` is the throwaway browser that loads a
 preview, reports console errors and failed requests, and sees a hot reload.
 
+## Advanced Local Container scenarios
+
+```sh
+cargo build -p blame-engine -p blame-harness
+pnpm --filter @blame/desktop build
+node packages/desktop/scripts/preview-campaign/drive.mjs \
+  --root /tmp/blcx --projects "$HOME/.blame-campaign/advanced-projects" \
+  --out out/preview-campaign-advanced --scripted-agents \
+  --only runtime,advanced,lifecycle,isolation,migration-recovery,remove
+```
+
+- `django-celery` installs Python dependencies, migrates PostgreSQL and starts
+  a Celery worker. The browser submits a job through Django and waits for the
+  worker to record its result in PostgreSQL. `isolation` compares two live
+  stories of the project after the first story has run the job, received an
+  edit and restarted. `migration-recovery` breaks the Django settings in a
+  fresh worktree, checks that setup fails, restores the settings and restarts
+  the same story.
+- `vite-fastapi-ws` installs dependencies in two subdirectories, sends a
+  WebSocket message from React through Vite to FastAPI, and checks that a
+  source edit reaches the open page without a manual reload.
+- `rust-axum-sqlite` compiles a nested Cargo workspace with bundled SQLite,
+  seeds the database and opens the configured `/reports/summary` route.
+
+Each advanced fixture checks the desktop's embedded preview state and its
+rendered content in a separate Chromium window. The `runtime` selector installs
+and starts the VM when using a new `--root`.
+
+`--scripted-agents` uses the built Blame engine and harness with a loopback
+model and API that return preset tool calls. The initialization task scans
+the project and validates the submitted preview setup before the campaign
+uses it. In cloud mode the story agent also applies the source edit via
+`edit_code`. This exercises the agent and synchronization paths with
+repeatable input and no paid model calls.
+
 ## Cloud Preview (`--cloud`)
 
 ```sh
-node scripts/preview-campaign/drive.mjs --cloud --out <dir> [--only vite-react,next-app,express-postgres,go-http,crash-on-start]
+node packages/desktop/scripts/preview-campaign/drive.mjs --cloud --out <dir> [--only vite-react,next-app,express-postgres,go-http,crash-on-start]
 ```
 
 Creates, for each fixture, a story `[campaign] cloud <name>` in the account of
@@ -63,6 +98,14 @@ in the test browser through an access ticket, edits a file locally and waits
 for the edit in the open page, stops and restarts it, then destroys the
 sandbox and deletes the story (also when a check fails). An empty project
 `[campaign] preview tests` stays in the account (no delete route).
+
+To run one cloud session through React hydration, an agent edit and a restart:
+
+```sh
+node packages/desktop/scripts/preview-campaign/drive.mjs --cloud --scripted-agents \
+  --root /tmp/blc-cloud --projects "$HOME/.blame-campaign/cloud-projects" \
+  --out out/preview-campaign-cloud --only next-app
+```
 
 How it signs in: only the `Local Storage` of the installed app
 (`~/Library/Application Support/dev.blame.desktop`, `--session-from`) is copied
