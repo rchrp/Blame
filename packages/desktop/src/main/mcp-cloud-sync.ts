@@ -1,4 +1,9 @@
-import type { CloudMcpServerConfig } from "@blame/app";
+import type {
+  CloudMcpServerConfig,
+  McpLocalParts,
+  McpSecretValues,
+} from "@blame/app";
+import { createHash } from "node:crypto";
 
 export type McpSettingsServer = Record<string, unknown>;
 export type McpSettings = {
@@ -17,6 +22,12 @@ const SYNC_MODE = "blameSync";
 // The shape the account and this computer last agreed on: tells a change made
 // here from a change made on another device.
 const SYNC_BASE = "blameSyncBase";
+// The person also keeps this server's arguments and secrets in their account.
+const SYNC_SECRETS = "blameSyncSecrets";
+// A digest of those values when the account and this computer last agreed.
+const SECRETS_BASE = "blameSecretsBase";
+// What the account said still has to be added on this device (names only).
+const CLOUD_MISSING = "blameCloudMissing";
 
 export type McpSyncMode = "account" | "device";
 
@@ -83,6 +94,62 @@ export function syncMode(server: McpSettingsServer): McpSyncMode {
     : "account";
 }
 
+/** Whether the person chose to keep this server's secrets in their account. */
+export function syncsSecrets(server: McpSettingsServer) {
+  return serverMetadata(server)?.[SYNC_SECRETS] === true;
+}
+
+/** What the account said this server still needs on this device. */
+export function missingLocalParts(
+  server: McpSettingsServer,
+): McpLocalParts | undefined {
+  if (!localSetupRequired(server)) return undefined;
+  const missing = serverMetadata(server)?.[CLOUD_MISSING];
+  return isRecord(missing) ? (missing as McpLocalParts) : undefined;
+}
+
+/** The secret-bearing parts of a server, as this computer holds them. */
+export function localSecrets(server: McpSettingsServer): McpSecretValues {
+  const transport = isRecord(server.transport) ? server.transport : server;
+  const remote =
+    transport.type === "streamableHttp" || transport.type === "sse";
+  const strings = (value: unknown) =>
+    isRecord(value)
+      ? Object.fromEntries(
+          Object.entries(value).filter(([, item]) => typeof item === "string"),
+        )
+      : undefined;
+  if (remote) {
+    const headers = strings(transport.headers);
+    return headers && Object.keys(headers).length
+      ? { headers: headers as Record<string, string> }
+      : {};
+  }
+  const env = strings(transport.env);
+  return {
+    ...(Array.isArray(transport.args) && transport.args.length
+      ? { args: transport.args.filter((a) => typeof a === "string") }
+      : {}),
+    ...(typeof transport.cwd === "string" && transport.cwd
+      ? { cwd: transport.cwd }
+      : {}),
+    ...(env && Object.keys(env).length
+      ? { env: env as Record<string, string> }
+      : {}),
+  };
+}
+
+/** The names of what a synced server keeps only on this computer. */
+export function localPartsOf(server: McpSettingsServer): McpLocalParts {
+  const secrets = localSecrets(server);
+  return {
+    ...(secrets.args ? { args: true } : {}),
+    ...(secrets.cwd ? { cwd: true } : {}),
+    ...(secrets.env ? { env: Object.keys(secrets.env) } : {}),
+    ...(secrets.headers ? { headers: Object.keys(secrets.headers) } : {}),
+  };
+}
+
 export function cloudOwner(server: McpSettingsServer) {
   const metadata = serverMetadata(server);
   return typeof metadata?.[CLOUD_USER_ID] === "string"
@@ -107,15 +174,24 @@ export function completedCloudMetadata(server?: McpSettingsServer) {
   const completedMetadata = { ...metadata };
   delete completedMetadata[LOCAL_SETUP_REQUIRED];
   delete completedMetadata[CLOUD_DISABLED];
+  delete completedMetadata[CLOUD_MISSING];
   return Object.keys(completedMetadata).length ? completedMetadata : undefined;
 }
 
 /** Metadata with the person's sync choice applied. */
-export function metadataWithSyncMode(
+export function metadataWithSyncChoice(
   metadata: Record<string, unknown> | undefined,
-  mode: McpSyncMode,
+  choice: { mode: McpSyncMode; secrets: boolean },
 ) {
-  return { ...metadata, [SYNC_MODE]: mode === "device" ? "device" : undefined };
+  const next: Record<string, unknown> = {
+    ...metadata,
+    [SYNC_MODE]: choice.mode === "device" ? "device" : undefined,
+    // Secrets only ever go with a server that syncs at all.
+    [SYNC_SECRETS]:
+      choice.mode === "account" && choice.secrets ? true : undefined,
+  };
+  if (!next[SYNC_SECRETS]) delete next[SECRETS_BASE];
+  return Object.keys(next).length ? next : undefined;
 }
 
 type Shape = {
@@ -147,27 +223,119 @@ function mergeCloudServer(
     }
   }
   const agreed = sameShape(localShape(next), there);
+  return applyCloudSecrets(
+    withMetadata(next, {
+      [CLOUD_USER_ID]: userId,
+      [SYNC_BASE]: agreed ? there : base,
+    }),
+    cloud,
+  );
+}
+
+/**
+ * The account's synced secrets reach a server only where this computer has
+ * none (or has not changed them since they last agreed): what is set up here
+ * is never replaced by a different value.
+ */
+function applyCloudSecrets(
+  local: McpSettingsServer,
+  cloud: CloudMcpServerConfig,
+): McpSettingsServer {
+  const secrets = cloud.secrets;
+  if (!secrets) return local;
+  const here = localSecrets(local);
+  const unchangedHere =
+    syncsSecrets(local) &&
+    serverMetadata(local)?.[SECRETS_BASE] === digest(here);
+  const next: McpSettingsServer = { ...local };
+  let changed = false;
+  if (secrets.args && (!here.args || unchangedHere)) {
+    next.args = secrets.args;
+    changed = true;
+  }
+  if (secrets.cwd && (!here.cwd || unchangedHere)) {
+    next.cwd = secrets.cwd;
+    changed = true;
+  }
+  for (const key of ["env", "headers"] as const) {
+    const given = secrets[key];
+    if (!given || (here[key] && !unchangedHere)) continue;
+    next[key] = given;
+    changed = true;
+  }
+  const agreed = digest(localSecrets(next)) === digest(secrets);
+  if (!changed && !agreed) return local;
   return withMetadata(next, {
-    [CLOUD_USER_ID]: userId,
-    [SYNC_BASE]: agreed ? there : base,
+    [SYNC_SECRETS]: true,
+    ...(agreed ? { [SECRETS_BASE]: digest(secrets) } : {}),
   });
 }
 
+function digest(secrets: McpSecretValues) {
+  const sorted = (record?: Record<string, string>) =>
+    record
+      ? Object.fromEntries(
+          Object.entries(record).sort(([a], [b]) => a.localeCompare(b)),
+        )
+      : undefined;
+  return createHash("sha256")
+    .update(
+      JSON.stringify({
+        args: secrets.args?.length ? secrets.args : undefined,
+        cwd: secrets.cwd || undefined,
+        env: sorted(secrets.env),
+        headers: sorted(secrets.headers),
+      }),
+    )
+    .digest("hex");
+}
+
+/**
+ * A server the account has and this computer does not. It is usable at once
+ * when the account holds everything it needs (its secrets, or nothing needed
+ * outside the shape); otherwise it waits, turned off, for the person to add
+ * what only the other device had.
+ */
 function placeholder(
   cloud: CloudMcpServerConfig,
   userId: string,
   previous?: McpSettingsServer,
 ): McpSettingsServer {
+  const metadata = {
+    ...(previous ? serverMetadata(previous) : {}),
+    [CLOUD_USER_ID]: userId,
+    [SYNC_BASE]: cloudShape(cloud),
+  };
+  if (cloud.secrets) {
+    return {
+      ...serializeShape(cloudShape(cloud)),
+      ...cloud.secrets,
+      metadata: {
+        ...metadata,
+        [SYNC_SECRETS]: true,
+        [SECRETS_BASE]: digest(cloud.secrets),
+      },
+    };
+  }
+  const missing = cloud.localParts;
+  if (missing && !needsSomething(missing)) {
+    return { ...serializeShape(cloudShape(cloud)), metadata };
+  }
   return {
     ...serializeShape({ ...cloudShape(cloud), disabled: true }),
     metadata: {
-      ...(previous ? serverMetadata(previous) : {}),
-      [CLOUD_USER_ID]: userId,
+      ...metadata,
       [LOCAL_SETUP_REQUIRED]: true,
       [CLOUD_DISABLED]: cloud.disabled,
-      [SYNC_BASE]: cloudShape(cloud),
+      ...(missing ? { [CLOUD_MISSING]: missing } : {}),
     },
   };
+}
+
+function needsSomething(parts: McpLocalParts) {
+  return Boolean(
+    parts.args || parts.cwd || parts.env?.length || parts.headers?.length,
+  );
 }
 
 function withMetadata(

@@ -1,7 +1,5 @@
 import * as React from "react"
 import {
-  AlertCircleIcon,
-  ChevronDownIcon,
   KeyRoundIcon,
   PencilIcon,
   PlusIcon,
@@ -10,47 +8,17 @@ import {
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { useCloudAuth, type CloudMcpServer } from "@/context/cloud-auth"
+import { SyncBadge } from "@/components/sync-choice"
+import { useCloudAuth } from "@/context/cloud-auth"
 import {
   usePlatform,
   type McpServerConfig,
   type McpSettingsRecovery,
   type McpTransport,
 } from "@/context/platform"
-import { formatArguments, parseArguments } from "./mcp-arguments"
-
-type Entry = { id: string; key: string; value: string }
-type FormState = {
-  args: string
-  command: string
-  cwd: string
-  entries: Entry[]
-  name: string
-  timeout: string
-  transport: McpTransport
-  url: string
-}
-
-const formState = (server?: McpServerConfig): FormState => ({
-  args: formatArguments(server?.args ?? []),
-  command: server?.command ?? "",
-  cwd: server?.cwd ?? "",
-  entries: localEntries(server),
-  name: server?.name ?? "",
-  timeout: server?.timeout ? String(server.timeout) : "",
-  transport: server?.transport ?? "stdio",
-  url: server?.url ?? "",
-})
+import { canSync, describeMissing, nextCloudServers } from "./mcp-cloud-servers"
+import { McpServerForm, Notice, errorMessage } from "./mcp-server-form"
 
 export function McpSettingsPanel() {
   const client = usePlatform().mcp
@@ -58,6 +26,8 @@ export function McpSettingsPanel() {
   const cloudMcpConfiguration = cloud.mcpConfiguration
   const cloudStatus = cloud.status
   const cloudUserId = cloud.user?.id
+  // Without an account there is nothing to choose: everything stays here.
+  const syncAvailable = cloud.mode === "account"
   const saveCloudMcpConfiguration = cloud.saveMcpConfiguration
   const [servers, setServers] = React.useState<McpServerConfig[]>([])
   const [adding, setAdding] = React.useState(false)
@@ -72,6 +42,7 @@ export function McpSettingsPanel() {
       .list()
       .then(async (localServers) => {
         if (
+          !syncAvailable ||
           cloudStatus !== "authenticated" ||
           !cloudUserId ||
           cloudMcpConfiguration === undefined
@@ -83,10 +54,9 @@ export function McpSettingsPanel() {
             await client.mergeCloud(cloudUserId, cloudMcpConfiguration.servers)
           )
         }
-        await saveCloudMcpConfiguration(toCloudServers(localServers))
-        setServers(
-          await client.mergeCloud(cloudUserId, toCloudServers(localServers))
-        )
+        const first = nextCloudServers({ current: [], local: localServers })
+        await saveCloudMcpConfiguration(first)
+        setServers(await client.mergeCloud(cloudUserId, first))
       })
       .then(() => client.recovery())
       .then((notice) => setRecovery(notice ?? null))
@@ -98,9 +68,17 @@ export function McpSettingsPanel() {
     cloudStatus,
     cloudUserId,
     saveCloudMcpConfiguration,
+    syncAvailable,
   ])
 
-  async function update(action: () => Promise<McpServerConfig[]>) {
+  /**
+   * Runs a change on this device, then tells the account: its own entries stay
+   * unless the change removed, renamed or switched them.
+   */
+  async function update(
+    action: () => Promise<McpServerConfig[]>,
+    cloudChange: { dropped?: string[]; forgetSecrets?: string[] } = {}
+  ) {
     setError(undefined)
     let updated: McpServerConfig[]
     try {
@@ -111,11 +89,18 @@ export function McpSettingsPanel() {
     }
     setServers(updated)
     if (
+      syncAvailable &&
       cloud.status === "authenticated" &&
       cloudMcpConfiguration !== undefined
     ) {
       try {
-        await cloud.saveMcpConfiguration(toCloudServers(updated))
+        await cloud.saveMcpConfiguration(
+          nextCloudServers({
+            ...cloudChange,
+            current: cloudMcpConfiguration?.servers ?? [],
+            local: updated,
+          })
+        )
       } catch (reason) {
         setError(
           `Saved on this device. Cloud sync failed: ${errorMessage(reason)}`
@@ -186,6 +171,7 @@ export function McpSettingsPanel() {
         )}
         {adding && client && (
           <McpServerForm
+            syncAvailable={syncAvailable}
             onCancel={() => setAdding(false)}
             onSave={async (server) => {
               const saved = await update(() => client.save(server))
@@ -210,10 +196,20 @@ export function McpSettingsPanel() {
               <McpServerForm
                 key={server.name}
                 server={server}
+                syncAvailable={syncAvailable}
                 onCancel={() => setEditingName(undefined)}
                 onSave={async (updatedServer) => {
-                  const saved = await update(() =>
-                    client.save(updatedServer, server.name)
+                  const saved = await update(
+                    () => client.save(updatedServer, server.name),
+                    {
+                      // Renamed or switched to this device: the account's
+                      // copy under the old name goes.
+                      dropped: [server.name],
+                      forgetSecrets:
+                        server.syncSecrets && !updatedServer.syncSecrets
+                          ? [updatedServer.name]
+                          : [],
+                    }
                   )
                   if (saved) setEditingName(undefined)
                   return saved
@@ -223,6 +219,7 @@ export function McpSettingsPanel() {
               <McpServerRow
                 key={server.name}
                 server={server}
+                syncAvailable={syncAvailable}
                 onEdit={() => {
                   setAdding(false)
                   setEditingName(server.name)
@@ -232,7 +229,10 @@ export function McpSettingsPanel() {
                   void update(() => client.setEnabled(server.name, enabled))
                 }
                 onRemove={() =>
-                  client && void update(() => client.remove(server.name))
+                  client &&
+                  void update(() => client.remove(server.name), {
+                    dropped: [server.name],
+                  })
                 }
                 onAuthorize={() =>
                   client
@@ -251,28 +251,6 @@ export function McpSettingsPanel() {
       </section>
     </div>
   )
-}
-
-function toCloudServers(servers: McpServerConfig[]): CloudMcpServer[] {
-  return servers.map((server) => ({
-    command: server.transport === "stdio" ? server.command : undefined,
-    disabled: server.disabled,
-    name: server.name,
-    timeout: server.timeout,
-    transport: server.transport,
-    url: server.transport === "stdio" ? undefined : safeCloudUrl(server.url),
-  }))
-}
-
-function safeCloudUrl(value: string | undefined) {
-  if (!value) return undefined
-  const url = new URL(value)
-  if (url.username || url.password || url.search || url.hash) {
-    throw new Error(
-      "Remove credentials and parameters from the MCP URL before syncing it."
-    )
-  }
-  return url.toString()
 }
 
 function McpServerSummary({
@@ -322,6 +300,7 @@ function McpStatusText({
 
 function McpServerRow({
   server,
+  syncAvailable,
   onAuthorize,
   onDisconnectOAuth,
   onEdit,
@@ -329,6 +308,7 @@ function McpServerRow({
   onToggle,
 }: {
   server: McpServerConfig
+  syncAvailable: boolean
   onAuthorize(): Promise<boolean>
   onDisconnectOAuth(): Promise<boolean>
   onEdit(): void
@@ -347,23 +327,40 @@ function McpServerRow({
           <ServerIcon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-medium">{server.name}</div>
+          <div className="flex items-center gap-2">
+            <span className="truncate text-sm font-medium">{server.name}</span>
+            {syncAvailable && !server.requiresLocalSetup && (
+              <SyncBadge
+                mode={
+                  server.sync === "device" || !canSync(server).ok
+                    ? "device"
+                    : "account"
+                }
+                title={
+                  server.syncSecrets && server.sync !== "device"
+                    ? "Saved in your account, with its arguments and secrets."
+                    : undefined
+                }
+                onClick={onEdit}
+              />
+            )}
+          </div>
           <p
             className="truncate text-sm text-muted-foreground"
             title={endpoint}
           >
             {server.requiresLocalSetup
-              ? "Needs setup on this device"
+              ? "From your account"
               : server.disabled
                 ? "Disabled"
                 : transportLabel(server.transport)}{" "}
             · {endpoint}
           </p>
           {server.requiresLocalSetup && (
-            <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-              This server came from your account. Its arguments and secrets stay
-              on each device: add them here with Complete setup, then turn it
-              on.
+            <p className="mt-1 text-xs text-muted-foreground">
+              To use it on this device, add{" "}
+              {describeMissing(server.missingLocal)}. These stay on the device
+              that has them.
             </p>
           )}
           {server.oauth.supported && !server.requiresLocalSetup && (
@@ -409,13 +406,13 @@ function McpServerRow({
           size={server.requiresLocalSetup ? "sm" : "icon-sm"}
           aria-label={
             server.requiresLocalSetup
-              ? `Complete ${server.name} setup`
+              ? `Add details for ${server.name} on this device`
               : `Edit ${server.name}`
           }
           onClick={onEdit}
         >
           <PencilIcon />
-          {server.requiresLocalSetup && "Complete setup"}
+          {server.requiresLocalSetup && "Add on this device"}
         </Button>
         <Switch
           checked={!server.disabled && !server.requiresLocalSetup}
@@ -437,377 +434,10 @@ function McpServerRow({
   )
 }
 
-function McpServerForm({
-  onCancel,
-  onSave,
-  server,
-}: {
-  onCancel(): void
-  onSave(server: McpServerConfig): Promise<boolean>
-  server?: McpServerConfig
-}) {
-  const [form, setForm] = React.useState(() => formState(server))
-  const [advanced, setAdvanced] = React.useState(Boolean(server))
-  const [saving, setSaving] = React.useState(false)
-  const [error, setError] = React.useState<string>()
-  const firstInput = React.useRef<HTMLInputElement>(null)
-  React.useEffect(() => firstInput.current?.focus(), [])
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault()
-    setError(undefined)
-    setSaving(true)
-    try {
-      const saved = await onSave(
-        serverFromForm(form, server?.disabled ?? false)
-      )
-      if (!saved) setSaving(false)
-    } catch (reason) {
-      setError(errorMessage(reason))
-      setSaving(false)
-    }
-  }
-
-  return (
-    <form className="mt-5 rounded-xl border bg-muted/20 p-4" onSubmit={submit}>
-      <div className="mb-4">
-        <h4 className="text-sm font-semibold">
-          {server ? `Edit ${server.name}` : "Add an MCP server"}
-        </h4>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {server
-            ? "Update how Blame connects on this device."
-            : "Choose how Blame should connect."}
-        </p>
-      </div>
-      {server?.requiresLocalSetup && (
-        <Notice>
-          This server came from your account without its arguments, working
-          directory, environment variables or headers, which stay on each
-          device. Add what it needs here and save; connect OAuth again if it
-          uses it.
-        </Notice>
-      )}
-      <div
-        className={
-          server?.requiresLocalSetup
-            ? "mt-4 grid gap-4 sm:grid-cols-2"
-            : "grid gap-4 sm:grid-cols-2"
-        }
-      >
-        <Field label="Name">
-          <Input
-            ref={firstInput}
-            required
-            maxLength={80}
-            placeholder="GitHub"
-            value={form.name}
-            onChange={(event) => setForm({ ...form, name: event.target.value })}
-          />
-        </Field>
-        <Field label="Connection">
-          <Select
-            value={form.transport}
-            onValueChange={(value) =>
-              setForm({ ...form, transport: value as McpTransport })
-            }
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="stdio">Local command</SelectItem>
-              <SelectItem value="streamableHttp">HTTP server</SelectItem>
-              <SelectItem value="sse">SSE server (legacy)</SelectItem>
-            </SelectContent>
-          </Select>
-        </Field>
-        {form.transport === "stdio" ? (
-          <Field label="Command" className="sm:col-span-2">
-            <Input
-              required
-              placeholder="npx"
-              value={form.command}
-              onChange={(event) =>
-                setForm({ ...form, command: event.target.value })
-              }
-            />
-          </Field>
-        ) : (
-          <Field label="Server URL" className="sm:col-span-2">
-            <Input
-              required
-              type="url"
-              placeholder="https://mcp.example.com"
-              value={form.url}
-              onChange={(event) =>
-                setForm({ ...form, url: event.target.value })
-              }
-            />
-          </Field>
-        )}
-      </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="mt-3 -ml-2"
-        aria-expanded={advanced}
-        onClick={() => setAdvanced(!advanced)}
-      >
-        Advanced options
-        <ChevronDownIcon className={advanced ? "rotate-180" : ""} />
-      </Button>
-      {advanced && (
-        <div className="mt-2 grid gap-4 border-t pt-4">
-          <Field
-            label="Timeout"
-            hint="Optional connection timeout in seconds (1–3600)."
-          >
-            <Input
-              inputMode="numeric"
-              min={1}
-              max={3600}
-              placeholder="60"
-              step={1}
-              type="number"
-              value={form.timeout}
-              onChange={(event) =>
-                setForm({ ...form, timeout: event.target.value })
-              }
-            />
-          </Field>
-          {form.transport === "stdio" && (
-            <>
-              <Field
-                label="Arguments"
-                hint="Separate arguments with spaces. Use quotes around values containing spaces."
-              >
-                <Input
-                  placeholder="-y @modelcontextprotocol/server-github"
-                  value={form.args}
-                  onChange={(event) =>
-                    setForm({ ...form, args: event.target.value })
-                  }
-                />
-              </Field>
-              <Field label="Working directory">
-                <Input
-                  placeholder="/path/to/project"
-                  value={form.cwd}
-                  onChange={(event) =>
-                    setForm({ ...form, cwd: event.target.value })
-                  }
-                />
-              </Field>
-            </>
-          )}
-          <KeyValueFields
-            label={
-              form.transport === "stdio"
-                ? "Environment variables"
-                : "Request headers"
-            }
-            entries={form.entries}
-            onChange={(entries) => setForm({ ...form, entries })}
-          />
-        </div>
-      )}
-      {error && <Notice error>{error}</Notice>}
-      <div className="mt-5 flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={saving}>
-          {saving
-            ? server
-              ? "Saving…"
-              : "Adding…"
-            : server
-              ? "Save changes"
-              : "Add server"}
-        </Button>
-      </div>
-    </form>
-  )
-}
-
-function KeyValueFields({
-  entries,
-  label,
-  onChange,
-}: {
-  entries: Entry[]
-  label: string
-  onChange(entries: Entry[]): void
-}) {
-  return (
-    <div>
-      <Label>{label}</Label>
-      <div className="mt-2 grid gap-2">
-        {entries.map((entry, index) => (
-          <div className="flex gap-2" key={entry.id}>
-            <Input
-              aria-label={`${label} key ${index + 1}`}
-              placeholder="Key"
-              value={entry.key}
-              onChange={(event) =>
-                onChange(
-                  entries.map((item) =>
-                    item.id === entry.id
-                      ? { ...item, key: event.target.value }
-                      : item
-                  )
-                )
-              }
-            />
-            <Input
-              aria-label={`${label} value ${index + 1}`}
-              placeholder="Value"
-              type={label === "Environment variables" ? "password" : "text"}
-              value={entry.value}
-              onChange={(event) =>
-                onChange(
-                  entries.map((item) =>
-                    item.id === entry.id
-                      ? { ...item, value: event.target.value }
-                      : item
-                  )
-                )
-              }
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Remove entry"
-              onClick={() =>
-                onChange(entries.filter((item) => item.id !== entry.id))
-              }
-            >
-              <Trash2Icon />
-            </Button>
-          </div>
-        ))}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-fit"
-          onClick={() =>
-            onChange([
-              ...entries,
-              { id: crypto.randomUUID(), key: "", value: "" },
-            ])
-          }
-        >
-          <PlusIcon />
-          Add {entries.length ? "another" : "entry"}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function Field({
-  children,
-  className,
-  hint,
-  label,
-}: {
-  children: React.ReactNode
-  className?: string
-  hint?: string
-  label: string
-}) {
-  return (
-    <div className={className}>
-      <Label className="mb-2">{label}</Label>
-      {children}
-      {hint && <p className="mt-1.5 text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  )
-}
-function Notice({
-  children,
-  error,
-}: {
-  children: React.ReactNode
-  error?: boolean
-}) {
-  return (
-    <div
-      className={`mt-4 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm ${error ? "border-destructive/30 text-destructive" : "text-muted-foreground"}`}
-    >
-      {error && <AlertCircleIcon className="mt-0.5 size-4 shrink-0" />}
-      {children}
-    </div>
-  )
-}
 function transportLabel(value: McpTransport) {
   return value === "stdio"
     ? "Local command"
     : value === "sse"
       ? "SSE · legacy"
       : "Streamable HTTP"
-}
-function errorMessage(reason: unknown) {
-  return reason instanceof Error
-    ? reason.message
-    : "Could not update MCP servers."
-}
-
-function localEntries(server?: McpServerConfig): Entry[] {
-  const values = server?.transport === "stdio" ? server.env : server?.headers
-  return Object.entries(values ?? {}).map(([key, value]) => ({
-    id: crypto.randomUUID(),
-    key,
-    value,
-  }))
-}
-
-function serverFromForm(form: FormState, disabled: boolean): McpServerConfig {
-  const values = entryValues(form.entries)
-  const common = {
-    disabled,
-    name: form.name,
-    requiresLocalSetup: false,
-    timeout: timeoutSeconds(form.timeout),
-  }
-  return form.transport === "stdio"
-    ? {
-        ...common,
-        args: parseArguments(form.args),
-        command: form.command,
-        cwd: form.cwd || undefined,
-        env: values,
-        oauth: { configured: false, supported: false },
-        transport: "stdio",
-      }
-    : {
-        ...common,
-        headers: values,
-        oauth: { configured: false, supported: true },
-        transport: form.transport,
-        url: form.url,
-      }
-}
-
-function timeoutSeconds(value: string) {
-  if (!value.trim()) return undefined
-  const parsed = Number(value)
-  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3600) {
-    throw new Error(
-      "Timeout must be a whole number between 1 and 3600 seconds."
-    )
-  }
-  return parsed
-}
-
-function entryValues(entries: Entry[]) {
-  return Object.fromEntries(
-    entries
-      .filter((entry) => entry.key.trim())
-      .map((entry) => [entry.key.trim(), entry.value])
-  )
 }

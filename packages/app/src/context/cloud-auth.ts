@@ -6,6 +6,7 @@ import type {
   ProjectRunConfiguration,
 } from "@blame/agent-runtime"
 import type { ReasoningSelection } from "@blame/agent-runtime"
+import type { CloudMcpServerConfig } from "./platform"
 import type { SignInGreeting } from "./workspace-start"
 import type { Personalization } from "@/lib/personalization"
 
@@ -47,14 +48,7 @@ export type CloudAiPreferences = {
   updatedAt: string | null
 }
 
-export type CloudMcpServer = {
-  command?: string
-  disabled: boolean
-  name: string
-  timeout?: number
-  transport: "stdio" | "streamableHttp" | "sse"
-  url?: string
-}
+export type CloudMcpServer = CloudMcpServerConfig
 
 export type CloudMcpConfiguration = {
   createdAt: string

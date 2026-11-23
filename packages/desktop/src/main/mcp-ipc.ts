@@ -15,6 +15,10 @@ import {
   detachCloudServers,
   localSetupRequired,
   mergeCloudServers,
+  metadataWithSyncChoice,
+  missingLocalParts,
+  syncMode,
+  syncsSecrets,
   type McpSettings,
 } from "./mcp-cloud-sync";
 import { callEngineHost } from "./engine/engine-host-ipc";
@@ -75,7 +79,11 @@ export function registerMcpIpcHandlers() {
         current.mcpServers[server.name] = {
           ...(existing ?? {}),
           ...serializeServer(server),
-          metadata: completedCloudMetadata(existing),
+          metadata: metadataWithSyncChoice(completedCloudMetadata(existing), {
+            mode: server.sync ?? (existing ? syncMode(existing) : "account"),
+            secrets:
+              server.syncSecrets ?? (existing ? syncsSecrets(existing) : false),
+          }),
           ...(preserveOAuth && existing.oauth
             ? { oauth: existing.oauth }
             : { oauth: undefined }),
@@ -220,6 +228,9 @@ function deserializeServer(
     name,
     oauth: oauth ?? { configured: false, supported: transport !== "stdio" },
     requiresLocalSetup: localSetupRequired(value),
+    missingLocal: missingLocalParts(value),
+    sync: syncMode(value),
+    syncSecrets: syncsSecrets(value),
     timeout: value.timeout ?? nested.timeout,
     transport,
   });
@@ -264,6 +275,7 @@ function validateCloudServers(input: unknown): CloudMcpServerConfig[] {
       return {
         command,
         disabled: value.disabled === true,
+        ...cloudExtras(value),
         name,
         timeout,
         transport,
@@ -274,12 +286,51 @@ function validateCloudServers(input: unknown): CloudMcpServerConfig[] {
     const url = safeCloudUrl(requiredString(value.url, "URL"));
     return {
       disabled: value.disabled === true,
+      ...cloudExtras(value),
       name,
       timeout,
       transport,
       url,
     };
   });
+}
+
+/** What the account may add to a server: names of what it lacks, synced secrets. */
+function cloudExtras(value: Record<string, unknown>) {
+  const secrets = isRecord(value.secrets)
+    ? {
+        args: stringArray(value.secrets.args),
+        cwd: optionalString(value.secrets.cwd),
+        env: stringRecord(value.secrets.env),
+        headers: stringRecord(value.secrets.headers),
+      }
+    : undefined;
+  return {
+    localParts: validateLocalParts(value.localParts),
+    ...(secrets && Object.values(secrets).some((part) => part !== undefined)
+      ? { secrets: withoutUndefined(secrets) }
+      : {}),
+  };
+}
+
+function validateLocalParts(value: unknown) {
+  if (!isRecord(value)) return undefined;
+  const names = (list: unknown) =>
+    Array.isArray(list)
+      ? list.filter((item): item is string => typeof item === "string")
+      : undefined;
+  return withoutUndefined({
+    args: value.args === true ? true : undefined,
+    cwd: value.cwd === true ? true : undefined,
+    env: names(value.env),
+    headers: names(value.headers),
+  });
+}
+
+function withoutUndefined<T extends Record<string, unknown>>(value: T) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => item !== undefined),
+  ) as T;
 }
 
 function safeCloudUrl(value: string) {
@@ -316,9 +367,19 @@ function validateServer(input: unknown): McpServerConfig {
   const oauth = validateOAuthStatus(input.oauth, transport !== "stdio");
   const requiresLocalSetup = input.requiresLocalSetup === true;
   const timeout = optionalTimeout(input.timeout);
+  const sync: Pick<McpServerConfig, "missingLocal" | "sync" | "syncSecrets"> = {
+    missingLocal: validateLocalParts(input.missingLocal),
+    sync:
+      input.sync === "device" || input.sync === "account"
+        ? input.sync
+        : undefined,
+    syncSecrets:
+      typeof input.syncSecrets === "boolean" ? input.syncSecrets : undefined,
+  };
   if (transport === "stdio") {
     const command = requiredString(input.command, "Command");
     return {
+      ...sync,
       name,
       oauth,
       requiresLocalSetup,
@@ -338,6 +399,7 @@ function validateServer(input: unknown): McpServerConfig {
     throw new Error("Enter a valid server URL");
   }
   return {
+    ...sync,
     name,
     oauth,
     requiresLocalSetup,

@@ -177,6 +177,25 @@ export type RuntimeStatusReport = {
 
 export type McpTransport = "stdio" | "streamableHttp" | "sse"
 
+/** Which of the person's MCP servers go to their account. */
+export type McpSyncMode = "account" | "device"
+
+/** What a synced server still needs on a device, by name, never by value. */
+export type McpLocalParts = {
+  args?: boolean
+  cwd?: boolean
+  env?: string[]
+  headers?: string[]
+}
+
+/** What the person chose to keep with a synced server (encrypted there). */
+export type McpSecretValues = {
+  args?: string[]
+  cwd?: string
+  env?: Record<string, string>
+  headers?: Record<string, string>
+}
+
 export type McpServerConfig = {
   args?: string[]
   command?: string
@@ -191,7 +210,14 @@ export type McpServerConfig = {
     lastError?: string
     supported: boolean
   }
+  /** From the account and not completed on this device yet. */
   requiresLocalSetup: boolean
+  /** What it still needs here, when the account said so. */
+  missingLocal?: McpLocalParts
+  /** "account" (default) syncs its shape; "device" never leaves this computer. */
+  sync?: McpSyncMode
+  /** The person also keeps its arguments and secrets in their account. */
+  syncSecrets?: boolean
   timeout?: number
   transport: McpTransport
   url?: string
@@ -226,7 +252,13 @@ export type McpSettingsRecovery = {
 export type CloudMcpServerConfig = Pick<
   McpServerConfig,
   "command" | "disabled" | "name" | "timeout" | "transport" | "url"
->
+> & {
+  localParts?: McpLocalParts
+  /** Sent only for a server the person chose to sync with its secrets. */
+  secrets?: McpSecretValues
+  /** false asks the account to forget the secrets it holds; absent keeps them. */
+  secretsSynced?: boolean
+}
 
 export type BacklogStatusPipClient = {
   open(): Promise<boolean>
