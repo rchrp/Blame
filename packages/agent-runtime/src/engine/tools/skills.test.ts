@@ -694,3 +694,152 @@ test("arguments are substituted as Claude Code does", () => {
     "Run /skills/s/scripts/x.sh",
   );
 });
+
+// A skill shaped like Anthropic's published `pdf` skill (written here, not
+// copied): front matter with a license, a body naming `forms.md`,
+// `reference.md` and scripts, and a LICENSE.txt.
+const pdfSkill = `---
+name: pdf
+description: Comprehensive PDF manipulation toolkit for extracting text and tables, creating new PDFs, merging/splitting documents, and handling forms.
+license: Proprietary. LICENSE.txt has complete terms
+---
+
+# PDF Processing Guide
+
+Read [forms.md](forms.md) to fill a form and [references/reference.md](references/reference.md) for the API.
+
+Check the fields first:
+
+\`\`\`bash
+python \${CLAUDE_SKILL_DIR}/scripts/check_fillable_fields.py <file.pdf>
+\`\`\`
+`;
+
+test("a skill with references and scripts hands its folder to the model and reads only inside it", async () => {
+  await withFolders(
+    {
+      "home/.claude/skills/pdf/SKILL.md": pdfSkill,
+      "home/.claude/skills/pdf/LICENSE.txt": "Terms.\n",
+      "home/.claude/skills/pdf/forms.md": "# Forms\n\nFill them.\n",
+      "home/.claude/skills/pdf/references/reference.md": "R".repeat(50_000),
+      "home/.claude/skills/pdf/scripts/check_fillable_fields.py":
+        "print('fields')\n",
+      "home/.claude/skills/pdf/assets/blank.bin": "\u0000\u0001binary",
+      "home/.claude/skills/notes/SKILL.md": "---\nname: notes\n---\nNotes.\n",
+      "home/secret.md": "Do not read.\n",
+      "outside/shared.md": "Shared outside.\n",
+      "repo/.claude/commands/ship.md": "Ship.\n",
+    },
+    async (folders) => {
+      const { symlink } = await import("node:fs/promises");
+      const pdf = join(folders.home, ".claude", "skills", "pdf");
+      await symlink(
+        join(folders.home, "secret.md"),
+        join(pdf, "references", "leak.md"),
+      );
+      await symlink(
+        join(folders.home, "..", "outside"),
+        join(pdf, "linked-folder"),
+      );
+      await symlink(
+        join(pdf, "forms.md"),
+        join(pdf, "references", "forms-alias.md"),
+      );
+      const conversation = await conversationSkills(
+        { workspaceRoot: folders.workspace, home: folders.home },
+        [],
+      );
+      assert.ok(conversation.tool);
+      const call = async (input: Record<string, unknown>) =>
+        JSON.stringify(
+          (await callThroughToolSet([conversation.tool!], "skills", input))
+            .content,
+        );
+
+      const run = await call({ skill: "pdf", args: "report.pdf" });
+      assert.match(run, new RegExp(`Base directory for this skill: ${pdf}`));
+      // The scripts' real location is in the instructions, and the arguments
+      // follow them as the body has no placeholder.
+      assert.match(run, new RegExp(`python ${pdf}/scripts/check_fillable`));
+      assert.match(run, /ARGUMENTS: report\.pdf/);
+      // A skill with no extra file does not carry the line.
+      assert.doesNotMatch(await call({ skill: "notes" }), /Base directory/);
+
+      assert.match(
+        await call({ skill: "pdf", file: "forms.md" }),
+        /Fill them\./,
+      );
+      assert.match(
+        await call({ skill: "pdf", file: "scripts/check_fillable_fields.py" }),
+        /print\('fields'\)/,
+      );
+      // By its absolute path too, and through a link that stays inside.
+      assert.match(
+        await call({ skill: "pdf", file: join(pdf, "forms.md") }),
+        /Fill them\./,
+      );
+      assert.match(
+        await call({ skill: "pdf", file: "references/forms-alias.md" }),
+        /Fill them\./,
+      );
+
+      // Long files come a page at a time.
+      const page = await call({
+        skill: "pdf",
+        file: "references/reference.md",
+      });
+      assert.match(page, /continue with offset 40000/);
+      const rest = await call({
+        skill: "pdf",
+        file: "references/reference.md",
+        offset: 40_000,
+      });
+      assert.doesNotMatch(rest, /continue with offset/);
+
+      // Nothing outside the skill's folder, however it is spelled.
+      for (const file of [
+        "../notes/SKILL.md",
+        "../../secret.md",
+        join(folders.home, "secret.md"),
+        "/etc/hosts",
+        "references/leak.md",
+        "linked-folder/shared.md",
+      ])
+        assert.match(
+          await call({ skill: "pdf", file }),
+          /Only files inside the skill's own folder|not found/,
+          file,
+        );
+      assert.doesNotMatch(
+        await call({ skill: "pdf", file: "../../secret.md" }),
+        /Do not read/,
+      );
+      assert.match(await call({ skill: "pdf", file: "assets" }), /not a file/);
+      assert.match(
+        await call({ skill: "pdf", file: "assets/blank.bin" }),
+        /binary file/,
+      );
+      assert.match(
+        await call({ skill: "pdf", file: "missing.md" }),
+        /not found/,
+      );
+      // A command is one file in a shared folder: it has no files to read.
+      assert.match(
+        await call({ skill: "ship", file: "../skills/x" }),
+        /no files besides/,
+      );
+      // And only a skill of the conversation's snapshot is read.
+      await mkdir(join(folders.home, ".claude", "skills", "late"), {
+        recursive: true,
+      });
+      await writeFile(
+        join(folders.home, ".claude", "skills", "late", "SKILL.md"),
+        "---\nname: late\n---\nLate.\n",
+      );
+      assert.match(
+        await call({ skill: "late", file: "SKILL.md" }),
+        /not found/,
+      );
+    },
+  );
+});

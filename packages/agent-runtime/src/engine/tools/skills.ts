@@ -37,6 +37,7 @@ import { basename, dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse as parseYaml } from "yaml";
 import { defineTool, type ClientTool } from "../tool.js";
+import { hasSkillFiles, readSkillFile } from "./skill-files.js";
 
 export type Skill = {
   /** The name in lower case: what the tool is called with. */
@@ -49,6 +50,8 @@ export type Skill = {
   file: string;
   /** A `.claude/commands` file rather than a skill folder. */
   command?: boolean;
+  /** The skill's folder holds more than its `SKILL.md`. */
+  resources?: boolean;
   /** `argument-hint`: what follows the name, `[issue-number]`. */
   argumentHint?: string;
   /** `arguments`: names for `$name`, by position. */
@@ -210,6 +213,9 @@ async function readSkill(
     instructions,
     file,
     ...(commandNamed ? { command: true } : {}),
+    ...(!commandNamed && (await hasSkillFiles(file))
+      ? { resources: true }
+      : {}),
     ...(argumentHint(data["argument-hint"])
       ? { argumentHint: argumentHint(data["argument-hint"]) }
       : {}),
@@ -392,6 +398,15 @@ export function skillsTool(
           type: ["string", "null"],
           description: "Arguments for the skill",
         },
+        file: {
+          type: ["string", "null"],
+          description:
+            "Instead of running the skill, read one of its files (`references/guide.md`), relative to the skill's folder.",
+        },
+        offset: {
+          type: ["integer", "null"],
+          description: "With `file`: the character to continue reading from.",
+        },
       },
       required: ["skill"],
       additionalProperties: false,
@@ -402,9 +417,32 @@ export function skillsTool(
       const requested = textField(input.skill)?.replace(/^\/+/, "");
       if (!requested) return "Missing skill name.";
       const skills = (await load()).filter((skill) => allowed.has(skill.id));
-      return runSkill(skills, requested, textField(input.args));
+      const file = textField(input.file);
+      if (!file) return runSkill(skills, requested, textField(input.args));
+      const { found } = findSkill(skills, requested);
+      if (found.length !== 1) return runSkill(skills, requested);
+      const skill = found[0]!;
+      return skill.resources
+        ? readSkillFile(
+            skill.file,
+            file,
+            typeof input.offset === "number" ? input.offset : 0,
+          )
+        : `Skill "${skill.name}" has no files besides its instructions.`;
     },
   });
+}
+
+// An exact name beats a prefixed one (`frontend:build` and `build`).
+function findSkill(skills: readonly Skill[], requested: string) {
+  const id = requested.trim().replace(/^\/+/, "").toLowerCase();
+  const short = id.includes(":") ? (id.split(":").at(-1) ?? id) : id;
+  const matches = skills.filter(
+    (skill) => skill.id === id || skill.id === short,
+  );
+  const enabled = matches.filter((skill) => !skill.disabled);
+  const exact = enabled.filter((skill) => skill.id === id);
+  return { matches, enabled, found: exact.length ? exact : enabled };
 }
 
 /** What the model reads when it invokes a skill. */
@@ -413,15 +451,7 @@ export function runSkill(
   requested: string,
   args?: string,
 ) {
-  const id = requested.trim().replace(/^\/+/, "").toLowerCase();
-  const short = id.includes(":") ? (id.split(":").at(-1) ?? id) : id;
-  const matches = skills.filter(
-    (skill) => skill.id === id || skill.id === short,
-  );
-  const enabled = matches.filter((skill) => !skill.disabled);
-  // An exact name beats a prefixed one (`frontend:build` and `build`).
-  const exact = enabled.filter((skill) => skill.id === id);
-  const found = exact.length ? exact : enabled;
+  const { matches, enabled, found } = findSkill(skills, requested);
   if (found.length === 1) {
     const skill = found[0]!;
     const commandArgs = args?.trim()
@@ -430,7 +460,10 @@ export function runSkill(
     const description = skill.description?.trim()
       ? `Description: ${skill.description.trim()}\n\n`
       : "";
-    return `<command-name>${skill.name}</command-name>${commandArgs}\n<command-instructions>\n${description}${skillInstructions(skill, args)}\n</command-instructions>`;
+    const folder = skill.resources
+      ? `Base directory for this skill: ${dirname(skill.file)}\nRelative paths in these instructions start there: read a file with the skills tool's \`file\` input, run a script by its full path.\n\n`
+      : "";
+    return `<command-name>${skill.name}</command-name>${commandArgs}\n<command-instructions>\n${description}${folder}${skillInstructions(skill, args)}\n</command-instructions>`;
   }
   if (matches.length && !enabled.length)
     return `Skill "${matches[0]!.name}" is configured but disabled.`;
