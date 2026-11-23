@@ -317,7 +317,7 @@ describe("Blame's self-repair tools", () => {
       await mkdir(join(skills, "bad-yaml"), { recursive: true });
       await writeFile(
         join(skills, "bad-yaml", "SKILL.md"),
-        "---\nname: [oops\n---\nBody",
+        "---\nname: bad-yaml\ndescription: Use when: the front matter has a colon\n---\nBody",
       );
       const { value } = await call(tools(), "blame_inspect", {
         area: "skills",
@@ -344,9 +344,12 @@ describe("Blame's self-repair tools", () => {
         problems["~/.agents/skills/nothing/SKILL.md"],
         /no SKILL.md/,
       );
-      assert.match(
-        problems["~/.agents/skills/bad-yaml/SKILL.md"],
-        /not valid YAML/,
+      // A front matter that does not parse (an unquoted colon in the
+      // description) no longer costs the skill: the loader reads what it can,
+      // so it is not a problem.
+      assert.equal(problems["~/.agents/skills/bad-yaml/SKILL.md"], undefined);
+      assert.ok(
+        value.details.loaded.some((skill: any) => skill.name === "bad-yaml"),
       );
       assert.equal(value.status, "problem");
     });

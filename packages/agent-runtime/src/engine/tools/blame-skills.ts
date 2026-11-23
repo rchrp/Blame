@@ -89,8 +89,9 @@ async function whyNotLoaded(
     try {
       const data = parseYaml(match[1]!) as { name?: unknown } | null;
       if (typeof data?.name === "string") name = data.name.toLowerCase();
-    } catch (error) {
-      return `the front matter is not valid YAML: ${(error instanceof Error ? error.message : String(error)).split("\n")[0]}`;
+    } catch {
+      // The loader still reads a skill whose front matter does not parse, with
+      // what it can make of it, so this is never why a skill is missing.
     }
   }
   if (!(match ? match[2]! : text).trim())
