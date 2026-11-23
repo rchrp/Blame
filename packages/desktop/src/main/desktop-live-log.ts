@@ -75,7 +75,7 @@ function formatLogValue(value: unknown) {
   }
 }
 
-function liveLogPath() {
+export function liveLogPath() {
   return join(app.getPath("userData"), "logs", "blame-live.log");
 }
 

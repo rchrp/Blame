@@ -1,9 +1,10 @@
 // Which effect each client tool has and which ones the user approves, in one
 // table. The engine runs read-only calls in parallel and keeps a message's
 // files undoable only across read-only calls; it lists command and external
-// calls as not undone when a message is rewound. No tool of a conversation
-// asks for approval today: stories approve their own writes (their harness
-// runs in the engine), and these tools only read or act on Blame's preview.
+// calls as not undone when a message is rewound. Stories approve their own
+// writes (their harness runs in the engine); of these tools only
+// `blame_configure` asks: it adds a command to run or instructions to the
+// agent's prompt, which the person must see and allow.
 
 import type { ToolEffect } from "@blame/engine-client";
 import type { ClientTool, ToolPolicy } from "../tool.js";
@@ -31,6 +32,15 @@ const rules: Record<string, Rule> = {
   propose_project_stack: { effect: "read_only" },
   search_user_stories: { effect: "read_only" },
   read_user_story: { effect: "read_only" },
+  // Blame's self-repair tools (`blame.ts`). Looking changes nothing. Fixing
+  // is an allowlist of reversible steps on this conversation's own preview,
+  // the user's MCP servers and a stopped runtime (`blame-repair.ts`), plus
+  // handing a step to the person. Configuring changes the machine's
+  // configuration and the agent's own instructions: always approved, and the
+  // approval shows the command, URL or source.
+  blame_inspect: { effect: "read_only" },
+  blame_repair: { effect: "command" },
+  blame_configure: { effect: "external", needsApproval: true },
   // Documents and skills.
   read_attachment: { effect: "read_only" },
   skills: { effect: "read_only" },

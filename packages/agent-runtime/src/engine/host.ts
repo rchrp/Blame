@@ -215,6 +215,21 @@ export class EngineHost {
       ...options.desktop,
       connection: () => this.api,
       mcp: this.mcp,
+      blameHost: {
+        providers: async () =>
+          (await this.providers.list(false)).credentials.map((credential) => ({
+            provider: credential.providerId,
+            label: credential.label,
+            ...(credential.authMethod ? { auth: credential.authMethod } : {}),
+            ...(credential.expiresAt
+              ? { expiresAt: credential.expiresAt }
+              : {}),
+            ...(credential.baseUrl
+              ? { endpoint: endpointHost(credential.baseUrl) }
+              : {}),
+          })),
+        sessionFailures: (session) => this.sessionFailures(session),
+      },
       // A story's repair_preview_initialization runs the repair task.
       repairInitialization: (input) =>
         runInitializationRepair(this.taskHost(), input),
@@ -805,6 +820,22 @@ export class EngineHost {
     };
   }
 
+  /** The latest model request failures of a conversation, for `blame_inspect`. */
+  private async sessionFailures(session: string): Promise<string[]> {
+    const client = await this.engineFor({ session }).supervisor.client();
+    const { head } = await client.readRecords({ session, after: 0, limit: 1 });
+    const { records } = await client.readRecords({
+      session,
+      after: Math.max(0, head - 400),
+      limit: 400,
+    });
+    return records.flatMap((record) =>
+      record.type === "request_failed"
+        ? [`${record.error.kind}: ${record.error.message}`.slice(0, 400)]
+        : [],
+    );
+  }
+
   /** The engine for a workspace's location, started on first use. */
   private engineAt(location: EngineLocation): Engine {
     let engine = this.engines.get(location);
@@ -920,4 +951,13 @@ function isWake(message: EngineMessage) {
     parseOrchestratorWake([{ type: "context", text: message.context }]) !==
       undefined
   );
+}
+
+/** The host of a credential's endpoint: its path and query may carry secrets. */
+function endpointHost(value: string) {
+  try {
+    return new URL(value).host;
+  } catch {
+    return "(invalid URL)";
+  }
 }
