@@ -638,7 +638,7 @@ one cache miss).
 | `search_user_stories`, `read_user_story` | API connection, a project (`git` for changed files) | yes | yes | yes | no | yes |
 | `github__*` | `githubMcpTools`, `githubMcpCall`: read-only GitHub access for the session id | yes | yes | yes | no | no |
 | `<server>__<tool>` | the user's MCP servers (Settings → MCP), `McpConnections` in the host | yes | yes | yes | no | yes |
-| `skills` | skill folders (`.claude/skills`, `.agents/skills`, `~/.agents/skills`… and Blame's own) | yes | yes | yes | no | yes |
+| `skills` | skill folders and command files (`.claude/skills`, `.claude/commands`, `.agents/skills`, `~/.claude/skills`, `~/.claude/commands`, `~/.agents/skills`… and Blame's own); `file` reads a skill's own files | yes | yes | yes | no | yes |
 
 The orchestrator also has its own tools, `epic_board`, `create_stories`,
 `update_story`, `story_report`, `message_story`, `approve_story`,
@@ -688,13 +688,88 @@ MCP servers are read from the MCP settings file Settings → MCP writes
 Streamable HTTP, SSE), one connection per server for the whole host, closed
 when it shuts down. OAuth state stays in that file next to the server
 (`mcp-oauth.ts`); authorizing opens the server's sign-in page and waits for
-the loopback redirect. Skills are `SKILL.md` folders read from the
-workspace (`.clinerules` and `.cline` for projects that also use Cline,
-`.claude`, `.agents` `/skills`), the user's home (`~/.agents/skills`) and
-Blame's own
-(`plugins/blame-native/skills`); the prompt lists their scopes as they were
-when the conversation started and the `skills` tool reads the current files.
-A plugin folder (`BLAME_AGENT_PLUGIN_PATHS`) adds its skills only.
+the loopback redirect.
+
+Skills are meant to be the ones people already have for Claude Code: a
+folder with a `SKILL.md` (the open Agent Skills format) works as it is, and
+so do Claude Code's older `commands/*.md` files. `engine/tools/skills.ts`
+loads them, `skill-files.ts` reads their supporting files.
+
+**Where they are read from**, first folder first (a name two hold goes to
+the first), so a project's skill beats the user's of the same name (Claude
+Code ranks the user's first) and, in each scope, a skill folder beats a
+command:
+
+1. the workspace: `.clinerules/skills` and `.cline/skills` (projects that
+   also use Cline), `.claude/skills`, `.agents/skills`;
+2. the workspace's `.claude/commands` (a subfolder names a `folder:command`);
+3. the user's `~/.claude/skills` and `~/.agents/skills`;
+4. their `~/.claude/commands`;
+5. Blame's own (`plugins/blame-native/skills`), then a plugin folder's
+   (`BLAME_AGENT_PLUGIN_PATHS`, its skills only).
+
+The prompt lists the model-invocable skills' scopes as they were when the
+conversation started and the `skills` tool reads the current files; neither
+changes during the conversation (provider prompt cache).
+
+**Front matter.** `name` (the folder's, or a command's path, otherwise),
+`description` with `when_to_use` appended (the first line of the body when
+there is none), `argument-hint`, `arguments`, `disable-model-invocation`
+and `user-invocable` (`true`/`false`, `yes`/`no`, `on`/`off`, `1`/`0`) are
+used, plus Blame's own `disabled`/`enabled`. An unknown key is ignored; a
+front matter YAML cannot parse (a colon in an unquoted description is the
+usual cause) is read line by line, so the skill is still there.
+
+- `disable-model-invocation: true`: left out of the prompt and of the tool's
+  description; the tool still runs it by name, which only the user's
+  `/name` gives the model (the prompt says a user's `/name` is a request to
+  run that skill, listed or not).
+- `user-invocable: false`: in the prompt, not in the `/` picker.
+
+**Arguments**, as Claude Code does them: `$ARGUMENTS` (the text as typed),
+`$ARGUMENTS[N]` and `$N` (0-based, shell-style quotes), `$name` for each of
+the `arguments`, `${CLAUDE_SKILL_DIR}` (the skill's folder). `\$1` is a
+literal `$1`; an indexed argument nobody gave stays as written, a named one
+is empty; what is inserted is not read again; with no placeholder in the
+body the arguments are appended as `ARGUMENTS: <text>`. The output keeps
+`<command-name>`, `<command-args>` and `<command-instructions>`.
+
+**Supporting files.** The harness reads inside the workspace only, and a
+user-level skill lives in the home folder, so the output of a skill whose
+folder holds more than its `SKILL.md` starts with `Base directory for this
+skill: <folder>` and the `skills` tool takes `file` (relative to that folder)
+and `offset`. The read is done by the host on this computer, as
+`read_attachment` does, and is limited to the folder of a skill the
+conversation discovered: the folder and the file are resolved to their real
+paths first, so `..`, an absolute path elsewhere, or a link pointing out of
+the folder (even `references -> ../shared`) fail; text only, 1 MiB at most,
+40,000 characters a page. A command file has no files (its folder is shared).
+Scripts are not run by the tool: the model runs them by their full path
+(`${CLAUDE_SKILL_DIR}/scripts/x.py`) with the run tool, so the usual
+approvals apply, and the harness's workspace boundary did not move.
+
+**The `/` picker.** Typing `/` at the start of a message in a story, chat or
+epic composer (the editors that already take `@` file mentions) lists the
+skills the user may start (`pickerSkills`: Blame's own and the folders above,
+without the `user-invocable: false` ones and those that need a tool the
+conversation may not have), with `argument-hint` and description. It asks
+the engine host (`listSkills`, a list of the workspace's folders, cached 15 s
+in the renderer): the main process may not load the loader's npm
+dependencies (`check-main-process-imports`). Picking one writes `/name ` and
+the message goes to the agent as typed.
+
+**Not supported** (read and ignored, because they do not fit Blame's approval
+policy or its engine): `allowed-tools` and `disallowed-tools` (a skill cannot
+grant itself tools; the run tool's approvals stand), `context: fork` and
+`agent` (the skill runs in the conversation), `hooks`, and `` !`command` ``
+injection (a shell command run while the skill loads would skip the run
+tool's approval); also `model`, `effort`, `paths`, `shell`,
+`${CLAUDE_SESSION_ID}` and `${CLAUDE_PROJECT_DIR}` (left as written). Not
+read: Claude plugins (`~/.claude/plugins`), nested `.claude/skills` in
+subfolders of a monorepo, enterprise-managed skills, and, unverified, the
+project skills of a VM worktree (the host reads the workspace path it is
+given; the user's folders apply either way, but the scripts of a user-level
+skill are not inside the VM, so they cannot run there).
 
 ## Approvals
 

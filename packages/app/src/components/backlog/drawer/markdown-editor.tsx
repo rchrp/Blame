@@ -89,6 +89,12 @@ import {
   markdownLineIndent,
   MarkdownPreview,
 } from "./markdown-preview"
+import {
+  matchingSkills,
+  skillInvocation,
+  skillMentionState,
+  workspaceSkills,
+} from "./skill-mention"
 
 export type PendingFileAttachment = {
   file: File
@@ -99,14 +105,19 @@ export type PendingFileAttachment = {
 
 type FileMentionState = {
   active: boolean
+  // The `/` skill picker rather than the `@` file one.
+  kind?: "skill"
   query: string
   start: number
   end: number
 }
 
 type FileMentionResult = {
+  // A skill's name for a skill.
   path: string
-  type: "directory" | "file"
+  type: "directory" | "file" | "skill"
+  description?: string
+  argumentHint?: string
 }
 
 const markdownStructureRenderDelayMs = 120
@@ -1192,25 +1203,49 @@ export const MarkdownEditor = React.forwardRef<
   }
   currentValueRef.current = value
   const editorRenderKey = String(editorRenderVersionRef.current)
+  const mentionActive =
+    mention.active &&
+    Boolean(mentionDirectory && platform.workspace) &&
+    (mention.kind !== "skill" || Boolean(platform.engine))
+  // A `/` that names no skill is an ordinary message: no empty list.
   const mentionOpen =
-    mention.active && Boolean(mentionDirectory && platform.workspace)
+    mentionActive && (mention.kind !== "skill" || mentionResults.length > 0)
   React.useEffect(() => {
     attachmentsRef.current = attachments
   }, [attachments])
 
   React.useEffect(() => {
-    if (!mentionOpen) return
+    if (!mentionActive) return
 
     const search = ++mentionSearchRef.current
     const timer = setTimeout(async () => {
       try {
         if (search !== mentionSearchRef.current) return
         if (!mentionDirectory || !platform.workspace) return
-        const results = await platform.workspace.searchFiles({
-          root: mentionDirectory,
-          query: mention.query,
-          limit: 100,
-        })
+        const engine = platform.engine
+        const workspace = platform.workspace
+        const results: FileMentionResult[] =
+          mention.kind === "skill"
+            ? matchingSkills(
+                await workspaceSkills(mentionDirectory, async () =>
+                  engine
+                    ? engine.call("listSkills", {
+                        workspaceRoot: mentionDirectory,
+                      })
+                    : []
+                ),
+                mention.query
+              ).map((skill) => ({
+                path: skill.name,
+                type: "skill",
+                description: skill.description,
+                argumentHint: skill.argumentHint,
+              }))
+            : await workspace.searchFiles({
+                root: mentionDirectory,
+                query: mention.query,
+                limit: 100,
+              })
         if (search !== mentionSearchRef.current) return
         setMentionResults(results)
         setActiveMentionIndex(0)
@@ -1222,12 +1257,19 @@ export const MarkdownEditor = React.forwardRef<
     }, 80)
 
     return () => clearTimeout(timer)
-  }, [mention.query, mentionDirectory, mentionOpen, platform.workspace])
+  }, [
+    mention.kind,
+    mention.query,
+    mentionActive,
+    mentionDirectory,
+    platform.engine,
+    platform.workspace,
+  ])
 
   React.useEffect(() => {
-    if (mentionOpen) return
+    if (mentionActive) return
     mentionSearchRef.current += 1
-  }, [mentionOpen])
+  }, [mentionActive])
 
   React.useEffect(() => {
     activeMentionItemRef.current?.scrollIntoView({ block: "nearest" })
@@ -1299,7 +1341,10 @@ export const MarkdownEditor = React.forwardRef<
         )
         return
       }
-      const nextMention = fileMentionState(nextValue, selection.start)
+      const skillMention = skillMentionState(nextValue, selection.start)
+      const nextMention: FileMentionState = skillMention.active
+        ? { ...skillMention, kind: "skill" }
+        : fileMentionState(nextValue, selection.start)
       setMention((current) =>
         equalFileMentionState(current, nextMention) ? current : nextMention
       )
@@ -1436,9 +1481,11 @@ export const MarkdownEditor = React.forwardRef<
   function selectMention(result?: FileMentionResult) {
     if (!result) return
     const insertedPath =
-      result.type === "file"
-        ? `${markdownFileLink(result.path)} `
-        : `${result.path} `
+      result.type === "skill"
+        ? skillInvocation({ name: result.path })
+        : result.type === "file"
+          ? `${markdownFileLink(result.path)} `
+          : `${result.path} `
     const nextMarkdown = markdownWithReplacement(
       value,
       mention.start,
@@ -2069,7 +2116,9 @@ export const MarkdownEditor = React.forwardRef<
             }}
           >
             <CommandEmpty className="py-3 text-muted-foreground">
-              No matching files.
+              {mention.kind === "skill"
+                ? "No matching skills."
+                : "No matching files."}
             </CommandEmpty>
             <CommandGroup>
               {mentionResults.map((result, index) => (
@@ -2085,16 +2134,37 @@ export const MarkdownEditor = React.forwardRef<
                   onMouseEnter={() => setActiveMentionIndex(index)}
                   onSelect={() => selectMention(result)}
                 >
-                  <DevelopmentFileIcon className="shrink-0" node={result} />
-                  <span className="flex min-w-0 items-center text-sm">
-                    <span className="truncate text-muted-foreground">
-                      {directoryName(result.path)}
+                  {result.type === "skill" ? (
+                    <span className="flex min-w-0 items-baseline gap-2 text-sm">
+                      <span className="shrink-0 text-foreground">
+                        /{result.path}
+                        {result.argumentHint ? (
+                          <span className="ml-1 text-muted-foreground">
+                            {result.argumentHint}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="truncate text-muted-foreground">
+                        {result.description}
+                      </span>
                     </span>
-                    <span className="shrink-0 text-foreground">
-                      {filename(result.path)}
-                      {result.type === "directory" ? "/" : ""}
-                    </span>
-                  </span>
+                  ) : (
+                    <>
+                      <DevelopmentFileIcon
+                        className="shrink-0"
+                        node={{ ...result, type: result.type }}
+                      />
+                      <span className="flex min-w-0 items-center text-sm">
+                        <span className="truncate text-muted-foreground">
+                          {directoryName(result.path)}
+                        </span>
+                        <span className="shrink-0 text-foreground">
+                          {filename(result.path)}
+                          {result.type === "directory" ? "/" : ""}
+                        </span>
+                      </span>
+                    </>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>
@@ -2119,6 +2189,7 @@ function equalFileMentionState(
   return (
     current.active === next.active &&
     current.end === next.end &&
+    current.kind === next.kind &&
     current.query === next.query &&
     current.start === next.start
   )

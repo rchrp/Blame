@@ -262,6 +262,15 @@ export type EngineHostMethods = {
     input: { providerId: string; credentialLabel?: string };
     result: SubscriptionUsage | null;
   };
+  /** The skills a user may start with `/name` in a workspace (the composers' picker). */
+  listSkills: {
+    input: { workspaceRoot: string };
+    result: {
+      name: string;
+      description?: string;
+      argumentHint?: string;
+    }[];
+  };
   shutdown: { input: undefined; result: null };
   /** An epic's conversation, spend and unreported turns (docs/orchestrator.md). */
   epicState: { input: { epicId: string }; result: EpicState };
@@ -327,6 +336,7 @@ export const engineHostMethods = [
   "claudeCodeStatus",
   "connectClaudeCode",
   "planUsage",
+  "listSkills",
   "shutdown",
   "status",
   "epicState",

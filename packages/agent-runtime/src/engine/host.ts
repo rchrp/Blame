@@ -77,6 +77,7 @@ import {
   clientToolPolicy,
   type PreviewRuntimeContext,
 } from "./tools/index.js";
+import { pickerSkills } from "./tools/skills.js";
 import { webResearchClientTools } from "./tools/web-research.js";
 
 export type EngineHostOptions = {
@@ -622,6 +623,7 @@ export class EngineHost {
     claudeCodeStatus: () => this.providers.claudeCodeStatus(),
     connectClaudeCode: ({ label }) => this.providers.connectClaudeCode(label),
     planUsage: (input) => this.providers.planUsage(input),
+    listSkills: ({ workspaceRoot }) => pickerSkills({ workspaceRoot }),
     shutdown: async () => {
       await this.shutdown();
       return null;
