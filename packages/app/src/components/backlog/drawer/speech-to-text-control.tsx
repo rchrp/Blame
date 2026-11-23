@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import { usePlatform } from "@/context/platform"
 import { useCloudAuth } from "@/context/cloud-auth"
 import { createCloudApi } from "@/lib/cloud-api"
+import { speechFailureNeedsSettings } from "@blame/speech-contract"
+import { speechOwnKeyStore } from "@/lib/speech-own-key-store"
+import { openSpeechKeySettings } from "@/pages/settings/settings-section"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 
 const maxRecordingDurationMs = 120_000
@@ -73,6 +76,31 @@ export function SpeechRecordingControl({
     chunksRef.current = []
   }
 
+  // The person's own OpenRouter key, when one is saved, takes the call: it
+  // goes from the desktop to OpenRouter, not through Blame's API. A failure
+  // leads back to the Settings that fix it.
+  async function transcribe(input: { data: string; format: string }) {
+    const speechKey = platform.speechKey
+    if (
+      speechKey &&
+      (await speechOwnKeyStore(speechKey).current())?.configured
+    ) {
+      const result = await speechKey.transcribe(input)
+      if (result.ok) return { text: result.text }
+      if (speechFailureNeedsSettings(result.code)) {
+        void speechOwnKeyStore(speechKey).refresh()
+        toast.error(result.message, {
+          action: { label: "Open settings", onClick: openSpeechKeySettings },
+          duration: 10_000,
+        })
+      } else {
+        toast.error(result.message)
+      }
+      return undefined
+    }
+    return createCloudApi(apiConnection).transcribeAudio(input)
+  }
+
   const transcribeRecording = useLatestCallback(async () => {
     if (status !== "recording") return
     setStatus("transcribing")
@@ -83,10 +111,8 @@ export function SpeechRecordingControl({
         return
       }
       const data = await blobToBase64(audio.blob)
-      const result = await createCloudApi(apiConnection).transcribeAudio({
-        data,
-        format: audio.format,
-      })
+      const result = await transcribe({ data, format: audio.format })
+      if (!result) return
       if (!result.text) {
         toast.info("No speech was detected.")
         return

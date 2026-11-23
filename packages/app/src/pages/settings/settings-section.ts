@@ -8,12 +8,26 @@ export type SettingsSectionId =
   | "desktop"
   | "account"
 
-// The section the next opening of Settings shows, then forgotten.
-let requestedSection: SettingsSectionId | undefined
+// A part of a section that opens expanded, such as an accordion.
+export type SettingsItemId = "speech-own-key"
 
-export function openSettings(section?: SettingsSectionId) {
+// The section (and item) the next opening of Settings shows, then forgotten.
+let requestedSection: SettingsSectionId | undefined
+let requestedItem: SettingsItemId | undefined
+
+export function openSettings(section?: SettingsSectionId, item?: SettingsItemId) {
   requestedSection = section
+  requestedItem = item
   navigate("/settings")
+}
+
+/** Settings on the accordion where the person's own OpenRouter key goes. */
+export function openSpeechKeySettings() {
+  openSettings("models", "speech-own-key")
+}
+
+export function requestedSettingsItem() {
+  return requestedItem
 }
 
 export function requestedSettingsSection() {
@@ -22,4 +36,5 @@ export function requestedSettingsSection() {
 
 export function clearRequestedSettingsSection() {
   requestedSection = undefined
+  requestedItem = undefined
 }

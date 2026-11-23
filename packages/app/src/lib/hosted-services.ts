@@ -5,14 +5,16 @@ import { navigate } from "@/components/navigation/navigation"
 import {
   hostedServiceAccess,
   hostedServiceIsPremium,
-  hostedServiceRequirement,
+  hostedServiceOffer,
   type HostedService,
   type SessionAccess,
 } from "@/lib/hosted-service-access"
+import { openSpeechKeySettings } from "@/pages/settings/settings-section"
 
 /**
  * Whether the service can be used now. When it cannot, says why and offers
  * the next step: Blame Premium for a Premium service, signing in otherwise.
+ * Voice input also offers the person's own OpenRouter key, where one can be kept.
  */
 export function requestHostedService(
   auth: SessionAccess & Pick<CloudAuthContextValue, "openSignIn">,
@@ -20,18 +22,26 @@ export function requestHostedService(
 ) {
   const access = hostedServiceAccess(auth, service)
   if (access === "available") return true
-  const message = `${hostedServiceRequirement(auth, service)}.`
-  if (hostedServiceIsPremium(service)) {
+  const { description, message, ownKey } = hostedServiceOffer(auth, service)
+  if (ownKey) {
+    // Two ways forward, none pushed: the person's own key, or Blame Cloud.
     toast.info(message, {
-      description:
-        auth.mode === "account"
-          ? undefined
-          : "Blame Cloud comes with a free account. Everything else keeps working without one.",
+      description,
+      duration: 12_000,
+      action: {
+        label: "Add your OpenRouter key",
+        onClick: openSpeechKeySettings,
+      },
+      cancel: { label: "View Blame Cloud", onClick: openHostedServicesOffer },
+    })
+  } else if (hostedServiceIsPremium(service)) {
+    toast.info(message, {
+      description,
       action: { label: "View Blame Cloud", onClick: openHostedServicesOffer },
     })
   } else {
     toast.info(message, {
-      description: "Everything else keeps working without one.",
+      description,
       action: { label: "Sign in", onClick: auth.openSignIn },
     })
   }
