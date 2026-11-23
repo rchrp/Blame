@@ -24,6 +24,7 @@ import { useCloudAuth, type CloudMcpServer } from "@/context/cloud-auth"
 import {
   usePlatform,
   type McpServerConfig,
+  type McpSettingsRecovery,
   type McpTransport,
 } from "@/context/platform"
 import { formatArguments, parseArguments } from "./mcp-arguments"
@@ -63,6 +64,7 @@ export function McpSettingsPanel() {
   const [editingName, setEditingName] = React.useState<string>()
   const [loading, setLoading] = React.useState(Boolean(client))
   const [error, setError] = React.useState<string>()
+  const [recovery, setRecovery] = React.useState<McpSettingsRecovery | null>()
 
   React.useEffect(() => {
     if (!client) return
@@ -79,13 +81,11 @@ export function McpSettingsPanel() {
         }
         await saveCloudMcpConfiguration(toCloudServers(localServers))
         setServers(
-          await client.mergeCloud(
-            cloudUserId,
-            toCloudServers(localServers),
-            true
-          )
+          await client.mergeCloud(cloudUserId, toCloudServers(localServers))
         )
       })
+      .then(() => client.recovery())
+      .then((notice) => setRecovery(notice ?? null))
       .catch((reason) => setError(errorMessage(reason)))
       .finally(() => setLoading(false))
   }, [
@@ -152,6 +152,31 @@ export function McpSettingsPanel() {
           </Notice>
         )}
         {error && <Notice error>{error}</Notice>}
+        {recovery && client && (
+          <Notice>
+            <span className="flex-1">
+              {recovery.restoredFrom
+                ? "Your saved servers file could not be read, so Blame brought back the last good copy."
+                : "Your saved servers file could not be read, so Blame set it aside and started a new list."}{" "}
+              The original is kept next to it, named{" "}
+              <code className="break-all">
+                {recovery.movedTo.split(/[\\/]/).pop()}
+              </code>
+              .
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setRecovery(null)
+                void client.dismissRecovery()
+              }}
+            >
+              Got it
+            </Button>
+          </Notice>
+        )}
         {adding && client && (
           <McpServerForm
             onCancel={() => setAdding(false)}
@@ -262,7 +287,9 @@ function McpServerSummary({
   ).length
   const status = [
     `${connected} connected server${connected === 1 ? "" : "s"}`,
-    setupRequired ? `${setupRequired} setup required` : undefined,
+    setupRequired
+      ? `${setupRequired} to finish setting up on this device`
+      : undefined,
   ]
     .filter(Boolean)
     .join(" · ")
@@ -319,7 +346,7 @@ function McpServerRow({
             title={endpoint}
           >
             {server.requiresLocalSetup
-              ? "Setup required"
+              ? "Needs setup on this device"
               : server.disabled
                 ? "Disabled"
                 : transportLabel(server.transport)}{" "}
@@ -327,8 +354,9 @@ function McpServerRow({
           </p>
           {server.requiresLocalSetup && (
             <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
-              Local arguments and credentials are not synced. Review this server
-              on this device.
+              This server came from your account. Its arguments and secrets stay
+              on each device: add them here with Complete setup, then turn it
+              on.
             </p>
           )}
           {server.oauth.supported && !server.requiresLocalSetup && (
@@ -447,9 +475,10 @@ function McpServerForm({
       </div>
       {server?.requiresLocalSetup && (
         <Notice>
-          This server was synced without its local arguments, working directory,
-          environment variables, headers, or OAuth credentials. Re-enter what it
-          needs, save, then reconnect OAuth if applicable.
+          This server came from your account without its arguments, working
+          directory, environment variables or headers, which stay on each
+          device. Add what it needs here and save; connect OAuth again if it
+          uses it.
         </Notice>
       )}
       <div

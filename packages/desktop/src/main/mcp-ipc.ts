@@ -1,12 +1,18 @@
 import type { McpOAuthStatus } from "@blame/agent-runtime";
 import type { CloudMcpServerConfig, McpServerConfig } from "@blame/app";
+import {
+  clearMcpSettingsRecovery,
+  readMcpSettings,
+  readMcpSettingsRecovery,
+  updateMcpSettings,
+  type McpSettingsUpdateOptions,
+} from "@blame/agent-runtime/mcp-settings-store";
 import { ipcMain } from "electron";
-import { chmod, mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { chmod } from "node:fs/promises";
 import {
   cloudDisabled,
-  cloudOwner,
   completedCloudMetadata,
+  detachCloudServers,
   localSetupRequired,
   mergeCloudServers,
   type McpSettings,
@@ -21,72 +27,72 @@ export function registerMcpIpcHandlers() {
   ipcMain.handle("mcp:list", () =>
     runSettingsOperation(async () => listServers()),
   );
-  ipcMain.handle(
-    "mcp:merge-cloud",
-    (_event, userIdInput, input, adoptLocalInput) =>
-      runSettingsOperation(async () => {
-        const userId = validateUserId(userIdInput);
-        const adoptLocal = adoptLocalInput === true;
-        const cloudServers = validateCloudServers(input);
-        const settings = await readSettings();
-        const merged = mergeCloudServers(
-          settings,
-          userId,
-          cloudServers,
-          adoptLocal,
-        );
-        await writeSettings(merged);
-        return listServers(merged);
-      }),
+  // The third argument older versions sent (adopt local servers) is ignored:
+  // a server set up on this computer is never replaced by the account's copy.
+  ipcMain.handle("mcp:merge-cloud", (_event, userIdInput, input) =>
+    runSettingsOperation(async () => {
+      const userId = validateUserId(userIdInput);
+      const cloudServers = validateCloudServers(input);
+      const merged = await changeSettings((settings) =>
+        mergeCloudServers(settings, userId, cloudServers),
+      );
+      return listServers(merged);
+    }),
   );
   ipcMain.handle("mcp:detach-cloud", (_event, userIdInput) =>
     runSettingsOperation(async () => {
       const userId = validateUserId(userIdInput);
-      const settings = await readSettings();
-      settings.mcpServers = Object.fromEntries(
-        Object.entries(settings.mcpServers).filter(
-          ([, server]) => cloudOwner(server) !== userId,
-        ),
+      const settings = await changeSettings(
+        (current) => detachCloudServers(current, userId),
+        { allowEmpty: true },
       );
-      await writeSettings(settings);
       return listServers(settings);
     }),
+  );
+  ipcMain.handle("mcp:recovery", () =>
+    runSettingsOperation(() => readMcpSettingsRecovery(settingsPath())),
+  );
+  ipcMain.handle("mcp:dismiss-recovery", () =>
+    runSettingsOperation(() => clearMcpSettingsRecovery(settingsPath())),
   );
   ipcMain.handle("mcp:save", (_event, input, previousName) =>
     runSettingsOperation(async () => {
       const server = validateServer(input);
-      const settings = await readSettings();
       const originalName =
         typeof previousName === "string"
           ? validateName(previousName)
           : undefined;
-      const existing = settings.mcpServers[originalName ?? server.name];
-      if (originalName && !existing) throw new Error("MCP server not found");
-      if (hasNameConflict(settings, server.name, originalName)) {
-        throw new Error("An MCP server with this name already exists");
-      }
-      if (originalName && originalName !== server.name) {
-        delete settings.mcpServers[originalName];
-      }
-      const preserveOAuth = existing && sameEndpoint(existing, server);
-      settings.mcpServers[server.name] = {
-        ...(existing ?? {}),
-        ...serializeServer(server),
-        metadata: completedCloudMetadata(existing),
-        ...(preserveOAuth && existing.oauth
-          ? { oauth: existing.oauth }
-          : { oauth: undefined }),
-      };
-      await writeSettings(settings);
+      const settings = await changeSettings((current) => {
+        const existing = current.mcpServers[originalName ?? server.name];
+        if (originalName && !existing) throw new Error("MCP server not found");
+        if (hasNameConflict(current, server.name, originalName)) {
+          throw new Error("An MCP server with this name already exists");
+        }
+        if (originalName && originalName !== server.name) {
+          delete current.mcpServers[originalName];
+        }
+        const preserveOAuth = existing && sameEndpoint(existing, server);
+        current.mcpServers[server.name] = {
+          ...(existing ?? {}),
+          ...serializeServer(server),
+          metadata: completedCloudMetadata(existing),
+          ...(preserveOAuth && existing.oauth
+            ? { oauth: existing.oauth }
+            : { oauth: undefined }),
+        };
+      });
       return listServers(settings);
     }),
   );
   ipcMain.handle("mcp:remove", (_event, input) =>
     runSettingsOperation(async () => {
       const name = validateName(input);
-      const settings = await readSettings();
-      delete settings.mcpServers[name];
-      await writeSettings(settings);
+      const settings = await changeSettings(
+        (current) => {
+          delete current.mcpServers[name];
+        },
+        { allowEmpty: true },
+      );
       return listServers(settings);
     }),
   );
@@ -95,13 +101,13 @@ export function registerMcpIpcHandlers() {
       const name = validateName(input);
       if (typeof enabled !== "boolean")
         throw new Error("Invalid enabled state");
-      const settings = await readSettings();
-      const server = settings.mcpServers[name];
-      if (!server) throw new Error("MCP server not found");
-      if (localSetupRequired(server))
-        throw new Error("Complete this MCP server setup before enabling it");
-      server.disabled = !enabled;
-      await writeSettings(settings);
+      const settings = await changeSettings((current) => {
+        const server = current.mcpServers[name];
+        if (!server) throw new Error("MCP server not found");
+        if (localSetupRequired(server))
+          throw new Error("Complete this MCP server setup before enabling it");
+        server.disabled = !enabled;
+      });
       return listServers(settings);
     }),
   );
@@ -152,29 +158,30 @@ function settingsPath() {
   return mcpSettingsFile();
 }
 
-async function readSettings(): Promise<McpSettings> {
-  try {
-    const parsed: unknown = JSON.parse(await readFile(settingsPath(), "utf8"));
-    if (!isRecord(parsed) || !isRecord(parsed.mcpServers))
-      throw new Error("Invalid MCP settings file");
-    return { ...parsed, mcpServers: { ...parsed.mcpServers } } as McpSettings;
-  } catch (error) {
-    if (isNodeError(error) && error.code === "ENOENT")
-      return { mcpServers: {} };
-    throw error;
-  }
+/**
+ * The file as it is. One that cannot be read is moved aside (and the person
+ * told, see `mcp:recovery`), never replaced by an empty list.
+ */
+function readSettings(): Promise<McpSettings> {
+  return readMcpSettings(settingsPath(), {
+    unreadable: "quarantine",
+  }) as Promise<McpSettings>;
 }
 
-async function writeSettings(settings: McpSettings) {
-  const path = settingsPath();
-  await mkdir(dirname(path), { recursive: true });
-  const temporaryPath = `${path}.tmp`;
-  await writeFile(temporaryPath, `${JSON.stringify(settings, null, 2)}\n`, {
-    encoding: "utf8",
-    mode: 0o600,
-  });
-  await rename(temporaryPath, path);
-  await protectSettingsFile();
+/** One change, read and written under the lock the engine host shares. */
+function changeSettings(
+  mutate: (settings: McpSettings) => McpSettings | void,
+  options?: McpSettingsUpdateOptions,
+): Promise<McpSettings> {
+  return updateMcpSettings(settingsPath(), mutate, {
+    unreadable: "quarantine",
+    ...options,
+  }) as Promise<McpSettings>;
+}
+
+/** Replaces the content with `settings` (atomic, backed up, never empty). */
+function writeSettings(settings: McpSettings) {
+  return changeSettings(() => settings);
 }
 
 async function protectSettingsFile() {
@@ -420,7 +427,4 @@ function stringRecord(value: unknown): Record<string, string> | undefined {
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-function isNodeError(value: unknown): value is NodeJS.ErrnoException {
-  return value instanceof Error && "code" in value;
 }

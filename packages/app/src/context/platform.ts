@@ -204,15 +204,23 @@ export type McpServersClient = {
   list(): Promise<McpServerConfig[]>
   mergeCloud(
     userId: string,
-    servers: CloudMcpServerConfig[],
-    adoptLocal?: boolean
+    servers: CloudMcpServerConfig[]
   ): Promise<McpServerConfig[]>
+  /** Set when the saved servers file could not be read and was set aside. */
+  recovery(): Promise<McpSettingsRecovery | null | undefined>
+  dismissRecovery(): Promise<void>
   save(
     server: McpServerConfig,
     previousName?: string
   ): Promise<McpServerConfig[]>
   remove(name: string): Promise<McpServerConfig[]>
   setEnabled(name: string, enabled: boolean): Promise<McpServerConfig[]>
+}
+
+export type McpSettingsRecovery = {
+  at: string
+  movedTo: string
+  restoredFrom?: string
 }
 
 export type CloudMcpServerConfig = Pick<
