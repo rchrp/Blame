@@ -111,11 +111,26 @@ export function transcriptConversation(
       })
       if (opening.rewind) rewindTargets.set(opening.key, opening.rewind)
     }
-    // The orchestrator ends with a structured outcome. Its own text stays where
-    // it was spoken, including before a story launch in the same turn.
-    const endedByOrchestrator = transcript.config?.purpose === "orchestrator" &&
-      items.some(item => item.kind === "tool_call" && item.name === "end_turn" && item.state === "completed")
-    const reply = endedByOrchestrator ? undefined : turnReply(turn, items)
+    // A structured ending can follow either an answer or more work. Only
+    // promote the last text if no work came after it, apart from the ending.
+    const structuredEnd =
+      transcript.config?.purpose === "orchestrator"
+        ? items.findLast(
+            (item) =>
+              item.kind === "tool_call" &&
+              item.name === "end_turn" &&
+              item.state === "completed"
+          )
+        : undefined
+    const lastWork =
+      structuredEnd &&
+      items.findLast(
+        (item) =>
+          (item.kind === "text" && item.text.trim()) ||
+          (item.kind === "tool_call" && item !== structuredEnd)
+      )
+    const reply =
+      lastWork?.kind === "tool_call" ? undefined : turnReply(turn, items)
     const activities = turnActivities(transcript, turn, items, author, reply)
     // The screenshots finish_task attached go above the final reply.
     const images = turnReplyImages(turn, items)

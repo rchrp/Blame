@@ -304,7 +304,7 @@ export function SpeechRecordingControl({
         className="flex min-w-0 items-center gap-1.5 rounded-full bg-destructive/10 px-2 py-1 text-xs text-destructive"
       >
         <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-destructive" />
-        <AudioSpectrum analyser={analyser} />
+        {analyser && <AudioSpectrum analyser={analyser} />}
         <span className="tabular-nums">{formatDuration(elapsedMs)}</span>
       </span>
       <Button
@@ -335,12 +335,12 @@ export function SpeechRecordingControl({
   )
 }
 
-function AudioSpectrum({ analyser }: { analyser: AnalyserNode | null }) {
+function AudioSpectrum({ analyser }: { analyser: AnalyserNode }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null)
 
   React.useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !analyser) return
+    if (!canvas) return
     const context = canvas.getContext("2d")
     if (!context) return
     const activeAnalyser = analyser

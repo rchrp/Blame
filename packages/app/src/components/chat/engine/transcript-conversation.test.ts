@@ -346,6 +346,29 @@ test("an epic's introduction stays before its launch when the completed turn is 
   assert.deepEqual(run?.activities?.map(activity => activity.toolName ?? activity.detail), [
     "I’ll start the exporter.", "create_stories", "end_turn",
   ])
+  assert.equal(run?.finalResponse, null)
+})
+
+test("an epic's answer after its tool calls gets the shared final response", () => {
+  const turn = "epic"
+  const reply = "The exporter is ready for review."
+  const blocks = [
+    { type: "tool_call", call: "board", name: "epic_board", input: {} },
+    { type: "text", text: reply },
+    { type: "tool_call", call: "end", name: "end_turn", input: { action: "reply" } },
+  ]
+  const [run] = conversation([
+    record({ type: "session_created", config: { ...config, purpose: "orchestrator" } }),
+    record({ type: "user_message", turn, delivery: "turn", input: [{ type: "text", text: "How is the exporter?" }] }),
+    record({ type: "request_started", turn, request: "r", model, attempt: 1, prefix_digest: "d" }),
+    record({ type: "assistant_message", turn, request: "r", stop: "tool_use", usage, blocks }),
+    ...["board", "end"].map(call => record({ type: "tool_call_finished", turn, call, outcome: "completed", content: [] })),
+    record({ type: "turn_ended", turn, outcome: { status: "completed" } }),
+  ]).runs
+  assert.equal(run?.finalResponse, reply)
+  assert.deepEqual(run?.activities?.map(activity => activity.toolName ?? activity.messageKind), [
+    "epic_board", "end_turn", "final",
+  ])
 })
 
 test("an accepted finish supplies exactly one final reply in every conversation mode", () => {

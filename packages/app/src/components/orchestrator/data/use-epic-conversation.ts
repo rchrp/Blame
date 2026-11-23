@@ -6,13 +6,15 @@ import { storyMaxInputTokens } from "@/components/backlog/data/story-context-lim
 import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import type { EngineConversationMessage } from "@/components/chat/engine/use-engine-conversation"
 import { transcriptConversation } from "@/components/chat/engine/transcript-conversation"
-import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import {
   modelForPreference,
   useModelSelection,
 } from "@/components/model/model-selection"
 import type { Epic } from "@/components/orchestrator/data/epic-data"
-import { useEpicStore } from "@/components/orchestrator/data/epic-store"
+import {
+  useEpicSession,
+  useEpicStore,
+} from "@/components/orchestrator/data/epic-store"
 import { epicTranscript } from "@/components/orchestrator/data/epic-transcript"
 import { orchestratorPreference } from "@/components/orchestrator/data/use-epic-models"
 import { useCloudAuth } from "@/context/cloud-auth"
@@ -111,7 +113,7 @@ export function useEpicConversation(epic: Epic) {
   const epics = useEpicStore()
   const messenger = useEpicMessenger()
   const session = epic.engineSessionId ?? undefined
-  const view = useEngineSession(session)
+  const view = useEpicSession()
   const transcript = view.transcript
   const conversation = React.useMemo(
     () => transcript && transcriptConversation(transcript, "You"),

@@ -60,13 +60,7 @@ export function EngineApprovalProvider({
 }
 
 /** Allow and Deny for one call waiting in the timeline. */
-export function ApprovalDecision({
-  call,
-  neutral = false,
-}: {
-  call: string
-  neutral?: boolean
-}) {
+export function ApprovalDecision({ call }: { call: string }) {
   const decide = React.useContext(ApprovalContext)
   const [pending, setPending] = React.useState<"approved" | "denied">()
   if (!decide) return null
@@ -86,11 +80,6 @@ export function ApprovalDecision({
         disabled={pending !== undefined}
         size="sm"
         type="button"
-        className={
-          neutral
-            ? "bg-foreground text-background hover:bg-foreground/85"
-            : undefined
-        }
         onClick={() => choose("approved")}
       >
         <CheckIcon />

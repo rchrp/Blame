@@ -36,19 +36,25 @@ test("dictation completed away from its editor returns only to the original edit
 test("returning to an editor reattaches its slot without losing a live dictation", () => {
   const store = createSpeechSessionStore()
   const texts: string[] = []
-  const leave = store.register(
-    "story",
-    slot(() => assert.fail("stale editor"))
-  )
-  store.visibility("story", false)
-  assert.equal(store.slot("story")?.visible, false)
+  const key = "epic:message"
+  const original = slot(() => assert.fail("stale editor"))
+  const placements: (HTMLElement | undefined)[] = []
+  store.subscribe(() => placements.push(store.visibleElement(key)))
+  const leave = store.register(key, original)
   leave()
-  assert.equal(store.slot("story"), undefined)
   const replacement = slot((text) => texts.push(text))
-  store.register("story", replacement)
+  store.register(key, replacement)
   leave()
-  assert.equal(store.slot("story"), replacement)
-  store.deliver("story", "Keep recording")
+  store.visibility(key, false)
+  store.visibility(key, true)
+  assert.deepEqual(placements, [
+    original.element,
+    undefined,
+    replacement.element,
+    undefined,
+    replacement.element,
+  ])
+  store.deliver(key, "Keep recording")
   assert.deepEqual(texts, ["Keep recording"])
 })
 

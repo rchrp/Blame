@@ -58,19 +58,20 @@ function useSpeechContainer() {
   const session = React.useContext(SpeechContext)!
   const { store, activeKey, container } = session
   const fallback = React.useRef<HTMLDivElement>(null)
-  const version = React.useSyncExternalStore(store.subscribe, store.snapshot)
-  const slot = activeKey ? store.slot(activeKey) : undefined
+  const editorSlot = React.useSyncExternalStore(store.subscribe, () =>
+    store.visibleElement(activeKey)
+  )
   React.useLayoutEffect(() => {
-    const target = slot?.visible ? slot.element : fallback.current
+    const target = editorSlot ?? fallback.current
     target?.appendChild(container)
     return () => {
       container.remove()
     }
-  }, [container, slot, version])
+  }, [container, editorSlot])
   return {
     ...session,
     fallback,
-    floating: Boolean(activeKey && !slot?.visible),
+    floating: Boolean(activeKey && !editorSlot),
   }
 }
 

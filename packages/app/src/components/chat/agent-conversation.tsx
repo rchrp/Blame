@@ -81,7 +81,7 @@ import {
   readSubAgentsRefusal,
   runAgentsTool,
 } from "./sub-agents/sub-agents-view"
-import { ToolCallItem, useToolCallDetails } from "./tool-calls/tool-call-item"
+import { ToolCallItem } from "./tool-calls/tool-call-item"
 import {
   AgentScreenshotOwnerProvider,
   ScreenshotGroupProvider,
@@ -838,50 +838,12 @@ type AgentWorkDetailsProps = {
 
 function AgentWorkDetails(props: AgentWorkDetailsProps) {
   const registry = useAgentActivityRegistry(props.activities, props.run)
-  const toolDetails = useToolCallDetails()
   if (!registry.activityIds.length) {
     return props.run.status === "running" && !props.earlier ? (
       <AgentThinkingTimelineItem />
     ) : null
   }
   const responseActivityId = terminalResponseActivityId(props, registry)
-  if (toolDetails) {
-    // An orchestrated turn keeps its narration and launches in transcript order.
-    // Technical calls remain available together underneath.
-    const work: string[] = []
-    const conversation: React.ReactNode[] = []
-    for (const activity of props.activities) {
-      const inline = toolDetails.get(activity.id)?.inlineContent
-      const inConversation = ["message", "error", "approval"].includes(activity.kind)
-      if (!inConversation) work.push(activity.id)
-      if (inline || inConversation) {
-        conversation.push(
-          <React.Fragment key={activity.id}>
-            {inline ?? (
-              <AgentActivityTimeline
-                {...props}
-                registry={registry}
-                activityIds={[activity.id]}
-              />
-            )}
-          </React.Fragment>
-        )
-      }
-    }
-    return (
-      <div className="grid min-w-0 gap-3">
-        {conversation}
-        {work.length > 0 && (
-          <AgentWorkAccordion
-            {...props}
-            activityIds={work}
-            registry={registry}
-            responseActivityId={responseActivityId}
-          />
-        )}
-      </div>
-    )
-  }
   // Proposals (stories, a stack) are cards under the reply, not steps.
   const proposals = registry.activityIds
     .map((activityId) => registry.persistedById.get(activityId))
@@ -1088,7 +1050,7 @@ function AgentWorkState({
             ? "agent-thinking-mark"
             : status === "failed"
               ? "bg-destructive"
-              : "bg-[var(--work-completed-color,var(--color-emerald-500))]"
+              : "bg-emerald-500"
         )}
         aria-hidden="true"
       />

@@ -69,7 +69,7 @@ export function EpicConversation({
     <EngineApprovalProvider session={chat.session}>
       <section
         aria-label="Conversation with the orchestrator"
-        className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden [--work-completed-color:var(--muted-foreground)]"
+        className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
       >
         <ConversationSurface
           conversationId={`epic:${epic.id}`}

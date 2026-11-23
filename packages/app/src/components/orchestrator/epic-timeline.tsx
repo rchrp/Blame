@@ -11,7 +11,6 @@ import {
 
 import { userStoryDisplayId } from "@/components/backlog/data/backlog-data"
 import { MarkdownMessage } from "@/components/backlog/drawer/markdown-editor"
-import { ApprovalDecision } from "@/components/chat/engine/engine-approvals"
 import { AgentConversationTimeline } from "@/components/chat/agent-conversation"
 import { agentConversationResponseHeader } from "@/components/chat/agent-conversation-header"
 import { QueuedMessages } from "@/components/chat/engine/queued-messages"
@@ -92,23 +91,8 @@ export function EpicTimeline({
         if (openQuestionKey !== entry.key && entry.action !== "reply")
           outcome = <EndRow context={context} end={entry} />
       } else if (entry?.kind === "decision") {
-        const attention =
-          entry.state === "awaiting_approval" ||
-          entry.state === "denied" ||
-          Boolean(entry.refusal)
         let inlineContent: React.ReactNode
-        if (entry.state === "awaiting_approval") {
-          inlineContent = (
-            <div className="grid gap-2 text-sm">
-              <p className="font-medium">{decisionTitle(entry, epic)}?</p>
-              <DecisionContent decision={entry} context={context} />
-              <ApprovalDecision call={entry.call} neutral />
-            </div>
-          )
-        } else if (
-          entry.tool === "create_stories" &&
-          entry.state === "completed"
-        ) {
+        if (entry.tool === "create_stories" && entry.state === "completed") {
           inlineContent = (
             <CreatedStories
               decision={entry}
@@ -123,7 +107,10 @@ export function EpicTimeline({
           family: entry.tool === "create_stories" ? "plan" : "agent",
           verb: decisionTitle(entry, epic),
           failed: Boolean(entry.refusal) || entry.state === "denied",
-          needsAttention: attention,
+          needsAttention:
+            entry.state === "awaiting_approval" ||
+            entry.state === "denied" ||
+            Boolean(entry.refusal),
           content: <DecisionContent decision={entry} context={context} />,
         })
       }

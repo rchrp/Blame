@@ -68,9 +68,6 @@ const ToolCallDetails = React.createContext<
   ReadonlyMap<string, ToolCallDetail> | undefined
 >(undefined)
 export const ToolCallDetailsProvider = ToolCallDetails.Provider
-export function useToolCallDetails() {
-  return React.useContext(ToolCallDetails)
-}
 
 // One tool call in the agent's work log. Collapsed, it reads as a sentence
 // ("Edited sync-service.ts +12 −3"); opened, it shows the detail that matters
@@ -111,7 +108,7 @@ export function ToolCallItem({
       ),
     [activity, fullDetail, researchDetail, running]
   )
-  const detail = useToolCallDetails()?.get(activity.id ?? "")
+  const detail = React.useContext(ToolCallDetails)?.get(activity.id ?? "")
   const Icon = familyIcons[detail?.family ?? view.family]
   const expandable = detail
     ? !detail.needsAttention
@@ -194,6 +191,7 @@ export function ToolCallItem({
             </span>
           </AccordionTrigger>
           {detail?.needsAttention ? detail.content : null}
+          {detail?.inlineContent}
           {screenshots ? (
             // Always in sight; the opened call shows it larger instead.
             <ToolCallScreenshots

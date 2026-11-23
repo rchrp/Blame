@@ -1,6 +1,7 @@
 import * as React from "react"
 import type { EpicState } from "@blame/agent-runtime/engine-protocol"
 
+import { useEngineSession } from "@/components/chat/engine/use-engine-session"
 import { createEpicApi } from "@/components/orchestrator/data/epic-api"
 import type {
   Epic,
@@ -26,6 +27,9 @@ type EpicStoreValue = ReturnType<typeof useEpicStoreValue>
 const EpicStoreContext = React.createContext<EpicStoreValue | undefined>(
   undefined
 )
+const EpicSessionContext = React.createContext<
+  ReturnType<typeof useEngineSession> | undefined
+>(undefined)
 
 // The page's choice, per project, survives a restart.
 const activeEpicMemoryKey = "orchestrator.active-epic"
@@ -37,7 +41,38 @@ export class EpicChangeNotApplied extends Error {
 
 export function EpicStoreProvider({ children }: { children: React.ReactNode }) {
   const value = useEpicStoreValue()
-  return React.createElement(EpicStoreContext.Provider, { value }, children)
+  return React.createElement(
+    EpicStoreContext.Provider,
+    { value },
+    React.createElement(EpicSessionProvider, {
+      session: value.activeEpic?.engineSessionId,
+      children,
+    })
+  )
+}
+
+// The selected epic keeps receiving transcript records and deltas while the
+// page is away. Stream updates only reach the conversation's consumers.
+function EpicSessionProvider({
+  session,
+  children,
+}: {
+  session?: string | null
+  children: React.ReactNode
+}) {
+  const view = useEngineSession(session ?? undefined)
+  return React.createElement(
+    EpicSessionContext.Provider,
+    { value: view },
+    children
+  )
+}
+
+export function useEpicSession() {
+  const view = React.useContext(EpicSessionContext)
+  if (!view)
+    throw new Error("useEpicSession must be used within EpicStoreProvider")
+  return view
 }
 
 export function useEpicStore() {
@@ -228,7 +263,10 @@ function useEpicStoreValue() {
 
   return {
     ...state,
-    activeEpic: state.epics.find((epic) => epic.id === state.activeId),
+    activeEpic:
+      state.projectId === projectId
+        ? state.epics.find((epic) => epic.id === state.activeId)
+        : undefined,
     create,
     epics,
     load,

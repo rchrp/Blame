@@ -24,14 +24,11 @@ class SpeechSessionStore {
   private targets = new Map<string, SpeechTarget>()
   private pending = new Map<string, string[]>()
   private listeners = new Set<() => void>()
-  private version = 0
   private options: SpeechSessionOptions
 
   constructor(options: SpeechSessionOptions = {}) {
     this.options = options
   }
-
-  snapshot = () => this.version
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -40,8 +37,9 @@ class SpeechSessionStore {
     }
   }
 
-  slot(key: string) {
-    return this.slots.get(key)
+  visibleElement(key: string | undefined) {
+    const slot = key === undefined ? undefined : this.slots.get(key)
+    return slot?.visible ? slot.element : undefined
   }
 
   // Remembered after its editor closes, so the floating recorder can say
@@ -93,7 +91,6 @@ class SpeechSessionStore {
   }
 
   private notify() {
-    this.version += 1
     this.listeners.forEach((listener) => listener())
   }
 }
