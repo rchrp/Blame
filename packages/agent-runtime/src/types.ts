@@ -94,9 +94,18 @@ export type ProviderCredentialSummary = {
   modelIds?: string[];
   accountId?: string | null;
   expiresAt?: string | null;
+  /**
+   * Where it is kept: "account" (Blame's API, available on the person's other
+   * devices) or "device" (this computer's keychain only). Absent: the API's.
+   */
+  storage?: CredentialStorage;
+  /** The last four characters of a device-only key, to recognise it. */
+  lastFour?: string;
   createdAt: string;
   updatedAt: string | null;
 };
+
+export type CredentialStorage = "account" | "device";
 
 export type ProviderListResponse = {
   all: BlameProvider[];
@@ -112,6 +121,38 @@ export type SaveProviderCredentialInput = {
   apiKey: string;
   baseUrl?: string | null;
   modelIds?: string[];
+  /** "device" keeps it in this computer's keychain and never sends it to the API. */
+  storage?: CredentialStorage;
+};
+
+/** A credential kept on this computer only (the desktop's keychain store). */
+export type DeviceCredentialInput = {
+  providerId: string;
+  label?: string;
+  apiKey: string;
+  baseUrl?: string | null;
+  modelIds?: string[];
+  oauthCredentials?: OAuthCredentials;
+};
+
+/** What the desktop's keychain store hands the engine host for a request. */
+export type DeviceCredential = {
+  id: string;
+  providerId: string;
+  label: string;
+  authMethod: ProviderAuthMethod;
+  apiKey: string;
+  baseUrl: string | null;
+  modelIds?: string[];
+  oauthCredentials?: OAuthCredentials | null;
+};
+
+/** Moves a credential between Blame's account and this computer's keychain. */
+export type MoveProviderCredentialInput = {
+  id: string;
+  providerId: string;
+  label: string;
+  to: CredentialStorage;
 };
 
 export type DeleteProviderCredentialInput = {

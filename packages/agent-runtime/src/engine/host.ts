@@ -32,6 +32,7 @@ import {
 import type { ApiConnection, ModelRecommendations } from "../types.js";
 import type { RenderWebPage } from "../web-research-types.js";
 import { CredentialResolver, type CredentialServices } from "./credentials.js";
+import { deviceCredentials } from "./device-credentials.js";
 import type { DesktopServices } from "./desktop-services.js";
 export { attachmentKind, vmCredential } from "./host-helpers.js";
 export type { VmEngineOptions } from "./host-helpers.js";
@@ -221,9 +222,11 @@ export class EngineHost {
       orchestratorTools: (session, epicId) =>
         this.orchestrator.tools(session, epicId),
     });
+    const device = deviceCredentials(options.desktop);
     this.credentials = new CredentialResolver(
       {
         connection: () => this.api,
+        ...(device ? { device } : {}),
         label: (session) => this.known.get(session)?.credentialLabel,
         ...options.credentials,
       },
@@ -275,6 +278,7 @@ export class EngineHost {
           { refresh },
         ),
       credentials: this.credentials,
+      ...(device ? { device } : {}),
       engineBinary: options.binary,
       openExternal: async (url) => {
         await options.desktop?.openExternal?.({ url });
@@ -618,7 +622,10 @@ export class EngineHost {
     providers: ({ refresh }) => this.providers.list(refresh ?? false),
     saveCredential: (input) => this.providers.saveCredential(input),
     deleteCredential: ({ id }) => this.providers.deleteCredential(id),
-    signInChatGpt: ({ label }) => this.providers.signInChatGpt(label),
+    moveCredential: (input) => this.providers.moveCredential(input),
+    credentialStorage: () => this.providers.credentialStorage(),
+    signInChatGpt: ({ label, storage }) =>
+      this.providers.signInChatGpt(label, storage),
     claudeCodeStatus: () => this.providers.claudeCodeStatus(),
     connectClaudeCode: ({ label }) => this.providers.connectClaudeCode(label),
     planUsage: (input) => this.providers.planUsage(input),
