@@ -111,6 +111,20 @@ export function toolCallSource(
 }
 
 export function describeToolCall(source: ToolCallSource): ToolCallView {
+  // A call waiting for the person's decision reads like the call, so they
+  // see exactly what they allow (a command, a URL, a source), plus a chip.
+  const waiting =
+    source.kind === "approval" && describers[source.toolName ?? ""]
+      ? describeToolCall({ ...source, kind: "tool", running: true })
+      : undefined
+  if (waiting)
+    return {
+      ...waiting,
+      chips: [
+        { label: "needs your approval", tone: "warning" },
+        ...waiting.chips,
+      ],
+    }
   if (source.kind !== "tool") {
     const text = textOf(source.detail)
     const isJson = source.detail.trim().startsWith("{")

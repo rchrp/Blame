@@ -48,6 +48,9 @@ const actions = [
 
 const serverName = /^[A-Za-z0-9][A-Za-z0-9_-]{0,39}$/;
 const environmentName = /^[A-Za-z_][A-Za-z0-9_]{0,63}$/;
+// Variables that change how any program starts: not a server's to ask for.
+const reservedEnvironment =
+  /^(?:PATH|HOME|SHELL|NODE_OPTIONS|NODE_PATH|PYTHONPATH|PYTHONSTARTUP|LD_[A-Z_]+|DYLD_[A-Z_]+)$/i;
 const shells =
   /^(?:sh|bash|zsh|fish|dash|ksh|csh|tcsh|cmd|cmd\.exe|powershell|powershell\.exe|pwsh|pwsh\.exe)$/i;
 
@@ -197,7 +200,10 @@ async function addMcp(
   const env = Array.isArray(input.env) ? input.env : [];
   if (
     env.some(
-      (entry) => typeof entry !== "string" || !environmentName.test(entry),
+      (entry) =>
+        typeof entry !== "string" ||
+        !environmentName.test(entry) ||
+        reservedEnvironment.test(entry),
     )
   )
     throw new Error(

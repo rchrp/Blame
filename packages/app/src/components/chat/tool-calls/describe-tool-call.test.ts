@@ -635,3 +635,34 @@ test("blame_inspect reads as a check of one area", () => {
   const refused = view("blame_inspect", { area: "skills", source: "o/r" }, { candidate: null, refused: "No SKILL.md" })
   assert.deepEqual(refused.bodies[0], { type: "error", message: "No SKILL.md" })
 })
+
+test("a call waiting for approval shows what the person would allow", () => {
+  const waiting = describeToolCall(
+    toolCallSource(
+      {
+        kind: "approval",
+        title: "blame_configure needs your approval",
+        toolName: "blame_configure",
+        detail: JSON.stringify({
+          toolName: "blame_configure",
+          input: { action: "add_mcp", name: "notes", command: "npx", args: ["-y", "notes-mcp"] },
+        }),
+      },
+      true
+    )
+  )
+  assert.equal(row(waiting), "Adding MCP server notes: npx -y notes-mcp needs your approval")
+  assert.equal(waiting.chips[0]!.tone, "warning")
+  assert.deepEqual(waiting.bodies[0], {
+    type: "fields",
+    fields: [{ label: "Runs", value: "npx -y notes-mcp", mono: true }],
+  })
+  // A tool without a view of its own keeps the plain title.
+  const plain = describeToolCall(
+    toolCallSource(
+      { kind: "approval", title: "deploy needs your approval", toolName: "deploy", detail: JSON.stringify({ toolName: "deploy", input: {} }) },
+      true
+    )
+  )
+  assert.equal(plain.verb, "deploy needs your approval")
+})

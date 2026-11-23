@@ -238,22 +238,35 @@ async function locateSkill(
   );
 }
 
+// One SKILL.md that lives on GitHub's own file hosts (a raw file or a gist),
+// not any address a page or a README suggests.
+const singleFileHosts = new Set([
+  "raw.githubusercontent.com",
+  "gist.githubusercontent.com",
+]);
+
 async function fetchSingleFile(
   source: string,
   fetchImplementation: Fetch,
 ): Promise<SkillCandidate> {
+  const refusal =
+    "Give a GitHub source (owner/repo or owner/repo/path, or a github.com URL).";
   let url: URL;
   try {
     url = new URL(source.trim());
   } catch {
-    throw new Error(
-      "Give a GitHub source (owner/repo or owner/repo/path) or an https URL of a SKILL.md file.",
-    );
+    throw new Error(refusal);
   }
-  if (url.protocol !== "https:" || !/\/SKILL\.md$/.test(url.pathname))
-    throw new Error(
-      "Give a GitHub source (owner/repo or owner/repo/path) or an https URL of a SKILL.md file.",
-    );
+  if (
+    url.protocol !== "https:" ||
+    !singleFileHosts.has(url.hostname) ||
+    !/\/SKILL\.md$/.test(url.pathname) ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  )
+    throw new Error(refusal);
   const response = await fetchImplementation(url, {
     headers: { "user-agent": "Blame" },
   });

@@ -572,6 +572,7 @@ describe("Blame's self-repair tools", () => {
       );
       await refuse({ name: "a", url: "http://x.test/mcp" }, /https/);
       await refuse({ name: "a", command: "x", env: ["KEY=value"] }, /names/);
+      await refuse({ name: "a", command: "x", env: ["NODE_OPTIONS"] }, /names/);
       await refuse({ name: "github", command: "x" }, /keeps for its own/);
       await refuse({ name: "TAKEN", command: "x" }, /already exists/);
       await refuse({ name: "bad name!", command: "x" }, /name must be/);
@@ -720,16 +721,28 @@ describe("Blame's self-repair tools", () => {
       );
     });
 
-    it("installs one SKILL.md given by an https URL", async () => {
+    it("installs one SKILL.md given by a gist URL, and no other address", async () => {
       const fetch = (async () =>
         new Response(
           skillText("single"),
         )) as unknown as typeof globalThis.fetch;
       const result = await call(tools({ fetch }), "blame_configure", {
         action: "install_skill",
-        source: "https://example.test/skills/single/SKILL.md",
+        source: "https://gist.githubusercontent.com/u/abc/raw/SKILL.md",
       });
       assert.equal(result.value.installed, "single");
+      for (const source of [
+        "https://example.test/skills/single/SKILL.md",
+        "https://gist.githubusercontent.com/u/abc/raw/SKILL.md?x=secret",
+        "http://gist.githubusercontent.com/u/abc/raw/SKILL.md",
+      ]) {
+        const refused = await call(tools({ fetch }), "blame_configure", {
+          action: "install_skill",
+          source,
+        });
+        assert.ok(refused.failed, source);
+        assert.match(refused.value.error, /GitHub source/);
+      }
     });
 
     it("parses the sources people paste", () => {
