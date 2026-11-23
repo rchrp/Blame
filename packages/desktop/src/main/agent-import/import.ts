@@ -58,6 +58,7 @@ export async function scanAgentSetups(
     sources: collected.map((source): AgentImportSource => ({
       id: source.id,
       label: source.label,
+      detected: source.detected,
       location: source.location,
       unsupported: source.unsupported,
       items: [

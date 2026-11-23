@@ -6,8 +6,12 @@ import {
   LoaderCircleIcon,
 } from "lucide-react"
 
+import { AgentImportSourceIcon } from "@/components/agent-import/agent-import-sources"
 import {
   availableLine,
+  availableSourceIds,
+  sourceCaption,
+  sourceStatus,
   categoryLabel,
   choicesFrom,
   defaultSelection,
@@ -22,6 +26,8 @@ import type {
   AgentImportItem,
   AgentImportResult,
   AgentImportScan,
+  AgentImportSource,
+  AgentImportSourceId,
 } from "@/context/platform"
 import { cn } from "@/lib/utils"
 
@@ -43,11 +49,30 @@ export function AgentImportPanel({
   finishLabel?: string
   skipLabel?: string
 }) {
-  const [selected, setSelected] = React.useState(() => defaultSelection(scan))
+  const [step, setStep] = React.useState<"sources" | "items">("sources")
+  const [picked, setPicked] = React.useState(() => availableSourceIds(scan))
+  const [selected, setSelected] = React.useState<ReadonlySet<string>>(
+    () => new Set()
+  )
   const [importing, setImporting] = React.useState(false)
   const [error, setError] = React.useState<string>()
   const [result, setResult] = React.useState<AgentImportResult>()
   const choices = choicesFrom(scan, selected)
+
+  function togglePicked(id: AgentImportSourceId) {
+    setPicked((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  // The items of the sources just picked, with their defaults ticked.
+  function next() {
+    setSelected(defaultSelection(scan, picked))
+    setStep("items")
+  }
 
   function toggle(id: string, on: boolean) {
     setSelected((current) => {
@@ -89,59 +114,97 @@ export function AgentImportPanel({
       </div>
     )
 
+  if (step === "sources")
+    return (
+      <div className="grid gap-4">
+        <p className="text-sm text-foreground/65">
+          Pick the tools to bring your setup from.
+        </p>
+        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {scan.sources.map((source) => (
+            <SourceTile
+              key={source.id}
+              source={source}
+              selected={picked.has(source.id)}
+              onToggle={() => togglePicked(source.id)}
+            />
+          ))}
+        </ul>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            className="h-10 rounded-full px-5"
+            disabled={picked.size === 0}
+            onClick={next}
+          >
+            Next
+          </Button>
+          {onSkip ? (
+            <Button
+              variant="outline"
+              className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
+              onClick={onSkip}
+            >
+              {skipLabel}
+            </Button>
+          ) : null}
+        </div>
+      </div>
+    )
+
   return (
     <div className="grid gap-4">
       <div className="grid max-h-[22rem] gap-5 overflow-y-auto pr-1">
-        {scan.sources.map((source) => {
-          const groups = groupItems(source.items)
-          const available = availableLine(source.items)
-          return (
-            <section key={source.id} className="grid gap-2">
-              <header className="flex items-baseline gap-2">
-                <h3 className="text-sm font-semibold">{source.label}</h3>
-                <span className="truncate font-mono text-[11px] text-foreground/50">
-                  {source.location}
-                </span>
-              </header>
-              {groups.map((group) => (
-                <div key={group.category} className="grid gap-1">
-                  <h4 className="text-[11px] font-medium tracking-wide text-foreground/50 uppercase">
-                    {categoryLabel(group.category)}
-                  </h4>
-                  <ul className="grid gap-1">
-                    {group.items.map((item) => (
-                      <ItemRow
-                        key={item.id}
-                        item={item}
-                        checked={selected.has(item.id)}
-                        onCheckedChange={(on) => toggle(item.id, on)}
-                      />
+        {scan.sources
+          .filter((source) => picked.has(source.id))
+          .map((source) => {
+            const groups = groupItems(source.items)
+            const available = availableLine(source.items)
+            return (
+              <section key={source.id} className="grid gap-2">
+                <header className="flex items-baseline gap-2">
+                  <h3 className="text-sm font-semibold">{source.label}</h3>
+                  <span className="truncate font-mono text-[11px] text-foreground/50">
+                    {source.location}
+                  </span>
+                </header>
+                {groups.map((group) => (
+                  <div key={group.category} className="grid gap-1">
+                    <h4 className="text-[11px] font-medium tracking-wide text-foreground/50 uppercase">
+                      {categoryLabel(group.category)}
+                    </h4>
+                    <ul className="grid gap-1">
+                      {group.items.map((item) => (
+                        <ItemRow
+                          key={item.id}
+                          item={item}
+                          checked={selected.has(item.id)}
+                          onCheckedChange={(on) => toggle(item.id, on)}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                {available ? (
+                  <p className="text-xs text-foreground/50">{available}.</p>
+                ) : null}
+                {source.unsupported.length ? (
+                  <ul className="grid gap-0.5 text-xs text-foreground/50">
+                    {source.unsupported.map((entry) => (
+                      <li key={entry.label}>
+                        Not imported: {entry.label} ({entry.count}).{" "}
+                        {entry.reason}
+                      </li>
                     ))}
                   </ul>
-                </div>
-              ))}
-              {available ? (
-                <p className="text-xs text-foreground/50">{available}.</p>
-              ) : null}
-              {source.unsupported.length ? (
-                <ul className="grid gap-0.5 text-xs text-foreground/50">
-                  {source.unsupported.map((entry) => (
-                    <li key={entry.label}>
-                      Not imported: {entry.label} ({entry.count}).{" "}
-                      {entry.reason}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          )
-        })}
+                ) : null}
+              </section>
+            )
+          })}
       </div>
       <p className="text-xs text-foreground/50">
         Values like tokens stay on this computer, in Blame's settings, and are
         hidden here. Sign-ins (OAuth) and connectors kept on claude.ai or
-        ChatGPT cannot be copied: authorize or add them again in Settings →
-        MCP.
+        ChatGPT cannot be copied: authorize or add them again in Settings → MCP.
       </p>
       {error ? (
         <p className="flex items-center gap-1.5 text-sm text-destructive">
@@ -160,18 +223,64 @@ export function AgentImportPanel({
             ? `Import ${choices.length} ${choices.length === 1 ? "item" : "items"}`
             : "Nothing selected"}
         </Button>
-        {onSkip ? (
-          <Button
-            variant="outline"
-            className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
-            disabled={importing}
-            onClick={onSkip}
-          >
-            {skipLabel}
-          </Button>
-        ) : null}
+        <Button
+          variant="outline"
+          className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
+          disabled={importing}
+          onClick={() => setStep("sources")}
+        >
+          Back
+        </Button>
       </div>
     </div>
+  )
+}
+
+function SourceTile({
+  source,
+  selected,
+  onToggle,
+}: {
+  source: AgentImportSource
+  selected: boolean
+  onToggle(): void
+}) {
+  const available = sourceStatus(source) === "available"
+  return (
+    <li>
+      <button
+        type="button"
+        disabled={!available}
+        aria-pressed={available ? selected : undefined}
+        onClick={onToggle}
+        className={cn(
+          "relative flex w-full flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-colors",
+          available
+            ? "border-foreground/10 bg-foreground/[0.03] hover:bg-foreground/[0.06]"
+            : "cursor-not-allowed border-transparent opacity-60",
+          available &&
+            selected &&
+            "border-primary/60 bg-primary/10 hover:bg-primary/10"
+        )}
+      >
+        <AgentImportSourceIcon
+          id={source.id}
+          label={source.label}
+          active={available}
+        />
+        <span className="grid gap-0.5">
+          <span className="text-sm font-medium">{source.label}</span>
+          <span className="text-xs text-foreground/55">
+            {sourceCaption(source)}
+          </span>
+        </span>
+        {available && selected ? (
+          <span className="absolute top-2 right-2 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <CheckIcon className="size-3" strokeWidth={3} />
+          </span>
+        ) : null}
+      </button>
+    </li>
   )
 }
 
@@ -230,8 +339,8 @@ function ItemRow({
         ) : null}
         {conflict ? (
           <span className="text-xs text-amber-700 dark:text-amber-300">
-            Blame already has a different {item.name}. Ticked, it is imported
-            as {item.renameTo}; unticked, it is skipped.
+            Blame already has a different {item.name}. Ticked, it is imported as{" "}
+            {item.renameTo}; unticked, it is skipped.
           </span>
         ) : null}
         {item.warnings.map((warning) => (

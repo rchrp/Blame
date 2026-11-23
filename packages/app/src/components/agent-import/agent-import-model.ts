@@ -4,6 +4,7 @@ import type {
   AgentImportItem,
   AgentImportResult,
   AgentImportScan,
+  AgentImportSource,
 } from "@/context/platform"
 
 // What the review shows and what it sends back. Pure, so it is tested alone.
@@ -21,13 +22,60 @@ export function hasImportable(scan: AgentImportScan) {
   return importableItems(scan).length > 0
 }
 
-/** The ids ticked when the review opens. */
-export function defaultSelection(scan: AgentImportScan) {
+/**
+ * The ids ticked when the review opens, for the sources the person picked
+ * (all of them when none is named).
+ */
+export function defaultSelection(
+  scan: AgentImportScan,
+  sourceIds?: ReadonlySet<string>
+) {
   return new Set(
-    importableItems(scan)
+    scan.sources
+      .filter((source) => !sourceIds || sourceIds.has(source.id))
+      .flatMap((source) => source.items.filter(isImportable))
       .filter((item) => item.defaultSelected)
       .map((item) => item.id)
   )
+}
+
+/**
+ * - `available`: found, with something to import: shown in colour.
+ * - `empty`: found, nothing Blame can use or everything is already there.
+ * - `missing`: not on this computer.
+ */
+export type SourceStatus = "available" | "empty" | "missing"
+
+export function sourceStatus(source: AgentImportSource): SourceStatus {
+  if (source.items.some(isImportable)) return "available"
+  return source.detected ? "empty" : "missing"
+}
+
+/** The sources the first screen preselects. */
+export function availableSourceIds(scan: AgentImportScan) {
+  return new Set(
+    scan.sources
+      .filter((source) => sourceStatus(source) === "available")
+      .map((source) => source.id)
+  )
+}
+
+export function sourceCaption(source: AgentImportSource) {
+  const status = sourceStatus(source)
+  if (status === "missing") return "Not found"
+  if (status === "empty") return "Nothing to import"
+  const count = (category: AgentImportCategory) =>
+    source.items.filter(
+      (item) => item.category === category && isImportable(item)
+    ).length
+  const servers = count("mcp")
+  const skills = count("skill") + count("command")
+  return [
+    servers ? `${servers} ${servers === 1 ? "server" : "servers"}` : "",
+    skills ? `${skills} ${skills === 1 ? "skill" : "skills"}` : "",
+  ]
+    .filter(Boolean)
+    .join(", ")
 }
 
 /**
@@ -70,7 +118,8 @@ export function groupItems(items: AgentImportItem[]) {
 export function availableLine(items: AgentImportItem[]) {
   const count = (state: AgentImportItem["state"], category?: string) =>
     items.filter(
-      (item) => item.state === state && (!category || item.category === category)
+      (item) =>
+        item.state === state && (!category || item.category === category)
     ).length
   const parts: string[] = []
   const inPlace = count("in-place")
@@ -88,7 +137,8 @@ export function availableLine(items: AgentImportItem[]) {
 
 export function resultLine(result: AgentImportResult) {
   const count = (...statuses: string[]) =>
-    result.outcomes.filter((outcome) => statuses.includes(outcome.status)).length
+    result.outcomes.filter((outcome) => statuses.includes(outcome.status))
+      .length
   const added = count("imported", "renamed")
   const parts = [`${added} imported`]
   if (count("skipped", "present"))

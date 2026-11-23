@@ -180,10 +180,17 @@ async function runInElectron() {
     report.progress = await window.webContents.executeJavaScript(
       `[...document.querySelectorAll('[aria-label="Setup progress"] li')].map((li) => li.innerText.trim())`,
     );
+    // First screen: every tool, in colour when found, grey when not.
+    report.tiles = await window.webContents.executeJavaScript(
+      `[...document.querySelectorAll("li > button")].map((b) => b.innerText.replace(/\\n+/g, " | ") + (b.disabled ? " [disabled]" : b.getAttribute("aria-pressed") === "true" ? " [picked]" : ""))`,
+    );
+    await shot(window, join(shots, "1-sources.png"));
+    await click(window, "Next");
+    await delay(800);
     report.reviewText = await window.webContents.executeJavaScript(
       `document.body.innerText.slice(0, 2500)`,
     );
-    await shot(window, join(shots, "1-review.png"));
+    await shot(window, join(shots, "1b-review.png"));
 
     await click(window, "Import ");
     await delay(1500);
@@ -244,6 +251,8 @@ async function runInElectron() {
     });
     await click(window, "Import from other tools");
     await delay(1500);
+    await click(window, "Next");
+    await delay(800);
     report.settingsText = await window.webContents.executeJavaScript(
       `[...document.querySelectorAll('[role="dialog"]')].at(-1)?.innerText.slice(0, 900)`,
     );

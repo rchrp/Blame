@@ -445,12 +445,24 @@ test("missing and corrupt files are tolerated and nothing is created by a scan",
       "[mcp_servers.x\ncommand =",
     );
     const { store } = memoryStore();
+    // Every source is listed; the two with corrupt files were found, and have nothing.
+    const scan = await scanAgentSetups(
+      scanEnvironment(home, { BLAME_AGENT_IMPORT_HOME: home }),
+      store,
+    );
     assert.deepEqual(
-      await scanAgentSetups(
-        scanEnvironment(home, { BLAME_AGENT_IMPORT_HOME: home }),
-        store,
-      ),
-      { sources: [] },
+      scan.sources.map((source) => [
+        source.id,
+        source.detected,
+        source.items.length,
+      ]),
+      [
+        ["claude-desktop", false, 0],
+        ["claude-code", true, 0],
+        ["codex", true, 0],
+        ["cursor", false, 0],
+        ["vscode", false, 0],
+      ],
     );
     assert.equal(
       await stat(join(home, ".agents")).then(

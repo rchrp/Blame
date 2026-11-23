@@ -21,6 +21,8 @@ import {
 export type CollectedSource = {
   id: AgentImportSourceId;
   label: string;
+  /** Its files are on this computer, whether or not they hold anything. */
+  detected: boolean;
   location: string;
   servers: ImportedServer[];
   /** Skills Blame does not read where they are: copied to `~/.agents/skills`. */
@@ -41,14 +43,7 @@ export async function collectSources(scan: ScanEnvironment) {
       vscode(scan),
     ])
   ).map(withoutCredentialUrls);
-  return sources.filter(
-    (source): source is CollectedSource =>
-      source !== undefined &&
-      (source.servers.length ||
-        source.skills.length ||
-        source.inPlace.length ||
-        source.unsupported.length) > 0,
-  );
+  return sources;
 }
 
 // Settings → MCP syncs a signed-in account's server addresses with Blame's
@@ -90,9 +85,11 @@ async function claudeDesktop(scan: ScanEnvironment) {
   const source = emptySource("claude-desktop", "Claude Desktop", scan);
   for (const folder of claudeDesktopFolders(scan)) {
     const file = p.join(folder, "claude_desktop_config.json");
-    const config = await readJson(file);
-    if (config === undefined) continue;
+    if (!(await exists(folder))) continue;
     source.location = displayPath(scan, folder);
+    source.detected = true;
+    const config = await readJson(file);
+    if (config === undefined) break;
     source.servers.push(
       ...parseServersTable(record(config).mcpServers).servers,
     );
@@ -112,6 +109,7 @@ async function claudeCode(scan: ScanEnvironment) {
   const p = pathsFor(scan.platform);
   const { folder, json } = claudeCodePaths(scan);
   const source = emptySource("claude-code", "Claude Code", scan, folder);
+  source.detected = (await exists(folder)) || (await exists(json));
   const config = record(await readJson(json));
   source.servers.push(...parseServersTable(config.mcpServers, "user").servers);
   // Servers added with `claude mcp add` in a project, kept under its path.
@@ -182,6 +180,7 @@ async function codex(scan: ScanEnvironment) {
   const p = pathsFor(scan.platform);
   const folder = codexFolder(scan);
   const source = emptySource("codex", "Codex", scan, folder);
+  source.detected = await exists(folder);
   const config = await readFile(p.join(folder, "config.toml"), "utf8").catch(
     () => undefined,
   );
@@ -218,6 +217,7 @@ async function cursor(scan: ScanEnvironment) {
     scan,
     pathsFor(scan.platform).dirname(file),
   );
+  source.detected = await exists(pathsFor(scan.platform).dirname(file));
   source.servers.push(
     ...parseServersTable(record(await readJson(file)).mcpServers).servers,
   );
@@ -232,6 +232,7 @@ async function vscode(scan: ScanEnvironment) {
     scan,
     pathsFor(scan.platform).dirname(file),
   );
+  source.detected = await exists(pathsFor(scan.platform).dirname(file));
   source.servers.push(
     ...parseServersTable(record(await readJson(file)).servers).servers,
   );
@@ -247,6 +248,7 @@ function emptySource(
   return {
     id,
     label,
+    detected: false,
     location: folder ? displayPath(scan, folder) : "",
     servers: [],
     skills: [],
@@ -262,6 +264,13 @@ async function readJson(file: string): Promise<unknown> {
     // Missing, unreadable or corrupt: nothing to offer from this file.
     return undefined;
   }
+}
+
+async function exists(path: string) {
+  return stat(path).then(
+    () => true,
+    () => false,
+  );
 }
 
 async function hasContent(file: string) {

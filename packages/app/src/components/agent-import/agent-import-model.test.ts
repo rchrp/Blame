@@ -1,8 +1,14 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import type { AgentImportItem, AgentImportScan } from "../../context/platform-agent-import.ts"
+import type {
+  AgentImportItem,
+  AgentImportScan,
+} from "../../context/platform-agent-import.ts"
 import {
+  availableSourceIds,
+  sourceCaption,
+  sourceStatus,
   availableLine,
   choicesFrom,
   defaultSelection,
@@ -32,6 +38,7 @@ const scan: AgentImportScan = {
     {
       id: "claude-code",
       label: "Claude Code",
+      detected: true,
       location: "~/.claude",
       unsupported: [],
       items: [
@@ -48,11 +55,27 @@ const scan: AgentImportScan = {
 
 test("only new and conflicting items can be decided on", () => {
   assert.equal(hasImportable(scan), true)
-  assert.equal(hasImportable({ sources: [{ ...scan.sources[0]!, items: [item("c", "present"), item("d", "in-place")] }] }), false)
+  assert.equal(
+    hasImportable({
+      sources: [
+        {
+          ...scan.sources[0]!,
+          items: [item("c", "present"), item("d", "in-place")],
+        },
+      ],
+    }),
+    false
+  )
   assert.equal(hasImportable({ sources: [] }), false)
   assert.deepEqual(
-    groupItems(scan.sources[0]!.items).map((group) => [group.category, group.items.map((i) => i.id)]),
-    [["mcp", ["a", "b", "f"]], ["skill", ["e"]]]
+    groupItems(scan.sources[0]!.items).map((group) => [
+      group.category,
+      group.items.map((i) => i.id),
+    ]),
+    [
+      ["mcp", ["a", "b", "f"]],
+      ["skill", ["e"]],
+    ]
   )
 })
 
@@ -80,5 +103,36 @@ test("what is already there is one line, and the result is counted", () => {
       ],
     }),
     "2 imported, 1 left as they were, 1 failed"
+  )
+})
+
+test("the first screen shows every source: colour when there is something, grey when not", () => {
+  const empty = (id: string, detected: boolean) => ({
+    id: id as "codex",
+    label: id,
+    detected,
+    location: "",
+    items: [item("x", "present")],
+    unsupported: [],
+  })
+  const all: AgentImportScan = {
+    sources: [scan.sources[0]!, empty("codex", true), empty("cursor", false)],
+  }
+  assert.deepEqual(all.sources.map(sourceStatus), [
+    "available",
+    "empty",
+    "missing",
+  ])
+  assert.deepEqual([...availableSourceIds(all)], ["claude-code"])
+  assert.deepEqual(all.sources.map(sourceCaption), [
+    "3 servers, 1 skill",
+    "Nothing to import",
+    "Not found",
+  ])
+  // Only the picked sources' defaults are ticked.
+  assert.deepEqual([...defaultSelection(all, new Set(["cursor"]))], [])
+  assert.deepEqual(
+    [...defaultSelection(all, new Set(["claude-code"]))].sort(),
+    ["a", "e"]
   )
 })

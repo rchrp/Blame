@@ -53,12 +53,15 @@ export type AgentImportUnsupported = {
 export type AgentImportSource = {
   id: AgentImportSourceId
   label: string
+  /** The tool's files were found on this computer. */
+  detected: boolean
   /** The folder or file the source was read from, for the person's eyes. */
   location: string
   items: AgentImportItem[]
   unsupported: AgentImportUnsupported[]
 }
 
+/** Every source Blame knows, found or not, so the first screen can show all. */
 export type AgentImportScan = {
   sources: AgentImportSource[]
 }
