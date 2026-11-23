@@ -11,6 +11,8 @@
 //   move.
 // - checks: approving a story whose build check fails is refused by the
 //   host, the row says so, changes are requested, it is approved.
+// - reply: a plain message that hands the turn back with no card; the
+//   statistics panel's Pause and Settings are icon buttons at its top right.
 // - ask: a question answered by clicking one of its options.
 // - allow: "Ask me before launching": nothing starts before Allow, a Deny
 //   is told to the orchestrator, the merge waits for Allow too.
@@ -484,7 +486,7 @@ async function connect(port) {
 
 // ------------------------------------------------------------------ scenario
 
-const scenarioNames = ["preview", "loop", "checks", "ask", "allow", "pause", "relaunch", "blocked", "conflict"];
+const scenarioNames = ["preview", "loop", "checks", "reply", "ask", "allow", "pause", "relaunch", "blocked", "conflict"];
 
 async function scenario(initial, options, model, projectPath, relaunch) {
   let cdp = initial;
@@ -787,6 +789,36 @@ async function scenario(initial, options, model, projectPath, relaunch) {
       check("changes were requested, on a smarter model", conversation.includes("Asked for changes on a smarter model"));
       check("the wake told the failing check", /failed its checks/.test(conversation));
       await shot("04-checks-refused");
+    },
+
+    // A plain message, then the turn handed back: no card, the composer answers.
+    async reply() {
+      const title = "Export sketch";
+      model.orchestrators.set(title, [
+        { text: "I would write the CSV writer first, then the button that uses it. Tell me when to start." },
+        tool("end_turn", { action: "reply", reason: "The plan is in my message." }),
+      ]);
+      const epic = await startEpicThroughUi(title, "Sketch the export feature.");
+      await waitState(epic.id, "replied");
+      await until(async () => (await pane()).includes("I would write the CSV writer first"), 15_000, "the message");
+      check("a reply is the message alone: no card", await evaluate(`!document.querySelector('[aria-label="Reply to the orchestrator"]')`));
+      check("the composer is the way to answer", await evaluate(`Boolean(${editor}) && !${editor}.closest('[aria-disabled="true"]')`));
+      check("the dot says the epic needs the person", (await dots()).includes("Needs you"));
+      check("the statistics panel says it is the person's turn", /Your turn/.test(await evaluate(`${statsPanel}?.innerText ?? ""`)));
+      const iconButtons = await evaluate(`(() => {
+        const panel = ${statsPanel}.getBoundingClientRect();
+        return ["Pause all", "Epic settings"].map((label) => {
+          const element = document.querySelector('button[aria-label="' + label + '"]');
+          const box = element?.getBoundingClientRect();
+          return { label, text: element?.innerText.trim(), width: box && Math.round(box.width), height: box && Math.round(box.height), fromTop: box && Math.round(box.top - panel.top), fromRight: box && Math.round(panel.right - box.right) };
+        });
+      })()`);
+      check(
+        "Pause and Settings are icon buttons at the statistics panel's top right",
+        iconButtons.every((item) => item.text === "" && item.width === 28 && item.height === 28 && item.fromTop < 24 && item.fromRight < 64) && iconButtons.at(-1).fromRight < 24,
+        JSON.stringify(iconButtons),
+      );
+      await shot("05a-reply");
     },
 
     // A question answered with one of its options.

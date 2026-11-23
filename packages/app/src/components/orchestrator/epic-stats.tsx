@@ -195,6 +195,7 @@ const conversationLabels: Partial<
   idle: { text: "Ready", tone: "" },
   working: { text: "Orchestrator working", tone: "text-foreground" },
   waiting: { text: "Waiting for its stories", tone: "" },
+  replied: { text: "Your turn", tone: "text-foreground" },
   asking: {
     text: "Asks you a question",
     tone: "text-foreground",

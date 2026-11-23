@@ -88,7 +88,8 @@ export function EpicTimeline({
       if (activity.kind === "message") narrated = true
       const entry = entries.get(activity.id)
       if (entry?.kind === "end") {
-        if (openQuestionKey !== entry.key)
+        // A reply is the message above: nothing more to show.
+        if (openQuestionKey !== entry.key && entry.action !== "reply")
           outcome = <EndRow context={context} end={entry} />
       } else if (entry?.kind === "decision") {
         const attention =

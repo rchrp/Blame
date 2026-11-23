@@ -171,13 +171,15 @@ store is listed, followed and deleted like any other.
   goal, branch and target, and how to work: it never codes; a brief stands
   alone; independent work in parallel, tightly coupled steps in one story;
   decisions two stories share are taken in their briefs; a story is judged
-  from the harness's verdict and the files changed; it asks only for a
-  choice of approach, a vague request or a missing access; it answers in
-  the person's language.
+  from the harness's verdict and the files changed; it speaks in ordinary
+  messages and uses an `ask` card only for a choice of approach, a vague
+  request or a missing access; it answers in the person's language.
 - **How a turn ends**: a completion contract whose result is the client tool
   `end_turn` (`max_corrections: 2`). A reply that stops in text is corrected
   by the engine, as for a story; a refused `end_turn` goes back as the
-  call's error. A turn that still does not end through it ends
+  call's error. The tool only says how the turn ends: the orchestrator's
+  messages are the text it writes, shown as they are in a chat (`reply` and
+  `wait` carry none, `ask` adds a card, `finish` the summary). A turn that still does not end through it ends
   `contract_unmet`, and the epic shows `failed` (see "What the screen
   reads").
 - **Where it runs**: on the computer that created its session (the host
@@ -254,7 +256,7 @@ or none is refused by every tool. The inputs are `OrchestratorToolInputs`
 | `message_story` | `reason`, `storyId`, `kind: "answer" \| "changes"`, `message`, `escalate?` | Sends the agent the message (a paused or reviewed story works again). A message to a story in review is a request for changes whatever its `kind`. `escalate` runs the turn on the next model up (`escalateModel` from its last model, in the epic's range); the story keeps it. Answers the requests and messages left. | the budget is spent; a fourth request for changes on the story; a seventh message of any kind to it (the counts are kept on this computer, counted before the message goes); `escalate` when it already runs on the top of the range |
 | `approve_story` | `reason`, `storyId` | Approve & Merge into the epic's branch, with the orchestrator's model for the commit message; the stories that start after it can start. | the story is not in review; its agent works; this computer has not its records; its last turn did not end `completed` (the harness did not accept its `finish_task`), whatever the prompt says; its target is not the epic's branch as this host made and kept it, or that branch is the target branch, or the API names another; it ran Direct; the merge of the epic's branch into it conflicts (aborted, never resolved by the merge agent: ask for changes, its agent merges the epic's branch in and passes its checks again) |
 | `reject_story` | `reason`, `storyId` | Discards the story; its worktree goes. | the story is merged |
-| `end_turn` | `action: "wait" \| "ask" \| "finish"`, `reason`, `question?` and `options?` (ask), `summary?` (finish) | Ends the turn, whoever wrote last: `wait` sleeps until woken (also after answering the person mid-epic while stories work); `ask` hands the turn back to the person with a question (also when nothing works yet: chatting before any story, a plan to show first); `finish` gives the epic's summary for the person's review. | `wait` while no story of the epic works or will start by itself (a queued story waiting for a story in review, paused, held or rejected, held by the epic, waiting for the person (no model, a missing tool, Git without a name, the runtime to install), or whose start has kept failing for 90 s); `ask` without a question; `finish` while a story is neither merged (`done`) nor rejected, or without a summary |
+| `end_turn` | `action: "wait" \| "reply" \| "ask" \| "finish"`, `reason`, `question?` and `options?` (ask), `summary?` (finish) | Ends the turn, whoever wrote last. It carries no message: what the person reads is the text the orchestrator wrote before it, as in a chat. `wait` sleeps until woken (also after answering the person mid-epic while stories work); `reply` hands the turn back to the person after its message, with no card (chatting before any story, a plan to show first, an answer, a report); `ask` does the same and adds a card, a short `question` with `options` the person clicks, for a decision or an action only they can take; `finish` gives the epic's summary for the person's review. | `wait` while no story of the epic works or will start by itself (a queued story waiting for a story in review, paused, held or rejected, held by the epic, waiting for the person (no model, a missing tool, Git without a name, the runtime to install), or whose start has kept failing for 90 s); `reply` while a story of the epic works or will start by itself, or while the epic is paused with stories not merged or rejected (nothing would wake it: it ends with `wait`); `ask` without a question; `finish` while a story is neither merged (`done`) nor rejected, or without a summary |
 
 With `askBeforeLaunch`, `create_stories` (unless every story is held),
 `update_story` when it queues, and `approve_story` need the person's
@@ -298,12 +300,14 @@ is resumed three times in a row, then left to the person (it shows
 `failed`); a pause's cut does not count.
 
 Nothing is sent while the epic is not `active`, while a turn runs or a
-message waits behind one, before its first turn, after `ask`, or after the
-person stopped its turn (the host's `interrupt`): it is sent when the epic
-resumes, the person answers or writes, once that turn ends. When the
-person writes while stories work, the orchestrator answers and ends with
-`wait`, and the stories' wake still comes; before any story exists it hands
-the turn back with `ask` (the prompt and `end_turn` say so).
+message waits behind one, before its first turn, after `reply` or `ask`, or
+after the person stopped its turn (the host's `interrupt`): it is sent when
+the epic resumes, the person answers or writes, once that turn ends. When
+the person writes while stories work, the orchestrator answers and ends with
+`wait`, and the stories' wake still comes (the host refuses `reply` then, as
+it would leave nothing to wake it); before any story exists it hands the
+turn back with `reply`, or `ask` when it needs a decision (the prompt and
+`end_turn` say so).
 
 **The message** is the host's, never the person's: a user message of one
 `context` block, no `text` block, whose text is `<orchestrator_wake>`, a
@@ -386,8 +390,8 @@ on, and the orchestrator is woken (`idle`) to wrap up.
 - `platform.engine.call("epicState", { epicId })` and the `epic` event
   (`onEpic`, `{ type: "epic", epicId, state }`, sent when the state
   changes): an `EpicState` (`engine/orchestrator-protocol.ts`):
-  `conversation` (`idle`, `working`, `waiting`, `asking`, `finished`,
-  `stopped`, `failed`), `problems` (every problem of the epic's own the
+  `conversation` (`idle`, `working`, `waiting`, `replied`, `asking`,
+  `finished`, `stopped`, `failed`), `problems` (every problem of the epic's own the
   person must act on, each `{ kind, message }`, in this order: `kept-file`
   when what this computer keeps cannot be read, `turn` when the last turn
   failed, `wake` when a wake could not be sent, `branch` when the epic's
@@ -398,8 +402,8 @@ on, and the orchestrator is woken (`idle`) to wrap up.
   `finish`, `unreported` (ended turns not told yet), `blocked` (the queued
   stories only the person can start, with why; the epic's own pause is not
   listed, since the person chose it) and `spend`. The epic switcher shows
-  working for `working`/`waiting`, needs you for `asking`, `stopped`,
-  `failed` or any `blocked`, done for `finished`.
+  working for `working`/`waiting`, needs you for `replied`, `asking`,
+  `stopped`, `failed` or any `blocked`, done for `finished`.
 - A queued story's card reads the `epic` wait reason (`storyWaitText`).
 - `resolveModelIntent` and `escalateModel` come from `engine-protocol`, so
   the screen shows the same choice the host makes.
@@ -419,11 +423,16 @@ on, and the orchestrator is woken (`idle`) to wrap up.
 - Select **Orchestrator** in the sidebar to return to the current epic.
   The title at the top opens the project's epic history and **New epic**.
   The command palette also offers **New epic**.
-- An open epic uses the chat timeline. The agent introduces the work and each
-  created story appears as a link to its session. Open the work log to inspect
-  tool calls and decisions. Story updates are grouped by report. Questions
-  accept a suggested answer or a reply in the composer. Press Command+Enter
-  on macOS or Ctrl+Enter elsewhere to send the first suggestion.
+- An open epic uses the chat timeline. The orchestrator writes ordinary
+  messages, before, between and after its tool calls, and its last one is
+  its answer: no card is needed to say something. Each created story appears
+  as a link to its session. Open the work log to inspect tool calls and
+  decisions. Story updates are grouped by report.
+- A card appears only when the orchestrator needs an action from the person
+  (`ask`): its short question with the options it offers, under the
+  messages. The options and the composer both answer it. Press Command+Enter
+  on macOS or Ctrl+Enter elsewhere to send the first option. A `reply`
+  leaves no card: the person just writes back.
 - The statistics panel stays expanded. It shows the orchestrator's model and
   context, total epic spend, branch, status, and changes reported by the stories.
   Stories are grouped by status and open in the backlog drawer. Pause (Resume

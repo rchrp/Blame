@@ -232,7 +232,12 @@ function endTurnInput(input: JsonValue): EndTurn | undefined {
   if (!input || typeof input !== "object" || Array.isArray(input))
     return undefined;
   const action = input.action;
-  if (action !== "wait" && action !== "ask" && action !== "finish")
+  if (
+    action !== "wait" &&
+    action !== "reply" &&
+    action !== "ask" &&
+    action !== "finish"
+  )
     return undefined;
   return input as unknown as EndTurn;
 }
@@ -252,6 +257,7 @@ export function conversationState(
   const last = conversation.last;
   if (!last) return { state: "idle" };
   if (last.endTurn?.action === "wait") return { state: "waiting" };
+  if (last.endTurn?.action === "reply") return { state: "replied" };
   if (last.endTurn?.action === "ask") return { state: "asking" };
   if (last.endTurn?.action === "finish") return { state: "finished" };
   if (last.outcome.status === "interrupted")

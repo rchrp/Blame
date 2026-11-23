@@ -183,6 +183,7 @@ export function epicActivity(
     count("needs-you") ||
     problem ||
     orchestrator === "asking" ||
+    orchestrator === "replied" ||
     orchestrator === "stopped" ||
     orchestrator === "failed"
   )

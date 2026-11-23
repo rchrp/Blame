@@ -524,15 +524,38 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
     )
       throw refused(
         "The orchestrator cannot sleep: nothing of the epic is working or will start by itself, so nothing would wake it.",
-        "Approve, ask for changes, queue or create stories, ask the person, or finish.",
+        "Approve, ask for changes, queue or create stories, reply to the person, ask them, or finish.",
       );
     return "Waiting: you will be woken when there is something to judge.";
+  }
+  if (input.action === "reply") {
+    // Nothing wakes a conversation after a reply: while the epic has work
+    // (or work a pause stopped), it ends with `wait` so the stories' end
+    // still reaches it.
+    const resumes =
+      look.epic.status === "paused" &&
+      stories.some(
+        (story) => story.status !== "done" && story.status !== "discarded",
+      );
+    if (
+      resumes ||
+      epicHasWork(stories, starting, (story) =>
+        desk.blocked(story as HostStory),
+      )
+    )
+      throw refused(
+        resumes
+          ? "A reply would leave nothing to wake the orchestrator once the epic is resumed."
+          : "A reply would leave nothing to wake the orchestrator when the working stories end.",
+        "End with wait after your message so you are woken, or ask if you need the person to decide something first.",
+      );
+    return "Replied: your message is the answer; the person's next message comes as their next turn.";
   }
   if (input.action === "ask") {
     if (!input.question?.trim())
       throw refused(
-        "The question for the person is missing.",
-        "Give it with ask.",
+        "The card's question for the person is missing.",
+        "Give it with ask, or end with reply if your message needs no card.",
       );
     return "Asked: the person's answer comes as their next message.";
   }
@@ -558,7 +581,7 @@ export async function endTurn(desk: EpicDesk, input: Inputs["end_turn"]) {
   }
   throw refused(
     "The way to end the turn is missing.",
-    "Use wait, ask or finish.",
+    "Use wait, reply, ask or finish.",
   );
 }
 

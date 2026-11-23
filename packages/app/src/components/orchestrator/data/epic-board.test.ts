@@ -192,6 +192,10 @@ test("a story the host calls blocked needs the person, with its reason", () => {
 test("the dot follows the orchestrator's conversation too", () => {
   const empty = board([])
   assert.equal(epicActivity({ status: "active" }, empty, "asking"), "needs-you")
+  assert.equal(
+    epicActivity({ status: "active" }, empty, "replied"),
+    "needs-you"
+  )
   assert.equal(epicActivity({ status: "active" }, empty, "failed"), "needs-you")
   assert.equal(epicActivity({ status: "active" }, empty, "waiting"), "working")
   assert.equal(epicActivity({ status: "active" }, empty, "finished"), "done")

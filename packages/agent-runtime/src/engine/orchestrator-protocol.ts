@@ -68,13 +68,22 @@ export type OrchestratorSettings = {
  * - `idle`: no turn yet;
  * - `working`: a turn runs (or a message waits behind one);
  * - `waiting`: it ended with `end_turn` `wait` and sleeps until woken;
- * - `asking`: it ended with `ask` and waits for the person's answer;
+ * - `replied`: it ended with `reply`: its message is the answer, the turn is
+ *   the person's;
+ * - `asking`: it ended with `ask` and waits for the person's answer to its card;
  * - `finished`: it ended with `finish`, the epic waits for the person's review;
  * - `stopped`: the person stopped its turn;
  * - `failed`: its turn failed, hit a limit or never ended through `end_turn`.
  */
 export type OrchestratorConversationState =
-  "idle" | "working" | "waiting" | "asking" | "finished" | "stopped" | "failed";
+  | "idle"
+  | "working"
+  | "waiting"
+  | "replied"
+  | "asking"
+  | "finished"
+  | "stopped"
+  | "failed";
 
 /** One story's spend, from its session's records (micro-USD). */
 export type EpicStorySpend = {
@@ -194,11 +203,11 @@ export type OrchestratorToolInputs = {
   approve_story: { reason: string; storyId: string };
   reject_story: { reason: string; storyId: string };
   end_turn: {
-    action: "wait" | "ask" | "finish";
+    action: "wait" | "reply" | "ask" | "finish";
     reason: string;
-    /** `ask`: the question for the person. */
+    /** `ask`: the card's question for the person. */
     question?: string;
-    /** `ask`: the answers to offer. */
+    /** `ask`: the answers the card offers. */
     options?: string[];
     /** `finish`: the epic's summary for the person's review. */
     summary?: string;

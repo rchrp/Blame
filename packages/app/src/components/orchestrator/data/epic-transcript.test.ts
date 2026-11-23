@@ -250,6 +250,29 @@ test("a call waiting for Allow, and one the person denied", () => {
   assert.equal(denied?.kind === "decision" && denied.refusal, undefined)
 })
 
+test("a reply ends the turn with the message alone, no open question", () => {
+  seq = 0
+  const replied = entries([
+    ...open("t1", [{ type: "text", text: "what is the plan?" }]),
+    ...call(
+      "t1",
+      "c1",
+      "end_turn",
+      { action: "reply", reason: "The plan is in my message." },
+      "completed",
+      "Replied"
+    ),
+    record({
+      type: "turn_ended",
+      turn: "t1",
+      outcome: { status: "completed" },
+    }),
+  ])
+  const end = replied.find((entry) => entry.kind === "end")
+  assert.equal(end?.kind === "end" && end.action, "reply")
+  assert.equal(openQuestion(replied), undefined)
+})
+
 test("an ask is the open question until the person answers", () => {
   seq = 0
   const asked = [

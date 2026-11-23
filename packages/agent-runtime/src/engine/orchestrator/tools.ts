@@ -185,20 +185,21 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
     defineTool<Inputs["end_turn"]>({
       name: "end_turn",
       description:
-        "Ends your turn, whoever wrote last. `wait`: sleep until the host wakes you; only while stories work or will start (also after answering the person mid-epic). `ask`: hand the turn back to the person, with your question; also when nothing works yet (chatting before any story, a plan to show before starting). `finish`: once every story is merged or rejected, with the epic's summary.",
+        "Ends your turn, whoever wrote last. Write what the person should read as ordinary text before calling it: this call only says how the turn ends, it carries no message. `wait`: sleep until the host wakes you; only while stories work or will start (also after answering the person mid-epic). `reply`: hand the turn back to the person after your message, when nothing works (chatting before any story, a plan to show, an answer, a report). `ask`: like reply, plus a card the person answers with a click, only when you need a decision or an action from them. `finish`: once every story is merged or rejected, with the epic's summary.",
       inputSchema: {
         type: "object",
         properties: {
-          action: { type: "string", enum: ["wait", "ask", "finish"] },
+          action: { type: "string", enum: ["wait", "reply", "ask", "finish"] },
           reason,
           question: {
             type: "string",
-            description: "ask: the question, in the person's language.",
+            description:
+              "ask: the card's question, short, in the person's language. Your explanation belongs in your message, not here.",
           },
           options: {
             type: "array",
             items: { type: "string" },
-            description: "ask: the answers to offer.",
+            description: "ask: the answers the card offers as buttons.",
           },
           summary: {
             type: "string",

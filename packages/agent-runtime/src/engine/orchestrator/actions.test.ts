@@ -1036,7 +1036,56 @@ describe("ending a turn", () => {
     );
     await assert.rejects(
       closed.run("end_turn", { action: "ask", reason: "r" }),
-      /The question for the person is missing/,
+      /The card's question for the person is missing/,
+    );
+  });
+
+  it("hands the turn back with reply only when nothing would need to wake it", async () => {
+    const quiet = await desk({
+      rows: [row("s1", "a", { epicId, status: "done" })],
+    });
+    assert.match(
+      String(await quiet.run("end_turn", { action: "reply", reason: "r" })),
+      /Replied/,
+    );
+    const working = await desk({
+      rows: [
+        row("s1", "a", {
+          epicId,
+          status: "in-progress",
+          agentStatus: "Running",
+          engineSessionId: "session-s1",
+          worktree: "/w/s1",
+        }),
+      ],
+    });
+    await assert.rejects(
+      working.run("end_turn", { action: "reply", reason: "r" }),
+      /would leave nothing to wake the orchestrator when the working stories end/,
+    );
+    // The same stories: waiting is how the turn ends then.
+    assert.match(
+      String(await working.run("end_turn", { action: "wait", reason: "r" })),
+      /Waiting/,
+    );
+  });
+
+  it("refuses a reply while the epic is paused with stories still to do", async () => {
+    const paused = await desk({
+      rows: [inReview("s1")],
+      epic: { status: "paused" },
+    });
+    await assert.rejects(
+      paused.run("end_turn", { action: "reply", reason: "r" }),
+      /would leave nothing to wake the orchestrator once the epic is resumed/,
+    );
+    const finished = await desk({
+      rows: [row("s1", "a", { epicId, status: "done" })],
+      epic: { status: "paused" },
+    });
+    assert.match(
+      String(await finished.run("end_turn", { action: "reply", reason: "r" })),
+      /Replied/,
     );
   });
 });

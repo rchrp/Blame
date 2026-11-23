@@ -346,6 +346,13 @@ describe("the orchestrator's rules", () => {
     );
     assert.equal(
       conversationState(
+        last({ status: "completed" }, { action: "reply" }),
+        false,
+      ).state,
+      "replied",
+    );
+    assert.equal(
+      conversationState(
         last({ status: "completed" }, { action: "finish" }),
         false,
       ).state,

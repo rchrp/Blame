@@ -50,7 +50,7 @@ export type EpicEntry =
   | {
       kind: "end"
       key: string
-      action: "wait" | "ask" | "finish"
+      action: "wait" | "reply" | "ask" | "finish"
       reason?: string
       question?: string
       options: string[]
@@ -156,7 +156,12 @@ function toolEntry(item: ToolCallItem): EpicEntry | undefined {
       }
     if (item.state !== "completed") return undefined
     const action = input.action
-    if (action !== "wait" && action !== "ask" && action !== "finish")
+    if (
+      action !== "wait" &&
+      action !== "reply" &&
+      action !== "ask" &&
+      action !== "finish"
+    )
       return undefined
     return {
       kind: "end",

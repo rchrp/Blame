@@ -616,7 +616,7 @@ export class Orchestrator {
       return;
     }
     const { state } = conversationState(conversation, entry.stopped === true);
-    if (state === "idle" || state === "asking" || state === "stopped") return;
+    if (["idle", "replied", "asking", "stopped"].includes(state)) return;
     const unreported = await reading.unreported();
     const stories = reading.epicStories();
     const starting = this.starting(stories);
