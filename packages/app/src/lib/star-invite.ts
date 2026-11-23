@@ -1,10 +1,17 @@
 // The invitation to star Blame on GitHub: once per install, after a merge
-// that worked. The flag is written before the card shows, so whatever the
+// that worked or after the person's 3rd Quick Chat message, whichever comes
+// first. Both share one flag, written before the card shows, so whatever the
 // person does next, it never comes back. Storage that cannot be read or
-// written means no invitation, never one on every merge.
+// written means no invitation, never one on every merge or message.
 
 export const starInviteStorageKey = "blame.app.star-invite.v1"
 export const starInviteRepositoryUrl = "https://github.com/rchrp/Blame"
+
+export const quickChatCountStorageKey = "blame.app.star-invite.messages.v1"
+/** Quick Chat messages sent, install-wide, before the invitation is due. */
+export const starInviteQuickChatMessages = 3
+
+export type StarInviteTrigger = "merge" | "quick-chat"
 
 export type MergeOutcome = "merged" | "failed"
 
@@ -18,6 +25,26 @@ export function starInviteDue(
   if (outcome !== "merged" || !storage) return false
   try {
     return storage.getItem(starInviteStorageKey) === null
+  } catch {
+    return false
+  }
+}
+
+/**
+ * Counts one accepted Quick Chat message. True once the threshold is reached
+ * and the invitation has not been shown: the count keeps its value until the
+ * flag is written, so a restart before the card shows still invites on the
+ * next message. Nothing is counted once the invitation was shown.
+ */
+export function countQuickChatMessage(
+  storage: StarInviteStorage | undefined
+) {
+  if (!storage || !starInviteDue("merged", storage)) return false
+  try {
+    const stored = Number(storage.getItem(quickChatCountStorageKey))
+    const count = (Number.isSafeInteger(stored) && stored > 0 ? stored : 0) + 1
+    storage.setItem(quickChatCountStorageKey, String(count))
+    return count >= starInviteQuickChatMessages
   } catch {
     return false
   }

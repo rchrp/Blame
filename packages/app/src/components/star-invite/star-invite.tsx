@@ -6,14 +6,17 @@ import { cn } from "@/lib/utils"
 import {
   browserStorage,
   claimStarInvite,
+  countQuickChatMessage,
   starInviteDue,
   starInviteRepositoryUrl,
   type MergeOutcome,
+  type StarInviteTrigger,
 } from "@/lib/star-invite"
 import { StarInviteCard } from "./star-invite-card"
 
 // Lets the merge's own confetti and toast land first.
 const afterMergeMs = 1600
+const afterChatMs = 800
 // The merge toast stays about 4 s: wait for it to leave rather than stack on
 // it, but never longer than this behind a toast that stays open.
 const toastWaitMs = 6000
@@ -23,15 +26,29 @@ const pollMs = 400
 const settleMs = 500
 const toastId = "blame-star-invite"
 
-let pending = false
+let pending: StarInviteTrigger | undefined
+// The 3rd Quick Chat message was sent: the card waits for its answer to end.
+let awaitingTurnEnd = false
 const listeners = new Set<() => void>()
 
 /** Asks for the invitation after a merge; only the first merge ever gets it. */
 export function inviteToStarAfter(outcome: MergeOutcome) {
-  if (starInviteDue(outcome, browserStorage())) setPending(true)
+  if (starInviteDue(outcome, browserStorage())) setPending("merge")
 }
 
-function setPending(value: boolean) {
+/** Counts a Quick Chat message the engine accepted. */
+export function countQuickChatSend() {
+  if (countQuickChatMessage(browserStorage())) awaitingTurnEnd = true
+}
+
+/** Tells the invitation whether a Quick Chat turn is running. */
+export function quickChatTurnRunning(running: boolean) {
+  if (running || !awaitingTurnEnd) return
+  awaitingTurnEnd = false
+  if (!pending) setPending("quick-chat")
+}
+
+function setPending(value: StarInviteTrigger | undefined) {
   if (pending === value) return
   pending = value
   for (const listener of listeners) listener()
@@ -71,11 +88,11 @@ function cornerTaken() {
  */
 export function StarInvite() {
   const platform = usePlatform()
-  const isPending = React.useSyncExternalStore(subscribe, readPending)
+  const trigger = React.useSyncExternalStore(subscribe, readPending)
   const shown = React.useRef(false)
 
   React.useEffect(() => {
-    if (!isPending) return
+    if (!trigger) return
     const startedAt = Date.now()
     let timer = 0
     let waited = false
@@ -91,7 +108,7 @@ export function StarInvite() {
         timer = window.setTimeout(check, settleMs)
         return
       }
-      setPending(false)
+      setPending(undefined)
       if (!claimStarInvite(browserStorage())) return
       shown.current = true
       showStarInvite(() => {
@@ -101,9 +118,12 @@ export function StarInvite() {
           window.open(starInviteRepositoryUrl, "_blank", "noopener,noreferrer")
       })
     }
-    timer = window.setTimeout(check, afterMergeMs)
+    timer = window.setTimeout(
+      check,
+      trigger === "merge" ? afterMergeMs : afterChatMs
+    )
     return () => window.clearTimeout(timer)
-  }, [isPending, platform])
+  }, [trigger, platform])
 
   React.useEffect(
     () => () => {

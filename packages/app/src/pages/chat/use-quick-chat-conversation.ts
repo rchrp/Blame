@@ -9,6 +9,10 @@ import { storyMaxInputTokens } from "@/components/backlog/data/story-context-lim
 import { useEngineCompaction } from "@/components/backlog/drawer/story-context-compaction"
 import type { QuickChat } from "@/components/chat/data/quick-chat-data"
 import { useQuickChatStore } from "@/components/chat/data/quick-chat-store"
+import {
+  countQuickChatSend,
+  quickChatTurnRunning,
+} from "@/components/star-invite/star-invite"
 import { engineModelChoice } from "@/components/chat/engine/engine-model"
 import { transcriptConversation } from "@/components/chat/engine/transcript-conversation"
 import type { QueuedMessageControls } from "@/components/chat/engine/queued-messages"
@@ -58,6 +62,9 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
     quickChats.isRunning(chat) ||
     Boolean(transcript?.runningTurn) ||
     (transcript?.activity.state ?? "idle") !== "idle"
+
+  // The star invitation waits for the turn that answers the 3rd message.
+  React.useEffect(() => quickChatTurnRunning(running), [running])
 
   async function settings(target: QuickChat): Promise<EngineSessionSettings> {
     const model = selection.currentModel!
@@ -141,6 +148,7 @@ export function useQuickChatConversation(chat: QuickChat | undefined) {
       settings: sent,
     })
     quickChats.touch(target.id)
+    countQuickChatSend()
   }
 
   // The queue is the engine's: these act on it, and the transcript shows
