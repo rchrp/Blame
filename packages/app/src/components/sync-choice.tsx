@@ -15,6 +15,7 @@ export function SyncChoice({
   accountLabel = "Save to my Blame account",
   deviceHint,
   deviceLabel = "Keep on this device only",
+  deviceDisabled,
   disabled,
   label,
   onChange,
@@ -24,6 +25,7 @@ export function SyncChoice({
   accountLabel?: string
   deviceHint: string
   deviceLabel?: string
+  deviceDisabled?: boolean
   disabled?: boolean
   label: string
   onChange(value: SyncChoiceValue): void
@@ -65,7 +67,7 @@ export function SyncChoice({
             type="button"
             role="radio"
             aria-checked={value === option.value}
-            disabled={disabled}
+            disabled={disabled || (option.value === "device" && deviceDisabled)}
             onClick={() => onChange(option.value)}
             className={cn(
               "flex items-start gap-2 rounded-lg border bg-background px-3 py-2 text-left text-sm transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50",

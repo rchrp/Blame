@@ -11,7 +11,12 @@ export function engineProviderClient(engine: EnginePlatformClient) {
       input: Parameters<typeof engine.call<"saveCredential">>[1]
     ) => engine.call("saveCredential", input),
     deleteCredential: (id: string) => engine.call("deleteCredential", { id }),
-    signInChatGpt: (label?: string) => engine.call("signInChatGpt", { label }),
+    moveCredential: (
+      input: Parameters<typeof engine.call<"moveCredential">>[1]
+    ) => engine.call("moveCredential", input),
+    credentialStorage: () => engine.call("credentialStorage", undefined),
+    signInChatGpt: (label?: string, storage?: "account" | "device") =>
+      engine.call("signInChatGpt", { label, storage }),
     claudeCodeStatus: () => engine.call("claudeCodeStatus", undefined),
     connectClaudeCode: (label?: string) =>
       engine.call("connectClaudeCode", { label }),

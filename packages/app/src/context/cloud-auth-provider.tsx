@@ -20,6 +20,7 @@ import {
   removeCloudSession,
   writeCloudSession,
 } from "@/context/cloud-auth-storage"
+import { sessionRejected } from "@/context/cloud-session-restore"
 import { configureStoredAttachmentUrls } from "@/components/attachments/stored-attachment-url"
 import { planUsages } from "@/components/model/plan-usage-cache"
 import { createCloudApi } from "@/lib/cloud-api"
@@ -172,7 +173,16 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
             writeCloudSession(restored.session)
             return restored
           })
-          .catch(() => {
+          .catch((error) => {
+            // Blame's servers being out of reach is not a sign-out: the
+            // workspace opens with the stored profile, and what lives on this
+            // computer (keys, servers) keeps working.
+            if (!sessionRejected(error)) {
+              return hydrateSession(apiForToken(stored.token), stored, {
+                mode: "account",
+                apiUrl: accountUrl,
+              })
+            }
             void platform.mcp?.detachCloud(stored.user.id)
             removeCloudSession()
             writeWorkspaceStart("signed-out")
