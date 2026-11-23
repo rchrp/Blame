@@ -75,6 +75,23 @@ const files: Record<string, string> = {
       },
     },
   }),
+  ".gemini/config/mcp_config.json": JSON.stringify({
+    mcpServers: {
+      agy_remote: {
+        serverUrl: "https://agy.example.com/mcp",
+        headers: { Authorization: "Bearer ${secrets[1]}" },
+        timeoutSeconds: 120,
+      },
+      agy_local: {
+        command: "node",
+        args: ["a.js"],
+        env: { K: "${secrets[1]}" },
+        disabled: true,
+      },
+    },
+  }),
+  ".gemini/config/skills/agy-skill/SKILL.md":
+    "---\nname: agy-skill\ndescription: From Antigravity\n---\nBody\n",
   ".gemini/skills/g-skill/SKILL.md": "---\nname: g-skill\n---\nBody\n",
   ".qwen/settings.json": JSON.stringify({
     mcpServers: { qwen_local: { command: "qwen-mcp" } },
@@ -183,6 +200,11 @@ test("the open-source tools' servers and skills are read, with their secrets hid
       "mcp:roo_remote",
       "mcp:roo_local (unticked)",
     ]);
+    assert.deepEqual(names("antigravity"), [
+      "mcp:agy_remote",
+      "mcp:agy_local (unticked)",
+      "skill:agy-skill",
+    ]);
     assert.deepEqual(names("gemini"), [
       "mcp:sse_one",
       "mcp:http_one",
@@ -256,6 +278,16 @@ test("each tool's transports and units come out right in what is imported", asyn
     assert.equal(server("sse_one").transport, "sse");
     assert.equal(server("http_one").transport, "streamableHttp");
     assert.equal(server("http_one").timeout, 30);
+    // Antigravity: `serverUrl`, `timeoutSeconds` in seconds.
+    assert.deepEqual(
+      [
+        server("agy_remote").transport,
+        server("agy_remote").url,
+        server("agy_remote").timeout,
+      ],
+      ["streamableHttp", "https://agy.example.com/mcp", 120],
+    );
+    assert.equal(server("agy_local").disabled, true);
     assert.equal(server("roo_remote").transport, "streamableHttp");
     assert.deepEqual(
       [server("github").command, server("github").env],

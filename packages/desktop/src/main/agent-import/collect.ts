@@ -13,6 +13,7 @@ import {
   type ScanEnvironment,
 } from "./environment.ts";
 import {
+  antigravity,
   continueDev,
   gemini,
   goose,
@@ -52,6 +53,7 @@ export async function collectSources(scan: ScanEnvironment) {
       openCode(scan),
       kilo(scan),
       roo(scan),
+      antigravity(scan),
       gemini(scan),
       qwen(scan),
       goose(scan),

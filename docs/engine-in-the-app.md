@@ -717,15 +717,18 @@ reads the files
 | Cline | `~/.cline/data/settings/cline_mcp_settings.json` (`CLINE_DIR`, `CLINE_DATA_DIR`, `CLINE_MCP_SETTINGS_PATH`), the VS Code extension's `globalStorage/saoudrizwan.claude-dev/settings`; `~/.cline/skills` | MCP servers (`disabled` kept off); skills (copied) |
 | OpenCode | `~/.config/opencode/opencode.json(c)`: `mcp` (`type: local` with `command` as an array and `environment`, or `remote`; also the newer `mcp.servers`); `skills/` | MCP servers; skills (copied) |
 | Kilo Code, Roo Code | Kilo: `~/.config/kilo/kilo.json(c)` (OpenCode-style) and the legacy extension file; Roo: `globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json` (the repo is archived) | MCP servers |
-| Gemini CLI, Qwen Code | `~/.gemini/settings.json`, `~/.qwen/settings.json`: `mcpServers`, `url` is SSE and `httpUrl` Streamable HTTP, `timeout` in ms; `skills/` | MCP servers; skills (copied) |
+| Antigravity (desktop IDE and `agy` CLI) | `~/.gemini/config/mcp_config.json`, shared by both (the IDE's older `~/.gemini/antigravity/mcp_config.json` is probed too); `mcpServers` with `command`/`args`/`env`/`cwd` or `serverUrl` (Streamable HTTP only), `disabled`, `timeoutSeconds`; skills in `config/skills`, `antigravity-cli/skills`, `antigravity/skills` | MCP servers; skills (copied) |
+| Gemini CLI (legacy), Qwen Code | `~/.gemini/settings.json`, `~/.qwen/settings.json`: `mcpServers`, `url` is SSE and `httpUrl` Streamable HTTP, `timeout` in ms; `skills/` | MCP servers; skills (copied) |
 | Goose | `~/.config/goose/config.yaml` (`%APPDATA%\Block\goose\config` on Windows): `extensions` (`stdio` with `cmd`, `envs`; `streamable_http` with `uri`) | MCP servers (built-in extensions are Goose's own, listed only) |
 | Continue, Zed | `~/.continue/mcpServers/*.json|yaml`; Zed's `settings.json` `context_servers` | MCP servers |
 
 Checked against each project's documentation or source on 2026-11-23; not
 checked on a real install here: everything but Claude, Codex and Cline (the
 VS Code `globalStorage` paths follow the standard per-system prefixes;
-`GEMINI_CLI_HOME`, OpenCode's Windows location and Kilo's CLI skills folder
-are unverified). Left out on purpose: closed-source tools (Windsurf, Kiro,
+`GEMINI_CLI_HOME`, OpenCode's Windows location, Kilo's CLI skills folder and
+Antigravity's per-system paths, which its docs do not state, are unverified).
+Google is retiring Gemini CLI for Antigravity: Antigravity does not migrate
+`mcpServers` by itself, so the legacy source stays for people who never moved. Left out on purpose: closed-source tools (Windsurf, Kiro,
 Amp, Copilot CLI: each is one more entry in the table if wanted) and Crush
 (its `crushrc` format is mid-migration).
 

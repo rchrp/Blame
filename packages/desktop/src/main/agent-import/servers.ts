@@ -257,7 +257,7 @@ function fromJsonEntry(
     server.headers = stringMap(raw.headers);
   }
   server.disabled = raw.disabled === true || raw.enabled === false;
-  server.timeout = seconds(raw.timeout);
+  server.timeout = seconds(raw.timeout ?? raw.timeoutSeconds);
   return finish(server);
 }
 

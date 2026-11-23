@@ -10,6 +10,7 @@ const looks: Record<
   "claude-desktop": { logo: "colour", letters: "Cl", color: "#d97757" },
   "claude-code": { logo: "colour", letters: "CC", color: "#c4623f" },
   codex: { logo: "colour", letters: "Cx", color: "#10a37f" },
+  antigravity: { logo: "colour", letters: "Ag", color: "#4285f4" },
   gemini: { logo: "colour", letters: "Ge", color: "#4285f4" },
   qwen: { logo: "colour", letters: "Qw", color: "#6d28d9" },
   cursor: { logo: "mono", letters: "Cu", color: "#27272a" },

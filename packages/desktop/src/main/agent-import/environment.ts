@@ -188,6 +188,22 @@ export function geminiFolder(scan: ScanEnvironment) {
   );
 }
 
+/**
+ * Antigravity (Google's replacement for Gemini CLI): the desktop IDE and the
+ * `agy` CLI share `~/.gemini/config/mcp_config.json`. Skills: that folder's
+ * `skills`, the CLI's `antigravity-cli/skills`, the IDE's legacy
+ * `antigravity/skills`.
+ */
+export function antigravityFolders(scan: ScanEnvironment) {
+  const p = pathsFor(scan.platform);
+  const root = p.join(scan.home, ".gemini");
+  return {
+    config: p.join(root, "config"),
+    legacyIde: p.join(root, "antigravity"),
+    cli: p.join(root, "antigravity-cli"),
+  };
+}
+
 export function qwenFolder(scan: ScanEnvironment) {
   return pathsFor(scan.platform).join(scan.home, ".qwen");
 }

@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { parse as parseYaml } from "yaml";
 import {
   continueFolder,
+  antigravityFolders,
   geminiFolder,
   gooseConfigFile,
   kiloFolder,
@@ -120,8 +121,34 @@ async function geminiLike(
   return source;
 }
 
+/** Gemini CLI's successor: one `mcp_config.json` for the IDE and the CLI. */
+export async function antigravity(scan: ScanEnvironment) {
+  const p = pathsFor(scan.platform);
+  const folders = antigravityFolders(scan);
+  const source = emptySource(
+    "antigravity",
+    "Antigravity",
+    scan,
+    folders.config,
+  );
+  source.detected = (
+    await Promise.all(Object.values(folders).map((folder) => exists(folder)))
+  ).some(Boolean);
+  // The IDE's older location is probed too (not in the docs any more).
+  for (const file of [
+    p.join(folders.config, "mcp_config.json"),
+    p.join(folders.legacyIde, "mcp_config.json"),
+  ])
+    source.servers.push(
+      ...parseServersTable(record(await readJson(file)).mcpServers).servers,
+    );
+  for (const folder of Object.values(folders))
+    await skillsOf(source, scan, folder);
+  return source;
+}
+
 export const gemini = (scan: ScanEnvironment) =>
-  geminiLike(scan, "gemini", "Gemini CLI", geminiFolder(scan));
+  geminiLike(scan, "gemini", "Gemini CLI (legacy)", geminiFolder(scan));
 export const qwen = (scan: ScanEnvironment) =>
   geminiLike(scan, "qwen", "Qwen Code", qwenFolder(scan));
 

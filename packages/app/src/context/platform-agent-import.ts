@@ -15,6 +15,7 @@ export type AgentImportSourceId =
   | "opencode"
   | "kilo"
   | "roo"
+  | "antigravity"
   | "gemini"
   | "qwen"
   | "goose"
