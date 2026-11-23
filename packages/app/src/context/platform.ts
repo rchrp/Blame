@@ -177,6 +177,20 @@ export type RuntimeStatusReport = {
   startRequired?: boolean
 }
 
+export type {
+  AgentImportCategory,
+  AgentImportChoice,
+  AgentImportClient,
+  AgentImportItem,
+  AgentImportItemState,
+  AgentImportOutcome,
+  AgentImportResult,
+  AgentImportScan,
+  AgentImportSource,
+  AgentImportSourceId,
+  AgentImportUnsupported,
+} from "./platform-agent-import"
+
 export type McpTransport = "stdio" | "streamableHttp" | "sse"
 
 export type McpServerConfig = {

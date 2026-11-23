@@ -27,6 +27,7 @@ import {
   type McpTransport,
 } from "@/context/platform"
 import { formatArguments, parseArguments } from "./mcp-arguments"
+import { AgentImportButton } from "./agent-import-dialog"
 
 type Entry = { id: string; key: string; value: string }
 type FormState = {
@@ -133,17 +134,22 @@ export function McpSettingsPanel() {
             loading={loading}
             servers={servers}
           />
-          <Button
-            type="button"
-            disabled={!client || adding || Boolean(editingName)}
-            onClick={() => {
-              setEditingName(undefined)
-              setAdding(true)
-            }}
-          >
-            <PlusIcon />
-            Add server
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <AgentImportButton
+              onImported={() => void update(() => client!.list())}
+            />
+            <Button
+              type="button"
+              disabled={!client || adding || Boolean(editingName)}
+              onClick={() => {
+                setEditingName(undefined)
+                setAdding(true)
+              }}
+            >
+              <PlusIcon />
+              Add server
+            </Button>
+          </div>
         </div>
 
         {!client && (
