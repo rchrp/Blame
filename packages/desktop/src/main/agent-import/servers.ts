@@ -72,12 +72,126 @@ export function parseJsonc(text: string): unknown {
 export function parseServersTable(
   table: unknown,
   scope?: string,
+  options: { bareUrl?: "streamableHttp" | "sse" } = {},
 ): ParsedServers {
   const result = empty();
   if (!isRecord(table)) return result;
   for (const [name, raw] of Object.entries(table)) {
-    const server = fromJsonEntry(name, raw, scope);
+    const server = fromJsonEntry(name, raw, scope, options.bareUrl);
     if (server) result.servers.push(server);
+  }
+  return result;
+}
+
+/**
+ * OpenCode and Kilo Code: `mcp` holds the servers by name (the newer OpenCode
+ * schema nests them under `mcp.servers`), `type: "local"` with `command` as
+ * one array, or `type: "remote"` with a `url`; `enabled: false` or
+ * `disabled: true` switches one off.
+ */
+export function parseOpenCodeMcp(mcp: unknown): ParsedServers {
+  const result = empty();
+  if (!isRecord(mcp)) return result;
+  const table = isRecord(mcp.servers) ? mcp.servers : mcp;
+  for (const [name, raw] of Object.entries(table)) {
+    if (!isRecord(raw)) continue;
+    const server = base(
+      name,
+      raw.type === "remote" || (!raw.command && raw.url)
+        ? "streamableHttp"
+        : "stdio",
+    );
+    if (server.transport === "stdio") {
+      const [command, ...args] = Array.isArray(raw.command)
+        ? raw.command.filter((part): part is string => typeof part === "string")
+        : [text(raw.command), ...(strings(raw.args) ?? [])];
+      if (!command) continue;
+      server.command = command;
+      server.args = args.filter(
+        (arg): arg is string => typeof arg === "string",
+      );
+      server.cwd = text(raw.cwd);
+      server.env = stringMap(raw.environment) ?? stringMap(raw.env);
+    } else {
+      server.url = text(raw.url);
+      if (!server.url) continue;
+      server.headers = stringMap(raw.headers);
+    }
+    server.disabled = raw.enabled === false || raw.disabled === true;
+    server.timeout = seconds(raw.timeout);
+    const finished = finish(server);
+    if (finished) result.servers.push(finished);
+  }
+  return result;
+}
+
+/**
+ * Zed's `context_servers`: `command` is an object (`path`, `args`, `env`) or
+ * a string; a server with a `url` is remote; one given by an extension (no
+ * command, no url) is not the person's.
+ */
+export function parseZedServers(table: unknown): ParsedServers {
+  const result = empty();
+  if (!isRecord(table)) return result;
+  for (const [name, raw] of Object.entries(table)) {
+    if (!isRecord(raw)) continue;
+    const command = isRecord(raw.command) ? raw.command : raw;
+    const entry = {
+      ...raw,
+      command: isRecord(raw.command) ? text(raw.command.path) : raw.command,
+      args: command.args,
+      env: command.env,
+      disabled: raw.enabled === false,
+    };
+    const server = fromJsonEntry(name, entry);
+    if (server) result.servers.push(server);
+  }
+  return result;
+}
+
+/**
+ * Goose's `extensions` (config.yaml): `stdio` with `cmd`, `args`, `envs`, or
+ * `streamable_http` with `uri`. Built-in and platform extensions come with
+ * Goose and are counted as bundled; `env_keys` live in its keyring.
+ */
+export function parseGooseExtensions(table: unknown): ParsedServers {
+  const result = empty();
+  if (!isRecord(table)) return result;
+  for (const [key, raw] of Object.entries(table)) {
+    if (!isRecord(raw)) continue;
+    if (
+      raw.bundled === true ||
+      (raw.type !== "stdio" &&
+        raw.type !== "streamable_http" &&
+        raw.type !== "sse")
+    ) {
+      result.bundled++;
+      continue;
+    }
+    const remote = raw.type !== "stdio";
+    const server = base(
+      text(raw.name) ?? key,
+      remote ? (raw.type === "sse" ? "sse" : "streamableHttp") : "stdio",
+    );
+    if (remote) {
+      server.url = text(raw.uri);
+      if (!server.url) continue;
+      server.headers = stringMap(raw.headers);
+    } else {
+      server.command = text(raw.cmd);
+      if (!server.command) continue;
+      server.args = strings(raw.args);
+      server.env = stringMap(raw.envs);
+    }
+    const keys = strings(raw.env_keys);
+    if (keys?.length)
+      server.warnings.push(
+        `Reads ${keys.join(", ")} from Goose's keyring, which Blame cannot. Put the values in after importing.`,
+      );
+    server.disabled = raw.enabled === false;
+    server.timeout = seconds(raw.timeout);
+    const finished = finish(server);
+    if (finished) result.servers.push(finished);
   }
   return result;
 }
@@ -108,10 +222,13 @@ function fromJsonEntry(
   name: string,
   raw: unknown,
   scope?: string,
+  bareUrl: "streamableHttp" | "sse" = "streamableHttp",
 ): ImportedServer | undefined {
   if (!isRecord(raw)) return undefined;
   const type = typeof raw.type === "string" ? raw.type.toLowerCase() : "";
-  const url = text(raw.url);
+  // Gemini CLI and Qwen Code: `httpUrl` is Streamable HTTP, `url` is SSE.
+  // Windsurf writes `serverUrl`.
+  const url = text(raw.httpUrl) ?? text(raw.url) ?? text(raw.serverUrl);
   const command = text(raw.command);
   const transport =
     type === "sse"
@@ -123,7 +240,9 @@ function fromJsonEntry(
         : type === "stdio" || type === "local"
           ? "stdio"
           : url && !command
-            ? "streamableHttp"
+            ? text(raw.httpUrl)
+              ? "streamableHttp"
+              : bareUrl
             : "stdio";
   const server = base(name, transport, scope);
   if (transport === "stdio") {

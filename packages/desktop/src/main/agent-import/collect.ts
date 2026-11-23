@@ -1,9 +1,9 @@
-import type { AgentImportSourceId, AgentImportUnsupported } from "@blame/app";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import {
   claudeCodePaths,
   claudeDesktopFolders,
   clineCliSettings,
+  clineFolder,
   codexFolder,
   cursorMcpFile,
   displayPath,
@@ -12,6 +12,25 @@ import {
   vscodeMcpFile,
   type ScanEnvironment,
 } from "./environment.ts";
+import {
+  continueDev,
+  gemini,
+  goose,
+  kilo,
+  openCode,
+  qwen,
+  roo,
+  zed,
+} from "./collect-open-source.ts";
+import {
+  emptySource,
+  exists,
+  hasContent,
+  readJson,
+  record,
+  subfolders,
+  type CollectedSource,
+} from "./files.ts";
 import { findCommands, findSkills, type FoundSkill } from "./skills.ts";
 import {
   parseCodexConfig,
@@ -19,20 +38,6 @@ import {
   parseServersTable,
   type ImportedServer,
 } from "./servers.ts";
-
-export type CollectedSource = {
-  id: AgentImportSourceId;
-  label: string;
-  /** Its files are on this computer, whether or not they hold anything. */
-  detected: boolean;
-  location: string;
-  servers: ImportedServer[];
-  /** Skills Blame does not read where they are: copied to `~/.agents/skills`. */
-  skills: FoundSkill[];
-  /** Skills and commands Blame reads in place. */
-  inPlace: { name: string; description?: string; kind: "skill" | "command" }[];
-  unsupported: AgentImportUnsupported[];
-};
 
 /** Everything the other tools keep that Blame can see. Read-only. */
 export async function collectSources(scan: ScanEnvironment) {
@@ -44,6 +49,14 @@ export async function collectSources(scan: ScanEnvironment) {
       cursor(scan),
       vscode(scan),
       cline(scan),
+      openCode(scan),
+      kilo(scan),
+      roo(scan),
+      gemini(scan),
+      qwen(scan),
+      goose(scan),
+      continueDev(scan),
+      zed(scan),
     ])
   ).map(withoutCredentialUrls);
   return sources;
@@ -261,60 +274,8 @@ async function cline(scan: ScanEnvironment) {
         .servers,
     );
   }
+  const skills = pathsFor(scan.platform).join(clineFolder(scan), "skills");
+  source.skills.push(...(await findSkills(skills, scan)));
+  source.detected ||= source.skills.length > 0;
   return source;
-}
-
-function emptySource(
-  id: AgentImportSourceId,
-  label: string,
-  scan: ScanEnvironment,
-  folder?: string,
-): CollectedSource {
-  return {
-    id,
-    label,
-    detected: false,
-    location: folder ? displayPath(scan, folder) : "",
-    servers: [],
-    skills: [],
-    inPlace: [],
-    unsupported: [],
-  };
-}
-
-async function readJson(file: string): Promise<unknown> {
-  try {
-    return parseJsonc(await readFile(file, "utf8"));
-  } catch {
-    // Missing, unreadable or corrupt: nothing to offer from this file.
-    return undefined;
-  }
-}
-
-async function exists(path: string) {
-  return stat(path).then(
-    () => true,
-    () => false,
-  );
-}
-
-async function hasContent(file: string) {
-  const size = await stat(file).then(
-    (s) => (s.isFile() ? s.size : 0),
-    () => 0,
-  );
-  if (!size || size > 1_000_000) return size > 0;
-  return (await readFile(file, "utf8").catch(() => "")).trim().length > 0;
-}
-
-async function subfolders(directory: string) {
-  return (await readdir(directory, { withFileTypes: true }).catch(() => []))
-    .filter((entry) => entry.isDirectory())
-    .map((entry) => entry.name);
-}
-
-function record(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
 }

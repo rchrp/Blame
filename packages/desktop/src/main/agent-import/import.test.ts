@@ -236,7 +236,22 @@ test("a scan lists every source, category and item, and hides every secret", asy
     assert.equal(json.includes("u:p@"), false);
     assert.deepEqual(
       scan.sources.map((source) => source.id),
-      ["claude-desktop", "claude-code", "codex", "cursor", "vscode", "cline"],
+      [
+        "claude-desktop",
+        "claude-code",
+        "codex",
+        "cursor",
+        "vscode",
+        "cline",
+        "opencode",
+        "kilo",
+        "roo",
+        "gemini",
+        "qwen",
+        "goose",
+        "continue",
+        "zed",
+      ],
     );
 
     const byId = (id: string) =>
@@ -481,6 +496,14 @@ test("missing and corrupt files are tolerated and nothing is created by a scan",
         ["cursor", false, 0],
         ["vscode", false, 0],
         ["cline", false, 0],
+        ["opencode", false, 0],
+        ["kilo", false, 0],
+        ["roo", false, 0],
+        ["gemini", false, 0],
+        ["qwen", false, 0],
+        ["goose", false, 0],
+        ["continue", false, 0],
+        ["zed", false, 0],
       ],
     );
     assert.equal(

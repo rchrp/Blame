@@ -120,8 +120,8 @@ export function AgentImportPanel({
         <p className="text-sm text-foreground/65">
           Pick the tools to bring your setup from.
         </p>
-        <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {scan.sources.map((source) => (
+        <ul className="grid max-h-[22rem] grid-cols-2 gap-2 overflow-y-auto pr-1 sm:grid-cols-3">
+          {sortedSources(scan.sources).map((source) => (
             <SourceTile
               key={source.id}
               source={source}
@@ -233,6 +233,14 @@ export function AgentImportPanel({
         </Button>
       </div>
     </div>
+  )
+}
+
+// Tools with something to import first, then the ones found but empty.
+function sortedSources(sources: AgentImportSource[]) {
+  const rank = { available: 0, empty: 1, missing: 2 } as const
+  return [...sources].sort(
+    (a, b) => rank[sourceStatus(a)] - rank[sourceStatus(b)]
   )
 }
 

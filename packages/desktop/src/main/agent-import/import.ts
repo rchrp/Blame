@@ -7,7 +7,8 @@ import type {
   AgentImportSource,
   McpServerConfig,
 } from "@blame/app";
-import { collectSources, type CollectedSource } from "./collect.ts";
+import { collectSources } from "./collect.ts";
+import type { CollectedSource } from "./files.ts";
 import {
   blameSkillsFolder,
   pathsFor,

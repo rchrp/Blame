@@ -12,6 +12,14 @@ export type AgentImportSourceId =
   | "cursor"
   | "vscode"
   | "cline"
+  | "opencode"
+  | "kilo"
+  | "roo"
+  | "gemini"
+  | "qwen"
+  | "goose"
+  | "continue"
+  | "zed"
 
 export type AgentImportCategory = "mcp" | "skill" | "command"
 

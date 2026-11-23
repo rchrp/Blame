@@ -130,10 +130,71 @@ export function vscodeExtensionSettings(
   return { folder, file: p.join(folder, file) };
 }
 
+export function clineFolder(scan: ScanEnvironment) {
+  return (
+    scan.env.CLINE_DIR?.trim() ||
+    pathsFor(scan.platform).join(scan.home, ".cline")
+  );
+}
+
 export function clineCliSettings(scan: ScanEnvironment) {
   const p = pathsFor(scan.platform);
   const data =
-    scan.env.CLINE_DATA_DIR?.trim() || p.join(scan.home, ".cline", "data");
+    scan.env.CLINE_DATA_DIR?.trim() || p.join(clineFolder(scan), "data");
   const folder = p.join(data, "settings");
-  return { folder, file: p.join(folder, "cline_mcp_settings.json") };
+  return {
+    folder,
+    file:
+      scan.env.CLINE_MCP_SETTINGS_PATH?.trim() ||
+      p.join(folder, "cline_mcp_settings.json"),
+  };
+}
+
+/** `~/.config` (or `XDG_CONFIG_HOME`) on every system: OpenCode, Kilo, Goose. */
+export function xdgConfigFolder(scan: ScanEnvironment) {
+  return (
+    scan.env.XDG_CONFIG_HOME?.trim() ||
+    pathsFor(scan.platform).join(scan.home, ".config")
+  );
+}
+
+export function openCodeFolder(scan: ScanEnvironment) {
+  return pathsFor(scan.platform).join(xdgConfigFolder(scan), "opencode");
+}
+
+export function kiloFolder(scan: ScanEnvironment) {
+  return pathsFor(scan.platform).join(xdgConfigFolder(scan), "kilo");
+}
+
+export function gooseConfigFile(scan: ScanEnvironment) {
+  const p = pathsFor(scan.platform);
+  return scan.platform === "win32"
+    ? p.join(appDataFolder(scan), "Block", "goose", "config", "config.yaml")
+    : p.join(xdgConfigFolder(scan), "goose", "config.yaml");
+}
+
+export function zedSettingsFile(scan: ScanEnvironment) {
+  const p = pathsFor(scan.platform);
+  return scan.platform === "win32"
+    ? p.join(appDataFolder(scan), "Zed", "settings.json")
+    : p.join(xdgConfigFolder(scan), "zed", "settings.json");
+}
+
+/** `GEMINI_CLI_HOME` relocates the folder; Qwen Code is a fork of the same. */
+export function geminiFolder(scan: ScanEnvironment) {
+  return pathsFor(scan.platform).join(
+    scan.env.GEMINI_CLI_HOME?.trim() || scan.home,
+    ".gemini",
+  );
+}
+
+export function qwenFolder(scan: ScanEnvironment) {
+  return pathsFor(scan.platform).join(scan.home, ".qwen");
+}
+
+export function continueFolder(scan: ScanEnvironment) {
+  return (
+    scan.env.CONTINUE_GLOBAL_DIR?.trim() ||
+    pathsFor(scan.platform).join(scan.home, ".continue")
+  );
 }

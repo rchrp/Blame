@@ -30,6 +30,7 @@ const secrets = [
   "sk-fake-dokploy-0001",
   "ghp_fakeGithubToken0002",
   "fake-bearer-0003",
+  "gm-fake-secret-0009",
 ];
 
 if (process.versions.electron) await runInElectron();
@@ -119,6 +120,12 @@ async function fakeHome(home) {
     ".codex/config.toml": `[mcp_servers.home_assistant]\nurl = "https://ha.example.com/api/mcp"\nbearer_token_env_var = "HA_TOKEN"\n\n[mcp_servers.remote]\nurl = "https://remote.example.com/mcp"\nhttp_headers = { Authorization = "Bearer ${secrets[2]}" }\n\n[mcp_servers.node_repl]\ncommand = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node_repl"\n`,
     ".codex/skills/release-notes/SKILL.md":
       "---\nname: release-notes\ndescription: Write release notes\n---\nBody\n",
+    ".config/opencode/opencode.json": JSON.stringify({
+      mcp: { servers: { context7: { type: "remote", url: "https://mcp.context7.com/mcp" } } },
+    }),
+    ".gemini/settings.json": JSON.stringify({
+      mcpServers: { gem: { command: "node", args: ["gem.js"], env: { API_KEY: "gm-fake-secret-0009" } } },
+    }),
     ".cursor/mcp.json": JSON.stringify({
       mcpServers: { figma: { url: "http://127.0.0.1:3845/sse" } },
     }),

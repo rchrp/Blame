@@ -14,6 +14,13 @@ const looks: Record<
   vscode: { letters: "VS", color: "#2f80ed" },
   opencode: { provider: "opencode", letters: "OC", color: "#3b82f6" },
   cline: { letters: "Cl", color: "#8b5cf6" },
+  kilo: { provider: "kilo", letters: "Ki", color: "#f59e0b" },
+  roo: { letters: "Ro", color: "#ec4899" },
+  gemini: { provider: "google", letters: "Ge", color: "#4285f4" },
+  qwen: { letters: "Qw", color: "#6d28d9" },
+  goose: { letters: "Go", color: "#0ea5e9" },
+  continue: { letters: "Co", color: "#16a34a" },
+  zed: { letters: "Z", color: "#0f766e" },
 }
 
 const fallbackColor = "#6b7280"
