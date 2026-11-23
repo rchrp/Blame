@@ -153,8 +153,15 @@ export class EngineProviders {
     input: MoveProviderCredentialInput,
   ): Promise<ProviderCredentialSummary> {
     const { providerId, label } = input;
+    // Both places save by provider and name: moving onto one that exists
+    // there would replace its key, which is nobody's intent.
+    const taken = `A "${label}" connection already exists ${
+      input.to === "device" ? "on this device" : "in your Blame account"
+    } for this provider. Rename or remove one of them first.`;
     if (input.to === "device") {
       const connection = this.connection();
+      if (await this.services.device?.resolve({ providerId, label }))
+        throw new Error(taken);
       const found = await resolveProviderCredential(connection, {
         providerId,
         label,
@@ -175,8 +182,17 @@ export class EngineProviders {
       return saved;
     }
     const found = await this.device().resolve({ providerId, label });
-    if (!found) throw new Error("This credential is no longer on this computer.");
+    if (!found)
+      throw new Error("This credential is no longer on this computer.");
     const connection = this.connection();
+    const existing = await listProviderCredentials(connection);
+    if (
+      existing.some(
+        (credential) =>
+          credential.providerId === providerId && credential.label === label,
+      )
+    )
+      throw new Error(taken);
     const saved = found.oauthCredentials
       ? await saveOAuthCredential(connection, {
           providerId,

@@ -57,9 +57,19 @@ export function mergeCloudServers(
       continue;
     }
     if (syncMode(local) === "device") continue;
+    if (belongsToAnotherAccount(local, userId)) {
+      // Set up under another account on this computer: it stays here, and
+      // is never uploaded to this one.
+      merged[name] = keptOnThisDevice(local);
+      continue;
+    }
     merged[name] = mergeCloudServer(local, cloud, userId);
   }
   for (const [name, local] of Object.entries(merged)) {
+    if (belongsToAnotherAccount(local, userId) && !localSetupRequired(local)) {
+      merged[name] = keptOnThisDevice(local);
+      continue;
+    }
     if (inCloud.has(name) || !wasSynced(local)) continue;
     // Gone from the account. Nothing set up here is lost with it: a server
     // that was never completed goes, one that works here stays on this device.
@@ -80,12 +90,33 @@ export function detachCloudServers(
   return {
     ...settings,
     mcpServers: Object.fromEntries(
-      Object.entries(settings.mcpServers).filter(
-        ([, server]) =>
-          !(cloudOwner(server) === userId && localSetupRequired(server)),
-      ),
+      Object.entries(settings.mcpServers)
+        .filter(
+          ([, server]) =>
+            !(cloudOwner(server) === userId && localSetupRequired(server)),
+        )
+        // What works here stays, and from now on stays on this device: the
+        // next account to sign in never receives it.
+        .map(([name, server]) => [
+          name,
+          cloudOwner(server) === userId ? keptOnThisDevice(server) : server,
+        ]),
     ),
   };
+}
+
+function belongsToAnotherAccount(server: McpSettingsServer, userId: string) {
+  const owner = cloudOwner(server);
+  return owner !== undefined && owner !== userId;
+}
+
+function keptOnThisDevice(server: McpSettingsServer): McpSettingsServer {
+  if (syncMode(server) === "device" && !syncsSecrets(server)) return server;
+  return withMetadata(server, {
+    [SYNC_MODE]: "device",
+    [SYNC_SECRETS]: undefined,
+    [SECRETS_BASE]: undefined,
+  });
 }
 
 export function syncMode(server: McpSettingsServer): McpSyncMode {
@@ -242,32 +273,47 @@ function applyCloudSecrets(
   cloud: CloudMcpServerConfig,
 ): McpSettingsServer {
   const secrets = cloud.secrets;
-  if (!secrets) return local;
   const here = localSecrets(local);
   const unchangedHere =
     syncsSecrets(local) &&
     serverMetadata(local)?.[SECRETS_BASE] === digest(here);
+  if (!secrets) {
+    // The account holds none any more: another device turned the sharing
+    // off. This one agreed to it before and has not changed them since, so it
+    // stops sharing too (its own values stay); otherwise its next upload
+    // would put them back.
+    if (!unchangedHere) return local;
+    return withMetadata(local, {
+      [SYNC_SECRETS]: undefined,
+      [SECRETS_BASE]: undefined,
+    });
+  }
   const next: McpSettingsServer = { ...local };
   let changed = false;
-  if (secrets.args && (!here.args || unchangedHere)) {
-    next.args = secrets.args;
-    changed = true;
+  if (!here.args || unchangedHere) {
+    if (secrets.args) next.args = secrets.args;
+    else if (here.args) delete next.args;
+    changed = changed || Boolean(secrets.args) || Boolean(here.args);
   }
-  if (secrets.cwd && (!here.cwd || unchangedHere)) {
-    next.cwd = secrets.cwd;
-    changed = true;
+  if (!here.cwd || unchangedHere) {
+    if (secrets.cwd) next.cwd = secrets.cwd;
+    else if (here.cwd) delete next.cwd;
+    changed = changed || Boolean(secrets.cwd) || Boolean(here.cwd);
   }
   for (const key of ["env", "headers"] as const) {
+    if (here[key] && !unchangedHere) continue;
     const given = secrets[key];
-    if (!given || (here[key] && !unchangedHere)) continue;
-    next[key] = given;
-    changed = true;
+    if (given) next[key] = given;
+    else if (here[key]) delete next[key];
+    changed = changed || Boolean(given) || Boolean(here[key]);
   }
   const agreed = digest(localSecrets(next)) === digest(secrets);
-  if (!changed && !agreed) return local;
+  // Sharing starts here only once both sides hold the same values: a device
+  // with its own different secrets never uploads them by accident.
+  if (!agreed) return changed ? { ...next } : local;
   return withMetadata(next, {
     [SYNC_SECRETS]: true,
-    ...(agreed ? { [SECRETS_BASE]: digest(secrets) } : {}),
+    [SECRETS_BASE]: digest(secrets),
   });
 }
 
@@ -301,12 +347,18 @@ function placeholder(
   userId: string,
   previous?: McpSettingsServer,
 ): McpSettingsServer {
-  const metadata = {
+  const metadata: Record<string, unknown> = {
     ...(previous ? serverMetadata(previous) : {}),
     [CLOUD_USER_ID]: userId,
     [SYNC_BASE]: cloudShape(cloud),
   };
+  const usable = () => {
+    delete metadata[LOCAL_SETUP_REQUIRED];
+    delete metadata[CLOUD_DISABLED];
+    delete metadata[CLOUD_MISSING];
+  };
   if (cloud.secrets) {
+    usable();
     return {
       ...serializeShape(cloudShape(cloud)),
       ...cloud.secrets,
@@ -319,6 +371,7 @@ function placeholder(
   }
   const missing = cloud.localParts;
   if (missing && !needsSomething(missing)) {
+    usable();
     return { ...serializeShape(cloudShape(cloud)), metadata };
   }
   return {

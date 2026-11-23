@@ -28,7 +28,7 @@ export function McpSettingsPanel() {
   const cloudUserId = cloud.user?.id
   // Without an account there is nothing to choose: everything stays here.
   const syncAvailable = cloud.mode === "account"
-  const saveCloudMcpConfiguration = cloud.saveMcpConfiguration
+  const updateCloudMcpConfiguration = cloud.updateMcpConfiguration
   const [servers, setServers] = React.useState<McpServerConfig[]>([])
   const [adding, setAdding] = React.useState(false)
   const [editingName, setEditingName] = React.useState<string>()
@@ -54,8 +54,9 @@ export function McpSettingsPanel() {
             await client.mergeCloud(cloudUserId, cloudMcpConfiguration.servers)
           )
         }
-        const first = nextCloudServers({ current: [], local: localServers })
-        await saveCloudMcpConfiguration(first)
+        const first = await updateCloudMcpConfiguration((current) =>
+          nextCloudServers({ current, local: localServers })
+        )
         setServers(await client.mergeCloud(cloudUserId, first))
       })
       .then(() => client.recovery())
@@ -67,7 +68,7 @@ export function McpSettingsPanel() {
     cloudMcpConfiguration,
     cloudStatus,
     cloudUserId,
-    saveCloudMcpConfiguration,
+    updateCloudMcpConfiguration,
     syncAvailable,
   ])
 
@@ -94,12 +95,8 @@ export function McpSettingsPanel() {
       cloudMcpConfiguration !== undefined
     ) {
       try {
-        await cloud.saveMcpConfiguration(
-          nextCloudServers({
-            ...cloudChange,
-            current: cloudMcpConfiguration?.servers ?? [],
-            local: updated,
-          })
+        await cloud.updateMcpConfiguration((current) =>
+          nextCloudServers({ ...cloudChange, current, local: updated })
         )
       } catch (reason) {
         setError(

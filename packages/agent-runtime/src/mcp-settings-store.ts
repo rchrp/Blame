@@ -84,6 +84,22 @@ export async function readMcpSettings(
   if (text === undefined) return { mcpServers: {} };
   const parsed = parseSettings(text);
   if (parsed) return parsed;
+  if (options.unreadable !== "quarantine")
+    throw new McpSettingsUnreadableError(path, "invalid content");
+  // Moving a file aside is a change like any other: under the lock, and
+  // after looking again, since a writer may have fixed it meanwhile.
+  return withFileLock(path, () => readLocked(path, options));
+}
+
+/** `readMcpSettings` for a caller that already holds the lock. */
+async function readLocked(
+  path: string,
+  options: McpSettingsReadOptions,
+): Promise<McpSettingsFile> {
+  const text = await readText(path);
+  if (text === undefined) return { mcpServers: {} };
+  const parsed = parseSettings(text);
+  if (parsed) return parsed;
   if (options.unreadable === "quarantine") return quarantine(path);
   throw new McpSettingsUnreadableError(path, "invalid content");
 }
@@ -101,7 +117,7 @@ export function updateMcpSettings(
   options: McpSettingsUpdateOptions = {},
 ): Promise<McpSettingsFile> {
   return withFileLock(path, async () => {
-    const current = await readMcpSettings(path, options);
+    const current = await readLocked(path, options);
     const before = JSON.stringify(current);
     const draft = JSON.parse(before) as McpSettingsFile;
     const next = (await mutate(draft)) ?? draft;
@@ -253,7 +269,13 @@ async function withFileLock<T>(path: string, run: () => Promise<T>) {
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
       if (await lockIsStale(lock)) {
-        await rm(lock, { force: true });
+        // Renamed away, then removed: of two processes that both judged it
+        // dead, only one finds it to rename.
+        const stale = `${lock}.stale-${randomUUID().slice(0, 8)}`;
+        await rename(lock, stale).then(
+          () => rm(stale, { force: true }),
+          () => undefined,
+        );
         continue;
       }
       if (Date.now() > deadline)
@@ -300,6 +322,10 @@ async function readText(path: string) {
 function parseSettings(text: string): McpSettingsFile | undefined {
   try {
     const parsed: unknown = JSON.parse(text);
+    // An object without `mcpServers` is a valid file with no server (older
+    // versions read it so); a wrong type for it is not.
+    if (isRecord(parsed) && parsed.mcpServers === undefined)
+      return { ...parsed, mcpServers: {} };
     return isSettings(parsed)
       ? ({ ...parsed, mcpServers: { ...parsed.mcpServers } } as McpSettingsFile)
       : undefined;

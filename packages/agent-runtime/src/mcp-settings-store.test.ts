@@ -205,3 +205,26 @@ test("separate processes lose no update either", async () => {
   assert.equal(Object.keys(settings.mcpServers).length, 25);
   assert.deepEqual(settings.mcpServers.Dokploy, dokploy);
 });
+
+test("a file without an mcpServers key is an empty list, not a broken file", async () => {
+  const { directory, path } = await scratch();
+  await writeFile(path, "{}");
+  assert.deepEqual(await readMcpSettings(path, { unreadable: "quarantine" }), {
+    mcpServers: {},
+  });
+  assert.deepEqual(await readdir(directory), ["mcp-settings.json"]);
+});
+
+test("a broken file is moved aside once, even when several readers meet it", async () => {
+  const { directory, path } = await scratch();
+  await writeFile(path, "{ truncated");
+  await Promise.all(
+    Array.from({ length: 4 }, () =>
+      readMcpSettings(path, { unreadable: "quarantine" }),
+    ),
+  );
+  const aside = (await readdir(directory)).filter((name) =>
+    name.includes(".unreadable-"),
+  );
+  assert.equal(aside.length, 1);
+});

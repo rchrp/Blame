@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readdir, readFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -186,4 +186,19 @@ test("a key the app has handled never appears in a log line", () => {
   rememberDeviceSecret(key);
   const [line] = redactLogData([`calling with ${key} now`], deviceSecrets());
   assert.ok(!String(line).includes(key));
+});
+
+test("an index that cannot be read is an error, never an empty store", async () => {
+  const { directory, store: credentials } = await store();
+  await credentials.save({ providerId: "openrouter", apiKey: key });
+  await writeFile(join(directory, "credentials.json"), "{ truncated");
+  await assert.rejects(credentials.list());
+  await assert.rejects(
+    credentials.save({ providerId: "anthropic", apiKey: `${key}-2` }),
+  );
+  // The first key's secret file is still there.
+  assert.equal(
+    (await readdir(directory)).filter((name) => name.endsWith(".bin")).length,
+    1,
+  );
 });

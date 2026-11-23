@@ -389,3 +389,42 @@ it("a ChatGPT sign-in kept on this device is refreshed and saved back to it, not
   assert.equal(saves[0].oauthCredentials?.refresh, "new-refresh");
   assert.deepEqual(api.seen, []);
 });
+
+it("refuses a move onto a connection of the same name and keeps both keys", async () => {
+  const api = await fakeApi();
+  const { device, stored } = fakeDevice();
+  const { providers } = providersFor(api, device);
+  await providers.saveCredential({
+    providerId: "openrouter",
+    label: "Work",
+    apiKey: "fake-account-key",
+  });
+  await device.save({
+    providerId: "openrouter",
+    label: "Work",
+    apiKey: "fake-device-key",
+  });
+  await assert.rejects(
+    providers.moveCredential({
+      id: "device-openrouter-Work",
+      providerId: "openrouter",
+      label: "Work",
+      to: "account",
+    }),
+    /already exists in your Blame account/,
+  );
+  await assert.rejects(
+    providers.moveCredential({
+      id: "cloud-openrouter-Work",
+      providerId: "openrouter",
+      label: "Work",
+      to: "device",
+    }),
+    /already exists on this device/,
+  );
+  assert.equal(stored.get("openrouter/Work")?.apiKey, "fake-device-key");
+  assert.equal(
+    api.accountKeys.get("openrouter/Work")?.apiKey,
+    "fake-account-key",
+  );
+});

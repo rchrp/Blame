@@ -4,7 +4,7 @@ import type {
   ProviderCredentialSummary,
 } from "@blame/agent-runtime";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, rename, rm } from "node:fs/promises";
 import { join } from "node:path";
 import type { SecretStorage } from "../local-api/local-api-key.ts";
 
@@ -178,22 +178,25 @@ export class DeviceCredentialStore {
   }
 
   private async index(): Promise<StoredCredential[]> {
+    let text: string;
     try {
-      const value: unknown = JSON.parse(
-        await readFile(join(this.directory, indexFile), "utf8"),
-      );
-      const list = (value as { credentials?: unknown } | null)?.credentials;
-      return Array.isArray(list)
-        ? list.filter(
-            (entry): entry is StoredCredential =>
-              Boolean(entry) &&
-              typeof (entry as StoredCredential).id === "string" &&
-              typeof (entry as StoredCredential).providerId === "string",
-          )
-        : [];
-    } catch {
-      return [];
+      text = await readFile(join(this.directory, indexFile), "utf8");
+    } catch (error) {
+      // No file yet is an empty store; any other failure must not look like
+      // one, or the next save would write an index that forgets the rest.
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") return [];
+      throw error;
     }
+    const value: unknown = JSON.parse(text);
+    const list = (value as { credentials?: unknown } | null)?.credentials;
+    return Array.isArray(list)
+      ? list.filter(
+          (entry): entry is StoredCredential =>
+            Boolean(entry) &&
+            typeof (entry as StoredCredential).id === "string" &&
+            typeof (entry as StoredCredential).providerId === "string",
+        )
+      : [];
   }
 
   private serialized<T>(operation: () => Promise<T>): Promise<T> {
@@ -205,7 +208,13 @@ export class DeviceCredentialStore {
   private async write(name: string, content: string | Buffer) {
     const path = join(this.directory, name);
     const temporary = `${path}.${randomUUID().slice(0, 8)}.tmp`;
-    await writeFile(temporary, content, { mode: 0o600 });
+    const handle = await open(temporary, "w", 0o600);
+    try {
+      await handle.writeFile(content);
+      await handle.sync();
+    } finally {
+      await handle.close();
+    }
     await rename(temporary, path);
   }
 }

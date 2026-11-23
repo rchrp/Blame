@@ -355,6 +355,21 @@ function ConnectProviderContent({
             setError("At least one model ID is required")
             return
           }
+          if (
+            accountMode &&
+            selection.credentials.some(
+              (item) =>
+                item.providerId === provider.id &&
+                item.label === label.trim() &&
+                item.id !== credential?.id &&
+                (item.storage ?? "account") !== storage
+            )
+          ) {
+            setError(
+              `A “${label.trim()}” connection already exists for ${provider.name} in the other place. Choose another name.`
+            )
+            return
+          }
           setError(undefined)
           setSaving(true)
           void selection.providers

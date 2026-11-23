@@ -431,6 +431,25 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
     [sessionApi, token, updateSession]
   )
 
+  const mcpSaves = React.useRef<Promise<unknown>>(Promise.resolve())
+  const updateMcpConfiguration = React.useCallback(
+    (build: (current: CloudMcpServer[]) => CloudMcpServer[]) => {
+      const run = async () => {
+        if (!token) return []
+        const fresh = await sessionApi.mcpConfiguration()
+        const servers = build(fresh?.servers ?? [])
+        updateSession({
+          mcpConfiguration: await sessionApi.saveMcpConfiguration(servers),
+        })
+        return servers
+      }
+      const result = mcpSaves.current.then(run, run)
+      mcpSaves.current = result.catch(() => undefined)
+      return result
+    },
+    [sessionApi, token, updateSession]
+  )
+
   /** Opens the workspace on this computer and remembers the choice. */
   const continueLocally = React.useCallback(async () => {
     const pending = pendingLocal.current ?? openLocalSession()
@@ -498,6 +517,7 @@ export function CloudAuthProvider({ children }: { children: React.ReactNode }) {
         saveAiPreferences,
         savePersonalization,
         saveMcpConfiguration,
+        updateMcpConfiguration,
         signup,
         socialLogin,
         startCheckout,

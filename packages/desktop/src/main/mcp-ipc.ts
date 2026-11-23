@@ -37,8 +37,11 @@ export function registerMcpIpcHandlers() {
     runSettingsOperation(async () => {
       const userId = validateUserId(userIdInput);
       const cloudServers = validateCloudServers(input);
-      const merged = await changeSettings((settings) =>
-        mergeCloudServers(settings, userId, cloudServers),
+      // The merge never removes a server set up here, only placeholders the
+      // account no longer has: all of them may go.
+      const merged = await changeSettings(
+        (settings) => mergeCloudServers(settings, userId, cloudServers),
+        { allowEmpty: true },
       );
       return listServers(merged);
     }),

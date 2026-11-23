@@ -540,3 +540,122 @@ test("a secret changed on another device arrives when it was not changed here", 
   ]).mcpServers.Dokploy;
   assert.deepEqual(third.env, { DOKPLOY_TOKEN: "mine" });
 });
+
+// Findings of the review: opt-outs hold, nothing crosses accounts.
+
+const otherUser = "01981221-2b74-7bc0-a1f5-000000000001";
+
+test("turning secret sync off on one device turns it off on the next", () => {
+  const synced = mergeCloudServers(emptySettings(), userId, [
+    { ...cloudServer(false), secrets: { env: { DOKPLOY_TOKEN: "one" } } },
+  ]);
+  assert.equal(syncsSecrets(synced.mcpServers.Dokploy), true);
+  // The account forgot them (another device unticked the box).
+  const after = mergeCloudServers(synced, userId, [cloudServer(false)]);
+  assert.equal(syncsSecrets(after.mcpServers.Dokploy), false);
+  assert.deepEqual(after.mcpServers.Dokploy.env, { DOKPLOY_TOKEN: "one" });
+});
+
+test("a part removed on another device is removed here when not changed here", () => {
+  const first = mergeCloudServers(emptySettings(), userId, [
+    {
+      ...cloudServer(false),
+      secrets: { args: ["-y"], env: { DOKPLOY_TOKEN: "one" } },
+    },
+  ]);
+  const second = mergeCloudServers(first, userId, [
+    { ...cloudServer(false), secrets: { args: ["-y"] } },
+  ]).mcpServers.Dokploy;
+  assert.equal(second.env, undefined);
+  assert.deepEqual(second.args, ["-y"]);
+});
+
+test("a device with its own different secrets does not start sharing them", () => {
+  const local: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        command: "npx",
+        disabled: false,
+        env: { DOKPLOY_TOKEN: "mine" },
+        timeout: 45,
+        type: "stdio",
+      },
+    },
+  };
+  const merged = mergeCloudServers(local, userId, [
+    {
+      ...cloudServer(false),
+      secrets: { args: ["-y"], env: { DOKPLOY_TOKEN: "theirs" } },
+    },
+  ]).mcpServers.Dokploy;
+  assert.deepEqual(merged.env, { DOKPLOY_TOKEN: "mine" });
+  assert.equal(syncsSecrets(merged), false);
+});
+
+test("what stays after signing out never goes to the next account", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        ...configured,
+        metadata: {
+          blameCloudUserId: userId,
+          blameSyncSecrets: true,
+          blameSecretsBase: "abc",
+        },
+      },
+    },
+  };
+  const detached = detachCloudServers(settings, userId);
+  assert.equal(syncMode(detached.mcpServers.Dokploy), "device");
+  assert.equal(syncsSecrets(detached.mcpServers.Dokploy), false);
+  // The next account has a server of that name: this one is left alone.
+  const merged = mergeCloudServers(detached, otherUser, [cloudServer(false)]);
+  assert.deepEqual(merged.mcpServers.Dokploy.env, configured.env);
+  assert.equal(syncMode(merged.mcpServers.Dokploy), "device");
+});
+
+test("a server of another account that was never signed out is kept on this device", () => {
+  const settings: McpSettings = {
+    mcpServers: {
+      Dokploy: {
+        ...configured,
+        metadata: { blameCloudUserId: userId, blameSyncSecrets: true },
+      },
+    },
+  };
+  const merged = mergeCloudServers(settings, otherUser, []);
+  assert.equal(syncMode(merged.mcpServers.Dokploy), "device");
+  assert.equal(syncsSecrets(merged.mcpServers.Dokploy), false);
+  assert.deepEqual(merged.mcpServers.Dokploy.env, configured.env);
+});
+
+test("a placeholder that receives its secrets stops waiting for setup", () => {
+  const waiting = mergeCloudServers(emptySettings(), userId, [
+    { ...cloudServer(false), localParts: { env: ["DOKPLOY_TOKEN"] } },
+  ]);
+  assert.equal(localSetupRequired(waiting.mcpServers.Dokploy), true);
+  const done = mergeCloudServers(waiting, userId, [
+    { ...cloudServer(false), secrets: { env: { DOKPLOY_TOKEN: "one" } } },
+  ]).mcpServers.Dokploy;
+  assert.equal(localSetupRequired(done), false);
+  assert.equal(cloudDisabled(done), undefined);
+  assert.equal(missingLocalParts(done), undefined);
+  assert.equal(done.disabled, false);
+});
+
+test("a merge that removes the last placeholders leaves an empty list, through the store", async () => {
+  const path = join(
+    await mkdtemp(join(tmpdir(), "mcp-merge-")),
+    "mcp-settings.json",
+  );
+  const placeholders = mergeCloudServers(emptySettings(), userId, [
+    cloudServer(false),
+  ]);
+  await writeFile(path, JSON.stringify(placeholders));
+  await updateMcpSettings(
+    path,
+    (settings) => mergeCloudServers(settings as McpSettings, userId, []),
+    { allowEmpty: true },
+  );
+  assert.deepEqual((await readMcpSettings(path)).mcpServers, {});
+});
