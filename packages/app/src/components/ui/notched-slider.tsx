@@ -1,9 +1,6 @@
 import * as React from "react"
 
-import {
-  sliderPoint,
-  type NotchDirection,
-} from "@/lib/notched-slider"
+import { sliderPoint, type NotchDirection } from "@/lib/notched-slider"
 import { cn } from "@/lib/utils"
 
 export type NotchedSliderColor = "blue" | "green" | "violet" | "amber" | "rose"
@@ -65,15 +62,17 @@ export function NotchedSlider({
   const control = useNotchedSliderControl(position, onChange)
   return (
     <div className="relative h-8" onWheel={onWheel}>
-      <SliderTrack color={color} position={position} />
-      <SliderMarkers markers={markers} position={position} />
+      <NotchedSliderTrack color={color} markers={markers} end={position} />
       <SliderRangeInput
         ariaLabel={ariaLabel}
         ariaValueText={ariaValueText}
         control={control}
         onStep={onStep}
       />
-      <SliderThumb position={position} />
+      <NotchedSliderThumb
+        position={position}
+        className="pointer-events-none peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl"
+      />
     </div>
   )
 }
@@ -140,55 +139,74 @@ function SliderRangeInput({
 
 type SliderFillStyle = React.CSSProperties & { "--smart-position": number }
 
-function sliderFillStyle(position: number): SliderFillStyle {
-  return { "--smart-position": position, width: sliderPoint(position) }
+function sliderFillStyle(end: number, start?: number): SliderFillStyle {
+  if (start === undefined) {
+    return { "--smart-position": end, width: sliderPoint(end) }
+  }
+  return {
+    "--smart-position": end,
+    left: sliderPoint(start),
+    width: `calc(${sliderPoint(end)} - ${sliderPoint(start)})`,
+    backgroundPositionX: `calc(0px - ${sliderPoint(start, "cqw")})`,
+    visibility: end === start ? "hidden" : undefined,
+  }
 }
 
-function SliderTrack({
-  color,
-  position,
+// Shared rail and notches for the single-model and model range controls.
+export function NotchedSliderTrack({
+  color = "blue",
+  markers,
+  start,
+  end,
 }: {
-  color: NotchedSliderColor
-  position: number
+  color?: NotchedSliderColor
+  markers: readonly number[]
+  start?: number
+  end: number
 }) {
   return (
-    <div
-      className={cn(
-        "smart-model-slider-track pointer-events-none absolute inset-x-0 top-1/2 h-[18px] -translate-y-1/2 rounded-full",
-        `notched-slider-${color}`
+    <>
+      <div
+        className={cn(
+          "smart-model-slider-track pointer-events-none absolute inset-x-0 top-1/2 h-[18px] -translate-y-1/2 rounded-full",
+          `notched-slider-${color}`
+        )}
+      >
+        <span
+          className="smart-model-slider-fill absolute inset-y-0 left-0 overflow-hidden rounded-full transition-[left,width,box-shadow] duration-300 ease-out motion-reduce:transition-none"
+          style={sliderFillStyle(end, start)}
+        />
+      </div>
+      {markers.map((marker, index) =>
+        (
+          start === undefined
+            ? Math.abs(marker - end) < 0.025
+            : marker === start || marker === end
+        ) ? null : (
+          <span
+            key={index}
+            className="pointer-events-none absolute top-1/2 z-1 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/30"
+            style={{ left: sliderPoint(marker) }}
+          />
+        )
       )}
-    >
-      <span
-        className="smart-model-slider-fill absolute inset-y-0 left-0 overflow-hidden rounded-full transition-[width,box-shadow] duration-300 ease-out motion-reduce:transition-none"
-        style={sliderFillStyle(position)}
-      />
-    </div>
+    </>
   )
 }
 
-function SliderThumb({ position }: { position: number }) {
+export function NotchedSliderThumb({
+  position,
+  className,
+  ...props
+}: Omit<React.ComponentProps<"span">, "style"> & { position: number }) {
   return (
     <span
-      className="pointer-events-none absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-md ring-2 ring-neutral-900 dark:ring-background transition-[left,scale,box-shadow] duration-200 ease-out peer-hover:scale-125 peer-hover:shadow-lg peer-focus-visible:scale-125 peer-active:scale-125 peer-active:shadow-xl motion-reduce:transition-none"
+      {...props}
+      className={cn(
+        "absolute top-1/2 z-2 size-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white shadow-md ring-2 ring-neutral-900 transition-[left,scale,box-shadow] duration-200 ease-out motion-reduce:transition-none dark:ring-background",
+        className
+      )}
       style={{ left: sliderPoint(position) }}
     />
-  )
-}
-
-function SliderMarkers({
-  markers,
-  position,
-}: {
-  markers: readonly number[]
-  position: number
-}) {
-  return markers.map((marker, index) =>
-    Math.abs(marker - position) < 0.025 ? null : (
-      <span
-        key={index}
-        className="pointer-events-none absolute top-1/2 z-1 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-foreground/30"
-        style={{ left: sliderPoint(marker) }}
-      />
-    )
   )
 }

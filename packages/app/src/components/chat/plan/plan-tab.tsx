@@ -39,7 +39,7 @@ const corner = 11.5
 function tabWidth(model: PlanTabModel) {
   const longest = Math.max(...model.rows.map((row) => row.step.length))
   const wanted = `min(24rem, max(17rem, calc(${Math.min(longest, 48)}ch + 7rem)))`
-  return `min(${wanted}, max(10rem, calc(100% - 72px - var(--turn-tab-width, 0px) - 12px)))`
+  return `min(${wanted}, max(0px, calc(100% - 72px - var(--turn-tab-width, 0px) - 12px)))`
 }
 
 export function PlanTab({ model }: { model: PlanTabModel | undefined }) {
@@ -138,7 +138,7 @@ function Tab({ model }: { model: PlanTabModel }) {
     <motion.div
       ref={tab}
       animate={{ clipPath: "inset(0% -1px 0 -1px)" }}
-      className="absolute bottom-full left-9 z-10"
+      className="relative z-10 col-start-1 row-start-1 ml-9 self-end justify-self-start"
       data-slot="plan-tab"
       exit={{ clipPath: "inset(100% -1px 0 -1px)" }}
       initial={{ clipPath: "inset(100% -1px 0 -1px)" }}

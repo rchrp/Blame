@@ -182,7 +182,7 @@ function MessageScrollerViewport({
     const mutationObserver = new MutationObserver(followLatest)
     resizeObserver.observe(viewport)
     if (viewport.firstElementChild)
-      resizeObserver.observe(viewport.firstElementChild)
+      resizeObserver.observe(viewport.firstElementChild, { box: "border-box" })
     mutationObserver.observe(viewport, { childList: true, subtree: true })
     viewport.addEventListener("scroll", handleScroll, { passive: true })
     followLatest()

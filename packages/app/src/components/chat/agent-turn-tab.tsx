@@ -59,7 +59,7 @@ function TurnTab({ metrics }: { metrics: AgentTurnMetrics }) {
     <motion.div
       ref={tabRef}
       animate={{ clipPath: "inset(0% -1px 0 -1px)" }}
-      className="absolute right-9 bottom-full z-10 flex"
+      className="relative z-10 col-start-1 row-start-1 mr-9 flex self-end justify-self-end"
       exit={{ clipPath: "inset(100% -1px 0 -1px)" }}
       initial={{ clipPath: "inset(100% -1px 0 -1px)" }}
       style={{ height }}

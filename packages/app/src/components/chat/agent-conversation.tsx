@@ -563,7 +563,10 @@ export function AgentConversationComposer({
         </div>
       ) : null}
       <div
-        className={cn("relative min-w-0", turnTabNotchClass)}
+        className={cn(
+          "relative grid min-w-0 grid-cols-1 grid-rows-[auto_auto] [&>[data-slot=markdown-editor]]:row-start-2",
+          turnTabNotchClass
+        )}
         onKeyDownCapture={(event) => {
           if (
             !sendWhileRunning ||
@@ -1059,14 +1062,14 @@ function AgentWorkState({
         className={cn(
           "size-2 shrink-0 rounded-full",
           running
-            ? "agent-thinking-mark"
+            ? "agent-activity-mark"
             : status === "failed"
               ? "bg-destructive"
               : "bg-emerald-500"
         )}
         aria-hidden="true"
       />
-      <span className={running ? "agent-activity-running" : undefined}>
+      <span className={running ? "font-medium text-foreground" : undefined}>
         {stateLabel}
       </span>
       <span>
@@ -1200,11 +1203,11 @@ function AgentStreamError({
 function AgentThinkingTimelineItem() {
   return (
     <div
-      className="chat-enter-agent flex min-w-0 items-center gap-3 px-2 py-2 text-sm text-muted-foreground"
+      className="flex min-w-0 items-center gap-2.5 px-2 py-2 text-sm font-medium text-foreground"
       role="status"
     >
-      <span className="agent-thinking-mark" aria-hidden="true" />
-      <span className="agent-thinking-text">Thinking</span>
+      <span className="agent-activity-mark" aria-hidden="true" />
+      <span>Thinking</span>
     </div>
   )
 }
@@ -1916,7 +1919,7 @@ function DraftSavedHint({
     <span
       aria-live="polite"
       className={cn(
-        "pointer-events-none absolute bottom-full left-(--plan-tab-end,1.25rem) z-10 mb-1.5 flex items-center gap-1 text-[11px] text-muted-foreground transition-opacity duration-300",
+        "pointer-events-none absolute bottom-full left-(--plan-tab-end,1.25rem) z-10 col-span-full row-start-2 row-end-3 mb-1.5 flex items-center gap-1 text-[11px] text-muted-foreground transition-opacity duration-300",
         saved && hasText && !hidden ? "opacity-100" : "opacity-0"
       )}
     >

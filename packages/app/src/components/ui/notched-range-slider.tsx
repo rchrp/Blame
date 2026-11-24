@@ -1,7 +1,8 @@
 import * as React from "react"
 
-import { nearestMarkerIndex, sliderPoint } from "@/lib/notched-slider"
+import { nearestMarkerIndex } from "@/lib/notched-slider"
 import { cn } from "@/lib/utils"
+import { NotchedSliderThumb, NotchedSliderTrack } from "./notched-slider"
 
 export type NotchedRange = { min: number; max: number }
 
@@ -98,34 +99,16 @@ export function NotchedRangeSlider({
       onPointerUp={() => setDragging(undefined)}
       onPointerCancel={() => setDragging(undefined)}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-foreground/10">
-        <span
-          className="absolute inset-y-0 rounded-full bg-blue-600/70 transition-[left,width] duration-200 ease-out motion-reduce:transition-none dark:bg-blue-400/65"
-          style={{
-            left: sliderPoint(minPosition),
-            width: `calc(${sliderPoint(maxPosition)} - ${sliderPoint(minPosition)})`,
-          }}
-        />
-      </div>
-      {markers.map((marker, index) =>
-        index === minIndex || index === maxIndex ? null : (
-          <span
-            key={index}
-            className={cn(
-              "pointer-events-none absolute top-1/2 z-1 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full",
-              index > minIndex && index < maxIndex
-                ? "bg-white/70"
-                : "bg-foreground/30"
-            )}
-            style={{ left: sliderPoint(marker) }}
-          />
-        )
-      )}
+      <NotchedSliderTrack
+        markers={markers}
+        start={minPosition}
+        end={maxPosition}
+      />
       {(["min", "max"] as const).map((handle) => {
         const position = handle === "min" ? minPosition : maxPosition
         const index = handle === "min" ? minIndex : maxIndex
         return (
-          <span
+          <NotchedSliderThumb
             key={handle}
             aria-label={
               handle === "min"
@@ -138,14 +121,14 @@ export function NotchedRangeSlider({
             aria-valuenow={Math.round(position * 1000)}
             aria-valuetext={valueText?.(handle, position)}
             className={cn(
-              "absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border border-foreground/35 bg-popover shadow-xs transition-[left,box-shadow] duration-200 ease-out outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
-              dragging === handle && "cursor-grabbing ring-2 ring-ring/50",
+              "cursor-grab outline-none hover:scale-125 focus-visible:scale-125 focus-visible:ring-ring",
+              dragging === handle && "scale-125 cursor-grabbing",
               // Met on one notch: the max handle stays on top to pull right.
               handle === "max" ? "z-3" : "z-2"
             )}
             data-handle={handle}
             role="slider"
-            style={{ left: sliderPoint(position) }}
+            position={position}
             tabIndex={0}
             onKeyDown={(event) => {
               const direction = stepKeys[event.key]

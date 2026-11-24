@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react"
+import { useRef, type ReactNode } from "react"
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -6,13 +6,8 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
+import { useElementHeight } from "@/hooks/use-element-height"
 import { cn } from "@/lib/utils"
-
-const bottomBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-} satisfies CSSProperties
 
 export function ConversationSurface({
   children,
@@ -31,6 +26,10 @@ export function ConversationSurface({
   running?: boolean
   clearPill?: boolean
 }) {
+  const composerRef = useRef<HTMLDivElement>(null)
+  const composerHeight = useElementHeight(composerRef, !emptyState)
+  const bottomInset = composerHeight ? composerHeight + 24 : undefined
+
   return (
     <>
       {background}
@@ -42,8 +41,9 @@ export function ConversationSurface({
           <MessageScrollerViewport>
             <MessageScrollerContent
               aria-busy={running}
+              style={{ paddingBottom: bottomInset }}
               className={cn(
-                "mx-auto w-full max-w-[calc(56rem+var(--chat-stats-inset))] gap-10 px-4 pt-[calc(var(--conversation-top,var(--header-height))+1rem)] pb-48 transition-[max-width,padding] duration-500 ease-out md:px-8 md:pr-[calc(2rem+var(--chat-stats-inset))]",
+                "mx-auto w-full max-w-[calc(56rem+var(--chat-stats-inset))] gap-10 px-4 pt-[calc(var(--conversation-top,var(--header-height))+1rem)] pb-48 transition-[max-width,padding-top,padding-right] duration-500 ease-out md:px-8 md:pr-[calc(2rem+var(--chat-stats-inset))]",
                 // The first message starts below the folded pill.
                 clearPill &&
                   "pt-[calc(var(--conversation-top,var(--header-height))+4rem)]"
@@ -52,25 +52,21 @@ export function ConversationSurface({
               {children}
             </MessageScrollerContent>
           </MessageScrollerViewport>
-          <MessageScrollerButton className="bottom-40 md:bottom-44" />
+          <MessageScrollerButton
+            className="bottom-40 md:bottom-44"
+            style={{ bottom: bottomInset }}
+          />
         </MessageScroller>
       </MessageScrollerProvider>
       <div
         className={
           emptyState
             ? "absolute inset-0 z-20 flex flex-col overflow-y-auto px-3 pt-[calc(var(--conversation-top,var(--header-height))+1rem)] pb-5 md:px-5"
-            : "pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-10 md:pt-12"
+            : "pointer-events-none absolute inset-x-0 bottom-0 z-20 pt-10 surface-fade-bottom md:pt-12"
         }
       >
         <div
-          className={
-            emptyState
-              ? "hidden"
-              : "absolute inset-0 bg-background/40 backdrop-blur-xl"
-          }
-          style={bottomBlurMask}
-        />
-        <div
+          ref={composerRef}
           className={cn(
             "pointer-events-auto relative px-3 pb-3 md:px-5 md:pb-5",
             emptyState && "my-auto"

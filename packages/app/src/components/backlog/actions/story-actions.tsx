@@ -173,15 +173,17 @@ function ProgressActions({
       <DevelopmentActions
         diffStats={diffStats}
         onOpenDrawer={onOpenDrawer}
-        story={story}
-      />
-      <Separator className="my-1" />
-      <WorkspaceActions
-        onAction={onAction}
-        onOpenDrawer={onOpenDrawer}
         onOpenWorktree={onOpenWorktree}
         story={story}
       />
+      <Separator className="my-1" />
+      {story.workspaceMode !== "direct" && (
+        <WorkspaceActions
+          onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
+          story={story}
+        />
+      )}
       <div className="flex flex-wrap justify-end gap-2">
         {story.agentStatus === "Paused" && (
           <StoryAction
@@ -230,15 +232,17 @@ function ReviewActions({
       <DevelopmentActions
         diffStats={diffStats}
         onOpenDrawer={onOpenDrawer}
-        story={story}
-      />
-      <Separator className="my-1" />
-      <WorkspaceActions
-        onAction={onAction}
-        onOpenDrawer={onOpenDrawer}
         onOpenWorktree={onOpenWorktree}
         story={story}
       />
+      <Separator className="my-1" />
+      {story.workspaceMode !== "direct" && (
+        <WorkspaceActions
+          onOpenDrawer={onOpenDrawer}
+          onOpenWorktree={onOpenWorktree}
+          story={story}
+        />
+      )}
       {story.pullRequestUrl ? (
         <div className="flex flex-wrap items-center gap-2">
           {updatePullRequest ? (
@@ -306,10 +310,12 @@ function ReviewActions({
 function DevelopmentActions({
   diffStats,
   onOpenDrawer,
+  onOpenWorktree,
   story,
 }: {
   diffStats?: UserStoryDiffStats
   onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
   story: UserStory
 }) {
   return (
@@ -320,7 +326,7 @@ function DevelopmentActions({
     >
       <StoryAction
         action="View Diff"
-        className="w-auto"
+        className="w-auto flex-1"
         diffStats={diffStats}
         label="Diff"
         onOpenDrawer={onOpenDrawer}
@@ -340,44 +346,43 @@ function DevelopmentActions({
         onOpenDrawer={onOpenDrawer}
         story={story}
       />
-    </div>
-  )
-}
-
-// Where the story's files live. Direct stories run in the project folder
-// and have no managed preview.
-function WorkspaceActions({
-  onAction,
-  onOpenDrawer,
-  onOpenWorktree,
-  story,
-}: {
-  onAction: StoryActionHandler
-  onOpenDrawer: OpenDrawer
-  onOpenWorktree: (story: UserStory) => Promise<void>
-  story: UserStory
-}) {
-  const direct = story.workspaceMode === "direct"
-  return (
-    <div className="grid grid-cols-2 gap-2">
-      <StoryAction
-        action="Open Worktree"
-        className={direct ? "col-span-2" : undefined}
-        label={direct ? "Open Project Folder" : undefined}
-        onAction={onAction}
-        onOpenDrawer={onOpenDrawer}
-        onOpenWorktree={onOpenWorktree}
-        story={story}
-      />
-      {direct ? null : (
+      {story.workspaceMode === "direct" && (
         <StoryAction
-          action="Open Preview"
-          onAction={onAction}
+          action="Open Worktree"
+          iconOnly
+          label="Open Project Folder"
           onOpenDrawer={onOpenDrawer}
           onOpenWorktree={onOpenWorktree}
           story={story}
         />
       )}
+    </div>
+  )
+}
+
+// Dedicated worktrees have a managed preview.
+function WorkspaceActions({
+  onOpenDrawer,
+  onOpenWorktree,
+  story,
+}: {
+  onOpenDrawer: OpenDrawer
+  onOpenWorktree: (story: UserStory) => Promise<void>
+  story: UserStory
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      <StoryAction
+        action="Open Worktree"
+        onOpenDrawer={onOpenDrawer}
+        onOpenWorktree={onOpenWorktree}
+        story={story}
+      />
+      <StoryAction
+        action="Open Preview"
+        onOpenDrawer={onOpenDrawer}
+        story={story}
+      />
     </div>
   )
 }

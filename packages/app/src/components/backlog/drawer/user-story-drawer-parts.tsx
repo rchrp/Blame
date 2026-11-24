@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { useElementHeight } from "@/hooks/use-element-height"
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -32,18 +33,6 @@ export type PendingComposerDraft = {
   draft: ComposerDraft
   key: string
 }
-
-export const drawerHeaderSoftBlurMask = {
-  maskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-
-export const drawerHeaderStrongBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
 
 export function initialDrawerTab(
   hasDevelopment: boolean,
@@ -102,8 +91,7 @@ export function DrawerBody({
   sidebarOpen: boolean
 }) {
   const fixedSectionRef = React.useRef<HTMLDivElement>(null)
-  const [fixedSectionHeight, setFixedSectionHeight] = React.useState(0)
-  const fixedSectionVisible = Boolean(fixedSection)
+  const fixedSectionHeight = useElementHeight(fixedSectionRef, Boolean(fixedSection))
   const topPaddingClassName = headerTabsVisible
     ? headerStacked
       ? "pt-50 sm:pt-36"
@@ -121,24 +109,7 @@ export function DrawerBody({
   const fixedSectionClassName =
     "pointer-events-none absolute right-0 bottom-0 left-0 z-20"
   const fixedSectionContentClassName = "w-full px-(--story-drawer-gutter)"
-  // Leave room for the composer’s raised turn metrics above its border.
   const bottomInset = Math.max(fixedSectionHeight + 16, 24)
-
-  React.useLayoutEffect(() => {
-    const section = fixedSectionRef.current
-    if (!section || !fixedSectionVisible) return
-
-    const updateHeight = () => {
-      const nextHeight = Math.ceil(section.getBoundingClientRect().height)
-      setFixedSectionHeight((currentHeight) =>
-        currentHeight === nextHeight ? currentHeight : nextHeight
-      )
-    }
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
-    observer.observe(section)
-    return () => observer.disconnect()
-  }, [fixedSectionVisible])
 
   return (
     <div
