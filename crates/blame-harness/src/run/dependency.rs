@@ -368,13 +368,27 @@ fn executable_file(path: &Path) -> bool {
 }
 
 fn manager_version(executable: &str) -> Option<String> {
-    let mut child = std::process::Command::new(executable)
-        .arg("--version")
-        .stdin(std::process::Stdio::null())
-        .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::null())
-        .spawn()
-        .ok()?;
+    let version = |command: &mut std::process::Command| {
+        command
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+    };
+    let arguments = ["--version".to_string()];
+    let spawned = version(std::process::Command::new(executable).args(&arguments));
+    // A shebang-less script (pnpm 12 without its native binary) runs under sh.
+    #[cfg(unix)]
+    let spawned = match spawned {
+        Err(error) if error.raw_os_error() == Some(crate::run::process::ENOEXEC) => {
+            match crate::run::process::sh_command(executable, &arguments, None, ".") {
+                Some(mut command) => version(&mut command),
+                None => Err(error),
+            }
+        }
+        other => other,
+    };
+    let mut child = spawned.ok()?;
     let deadline = std::time::Instant::now() + Duration::from_secs(5);
     loop {
         match child.try_wait() {

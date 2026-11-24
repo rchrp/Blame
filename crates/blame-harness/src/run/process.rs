@@ -168,22 +168,24 @@ impl Shared {
 pub fn start(executable: &str, args: &[String], options: CommandOptions) -> Outcome<CommandHandle> {
     options.signal.check()?;
     let mut command = platform_command(executable, args, &options.environment);
-    command
-        .current_dir(&options.cwd)
-        .env_clear()
-        .envs(
-            options
-                .environment
-                .iter()
-                .map(|(name, value)| (name, value)),
-        )
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
-    // Its own process group, so termination reaches the command's children.
+    #[allow(unused_mut)]
+    let mut spawned = configured(&mut command, &options).spawn();
     #[cfg(unix)]
-    std::os::unix::process::CommandExt::process_group(&mut command, 0);
-    let spawned = hidden(&mut command).spawn();
+    if spawned
+        .as_ref()
+        .err()
+        .and_then(std::io::Error::raw_os_error)
+        == Some(ENOEXEC)
+    {
+        let path = options
+            .environment
+            .iter()
+            .find(|(name, _)| name == "PATH")
+            .map(|(_, value)| value.as_str());
+        if let Some(mut retry) = sh_command(executable, args, path, &options.cwd) {
+            spawned = configured(&mut retry, &options).spawn();
+        }
+    }
     let pid = spawned.as_ref().ok().map(|child| child.id());
     let shared = Arc::new(Shared {
         state: Mutex::new(State::default()),
@@ -289,6 +291,55 @@ pub fn start(executable: &str, args: &[String], options: CommandOptions) -> Outc
         });
     }
     Ok(CommandHandle(shared))
+}
+
+fn configured<'a>(command: &'a mut Command, options: &CommandOptions) -> &'a mut Command {
+    command
+        .current_dir(&options.cwd)
+        .env_clear()
+        .envs(
+            options
+                .environment
+                .iter()
+                .map(|(name, value)| (name, value)),
+        )
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    // Its own process group, so termination reaches the command's children.
+    #[cfg(unix)]
+    std::os::unix::process::CommandExt::process_group(command, 0);
+    hidden(command)
+}
+
+#[cfg(unix)]
+pub(crate) const ENOEXEC: i32 = 8;
+
+/// What glibc's `execvp` and a shell do with a file the kernel refuses to
+/// run (ENOEXEC): run it as an `sh` script. Rust's spawn does not, so pnpm
+/// 12's shebang-less `bin/pnpm`, left in place when its native binary was
+/// not installed, failed every project task in the runtime VM (US-103).
+/// `executable` is looked up in `path` as the spawn would; `None` when it
+/// is not found there.
+#[cfg(unix)]
+pub(crate) fn sh_command(
+    executable: &str,
+    args: &[String],
+    path: Option<&str>,
+    cwd: &str,
+) -> Option<Command> {
+    let file = if executable.contains('/') {
+        std::path::PathBuf::from(executable)
+    } else {
+        path?
+            .split(':')
+            .filter(|entry| !entry.is_empty())
+            .map(|entry| std::path::Path::new(cwd).join(entry).join(executable))
+            .find(|candidate| candidate.is_file())?
+    };
+    let mut command = Command::new("/bin/sh");
+    command.arg(file).args(args);
+    Some(command)
 }
 
 /// Node's error code for a failed spawn.
@@ -688,6 +739,30 @@ mod tests {
         assert!(slow.all.ends_with("Command timed out after 200 ms."));
         let missing = execute("/nonexistent/tool", &[], options(1_000)).unwrap();
         assert_eq!(missing.all, "spawn /nonexistent/tool ENOENT");
+    }
+
+    #[test]
+    fn runs_a_shebang_less_script_through_sh() {
+        let directory = std::env::temp_dir().join(format!("blame-enoexec-{}", std::process::id()));
+        std::fs::create_dir_all(&directory).unwrap();
+        let script = directory.join("tool");
+        std::fs::write(&script, "echo \"ran $1\"\n").unwrap();
+        std::fs::set_permissions(&script, std::os::unix::fs::PermissionsExt::from_mode(0o755))
+            .unwrap();
+        let mut by_name = options(5_000);
+        by_name.environment.retain(|(name, _)| name != "PATH");
+        by_name.environment.push((
+            "PATH".into(),
+            format!("{}:/usr/bin:/bin", directory.display()),
+        ));
+        let done = execute("tool", &["typecheck".into()], by_name).unwrap();
+        assert_eq!(
+            (done.exit_code, done.all.trim()),
+            (Some(0), "ran typecheck")
+        );
+        let by_path = execute(&script.to_string_lossy(), &["lint".into()], options(5_000)).unwrap();
+        assert_eq!(by_path.all.trim(), "ran lint");
+        std::fs::remove_dir_all(&directory).unwrap();
     }
 
     #[test]
