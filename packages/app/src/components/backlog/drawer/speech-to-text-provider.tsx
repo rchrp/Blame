@@ -2,6 +2,8 @@ import * as React from "react"
 import { createPortal } from "react-dom"
 import { MicIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
+import { MicrophoneInputMenu } from "./microphone-input-menu"
 import { SpeechRecordingControl } from "./speech-to-text-control"
 import {
   createSpeechSessionStore,
@@ -178,19 +180,45 @@ function SpeechStartButton({
   onClick: () => void
 }) {
   return (
-    <Button
-      aria-label="Start voice input"
-      title="Start voice input"
-      type="button"
-      className="rounded-xl text-muted-foreground hover:text-foreground"
-      size="icon-sm"
-      variant="ghost"
-      disabled={disabled}
-      onPointerDown={(event) => event.preventDefault()}
-      onClick={onClick}
-    >
-      <MicIcon className="size-3.5" />
-    </Button>
+    <ContextMenu modal={false}>
+      <ContextMenuTrigger asChild disabled={disabled}>
+        <Button
+          aria-label="Start voice input"
+          aria-keyshortcuts="Shift+F10"
+          title="Start voice input · Right-click to choose a microphone"
+          type="button"
+          className="rounded-xl text-muted-foreground hover:text-foreground"
+          size="icon-sm"
+          variant="ghost"
+          disabled={disabled}
+          onPointerDown={(event) => {
+            if (event.pointerType === "mouse") event.preventDefault()
+          }}
+          onKeyDown={(event) => {
+            if (
+              event.key !== "ContextMenu" &&
+              !(event.shiftKey && event.key === "F10")
+            )
+              return
+            event.preventDefault()
+            const button = event.currentTarget
+            const { left, top, width, height } = button.getBoundingClientRect()
+            button.dispatchEvent(
+              new MouseEvent("contextmenu", {
+                bubbles: true,
+                cancelable: true,
+                clientX: left + width / 2,
+                clientY: top + height / 2,
+              })
+            )
+          }}
+          onClick={onClick}
+        >
+          <MicIcon className="size-3.5" />
+        </Button>
+      </ContextMenuTrigger>
+      <MicrophoneInputMenu />
+    </ContextMenu>
   )
 }
 

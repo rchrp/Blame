@@ -10,6 +10,11 @@ import { speechFailureNeedsSettings } from "@blame/speech-contract"
 import { speechOwnKeyStore } from "@/lib/speech-own-key-store"
 import { openSpeechKeySettings } from "@/pages/settings/settings-section"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import {
+  openPreferredMicrophone,
+  preferredMicrophone,
+  requestMicrophonePermission,
+} from "@/lib/microphone-preference"
 import { recordingToSpeechInput } from "./speech-recording-audio"
 
 const maxRecordingDurationMs = 120_000
@@ -157,16 +162,14 @@ export function SpeechRecordingControl({
 
     setStatus("starting")
     try {
-      if (
-        platform.requestMicrophoneAccess &&
-        !(await platform.requestMicrophoneAccess())
-      ) {
-        throw new DOMException(
-          "Microphone permission denied",
-          "NotAllowedError"
-        )
+      await requestMicrophonePermission(platform.requestMicrophoneAccess)
+      const { stream, usedSystemFallback } = await openPreferredMicrophone(
+        navigator.mediaDevices,
+        preferredMicrophone()
+      )
+      if (usedSystemFallback) {
+        toast.info("Selected microphone is unavailable. Using system default.")
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       mediaStreamRef.current = stream
       const mimeType = supportedMimeType()
       const recorder = mimeType

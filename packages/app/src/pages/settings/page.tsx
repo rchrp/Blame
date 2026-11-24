@@ -60,6 +60,7 @@ import { OpenProjectTargetRow } from "./open-project-target-row"
 import { PreviewSetupPolicyRow } from "./preview-setup-policy-row"
 import { StoryPreviewAutoStartRow } from "./story-preview-auto-start-row"
 import { SpeechOwnKeyGroup } from "./speech-own-key-group"
+import { MicrophoneInputRow } from "./microphone-input-row"
 import {
   clearRequestedSettingsSection,
   requestedSettingsSection,
@@ -297,6 +298,12 @@ function GeneralSettingsPanel() {
         <OpenProjectTargetRow />
         <PreviewSetupPolicyRow />
         <StoryPreviewAutoStartRow />
+      </SettingsGroup>
+      <SettingsGroup
+        title="Voice input"
+        description="Microphone preferences for this device."
+      >
+        <MicrophoneInputRow />
       </SettingsGroup>
     </SettingsPanel>
   )
