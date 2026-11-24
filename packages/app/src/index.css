@@ -21,7 +21,7 @@
 @utility surface-fade-top {
   background: linear-gradient(
     to bottom,
-    var(--surface-fade-color, var(--popover)) 65%,
+    var(--surface-fade-color, var(--popover)) var(--surface-fade-start, 65%),
     transparent
   );
 }
@@ -32,6 +32,17 @@
     var(--surface-fade-color, var(--popover)) 65%,
     transparent
   );
+}
+
+@utility app-page-surface {
+  /* An opaque base keeps the fades from tinting the page a second time. */
+  --surface-fade-color: oklch(from var(--background) l c h / 1);
+}
+
+@utility app-page-header-fade {
+  /* Start below the controls and finish before the page content. */
+  --surface-fade-start: calc(var(--header-height) - 0.5rem);
+  @apply surface-fade-top pb-1;
 }
 
 @utility story-drawer-surface {

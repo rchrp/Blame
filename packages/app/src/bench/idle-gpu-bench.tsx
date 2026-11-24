@@ -136,7 +136,7 @@ function BenchApp() {
       }
     >
       <div className="w-64 shrink-0" />
-      <main className="relative m-2 ml-0 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-background shadow-sm">
+      <main className="app-page-surface relative m-2 ml-0 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-(--surface-fade-color) shadow-sm">
         <BenchHeader />
         <div className="flex min-h-0 flex-1 flex-col px-6 pt-[calc(var(--header-height)+1.5rem)] pb-6">
           <KanbanBoard
@@ -171,7 +171,7 @@ function BenchApp() {
 // The app header over the board (site-header.tsx).
 function BenchHeader() {
   return (
-    <header className="surface-fade-top pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
+    <header className="app-page-header-fade pointer-events-none absolute inset-x-0 top-0 z-20">
       <div className="relative flex h-(--header-height) items-center gap-2 pl-6">
         <h1 className="truncate text-base font-medium">Bench project</h1>
       </div>

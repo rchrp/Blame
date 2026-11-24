@@ -124,7 +124,7 @@ export function AppLayout({
         </div>
         <SidebarInset
           data-window-shell-inset
-          className="z-[1] min-w-0 overflow-hidden"
+          className="app-page-surface z-[1] min-w-0 overflow-hidden bg-(--surface-fade-color)"
         >
           <SiteHeader title={pathname === "/orchestrator" && projects.activeProject ? <EpicSwitcher /> : headerTitle} />
           {persistent ? (

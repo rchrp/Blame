@@ -9,7 +9,7 @@ import { ProjectRunnerButton } from "@/components/backlog/board/project-runner-b
 
 export function SiteHeader({ title }: { title: React.ReactNode }) {
   return (
-    <header className="surface-fade-top pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
+    <header className="app-page-header-fade pointer-events-none absolute inset-x-0 top-0 z-20">
       <div className="pointer-events-auto relative flex h-(--header-height) items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
         {/* The runner keeps as much room on its right as above it. */}
         <div className="flex min-w-0 flex-1 items-center gap-3 pr-[calc((var(--header-height)-2.375rem)/2)] pl-4 lg:gap-4 lg:pl-6">
