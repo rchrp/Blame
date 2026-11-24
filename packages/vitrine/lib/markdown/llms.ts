@@ -34,7 +34,7 @@ export function llmsTxt() {
 
 > ${productSummary}
 
-Blame is free and open source (AGPL-3.0-only). Blame Cloud adds hosted services (managed Cloud Previews, cloud voice transcription, hosted file uploads) for $${monthly.price}/month or $${yearly.price}/year. Agents run on your machine with your own AI provider: 50 providers are supported, plus any OpenAI-compatible API.
+Blame is free and open source (AGPL-3.0-only). Blame Cloud adds hosted services (managed Cloud Previews, cloud voice transcription, hosted file uploads) for $${monthly.price}/month or $${yearly.price}/year. Agents run on your machine with your own AI provider: your Claude or ChatGPT plan, or a key for OpenAI, Anthropic, Gemini, OpenRouter, or any OpenAI-compatible API.
 
 Every page below is plain Markdown. A page of the website also answers in Markdown when requested with \`Accept: text/markdown\`.
 

@@ -5,7 +5,7 @@ export const githubIssuesUrl = `${githubRepositoryUrl}/issues`;
 export const githubDiscussionsUrl = `${githubRepositoryUrl}/discussions`;
 export const githubContributingUrl = `${githubRepositoryUrl}/blob/main/CONTRIBUTING.md`;
 export const githubLicenseUrl = `${githubRepositoryUrl}/blob/main/LICENSE`;
-export const harnessSourceUrl = `${githubRepositoryUrl}/tree/main/packages/agent-runtime/src/harness`;
+export const harnessSourceUrl = `${githubRepositoryUrl}/tree/main/crates/blame-harness`;
 
 const starCountFormat = new Intl.NumberFormat("en", {
   notation: "compact",

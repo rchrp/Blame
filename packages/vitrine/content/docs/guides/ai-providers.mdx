@@ -3,9 +3,9 @@ title: AI providers
 description: Connect your Claude or ChatGPT plan, an API key, or any OpenAI-compatible endpoint, and choose the models Blame uses.
 ---
 
-Blame runs on your own credentials, and your provider bills you directly. It supports 50 AI providers, plus any OpenAI-compatible API. You can connect several, and use a different model for each story.
+Blame runs on your own credentials, and your provider bills you directly. It connects to your Claude or ChatGPT plan, to API keys for OpenAI, Anthropic, OpenRouter, and Gemini, and to any OpenAI-compatible API, local models included. You can connect several, and use a different model for each story.
 
-Connections live in **Settings → Models & Providers**, under **Provider connections**. Choose **Connect provider**, then pick a provider: the dialog groups them under **Use your subscription**, **API keys**, and **More providers**. The first-launch setup offers the same choice.
+Connections live in **Settings → Models & Providers**, under **Provider connections**. Choose **Connect provider**, then pick a provider: the dialog groups them under **Use your subscription** and **API keys**. The first-launch setup offers the same choice.
 
 ## Use your Claude plan
 
@@ -51,13 +51,11 @@ In **Connect Claude Code**, choose **Connect Claude Code**. Usage counts against
 
 ## Use your ChatGPT plan
 
-{/* TODO(Raphael): the README says the ChatGPT plan works "through Codex". In the code (packages/agent-runtime/src/provider-catalog.ts), the Codex CLI provider is not wired yet, and the subscription goes through the "OpenAI ChatGPT Subscription" OAuth provider. This section follows the code; align the README, or this page once Codex is wired. */}
-
-Under **Use your subscription**, choose **OpenAI ChatGPT Subscription**. Give the connection a name, then choose **Continue with OAuth** and sign in with your ChatGPT account.
+Under **Use your subscription**, choose ChatGPT, then sign in with your ChatGPT account in the browser that opens. If another ChatGPT sign-in is already open (Codex or another app), finish or close it first.
 
 ## Use an API key
 
-Pick the provider under **API keys** or **More providers**, give the connection a name (for example "Work"), and paste the key. A provider can have several connections: use **Add connection** for another key.
+Pick the provider under **API keys**, give the connection a name (for example "Work"), and paste the key. A provider can have several connections: use **Add connection** for another key.
 
 Provider keys are encrypted. Without an account, the key that encrypts them is held by your system keychain.
 

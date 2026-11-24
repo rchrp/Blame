@@ -171,8 +171,8 @@ function ParallelAgentsSection() {
           </h2>
           <p className="story-copy mx-auto mt-7 max-w-3xl">
             Run an agent on every story you queue, each on its own model. Sign
-            in with your Claude or ChatGPT plan, or use any of 50 AI providers
-            with your own key.
+            in with your Claude or ChatGPT plan, or bring your own key for
+            OpenAI, Anthropic, Gemini, or OpenRouter.
           </p>
         </ScrollReveal>
         <ProviderRail />

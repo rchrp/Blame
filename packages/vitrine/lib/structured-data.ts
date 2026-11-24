@@ -89,7 +89,7 @@ const softwareApplicationStructuredData = {
   name: "Blame ADE",
   alternateName: "Blame",
   description:
-    "Blame ADE is an open-source Agentic Development Environment: a desktop app that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so you try each change in its running app before you review and merge it. Free, no account needed, and it works with your Claude or ChatGPT plan or 50 AI providers.",
+    "Blame ADE is an open-source Agentic Development Environment: a desktop app that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so you try each change in its running app before you review and merge it. Free, no account needed, and it works with your Claude or ChatGPT plan or your own API keys.",
   url: absoluteSiteUrl("/"),
   downloadUrl: absoluteSiteUrl("/download"),
   installUrl: absoluteSiteUrl("/download"),
@@ -106,7 +106,7 @@ const softwareApplicationStructuredData = {
     "Backlog-driven development: each user story becomes a lane that keeps its brief, agent work, review, and decision",
     "Light Semantic Harness: agents find code by its structure, read before they edit, and prove their checks",
     "Controlled merge: approve, request changes, or reject",
-    "Works with your Claude or ChatGPT plan, or 50 AI providers and any OpenAI-compatible API with your own key",
+    "Works with your Claude or ChatGPT plan, or your own key for OpenAI, Anthropic, Gemini, OpenRouter, or any OpenAI-compatible API",
     "No account needed: projects, stories, and provider connections stay on your computer",
     "Code Practices: coding style, unit tests, architecture, and commit messages, matched to the codebase or to a stricter standard",
     "Managed Cloud Previews with Blame Cloud",

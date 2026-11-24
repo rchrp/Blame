@@ -21,7 +21,7 @@ const demoVideoUrl = "https://youtu.be/cD6jASpIKQw";
 const studyUrl = absoluteSiteUrl("/research/light-semantic-harness-study.pdf");
 
 export const productSummary =
-  "Blame ADE is a free, open-source desktop app for macOS, Windows, and Linux that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so agents work side by side without conflicts, and nothing merges until you approve it. No account needed: it works with your Claude or ChatGPT plan, or 50 AI providers with your own key.";
+  "Blame ADE is a free, open-source desktop app for macOS, Windows, and Linux that runs coding agents in parallel, each with its own live preview. Every story gets its own branch, worktree, ports, and containers for the app and its services, so agents work side by side without conflicts, and nothing merges until you approve it. No account needed: it works with your Claude or ChatGPT plan, or your own key for OpenAI, Anthropic, Gemini, OpenRouter, or any OpenAI-compatible API.";
 
 const installCommands = [
   "- macOS: `brew install --cask rchrp/tap/blame`",
@@ -107,7 +107,7 @@ Open the running app beside the story, read the diff and the checks, then approv
 
 ## Parallel agents: run every agent on the model that fits
 
-Run an agent on every story you queue, each on its own model. Sign in with your Claude or ChatGPT plan, or use any of 50 AI providers, such as OpenAI, Anthropic, Google, xAI, and Mistral, with your own key, plus any OpenAI-compatible API.
+Run an agent on every story you queue, each on its own model. Sign in with your Claude or ChatGPT plan, or bring your own key for OpenAI, Anthropic, Gemini, or OpenRouter (which also serves models such as xAI's, Mistral's, and DeepSeek's), plus any OpenAI-compatible API.
 
 ## Code Practices: same rules for every agent
 
