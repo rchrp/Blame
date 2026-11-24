@@ -10,15 +10,11 @@ import { speechFailureNeedsSettings } from "@blame/speech-contract"
 import { speechOwnKeyStore } from "@/lib/speech-own-key-store"
 import { openSpeechKeySettings } from "@/pages/settings/settings-section"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { recordingToSpeechInput } from "./speech-recording-audio"
 
 const maxRecordingDurationMs = 120_000
 
 type RecordingStatus = "idle" | "starting" | "recording" | "transcribing"
-
-type RecordedAudio = {
-  blob: Blob
-  format: string
-}
 
 export function SpeechRecordingControl({
   onFinished,
@@ -37,12 +33,11 @@ export function SpeechRecordingControl({
   const audioContextRef = React.useRef<AudioContext | null>(null)
   const audioSourceRef = React.useRef<MediaStreamAudioSourceNode | null>(null)
   const chunksRef = React.useRef<Blob[]>([])
-  const mimeTypeRef = React.useRef("audio/webm")
   const startedAtRef = React.useRef(0)
   const stopPromiseRef = React.useRef<
     | {
         reject: (error: unknown) => void
-        resolve: (audio: RecordedAudio | null) => void
+        resolve: (audio: Blob | null) => void
       }
     | undefined
   >(undefined)
@@ -58,7 +53,7 @@ export function SpeechRecordingControl({
   function stopRecording() {
     const recorder = mediaRecorderRef.current
     if (!recorder || recorder.state === "inactive") return Promise.resolve(null)
-    return new Promise<RecordedAudio | null>((resolve, reject) => {
+    return new Promise<Blob | null>((resolve, reject) => {
       stopPromiseRef.current = { reject, resolve }
       recorder.stop()
     })
@@ -110,8 +105,7 @@ export function SpeechRecordingControl({
         toast.info("No audio was recorded.")
         return
       }
-      const data = await blobToBase64(audio.blob)
-      const result = await transcribe({ data, format: audio.format })
+      const result = await transcribe(await recordingToSpeechInput(audio))
       if (!result) return
       if (!result.text) {
         toast.info("No speech was detected.")
@@ -178,7 +172,7 @@ export function SpeechRecordingControl({
       const recorder = mimeType
         ? new MediaRecorder(stream, { mimeType })
         : new MediaRecorder(stream)
-      mimeTypeRef.current = recorder.mimeType || mimeType || "audio/webm"
+      const recordingMimeType = recorder.mimeType || mimeType || "audio/webm"
       mediaStreamRef.current = stream
       mediaRecorderRef.current = recorder
       chunksRef.current = []
@@ -198,12 +192,7 @@ export function SpeechRecordingControl({
       recorder.onstop = () => {
         const audio =
           chunksRef.current.length > 0
-            ? {
-                blob: new Blob(chunksRef.current, {
-                  type: mimeTypeRef.current,
-                }),
-                format: audioFormat(mimeTypeRef.current),
-              }
+            ? new Blob(chunksRef.current, { type: recordingMimeType })
             : null
         const pending = stopPromiseRef.current
         stopPromiseRef.current = undefined
@@ -395,24 +384,6 @@ function supportedMimeType() {
     "audio/mp4",
     "audio/ogg;codecs=opus",
   ].find((type) => MediaRecorder.isTypeSupported(type))
-}
-
-function audioFormat(mimeType: string) {
-  const mime = mimeType.split(";", 1)[0]
-  return mime.slice(mime.indexOf("/") + 1) || "webm"
-}
-
-function blobToBase64(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onerror = () => reject(new Error("Unable to read the recording."))
-    reader.onload = () => {
-      const value = typeof reader.result === "string" ? reader.result : ""
-      const separator = value.indexOf(",")
-      resolve(separator >= 0 ? value.slice(separator + 1) : value)
-    }
-    reader.readAsDataURL(blob)
-  })
 }
 
 function formatDuration(durationMs: number) {
