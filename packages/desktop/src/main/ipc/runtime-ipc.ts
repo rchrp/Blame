@@ -1,5 +1,5 @@
 import { BrowserWindow, ipcMain, type IpcMainInvokeEvent } from "electron";
-import { setupPath } from "../host-tool-path";
+import { runtimeToolEnvironment } from "../host-tool-path";
 import {
   ensureRuntimeReady,
   getRuntimeStatus,
@@ -34,24 +34,24 @@ export function registerRuntimeIpcHandlers() {
     configureRuntimePower({
       availability: async () =>
         runtimeAvailability(
-          await getRuntimeStatus({ env: runtimeManagerEnvironment() }),
+          await getRuntimeStatus({ env: runtimeToolEnvironment() }),
         ),
       async start(onProgress) {
         resetRuntimeGitIdentityConfigured();
         const report = await ensureRuntimeReady({
-          env: runtimeManagerEnvironment(),
+          env: runtimeToolEnvironment(),
           onProgress,
         });
         if (runtimeAvailability(report) !== "running")
           throw new Error(runtimeStartFailure(report));
       },
-      stop: () => stopRuntime({ env: runtimeManagerEnvironment() }),
+      stop: () => stopRuntime({ env: runtimeToolEnvironment() }),
       notify: broadcastRuntimePower,
     });
     onRuntimeRunning(schedulePreviewCleanup);
   }
   ipcMain.handle("workspace:get-runtime-status", () =>
-    getRuntimeStatus({ env: runtimeManagerEnvironment() }),
+    getRuntimeStatus({ env: runtimeToolEnvironment() }),
   );
   registerRuntimeOperationHandler(
     "workspace:ensure-runtime-ready",
@@ -62,7 +62,7 @@ export function registerRuntimeIpcHandlers() {
   ipcMain.handle("workspace:uninstall-runtime", () =>
     runtimeLifecycleOperation(() => {
       resetRuntimeGitIdentityConfigured();
-      return uninstallRuntime({ env: runtimeManagerEnvironment() });
+      return uninstallRuntime({ env: runtimeToolEnvironment() });
     }),
   );
 }
@@ -75,7 +75,7 @@ function registerRuntimeOperationHandler(
     runtimeLifecycleOperation(async () => {
       resetRuntimeGitIdentityConfigured();
       const report = await operation({
-        env: runtimeManagerEnvironment(),
+        env: runtimeToolEnvironment(),
         onProgress: runtimeProgressReporter(event, input.operationId),
       });
       if (report.status === "ready") schedulePreviewCleanup();
@@ -121,11 +121,4 @@ export function runtimeAvailability(
 function runtimeStartFailure(report: RuntimeStatusReport) {
   const issue = report.issues[0];
   return issue?.action ?? `Blame Runtime could not start (${report.status}).`;
-}
-
-function runtimeManagerEnvironment() {
-  return {
-    ...process.env,
-    PATH: setupPath(),
-  };
 }

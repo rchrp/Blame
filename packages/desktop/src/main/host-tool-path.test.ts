@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { runtimeToolCommand, setupPath } from "./host-tool-path.ts";
+import {
+  runtimeToolCommand,
+  runtimeToolEnvironment,
+  setupPath,
+} from "./host-tool-path.ts";
 
 test("adds Windows package manager shim paths", () => {
   const path = setupPath({
@@ -30,6 +34,23 @@ test("adds Windows package manager shim paths", () => {
     true,
   );
   assert.equal(entries.includes(String.raw`C:\Program Files\nodejs`), true);
+});
+
+test("puts the packaged macOS runtime commands on the runtime tools' PATH", () => {
+  const env = runtimeToolEnvironment({
+    env: { HOME: "/Users/dev", PATH: "/usr/bin:/bin" },
+    execPath: "/Applications/Blame.app/Contents/MacOS/Blame",
+    platform: "darwin",
+  });
+
+  assert.equal(env.HOME, "/Users/dev");
+  assert.equal(
+    env.PATH?.split(":").includes(
+      "/Applications/Blame.app/Contents/Resources/runtime/macos/bin",
+    ),
+    true,
+  );
+  assert.equal(env.PATH?.split(":").includes("/usr/bin"), true);
 });
 
 test("resolves Windows runtime wrapper commands from packaged resources", () => {

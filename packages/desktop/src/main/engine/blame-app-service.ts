@@ -11,6 +11,7 @@ import type {
 import { liveLogErrors, readLiveLog } from "../live-log-reader.ts";
 import { redactLogData } from "../desktop-log-redaction.ts";
 import { grantedGithubTokens } from "../github-access/agent-github-access.ts";
+import { runtimeToolEnvironment } from "../host-tool-path.ts";
 
 const maximumLines = 300;
 const runtimeTimeoutMs = 20_000;
@@ -79,7 +80,7 @@ async function runtimeState(): Promise<BlameAppState["runtime"]> {
   const { getRuntimeStatus } = await import("../runtime-manager.ts");
   try {
     const report = await Promise.race([
-      getRuntimeStatus(),
+      getRuntimeStatus({ env: runtimeToolEnvironment() }),
       new Promise<never>((_, reject) =>
         setTimeout(
           () => reject(new Error("no answer")),
@@ -123,13 +124,14 @@ async function restartPreview(request: Record<string, unknown>) {
 async function startRuntime() {
   const { ensureRuntimeReady, getRuntimeStatus } =
     await import("../runtime-manager.ts");
-  const report = await getRuntimeStatus();
+  const env = runtimeToolEnvironment();
+  const report = await getRuntimeStatus({ env });
   if (report.status !== "ready") {
     if (!report.startRequired)
       throw new Error(
         "The runtime is not just stopped; only the person repairs it.",
       );
-    await ensureRuntimeReady();
+    await ensureRuntimeReady({ env });
   }
   return state();
 }

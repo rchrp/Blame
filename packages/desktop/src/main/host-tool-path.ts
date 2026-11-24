@@ -25,6 +25,17 @@ export function setupPath(input: SetupPathInput = {}) {
   ).join(pathDelimiter(platform));
 }
 
+/**
+ * The environment the runtime commands (`blame-lima-runtime`,
+ * `blame-wsl2-runtime`) run under: the packaged app's PATH lacks the folder
+ * that holds them, and a status check without it reports the runtime missing.
+ */
+export function runtimeToolEnvironment(
+  input: SetupPathInput = {},
+): NodeJS.ProcessEnv {
+  return { ...(input.env ?? process.env), PATH: setupPath(input) };
+}
+
 export function runtimeToolCommand(
   command: string,
   input: SetupPathInput = {},
