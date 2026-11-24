@@ -42,7 +42,7 @@ export function RunLogPanel({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden p-4">
       <div className="flex h-12 shrink-0 items-start gap-2">
-        {/* Tabs as tall as the runner's controls, on the terminal. */}
+        {/* The tabs sit flush with the terminal; the controls float above it. */}
         <div className="min-w-0 flex-1 self-end">
           {items.length ? (
             <AttachedTabs
@@ -98,7 +98,7 @@ function RunLogTerminal({
   return (
     <div
       className={cn(
-        "flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-zinc-950",
+        "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-terminal-surface",
         flushStart && "rounded-tl-none"
       )}
     >
@@ -115,13 +115,13 @@ function RunLogTerminal({
         <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 p-6 text-center">
           <p className="text-sm font-medium text-zinc-300">{empty.title}</p>
           {empty.description ? (
-            <p className="max-w-sm text-xs text-pretty text-zinc-500">
+            <p className="max-w-sm text-xs text-pretty text-neutral-400">
               {empty.description}
             </p>
           ) : null}
           {empty.action ? (
             <Button
-              className="mt-3 border-zinc-700 bg-zinc-900 text-zinc-100 hover:bg-zinc-800 hover:text-zinc-50"
+              className="mt-3 border-white/10 bg-white/5 text-neutral-100 hover:bg-white/10 hover:text-white"
               size="sm"
               type="button"
               variant="outline"

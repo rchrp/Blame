@@ -49,7 +49,7 @@ export function DevelopmentDiffSection({
   return (
     <section
       ref={sectionRef}
-      className="relative min-w-0 scroll-mt-3 bg-card [--diff-surface:var(--color-card)] dark:bg-neutral-800 dark:[--diff-surface:var(--color-neutral-800)]"
+      className="relative min-w-0 scroll-mt-3 bg-workspace-panel"
     >
       {!hideHeader && (
         <div className="flex min-w-0 items-center gap-2 border-b border-foreground/8 bg-foreground/3 px-2 py-1">
@@ -101,7 +101,7 @@ export function DevelopmentDiffSection({
           className={cn(
             "flex justify-center",
             !expanded &&
-              "pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-[var(--diff-surface)] from-20% to-transparent pt-7 backdrop-blur-[1px]"
+              "pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-workspace-panel from-20% to-transparent pt-7 backdrop-blur-[1px]"
           )}
         >
           <Button

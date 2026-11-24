@@ -30,9 +30,18 @@
   initial-value: 0%;
 }
 
+:root {
+  /* Match the markdown composer; smaller controls use a fraction of this. */
+  --radius-base: 1.25rem;
+  --control-height: 2rem;
+  --attached-tab-height: calc(var(--control-height) + 0.5rem);
+}
+
 :root,
 .light {
   --background: oklch(1 0 0 / 93%);
+  --terminal-surface: #262626;
+  --workspace-panel: var(--popover);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0 / 88%);
   --card-foreground: oklch(0.145 0 0);
@@ -55,7 +64,6 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0 / 60%);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.546 0.245 262.881);
@@ -68,6 +76,7 @@
 
 .dark {
   --background: oklch(0.145 0 0 / 93%);
+  --workspace-panel: var(--terminal-surface);
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0 / 88%);
   --card-foreground: oklch(0.985 0 0);
@@ -203,13 +212,16 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --color-workspace-panel: var(--workspace-panel);
+  --color-terminal-surface: var(--terminal-surface);
+  --radius-xs: calc(var(--radius-base) * 0.2);
+  --radius-sm: calc(var(--radius-base) * 0.4);
+  --radius-md: calc(var(--radius-base) * 0.5);
+  --radius-lg: calc(var(--radius-base) * 0.6);
+  --radius-xl: calc(var(--radius-base) * 0.8);
+  --radius-2xl: var(--radius-base);
+  --radius-3xl: calc(var(--radius-base) * 1.2);
+  --radius-4xl: calc(var(--radius-base) * 1.4);
 }
 
 @layer base {
@@ -341,8 +353,8 @@
   /* The selected attached tab flows into the panel under it: a curve on
      each side, filled with the panel's color (--attached-tab-surface) by
      the shadow of a rounded corner, carries the border down to its edge. */
-  .attached-tab {
-    --attached-tab-curve: 0.5rem;
+  .attached-tab-list {
+    --attached-tab-curve: var(--radius-xl);
     --attached-tab-half: calc(var(--attached-tab-curve) / 2);
   }
 
@@ -368,7 +380,7 @@
     border-right-width: 1px;
     border-bottom-right-radius: var(--attached-tab-curve);
     box-shadow: var(--attached-tab-half) var(--attached-tab-half) 0 var(--attached-tab-half)
-      var(--attached-tab-surface, var(--color-zinc-950));
+      var(--attached-tab-surface);
   }
 
   .attached-tab[data-state="active"]::after {
@@ -376,7 +388,7 @@
     border-left-width: 1px;
     border-bottom-left-radius: var(--attached-tab-curve);
     box-shadow: calc(var(--attached-tab-half) * -1) var(--attached-tab-half) 0
-      var(--attached-tab-half) var(--attached-tab-surface, var(--color-zinc-950));
+      var(--attached-tab-half) var(--attached-tab-surface);
   }
 
   @container (max-width: 72rem) {
@@ -393,8 +405,8 @@
 
   .blame-pierre-file,
   .blame-pierre-diff {
-    --diffs-light-bg: var(--diff-surface, var(--background));
-    --diffs-dark-bg: var(--diff-surface, var(--background));
+    --diffs-light-bg: var(--workspace-panel);
+    --diffs-dark-bg: var(--workspace-panel);
     --diffs-light: var(--foreground);
     --diffs-dark: var(--foreground);
     --diffs-bg-hover-override: var(--muted);

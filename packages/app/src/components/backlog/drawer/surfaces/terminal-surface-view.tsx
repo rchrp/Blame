@@ -154,7 +154,7 @@ export function TerminalSurfaceView({
         ref={element}
         role="application"
         aria-label="Program terminal"
-        className="min-h-0 flex-1 overflow-hidden bg-zinc-950 p-3"
+        className="min-h-0 flex-1 overflow-hidden bg-terminal-surface p-3"
       />
     </div>
   )

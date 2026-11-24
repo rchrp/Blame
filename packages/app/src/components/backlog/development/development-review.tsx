@@ -36,7 +36,7 @@ export function DevelopmentReview({
   }
 
   return (
-    <DevelopmentScrollArea className="h-full bg-muted/50 dark:bg-neutral-900">
+    <DevelopmentScrollArea className="h-full">
       <div className="divide-y divide-foreground/10">
         {diffs.map((diff) => (
           <DevelopmentDiffSection

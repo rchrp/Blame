@@ -57,7 +57,7 @@ export function SlidingTabsList({
       <span
         ref={knobRef}
         aria-hidden="true"
-        className="pointer-events-none absolute top-[3px] bottom-[3px] left-0 rounded-md border border-foreground/8 bg-popover opacity-0 shadow-xs data-placed:transition-[translate,width] data-placed:duration-200 data-placed:ease-out motion-reduce:transition-none"
+        className="pointer-events-none absolute top-[3px] bottom-[3px] left-0 rounded-md border border-foreground/8 bg-workspace-panel opacity-0 shadow-xs data-placed:transition-[translate,width] data-placed:duration-200 data-placed:ease-out motion-reduce:transition-none"
       />
       {children}
     </TabsList>

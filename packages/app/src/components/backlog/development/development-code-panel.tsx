@@ -150,8 +150,8 @@ export function DevelopmentCodePanel({
   // As a story's preview: a toolbar over the drawer's own background, the
   // tree beside a framed editor whose open files sit on it as tabs.
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
-      <div className="flex h-12 shrink-0 items-start gap-3">
+    <div className="flex h-full min-h-0 flex-col py-4">
+      <div className="flex h-(--attached-tab-height) shrink-0 items-start gap-3">
         <CodeSearchField
           placeholder={
             mode === "diff"
@@ -161,7 +161,7 @@ export function DevelopmentCodePanel({
           value={query}
           onChange={setQuery}
         />
-        <div className="min-w-0 flex-1 self-end">
+        <div className="min-w-0 flex-1">
           {editorTabs.length ? (
             <AttachedTabs
               items={editorTabs}
@@ -188,7 +188,7 @@ export function DevelopmentCodePanel({
               allowed={
                 mode === "diff" ? diffs.map((diff) => diff.file) : undefined
               }
-              className="py-0"
+              className="pt-2 pb-0"
               kinds={kinds}
               listDirectory={workspace.listDirectory}
               modified={diffs.map((diff) => diff.file)}
@@ -201,7 +201,8 @@ export function DevelopmentCodePanel({
         </ScrollArea>
         <div
           className={cn(
-            "min-h-0 min-w-0 flex-1 overflow-hidden rounded-lg border bg-background shadow-[0_16px_44px_rgb(0_0_0/0.18)]",
+            "min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border bg-workspace-panel shadow-[0_16px_44px_rgb(0_0_0/0.18)]",
+            editorTabs.length > 0 && "-mt-px",
             // The first tab, selected, carries the panel's left edge up.
             editorTabs[0]?.id === shownTab && "rounded-tl-none"
           )}
@@ -245,7 +246,7 @@ function CodeSearchField({
   onChange: (value: string) => void
 }) {
   return (
-    <label className="flex h-[2.375rem] w-72 shrink-0 cursor-text items-center gap-2 rounded-full border bg-background/95 pr-1.5 pl-3.5 shadow-sm backdrop-blur focus-within:ring-2 focus-within:ring-ring/40">
+    <label className="flex h-(--control-height) w-72 shrink-0 cursor-text items-center gap-2 rounded-lg border bg-muted pr-1 pl-3 shadow-sm focus-within:ring-2 focus-within:ring-ring/40">
       <SearchIcon className="size-4 shrink-0 text-muted-foreground" />
       <input
         aria-label={placeholder}
@@ -262,8 +263,7 @@ function CodeSearchField({
       {value ? (
         <Button
           aria-label="Clear the search"
-          className="size-7 shrink-0 rounded-full"
-          size="icon"
+          size="icon-xs"
           type="button"
           variant="ghost"
           onClick={() => onChange("")}
@@ -287,8 +287,8 @@ export function DevelopmentEmptyState({
   title: string
 }) {
   return (
-    <div className="flex h-full min-h-0 flex-col p-4 pt-16">
-      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-lg border bg-background p-8 text-center">
+    <div className="flex h-full min-h-0 flex-col pt-[calc(var(--attached-tab-height)+1rem)] pb-4">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 rounded-xl border bg-workspace-panel p-8 text-center">
         <Icon className="size-8 text-muted-foreground" />
         <div className="space-y-1">
           <h3 className="font-heading text-lg font-semibold">{title}</h3>

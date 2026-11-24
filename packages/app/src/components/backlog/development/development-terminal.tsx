@@ -109,9 +109,9 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
 
   // As a preview's run logs: its tab set on a dark terminal.
   return (
-    <div className="flex h-full min-h-0 flex-col p-4">
-      <div className="flex h-12 shrink-0 items-start gap-3">
-        <div className="min-w-0 flex-1 self-end">
+    <div className="flex h-full min-h-0 flex-col py-4">
+      <div className="flex h-(--attached-tab-height) shrink-0 items-start gap-3">
+        <div className="min-w-0 flex-1">
           <AttachedTabs
             items={[
               {
@@ -127,7 +127,7 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
         </div>
         <CodeActionsSpace />
       </div>
-      <div className="relative min-h-0 flex-1 overflow-hidden rounded-lg rounded-tl-none border bg-zinc-950">
+      <div className="relative -mt-px min-h-0 flex-1 overflow-hidden rounded-xl rounded-tl-none border bg-terminal-surface">
         <div
           aria-label="Development terminal"
           className="h-full min-h-0 overflow-hidden p-3"
@@ -137,7 +137,7 @@ export function DevelopmentTerminal({ userStory }: { userStory?: UserStory }) {
         {sessionId ? (
           <Button
             aria-label="Stop terminal"
-            className="absolute top-3 right-3 size-7 bg-zinc-800/80 text-zinc-100 hover:bg-zinc-700"
+            className="absolute top-3 right-3 size-7 bg-white/10 text-neutral-100 hover:bg-white/20"
             size="icon"
             title="Stop terminal"
             type="button"

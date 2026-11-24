@@ -187,7 +187,6 @@ function SpeechStartButton({
           aria-keyshortcuts="Shift+F10"
           title="Start voice input · Right-click to choose a microphone"
           type="button"
-          className="rounded-full"
           size="icon"
           variant="subtle"
           disabled={disabled}

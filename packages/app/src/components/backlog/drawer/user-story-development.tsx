@@ -16,7 +16,6 @@ import type { UserStoryDiffStats } from "@/components/backlog/development/user-s
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
 import {
   InsetSwitch,
-  insetSwitchGroupClassName,
   useElementWidth,
 } from "@/components/backlog/shared/inset-switch"
 import type { UserStoryDevelopmentTab } from "@/components/backlog/shared/backlog-types"
@@ -91,7 +90,7 @@ export function DevelopmentContent({
   return (
     <TooltipProvider>
       <div
-        className="relative h-full min-h-0"
+        className="relative h-full min-h-0 px-(--story-drawer-gutter)"
         style={
           {
             "--code-actions-space": actionsWidth
@@ -100,30 +99,27 @@ export function DevelopmentContent({
           } as React.CSSProperties
         }
       >
-        {/* One element whatever the view, so its knob slides between them:
-            each view's toolbar leaves it room. As tall as the switch group
-            (38px), like the search field beside it. */}
+        {/* One switch across all views so the knob can slide between them. */}
         {tabs.length > 1 || hasChanges ? (
           <div
             ref={actionsRef}
-            className="absolute top-4 right-4 z-30 flex h-[2.375rem] items-center gap-2"
+            className="absolute top-4 right-(--story-drawer-gutter) z-30 flex h-(--control-height) items-center gap-2"
           >
             {hasChanges && diffStats ? (
-              <span className="flex h-full items-center rounded-full border bg-background/95 px-3 shadow-sm backdrop-blur">
+              <span className="flex h-full items-center rounded-lg border bg-background/95 px-3 shadow-sm backdrop-blur">
                 <DiffStats compact diff={diffStats} />
               </span>
             ) : null}
             {tabs.length > 1 ? (
-              <div className={insetSwitchGroupClassName}>
-                <InsetSwitch
-                  labeled
-                  items={tabs.map((item) => ({
-                    ...item,
-                    active: item.id === activeTab,
-                    onSelect: () => onTabChange(item.id),
-                  }))}
-                />
-              </div>
+              <InsetSwitch
+                className="h-full ring-1 ring-border ring-inset"
+                labeled
+                items={tabs.map((item) => ({
+                  ...item,
+                  active: item.id === activeTab,
+                  onSelect: () => onTabChange(item.id),
+                }))}
+              />
             ) : null}
           </div>
         ) : null}

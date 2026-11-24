@@ -290,7 +290,7 @@ export function SpeechCapturePill({
         width: status === "starting" ? 32 : status === "recording" ? 168 : 136,
       }}
       transition={{ duration: reducedMotion ? 0 : 0.24, ease: "easeOut" }}
-      className="flex h-8 shrink-0 items-center overflow-hidden rounded-full border border-foreground/8 bg-foreground/4 px-1 text-muted-foreground focus-within:ring-1 focus-within:ring-ring"
+      className="flex h-(--control-height) shrink-0 items-center overflow-hidden rounded-lg border border-foreground/8 bg-foreground/4 px-1 text-muted-foreground focus-within:ring-1 focus-within:ring-ring"
     >
       <span className="sr-only" role="status">
         {status === "starting"
@@ -319,7 +319,7 @@ export function SpeechCapturePill({
             type="button"
             variant="ghost"
             size="icon-xs"
-            className="ml-auto rounded-full"
+            className="ml-auto"
             aria-label="Cancel voice input"
             title="Cancel voice input"
             onClick={onCancel}
@@ -331,7 +331,7 @@ export function SpeechCapturePill({
             type="button"
             variant="ghost"
             size="icon-xs"
-            className="rounded-full bg-foreground text-background hover:bg-foreground/80 hover:text-background dark:hover:bg-foreground/80"
+            className="bg-foreground text-background hover:bg-foreground/80 hover:text-background dark:hover:bg-foreground/80"
             aria-label="Transcribe voice input"
             title="Transcribe voice input"
             onClick={onConfirm}

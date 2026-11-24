@@ -145,7 +145,7 @@ export function NewEpic({
         composer={
           <div className="mx-auto grid w-full max-w-3xl gap-3">
             {noPreviewEnvironment ? <EpicPreviewEnvironmentNotice /> : null}
-            <div className="epic-setup min-w-0 rounded-[1.25rem] border border-foreground/12 bg-popover">
+            <div className="epic-setup min-w-0 rounded-2xl border border-foreground/12 bg-popover">
               <AgentConversationComposer
                 {...draft.composer}
                 disabled={!project || noPreviewEnvironment}

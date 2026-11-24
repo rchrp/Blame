@@ -28,7 +28,7 @@ export type InsetSwitchItem = {
 }
 
 // The look of the group the switch sits in.
-export const insetSwitchGroupClassName = "rounded-lg border bg-muted p-0.5"
+export const insetSwitchGroupClassName = "rounded-xl border bg-muted p-0.5"
 
 export function InsetSwitch({
   className,
@@ -79,14 +79,14 @@ export function InsetSwitch({
     <div
       ref={listRef}
       className={cn(
-        "relative flex items-center gap-0.5 rounded-md! bg-foreground/[0.07] p-0.5 shadow-[inset_0_1px_2px_rgb(0_0_0/0.16)] dark:bg-black/35 dark:shadow-[inset_0_1px_3px_rgb(0_0_0/0.45)]",
+        "relative flex items-center gap-0.5 rounded-lg! bg-foreground/[0.07] p-0.5 shadow-[inset_0_1px_2px_rgb(0_0_0/0.16)] dark:bg-black/35 dark:shadow-[inset_0_1px_3px_rgb(0_0_0/0.45)]",
         className
       )}
     >
       <span
         ref={knobRef}
         aria-hidden="true"
-        className="pointer-events-none absolute top-0.5 left-0 h-7 w-7 rounded-[5px] border border-transparent bg-background opacity-0 shadow-sm transition-[translate,width,opacity] duration-200 ease-out motion-reduce:transition-none dark:border-white/10 dark:bg-muted"
+        className="pointer-events-none absolute top-0.5 left-0 h-7 w-7 rounded-md border border-transparent bg-background opacity-0 shadow-sm transition-[translate,width,opacity] duration-200 ease-out motion-reduce:transition-none dark:border-white/10 dark:bg-muted"
       />
       {items.map((item) => (
         <InsetSwitchButton key={item.id} item={item} labeled={labeled} />
@@ -114,7 +114,7 @@ function InsetSwitchButton({
         aria-label={item.ready ? `${item.label}, ready` : item.label}
         aria-pressed={Boolean(item.active)}
         className={cn(
-          "relative rounded-[5px] text-muted-foreground hover:bg-foreground/5 hover:text-foreground dark:hover:bg-white/5",
+          "relative rounded-md text-muted-foreground hover:bg-foreground/5 hover:text-foreground dark:hover:bg-white/5",
           labeled
             ? "h-7 w-auto gap-1.5 px-2.5 text-[0.8rem] font-medium"
             : "size-7",

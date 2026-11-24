@@ -609,7 +609,7 @@ export function AgentConversationComposer({
             <Button
               aria-label={primaryActionLabel}
               className={cn(
-                "rounded-full p-0 transition-[background-color,color] disabled:opacity-100",
+                "p-0 transition-[background-color,color] disabled:opacity-100",
                 stopAction && !submitting
                   ? "bg-foreground text-background hover:bg-foreground/85 disabled:bg-foreground/70"
                   : "bg-blue-600 text-white hover:bg-blue-700",
@@ -732,7 +732,7 @@ function RunCommentItem({
               type="button"
               variant="ghost"
               size="sm"
-              className="h-7 rounded-full px-3 text-xs"
+              className="px-3 text-xs"
               onClick={() => setDraft(undefined)}
             >
               Cancel
@@ -740,7 +740,7 @@ function RunCommentItem({
             <Button
               type="button"
               size="sm"
-              className="h-7 rounded-full px-3 text-xs"
+              className="px-3 text-xs"
               disabled={!draft?.trim()}
               onClick={saveDraft}
             >
@@ -815,10 +815,10 @@ function QueuedMessageFooter({ actions }: { actions: QueuedMessageActions }) {
       <Button
         type="button"
         variant="ghost"
-        size="icon"
+        size="icon-sm"
         aria-label="Remove queued message"
         title="Remove"
-        className="size-7 rounded-full text-muted-foreground hover:text-destructive"
+        className="text-muted-foreground hover:text-destructive"
         onClick={actions.onRemove}
       >
         <Trash2Icon className="size-3.5" />
@@ -826,7 +826,7 @@ function QueuedMessageFooter({ actions }: { actions: QueuedMessageActions }) {
       <Button
         type="button"
         size="sm"
-        className="h-7 rounded-full px-3 text-xs"
+        className="px-3 text-xs"
         onClick={actions.onSendNow}
       >
         <ArrowUpIcon className="size-3.5" />

@@ -23,16 +23,8 @@ export type AttachedTab = {
 type AttachedTabsSurface = "terminal" | "panel"
 
 const surfaceColor: Record<AttachedTabsSurface, string> = {
-  panel: "var(--background)",
-  terminal: "var(--color-zinc-950)",
-}
-
-const activeClassName: Record<AttachedTabsSurface, string> = {
-  panel:
-    "data-[state=active]:border-border data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:hover:bg-background",
-  // The terminal stays dark in both themes, and so does a gray on it.
-  terminal:
-    "data-[state=active]:border-border data-[state=active]:bg-zinc-950 data-[state=active]:text-zinc-100 data-[state=active]:hover:bg-zinc-950 data-[state=active]:[&_[data-status=stopped]]:bg-zinc-500",
+  panel: "var(--workspace-panel)",
+  terminal: "var(--terminal-surface)",
 }
 
 export function AttachedTabs({
@@ -58,7 +50,7 @@ export function AttachedTabs({
     >
       <TabsPrimitive.List
         aria-label={label}
-        className="relative z-10 -mb-px no-scrollbar flex items-end gap-0.5 overflow-x-auto pr-2"
+        className="attached-tab-list relative z-10 -mb-px no-scrollbar flex items-end gap-0.5 overflow-x-auto pr-(--attached-tab-curve)"
         style={
           {
             "--attached-tab-surface": surfaceColor[surface],
@@ -69,9 +61,12 @@ export function AttachedTabs({
           <TabsPrimitive.Trigger
             key={item.id}
             className={cn(
-              "attached-tab group/attached-tab relative flex h-[2.375rem] max-w-60 min-w-32 shrink-0 items-center justify-center gap-2 rounded-t-lg border border-b-0 border-transparent px-4 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
+              "attached-tab group/attached-tab relative flex h-(--attached-tab-height) max-w-60 min-w-32 shrink-0 items-center justify-center gap-2 rounded-t-xl border border-b-0 border-transparent px-4 text-sm font-medium whitespace-nowrap text-muted-foreground outline-none hover:bg-foreground/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset",
+              "data-active:border-border data-active:bg-(--attached-tab-surface) data-active:hover:bg-(--attached-tab-surface)",
               item.closable && "pr-2",
-              activeClassName[surface]
+              surface === "terminal"
+                ? "data-active:text-neutral-100 data-active:hover:text-neutral-100 data-active:[&_[data-status=stopped]]:bg-neutral-400"
+                : "data-active:text-foreground"
             )}
             title={item.title}
             value={item.id}

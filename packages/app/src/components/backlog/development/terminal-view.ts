@@ -26,9 +26,12 @@ export async function createTerminalView(
     lineHeight: 1.1,
     scrollback: 10000,
     theme: {
-      background: "#09090b",
+      background: getComputedStyle(element)
+        .getPropertyValue("--terminal-surface")
+        .trim(),
+      brightBlack: "#a3a3a3",
       cursor: "#f4f4f5",
-      selectionBackground: "#3f3f46",
+      selectionBackground: "#525252",
       foreground: "#f4f4f5",
     },
   })

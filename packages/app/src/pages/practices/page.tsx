@@ -52,6 +52,9 @@ const codebaseModeLabels: Record<CodePracticeKey, string> = {
   commit_message_convention: "Match codebase",
 }
 
+const practiceModeTriggerClassName =
+  "px-2 text-xs group-data-[variant=default]/tabs-list:data-active:bg-workspace-panel"
+
 export function PracticesPage() {
   const store = useCodePracticesStore()
   const analysis = useCodePracticeAnalysis()
@@ -131,10 +134,7 @@ function PracticeCard({
       role="button"
       tabIndex={0}
       aria-labelledby={`${practiceId}-title`}
-      className={cn(
-        "cursor-pointer rounded-lg transition-colors outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
-        "border-foreground/10 bg-background/95"
-      )}
+      className="cursor-pointer rounded-lg bg-workspace-panel transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       onClick={togglePractice}
       onKeyDown={togglePracticeFromKeyboard}
     >
@@ -152,8 +152,8 @@ function PracticeCard({
                 variant="outline"
                 className={cn(
                   practice.detected
-                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                    : "border-red-500/30 bg-red-500/10 text-red-400"
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+                    : "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400"
                 )}
               >
                 {practice.detected ? "Detected" : "Not detected"}
@@ -169,18 +169,18 @@ function PracticeCard({
             onClick={(event) => event.stopPropagation()}
             onKeyDown={(event) => event.stopPropagation()}
           >
-            <TabsList className="h-8 w-60 shrink-0 rounded-lg border border-border bg-muted p-0.5 dark:border-foreground/10 dark:bg-black/55">
+            <TabsList className="h-8 w-60 bg-black/5 p-0.5 dark:bg-black/20">
               <TabsTrigger
                 value="codebase"
                 disabled={updating}
-                className="rounded-[calc(var(--radius-lg)-2px)] px-2 text-xs text-muted-foreground data-active:bg-background data-active:text-foreground dark:data-active:bg-foreground/10"
+                className={practiceModeTriggerClassName}
               >
                 {codebaseModeLabels[practice.practice]}
               </TabsTrigger>
               <TabsTrigger
                 value="pro"
                 disabled={updating}
-                className="rounded-[calc(var(--radius-lg)-2px)] px-2 text-xs text-blue-600 dark:text-blue-300/80 data-active:bg-blue-600 data-active:text-white dark:data-active:bg-blue-500"
+                className={practiceModeTriggerClassName}
               >
                 Pro standard
               </TabsTrigger>
@@ -197,7 +197,7 @@ function PracticeCard({
               Detection comment
             </AccordionTrigger>
             <AccordionContent className="pb-0">
-              <Alert className="bg-background/60">
+              <Alert className="bg-foreground/4">
                 <AlertDescription>{practice.comment}</AlertDescription>
               </Alert>
             </AccordionContent>
@@ -212,7 +212,7 @@ function PracticesLoading() {
   return (
     <FieldGroup className="gap-4">
       {Array.from({ length: 4 }, (_, index) => (
-        <Card key={index} size="sm">
+        <Card key={index} size="sm" className="rounded-lg bg-workspace-panel">
           <CardContent className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex flex-1 flex-col gap-2">

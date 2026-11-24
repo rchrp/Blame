@@ -337,7 +337,6 @@ const MarkdownFormattingMenu = React.memo(function MarkdownFormattingMenu({
           type="button"
           aria-label="Formatting"
           title="Formatting"
-          className="rounded-full"
           disabled={disabled}
           size="icon"
           variant="subtle"
@@ -407,7 +406,7 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
           <Button
             type="button"
             aria-label="Enhance with AI"
-            className="rounded-full px-3 text-xs"
+            className="px-3 text-xs"
             variant="subtle"
             disabled={disabled}
             onClick={onOptimize}
@@ -1003,7 +1002,7 @@ export function MarkdownMessage({
 
 function markdownFrameClassName(appearance: MarkdownAppearance) {
   return cn(
-    "relative max-w-full min-w-0 overflow-hidden rounded-3xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
+    "relative max-w-full min-w-0 overflow-hidden rounded-2xl bg-muted/50 p-1 shadow-xl ring-1 shadow-black/10 ring-foreground/20 transition-colors dark:bg-muted/50",
     appearance === "subtle" &&
       // The agent's reasoning: quiet italic, titles included.
       "rounded-none bg-transparent p-0 text-muted-foreground italic shadow-none ring-0 dark:bg-transparent [&_*]:font-normal",
@@ -1875,7 +1874,7 @@ export const MarkdownEditor = React.forwardRef<
           }}
           className={cn(
             composerVisible
-              ? "relative max-w-full min-w-0 rounded-[1.25rem] bg-popover shadow-[0_2px_4px_-2px_#00000012,0_10px_24px_-12px_#00000026] ring-1 ring-foreground/12 transition-[box-shadow] focus-within:ring-foreground/25 dark:shadow-[0_2px_4px_-2px_#0006,0_10px_24px_-12px_#0009]"
+              ? "relative max-w-full min-w-0 rounded-2xl bg-popover shadow-[0_2px_4px_-2px_#00000012,0_10px_24px_-12px_#00000026] ring-1 ring-foreground/12 transition-[box-shadow] focus-within:ring-foreground/25 dark:shadow-[0_2px_4px_-2px_#0006,0_10px_24px_-12px_#0009]"
               : markdownFrameClassName(appearance),
             fileDropActive && "ring-2 ring-primary focus-within:ring-primary"
           )}
@@ -1890,7 +1889,7 @@ export const MarkdownEditor = React.forwardRef<
           {fileDropActive && (
             <div
               aria-live="polite"
-              className="pointer-events-none absolute inset-1 z-30 flex items-center justify-center rounded-2xl border border-primary/60 bg-popover/90 text-primary backdrop-blur-sm"
+              className="pointer-events-none absolute inset-1 z-30 flex items-center justify-center rounded-xl border border-primary/60 bg-popover/90 text-primary backdrop-blur-sm"
               role="status"
             >
               <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium">
@@ -1961,7 +1960,6 @@ export const MarkdownEditor = React.forwardRef<
                       type="button"
                       aria-label="Attach files"
                       title="Attach files"
-                      className="rounded-full"
                       size="icon"
                       variant="subtle"
                       onClick={() => fileInputRef.current?.click()}
