@@ -2,8 +2,7 @@ import type { Transition, Variants } from "motion/react"
 
 // Shared motion vocabulary, so every screen moves the same way.
 //
-// Blur entrances must end on `filter: none`, not `blur(0px)`: any filter on an
-// ancestor turns off backdrop-filter (the frosted glass) for everything inside.
+// Clear the filter after the entrance so the settled screen can render normally.
 const clearFilter = { filter: "none" }
 
 // Fast start, long soft landing. Used for most entrances.

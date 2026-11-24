@@ -321,7 +321,7 @@ export function ImageAttachmentGallery({
       <DialogContent
         {...backdrop}
         showCloseButton={false}
-        overlayClassName="bg-background/55 backdrop-blur-xl supports-backdrop-filter:backdrop-blur-xl"
+        overlayClassName="bg-popover/95"
         className="flex h-dvh w-full max-w-none flex-col gap-0 overflow-hidden rounded-none bg-transparent p-3 ring-0 sm:max-w-none sm:p-6 data-open:zoom-in-100 data-closed:zoom-out-100"
         onKeyDown={keyDown}
         onEscapeKeyDown={(event) => {
@@ -347,7 +347,7 @@ export function ImageAttachmentGallery({
           className="flex shrink-0 items-center justify-end gap-2 pb-3"
         >
           {view && (
-            <span className="rounded-md bg-popover/80 px-2 py-1 text-xs text-popover-foreground tabular-nums shadow-lg backdrop-blur-xl">
+            <span className="rounded-md bg-popover px-2 py-1 text-xs text-popover-foreground tabular-nums shadow-lg">
               {Math.round(view.scale * 100)}%
             </span>
           )}
@@ -375,7 +375,7 @@ export function ImageAttachmentGallery({
         {error && (
           <div
             role="alert"
-            className="mx-auto mb-3 max-w-xl shrink-0 rounded-xl bg-popover/90 px-4 py-3 text-sm text-destructive shadow-lg backdrop-blur-xl"
+            className="mx-auto mb-3 max-w-xl shrink-0 rounded-xl bg-popover px-4 py-3 text-sm text-destructive shadow-lg"
           >
             {error}
           </div>
@@ -385,7 +385,7 @@ export function ImageAttachmentGallery({
             role="alertdialog"
             aria-label="Discard annotations?"
             aria-describedby="discard-annotations-description"
-            className="mx-auto mb-3 flex max-w-xl shrink-0 flex-wrap items-center justify-between gap-3 rounded-xl bg-popover/90 px-4 py-3 shadow-lg backdrop-blur-xl"
+            className="mx-auto mb-3 flex max-w-xl shrink-0 flex-wrap items-center justify-between gap-3 rounded-xl bg-popover px-4 py-3 shadow-lg"
           >
             <p id="discard-annotations-description" className="text-sm">
               Discard your unsaved annotations?
@@ -461,7 +461,7 @@ export function ImageAttachmentGallery({
                 size="icon"
                 aria-label="Previous image (Left arrow)"
                 disabled={index === 0 || locked}
-                className="absolute top-1/2 left-1 size-10 -translate-y-1/2 bg-popover/80 shadow-md backdrop-blur-xl sm:left-0"
+                className="absolute top-1/2 left-1 size-10 -translate-y-1/2 bg-popover shadow-md sm:left-0"
                 onClick={() => step(-1)}
               >
                 <ChevronLeftIcon />
@@ -472,7 +472,7 @@ export function ImageAttachmentGallery({
                 size="icon"
                 aria-label="Next image (Right arrow)"
                 disabled={index === images.length - 1 || locked}
-                className="absolute top-1/2 right-1 size-10 -translate-y-1/2 bg-popover/80 shadow-md backdrop-blur-xl sm:right-0"
+                className="absolute top-1/2 right-1 size-10 -translate-y-1/2 bg-popover shadow-md sm:right-0"
                 onClick={() => step(1)}
               >
                 <ChevronRightIcon />
@@ -580,7 +580,7 @@ export function ImageAttachmentGallery({
               className="flex max-w-full items-end justify-center gap-3"
             >
               {onSave && !editing && (
-                <div className="rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl">
+                <div className="rounded-xl bg-popover p-1.5 shadow-lg">
                   <Button
                     type="button"
                     variant="ghost"
@@ -618,7 +618,7 @@ export function ImageAttachmentGallery({
                   <div
                     role="group"
                     aria-label="Image actions"
-                    className="flex shrink-0 items-center gap-0.5 rounded-xl bg-popover/80 p-1.5 shadow-lg backdrop-blur-xl"
+                    className="flex shrink-0 items-center gap-0.5 rounded-xl bg-popover p-1.5 shadow-lg"
                   >
                     <AnnotationButton
                       label={

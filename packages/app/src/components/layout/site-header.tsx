@@ -7,19 +7,9 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 import { cn } from "@/lib/utils"
 import { ProjectRunnerButton } from "@/components/backlog/board/project-runner-button"
 
-const siteHeaderBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 5%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 5%, transparent 72%)",
-} satisfies React.CSSProperties
-
 export function SiteHeader({ title }: { title: React.ReactNode }) {
   return (
-    <header className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 backdrop-blur-xl"
-        style={siteHeaderBlurMask}
-      />
+    <header className="surface-fade-top pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
       <div className="pointer-events-auto relative flex h-(--header-height) items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)">
         {/* The runner keeps as much room on its right as above it. */}
         <div className="flex min-w-0 flex-1 items-center gap-3 pr-[calc((var(--header-height)-2.375rem)/2)] pl-4 lg:gap-4 lg:pl-6">

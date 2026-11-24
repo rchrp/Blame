@@ -113,8 +113,6 @@ import {
   createdAtLabel,
   createInput,
   DrawerBody,
-  drawerHeaderSoftBlurMask,
-  drawerHeaderStrongBlurMask,
   DrawerHeaderTitle,
   initialDrawerTab,
   isSendToDevAgentShortcut,
@@ -585,9 +583,7 @@ export function UserStoryDrawerPanel({
       }
     >
       <DrawerContent
-        // Round on every corner with a full border: in Chromium, without them
-        // the header's masked blur loses its fade and cuts the thread.
-        className="overflow-hidden rounded-xl border bg-[oklch(1_0_0)] text-foreground outline-none data-[vaul-drawer-direction=right]:w-[min(var(--story-drawer-width,90rem),calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]"
+        className="story-drawer-surface overflow-hidden rounded-xl border bg-(--surface-fade-color) text-foreground outline-none data-[vaul-drawer-direction=right]:w-[min(var(--story-drawer-width,90rem),calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none"
         overlayClassName="bg-black/30 dark:bg-black/50"
         style={drawerWidth.style}
       >
@@ -625,23 +621,13 @@ export function UserStoryDrawerPanel({
         >
           <DrawerHeader
             className={cn(
-              // The blur spans the whole width, under the stats panel too;
-              // only the title and tabs keep clear of it.
-              "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden pt-6 pr-14 pb-6 pl-(--story-drawer-gutter) transition-[padding] duration-500 ease-out",
+              "surface-fade-top absolute top-0 right-0 left-0 z-[15] gap-4 overflow-hidden pt-6 pr-14 pb-6 pl-(--story-drawer-gutter) transition-[padding] duration-500 ease-out",
               tab === "user-story" &&
                 (statsShownExpanded
                   ? "lg:pr-[23rem]"
                   : "pt-20 sm:pt-6 sm:pr-[20rem]")
             )}
           >
-            <div
-              className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
-              style={drawerHeaderSoftBlurMask}
-            />
-            <div
-              className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
-              style={drawerHeaderStrongBlurMask}
-            />
             <div className="min-w-0 flex-1">
               <DrawerTitle asChild>
                 <DrawerHeaderTitle

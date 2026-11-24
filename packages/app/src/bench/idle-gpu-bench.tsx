@@ -16,20 +16,23 @@ import {
   previewAmbilightShadow,
   useNativePreviewAmbilight,
 } from "@/components/backlog/drawer/preview-ambilight"
-import {
-  drawerHeaderSoftBlurMask,
-  drawerHeaderStrongBlurMask,
-} from "@/components/backlog/drawer/user-story-drawer-parts"
+import { PlanProgressLine } from "@/components/chat/plan/plan-progress-line"
 import {
   KanbanBoard,
   KanbanColumn,
   KanbanColumnHeader,
 } from "@/components/shared/kanban-board"
-import { Drawer, DrawerContent, DrawerHeader } from "@/components/ui/drawer"
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer"
 import type { PreviewBrowserClient } from "@/context/platform"
 import { useAnimatedBorderEffect } from "@/hooks/use-animated-border-effect"
 
-type BenchState = "blank" | "board" | "drawer" | "agent"
+type BenchState = "blank" | "board" | "drawer" | "agent" | "waiting"
 
 type BenchPreview = {
   capture(): Promise<string | null>
@@ -103,6 +106,25 @@ function BenchApp() {
     window.idleGpuBenchReady = true
   }, [])
   if (state === "blank") return <div className="h-svh" />
+  if (state === "waiting") {
+    return (
+      <main className="grid h-svh content-start gap-5 bg-popover p-8 text-sm">
+        <BenchActivity label="Thinking" />
+        <BenchActivity label="Working" />
+        <PlanProgressLine
+          progress={{
+            done: 1,
+            abandoned: 0,
+            total: 3,
+            open: 2,
+            finished: false,
+            current: "Run checks",
+          }}
+          step
+        />
+      </main>
+    )
+  }
   return (
     <div
       className="flex h-svh"
@@ -146,16 +168,10 @@ function BenchApp() {
   )
 }
 
-// The site header's masked blur over the board (site-header.tsx).
+// The app header over the board (site-header.tsx).
 function BenchHeader() {
-  const mask = "linear-gradient(to bottom, black 5%, transparent 72%)"
   return (
-    <header className="pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 backdrop-blur-xl"
-        style={{ maskImage: mask, WebkitMaskImage: mask }}
-      />
+    <header className="surface-fade-top pointer-events-none absolute inset-x-0 top-0 z-20 pb-10 md:pb-12">
       <div className="relative flex h-(--header-height) items-center gap-2 pl-6">
         <h1 className="truncate text-base font-medium">Bench project</h1>
       </div>
@@ -163,31 +179,20 @@ function BenchHeader() {
   )
 }
 
-// The story drawer (user-story-drawer-panel.tsx): its header's two blurs
-// over the preview or the conversation.
+// The story drawer's header over the preview or the conversation.
 function BenchDrawer() {
   return (
     <Drawer direction="right" open>
       <DrawerContent
-        className="overflow-hidden rounded-xl border bg-[oklch(1_0_0)] text-foreground outline-none data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none dark:bg-[oklch(0.16_0_0)]"
+        className="story-drawer-surface overflow-hidden rounded-xl border bg-(--surface-fade-color) text-foreground outline-none data-[vaul-drawer-direction=right]:w-[min(90rem,calc(100vw-1rem))] data-[vaul-drawer-direction=right]:sm:max-w-none"
         overlayClassName="bg-black/30 dark:bg-black/50"
       >
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          <DrawerHeader className="absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6">
-            <div
-              className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
-              style={drawerHeaderSoftBlurMask}
-            />
-            <div
-              className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
-              style={drawerHeaderStrongBlurMask}
-            />
-            <p className="text-lg font-semibold">
+          <DrawerHeader className="surface-fade-top absolute top-0 right-0 left-0 z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6">
+            <DrawerTitle className="text-lg font-semibold">
               Let people export their invoices as PDF
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Product created this
-            </p>
+            </DrawerTitle>
+            <DrawerDescription>Product created this</DrawerDescription>
           </DrawerHeader>
           <div className="h-full pt-28">
             {state === "drawer" ? <BenchPreview /> : <BenchConversation />}
@@ -238,8 +243,8 @@ function BenchPreview() {
   return (
     <div className="relative h-full min-h-0">
       <div className="pointer-events-auto absolute top-4 right-4 left-4 z-30 flex h-10 items-center gap-1.5">
-        <span className="size-9 shrink-0 rounded-full border bg-background/95 shadow-sm backdrop-blur" />
-        <div className="flex h-10 min-w-0 flex-1 items-center rounded-full border bg-background/95 py-1 pr-1.5 pl-4 text-sm shadow-sm backdrop-blur">
+        <span className="size-9 shrink-0 rounded-full border bg-popover shadow-sm" />
+        <div className="flex h-10 min-w-0 flex-1 items-center rounded-full border bg-popover py-1 pr-1.5 pl-4 text-sm shadow-sm">
           localhost:3000/
         </div>
       </div>
@@ -264,8 +269,7 @@ const streamWords =
   )
 
 // An agent writing its reply (agent-conversation.tsx): the latest reply's
-// animated border, a running step, the thinking line and the composer's
-// blur over the thread.
+// animated border, activity markers and the composer's fade over the thread.
 function BenchConversation() {
   // The reply keeps growing on screen: the thread does not follow it down,
   // so once it fills the screen it starts over.
@@ -286,18 +290,16 @@ function BenchConversation() {
         .slice(0, Math.min(60, words - i * 60))
         .join(" ")
   )
-  const mask = "linear-gradient(to top, black 0%, black 60%, transparent 100%)"
   return (
     <div className="relative flex h-full min-h-0 flex-col">
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto grid max-w-4xl gap-10 px-10 pt-4 pb-40">
           <div className="flex min-h-10 items-center gap-2.5 py-1 text-sm text-muted-foreground">
-            <span className="agent-thinking-mark size-2 shrink-0 rounded-full" />
-            <span className="agent-activity-running">Working</span>
+            <BenchActivity label="Working" />
             <span>· 12 steps</span>
           </div>
-          <div className="chat-step-running flex items-center gap-2 text-sm">
-            <span className="agent-activity-running">Running pnpm test</span>
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <span>Running pnpm test</span>
           </div>
           <div ref={responseRef} className="agent-response-effect min-w-0">
             <div className="grid gap-3 p-5 text-sm leading-relaxed">
@@ -306,20 +308,24 @@ function BenchConversation() {
               ))}
             </div>
           </div>
-          <div className="flex min-w-0 items-center gap-3 px-2 py-2 text-sm text-muted-foreground">
-            <span className="agent-thinking-mark" aria-hidden="true" />
-            <span className="agent-thinking-text">Thinking</span>
+          <div className="px-2 py-2 text-sm">
+            <BenchActivity label="Thinking" />
           </div>
         </div>
       </div>
-      <div className="pointer-events-auto absolute inset-x-0 bottom-0 px-4 pt-4 pb-4">
-        <div
-          className="pointer-events-none absolute inset-0 bg-background/40 backdrop-blur-xl"
-          style={{ maskImage: mask, WebkitMaskImage: mask }}
-        />
+      <div className="surface-fade-bottom pointer-events-auto absolute inset-x-0 bottom-0 px-4 pt-4 pb-4">
         <div className="relative mx-auto h-28 w-full max-w-4xl rounded-3xl border bg-background shadow-sm" />
       </div>
     </div>
+  )
+}
+
+function BenchActivity({ label }: { label: string }) {
+  return (
+    <span className="flex items-center gap-2.5 font-medium text-foreground">
+      <span className="agent-activity-mark" aria-hidden="true" />
+      {label}
+    </span>
   )
 }
 

@@ -187,7 +187,7 @@ export function SecurityFindingDrawer({
                 </aside>
               </div>
             </ScrollArea>
-            <DrawerFooter className="shrink-0 border-t bg-background/95 px-5 py-4 backdrop-blur sm:px-6">
+            <DrawerFooter className="shrink-0 border-t bg-popover px-5 py-4 sm:px-6">
               <Button
                 className="sm:self-end sm:px-8"
                 disabled={adding || Boolean(finding.backlogStoryId)}

@@ -59,7 +59,7 @@ export function MergeEditor({
 
 function MergeColumnHeader({ path }: { path: string }) {
   return (
-    <div className="sticky top-0 z-10 grid grid-cols-3 border-b bg-background/95 backdrop-blur">
+    <div className="sticky top-0 z-10 grid grid-cols-3 border-b bg-popover">
       <MergeHeaderCell label="Changes from current" />
       <MergeHeaderCell label={`Result ${path}`} />
       <MergeHeaderCell label="Changes from incoming" />

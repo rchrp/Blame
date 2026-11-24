@@ -214,16 +214,19 @@ export function StoryAction({
   if (action === "Open Worktree") {
     const actionStyle = actionConfig[action]
     const Icon = actionStyle.icon
+    const buttonLabel = label ?? action
     return (
       <Button
         type="button"
-        size="sm"
+        size={iconOnly ? "icon-sm" : "sm"}
         variant={actionStyle.variant}
-        className={cn("justify-start", "w-full", className)}
+        className={cn(!iconOnly && "w-full justify-start", className)}
+        aria-label={iconOnly ? buttonLabel : undefined}
+        title={iconOnly ? buttonLabel : undefined}
         onClick={() => void onOpenWorktree?.(story)}
       >
         <Icon />
-        {label ?? action}
+        {!iconOnly && buttonLabel}
       </Button>
     )
   }

@@ -30,7 +30,7 @@ export type PlanTabModel = {
   current: PlanRow | undefined
   /** Every step is completed or abandoned. */
   finished: boolean
-  /** The agent is working: the current step moves. */
+  /** The agent is working: highlight the active step. */
   working: boolean
 }
 

@@ -256,7 +256,7 @@ function StepButton({
         direction === "next" ? "Next screenshot" : "Previous screenshot"
       }
       className={cn(
-        "absolute top-1/2 -translate-y-1/2 bg-background/85 opacity-0 shadow-sm backdrop-blur-sm transition-opacity group-focus-within/carousel:opacity-100 group-hover/carousel:opacity-100 focus-visible:opacity-100 disabled:!opacity-0 group-focus-within/carousel:disabled:!opacity-40 group-hover/carousel:disabled:!opacity-40 motion-reduce:transition-none [@media(hover:none)]:opacity-100 [@media(hover:none)]:disabled:!opacity-40",
+        "absolute top-1/2 -translate-y-1/2 bg-popover opacity-0 shadow-sm transition-opacity group-focus-within/carousel:opacity-100 group-hover/carousel:opacity-100 focus-visible:opacity-100 disabled:!opacity-0 group-focus-within/carousel:disabled:!opacity-40 group-hover/carousel:disabled:!opacity-40 motion-reduce:transition-none [@media(hover:none)]:opacity-100 [@media(hover:none)]:disabled:!opacity-40",
         direction === "next" ? "right-2" : "left-2"
       )}
       disabled={disabled}

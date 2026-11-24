@@ -364,7 +364,7 @@ function WelcomeAction({
       whileHover={disabled ? undefined : { y: -3 }}
       whileTap={disabled ? undefined : { scale: 0.98 }}
       disabled={disabled}
-      className="group relative flex items-center gap-3 rounded-2xl border border-white/70 bg-white/60 p-3.5 text-left shadow-[0_10px_30px_-18px_rgba(28,36,120,0.45)] backdrop-blur-xl outline-none transition-[background-color,box-shadow,border-color] duration-200 hover:bg-white/85 hover:shadow-[0_18px_36px_-18px_var(--primary)] focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25 disabled:pointer-events-none disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-white/[0.09]"
+      className="group relative flex items-center gap-3 rounded-2xl border border-white/70 bg-white/60 p-3.5 text-left shadow-[0_10px_30px_-18px_rgba(28,36,120,0.45)] outline-none transition-[background-color,box-shadow,border-color] duration-200 hover:bg-white/85 hover:shadow-[0_18px_36px_-18px_var(--primary)] focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25 disabled:pointer-events-none disabled:opacity-50 dark:border-white/10 dark:bg-white/[0.05] dark:hover:bg-white/[0.09]"
       onClick={onClick}
     >
       <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-foreground/[0.06] text-foreground transition-[background-color,color,transform] duration-300 group-hover:scale-105 group-hover:bg-primary group-hover:text-primary-foreground group-focus-visible:bg-primary group-focus-visible:text-primary-foreground [&_svg]:size-4">

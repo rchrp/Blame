@@ -25,6 +25,7 @@ export type PricingCardProps = {
   logo: ReactNode
   // Tighter layout for short windows, such as the desktop app.
   compact?: boolean
+  glass?: boolean
   className?: string
   disabled?: boolean
   billingCycle?: PricingBillingCycle
@@ -37,6 +38,7 @@ export function PricingCard({
   className,
   compact = false,
   disabled = false,
+  glass = true,
   legalLinks,
   logo,
   onBillingCycleChange,
@@ -53,7 +55,8 @@ export function PricingCard({
   return (
     <div
       className={cx(
-        'relative w-full overflow-hidden border border-white/18 bg-white/[0.08] shadow-[0_34px_120px_rgba(0,0,0,0.42)] backdrop-blur-2xl',
+        'relative w-full overflow-hidden border border-white/18 bg-white/[0.08] shadow-[0_34px_120px_rgba(0,0,0,0.42)]',
+        glass && 'backdrop-blur-2xl',
         compact ? 'max-w-[440px] rounded-[1.75rem] p-1.5' : 'max-w-[430px] rounded-[2rem] p-2',
         className,
       )}
@@ -61,7 +64,8 @@ export function PricingCard({
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(255,255,255,0.18),transparent_28%),radial-gradient(circle_at_80%_18%,rgba(179,172,243,0.2),transparent_36%)]" />
       <div
         className={cx(
-          'relative border border-white/14 bg-[#f7f7f8]/90 text-[#111] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_18px_60px_rgba(0,0,0,0.24)] backdrop-blur-xl',
+          'relative border border-white/14 text-[#111] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_18px_60px_rgba(0,0,0,0.24)]',
+          glass ? 'bg-[#f7f7f8]/90 backdrop-blur-xl' : 'bg-[#f7f7f8]',
           compact ? 'rounded-[1.4rem] p-5' : 'rounded-[1.55rem] p-6 sm:p-7',
         )}
       >

@@ -141,7 +141,7 @@ export function AgentImportPanel({
           {onSkip ? (
             <Button
               variant="outline"
-              className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
+              className="h-10 rounded-full bg-popover px-4"
               onClick={onSkip}
             >
               {skipLabel}
@@ -225,7 +225,7 @@ export function AgentImportPanel({
         </Button>
         <Button
           variant="outline"
-          className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
+          className="h-10 rounded-full bg-popover px-4"
           disabled={importing}
           onClick={() => setStep("sources")}
         >

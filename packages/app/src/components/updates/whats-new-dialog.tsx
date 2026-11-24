@@ -117,7 +117,7 @@ export function WhatsNewDialog({
             <Button
               variant="ghost"
               size="icon-sm"
-              className="absolute top-4 right-4 rounded-full bg-black/25 text-white backdrop-blur-sm hover:bg-black/45 hover:text-white"
+              className="absolute top-4 right-4 rounded-full bg-black/60 text-white hover:bg-black/80 hover:text-white"
             >
               <XIcon />
               <span className="sr-only">Close</span>
@@ -125,7 +125,7 @@ export function WhatsNewDialog({
           </DialogClose>
           <span
             aria-hidden
-            className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-medium ring-1 ring-white/25 backdrop-blur-sm"
+            className="inline-flex w-fit items-center gap-1.5 rounded-full bg-black/60 px-3 py-1 text-xs font-medium ring-1 ring-white/25"
           >
             <SparklesIcon className="size-3.5" />
             What's new in Blame

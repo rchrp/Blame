@@ -114,7 +114,7 @@ export function RuntimeSetupScreen() {
             </Button>
             <Button
               variant="outline"
-              className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
+              className="h-10 rounded-full bg-popover px-4"
               onClick={skip}
             >
               Skip for now

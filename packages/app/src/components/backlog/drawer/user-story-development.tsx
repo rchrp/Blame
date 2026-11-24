@@ -106,7 +106,7 @@ export function DevelopmentContent({
             className="absolute top-4 right-(--story-drawer-gutter) z-30 flex h-(--control-height) items-center gap-2"
           >
             {hasChanges && diffStats ? (
-              <span className="flex h-full items-center rounded-lg border bg-background/95 px-3 shadow-sm backdrop-blur">
+              <span className="flex h-full items-center rounded-lg border bg-popover px-3 shadow-sm">
                 <DiffStats compact diff={diffStats} />
               </span>
             ) : null}

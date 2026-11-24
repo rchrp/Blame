@@ -32,7 +32,7 @@ export function HelperAvatar({
         alt=""
         className={cn(
           "size-full rounded-full object-cover ring-1 ring-foreground/15 [image-rendering:pixelated]",
-          status === "running" && "helper-avatar-running",
+          status === "running" && "ring-2 ring-blue-500/60 dark:ring-blue-400/60",
           status === "waiting" && "opacity-45 grayscale"
         )}
         draggable={false}

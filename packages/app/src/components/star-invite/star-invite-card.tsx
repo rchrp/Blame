@@ -74,7 +74,7 @@ export function StarInviteCard({
       variants={reduceMotion ? fadeIn : riseIn}
       initial="initial"
       animate="animate"
-      className="relative w-(--width) rounded-2xl bg-popover/80 p-4 text-popover-foreground shadow-lg ring-1 ring-foreground/10 before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:backdrop-blur-2xl before:backdrop-saturate-150"
+      className="relative w-(--width) rounded-2xl bg-popover p-4 text-popover-foreground shadow-lg ring-1 ring-foreground/10"
     >
       <Button
         aria-label="Close"

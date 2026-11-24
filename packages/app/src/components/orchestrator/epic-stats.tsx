@@ -270,7 +270,7 @@ function ConversationStatus({
       title={state?.error && quiet ? state.error : undefined}
     >
       {state?.conversation === "working" && !blocked && !state.error ? (
-        <span aria-hidden="true" className="agent-thinking-mark size-2!" />
+        <span aria-hidden="true" className="agent-activity-mark" />
       ) : null}
       {label.text}
     </span>

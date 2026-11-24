@@ -94,7 +94,7 @@ export default function PdfDocument({
       </div>
       <div data-gallery-backdrop className="flex flex-wrap items-center justify-center gap-2 pt-3">
         {pdf && (
-          <div className="flex items-center gap-1 rounded-xl bg-popover/85 p-1.5 shadow-lg backdrop-blur-xl">
+          <div className="flex items-center gap-1 rounded-xl bg-popover p-1.5 shadow-lg">
             <Button
               variant="ghost"
               size="icon-sm"

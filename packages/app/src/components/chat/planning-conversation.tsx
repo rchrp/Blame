@@ -16,22 +16,6 @@ import {
 } from "@/components/ui/message-scroller"
 import { cn } from "@/lib/utils"
 
-const headerSoftBlurMask = {
-  maskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-const headerStrongBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
-const footerBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-
 /** The new-project assistant's conversation surface. */
 export function PlanningConversation({
   open,
@@ -90,15 +74,7 @@ export function PlanningConversation({
           />
         </MessageScroller>
       </MessageScrollerProvider>
-      <header className="absolute inset-x-0 top-0 isolate z-20 flex items-center gap-3 px-6 pt-5 pb-8">
-        <div
-          className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-sm"
-          style={headerSoftBlurMask}
-        />
-        <div
-          className="absolute inset-0 -z-10 bg-popover/20 backdrop-blur-2xl backdrop-saturate-150"
-          style={headerStrongBlurMask}
-        />
+      <header className="surface-fade-top absolute inset-x-0 top-0 z-20 flex items-center gap-3 px-6 pt-5 pb-8">
         <div className="grid min-w-0 flex-1 gap-0.5">
           <DialogTitle className="flex items-center gap-2 font-heading text-xl leading-tight font-semibold">
             {title}
@@ -122,12 +98,8 @@ export function PlanningConversation({
       </header>
       <footer
         ref={setFooterElement}
-        className="absolute inset-x-0 bottom-0 z-20 px-6 pt-6 pb-5"
+        className="surface-fade-bottom absolute inset-x-0 bottom-0 z-20 px-6 pt-6 pb-5"
       >
-        <div
-          className="pointer-events-none absolute inset-0 bg-background/40 backdrop-blur-xl"
-          style={footerBlurMask}
-        />
         <div className="relative mx-auto grid w-full max-w-2xl min-w-0 grid-cols-1 gap-2">
           {footer}
         </div>

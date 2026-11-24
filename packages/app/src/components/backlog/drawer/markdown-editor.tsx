@@ -1889,7 +1889,7 @@ export const MarkdownEditor = React.forwardRef<
           {fileDropActive && (
             <div
               aria-live="polite"
-              className="pointer-events-none absolute inset-1 z-30 flex items-center justify-center rounded-xl border border-primary/60 bg-popover/90 text-primary backdrop-blur-sm"
+              className="pointer-events-none absolute inset-1 z-30 flex items-center justify-center rounded-xl border border-primary/60 bg-popover text-primary"
               role="status"
             >
               <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium">

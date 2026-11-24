@@ -81,7 +81,7 @@ export type AgentStatsSource = StoryModelSource & {
 // The agent at a glance, floating at the top right of the story drawer or
 // the chat: the full panel, or a small pill with the context donut.
 const statsPanelClass =
-  "overflow-hidden rounded-xl bg-input/40 shadow-xl ring-1 shadow-black/10 ring-foreground/20 backdrop-blur-xl dark:bg-muted"
+  "overflow-hidden rounded-xl bg-muted shadow-xl ring-1 shadow-black/10 ring-foreground/20"
 
 // The expanded face can also live in the layout, with no minimize control.
 // Its own buttons (`actions`) sit at the top right, where the drawer and the

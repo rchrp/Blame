@@ -130,7 +130,7 @@ function stageTravel(screen: OnboardingScreen, stepProgress: number) {
 function StageVeil() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,rgba(255,255,255,0.5)_0%,rgba(244,245,255,0.78)_55%,rgba(240,241,252,0.94)_100%)] backdrop-blur-[2px] dark:bg-[radial-gradient(ellipse_at_50%_45%,rgba(2,4,10,0.12)_0%,rgba(2,4,10,0.38)_50%,rgba(2,4,10,0.82)_100%)] dark:backdrop-blur-0" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_45%,rgba(255,255,255,0.5)_0%,rgba(244,245,255,0.78)_55%,rgba(240,241,252,0.94)_100%)] dark:bg-[radial-gradient(ellipse_at_50%_45%,rgba(2,4,10,0.12)_0%,rgba(2,4,10,0.38)_50%,rgba(2,4,10,0.82)_100%)]" />
       <div className="absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-white/70 to-transparent dark:from-[#050712]/70" />
     </div>
   )

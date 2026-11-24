@@ -54,12 +54,6 @@ import { useConversationUltra } from "@/lib/use-conversation-ultra"
 import { useLatestCallback } from "@/lib/use-latest-callback"
 import { useStoryConversation } from "./story-conversation"
 
-const commentComposerBlurMask = {
-  maskImage: "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to top, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-
 type UserStoryCommentComposerProps = {
   // The ambition kept with this story; null follows the account's.
   ambition: Ambition | null
@@ -291,8 +285,8 @@ export const UserStoryFixedSection = React.memo(function UserStoryFixedSection({
   return (
     <div className={fixedSectionClassName(commentComposerVisible)}>
       <div
-        className="pointer-events-none absolute inset-0 bg-background/40 backdrop-blur-xl"
-        style={commentComposerBlurMask}
+        aria-hidden="true"
+        className="surface-fade-bottom pointer-events-none absolute inset-0"
       />
       <div className="relative grid gap-3">
         {commentComposerVisible ? (

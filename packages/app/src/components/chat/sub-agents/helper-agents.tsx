@@ -83,7 +83,7 @@ export function HelperAgents({
             <span
               className={cn(
                 "text-muted-foreground",
-                call.running && "agent-activity-running"
+                call.running && "font-medium text-foreground"
               )}
             >
               {head.verb}

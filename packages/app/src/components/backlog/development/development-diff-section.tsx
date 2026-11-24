@@ -101,7 +101,7 @@ export function DevelopmentDiffSection({
           className={cn(
             "flex justify-center",
             !expanded &&
-              "pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-workspace-panel from-20% to-transparent pt-7 backdrop-blur-[1px]"
+              "pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-workspace-panel from-20% to-transparent pt-7"
           )}
         >
           <Button

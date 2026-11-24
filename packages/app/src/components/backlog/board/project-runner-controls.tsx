@@ -347,7 +347,7 @@ export function ProjectRunnerStatusDot({
       : status === "error"
         ? "bg-destructive"
         : isTransitioning(status)
-          ? "animate-pulse bg-amber-500"
+          ? "bg-amber-500"
           : "bg-muted-foreground/45"
   return (
     <span

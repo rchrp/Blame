@@ -8,7 +8,8 @@
 //     [--screenshots directory] [--css "extra rules"]
 //
 // It builds the app's bench page (packages/app/bench/idle-gpu.html: the
-// board, the drawer on an idle preview, an agent writing) and shows each state
+// board, the drawer on an idle preview, an agent writing, and the activity
+// indicators alone with --states waiting) and shows each state
 // in a window made like the app's, with a native page as the preview. For
 // each state it reports the CPU of the GPU process, of the page's renderer
 // and of the main process, the frames the window's compositor drew and swapped

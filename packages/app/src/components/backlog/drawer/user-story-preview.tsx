@@ -1288,7 +1288,7 @@ function PreviewActions({
     <>
       <Button
         aria-label="Refresh preview"
-        className="pointer-events-auto size-9 shrink-0 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        className="pointer-events-auto size-9 shrink-0 rounded-full border bg-popover shadow-sm"
         disabled={refreshDisabled}
         size="icon"
         title="Refresh preview"
@@ -1300,7 +1300,7 @@ function PreviewActions({
       </Button>
       <Button
         aria-label="Capture preview"
-        className="pointer-events-auto size-9 shrink-0 rounded-full border bg-background/95 shadow-sm backdrop-blur"
+        className="pointer-events-auto size-9 shrink-0 rounded-full border bg-popover shadow-sm"
         disabled={captureDisabled}
         size="icon"
         title="Capture preview"
@@ -1368,7 +1368,7 @@ function PreviewAddress({
 
   return (
     <TooltipProvider>
-      <div className="preview-address pointer-events-auto flex h-10 min-w-0 flex-1 items-center overflow-hidden rounded-full border bg-background/95 py-1 pr-1.5 pl-4 shadow-sm backdrop-blur">
+      <div className="preview-address pointer-events-auto flex h-10 min-w-0 flex-1 items-center overflow-hidden rounded-full border bg-popover py-1 pr-1.5 pl-4 shadow-sm">
         {source ? (
           <PreviewAddressOrigin source={source} />
         ) : (

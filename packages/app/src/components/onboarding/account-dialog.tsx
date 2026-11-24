@@ -93,7 +93,7 @@ export function AccountDialog({
       <DialogContent
         aria-describedby={undefined}
         showCloseButton={false}
-        overlayClassName="bg-black/30 supports-backdrop-filter:backdrop-blur-sm"
+        overlayClassName="bg-black/40"
         className={cn(
           "max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto rounded-3xl bg-transparent p-0 ring-0",
           shown === "premium" ? "sm:max-w-4xl" : "sm:max-w-[22rem]"

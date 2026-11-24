@@ -150,7 +150,7 @@ export function PremiumPanel({
           >
             <Button
               variant="outline"
-              className="h-10 rounded-full bg-background/60 px-4 backdrop-blur"
+              className="h-10 rounded-full bg-popover px-4"
               onClick={onLeave}
             >
               Continue using Blame
@@ -187,6 +187,7 @@ export function PremiumPanel({
         >
           <PricingCard
             compact
+            glass={false}
             disabled={actions.pending !== null}
             logo={
               <img

@@ -153,7 +153,7 @@ function StepButton({
     <Button
       aria-label={direction === "next" ? "Next stories" : "Previous stories"}
       className={cn(
-        "absolute top-[calc(50%-0.875rem)] z-10 rounded-full border bg-background/90 shadow-sm backdrop-blur-sm transition-opacity motion-reduce:transition-none",
+        "absolute top-[calc(50%-0.875rem)] z-10 rounded-full border bg-popover shadow-sm transition-opacity motion-reduce:transition-none",
         direction === "next" ? "-right-3" : "-left-3",
         hidden
           ? "pointer-events-none opacity-0"

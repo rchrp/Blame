@@ -17,6 +17,31 @@
   @apply font-heading text-2xl font-semibold tracking-tight;
 }
 
+/* Cover the controls, then fade into the scrolling content without sampling it. */
+@utility surface-fade-top {
+  background: linear-gradient(
+    to bottom,
+    var(--surface-fade-color, var(--popover)) 65%,
+    transparent
+  );
+}
+
+@utility surface-fade-bottom {
+  background: linear-gradient(
+    to top,
+    var(--surface-fade-color, var(--popover)) 65%,
+    transparent
+  );
+}
+
+@utility story-drawer-surface {
+  --surface-fade-color: white;
+
+  @variant dark {
+    --surface-fade-color: oklch(0.16 0 0);
+  }
+}
+
 /* The corner light can travel around a control without moving its content. */
 @property --corner-x {
   syntax: "<percentage>";
@@ -412,58 +437,34 @@
     --diffs-bg-hover-override: var(--muted);
   }
 
-  .agent-activity-running {
-    color: transparent;
-    background: repeating-linear-gradient(
-      100deg,
-      var(--muted-foreground) 0%,
-      var(--muted-foreground) 35%,
-      var(--foreground) 50%,
-      var(--muted-foreground) 65%,
-      var(--muted-foreground) 100%
-    );
-    background-size: 200% 100%;
-    background-clip: text;
-    animation: agent-activity-running-wave 1.8s linear infinite;
-    -webkit-background-clip: text;
+  .agent-activity-mark {
+    position: relative;
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--color-blue-500);
+    box-shadow: 0 0 0 3px
+      color-mix(in oklab, var(--color-blue-500) 18%, transparent);
   }
 
-  .agent-thinking-mark {
-    width: 0.62rem;
-    height: 0.62rem;
-    border-radius: 999px;
-    background: oklch(0.78 0.16 230 / 90%);
-    box-shadow:
-      0 0 0 0.24rem oklch(0.72 0.2 285 / 10%),
-      0 0 14px oklch(0.62 0.22 255 / 58%);
-    animation: agent-thinking-mark-breath 1.25s ease-in-out infinite;
+  .dark .agent-activity-mark {
+    background: var(--color-blue-400);
   }
 
-  /* A helper agent's flower while it works: a soft glow that breathes, in the
-     colours of the thinking mark. */
-  .helper-avatar-running {
-    animation: helper-avatar-breath 1.8s ease-in-out infinite;
+  /* Only the small ring moves on entry. A steady mark shows long-running work. */
+  @media (prefers-reduced-motion: no-preference) {
+    .agent-activity-mark::after {
+      position: absolute;
+      inset: -3px;
+      border: 1px solid var(--color-blue-400);
+      border-radius: inherit;
+      content: "";
+      animation: agent-activity-entry 800ms ease-out 2 both;
+    }
   }
 
-  .agent-thinking-text {
-    color: transparent;
-    background: linear-gradient(
-      90deg,
-      var(--muted-foreground),
-      oklch(0.78 0.16 230),
-      oklch(0.72 0.2 285),
-      var(--muted-foreground)
-    );
-    background-size: 180% 100%;
-    background-clip: text;
-    animation: agent-thinking-text-wave 1.8s ease-in-out infinite;
-    -webkit-background-clip: text;
-  }
-
-  /* Cheaper to smarter: one blue gradient laid over the whole track, calm
-     at the cheap end and vivid at the smart end. The fill only reveals
-     more or less of it, never squeezes it; the halo grows with it, and one
-     soft light sweeps across the whole track and rests. */
+  /* The fill reveals the gradient without squeezing it; the halo grows with it. */
   .smart-model-slider-track {
     /* Blue unless a color class below sets the five colors of the fill. */
     --slider-start: oklch(0.55 0.09 262);
@@ -524,42 +525,6 @@
       inset 0 1px 0 oklch(1 0 0 / 0.22);
   }
 
-  .smart-model-slider-fill::after {
-    position: absolute;
-    inset: 0;
-    content: "";
-    background: radial-gradient(
-        closest-side,
-        oklch(1 0 0 / 0.34),
-        oklch(1 0 0 / 0.12) 55%,
-        transparent
-      )
-      no-repeat;
-    background-size: 30cqw 260%;
-    background-position: -30cqw 50%;
-    mix-blend-mode: plus-lighter;
-    animation: smart-model-slider-sheen 3.6s cubic-bezier(0.45, 0, 0.25, 1)
-      infinite;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .agent-activity-running,
-    .agent-thinking-mark,
-    .agent-thinking-text,
-    .helper-avatar-running {
-      animation: none;
-    }
-
-    .helper-avatar-running {
-      box-shadow: 0 0 0 2px oklch(0.78 0.16 230 / 70%);
-    }
-
-    .smart-model-slider-fill::after {
-      animation: none;
-      opacity: 0;
-    }
-  }
-
   .user-story-title-cloud {
     position: relative;
     display: inline-block;
@@ -577,27 +542,14 @@
   }
 
   .magic-cloud {
-    position: relative;
-    display: block;
-    width: 100%;
     min-height: 1.25rem;
-    overflow: hidden;
     border-radius: 0.5rem;
     background: linear-gradient(
       90deg,
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.08) 0%,
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.18) 25%,
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.25) 50%,
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.18) 75%,
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.08) 100%
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.08),
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.25),
+      rgba(var(--cloud-rgb, 148, 163, 184), 0.08)
     );
-    background-size: 300% 100%;
-    filter: blur(6px);
-    transform-origin: center;
-    animation:
-      cloud-drift 5s ease-in-out infinite,
-      cloud-breathe 4s ease-in-out infinite,
-      ethereal-glow 3s ease-in-out infinite;
   }
 
   .user-story-title-cloud-active > .magic-cloud {
@@ -607,45 +559,6 @@
     left: 0;
     min-width: 6rem;
     margin-top: -0.625rem;
-  }
-
-  .magic-cloud::before {
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 40%;
-    height: 100%;
-    content: "";
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.15),
-      rgba(255, 255, 255, 0.15),
-      transparent
-    );
-    filter: blur(3px);
-    opacity: 0.6;
-    animation: shimmer 4s ease-in-out infinite;
-  }
-
-  .magic-cloud::after {
-    position: absolute;
-    top: 0;
-    right: -100%;
-    width: 40%;
-    height: 100%;
-    content: "";
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.12),
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.2),
-      rgba(var(--cloud-rgb, 148, 163, 184), 0.12),
-      transparent
-    );
-    filter: blur(4px);
-    opacity: 0.5;
-    animation: shimmer-reverse 4.5s ease-in-out infinite;
   }
 
   .agent-response-effect {
@@ -855,32 +768,15 @@
   }
 }
 
-@keyframes helper-avatar-breath {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px oklch(0.78 0.16 230 / 45%),
-      0 0 0 0 oklch(0.72 0.2 285 / 0%);
+@keyframes agent-activity-entry {
+  from {
+    opacity: 0.85;
+    transform: scale(0.65);
   }
 
-  50% {
-    box-shadow:
-      0 0 0 1px oklch(0.78 0.16 230 / 85%),
-      0 0 0 4px oklch(0.72 0.2 285 / 16%),
-      0 0 12px oklch(0.62 0.22 255 / 45%);
-  }
-}
-
-@keyframes agent-thinking-mark-breath {
-  0%,
-  100% {
-    opacity: 0.5;
-    transform: scale(0.96);
-  }
-
-  50% {
-    opacity: 1;
-    transform: scale(1.18);
+  to {
+    opacity: 0;
+    transform: scale(1.45);
   }
 }
 
@@ -906,99 +802,7 @@
   }
 }
 
-@keyframes agent-thinking-text-wave {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes cloud-drift {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-
-  50% {
-    background-position: 100% 50%;
-  }
-}
-
-@keyframes cloud-breathe {
-  0%,
-  100% {
-    transform: scaleX(0.98) scaleY(0.92);
-  }
-
-  50% {
-    transform: scaleX(1.01) scaleY(1.04);
-  }
-}
-
-@keyframes ethereal-glow {
-  0%,
-  100% {
-    opacity: 0.58;
-  }
-
-  50% {
-    opacity: 0.88;
-  }
-}
-
-@keyframes shimmer {
-  0%,
-  35% {
-    left: -100%;
-  }
-
-  70%,
-  100% {
-    left: 120%;
-  }
-}
-
-@keyframes shimmer-reverse {
-  0%,
-  30% {
-    right: -100%;
-  }
-
-  75%,
-  100% {
-    right: 120%;
-  }
-}
-
-@keyframes agent-activity-running-wave {
-  from {
-    background-position: 200% 50%;
-  }
-
-  to {
-    background-position: 0% 50%;
-  }
-}
-
-@keyframes smart-model-slider-sheen {
-  from {
-    background-position: -30cqw 50%;
-  }
-
-  60%,
-  to {
-    background-position: 100cqw 50%;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .agent-thinking-mark,
-  .agent-thinking-text,
-  .agent-activity-running,
   .markdown-stream-reveal,
   .markdown-stream-block-reveal {
     animation: none;
@@ -1115,18 +919,6 @@
   }
 }
 
-@keyframes chat-step-pulse {
-  0% {
-    transform: scale(0.7);
-    opacity: 0.55;
-  }
-
-  100% {
-    transform: scale(1.45);
-    opacity: 0;
-  }
-}
-
 @layer components {
   .chat-enter-user {
     transform-origin: 100% 100%;
@@ -1145,20 +937,6 @@
     animation: chat-step-done 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
 
-  .chat-step-running {
-    position: relative;
-  }
-
-  .chat-step-running::after {
-    position: absolute;
-    inset: 0.35rem;
-    border-radius: 999px;
-    background: oklch(0.72 0.2 270 / 35%);
-    content: "";
-    pointer-events: none;
-    animation: chat-step-pulse 1.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
-  }
-
   .composer-icon-swap {
     animation: chat-step-done 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
   }
@@ -1169,10 +947,6 @@
     .chat-enter-step,
     .chat-step-done,
     .composer-icon-swap {
-      animation: none;
-    }
-
-    .chat-step-running::after {
       animation: none;
     }
   }
@@ -1198,41 +972,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .page-enter {
-      animation: none;
-    }
-  }
-}
-
-/* Skeletons: one light sweep shared by every placeholder on screen (the
-   gradient is fixed to the viewport, so neighbours shimmer in step). */
-@keyframes skeleton-sweep {
-  from {
-    background-position: 100vw 0;
-  }
-
-  to {
-    background-position: -100vw 0;
-  }
-}
-
-@layer components {
-  .skeleton-shimmer {
-    background-color: var(--muted);
-    background-image: linear-gradient(
-      100deg,
-      transparent 0%,
-      color-mix(in oklab, var(--foreground) 6%, transparent) 50%,
-      transparent 100%
-    );
-    background-size: 50vw 100%;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    animation: skeleton-sweep 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton-shimmer {
-      background-image: none;
       animation: none;
     }
   }
@@ -1301,7 +1040,6 @@
    still when it does not and for people who reduce motion. */
 @layer components {
   .plan-step-mark {
-    position: relative;
     width: 0.5rem;
     height: 0.5rem;
     border-radius: 999px;
@@ -1312,37 +1050,9 @@
     background: var(--color-blue-400);
   }
 
-  /* A steady halo says the agent is on it, with or without the pulse. */
+  /* The halo distinguishes the active step without animating each copy. */
   .plan-step-mark[data-working="true"] {
     box-shadow: 0 0 0 0.1875rem
       color-mix(in oklab, var(--color-blue-500) 22%, transparent);
-  }
-
-  .plan-step-mark[data-working="true"]::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: inherit;
-    animation: plan-step-breath 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
-  }
-}
-
-@keyframes plan-step-breath {
-  0% {
-    opacity: 0.45;
-    transform: scale(1);
-  }
-
-  70%,
-  100% {
-    opacity: 0;
-    transform: scale(2.6);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .plan-step-mark[data-working="true"]::after {
-    animation: none;
   }
 }

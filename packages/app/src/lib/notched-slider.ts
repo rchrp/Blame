@@ -2,10 +2,10 @@ export type NotchDirection = -1 | 1
 
 // Where the thumb sits for a position from 0 to 1: the thumb is 24px wide, so
 // the ends stay inside the track.
-export function sliderPoint(position: number) {
+export function sliderPoint(position: number, unit: "%" | "cqw" = "%") {
   const percent = position * 100
   const offset = 16 * (1 - 2 * position)
-  return `calc(${percent}% + ${offset}px)`
+  return `calc(${percent}${unit} + ${offset}px)`
 }
 
 // The positions of evenly spaced notches, from 0 to 1.

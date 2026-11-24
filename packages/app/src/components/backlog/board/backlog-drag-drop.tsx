@@ -234,7 +234,7 @@ export function ColumnDropZones({
         <motion.div
           key="zones"
           animate={{ opacity: 1 }}
-          className="absolute inset-0 z-10 flex flex-col gap-2.5 bg-background/55 p-3 backdrop-blur-[2px]"
+          className="absolute inset-0 z-10 flex flex-col gap-2.5 bg-popover/90 p-3"
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
           transition={{ duration: 0.2, ease: easeOutExpo }}

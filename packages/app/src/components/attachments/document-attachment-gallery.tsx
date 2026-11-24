@@ -58,7 +58,7 @@ export function DocumentAttachmentGallery({
       <DialogContent
         {...backdrop}
         showCloseButton={false}
-        overlayClassName="bg-background/55 backdrop-blur-xl supports-backdrop-filter:backdrop-blur-xl"
+        overlayClassName="bg-popover/95"
         className="fixed inset-0 flex h-dvh w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none bg-transparent px-3 py-4 ring-0 sm:max-w-none sm:px-16 sm:py-6"
         onCloseAutoFocus={(event) => {
           event.preventDefault()
@@ -98,7 +98,7 @@ export function DocumentAttachmentGallery({
         {attachments.length > 1 && (
           <div className="pointer-events-none mt-2 flex items-center justify-center gap-3 sm:absolute sm:inset-x-3 sm:top-1/2 sm:mt-0 sm:-translate-y-1/2 sm:justify-between">
             <Button
-              className="pointer-events-auto rounded-full bg-popover/90 shadow-md backdrop-blur-xl"
+              className="pointer-events-auto rounded-full bg-popover shadow-md"
               variant="secondary"
               size="icon"
               aria-label="Previous file"
@@ -111,7 +111,7 @@ export function DocumentAttachmentGallery({
               {index + 1} / {attachments.length}
             </span>
             <Button
-              className="pointer-events-auto rounded-full bg-popover/90 shadow-md backdrop-blur-xl"
+              className="pointer-events-auto rounded-full bg-popover shadow-md"
               variant="secondary"
               size="icon"
               aria-label="Next file"
@@ -150,7 +150,7 @@ function DocumentView({
   )
   const actions = useAttachmentActions(attachment)
   const controls = (
-    <div className="flex items-center gap-1 rounded-xl bg-popover/85 p-1.5 shadow-lg backdrop-blur-xl">
+    <div className="flex items-center gap-1 rounded-xl bg-popover p-1.5 shadow-lg">
       {actions.canOpen && (
         <Button
           variant="ghost"

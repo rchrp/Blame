@@ -9,7 +9,7 @@ horizontally. A native button opens each card, and removal remains a separate
 button available to keyboard and touch users.
 
 `document-attachment-gallery.tsx` is the read-only document dialog. It uses the
-same translucent blurred backdrop as the image gallery, with no visible header,
+same nearly opaque backdrop as the image gallery, with no visible header,
 floating controls, Escape to close, focus restoration, and arrow-key/file-button
 navigation. PDF page controls are separate from file navigation (Page Up/Down
 within the PDF).
@@ -75,7 +75,7 @@ Uploaded originals are read through signed storage links that expire (15 minutes
 
 ## Image annotation implementation
 
-The shared Markdown composer opens image thumbnails in a gallery. Editable composers can annotate and apply changes; read-only consumers omit `onSave`. This extends the existing app UI: Radix dialog, shared buttons/popovers/tooltips, semantic app colors, and Lucide icons. The gallery fills the viewport over a translucent blurred backdrop, without a visible header, filename, or footer divider. The top right holds the zoom percentage, the Actual size / Fit to window toggle and Close. Annotation tools float at the bottom center, with Save in a detached action group to their right; tools wrap on narrow screens. At the bottom right, without a background, sit the image dimensions and the Copy image / Save as buttons. The dialog title and editing hints remain available to assistive technology. There are no generated visual assets or additional design-system tokens.
+The shared Markdown composer opens image thumbnails in a gallery. Editable composers can annotate and apply changes; read-only consumers omit `onSave`. This extends the existing app UI: Radix dialog, shared buttons/popovers/tooltips, semantic app colors, and Lucide icons. The gallery fills the viewport over a nearly opaque backdrop, without a visible header, filename, or footer divider. The top right holds the zoom percentage, the Actual size / Fit to window toggle and Close. Annotation tools float at the bottom center, with Save in a detached action group to their right; tools wrap on narrow screens. At the bottom right, without a background, sit the image dimensions and the Copy image / Save as buttons. The dialog title and editing hints remain available to assistive technology. There are no generated visual assets or additional design-system tokens.
 
 The same gallery shows the agent's preview screenshots (`chat/screenshots/screenshot-lightbox.tsx` adapts them to `GalleryImage`). Those omit `onSave`, so there is no Annotate button; they pass `details` (caption, color scheme, viewport), `actions` (copy and save through the desktop client) and a `status` while the image loads or is missing.
 

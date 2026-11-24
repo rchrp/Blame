@@ -16,17 +16,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-const historyToolbarSoftBlurMask = {
-  maskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-  WebkitMaskImage:
-    "linear-gradient(to bottom, black 0%, black 60%, transparent 100%)",
-} satisfies React.CSSProperties
-const historyToolbarStrongBlurMask = {
-  maskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-  WebkitMaskImage: "linear-gradient(to bottom, black 0%, transparent 72%)",
-} satisfies React.CSSProperties
-
 export function GitHistoryPanel({
   commits,
   commitTotal,
@@ -71,15 +60,7 @@ export function GitHistoryPanel({
 
   return (
     <main className="relative flex min-h-[34rem] min-w-0 flex-col xl:min-h-0">
-      <div className="absolute top-0 right-3 left-0 z-10 overflow-hidden pb-8">
-        <div
-          className="absolute inset-0 backdrop-blur-sm"
-          style={historyToolbarSoftBlurMask}
-        />
-        <div
-          className="absolute inset-0 backdrop-blur-2xl backdrop-saturate-150"
-          style={historyToolbarStrongBlurMask}
-        />
+      <div className="surface-fade-top absolute top-0 right-3 left-0 z-10 overflow-hidden pb-8">
         <div className="relative">
           <HistoryToolbar
             loadedCount={commits.length}
