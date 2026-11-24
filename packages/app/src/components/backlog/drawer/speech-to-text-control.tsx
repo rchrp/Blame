@@ -11,6 +11,7 @@ import { speechFailureNeedsSettings } from "@blame/speech-contract"
 import { speechOwnKeyStore } from "@/lib/speech-own-key-store"
 import { openSpeechKeySettings } from "@/pages/settings/settings-section"
 import { useLatestCallback } from "@/lib/use-latest-callback"
+import { cn } from "@/lib/utils"
 import {
   openPreferredMicrophone,
   preferredMicrophone,
@@ -23,9 +24,11 @@ const maxRecordingDurationMs = 120_000
 type RecordingStatus = "idle" | "starting" | "recording" | "transcribing"
 
 export function SpeechRecordingControl({
+  floating,
   onFinished,
   onTranscription,
 }: {
+  floating: boolean
   onFinished: () => void
   onTranscription: (text: string) => void
 }) {
@@ -245,8 +248,7 @@ export function SpeechRecordingControl({
     const context = new AudioContextConstructor()
     const source = context.createMediaStreamSource(stream)
     const nextAnalyser = context.createAnalyser()
-    nextAnalyser.fftSize = 64
-    nextAnalyser.smoothingTimeConstant = 0.75
+    nextAnalyser.fftSize = 1024
     source.connect(nextAnalyser)
     const silentOutput = context.createGain()
     silentOutput.gain.value = 0
@@ -261,6 +263,7 @@ export function SpeechRecordingControl({
   return (
     <SpeechCapturePill
       status={status === "idle" ? "starting" : status}
+      floating={floating}
       analyser={analyser}
       elapsedMs={elapsedMs}
       onCancel={() => void cancelRecording()}
@@ -271,12 +274,14 @@ export function SpeechRecordingControl({
 
 export function SpeechCapturePill({
   status,
+  floating = false,
   analyser = null,
   elapsedMs = 0,
   onCancel,
   onConfirm,
 }: {
   status: Exclude<RecordingStatus, "idle">
+  floating?: boolean
   analyser?: AnalyserNode | null
   elapsedMs?: number
   onCancel: () => void
@@ -290,7 +295,12 @@ export function SpeechCapturePill({
         width: status === "starting" ? 32 : status === "recording" ? 168 : 136,
       }}
       transition={{ duration: reducedMotion ? 0 : 0.24, ease: "easeOut" }}
-      className="flex h-(--control-height) shrink-0 items-center overflow-hidden rounded-lg border border-foreground/8 bg-foreground/4 px-1 text-muted-foreground focus-within:ring-1 focus-within:ring-ring"
+      className={cn(
+        "flex h-(--control-height) shrink-0 items-center overflow-hidden rounded-lg border px-1 text-muted-foreground focus-within:ring-1 focus-within:ring-ring",
+        floating
+          ? "border-border bg-popover shadow-lg"
+          : "border-foreground/8 bg-foreground/4"
+      )}
     >
       <span className="sr-only" role="status">
         {status === "starting"
@@ -299,16 +309,22 @@ export function SpeechCapturePill({
             ? "Recording voice input"
             : "Transcribing voice input"}
       </span>
-      <span className="grid size-5 shrink-0 place-items-center">
+      <span
+        className="relative grid size-5 shrink-0 place-items-center"
+        aria-hidden="true"
+      >
         {status === "transcribing" ? (
           <LoaderCircleIcon className="size-3.5 motion-safe:animate-spin" />
         ) : (
           <MicIcon className="size-3.5" />
         )}
+        {status === "recording" && (
+          <span className="absolute top-0.5 right-0 size-1.5 rounded-full bg-destructive" />
+        )}
       </span>
       {status === "recording" && (
         <>
-          <VoiceWave analyser={analyser} />
+          <VoiceTrace analyser={analyser} />
           <span
             className="shrink-0 text-[11px] tabular-nums"
             aria-hidden="true"
@@ -348,43 +364,70 @@ export function SpeechCapturePill({
   )
 }
 
-function VoiceWave({ analyser }: { analyser: AnalyserNode | null }) {
-  const waveRef = React.useRef<SVGGElement>(null)
+function VoiceTrace({ analyser }: { analyser: AnalyserNode | null }) {
+  const traceRef = React.useRef<SVGPathElement>(null)
+  const gradientId = React.useId()
   const reducedMotion = useReducedMotion()
   React.useEffect(() => {
-    const wave = waveRef.current
-    if (!wave || !analyser || reducedMotion) return
-    const activeAnalyser = analyser
-    const data = new Uint8Array(activeAnalyser.frequencyBinCount)
-    let frame: number
-    function draw() {
-      activeAnalyser.getByteFrequencyData(data)
-      const average = data.reduce((sum, value) => sum + value, 0) / data.length
-      wave?.setAttribute(
-        "transform",
-        `translate(0 8) scale(1 ${0.55 + average / 120}) translate(0 -8)`
-      )
+    const trace = traceRef.current
+    if (!trace || !analyser || reducedMotion) return
+    const samples = new Float32Array(analyser.fftSize)
+    const levels = new Float32Array(18)
+    let lastSampleAt = -Infinity
+    const draw = (now: number) => {
       frame = requestAnimationFrame(draw)
+      if (now - lastSampleAt < 29) return
+      lastSampleAt = now
+
+      analyser.getFloatTimeDomainData(samples)
+      let energy = 0
+      for (const sample of samples) energy += sample * sample
+      const rms = Math.sqrt(energy / samples.length)
+      // Keep mic noise off the trace, and give quiet speech room to show up.
+      levels.copyWithin(0, 1)
+      levels[levels.length - 1] = Math.min(
+        1,
+        Math.sqrt(Math.max(0, rms - 0.012) * 7)
+      )
+
+      let marks = ""
+      for (const [index, level] of levels.entries()) {
+        if (level === 0) continue
+        const halfHeight = Math.round(level * 80) / 10
+        const x = 2.5 + index * 3
+        marks += `M${x} ${9 - halfHeight}v${halfHeight * 2}`
+      }
+      trace.setAttribute("d", marks)
     }
-    frame = requestAnimationFrame(draw)
-    return () => cancelAnimationFrame(frame)
+    let frame = requestAnimationFrame(draw)
+    return () => {
+      cancelAnimationFrame(frame)
+      trace.removeAttribute("d")
+    }
   }, [analyser, reducedMotion])
   return (
     <svg
       aria-hidden="true"
-      viewBox="0 0 48 16"
-      className="mx-1 h-4 w-12 shrink-0 text-foreground/65"
+      viewBox="0 0 56 18"
+      className="mx-1 h-[18px] w-14 shrink-0 text-destructive"
       fill="none"
-      stroke="currentColor"
-      strokeWidth="1.3"
+      strokeLinecap="round"
     >
-      <g ref={waveRef}>
-        <motion.path
-          d="M-24 8q4 0 6-3t6 3t6 3t6-3t6-3t6 3t6 3t6-3t6-3t6 3t6 3t6-3"
-          animate={reducedMotion ? undefined : { x: [0, 24] }}
-          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-        />
-      </g>
+      <defs>
+        <linearGradient
+          id={gradientId}
+          gradientUnits="userSpaceOnUse"
+          x1="0"
+          x2="56"
+          y1="0"
+          y2="0"
+        >
+          <stop stopColor="currentColor" stopOpacity="0.22" />
+          <stop offset="1" stopColor="currentColor" />
+        </linearGradient>
+      </defs>
+      <path d="M2.5 9h51" className="stroke-foreground/20" />
+      <path ref={traceRef} stroke={`url(#${gradientId})`} strokeWidth="1.75" />
     </svg>
   )
 }

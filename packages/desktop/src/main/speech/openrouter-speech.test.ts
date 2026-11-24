@@ -60,6 +60,27 @@ test("sends the request the hosted API sends, with the person's key", async () =
   assert.ok(calls[0].init.signal);
 });
 
+test("requests Azure clean transcription for MAI-Transcribe 2", async () => {
+  const calls: Call[] = [];
+  const model = "microsoft/mai-transcribe-2";
+  const result = await transcribeWithOpenRouter(
+    { ...input, format: "wav", model },
+    { fetcher: fakeFetch(() => json({ text: "Hello there." }), calls) },
+  );
+
+  assert.deepEqual(result, { ok: true, text: "Hello there." });
+  assert.deepEqual(JSON.parse(String(calls[0].init.body)), {
+    input_audio: { data: audio, format: "wav" },
+    model,
+    temperature: 0,
+    provider: {
+      options: {
+        azure: { enhancedMode: { modelOptions: { transcribeStyle: "clean" } } },
+      },
+    },
+  });
+});
+
 test("tells apart what OpenRouter refuses", async () => {
   const failure = async (status: number, body: unknown = {}) => {
     const result = await transcribeWithOpenRouter(input, {

@@ -4,6 +4,7 @@ import {
   type SpeechTranscriptionFormat,
   type SpeechTranscriptionConfig,
 } from '#config/speech_transcription'
+import { openRouterTranscriptionBody } from '@blame/speech-contract'
 
 type SpeechTranscriptionInput = {
   data: string
@@ -58,11 +59,7 @@ export default class SpeechTranscriptionService {
     let response: Response
     try {
       response = await this.fetcher('https://openrouter.ai/api/v1/audio/transcriptions', {
-        body: JSON.stringify({
-          input_audio: { data: input.data, format: input.format },
-          model: this.config.model,
-          temperature: 0,
-        }),
+        body: JSON.stringify(openRouterTranscriptionBody({ ...input, model: this.config.model })),
         headers: {
           'Accept': 'application/json',
           'Authorization': `Bearer ${this.config.apiKey}`,

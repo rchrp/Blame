@@ -77,12 +77,10 @@ function useSpeechContainer() {
   }
 }
 
-// Away from its editor, the recording follows the user in a corner card
-// that says where the text goes, and can be finished from there.
+// Move the same recording control without restarting capture.
 function SpeechRecordingHost() {
   const { store, activeKey, container, setActiveKey, fallback, floating } =
     useSpeechContainer()
-  const target = activeKey ? store.target(activeKey) : undefined
   const deliver = useLatestCallback((key: string, text: string) => {
     const target = store.target(key)
     const reachedEditor = store.deliver(key, text)
@@ -98,31 +96,20 @@ function SpeechRecordingHost() {
   return (
     <>
       <div
+        ref={fallback}
         role="region"
         aria-label="Voice input"
         className={
           floating
-            ? "pointer-events-auto fixed right-4 bottom-4 z-[100] w-max max-w-[calc(100vw-2rem)] animate-in rounded-2xl border bg-popover p-3 text-popover-foreground shadow-xl duration-200 fade-in-0 slide-in-from-bottom-2"
+            ? "pointer-events-auto fixed right-4 bottom-4 z-[100] max-w-[calc(100vw-2rem)]"
             : "hidden"
         }
-      >
-        {floating ? (
-          <div className="mb-2 flex min-w-0 items-center gap-1.5 text-xs">
-            <MicIcon className="size-3.5 shrink-0 text-destructive" />
-            <span className="shrink-0 font-medium">Voice note</span>
-            {target?.label ? (
-              <span className="truncate text-muted-foreground">
-                → {target.label}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-        <div ref={fallback} />
-      </div>
+      />
       {activeKey
         ? createPortal(
             <SpeechRecordingControl
               key={activeKey}
+              floating={floating}
               onFinished={() => setActiveKey(undefined)}
               onTranscription={(text) => deliver(activeKey, text)}
             />,

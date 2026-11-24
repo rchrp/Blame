@@ -46,6 +46,31 @@ test.group('speech transcription', () => {
     })
   })
 
+  test('requests Azure clean transcription for MAI-Transcribe 2', async ({ assert }) => {
+    let requestBody: unknown
+    const fetcher: typeof fetch = async (_input, init) => {
+      requestBody = JSON.parse(String(init?.body))
+      return jsonResponse({ text: 'Create a story.' })
+    }
+    const model = 'microsoft/mai-transcribe-2'
+    const service = new SpeechTranscriptionService({ ...testConfig(), model }, fetcher)
+    const data = Buffer.from('voice').toString('base64')
+
+    const result = await service.transcribe({ data, format: 'wav' })
+
+    assert.deepEqual(result, { text: 'Create a story.' })
+    assert.deepEqual(requestBody, {
+      input_audio: { data, format: 'wav' },
+      model,
+      temperature: 0,
+      provider: {
+        options: {
+          azure: { enhancedMode: { modelOptions: { transcribeStyle: 'clean' } } },
+        },
+      },
+    })
+  })
+
   test('rejects malformed audio before calling OpenRouter', async ({ assert }) => {
     let called = false
     const fetcher = async () => {

@@ -7,6 +7,7 @@ export {
   speechTranscriptionMaxEncodedChars,
 } from "./limits.js";
 export type { SpeechTranscriptionFormat } from "./limits.js";
+export { openRouterTranscriptionBody } from "./openrouter.js";
 export {
   checkOpenRouterKey,
   checkSpeechModel,

@@ -3,6 +3,7 @@ import {
   openRouterApiBase,
   openRouterErrorMessage,
   openRouterSpeechFailure,
+  openRouterTranscriptionBody,
   speechFailure,
   speechTranscriptionMaxAudioBytes,
   speechTranscriptionMaxEncodedChars,
@@ -52,7 +53,11 @@ export async function transcribeWithOpenRouter(
   input: { data: string; format: string; key: string; model: string },
   options: OpenRouterSpeechOptions = {},
 ): Promise<SpeechOwnKeyTranscription> {
-  const audio = checkAudio(input.data, input.format);
+  const { data, format, model } = input;
+  if (!isSpeechTranscriptionFormat(format)) {
+    return { ok: false, ...speechFailure("invalid-audio") };
+  }
+  const audio = checkAudio(data);
   if (audio) return { ok: false, ...audio };
   const fetcher = options.fetcher ?? fetch;
   let response: Response;
@@ -60,11 +65,7 @@ export async function transcribeWithOpenRouter(
     response = await fetcher(
       `${options.baseUrl ?? openRouterBaseUrl()}/audio/transcriptions`,
       {
-        body: JSON.stringify({
-          input_audio: { data: input.data, format: input.format },
-          model: input.model,
-          temperature: 0,
-        }),
+        body: JSON.stringify(openRouterTranscriptionBody({ data, format, model })),
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${input.key}`,
@@ -146,10 +147,7 @@ export async function testOpenRouterKey(
   return { ok: true };
 }
 
-function checkAudio(data: string, format: string) {
-  if (!isSpeechTranscriptionFormat(format)) {
-    return speechFailure("invalid-audio");
-  }
+function checkAudio(data: string) {
   if (!data || data.length > speechTranscriptionMaxEncodedChars) {
     return speechFailure(data ? "too-large" : "invalid-audio");
   }
