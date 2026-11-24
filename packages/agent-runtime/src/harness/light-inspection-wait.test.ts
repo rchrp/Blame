@@ -115,14 +115,17 @@ test("a command sent while another runs waits for it instead of failing on the w
     assert.equal(first.process, "running");
     const second = runner.run({ kind: "command", command: "node second.cjs" });
     await delay(200);
-    assert.equal(await readFile(order, "utf8").catch(() => ""), "", "The second command waits for the first.");
+    const orderWhileFirstRuns = await readFile(order, "utf8").catch(() => "");
     await writeFile(join(root, ".blame/go"), "go");
-    const result = await second as { status: string; data?: { exitCode?: number; process?: string } };
+    const result = await second as { status: string; data?: { exitCode?: number; run?: string } };
     assert.equal(result.status, "ok", JSON.stringify(result));
-    // On a slow machine the second command outlasts its 300 ms wait and
-    // answers while it still runs: it ran after the first all the same.
-    if (result.data?.process !== "running") assert.equal(result.data?.exitCode, 0);
-    for (let n = 0; n < 500 && await readFile(order, "utf8").catch(() => "") !== "ab"; n++) await delay(10);
+    // A managed run can write its output before the harness finishes journaling it.
+    const completed = result.data?.run
+      ? data(await runner.run({ kind: "inspect", run: result.data.run })).completed
+      : result;
+    assert.equal(completed?.status, "ok", JSON.stringify(completed));
+    assert.equal(completed.data?.exitCode, 0);
+    assert.equal(orderWhileFirstRuns, "", "The second command waits for the first.");
     assert.equal(await readFile(order, "utf8"), "ab");
   });
 });
