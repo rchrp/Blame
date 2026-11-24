@@ -1,27 +1,27 @@
 import * as React from "react"
 
 import { useCloudAuth } from "@/context/cloud-auth"
-import { usePlatform, type AgentScreenshotData } from "@/context/platform"
+import {
+  usePlatform,
+  type AgentScreenshotData,
+  type AgentScreenshotMetadata,
+} from "@/context/platform"
 import {
   readAgentScreenshot,
   type ScreenshotOwner,
 } from "@/lib/agent-screenshot-sync"
 
-import { screenshotRefs } from "../tool-calls/describe-preview-devtools"
-import type { ScreenshotRef } from "../tool-calls/tool-call-view"
-
-// A screenshot as shown in the conversation: its id, what the tool result
-// said about it when known, and a caption chosen by the agent.
-export type ScreenshotItem = {
-  caption?: string
-  id: string
-  ref?: ScreenshotRef
-}
+import { readEngineImage } from "./engine-image"
+import {
+  screenshotItemsFromActivities,
+  type ScreenshotItem,
+} from "./screenshot-items"
+export type { ScreenshotItem } from "./screenshot-items"
 
 export type ScreenshotState =
   | { status: "loading" }
   | { status: "unavailable" }
-  | { data: AgentScreenshotData; status: "ready" }
+  | { source: string; metadata?: AgentScreenshotMetadata; status: "ready" }
 
 const OwnerContext = React.createContext<ScreenshotOwner | undefined>(undefined)
 const GroupContext = React.createContext<ScreenshotItem[]>([])
@@ -38,43 +38,23 @@ export function AgentScreenshotOwnerProvider({
   return <OwnerContext.Provider value={owner}>{children}</OwnerContext.Provider>
 }
 
-// Every screenshot of one turn, so the lightbox can move between them.
+// Every tool screenshot of the conversation, including earlier turns.
 export function ScreenshotGroupProvider({
   activities,
   children,
 }: {
-  activities: ReadonlyArray<{ detail: string; kind: string }>
+  activities: Parameters<typeof screenshotItemsFromActivities>[0]
   children: React.ReactNode
 }) {
-  // Compared by content: activity objects are recreated on every update.
-  const key = activities
-    .filter(
-      (activity) =>
-        activity.kind === "tool" && activity.detail.includes("screenshot_ref")
-    )
-    .map((activity) => activity.detail)
-    .join("\u0000")
   const items = React.useMemo(
-    () => screenshotItemsFromDetails(key ? key.split("\u0000") : []),
-    [key]
+    () => screenshotItemsFromActivities(activities),
+    [activities]
   )
   return <GroupContext.Provider value={items}>{children}</GroupContext.Provider>
 }
 
 export function useScreenshotGroup() {
   return React.useContext(GroupContext)
-}
-
-export function screenshotItemsFromDetails(details: string[]) {
-  const refs: ScreenshotRef[] = []
-  for (const detail of details) {
-    try {
-      screenshotRefs(JSON.parse(detail), refs)
-    } catch {
-      // A truncated preview: no screenshot to show from it.
-    }
-  }
-  return refs.map((ref) => ({ id: ref.id, ref }))
 }
 
 const maximumCachedScreenshots = 48
@@ -115,8 +95,9 @@ export function useAgentScreenshot(
   const platform = usePlatform()
   const auth = useCloudAuth()
   const owner = React.useContext(OwnerContext)
-  const id = item?.id
+  const id = item?.blob ? undefined : item?.id
   const sessionId = item?.ref?.sessionId
+  const blob = useEngineScreenshot(item?.blob ? item.id : undefined)
   const value = React.useSyncExternalStore(subscribe, () => snapshot(id))
   React.useEffect(() => {
     if (!id || loaded.has(id) || pending.has(id)) return
@@ -145,7 +126,37 @@ export function useAgentScreenshot(
       })
     pending.set(id, request)
   }, [auth.apiConnection, id, owner, platform.agentScreenshots, sessionId])
+  if (item?.blob) return blob
   if (value === "loading") return { status: "loading" }
   if (value === "unavailable") return { status: "unavailable" }
-  return { data: value, status: "ready" }
+  return { source: value.dataUrl, metadata: value.metadata, status: "ready" }
+}
+
+function useEngineScreenshot(id: string | undefined): ScreenshotState {
+  const { apiConnection } = useCloudAuth()
+  const [result, setResult] = React.useState<{
+    id: string
+    source: string | null
+  }>()
+  React.useEffect(() => {
+    if (!id) return
+    const controller = new AbortController()
+    let source: string | null = null
+    void readEngineImage(apiConnection, id, controller.signal)
+      .catch(() => null)
+      .then((blob) => {
+        if (controller.signal.aborted) return
+        source = blob ? URL.createObjectURL(blob) : null
+        setResult({ id, source })
+      })
+    return () => {
+      controller.abort()
+      if (source) URL.revokeObjectURL(source)
+    }
+  }, [apiConnection, id])
+  if (!id) return { status: "unavailable" }
+  if (result?.id !== id) return { status: "loading" }
+  return result.source
+    ? { status: "ready", source: result.source }
+    : { status: "unavailable" }
 }

@@ -37,7 +37,10 @@ export function ScreenshotThumbnail({
   if (state.status === "unavailable")
     return <ScreenshotUnavailable style={style} />
   const pageUrl =
-    item.ref?.pageUrl || state.data.metadata.pageUrl || "the preview"
+    item.ref?.pageUrl ||
+    state.metadata?.pageUrl ||
+    item.caption ||
+    "the preview"
   return (
     <button
       type="button"
@@ -51,7 +54,7 @@ export function ScreenshotThumbnail({
         className="size-full object-cover object-top"
         draggable={false}
         loading="lazy"
-        src={state.data.dataUrl}
+        src={state.source}
       />
     </button>
   )

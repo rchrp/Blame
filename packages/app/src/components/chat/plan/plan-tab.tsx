@@ -151,10 +151,8 @@ function Tab({ model }: { model: PlanTabModel }) {
         height={size.height}
         width={size.width}
       >
-        {/* Opaque under the editor's own tint: the transcript scrolls behind the open list. */}
         <path className="fill-popover" d={shape} />
-        <path className="fill-muted/50" d={shape} />
-        <path className="fill-none stroke-foreground/20" d={outline} />
+        <path className="fill-none stroke-foreground/12" d={outline} />
       </svg>
       <section
         aria-label="Agent plan"

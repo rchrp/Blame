@@ -1,5 +1,6 @@
 import * as React from "react"
-import { CheckIcon, LoaderCircleIcon, XIcon } from "lucide-react"
+import { CheckIcon, LoaderCircleIcon, MicIcon, XIcon } from "lucide-react"
+import { motion, useReducedMotion } from "motion/react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -257,125 +258,134 @@ export function SpeechRecordingControl({
     setAnalyser(nextAnalyser)
   }
 
-  if (status === "idle") return null
-
-  if (status === "starting") {
-    return (
-      <Button
-        aria-label="Starting voice input"
-        className="rounded-xl text-muted-foreground"
-        disabled
-        size="icon-sm"
-        title="Starting voice input"
-        type="button"
-        variant="ghost"
-      >
-        <LoaderCircleIcon className="size-3.5 animate-spin" />
-      </Button>
-    )
-  }
-
-  if (status === "transcribing") {
-    return (
-      <div className="flex items-center gap-1">
-        <span className="max-w-32 truncate text-xs text-muted-foreground">
-          Transcribing…
-        </span>
-        <LoaderCircleIcon
-          aria-hidden="true"
-          className="size-3.5 animate-spin text-blue-500"
-        />
-      </div>
-    )
-  }
-
   return (
-    <div className="flex min-w-0 items-center gap-1">
-      <span
-        aria-live="polite"
-        className="flex min-w-0 items-center gap-1.5 rounded-full bg-destructive/10 px-2 py-1 text-xs text-destructive"
-      >
-        <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-destructive" />
-        {analyser && <AudioSpectrum analyser={analyser} />}
-        <span className="tabular-nums">{formatDuration(elapsedMs)}</span>
-      </span>
-      <Button
-        aria-label="Cancel voice input"
-        className="rounded-xl text-muted-foreground hover:text-foreground"
-        size="icon-sm"
-        title="Cancel voice input"
-        type="button"
-        variant="ghost"
-        onClick={() => void cancelRecording()}
-        onPointerDown={(event) => event.preventDefault()}
-      >
-        <XIcon className="size-3.5" />
-      </Button>
-      <Button
-        aria-label="Transcribe voice input"
-        className="rounded-xl text-emerald-600 hover:bg-emerald-500/10 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-        size="icon-sm"
-        title="Transcribe voice input"
-        type="button"
-        variant="ghost"
-        onClick={() => void transcribeRecording()}
-        onPointerDown={(event) => event.preventDefault()}
-      >
-        <CheckIcon className="size-3.5" />
-      </Button>
-    </div>
+    <SpeechCapturePill
+      status={status === "idle" ? "starting" : status}
+      analyser={analyser}
+      elapsedMs={elapsedMs}
+      onCancel={() => void cancelRecording()}
+      onConfirm={() => void transcribeRecording()}
+    />
   )
 }
 
-function AudioSpectrum({ analyser }: { analyser: AnalyserNode }) {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null)
+export function SpeechCapturePill({
+  status,
+  analyser = null,
+  elapsedMs = 0,
+  onCancel,
+  onConfirm,
+}: {
+  status: Exclude<RecordingStatus, "idle">
+  analyser?: AnalyserNode | null
+  elapsedMs?: number
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const reducedMotion = useReducedMotion()
+  return (
+    <motion.div
+      initial={{ width: 32 }}
+      animate={{
+        width: status === "starting" ? 32 : status === "recording" ? 168 : 136,
+      }}
+      transition={{ duration: reducedMotion ? 0 : 0.24, ease: "easeOut" }}
+      className="flex h-8 shrink-0 items-center overflow-hidden rounded-full border border-foreground/8 bg-foreground/4 px-1 text-muted-foreground focus-within:ring-1 focus-within:ring-ring"
+    >
+      <span className="sr-only" role="status">
+        {status === "starting"
+          ? "Starting voice input"
+          : status === "recording"
+            ? "Recording voice input"
+            : "Transcribing voice input"}
+      </span>
+      <span className="grid size-5 shrink-0 place-items-center">
+        {status === "transcribing" ? (
+          <LoaderCircleIcon className="size-3.5 motion-safe:animate-spin" />
+        ) : (
+          <MicIcon className="size-3.5" />
+        )}
+      </span>
+      {status === "recording" && (
+        <>
+          <VoiceWave analyser={analyser} />
+          <span
+            className="shrink-0 text-[11px] tabular-nums"
+            aria-hidden="true"
+          >
+            {formatDuration(elapsedMs)}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className="ml-auto rounded-full"
+            aria-label="Cancel voice input"
+            title="Cancel voice input"
+            onClick={onCancel}
+            onPointerDown={(event) => event.preventDefault()}
+          >
+            <XIcon />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            className="rounded-full bg-foreground text-background hover:bg-foreground/80 hover:text-background dark:hover:bg-foreground/80"
+            aria-label="Transcribe voice input"
+            title="Transcribe voice input"
+            onClick={onConfirm}
+            onPointerDown={(event) => event.preventDefault()}
+          >
+            <CheckIcon />
+          </Button>
+        </>
+      )}
+      {status === "transcribing" && (
+        <span className="ml-1 text-xs whitespace-nowrap">Transcribing…</span>
+      )}
+    </motion.div>
+  )
+}
 
+function VoiceWave({ analyser }: { analyser: AnalyserNode | null }) {
+  const waveRef = React.useRef<SVGGElement>(null)
+  const reducedMotion = useReducedMotion()
   React.useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const context = canvas.getContext("2d")
-    if (!context) return
+    const wave = waveRef.current
+    if (!wave || !analyser || reducedMotion) return
     const activeAnalyser = analyser
-    const canvasElement = canvas
-    const drawingContext = context
-    const ratio = window.devicePixelRatio || 1
-    const width = 88
-    const height = 20
-    canvas.width = width * ratio
-    canvas.height = height * ratio
-    canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
-    drawingContext.scale(ratio, ratio)
     const data = new Uint8Array(activeAnalyser.frequencyBinCount)
-    const barCount = 18
-    const barWidth = 3
-    const gap = 2
-    let frame = 0
-
+    let frame: number
     function draw() {
       activeAnalyser.getByteFrequencyData(data)
-      drawingContext.clearRect(0, 0, width, height)
-      drawingContext.fillStyle = getComputedStyle(canvasElement).color
-      for (let index = 0; index < barCount; index += 1) {
-        const dataIndex = Math.floor((index / barCount) * data.length)
-        const level = data[dataIndex] ?? 0
-        const barHeight = Math.max(2, (level / 255) * height)
-        drawingContext.fillRect(
-          index * (barWidth + gap),
-          (height - barHeight) / 2,
-          barWidth,
-          barHeight
-        )
-      }
+      const average = data.reduce((sum, value) => sum + value, 0) / data.length
+      wave?.setAttribute(
+        "transform",
+        `translate(0 8) scale(1 ${0.55 + average / 120}) translate(0 -8)`
+      )
       frame = requestAnimationFrame(draw)
     }
-
-    draw()
+    frame = requestAnimationFrame(draw)
     return () => cancelAnimationFrame(frame)
-  }, [analyser])
-
+  }, [analyser, reducedMotion])
   return (
-    <canvas ref={canvasRef} aria-hidden="true" className="text-destructive" />
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 48 16"
+      className="mx-1 h-4 w-12 shrink-0 text-foreground/65"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.3"
+    >
+      <g ref={waveRef}>
+        <motion.path
+          d="M-24 8q4 0 6-3t6 3t6 3t6-3t6-3t6 3t6 3t6-3t6-3t6 3t6 3t6-3"
+          animate={reducedMotion ? undefined : { x: [0, 24] }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+        />
+      </g>
+    </svg>
   )
 }
 

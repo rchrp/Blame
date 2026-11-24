@@ -18,10 +18,10 @@ export function FeatureStart({
   footer,
 }: FeatureStartProps) {
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] pb-6 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
+    <div className="project-page-top flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto px-4 pb-6 lg:px-6">
       <header className="shrink-0">
-        <h2 className="font-heading text-xl font-semibold">{title}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        <h2 className="project-page-title">{title}</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </header>
       <section className="my-auto w-full max-w-5xl self-center py-10 sm:py-16">
         <div className="grid overflow-hidden rounded-xl border bg-card md:grid-cols-[1.1fr_1fr]">

@@ -9,6 +9,14 @@
 
 @custom-variant dark (&:is(.dark *):not(:is(.light, .light *)));
 
+@utility project-page-top {
+  padding-top: calc(var(--header-height) + 0.5rem);
+}
+
+@utility project-page-title {
+  @apply font-heading text-2xl font-semibold tracking-tight;
+}
+
 /* The corner light can travel around a control without moving its content. */
 @property --corner-x {
   syntax: "<percentage>";
@@ -385,8 +393,8 @@
 
   .blame-pierre-file,
   .blame-pierre-diff {
-    --diffs-light-bg: var(--background);
-    --diffs-dark-bg: var(--background);
+    --diffs-light-bg: var(--diff-surface, var(--background));
+    --diffs-dark-bg: var(--diff-surface, var(--background));
     --diffs-light: var(--foreground);
     --diffs-dark: var(--foreground);
     --diffs-bg-hover-override: var(--muted);
@@ -761,16 +769,12 @@
   }
 
   .user-story-state-effect[data-story-state="in-progress"] {
-    box-shadow:
-      0 0 0 1px oklch(0.7 0.17 250 / 25%),
-      0 0 14px oklch(0.65 0.2 250 / 32%);
+    box-shadow: 0 0 0 1px oklch(0.7 0.17 250 / 24%);
   }
 
   .user-story-state-effect[data-story-state="in-review"] {
     background: oklch(0.7 0.18 250 / 35%);
-    box-shadow:
-      0 0 0 1px oklch(0.7 0.17 250 / 12%),
-      0 0 4px oklch(0.65 0.2 250 / 10%);
+    box-shadow: 0 0 0 1px oklch(0.7 0.17 250 / 12%);
   }
 
   [data-window-shell-bar] {

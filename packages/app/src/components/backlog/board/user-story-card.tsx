@@ -54,6 +54,9 @@ type UserStoryCardBodyProps = {
   titleGenerating?: boolean
 }
 
+const storyCardClassName =
+  "group/user-story relative z-1 rounded-lg bg-popover shadow-xs ring-foreground/10 dark:bg-neutral-800"
+
 type UserStoryCardProps = {
   cleanup?: boolean
   diffStats?: UserStoryDiffStats
@@ -99,10 +102,7 @@ export const UserStoryCard = React.memo(function UserStoryCard({
       data-story-id={story.id}
       data-story-state={story.status}
     >
-      <Card
-        size="sm"
-        className="group/user-story relative z-1 rounded-lg bg-white! dark:bg-neutral-900!"
-      >
+      <Card size="sm" className={storyCardClassName}>
         <UserStoryCardBody
           cleanup={cleanup}
           onOpenDrawer={onOpenDrawer}
@@ -110,7 +110,7 @@ export const UserStoryCard = React.memo(function UserStoryCard({
           story={story}
           titleGenerating={titleGenerating}
         />
-        <CardFooter>
+        <CardFooter className="border-foreground/8 bg-transparent group-data-[size=sm]/card:px-3 group-data-[size=sm]/card:py-2">
           <StoryActions
             diffStats={diffStats}
             onAction={onAction}
@@ -151,10 +151,7 @@ export function ReadOnlyUserStoryCard({ story }: { story: UserStory }) {
       data-story-id={story.id}
       data-story-state={story.status}
     >
-      <Card
-        size="sm"
-        className="group/user-story relative z-1 rounded-lg bg-white! dark:bg-neutral-900!"
-      >
+      <Card size="sm" className={storyCardClassName}>
         <UserStoryCardBody interactive={false} story={story} />
       </Card>
     </div>
@@ -181,7 +178,7 @@ function UserStoryCardBody({
 }: UserStoryCardBodyProps) {
   return (
     <>
-      <CardHeader className="gap-0 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
+      <CardHeader className="gap-y-1.5 has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]">
         <p className="flex min-w-0 items-center gap-2 text-xs font-medium text-muted-foreground">
           <StoryContributors story={story} />
           <span className="shrink-0">{userStoryLabel(story)}</span>

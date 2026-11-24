@@ -39,7 +39,7 @@ export function StoryApproveMergeMenu({
   return (
     // The card is draggable: pressing the button or the arrow, or choosing in
     // the menu (React events cross its portal), must not start a drag.
-    <div onPointerDown={(event) => event.stopPropagation()}>
+    <div className="grow" onPointerDown={(event) => event.stopPropagation()}>
       <ApproveMergeMenu
         activeAction={pendingAction ?? transitionAction}
         compact

@@ -42,7 +42,11 @@ export function NavMain({
 
   return (
     <SidebarGroup>
-      {label ? <SidebarGroupLabel>{label}</SidebarGroupLabel> : null}
+      {label ? (
+        <SidebarGroupLabel className="h-7 text-[11px] font-semibold">
+          {label}
+        </SidebarGroupLabel>
+      ) : null}
       <SidebarGroupContent className="flex flex-col gap-2">
         <SidebarMenu>
           {items.map((item) =>
@@ -52,9 +56,13 @@ export function NavMain({
                   asChild
                   isActive={pathname === item.url}
                   tooltip={`${item.title} · ${routeShortcutLabel(item.url)}`}
-                  className="justify-center bg-sidebar-foreground/[0.07] hover:bg-sidebar-foreground/12 data-[active=true]:bg-sidebar-foreground/15"
+                  className="justify-center border border-foreground/8 bg-popover/70 font-semibold shadow-xs data-active:border-sidebar-primary/20 data-active:bg-sidebar-primary/8 data-active:text-sidebar-primary dark:data-active:bg-sidebar-primary/12"
                 >
-                  <AppLink href={item.url} aria-label={item.title}>
+                  <AppLink
+                    href={item.url}
+                    aria-label={item.title}
+                    aria-current={pathname === item.url ? "page" : undefined}
+                  >
                     {item.icon}
                     <span className="group-data-[collapsible=icon]:hidden">
                       {item.title}
@@ -67,6 +75,7 @@ export function NavMain({
                 <SidebarMenuButton
                   asChild
                   tooltip={item.title}
+                  className="gap-2.5 border border-transparent text-sidebar-foreground/80 data-active:border-sidebar-primary/15 data-active:bg-sidebar-primary/8 data-active:font-semibold data-active:text-sidebar-primary data-active:hover:bg-sidebar-primary/12 dark:data-active:bg-sidebar-primary/12 dark:data-active:hover:bg-sidebar-primary/16"
                   isActive={
                     pathname === item.url &&
                     (item.url !== "/chat" || !quickChats.activeId) &&
@@ -75,6 +84,9 @@ export function NavMain({
                 >
                   <AppLink
                     href={item.url}
+                    aria-current={
+                      pathname === item.url ? "location" : undefined
+                    }
                     onClick={() => {
                       if (item.url === "/chat") {
                         quickChats.setActiveId(undefined)

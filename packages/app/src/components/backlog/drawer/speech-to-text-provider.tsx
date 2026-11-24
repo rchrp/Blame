@@ -187,9 +187,9 @@ function SpeechStartButton({
           aria-keyshortcuts="Shift+F10"
           title="Start voice input · Right-click to choose a microphone"
           type="button"
-          className="rounded-xl text-muted-foreground hover:text-foreground"
-          size="icon-sm"
-          variant="ghost"
+          className="rounded-full"
+          size="icon"
+          variant="subtle"
           disabled={disabled}
           onPointerDown={(event) => {
             if (event.pointerType === "mouse") event.preventDefault()

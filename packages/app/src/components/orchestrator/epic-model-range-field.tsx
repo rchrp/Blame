@@ -52,8 +52,8 @@ export function EpicModelRangeField({
     return modelName(item)
   }
   return (
-    <div className="@container/model-range grid min-w-0 gap-3">
-      <div className="flex justify-between text-sm text-muted-foreground">
+    <div className="@container/model-range grid min-w-0 gap-1">
+      <div className="flex justify-between px-1 text-xs text-muted-foreground">
         <span>Cheaper</span>
         <span>Smarter</span>
       </div>
@@ -65,7 +65,7 @@ export function EpicModelRangeField({
         onChange={onChange}
       />
       {picks ? (
-        <dl className="grid gap-1.5 rounded-lg bg-muted/50 p-3 text-sm @sm/model-range:grid-cols-3 @sm/model-range:gap-3">
+        <dl className="mt-1 grid gap-x-4 gap-y-2 border-t border-foreground/8 pt-3 text-sm @sm/model-range:grid-cols-3">
           {modelIntents.map((intent) => (
             <div
               key={intent}
@@ -79,7 +79,9 @@ export function EpicModelRangeField({
                   className="shrink-0"
                   providerId={picks[intent].providerId}
                 />
-                <span className="truncate">{modelName(picks[intent])}</span>
+                <span className="min-w-0 break-words">
+                  {modelName(picks[intent])}
+                </span>
               </dd>
             </div>
           ))}

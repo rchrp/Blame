@@ -130,7 +130,7 @@ const deploymentSetupSteps = [
 
 export function DeployLoading() {
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-[calc(var(--header-height)+1rem)] pb-8 lg:px-6">
+    <div className="project-page-top mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-8 lg:px-6">
       <Skeleton className="h-6 w-28" />
       <Skeleton className="h-52 w-full rounded-xl" />
       <Skeleton className="h-28 w-full rounded-xl" />

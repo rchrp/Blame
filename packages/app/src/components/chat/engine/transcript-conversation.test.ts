@@ -4,6 +4,8 @@ import type { Delta, SessionRecord } from "@blame/engine-client"
 import { TranscriptReducer } from "@blame/engine-client/transcript"
 
 import { transcriptConversation } from "./transcript-conversation.ts"
+import { screenshotItemsFromActivities } from "../screenshots/screenshot-items.ts"
+import { readEngineImage } from "../screenshots/engine-image.ts"
 import {
   describeToolCall,
   toolCallSource,
@@ -22,6 +24,37 @@ const config = {
   checkpoints: true,
 }
 const usage = { input_tokens: 100, output_tokens: 20, cost_micro_usd: 3000 }
+
+test("a capture loads when its blob arrives after the tool record", async (t) => {
+  const id = "a".repeat(64)
+  const replies = [
+    new Response(null, { status: 404 }),
+    new Response("image", { headers: { "x-blob-media-type": "image/png" } }),
+  ]
+  const fetchImage = t.mock.method(globalThis, "fetch", async () => {
+    const response = replies.shift()
+    assert.ok(response, "unexpected blob request")
+    return response
+  })
+  const image = await readEngineImage({ url: "https://example.invalid" }, id, new AbortController().signal)
+  assert.equal(image?.type, "image/png")
+  assert.equal(fetchImage.mock.callCount(), 2)
+})
+
+test("the tool gallery includes every capture in conversation order without duplicates", () => {
+  const [a, b, c, d] = ["a", "b", "c", "d"].map((char) => char.repeat(64))
+  const ref = (id: string) => ({ type: "screenshot_ref", id, width: 390 })
+  const items = screenshotItemsFromActivities([
+    { kind: "tool", detail: JSON.stringify({ output: [ref(a), ref(b)] }) },
+    { kind: "tool", detail: "", images: [{ id: c, caption: "Light" }, { id: d, caption: "Dark" }] },
+    { kind: "tool", detail: "", images: [{ id: a, caption: "Light" }] },
+    { kind: "message", detail: "", images: [{ id: "e".repeat(64), caption: "Final reply" }] },
+  ])
+  assert.deepEqual(items.map((item) => item.id), [a, b, c, d])
+  assert.equal(items[0]?.blob, true)
+  assert.equal(items[0]?.ref?.width, 390)
+  assert.equal(items[2]?.caption, "Light")
+})
 
 let seq = 0
 function record(body: Record<string, unknown>): SessionRecord {

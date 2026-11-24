@@ -144,10 +144,10 @@ function DeployPageContent() {
 
   return (
     <>
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] pb-6 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
+      <div className="project-page-top flex min-h-0 min-w-0 flex-1 flex-col gap-6 overflow-y-auto px-4 pb-6 lg:px-6">
         <div>
-          <h2 className="font-heading text-xl font-semibold">Deploy</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="project-page-title">Deploy</h2>
+          <p className="text-sm text-muted-foreground">
             Publish the current workspace to your Vercel account.
           </p>
         </div>

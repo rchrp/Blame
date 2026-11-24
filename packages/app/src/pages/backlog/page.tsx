@@ -802,7 +802,7 @@ export function BacklogPage({
   const drawerUndoComment = useLatestCallback(undoUserStoryComment)
 
   return (
-    <div className="flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
+    <div className="project-page-top flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pb-6">
       <WhileShown shown={active}>
       <BacklogToolbar
         disabled={!backlog.projectPath}
@@ -824,7 +824,7 @@ export function BacklogPage({
         onDrop={(story, drop) => runStatusPipRequest({ ...drop.request, storyId: story.id })}
         reviewDiffEmpty={reviewDiffEmpty}
       >
-      <KanbanBoard className="-mx-6 px-6" gridClassName="min-w-500 grid-cols-6">
+      <KanbanBoard className="-mx-4 px-4 lg:-mx-6 lg:px-6" gridClassName="min-w-480 grid-cols-6">
         {backlogColumns.map((column) => (
           <BacklogColumn
             key={`${backlog.projectId ?? "no-project"}:${column.id}`}

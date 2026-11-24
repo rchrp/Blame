@@ -151,7 +151,7 @@ export function NewProjectAssistant({ wizard }: { wizard: NewProjectWizard }) {
                 label: "your project",
               }}
               submitLabel="Send"
-              toolbarEnd={<ModelSelector role="agent" />}
+              toolbarEnd={<ModelSelector appearance="composer" role="agent" />}
             />
           </>
         }

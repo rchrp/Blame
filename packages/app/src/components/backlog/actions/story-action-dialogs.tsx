@@ -249,8 +249,8 @@ export function RejectDialog({
         <Button
           type="button"
           size={triggerSize}
-          variant="destructive"
-          className={cn("w-full justify-start", triggerClassName)}
+          variant="ghost"
+          className={cn("w-full justify-start text-destructive hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/15", triggerClassName)}
         >
           <XIcon />
           Reject

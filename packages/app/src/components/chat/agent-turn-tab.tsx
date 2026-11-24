@@ -72,10 +72,10 @@ function TurnTab({ metrics }: { metrics: AgentTurnMetrics }) {
         width={width}
       >
         <path
-          className="fill-muted/50"
+          className="fill-popover"
           d={`${outline} L ${width} ${height} L 0 ${height} Z`}
         />
-        <path className="fill-none stroke-foreground/20" d={outline} />
+        <path className="fill-none stroke-foreground/12" d={outline} />
       </svg>
       <div
         ref={labelRef}

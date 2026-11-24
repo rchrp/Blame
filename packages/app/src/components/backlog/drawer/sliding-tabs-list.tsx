@@ -57,7 +57,7 @@ export function SlidingTabsList({
       <span
         ref={knobRef}
         aria-hidden="true"
-        className="pointer-events-none absolute top-[3px] bottom-[3px] left-0 rounded-md border border-transparent bg-background opacity-0 shadow-sm data-placed:transition-[translate,width] data-placed:duration-200 data-placed:ease-out motion-reduce:transition-none dark:border-input dark:bg-input/30"
+        className="pointer-events-none absolute top-[3px] bottom-[3px] left-0 rounded-md border border-foreground/8 bg-popover opacity-0 shadow-xs data-placed:transition-[translate,width] data-placed:duration-200 data-placed:ease-out motion-reduce:transition-none"
       />
       {children}
     </TabsList>
@@ -66,7 +66,7 @@ export function SlidingTabsList({
 
 // The trigger leaves its look to the knob under it.
 export const slidingTabsTrigger =
-  "z-10 data-active:bg-transparent data-active:shadow-none group-data-[variant=default]/tabs-list:data-active:shadow-none dark:data-active:border-transparent dark:data-active:bg-transparent"
+  "z-10 group-data-[variant=default]/tabs-list:data-active:border-transparent group-data-[variant=default]/tabs-list:data-active:bg-transparent group-data-[variant=default]/tabs-list:data-active:shadow-none"
 
 // A blue dot on a tab's icon: something to see there now.
 export function TabReadyIcon({

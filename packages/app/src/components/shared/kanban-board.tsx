@@ -25,8 +25,6 @@ export function KanbanBoard({
     >
       <div
         className={cn(
-          // The 1px padding keeps the columns' ring from being clipped by the
-          // scroll container on the top and sides.
           "grid h-full auto-rows-[minmax(0,1fr)] gap-3 px-px pt-px pb-3",
           gridClassName
         )}
@@ -57,7 +55,7 @@ export function KanbanColumn({
   return (
     <section
       className={cn(
-        "flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border bg-muted/30 shadow-xl ring-1 shadow-black/10 ring-foreground/15 transition-[opacity,filter] duration-300 ease-out",
+        "flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-foreground/10 bg-foreground/3 transition-[opacity,filter] duration-200 ease-out dark:bg-neutral-900",
         dimmed && "opacity-40 grayscale"
       )}
       data-dimmed={dimmed || undefined}
@@ -65,10 +63,10 @@ export function KanbanColumn({
       {header}
       <div className="relative flex min-h-0 flex-1 flex-col">
         <ScrollArea
-          className="min-h-0 flex-1 bg-foreground/5 dark:bg-background [&_[data-slot=scroll-area-viewport]>div]:block!"
+          className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:block!"
           viewportRef={viewportRef}
         >
-          <div className="flex flex-col gap-3 p-3">{children}</div>
+          <div className="flex flex-col gap-2.5 p-2.5">{children}</div>
         </ScrollArea>
         {overlay}
       </div>
@@ -92,20 +90,27 @@ export function KanbanColumnHeader({
   children,
 }: KanbanColumnHeaderProps) {
   return (
-    <div className="flex items-start justify-between gap-3 border-b bg-muted/30 p-4">
+    <div className="flex items-start justify-between gap-3 border-b border-foreground/8 bg-popover/55 px-3.5 py-3 dark:bg-neutral-800">
       <div className="flex min-w-0 items-start gap-2.5">
         <span
-          className={cn("mt-1.5 size-3 shrink-0 rounded-full border-2", color)}
+          aria-hidden="true"
+          className={cn(
+            "mt-1.5 size-2.5 shrink-0 rounded-full border-2",
+            color
+          )}
         />
         <div className="min-w-0">
-          <h3 className="truncate text-base font-semibold">{title}</h3>
+          <h3 className="truncate text-sm font-semibold">{title}</h3>
           <p className="truncate text-xs text-muted-foreground">
             {description}
           </p>
           {children}
         </div>
       </div>
-      <Badge variant="secondary" className="tabular-nums">
+      <Badge
+        variant="secondary"
+        className="min-w-6 rounded-md border-foreground/8 bg-foreground/5 px-1.5 text-muted-foreground tabular-nums"
+      >
         <CountUp value={count} />
       </Badge>
     </div>

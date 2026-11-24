@@ -16,7 +16,7 @@ import * as React from "react"
 import { toast } from "sonner"
 
 import { ApprovalDecision } from "@/components/chat/engine/engine-approvals"
-import { EngineToolImages } from "@/components/chat/engine/engine-blob-image"
+import { ToolScreenshotStrip } from "./screenshots/screenshot-tool-call"
 import type {
   UserStoryAgentActivity,
   UserStoryAgentRunKind,
@@ -241,67 +241,73 @@ export function AgentConversationTimeline({
     [runs]
   )
   const timelineRef = React.useRef<HTMLDivElement>(null)
+  const screenshotActivities = React.useMemo(
+    () => runs.flatMap(agentTimelineActivities),
+    [runs]
+  )
 
   if (runs.length === 0 && unsentComments.length === 0 && !queued) return null
 
   return (
     <AgentScreenshotOwnerProvider owner={screenshotOwner}>
-      <WebResearchProvider runs={runs} loadDetail={loadActivityDetail}>
-        <StoryProposalsProvider runs={runs}>
-          {/* Room for the avatars beside the messages (-left-10 and
+      <ScreenshotGroupProvider activities={screenshotActivities}>
+        <WebResearchProvider runs={runs} loadDetail={loadActivityDetail}>
+          <StoryProposalsProvider runs={runs}>
+            {/* Room for the avatars beside the messages (-left-10 and
               -right-10): whatever holds the thread, they stay inside it. */}
-          <div
-            ref={timelineRef}
-            className="grid gap-10 px-10"
-            aria-busy={runs.some((run) => run.status === "running")}
-          >
-            {runs.map((run, index) => (
-              <AgentConversationTurn
-                key={run.id}
-                opening={turnContent?.get(run.id)?.opening}
-                outcome={turnContent?.get(run.id)?.outcome}
-                activityAlwaysVisible={
-                  lastVisibleMessage?.type === "activity" &&
-                  lastVisibleMessage.runId === run.id
-                }
-                checkpointRunCount={
-                  checkpointTargets[index]?.checkpointRunCount
-                }
-                commentAlwaysVisible={
-                  lastVisibleMessage?.type === "comment" &&
-                  lastVisibleMessage.runId === run.id
-                }
-                loadChangedFileDiffs={loadChangedFileDiffs}
-                comment={runComment(run, commentsById)}
-                highlightFinalResponse={
-                  run.id === highlightedFinalResponseRunId
-                }
-                onFileLinkClick={onFileLinkClick}
-                onChangedFileClick={onChangedFileClick}
-                onLoadActivityDetail={loadActivityDetail}
-                onUserMessageUndo={onUserMessageUndo}
-                modelSwitch={modelSwitched(runs[index - 1], run)}
-                responseHeader={responseHeader}
-                responseHeaderForRun={responseHeaderForRun}
-                run={run}
-              />
-            ))}
-            {unsentComments.map((comment) => (
-              <RunCommentItem
-                key={comment.id}
-                alwaysVisible
-                comment={comment}
-                onFileLinkClick={onFileLinkClick}
-              />
-            ))}
-            {queued}
-          </div>
-          <SelectionExcerptActions
-            containerRef={timelineRef}
-            readExcerpt={selectedMessageExcerpt}
-          />
-        </StoryProposalsProvider>
-      </WebResearchProvider>
+            <div
+              ref={timelineRef}
+              className="grid gap-10 px-10"
+              aria-busy={runs.some((run) => run.status === "running")}
+            >
+              {runs.map((run, index) => (
+                <AgentConversationTurn
+                  key={run.id}
+                  opening={turnContent?.get(run.id)?.opening}
+                  outcome={turnContent?.get(run.id)?.outcome}
+                  activityAlwaysVisible={
+                    lastVisibleMessage?.type === "activity" &&
+                    lastVisibleMessage.runId === run.id
+                  }
+                  checkpointRunCount={
+                    checkpointTargets[index]?.checkpointRunCount
+                  }
+                  commentAlwaysVisible={
+                    lastVisibleMessage?.type === "comment" &&
+                    lastVisibleMessage.runId === run.id
+                  }
+                  loadChangedFileDiffs={loadChangedFileDiffs}
+                  comment={runComment(run, commentsById)}
+                  highlightFinalResponse={
+                    run.id === highlightedFinalResponseRunId
+                  }
+                  onFileLinkClick={onFileLinkClick}
+                  onChangedFileClick={onChangedFileClick}
+                  onLoadActivityDetail={loadActivityDetail}
+                  onUserMessageUndo={onUserMessageUndo}
+                  modelSwitch={modelSwitched(runs[index - 1], run)}
+                  responseHeader={responseHeader}
+                  responseHeaderForRun={responseHeaderForRun}
+                  run={run}
+                />
+              ))}
+              {unsentComments.map((comment) => (
+                <RunCommentItem
+                  key={comment.id}
+                  alwaysVisible
+                  comment={comment}
+                  onFileLinkClick={onFileLinkClick}
+                />
+              ))}
+              {queued}
+            </div>
+            <SelectionExcerptActions
+              containerRef={timelineRef}
+              readExcerpt={selectedMessageExcerpt}
+            />
+          </StoryProposalsProvider>
+        </WebResearchProvider>
+      </ScreenshotGroupProvider>
     </AgentScreenshotOwnerProvider>
   )
 }
@@ -389,53 +395,51 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
       {modelSwitch ? (
         <ModelSwitchNote responseHeader={turnResponseHeader} run={run} />
       ) : null}
-      <ScreenshotGroupProvider activities={activities}>
-        <div className="grid min-w-0 gap-5">
-          {/* Messages sent into the running turn split its work: each shows
+      <div className="grid min-w-0 gap-5">
+        {/* Messages sent into the running turn split its work: each shows
               where it joined, with the agent's acknowledgement under it. */}
-          {segments.map((segment, index) => (
-            <React.Fragment key={segment.steer?.id ?? "work"}>
-              {segment.steer ? (
-                <RunCommentItem
-                  alwaysVisible={false}
-                  comment={steerComment(segment.steer)}
-                  onFileLinkClick={onFileLinkClick}
-                  run={run}
-                />
-              ) : null}
-              {segment.acknowledgement ? (
-                <AgentStreamMessage
-                  activity={segment.acknowledgement}
-                  activityId={segment.acknowledgement.id}
-                  alwaysVisible={false}
-                  highlightFinalResponse={false}
-                  onFileLinkClick={onFileLinkClick}
-                  onLoadDetail={loadActivityDetail}
-                  responseHeader={turnResponseHeader}
-                  run={run}
-                />
-              ) : null}
-              <AgentWorkDetails
-                activities={segment.activities}
-                alwaysVisible={
-                  activityAlwaysVisible && index === segments.length - 1
-                }
-                earlier={index < segments.length - 1}
-                highlightFinalResponse={highlightFinalResponse}
+        {segments.map((segment, index) => (
+          <React.Fragment key={segment.steer?.id ?? "work"}>
+            {segment.steer ? (
+              <RunCommentItem
+                alwaysVisible={false}
+                comment={steerComment(segment.steer)}
+                onFileLinkClick={onFileLinkClick}
+                run={run}
+              />
+            ) : null}
+            {segment.acknowledgement ? (
+              <AgentStreamMessage
+                activity={segment.acknowledgement}
+                activityId={segment.acknowledgement.id}
+                alwaysVisible={false}
+                highlightFinalResponse={false}
                 onFileLinkClick={onFileLinkClick}
                 onLoadDetail={loadActivityDetail}
                 responseHeader={turnResponseHeader}
                 run={run}
               />
-            </React.Fragment>
-          ))}
-          <TurnSummary
-            activities={activities}
-            onFileClick={openChangedFile}
-            run={run}
-          />
-        </div>
-      </ScreenshotGroupProvider>
+            ) : null}
+            <AgentWorkDetails
+              activities={segment.activities}
+              alwaysVisible={
+                activityAlwaysVisible && index === segments.length - 1
+              }
+              earlier={index < segments.length - 1}
+              highlightFinalResponse={highlightFinalResponse}
+              onFileLinkClick={onFileLinkClick}
+              onLoadDetail={loadActivityDetail}
+              responseHeader={turnResponseHeader}
+              run={run}
+            />
+          </React.Fragment>
+        ))}
+        <TurnSummary
+          activities={activities}
+          onFileClick={openChangedFile}
+          run={run}
+        />
+      </div>
       {outcome}
     </section>
   )
@@ -472,6 +476,7 @@ export function AgentConversationComposer({
   queueWhileRunning = false,
   title,
   toolbarEnd,
+  toolbarStart,
   turnMetrics,
 }: {
   // While the agent runs, typing turns Stop into Send (the message goes
@@ -512,6 +517,7 @@ export function AgentConversationComposer({
   planTab?: React.ReactNode
   title?: string
   toolbarEnd?: React.ReactNode
+  toolbarStart?: React.ReactNode
   turnMetrics?: AgentTurnMetrics
 }) {
   const hasMessageBody = Boolean(
@@ -593,6 +599,7 @@ export function AgentConversationComposer({
           onMarkdownChange={onMessageChange}
           onFileLinkClick={onFileLinkClick}
           readOnly={disabled || submitting}
+          submitting={submitting}
           placeholder={placeholder}
           minHeight={minHeight}
           maxHeight="max-h-80"
@@ -602,17 +609,21 @@ export function AgentConversationComposer({
             <Button
               aria-label={primaryActionLabel}
               className={cn(
-                "size-9 rounded-xl border p-0 text-white shadow-md transition-[transform,background-color,box-shadow] duration-200 active:scale-90 disabled:border-muted disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
-                stopAction
-                  ? "border-destructive bg-destructive shadow-destructive/25 hover:bg-destructive/90 hover:text-white"
-                  : "border-blue-500 bg-blue-500 shadow-blue-500/25 hover:bg-blue-600 hover:text-white"
+                "rounded-full p-0 transition-[background-color,color] disabled:opacity-100",
+                stopAction && !submitting
+                  ? "bg-foreground text-background hover:bg-foreground/85 disabled:bg-foreground/70"
+                  : "bg-blue-600 text-white hover:bg-blue-700",
+                submitting
+                  ? "disabled:bg-blue-600/75"
+                  : !stopAction &&
+                      "disabled:bg-foreground/8 disabled:text-muted-foreground"
               )}
               disabled={
                 stopAction
                   ? cancelingAgent || !onAgentCancel
                   : disabled || submitting || submitDisabled || !hasMessageBody
               }
-              size="icon-sm"
+              size="icon-lg"
               type="button"
               onClick={handlePrimaryAction}
             >
@@ -625,7 +636,7 @@ export function AgentConversationComposer({
                 {submitting ? (
                   <LoaderCircleIcon className="size-4 animate-spin" />
                 ) : stopAction ? (
-                  <SquareIcon className="size-3.5 fill-current" />
+                  <SquareIcon className="size-3 fill-current" />
                 ) : (
                   <ArrowUpIcon className="size-4" />
                 )}
@@ -633,6 +644,7 @@ export function AgentConversationComposer({
             </Button>
           }
           toolbarEnd={toolbarEnd}
+          toolbarStart={toolbarStart}
         />
       </div>
     </section>
@@ -995,7 +1007,7 @@ function AgentActivityTimeline({
   void activities
   const visibleActivityIds = activityIds ?? registry.activityIds
   return (
-    <Accordion type="multiple" className="grid gap-2">
+    <Accordion type="multiple" className="grid gap-1.5">
       {visibleActivityIds.map((activityId, index) => (
         <StreamingAgentActivityItem
           {...props}
@@ -1101,7 +1113,10 @@ function AgentStreamActivity({
     return (
       <div className="grid gap-1">
         <AgentStreamTool activity={activity} {...props} />
-        <EngineToolImages images={activity.images} />
+        <ToolScreenshotStrip
+          className="py-1 pl-7"
+          items={activity.images.map((image) => ({ ...image, blob: true }))}
+        />
       </div>
     )
   }

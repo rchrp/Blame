@@ -26,10 +26,8 @@ const stepKeys: Record<string, -1 | 1> = {
   PageUp: 1,
 }
 
-// The smart slider with two handles: the slice of notches between them is
-// the range. Both handles rest on notches and may meet on one. It looks like
-// NotchedSlider (same track, fill, notches and thumbs) and takes the pointer
-// (the nearer handle follows it) and the keyboard (arrows step one notch).
+// Both handles rest on notches and may meet on one. The nearer handle follows
+// the pointer, and arrow keys move the focused handle by one notch.
 export function NotchedRangeSlider({
   ariaLabel,
   markers,
@@ -100,16 +98,13 @@ export function NotchedRangeSlider({
       onPointerUp={() => setDragging(undefined)}
       onPointerCancel={() => setDragging(undefined)}
     >
-      <div className="smart-model-slider-track notched-slider-blue pointer-events-none absolute inset-x-0 top-1/2 h-[18px] -translate-y-1/2 rounded-full">
+      <div className="pointer-events-none absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-foreground/10">
         <span
-          className="smart-model-slider-fill absolute inset-y-0 overflow-hidden rounded-full transition-[left,width] duration-200 ease-out motion-reduce:transition-none"
-          style={
-            {
-              "--smart-position": maxPosition,
-              left: `calc(${sliderPoint(minPosition)} - 12px)`,
-              width: `calc(${sliderPoint(maxPosition)} - ${sliderPoint(minPosition)} + 24px)`,
-            } as React.CSSProperties
-          }
+          className="absolute inset-y-0 rounded-full bg-blue-600/70 transition-[left,width] duration-200 ease-out motion-reduce:transition-none dark:bg-blue-400/65"
+          style={{
+            left: sliderPoint(minPosition),
+            width: `calc(${sliderPoint(maxPosition)} - ${sliderPoint(minPosition)})`,
+          }}
         />
       </div>
       {markers.map((marker, index) =>
@@ -117,7 +112,7 @@ export function NotchedRangeSlider({
           <span
             key={index}
             className={cn(
-              "pointer-events-none absolute top-1/2 z-1 size-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full",
+              "pointer-events-none absolute top-1/2 z-1 size-1 -translate-x-1/2 -translate-y-1/2 rounded-full",
               index > minIndex && index < maxIndex
                 ? "bg-white/70"
                 : "bg-foreground/30"
@@ -143,8 +138,8 @@ export function NotchedRangeSlider({
             aria-valuenow={Math.round(position * 1000)}
             aria-valuetext={valueText?.(handle, position)}
             className={cn(
-              "absolute top-1/2 size-6 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full bg-white shadow-md ring-2 ring-neutral-900 transition-[left,scale,box-shadow] duration-200 ease-out outline-none hover:scale-110 focus-visible:scale-125 focus-visible:shadow-lg motion-reduce:transition-none dark:ring-background",
-              dragging === handle && "scale-125 cursor-grabbing shadow-xl",
+              "absolute top-1/2 size-4 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-full border border-foreground/35 bg-popover shadow-xs transition-[left,box-shadow] duration-200 ease-out outline-none focus-visible:ring-2 focus-visible:ring-ring motion-reduce:transition-none",
+              dragging === handle && "cursor-grabbing ring-2 ring-ring/50",
               // Met on one notch: the max handle stays on top to pull right.
               handle === "max" ? "z-3" : "z-2"
             )}

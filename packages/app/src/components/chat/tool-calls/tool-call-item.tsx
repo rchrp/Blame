@@ -9,6 +9,7 @@ import {
   FolderTreeIcon,
   GlobeIcon,
   ListChecksIcon,
+  LoaderCircleIcon,
   MessageCircleQuestionMarkIcon,
   MonitorPlayIcon,
   NetworkIcon,
@@ -92,9 +93,7 @@ export function ToolCallItem({
 }) {
   const [fullDetail, setFullDetail] = React.useState<string>()
   const { details, rememberDetail } = useWebResearch()
-  const researchDetail = details.get(
-    activity.id ?? ""
-  )
+  const researchDetail = details.get(activity.id ?? "")
   const [loading, setLoading] = React.useState(false)
   const view = React.useMemo(
     () =>
@@ -114,6 +113,8 @@ export function ToolCallItem({
     ? !detail.needsAttention
     : view.bodies.length > 0 || hasFullDetail
   const screenshots = view.bodies.find((body) => body.type === "screenshot")
+  const failed = detail?.failed || view.failed
+  const verb = detail?.verb ?? view.verb
 
   async function loadDetail() {
     setLoading(true)
@@ -136,35 +137,30 @@ export function ToolCallItem({
         entering && "chat-enter-step"
       )}
     >
-      <div className="grid grid-cols-[2rem_minmax(0,1fr)] items-start gap-2 text-sm">
-        {/* Keyed by state: the icon pops when the step finishes. */}
+      <div className="grid grid-cols-[1.5rem_minmax(0,1fr)] items-start gap-1 text-sm">
         <span
-          key={running ? "running" : "idle"}
+          aria-hidden="true"
           className={cn(
-            "flex size-8 items-center justify-center text-muted-foreground",
-            running ? "chat-step-running" : entering && "chat-step-done",
-            (detail?.failed || view.failed) && "text-red-600 dark:text-red-400"
+            "flex h-8 items-center justify-center text-muted-foreground",
+            failed && "text-destructive"
           )}
         >
-          <Icon className="size-4" />
+          {running ? (
+            <LoaderCircleIcon className="size-3.5 animate-spin motion-reduce:animate-none" />
+          ) : (
+            <Icon className="size-3.5" />
+          )}
         </span>
         <div className="min-w-0">
           <AccordionTrigger
             className={cn(
-              "min-h-8 min-w-0 items-center gap-2 py-0 hover:no-underline",
+              "min-h-8 min-w-0 items-center gap-2 px-1.5 py-0 transition-colors hover:bg-foreground/4 hover:no-underline **:data-[slot=accordion-trigger-icon]:size-3.5",
               !expandable &&
                 "cursor-default disabled:opacity-100 **:data-[slot=accordion-trigger-icon]:hidden"
             )}
           >
-            <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-1.5 font-normal">
-              <span
-                className={cn(
-                  "shrink-0 text-muted-foreground",
-                  running && "agent-activity-running"
-                )}
-              >
-                {detail?.verb ?? view.verb}
-              </span>
+            <span className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 py-1 font-normal">
+              <span className="font-medium text-muted-foreground">{verb}</span>
               {!detail && view.target ? (
                 <span
                   className={cn(
@@ -176,13 +172,16 @@ export function ToolCallItem({
                   {view.target.text}
                 </span>
               ) : null}
+              {running && !/^running\b/i.test(verb) && (
+                <span className="text-xs text-muted-foreground">Running</span>
+              )}
               {view.webSources?.length ? (
                 <span className="self-center">
                   <SourceStack sources={view.webSources} />
                 </span>
               ) : null}
               {view.chips.length ? (
-                <span className="flex shrink-0 items-center gap-1 self-center">
+                <span className="flex max-w-full flex-wrap items-center gap-1 self-center">
                   {view.chips.map((chip) => (
                     <Chip key={chip.label} chip={chip} />
                   ))}
@@ -201,7 +200,7 @@ export function ToolCallItem({
             />
           ) : null}
           {expandable ? (
-            <AccordionContent className="grid gap-2 pt-1.5 pb-1">
+            <AccordionContent className="mt-1 grid min-w-0 gap-2 border-l border-foreground/10 pb-1.5 pl-3">
               {detail
                 ? detail.content
                 : view.bodies.map((body, index) => (

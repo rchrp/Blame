@@ -34,10 +34,10 @@ export function EpicProviderField({
             type="button"
             aria-pressed={selected}
             className={cn(
-              "inline-flex min-h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "inline-flex min-h-7 items-center gap-1.5 rounded-md border px-2 text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring",
               selected
-                ? "border-foreground/25 bg-foreground/10 text-foreground"
-                : "border-border/70 text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "border-foreground/12 bg-foreground/6 text-foreground"
+                : "border-transparent text-muted-foreground hover:bg-foreground/5 hover:text-foreground"
             )}
             onClick={() =>
               onChange(

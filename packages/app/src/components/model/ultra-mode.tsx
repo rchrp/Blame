@@ -1,5 +1,4 @@
 import * as React from "react"
-import { ZapIcon } from "lucide-react"
 
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
@@ -19,25 +18,12 @@ export const ultraExplanation =
 /** What the menu says where the model cannot run helpers. */
 export const ultraUnavailableReason = "Not available with Claude Code."
 
-/** The glyph alone, where Ultra mode is off but can be turned on. */
-export function UltraGlyph({ className }: { className?: string }) {
-  return (
-    <ZapIcon
-      aria-hidden="true"
-      className={cn("size-3.5 shrink-0 text-muted-foreground", className)}
-    />
-  )
-}
-
 /** The small marker of a composer or a message that has ultra mode on. */
 export function UltraMark({
   className,
-  compact = false,
   label = "Ultra",
 }: {
   className?: string
-  /** Under a narrow window the word goes and the icon stays, for screen readers too. */
-  compact?: boolean
   label?: string
 }) {
   return (
@@ -47,8 +33,7 @@ export function UltraMark({
         className
       )}
     >
-      <ZapIcon className="size-3" aria-hidden="true" />
-      <span className={cn(compact && "max-sm:sr-only")}>{label}</span>
+      {label}
     </span>
   )
 }

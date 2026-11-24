@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
   BlocksIcon,
+  ArrowRightIcon,
   GitPullRequestIcon,
   RouteIcon,
   WorkflowIcon,
@@ -142,23 +143,9 @@ export function NewEpic({
           />
         }
         composer={
-          <div className="grid gap-3">
-            {noPreviewEnvironment ? (
-              <p
-                className="rounded-lg border border-amber-500/35 bg-background/90 px-3 py-2.5 text-sm"
-                role="status"
-              >
-                An epic needs this project’s preview environment to run its
-                stories.{" "}
-                <AppLink
-                  className="font-medium underline underline-offset-4"
-                  href="/initialization"
-                >
-                  Set up the preview environment
-                </AppLink>
-              </p>
-            ) : null}
-            <div className="epic-setup mx-auto w-full max-w-3xl rounded-3xl border border-foreground/15 bg-card">
+          <div className="mx-auto grid w-full max-w-3xl gap-3">
+            {noPreviewEnvironment ? <EpicPreviewEnvironmentNotice /> : null}
+            <div className="epic-setup min-w-0 rounded-[1.25rem] border border-foreground/12 bg-popover">
               <AgentConversationComposer
                 {...draft.composer}
                 disabled={!project || noPreviewEnvironment}
@@ -185,6 +172,30 @@ export function NewEpic({
         }
       />
     </main>
+  )
+}
+
+export function EpicPreviewEnvironmentNotice() {
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-foreground/10 bg-popover px-3 py-2.5">
+      <BlocksIcon
+        aria-hidden="true"
+        className="size-4 shrink-0 text-muted-foreground"
+      />
+      <div role="status" className="min-w-0 flex-1 text-sm">
+        <p className="font-medium">Preview environment required</p>
+        <p className="text-muted-foreground">
+          Set it up so the orchestrator can run this epic’s stories.
+        </p>
+      </div>
+      <AppLink
+        className="ml-auto inline-flex min-h-8 items-center gap-1.5 rounded-md px-2 text-sm font-medium text-primary outline-none hover:bg-foreground/5 focus-visible:ring-2 focus-visible:ring-ring dark:text-blue-300"
+        href="/initialization"
+      >
+        Set up the preview environment
+        <ArrowRightIcon aria-hidden="true" className="size-3.5" />
+      </AppLink>
+    </div>
   )
 }
 

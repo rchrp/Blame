@@ -25,8 +25,8 @@ export function ResponseImageCarousel({
   const items = React.useMemo(
     () =>
       images.map((image) => ({
+        ...group.find((entry) => entry.id === image.id),
         ...image,
-        ref: group.find((entry) => entry.id === image.id)?.ref,
       })),
     [group, images]
   )
@@ -192,14 +192,14 @@ function Slide({
         className="absolute inset-0 size-full scale-125 object-cover blur-2xl"
         draggable={false}
         loading="lazy"
-        src={state.data.dataUrl}
+        src={state.source}
       />
       <img
         alt={item.caption ?? ""}
         className="relative size-full object-contain"
         draggable={false}
         loading="lazy"
-        src={state.data.dataUrl}
+        src={state.source}
       />
     </button>
   )
@@ -233,7 +233,7 @@ function SlideThumbnail({
           alt=""
           className="size-full object-cover object-top"
           draggable={false}
-          src={state.data.dataUrl}
+          src={state.source}
         />
       ) : null}
     </button>

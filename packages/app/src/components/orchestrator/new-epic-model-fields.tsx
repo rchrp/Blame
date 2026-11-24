@@ -17,16 +17,23 @@ export function NewEpicModelFields({
       aria-label="Story agents"
       disabled={disabled}
       inert={disabled}
-      className="mx-4 grid min-w-0 gap-2.5 border-t border-border/65 pt-3 pb-4 @xl/epic:mx-5 @xl/epic:grid-cols-[9rem_minmax(0,1fr)] @xl/epic:items-baseline @xl/epic:gap-4"
+      className="mx-4 grid min-w-0 gap-4 border-t border-foreground/10 pt-4 pb-4 @xl/epic:mx-5"
     >
-      <h3 className="flex items-center gap-2 text-sm font-medium">
-        <Layers2Icon
-          aria-hidden="true"
-          className="size-4 text-muted-foreground"
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="flex items-center gap-2 text-sm font-semibold">
+          <Layers2Icon
+            aria-hidden="true"
+            className="size-4 text-muted-foreground"
+          />
+          Story agents
+        </h3>
+        <EpicProviderField
+          connected={models.connectedProviders}
+          value={draft.providers}
+          onChange={(providers) => change({ providers })}
         />
-        Story agents
-      </h3>
-      <div className="grid min-w-0 gap-2.5 @xl/epic:w-full @xl/epic:max-w-md @xl/epic:justify-self-end">
+      </div>
+      <div className="min-w-0">
         {models.loading && !models.recommendations ? (
           <p role="status" className="text-xs text-muted-foreground">
             Loading story models…
@@ -41,14 +48,6 @@ export function NewEpicModelFields({
             onChange={(range) => change({ range })}
           />
         )}
-        <div className="flex max-w-full flex-wrap items-center gap-x-2.5 gap-y-1.5 @xl/epic:justify-end @xl/epic:[&>[role=group]]:justify-end">
-          <span className="text-xs text-muted-foreground">Providers</span>
-          <EpicProviderField
-            connected={models.connectedProviders}
-            value={draft.providers}
-            onChange={(providers) => change({ providers })}
-          />
-        </div>
       </div>
     </fieldset>
   )

@@ -174,8 +174,8 @@ export function SecurityPage() {
   return (
     <>
       {audit && audit.status !== "completed" && (
-        <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 pt-[calc(var(--header-height)+1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]">
-          <h2 className="font-heading text-xl font-semibold">Security Audit</h2>
+        <div className="project-page-top flex shrink-0 flex-wrap items-center justify-between gap-3 px-4 lg:px-6">
+          <h2 className="project-page-title">Security Audit</h2>
           <SecurityAuditHistory
             audit={audit}
             audits={security.audits}

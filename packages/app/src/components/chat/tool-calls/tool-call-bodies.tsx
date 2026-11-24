@@ -379,7 +379,7 @@ function TerminalBody({
   const lines = output?.replace(/\n$/u, "").split("\n") ?? []
   const shown = lines.slice(-maxLines)
   return (
-    <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-[#0d1017] font-mono text-xs leading-5 text-[#d6deeb] dark:border-white/10">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-black/10 bg-neutral-900 font-mono text-xs leading-5 text-neutral-200 dark:border-white/10">
       {command ? (
         <div className="flex gap-2 border-b border-white/[0.06] px-3 py-2">
           <span className="shrink-0 text-emerald-400 select-none">
@@ -389,24 +389,24 @@ function TerminalBody({
             {command}
           </span>
           <CopyButton
-            className="text-[#7f8898] hover:bg-white/10 hover:text-white"
+            className="text-neutral-400 hover:bg-white/10 hover:text-white"
             label="Copy command"
             text={command}
           />
         </div>
       ) : null}
       {shown.length ? (
-        <pre className="max-h-72 overflow-auto px-3 py-2 break-words whitespace-pre-wrap text-[#c3cad6]">
+        <pre className="max-h-72 overflow-auto px-3 py-2 break-words whitespace-pre-wrap text-neutral-300">
           {lines.length > maxLines
             ? `… ${lines.length - maxLines} earlier lines\n`
             : ""}
           {shown.join("\n")}
         </pre>
       ) : command ? (
-        <div className="px-3 py-2 text-[#7f8898]">No output</div>
+        <div className="px-3 py-2 text-neutral-400">No output</div>
       ) : null}
       {exitCode !== undefined || truncated ? (
-        <div className="flex items-center gap-3 border-t border-white/[0.06] px-3 py-1.5 text-[11px] text-[#7f8898]">
+        <div className="flex items-center gap-3 border-t border-white/[0.06] px-3 py-1.5 text-[11px] text-neutral-400">
           {exitCode !== undefined ? (
             <span
               className={exitCode === 0 ? "text-emerald-400" : "text-red-400"}

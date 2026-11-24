@@ -58,10 +58,10 @@ export function PracticesPage() {
   useMarkCodePracticeAnalysisViewed(analysis)
 
   return (
-    <div className="flex flex-1 flex-col items-center px-4 pt-[calc(var(--header-height)+1rem)] pb-4 lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
+    <div className="project-page-top flex flex-1 flex-col items-center px-4 pb-4 lg:px-6 lg:pb-6">
       <div className="flex w-full max-w-3xl flex-col gap-4">
         <div>
-          <h2 className="font-heading text-2xl font-semibold tracking-normal">
+          <h2 className="project-page-title">
             Code practices
           </h2>
           <p className="max-w-2xl text-sm text-muted-foreground">

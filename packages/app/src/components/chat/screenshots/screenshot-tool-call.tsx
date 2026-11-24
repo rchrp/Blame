@@ -68,13 +68,23 @@ export function ToolCallScreenshots({
   screenshots: ScreenshotRef[]
 }) {
   const items = screenshots.map((ref) => ({ id: ref.id, ref }))
-  const { lightbox, open } = useLightbox(items)
   if (pending)
     return (
       <div className={className}>
         <PendingScreenshot />
       </div>
     )
+  return <ToolScreenshotStrip className={className} items={items} />
+}
+
+export function ToolScreenshotStrip({
+  className,
+  items,
+}: {
+  className?: string
+  items: ScreenshotItem[]
+}) {
+  const { lightbox, open } = useLightbox(items)
   if (!items.length) return null
   return (
     <div className={cn("flex flex-wrap gap-2", className)}>
@@ -121,7 +131,7 @@ function LargeScreenshot({
   const state = useAgentScreenshot(item)
   const ref = item.ref
   const createdAt =
-    state.status === "ready" ? state.data.metadata.createdAt : undefined
+    state.status === "ready" ? state.metadata?.createdAt : undefined
   const ratio =
     ref?.width && ref.height ? `${ref.width} / ${ref.height}` : "16 / 10"
   return (
@@ -138,7 +148,7 @@ function LargeScreenshot({
             className="max-h-[360px] w-full object-contain"
             draggable={false}
             loading="lazy"
-            src={state.data.dataUrl}
+            src={state.source}
           />
         </button>
       ) : state.status === "loading" ? (

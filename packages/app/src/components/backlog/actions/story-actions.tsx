@@ -23,7 +23,6 @@ import {
 } from "@/components/backlog/actions/story-action-dialogs"
 import { Separator } from "@/components/ui/separator"
 import { useStoryWorkToPush } from "@/pages/backlog/use-story-work-to-push"
-import { cn } from "@/lib/utils"
 
 export function StoryActions({
   diffStats,
@@ -81,7 +80,7 @@ export function StoryActions({
   }
 
   return (
-    <div className="flex w-full justify-end gap-2">
+    <div className="flex w-full flex-wrap justify-end gap-2">
       {userStoryActions(story).map((action) => (
         <UserStoryAction
           key={action}
@@ -183,7 +182,7 @@ function ProgressActions({
         onOpenWorktree={onOpenWorktree}
         story={story}
       />
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-wrap justify-end gap-2">
         {story.agentStatus === "Paused" && (
           <StoryAction
             action="Unpause Agent"
@@ -241,15 +240,11 @@ function ReviewActions({
         story={story}
       />
       {story.pullRequestUrl ? (
-        <div
-          className={cn(
-            "grid gap-2",
-            updatePullRequest ? "grid-cols-2" : "grid-cols-1"
-          )}
-        >
+        <div className="flex flex-wrap items-center gap-2">
           {updatePullRequest ? (
             <StoryAction
               action="Open PR"
+              className="w-auto grow"
               label="Update Pull Request"
               onAction={onAction}
               onOpenDrawer={onOpenDrawer}
@@ -258,22 +253,17 @@ function ReviewActions({
             />
           ) : null}
           <PullRequestButton
-            className="w-full"
+            className="grow"
             size="sm"
             url={story.pullRequestUrl}
           />
         </div>
       ) : (
-        <div
-          className={cn(
-            "grid gap-2",
-            approveLabel ? "grid-cols-2" : "grid-cols-[auto_1fr]"
-          )}
-        >
+        <div className="flex flex-wrap items-center gap-2">
           {reviewDiffEmpty ? (
             <StoryAction
               action="Discard"
-              className="w-full"
+              className="w-auto"
               icon={Trash2Icon}
               iconOnly={false}
               label="Discard"
@@ -287,11 +277,13 @@ function ReviewActions({
               onOpenDrawer={onOpenDrawer}
               onReject={onReject}
               story={story}
+              triggerClassName="w-auto"
             />
           )}
           {approveLabel ? (
             <StoryAction
               action="Approve & Merge"
+              className="w-auto grow"
               label={approveLabel}
               onAction={onAction}
               onOpenDrawer={onOpenDrawer}
@@ -321,9 +313,14 @@ function DevelopmentActions({
   story: UserStory
 }) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div
+      className="flex flex-wrap items-center gap-1"
+      role="group"
+      aria-label="Development tools"
+    >
       <StoryAction
         action="View Diff"
+        className="w-auto"
         diffStats={diffStats}
         label="Diff"
         onOpenDrawer={onOpenDrawer}
@@ -331,12 +328,14 @@ function DevelopmentActions({
       />
       <StoryAction
         action="View Files"
+        iconOnly
         label="Files"
         onOpenDrawer={onOpenDrawer}
         story={story}
       />
       <StoryAction
         action="View Terminal"
+        iconOnly
         label="Terminal"
         onOpenDrawer={onOpenDrawer}
         story={story}

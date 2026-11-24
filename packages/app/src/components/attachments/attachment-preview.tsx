@@ -23,6 +23,7 @@ import { useAttachmentImageUrl } from "./use-stored-attachment-url"
 
 type AttachmentPreviewProps = {
   attachment: ComposerAttachment
+  compact?: boolean
   onOpenImage: (id: string) => void
   onOpenDocument: (id: string) => void
   onRemove?: (attachment: ComposerAttachment) => void
@@ -33,6 +34,7 @@ export function AttachmentPreview(props: AttachmentPreviewProps) {
     return (
       <StoryAttachmentPreview
         attachment={props.attachment}
+        compact={props.compact}
         onRemove={props.onRemove}
       />
     )
@@ -42,6 +44,7 @@ export function AttachmentPreview(props: AttachmentPreviewProps) {
 
 function FileAttachmentPreview({
   attachment,
+  compact = false,
   onOpenImage,
   onOpenDocument,
   onRemove,
@@ -51,11 +54,15 @@ function FileAttachmentPreview({
   const format = attachmentFormat(attachment.file)
   const isImage = Boolean(attachment.previewUrl)
   const previewable = !isImage && hasDocumentPreview(attachment.file)
-  const preview = useDocumentPreview(attachment, visible && previewable)
+  const preview = useDocumentPreview(
+    attachment,
+    !compact && visible && previewable
+  )
   const actions = useAttachmentActions(attachment)
   const image = useAttachmentImageUrl(attachment)
   const external = format === "audio" || format === "video"
   useEffect(() => {
+    if (compact) return
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting)) {
@@ -67,7 +74,7 @@ function FileAttachmentPreview({
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
-  }, [])
+  }, [compact])
   const title = attachment.title ?? attachment.file.name
   return (
     <div ref={ref} className="group relative shrink-0">
@@ -87,11 +94,38 @@ function FileAttachmentPreview({
               : onOpenDocument(attachment.id)
         }
         className={cn(
-          "relative flex h-40 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/40 text-left transition-colors outline-none hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60",
-          isImage ? "w-40" : "w-56"
+          "relative flex overflow-hidden rounded-xl border border-border/70 bg-muted/40 text-left transition-colors outline-none hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60",
+          compact
+            ? "h-12 max-w-56 items-center gap-2 pr-8 pl-2"
+            : cn("h-40 flex-col", isImage ? "w-40" : "w-56")
         )}
       >
-        {isImage ? (
+        {compact ? (
+          <>
+            {isImage ? (
+              <img
+                alt=""
+                className="size-8 shrink-0 rounded-md object-cover"
+                loading="lazy"
+                src={image.url}
+                onError={image.onError}
+              />
+            ) : (
+              <span className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground/5">
+                <AttachmentIcon format={format} />
+              </span>
+            )}
+            <span className="min-w-0 truncate text-xs font-medium">
+              {title}
+            </span>
+            {attachment.annotation && (
+              <PenLineIcon
+                aria-label="Annotated"
+                className="size-3 shrink-0 text-muted-foreground"
+              />
+            )}
+          </>
+        ) : isImage ? (
           <>
             <img
               alt=""
@@ -154,7 +188,7 @@ function FileAttachmentPreview({
           </>
         )}
       </button>
-      {!isImage && preview.data && (
+      {!compact && !isImage && preview.data && (
         <div
           inert
           aria-hidden="true"
@@ -170,6 +204,7 @@ function FileAttachmentPreview({
       )}
       {onRemove && (
         <RemoveAttachmentButton
+          compact={compact}
           title={title}
           onRemove={() => onRemove(attachment)}
         />
@@ -181,8 +216,9 @@ function FileAttachmentPreview({
 // A story attached as context: it opens the story, it has no preview.
 function StoryAttachmentPreview({
   attachment,
+  compact = false,
   onRemove,
-}: Pick<AttachmentPreviewProps, "attachment" | "onRemove">) {
+}: Pick<AttachmentPreviewProps, "attachment" | "compact" | "onRemove">) {
   const displayId = attachment.title ?? attachment.file.name
   const storyTitle = attachment.subtitle
   const label = storyTitle ? `${displayId} · ${storyTitle}` : displayId
@@ -197,32 +233,51 @@ function StoryAttachmentPreview({
         onClick={() => {
           if (storyId) openBacklogStory(storyId)
         }}
-        className="relative flex h-40 w-56 flex-col overflow-hidden rounded-xl border border-border/70 bg-muted/40 text-left transition-colors outline-none hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60"
+        className={cn(
+          "relative flex overflow-hidden rounded-xl border border-border/70 bg-muted/40 text-left transition-colors outline-none hover:border-foreground/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60",
+          compact
+            ? "h-12 max-w-56 items-center gap-2 pr-8 pl-2"
+            : "h-40 w-56 flex-col"
+        )}
       >
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-2 p-3">
-          <span className="line-clamp-4 text-sm leading-5 font-medium text-foreground">
-            {storyTitle ?? displayId}
-          </span>
-          <span className="mt-auto flex items-center gap-1 text-[11px] text-muted-foreground">
-            Open the story
-            <ArrowUpRightIcon className="size-3" />
-          </span>
-        </div>
-        <div className="flex h-10 w-full shrink-0 items-center gap-2 bg-background/85 px-3">
-          <Table2Icon className="size-4 shrink-0 text-muted-foreground" />
-          <span className="truncate font-mono text-xs font-medium">
-            {displayId}
-          </span>
-          <Badge
-            variant="secondary"
-            className="ml-auto h-5 shrink-0 px-1.5 text-[10px]"
-          >
-            Context
-          </Badge>
-        </div>
+        {compact ? (
+          <>
+            <span className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground/5 text-muted-foreground">
+              <Table2Icon className="size-4" />
+            </span>
+            <span className="min-w-0 truncate text-xs font-medium">
+              {storyTitle ?? displayId}
+            </span>
+          </>
+        ) : (
+          <>
+            <div className="flex min-h-0 w-full flex-1 flex-col gap-2 p-3">
+              <span className="line-clamp-4 text-sm leading-5 font-medium text-foreground">
+                {storyTitle ?? displayId}
+              </span>
+              <span className="mt-auto flex items-center gap-1 text-[11px] text-muted-foreground">
+                Open the story
+                <ArrowUpRightIcon className="size-3" />
+              </span>
+            </div>
+            <div className="flex h-10 w-full shrink-0 items-center gap-2 bg-background/85 px-3">
+              <Table2Icon className="size-4 shrink-0 text-muted-foreground" />
+              <span className="truncate font-mono text-xs font-medium">
+                {displayId}
+              </span>
+              <Badge
+                variant="secondary"
+                className="ml-auto h-5 shrink-0 px-1.5 text-[10px]"
+              >
+                Context
+              </Badge>
+            </div>
+          </>
+        )}
       </button>
       {onRemove && (
         <RemoveAttachmentButton
+          compact={compact}
           title={displayId}
           onRemove={() => onRemove(attachment)}
         />
@@ -232,9 +287,11 @@ function StoryAttachmentPreview({
 }
 
 function RemoveAttachmentButton({
+  compact,
   onRemove,
   title,
 }: {
+  compact: boolean
   onRemove: () => void
   title: string
 }) {
@@ -243,7 +300,12 @@ function RemoveAttachmentButton({
       type="button"
       aria-label={`Remove ${title}`}
       onClick={onRemove}
-      className="absolute top-1.5 right-1.5 flex size-7 items-center justify-center rounded-full bg-background/95 text-foreground shadow-sm transition-opacity outline-none group-hover:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-ring [@media(hover:hover)]:opacity-0"
+      className={cn(
+        "absolute flex items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        compact
+          ? "top-1/2 right-1.5 size-5 -translate-y-1/2 text-muted-foreground hover:bg-foreground/8 hover:text-foreground"
+          : "top-1.5 right-1.5 size-7 bg-background/95 text-foreground shadow-sm transition-opacity group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:hover)]:opacity-0"
+      )}
     >
       <XIcon className="size-3.5" />
     </button>

@@ -7,7 +7,10 @@ import {
   SlidersHorizontalIcon,
 } from "lucide-react"
 import * as React from "react"
-import type { BlameProvider as Provider, ProviderCredentialSummary } from "@blame/agent-runtime"
+import type {
+  BlameProvider as Provider,
+  ProviderCredentialSummary,
+} from "@blame/agent-runtime"
 
 import {
   ConnectProviderDialog,
@@ -41,7 +44,6 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import {
-  UltraGlyph,
   UltraMark,
   UltraToggle,
   ultraUnavailableReason,
@@ -79,12 +81,14 @@ type ModelDialog =
   | undefined
 
 export function ModelSelector({
+  appearance = "segmented",
   modelTriggerClassName,
   role,
   scope,
   ultra,
   warnOnModelChange,
 }: {
+  appearance?: "segmented" | "composer"
   modelTriggerClassName?: string
   role?: ModelPreferenceRole
   scope?: ModelSelectionScope
@@ -98,6 +102,7 @@ export function ModelSelector({
   return (
     <>
       <ModelPicker
+        plain={appearance === "composer"}
         modelTriggerClassName={modelTriggerClassName}
         selection={selection}
         setDialog={setDialog}
@@ -133,11 +138,13 @@ export function ModelSelector({
 
 function ModelPicker({
   modelTriggerClassName,
+  plain,
   selection,
   setDialog,
   ultra,
 }: {
   modelTriggerClassName?: string
+  plain: boolean
   selection: ModelSelection
   setDialog: (dialog: ModelDialog) => void
   ultra?: UltraControl
@@ -170,14 +177,19 @@ function ModelPicker({
   return (
     <Popover open={open} onOpenChange={openPicker}>
       <PopoverAnchor asChild>
-        <SelectorGroup>
+        <SelectorGroup className={plain ? "shrink gap-0" : undefined}>
           <ModelPickerTrigger
             className={modelTriggerClassName}
+            plain={plain}
             open={open}
             selection={selection}
             onWheel={onWheel}
           />
-          <ModelVariantSelector selection={selection} ultra={ultra} />
+          <ModelVariantSelector
+            plain={plain}
+            selection={selection}
+            ultra={ultra}
+          />
         </SelectorGroup>
       </PopoverAnchor>
       <ModelPickerContent
@@ -193,19 +205,17 @@ function ModelPicker({
   )
 }
 
-
-
-
-
 function ModelPickerTrigger({
   className,
   onWheel,
   open,
+  plain,
   selection,
 }: {
   className?: string
   onWheel: React.WheelEventHandler<HTMLButtonElement>
   open: boolean
+  plain: boolean
   selection: ModelSelection
 }) {
   return (
@@ -214,13 +224,18 @@ function ModelPickerTrigger({
         <PopoverTrigger asChild>
           <Button
             variant="ghost"
-            className={cn(selectorSegmentClassName, "w-48 shrink", className)}
+            className={cn(
+              plain
+                ? cn(plainModelTriggerClassName, "shrink text-foreground")
+                : cn(selectorSegmentClassName, "w-48 shrink"),
+              className
+            )}
             data-model-picker=""
             disabled={!selection.serverReady || selection.loading}
             onWheel={onWheel}
           >
-            <ModelSummary model={selection.currentModel} />
-            <PickerChevron open={open} />
+            <ModelSummary model={selection.currentModel} plain={plain} />
+            {!plain && <PickerChevron open={open} />}
           </Button>
         </PopoverTrigger>
       </TooltipTrigger>
@@ -756,16 +771,6 @@ function useSmartSliderSelection(props: SmartSliderInputProps) {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
 function SliderLabels({
   boundary,
   hasUnbenchmarked,
@@ -817,10 +822,6 @@ function SliderLabels({
     </div>
   )
 }
-
-
-
-
 
 function sliderRecommendations(
   recommendations: RecommendedSelectableModel[],
@@ -1102,10 +1103,15 @@ function recommendationIdentity(
     : undefined
 }
 
+const plainModelTriggerClassName =
+  "inline-flex h-8 min-w-0 items-center gap-1.5 rounded-md border-0 bg-transparent px-1.5 text-sm font-medium whitespace-nowrap shadow-none transition-colors hover:bg-transparent hover:text-foreground aria-expanded:bg-transparent aria-expanded:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none dark:hover:bg-transparent"
+
 function ModelVariantSelector({
+  plain,
   selection,
   ultra,
 }: {
+  plain: boolean
   selection: ModelSelection
   ultra?: UltraControl
 }) {
@@ -1142,9 +1148,13 @@ function ModelVariantSelector({
                     : `Ultra mode, ${ultraOn ? "on" : "off"}`
               }
               className={cn(
-                selectorSegmentClassName,
                 "shrink-0 capitalize",
-                hasVariants ? "min-w-28" : "w-auto"
+                plain
+                  ? cn(plainModelTriggerClassName, "text-muted-foreground")
+                  : cn(
+                      selectorSegmentClassName,
+                      hasVariants ? "min-w-28" : "w-auto"
+                    )
               )}
               type="button"
               onWheel={onWheel}
@@ -1153,16 +1163,13 @@ function ModelVariantSelector({
                 <span className="truncate">{variantLabel}</span>
               ) : null}
               {ultraOn ? (
-                <UltraMark className="normal-case" compact />
-              ) : hasVariants ? (
-                ultra && !unavailable ? <UltraGlyph /> : null
-              ) : (
+                <UltraMark className="normal-case" />
+              ) : !hasVariants ? (
                 <UltraMark
                   className="bg-transparent px-0 text-muted-foreground normal-case dark:bg-transparent dark:text-muted-foreground"
-                  compact
                 />
-              )}
-              <PickerChevron open={open} />
+              ) : null}
+              {!plain && <PickerChevron open={open} />}
             </button>
           </PopoverTrigger>
         </TooltipTrigger>
@@ -1212,9 +1219,7 @@ function ModelVariantContent({
       sideOffset={6}
       className={cn(
         "rounded-xl p-2",
-        ultra
-          ? "w-72"
-          : "w-[var(--radix-popover-trigger-width)] min-w-36"
+        ultra ? "w-72" : "w-[var(--radix-popover-trigger-width)] min-w-36"
       )}
     >
       <div className="space-y-0.5">
@@ -1246,7 +1251,13 @@ function PickerChevron({ open }: { open: boolean }) {
   )
 }
 
-function ModelSummary({ model }: { model: SelectableModel | undefined }) {
+function ModelSummary({
+  model,
+  plain = false,
+}: {
+  model: SelectableModel | undefined
+  plain?: boolean
+}) {
   if (!model) {
     return (
       <span className="min-w-0 flex-1 truncate text-left text-muted-foreground">
@@ -1257,8 +1268,14 @@ function ModelSummary({ model }: { model: SelectableModel | undefined }) {
 
   return (
     <span className="flex min-w-0 flex-1 items-center gap-2">
-      <ProviderMark provider={model.provider} />
-      <span className="min-w-0 truncate">{modelTriggerDisplayName(model)}</span>
+      {plain ? (
+        <ProviderIcon className="shrink-0" providerId={model.provider.id} />
+      ) : (
+        <ProviderMark provider={model.provider} />
+      )}
+      <span className="min-w-0 truncate">
+        {plain ? modelDisplayName(model) : modelTriggerDisplayName(model)}
+      </span>
     </span>
   )
 }

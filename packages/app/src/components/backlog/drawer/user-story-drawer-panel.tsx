@@ -621,13 +621,13 @@ export function UserStoryDrawerPanel({
         <Tabs
           value={tab}
           onValueChange={(value) => setTab(value as UserStoryDrawerTab)}
-          className="relative min-h-0 flex-1 gap-0 overflow-hidden"
+          className="relative min-h-0 flex-1 gap-0 overflow-hidden [--story-drawer-gutter:1.5rem]"
         >
           <DrawerHeader
             className={cn(
               // The blur spans the whole width, under the stats panel too;
               // only the title and tabs keep clear of it.
-              "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden px-6 pt-6 pr-14 pb-6 transition-[padding] duration-500 ease-out",
+              "absolute top-0 right-0 left-0 isolate z-[15] gap-4 overflow-hidden pt-6 pr-14 pb-6 pl-(--story-drawer-gutter) transition-[padding] duration-500 ease-out",
               tab === "user-story" &&
                 (statsShownExpanded
                   ? "lg:pr-[23rem]"

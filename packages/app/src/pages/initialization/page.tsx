@@ -115,14 +115,14 @@ export function InitializationPage() {
   return (
     <div
       className={cn(
-        "flex h-svh min-h-0 min-w-0 flex-col items-center overflow-y-auto px-4 pt-[calc(var(--header-height)+1rem)] md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)]",
+        "project-page-top flex h-svh min-h-0 min-w-0 flex-col items-center overflow-y-auto px-4 md:h-[calc(100svh_-_1rem)] lg:px-6",
         editing ? "pb-0" : "pb-12"
       )}
     >
       <div className="flex min-h-full w-full max-w-5xl shrink-0 flex-col gap-10">
         <header className="flex flex-wrap items-end justify-between gap-4">
-          <div className="grid gap-1">
-            <h2 className="font-heading text-2xl font-semibold tracking-normal">
+          <div>
+            <h2 className="project-page-title">
               Preview Environment
             </h2>
             <p className="text-sm text-muted-foreground">

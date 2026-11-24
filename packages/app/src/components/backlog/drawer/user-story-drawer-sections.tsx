@@ -198,52 +198,61 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           personalizationMenu={
             mode === "create" && onAmbitionChange ? (
               <PersonalizationMenu
-                ambition={{ value: ambition ?? null, onChange: onAmbitionChange }}
+                ambition={{
+                  value: ambition ?? null,
+                  onChange: onAmbitionChange,
+                }}
               />
             ) : undefined
           }
           readOnly={!editable}
-          toolbarEnd={
+          toolbarStart={
             editable ? (
-              <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
-                <SelectorGroup>
-                  <RuntimeProfileSelector
-                    value={runMode}
-                    onChange={onRunModeChange}
-                  />
-                  <StoryBranchSelector
-                    runMode={runMode}
-                    value={targetBranch}
-                    onChange={onTargetBranchChange}
-                  />
-                </SelectorGroup>
-                <MarkdownEditorModelSelector />
-              </div>
+              <SelectorGroup>
+                <RuntimeProfileSelector
+                  value={runMode}
+                  onChange={onRunModeChange}
+                />
+                <StoryBranchSelector
+                  runMode={runMode}
+                  value={targetBranch}
+                  onChange={onTargetBranchChange}
+                />
+              </SelectorGroup>
             ) : undefined
           }
+          toolbarEnd={editable ? <MarkdownEditorModelSelector /> : undefined}
           placeholder="Describe the user story, expected behavior, and acceptance criteria."
           minHeight="min-h-80"
           maxHeight="max-h-180"
         />
-        {summary.trim() ? (
-          <MarkdownMessageActions
-            alwaysVisible={summaryActionsAlwaysVisible(storyRuns)}
-            createdAt={userStory?.createdAt}
-            markdown={summary}
-          />
-        ) : null}
-        {onStartsAfterChange ? (
-          <StartsAfterField
-            // Until it starts: in the backlog or queued, or being written.
-            editable={
-              mode === "create" || status === "backlog" || status === "ready"
-            }
-            onChange={onStartsAfterChange}
-            queued={status === "ready"}
-            storyId={userStory?.id}
-            value={startsAfter ?? []}
-          />
-        ) : null}
+        {(onStartsAfterChange || summary.trim()) && (
+          <div className="flex min-w-0 items-start justify-between gap-2">
+            {onStartsAfterChange ? (
+              <StartsAfterField
+                // Until it starts: in the backlog or queued, or being written.
+                editable={
+                  mode === "create" ||
+                  status === "backlog" ||
+                  status === "ready"
+                }
+                onChange={onStartsAfterChange}
+                queued={status === "ready"}
+                storyId={userStory?.id}
+                value={startsAfter ?? []}
+              />
+            ) : null}
+            {summary.trim() ? (
+              <div className="ml-auto self-center">
+                <MarkdownMessageActions
+                  alwaysVisible={summaryActionsAlwaysVisible(storyRuns)}
+                  createdAt={userStory?.createdAt}
+                  markdown={summary}
+                />
+              </div>
+            ) : null}
+          </div>
+        )}
       </div>
       <div className="mx-auto w-full max-w-4xl">
         <AgentRunTimeline
@@ -375,7 +384,9 @@ function UserStoryCommentComposer({
           ? "Message the agent: ↵ right now, ⌘↵ when it finishes"
           : commentPlaceholder(status)
       }
-      submitLabel={agentRunning ? "Send to the agent now" : commentButtonLabel(status)}
+      submitLabel={
+        agentRunning ? "Send to the agent now" : commentButtonLabel(status)
+      }
       toolbarEnd={
         userStory && status !== "done" ? (
           <StoryCommentModelSelector userStory={userStory} />
@@ -388,33 +399,32 @@ function UserStoryCommentComposer({
 
 // Picks the model and reasoning of this story's next turn, without changing
 // the default used by new stories.
-const StoryCommentModelSelector = React.memo(function StoryCommentModelSelector({
-  userStory,
-}: {
-  userStory: UserStory
-}) {
-  const preference = useStoryModelChoice(userStory)
-  const storyId = userStory.id
-  const scope = React.useMemo(
-    () => ({
-      preference,
-      onChange: (next: CloudAiModelPreference) =>
-        saveStoryModelChoice(storyId, next),
-    }),
-    [preference, storyId]
-  )
-  const [ultra, setUltra] = useConversationUltra(storyUltraKey(storyId))
-  return (
-    <ModelSelector
-      role="agent"
-      scope={scope}
-      ultra={{ checked: ultra, onCheckedChange: setUltra }}
-      warnOnModelChange={Boolean(
-        userStory.agentModels?.length || userStory.engineSessionId
-      )}
-    />
-  )
-})
+const StoryCommentModelSelector = React.memo(
+  function StoryCommentModelSelector({ userStory }: { userStory: UserStory }) {
+    const preference = useStoryModelChoice(userStory)
+    const storyId = userStory.id
+    const scope = React.useMemo(
+      () => ({
+        preference,
+        onChange: (next: CloudAiModelPreference) =>
+          saveStoryModelChoice(storyId, next),
+      }),
+      [preference, storyId]
+    )
+    const [ultra, setUltra] = useConversationUltra(storyUltraKey(storyId))
+    return (
+      <ModelSelector
+        appearance="composer"
+        role="agent"
+        scope={scope}
+        ultra={{ checked: ultra, onCheckedChange: setUltra }}
+        warnOnModelChange={Boolean(
+          userStory.agentModels?.length || userStory.engineSessionId
+        )}
+      />
+    )
+  }
+)
 
 function commentPlaceholder(status: BacklogColumnId) {
   if (status === "done") return "Comments are read-only after merge."
@@ -536,7 +546,7 @@ const StoryBranchSelector = React.memo(function StoryBranchSelector({
 })
 const MarkdownEditorModelSelector = React.memo(
   function ModelSelectorBoundary() {
-    return <ModelSelector />
+    return <ModelSelector appearance="composer" />
   }
 )
 

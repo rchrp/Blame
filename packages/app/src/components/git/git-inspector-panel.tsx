@@ -17,9 +17,7 @@ import {
   parseGitDiff,
 } from "@/components/backlog/development/development-workspace"
 import { totalDiffStats } from "@/components/backlog/development/development-diff-stats-data"
-import { DiffStats } from "@/components/backlog/development/development-diff-stats"
-import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
-import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
+import { DevelopmentDiffSection } from "@/components/backlog/development/development-diff-section"
 import { GitHubRepositoryCard } from "@/components/git/git-github-repository-card"
 import { GitBranchIcon, GitCommitIcon, GitPullRequestIcon } from "lucide-react"
 
@@ -54,9 +52,11 @@ export function GitInspectorPanel({
         selected={selected}
         status={status}
       />
-      <div className="min-h-0 flex-1 bg-muted/10 dark:bg-muted/20">
+      <div className="min-h-0 flex-1">
         {diffLoading ? <DiffSkeleton /> : null}
-        {!diffLoading && selected ? <DiffStack diffs={diffs} /> : null}
+        {!diffLoading && selected ? (
+          <DiffStack diffs={diffs} singleFile={selected.type === "file"} />
+        ) : null}
         {!diffLoading && !selected ? (
           <RepositoryOverview status={status} />
         ) : null}
@@ -249,7 +249,13 @@ function OverviewMetric({ label, value }: { label: string; value: number }) {
   )
 }
 
-function DiffStack({ diffs }: { diffs: ReturnType<typeof parseGitDiff> }) {
+function DiffStack({
+  diffs,
+  singleFile,
+}: {
+  diffs: ReturnType<typeof parseGitDiff>
+  singleFile: boolean
+}) {
   if (diffs.length === 0) {
     return (
       <div className="flex h-full items-center justify-center p-8 text-center text-sm text-muted-foreground">
@@ -259,28 +265,14 @@ function DiffStack({ diffs }: { diffs: ReturnType<typeof parseGitDiff> }) {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-y-auto p-3">
-      <div className="flex max-w-full min-w-0 flex-col gap-3">
-        {diffs.map((diff) => (
-          <DiffCard diff={diff} key={diff.file} />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function DiffCard({ diff }: { diff: ReturnType<typeof parseGitDiff>[number] }) {
-  return (
-    <div className="max-w-full min-w-0 overflow-hidden rounded-xl border bg-card">
-      <div className="flex min-w-0 items-center gap-2 border-b bg-muted/20 px-4 py-2">
-        <span className="truncate font-medium">{diff.file}</span>
-        <DiffStats diff={diff} />
-      </div>
-      <DevelopmentScrollArea className="max-h-[32rem] w-full max-w-full min-w-0">
-        <div className="w-max min-w-full">
-          <DevelopmentDiffView diff={diff} scroll={false} />
-        </div>
-      </DevelopmentScrollArea>
+    <div className="h-full min-h-0 divide-y divide-foreground/10 overflow-y-auto bg-muted/50 dark:bg-neutral-900">
+      {diffs.map((diff) => (
+        <DevelopmentDiffSection
+          diff={diff}
+          hideHeader={singleFile && diffs.length === 1}
+          key={diff.file}
+        />
+      ))}
     </div>
   )
 }

@@ -86,15 +86,15 @@ const actionConfig: Record<BacklogAction, ActionConfig> = {
   },
   "View Diff": {
     icon: GitMergeIcon,
-    variant: "outline",
+    variant: "subtle",
   },
   "View Files": {
     icon: FileTextIcon,
-    variant: "outline",
+    variant: "subtle",
   },
   "View Terminal": {
     icon: TerminalIcon,
-    variant: "outline",
+    variant: "subtle",
   },
   "Request Changes": {
     icon: MessageSquareReplyIcon,
@@ -265,7 +265,7 @@ export function StoryAction({
       className={cn(
         "justify-start",
         buttonIconOnly && "justify-center",
-        !actionStyle.compact && "w-full",
+        !actionStyle.compact && !buttonIconOnly && "w-full",
         actionStyle.tone === "primary" &&
           "bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500",
         actionStyle.tone === "preview" &&
@@ -274,6 +274,7 @@ export function StoryAction({
       )}
       onClick={() => void handleClick()}
       aria-label={buttonIconOnly ? (label ?? action) : undefined}
+      title={buttonIconOnly ? (label ?? action) : undefined}
     >
       {showIcon && <Icon className={cn(loading && "animate-spin")} />}
       {!buttonIconOnly && (label ?? action)}

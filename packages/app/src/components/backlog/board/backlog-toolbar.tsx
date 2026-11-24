@@ -16,11 +16,10 @@ export function BacklogToolbar({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div>
-        <h2 className="font-heading text-xl font-semibold tracking-normal">
-          Backlog
-        </h2>
+        <h2 className="project-page-title">Backlog</h2>
         <p className="text-sm text-muted-foreground">
-          {storyCount} user stories across the delivery pipeline
+          {storyCount} {storyCount === 1 ? "user story" : "user stories"} across
+          the delivery pipeline
         </p>
       </div>
       <div className="flex flex-wrap items-center justify-end gap-2">

@@ -1,32 +1,10 @@
-import * as React from "react"
 import type { VcsFileDiff } from "@/components/backlog/development/development-workspace"
-import { ChevronDownIcon, ChevronRightIcon, FileDiffIcon } from "lucide-react"
-import { Collapsible } from "radix-ui"
+import { FileDiffIcon } from "lucide-react"
 
-import { DiffStats } from "@/components/backlog/development/development-diff-stats"
-import { DevelopmentDiffView } from "@/components/backlog/development/development-diff-view"
-import {
-  DevelopmentGraph,
-  reviewSurfaceClassName,
-} from "@/components/backlog/development/development-graph"
-import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
+import { DevelopmentDiffSection } from "@/components/backlog/development/development-diff-section"
 import { DevelopmentScrollArea } from "@/components/backlog/development/development-scroll-area"
-import {
-  diffKindClassName,
-  filename,
-} from "@/components/backlog/development/development-workspace"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
 
 export function DevelopmentReview({
   diffs,
@@ -58,106 +36,18 @@ export function DevelopmentReview({
   }
 
   return (
-    <DevelopmentScrollArea className="h-full">
-      <div className="flex min-w-0 flex-col gap-3 p-3">
-        <DevelopmentGraph diffs={diffs} onOpenFile={onOpenFile} />
+    <DevelopmentScrollArea className="h-full bg-muted/50 dark:bg-neutral-900">
+      <div className="divide-y divide-foreground/10">
         {diffs.map((diff) => (
-          <ReviewDiffCard
+          <DevelopmentDiffSection
             defaultOpen={diff.file === initialOpenFilePath}
             diff={diff}
-            key={diff.file}
+            key={`${diff.file}:${diff.file === initialOpenFilePath}`}
             onOpenFile={onOpenFile}
           />
         ))}
       </div>
     </DevelopmentScrollArea>
-  )
-}
-
-function ReviewDiffCard({
-  defaultOpen,
-  diff,
-  onOpenFile,
-}: {
-  defaultOpen: boolean
-  diff: VcsFileDiff
-  onOpenFile: (path: string) => void
-}) {
-  const [open, setOpen] = React.useState(defaultOpen)
-  const cardRef = React.useRef<HTMLDivElement>(null)
-  const kind =
-    diff.status === "added" ? "add" : diff.status === "deleted" ? "del" : "mix"
-
-  React.useEffect(() => {
-    if (!defaultOpen) return
-    cardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }, [defaultOpen])
-
-  return (
-    <Collapsible.Root open={open} onOpenChange={setOpen}>
-      <Card
-        className={reviewSurfaceClassName("min-w-0 scroll-mt-3 gap-0 py-0")}
-        ref={cardRef}
-        size="sm"
-      >
-        <CardHeader className="min-w-0 px-0">
-          <Collapsible.Trigger asChild>
-            <button
-              className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-muted/50"
-              type="button"
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                {open ? (
-                  <ChevronDownIcon className="size-4 shrink-0 text-muted-foreground" />
-                ) : (
-                  <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground" />
-                )}
-                <DevelopmentFileIcon
-                  className="shrink-0"
-                  node={{ path: diff.file, type: "file" }}
-                />
-                <div className="min-w-0">
-                  <CardTitle className="truncate">
-                    {filename(diff.file)}
-                  </CardTitle>
-                  <CardDescription className="truncate text-xs">
-                    {diff.file}
-                  </CardDescription>
-                </div>
-              </div>
-              <CardAction className="static row-auto flex items-center gap-2 self-center justify-self-end">
-                <Badge
-                  className={cn("shrink-0", diffKindClassName(kind))}
-                  variant="outline"
-                >
-                  {diff.status ?? "modified"}
-                </Badge>
-                <DiffStats diff={diff} />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    onOpenFile(diff.file)
-                  }}
-                >
-                  Open
-                </Button>
-              </CardAction>
-            </button>
-          </Collapsible.Trigger>
-        </CardHeader>
-        <Collapsible.Content>
-          <CardContent className="min-w-0 overflow-hidden border-t p-4">
-            <DevelopmentScrollArea className="max-h-[60vh] w-full max-w-full min-w-0">
-              <div className="w-max min-w-full">
-                <DevelopmentDiffView diff={diff} scroll={false} />
-              </div>
-            </DevelopmentScrollArea>
-          </CardContent>
-        </Collapsible.Content>
-      </Card>
-    </Collapsible.Root>
   )
 }
 

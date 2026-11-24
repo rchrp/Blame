@@ -1,7 +1,6 @@
 import {
   BoldIcon,
   CodeIcon,
-  EllipsisIcon,
   Heading2Icon,
   ItalicIcon,
   LinkIcon,
@@ -10,10 +9,12 @@ import {
   ListOrderedIcon,
   LoaderCircleIcon,
   PaperclipIcon,
+  PlusIcon,
   QuoteIcon,
   Redo2Icon,
   PenLineIcon,
   StrikethroughIcon,
+  TypeIcon,
   Undo2Icon,
 } from "lucide-react"
 import * as React from "react"
@@ -66,10 +67,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
-import { Separator } from "@/components/ui/separator"
 import {
   Tooltip,
   TooltipContent,
@@ -306,15 +307,7 @@ const markdownActions: {
   { action: "task", icon: ListChecksIcon, label: "Task list" },
 ]
 
-const visibleMarkdownActions = markdownActions.filter(({ action }) =>
-  ["bold", "italic", "code", "link"].includes(action)
-)
-
-const additionalMarkdownActions = markdownActions.filter(
-  ({ action }) => !visibleMarkdownActions.some((item) => item.action === action)
-)
-
-const MarkdownToolbar = React.memo(function MarkdownToolbar({
+const MarkdownFormattingMenu = React.memo(function MarkdownFormattingMenu({
   disabled,
   onAction,
   onActionIntent,
@@ -327,33 +320,74 @@ const MarkdownToolbar = React.memo(function MarkdownToolbar({
   onRedo: () => void
   onUndo: () => void
 }) {
+  const pendingAction = React.useRef<(() => void) | null>(null)
+
   return (
-    <TooltipProvider>
-      <div className="flex flex-wrap items-center gap-0.5">
-        <ToolbarIconButton disabled={disabled} label="Undo" onClick={onUndo}>
-          <Undo2Icon className="size-3.5" />
-        </ToolbarIconButton>
-        <ToolbarIconButton disabled={disabled} label="Redo" onClick={onRedo}>
-          <Redo2Icon className="size-3.5" />
-        </ToolbarIconButton>
-        <ToolbarSeparator />
-        {visibleMarkdownActions.map(({ action, icon: Icon, label }) => (
-          <ToolbarIconButton
-            key={action}
-            disabled={disabled}
-            label={label}
-            onClick={() => onAction(action)}
-          >
-            <Icon className="size-3.5" />
-          </ToolbarIconButton>
-        ))}
-        <AdditionalMarkdownActions
+    <DropdownMenu
+      modal={false}
+      onOpenChange={(open) => {
+        if (open) {
+          pendingAction.current = null
+          onActionIntent()
+        }
+      }}
+    >
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          aria-label="Formatting"
+          title="Formatting"
+          className="rounded-full"
           disabled={disabled}
-          onAction={onAction}
-          onActionIntent={onActionIntent}
-        />
-      </div>
-    </TooltipProvider>
+          size="icon"
+          variant="subtle"
+        >
+          <TypeIcon />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        className="w-44 rounded-xl bg-popover p-1.5"
+        side="top"
+        sideOffset={8}
+        onCloseAutoFocus={(event) => {
+          const action = pendingAction.current
+          if (!action) return
+          // Restore the editor selection after the menu releases focus.
+          pendingAction.current = null
+          event.preventDefault()
+          action()
+        }}
+      >
+        {markdownActions.map(({ action, icon: Icon, label }) => (
+          <DropdownMenuItem
+            key={action}
+            className="gap-2 px-2 py-1.5"
+            onSelect={() => {
+              pendingAction.current = () => onAction(action)
+            }}
+          >
+            <Icon className="size-3.5" /> {label}
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="gap-2 px-2 py-1.5"
+          onSelect={() => {
+            pendingAction.current = onUndo
+          }}
+        >
+          <Undo2Icon className="size-3.5" /> Undo
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          className="gap-2 px-2 py-1.5"
+          onSelect={() => {
+            pendingAction.current = onRedo
+          }}
+        >
+          <Redo2Icon className="size-3.5" /> Redo
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 })
 
@@ -373,14 +407,10 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
           <Button
             type="button"
             aria-label="Enhance with AI"
-            className="h-8 gap-1.5 rounded-xl border-transparent bg-transparent px-2.5 text-[11px] font-semibold text-foreground shadow-[0_0_0_1px_oklch(0.7_0.17_250_/_0.12),0_0_8px_oklch(0.65_0.2_250_/_0.12)] ring-1 ring-foreground/20 transition-[filter] duration-150 hover:brightness-105 focus-visible:ring-2 focus-visible:ring-sky-300/80 active:translate-y-0"
+            className="rounded-full px-3 text-xs"
+            variant="subtle"
             disabled={disabled}
             onClick={onOptimize}
-            style={{
-              background:
-                "linear-gradient(color-mix(in oklch, var(--muted) 68%, var(--background)), color-mix(in oklch, var(--muted) 68%, var(--background))) padding-box, linear-gradient(135deg, oklch(0.8 0.16 240 / 52%), oklch(0.7 0.21 245 / 52%), oklch(0.62 0.22 255 / 42%)) border-box",
-              backgroundClip: "padding-box, border-box",
-            }}
           >
             {optimizing ? (
               <LoaderCircleIcon className="size-3.5 animate-spin" />
@@ -397,84 +427,6 @@ const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
     </TooltipProvider>
   )
 })
-
-function AdditionalMarkdownActions({
-  disabled,
-  onActionIntent,
-  onAction,
-}: {
-  disabled?: boolean
-  onActionIntent: () => void
-  onAction: (action: MarkdownAction) => void
-}) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          aria-label="More formatting"
-          className="text-muted-foreground hover:text-foreground"
-          disabled={disabled}
-          size="icon-sm"
-          variant="ghost"
-          onPointerDown={onActionIntent}
-        >
-          <EllipsisIcon className="size-3.5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="start"
-        className="w-44"
-        onCloseAutoFocus={(event) => event.preventDefault()}
-      >
-        {additionalMarkdownActions.map(({ action, icon: Icon, label }) => (
-          <DropdownMenuItem key={action} onSelect={() => onAction(action)}>
-            <Icon className="size-3.5 text-muted-foreground" />
-            {label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  )
-}
-
-function ToolbarSeparator() {
-  return (
-    <Separator className="mx-1.5 h-4 !self-center" orientation="vertical" />
-  )
-}
-
-function ToolbarIconButton({
-  children,
-  disabled,
-  label,
-  onClick,
-}: {
-  children: React.ReactNode
-  disabled?: boolean
-  label: string
-  onClick?: () => void
-}) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          type="button"
-          aria-label={label}
-          className="text-muted-foreground hover:text-foreground"
-          disabled={disabled || !onClick}
-          size="icon-sm"
-          variant="ghost"
-          onClick={onClick}
-          onPointerDown={(event) => event.preventDefault()}
-        >
-          {children}
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent sideOffset={6}>{label}</TooltipContent>
-    </Tooltip>
-  )
-}
 
 type MarkdownSelection = { end: number; start: number }
 
@@ -505,7 +457,10 @@ function MarkdownWysiwygEditor({
   return (
     <div className="relative">
       {!markdown && (
-        <div className="pointer-events-none absolute inset-x-4 top-3.5 text-[0.9375rem] text-muted-foreground/55 dark:text-muted-foreground/50">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-4 top-3.5 text-[0.9375rem] leading-6 text-muted-foreground"
+        >
           {placeholder}
         </div>
       )}
@@ -513,6 +468,7 @@ function MarkdownWysiwygEditor({
         key={`${renderKey}:${activeSegmentKey}`}
         ref={editorRef}
         aria-label={placeholder}
+        aria-multiline="true"
         className={cn(
           "max-w-full min-w-0 space-y-2 overflow-x-hidden text-[0.9375rem] leading-6 [overflow-wrap:anywhere] outline-none",
           className
@@ -1095,7 +1051,10 @@ export const MarkdownEditor = React.forwardRef<
     personalizationMenu?: React.ReactNode
     primaryAction?: React.ReactNode
     readOnly?: boolean
+    // Keep the composer surface and primary action visible while sending.
+    submitting?: boolean
     toolbarEnd?: React.ReactNode
+    toolbarStart?: React.ReactNode
   }
 >(function MarkdownEditor(
   {
@@ -1122,7 +1081,9 @@ export const MarkdownEditor = React.forwardRef<
     primaryAction,
     placeholder,
     readOnly,
+    submitting,
     toolbarEnd,
+    toolbarStart,
   },
   ref
 ) {
@@ -1839,14 +1800,29 @@ export const MarkdownEditor = React.forwardRef<
     const editor = editorRef.current
     const selection =
       (editor && markdownEditorSelection(editor)) ?? lastSelectionRef.current
-    if (!editor || !selection || readOnly) return
+    if (!editor || readOnly) return
+    const nextSelection = selection ?? {
+      start: value.length,
+      end: value.length,
+    }
+    editor.focus({ preventScroll: true })
     const result = markdownActionResult(
       value,
-      selection.start,
-      selection.end,
+      nextSelection.start,
+      nextSelection.end,
       action
     )
     emitMarkdown(result.value, result.cursor)
+    // Revealing the Markdown markers can replace the contenteditable node.
+    requestAnimationFrame(() => {
+      const nextEditor = editorRef.current
+      if (nextEditor && document.activeElement === document.body) {
+        restoreMarkdownEditorSelection(nextEditor, {
+          start: result.cursor,
+          end: result.cursor,
+        })
+      }
+    })
   }
 
   function toggleTaskLine(lineIndex: number, checked: boolean) {
@@ -1885,6 +1861,7 @@ export const MarkdownEditor = React.forwardRef<
   const stableRedo = useLatestCallback(() => runHistoryCommand("redo"))
   const stableUndo = useLatestCallback(() => runHistoryCommand("undo"))
   const stableOptimize = useLatestCallback(handleOptimize)
+  const composerVisible = !readOnly || submitting
 
   return (
     <Popover open={mentionOpen}>
@@ -1897,8 +1874,10 @@ export const MarkdownEditor = React.forwardRef<
             else if (ref) ref.current = element
           }}
           className={cn(
-            markdownFrameClassName(appearance),
-            fileDropActive && "ring-2 ring-primary"
+            composerVisible
+              ? "relative max-w-full min-w-0 rounded-[1.25rem] bg-popover shadow-[0_2px_4px_-2px_#00000012,0_10px_24px_-12px_#00000026] ring-1 ring-foreground/12 transition-[box-shadow] focus-within:ring-foreground/25 dark:shadow-[0_2px_4px_-2px_#0006,0_10px_24px_-12px_#0009]"
+              : markdownFrameClassName(appearance),
+            fileDropActive && "ring-2 ring-primary focus-within:ring-primary"
           )}
           onBlur={() => requestAnimationFrame(() => updateMention())}
           onDragEnter={handleFileDragEnter}
@@ -1911,7 +1890,7 @@ export const MarkdownEditor = React.forwardRef<
           {fileDropActive && (
             <div
               aria-live="polite"
-              className="pointer-events-none absolute inset-1 z-30 flex items-center justify-center rounded-[calc(1.5rem-0.25rem)] border-2 border-primary/60 bg-background/90 text-primary backdrop-blur-sm"
+              className="pointer-events-none absolute inset-1 z-30 flex items-center justify-center rounded-2xl border border-primary/60 bg-popover/90 text-primary backdrop-blur-sm"
               role="status"
             >
               <div className="flex items-center gap-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium">
@@ -1920,33 +1899,97 @@ export const MarkdownEditor = React.forwardRef<
               </div>
             </div>
           )}
+          {composerVisible && attachments.length > 0 && (
+            <div className="flex items-center gap-2 overflow-x-auto overscroll-x-contain px-4 pt-3 pb-1">
+              {attachments.map((attachment) => (
+                <AttachmentPreview
+                  key={attachment.id}
+                  attachment={attachment}
+                  compact
+                  onOpenImage={openGallery}
+                  onOpenDocument={setDocumentId}
+                  onRemove={readOnly ? undefined : removeAttachment}
+                />
+              ))}
+            </div>
+          )}
           {readOnly ? (
             <MarkdownPreview
               animateAppend={animateAppend}
-              className={cn(minHeight, markdownPreviewPadding(appearance))}
+              className={cn(
+                minHeight,
+                submitting
+                  ? cn(maxHeight, "overflow-y-auto px-4 py-3.5")
+                  : markdownPreviewPadding(appearance)
+              )}
               markdown={value}
               onFileLinkClick={onFileLinkClick}
               onTaskToggle={readOnly ? undefined : toggleTaskLine}
               placeholder={placeholder}
             />
           ) : (
-            <div className="relative">
-              <div className="pointer-events-none absolute top-3 right-3 z-10 flex max-w-[calc(100%-1.5rem)] items-center gap-1.5 rounded-2xl border border-border/70 bg-background/85 p-1 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/65">
-                {onOptimize && (
-                  <div className="pointer-events-auto shrink-0">
-                    <MarkdownOptimizeButton
-                      disabled={optimizing}
-                      onOptimize={stableOptimize}
-                      optimizing={optimizing}
+            <MarkdownWysiwygEditor
+              activeSelection={activeSelection}
+              editorRef={setEditorElement}
+              className={cn(
+                minHeight,
+                maxHeight,
+                "overflow-y-auto px-4 py-3.5"
+              )}
+              markdown={value}
+              onFileLinkClick={stableFileLinkClick}
+              placeholder={placeholder}
+              onInput={handleMarkdownInput}
+              onKeyDown={handleEditorKeyDown}
+              onSelectionChange={handleSelectionChange}
+              renderKey={editorRenderKey}
+            />
+          )}
+          {composerVisible && (
+            <div className="flex min-h-14 flex-wrap items-end gap-x-3 gap-y-1.5 px-3 pt-1 pb-3">
+              <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
+                {!readOnly && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      className="hidden"
+                      multiple
+                      type="file"
+                      onChange={handleFileSelection}
                     />
-                  </div>
-                )}
-                {personalizationMenu ? (
-                  <div className="pointer-events-auto shrink-0">
+                    <Button
+                      type="button"
+                      aria-label="Attach files"
+                      title="Attach files"
+                      className="rounded-full"
+                      size="icon"
+                      variant="subtle"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <PlusIcon />
+                    </Button>
+                    <MarkdownFormattingMenu
+                      disabled={optimizing}
+                      onAction={stableApplyMarkdownAction}
+                      onActionIntent={stableRememberEditorSelection}
+                      onRedo={stableRedo}
+                      onUndo={stableUndo}
+                    />
+                    {onOptimize && (
+                      <MarkdownOptimizeButton
+                        disabled={optimizing}
+                        onOptimize={stableOptimize}
+                        optimizing={optimizing}
+                      />
+                    )}
                     {personalizationMenu}
-                  </div>
-                ) : null}
-                <div className="pointer-events-auto shrink-0">
+                    {toolbarStart}
+                  </>
+                )}
+              </div>
+              <div className="ml-auto flex min-w-0 max-w-full items-center justify-end gap-1.5">
+                {!readOnly && toolbarEnd}
+                {!readOnly && (
                   <SpeechToTextControl
                     sessionKey={speechSessionKey}
                     currentText={() => currentValueRef.current}
@@ -1955,78 +1998,13 @@ export const MarkdownEditor = React.forwardRef<
                     onStartRecording={rememberSpeechSelection}
                     onTranscription={insertSpeechTranscription}
                   />
-                </div>
-                {primaryAction ? (
-                  <div className="pointer-events-auto shrink-0">
-                    {primaryAction}
-                  </div>
-                ) : null}
-              </div>
-              <MarkdownWysiwygEditor
-                activeSelection={activeSelection}
-                editorRef={setEditorElement}
-                className={cn(
-                  minHeight,
-                  maxHeight,
-                  "overflow-y-auto rounded-3xl bg-input/40 px-4 py-3.5 pr-56 dark:bg-muted"
                 )}
-                markdown={value}
-                onFileLinkClick={stableFileLinkClick}
-                placeholder={placeholder}
-                onInput={handleMarkdownInput}
-                onKeyDown={handleEditorKeyDown}
-                onSelectionChange={handleSelectionChange}
-                renderKey={editorRenderKey}
-              />
-              {attachments.length > 0 && (
-                <div className="mx-1 flex items-center gap-3 overflow-x-auto overscroll-x-contain px-3 py-3">
-                  {attachments.map((attachment) => (
-                    <AttachmentPreview
-                      key={attachment.id}
-                      attachment={attachment}
-                      onOpenImage={openGallery}
-                      onOpenDocument={setDocumentId}
-                      onRemove={removeAttachment}
-                    />
-                  ))}
-                </div>
-              )}
-              <div className="flex flex-wrap items-center justify-between gap-2 px-1 py-1.5">
-                <div className="flex min-w-0 flex-wrap items-center gap-0.5">
-                  <input
-                    ref={fileInputRef}
-                    className="hidden"
-                    multiple
-                    type="file"
-                    onChange={handleFileSelection}
-                  />
-                  <Button
-                    type="button"
-                    aria-label="Attach files"
-                    className="text-muted-foreground hover:text-foreground"
-                    size="icon-sm"
-                    variant="ghost"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <PaperclipIcon className="size-3.5" />
-                  </Button>
-                  <ToolbarSeparator />
-                  <MarkdownToolbar
-                    disabled={optimizing}
-                    onAction={stableApplyMarkdownAction}
-                    onActionIntent={stableRememberEditorSelection}
-                    onRedo={stableRedo}
-                    onUndo={stableUndo}
-                  />
-                </div>
-                <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
-                  {toolbarEnd}
-                </div>
+                {primaryAction}
               </div>
             </div>
           )}
 
-          {readOnly && attachments.length > 0 && (
+          {!composerVisible && attachments.length > 0 && (
             <div className="flex items-center gap-3 overflow-x-auto overscroll-x-contain border-t border-border/70 px-3 py-3">
               {attachments.map((attachment) => (
                 <AttachmentPreview

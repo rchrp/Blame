@@ -231,7 +231,7 @@ export function DrawerActions({
   )
 
   return (
-    <div className="pointer-events-auto flex flex-wrap items-center justify-end gap-2">
+    <div className="pointer-events-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
       {requestChangesPrimary ? (
         <>
           <ReviewActionsMenu disabled={Boolean(activeAction)}>

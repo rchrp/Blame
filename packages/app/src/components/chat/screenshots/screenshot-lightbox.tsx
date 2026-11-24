@@ -61,21 +61,24 @@ function galleryImage(
   state: ScreenshotState,
   client: AgentScreenshotsClient | undefined
 ): GalleryImage {
-  const metadata = state.status === "ready" ? state.data.metadata : undefined
+  const metadata = state.status === "ready" ? state.metadata : undefined
   const pageUrl = item.ref?.pageUrl || metadata?.pageUrl
   return {
     id: item.id,
     name: item.caption ?? (pageUrl ? `Screenshot of ${pageUrl}` : "Screenshot"),
-    source: state.status === "ready" ? state.data.dataUrl : "",
+    source: state.status === "ready" ? state.source : "",
     status: state.status === "ready" ? undefined : state.status,
     details: {
       caption: item.caption ?? pageUrl,
       colorScheme: item.ref?.colorScheme ?? metadata?.colorScheme,
       viewport: item.ref?.viewport ?? metadata?.viewport,
     },
-    actions: client && {
-      copy: () => client.copy({ id: item.id }),
-      saveAs: () => client.saveAs({ id: item.id }),
-    },
+    actions:
+      !item.blob && client
+        ? {
+            copy: () => client.copy({ id: item.id }),
+            saveAs: () => client.saveAs({ id: item.id }),
+          }
+        : undefined,
   }
 }

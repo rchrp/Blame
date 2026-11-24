@@ -77,20 +77,19 @@ export function QuickChatView({
                       ambitionKey={chatAmbitionKey(conversationId)}
                     />
                   }
-                  minHeight={emptyConversation ? "min-h-44" : "min-h-24"}
+                  minHeight={emptyConversation ? "min-h-28" : "min-h-24"}
+                  toolbarStart={
+                    emptyConversation && (
+                      <SelectorGroup>
+                        <BranchSelector readOnly />
+                      </SelectorGroup>
+                    )
+                  }
                   toolbarEnd={
-                    <div className="flex max-w-full min-w-0 flex-wrap items-center justify-end gap-2">
-                      {/* A chat works in the project folder, on its branch. */}
-                      {emptyConversation ? (
-                        <SelectorGroup>
-                          <BranchSelector readOnly />
-                        </SelectorGroup>
-                      ) : null}
-                      <QuickChatModelSelector
-                        conversationId={conversationId}
-                        warnOnModelChange={!emptyConversation}
-                      />
-                    </div>
+                    <QuickChatModelSelector
+                      conversationId={conversationId}
+                      warnOnModelChange={!emptyConversation}
+                    />
                   }
                 />
               }
@@ -125,6 +124,7 @@ function QuickChatModelSelector({
   const [ultra, setUltra] = useConversationUltra(chatUltraKey(conversationId))
   return (
     <ModelSelector
+      appearance="composer"
       role="agent"
       ultra={{ checked: ultra, onCheckedChange: setUltra }}
       warnOnModelChange={warnOnModelChange}

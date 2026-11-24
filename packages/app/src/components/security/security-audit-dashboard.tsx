@@ -67,7 +67,7 @@ const columns: {
 
 export function SecurityAuditDashboard(props: SecurityAuditDashboardProps) {
   return (
-    <div className="flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
+    <div className="project-page-top flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pb-6">
       <AuditToolbar {...props} />
       <AuditSummary audit={props.audit} />
       <KanbanBoard gridClassName="min-w-280 grid-cols-4">
@@ -200,8 +200,8 @@ function FindingCard({
 function AuditTitle({ audit }: { audit: SecurityAudit }) {
   return (
     <div className="min-w-0">
-      <h2 className="font-heading text-xl font-semibold">Security Audit</h2>
-      <p className="mt-1 text-sm break-words text-muted-foreground">
+      <h2 className="project-page-title">Security Audit</h2>
+      <p className="text-sm break-words text-muted-foreground">
         {auditRevision(audit)} ·{" "}
         {auditDate(audit.completedAt ?? audit.updatedAt)}
       </p>

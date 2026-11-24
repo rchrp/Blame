@@ -591,12 +591,6 @@ importers:
       cmdk:
         specifier: 1.1.1
         version: 1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
-      cytoscape:
-        specifier: ^3.34.4
-        version: 3.34.4
-      cytoscape-fcose:
-        specifier: ^2.2.0
-        version: 2.2.0(cytoscape@3.34.4)
       dompurify:
         specifier: ^3.4.17
         version: 3.4.17

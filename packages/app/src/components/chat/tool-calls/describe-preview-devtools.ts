@@ -310,6 +310,7 @@ function consoleChips(text: string): ToolCallChip[] {
 
 // The text blocks of an MCP result, whether stored as an object or a list.
 function outputText(output: unknown) {
+  if (typeof output === "string") return output.trim()
   const blocks = Array.isArray(output) ? output : list(record(output).content)
   return blocks
     .map((block) => {
