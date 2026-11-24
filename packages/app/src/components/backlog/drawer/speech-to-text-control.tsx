@@ -17,9 +17,10 @@ import {
   preferredMicrophone,
   requestMicrophonePermission,
 } from "@/lib/microphone-preference"
-import { recordingToSpeechInput } from "./speech-recording-audio"
-
-const maxRecordingDurationMs = 120_000
+import {
+  maxRecordingDurationMs,
+  recordingToSpeechInput,
+} from "./speech-recording-audio"
 
 type RecordingStatus = "idle" | "starting" | "recording" | "transcribing"
 
@@ -42,7 +43,7 @@ export function SpeechRecordingControl({
   const audioContextRef = React.useRef<AudioContext | null>(null)
   const audioSourceRef = React.useRef<MediaStreamAudioSourceNode | null>(null)
   const chunksRef = React.useRef<Blob[]>([])
-  const startedAtRef = React.useRef(0)
+  const finishingRef = React.useRef(false)
   const stopPromiseRef = React.useRef<
     | {
         reject: (error: unknown) => void
@@ -105,52 +106,58 @@ export function SpeechRecordingControl({
     return createCloudApi(apiConnection).transcribeAudio(input)
   }
 
-  const transcribeRecording = useLatestCallback(async () => {
-    if (status !== "recording") return
-    setStatus("transcribing")
-    try {
-      const audio = await stopRecording()
-      if (!audio) {
-        toast.info("No audio was recorded.")
-        return
+  const finishRecording = useLatestCallback(
+    async (action: "transcribe" | "cancel") => {
+      if (status !== "recording" || finishingRef.current) return
+      finishingRef.current = true
+      if (action === "transcribe") setStatus("transcribing")
+      try {
+        const audio = await stopRecording()
+        if (action === "cancel") return
+        if (!audio) {
+          toast.info("No audio was recorded.")
+          return
+        }
+        const result = await transcribe(await recordingToSpeechInput(audio))
+        if (!result) return
+        if (!result.text) {
+          toast.info("No speech was detected.")
+          return
+        }
+        onTranscription(result.text)
+      } catch (error) {
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Unable to transcribe the recording."
+        )
+      } finally {
+        setElapsedMs(0)
+        setStatus("idle")
+        onFinished()
       }
-      const result = await transcribe(await recordingToSpeechInput(audio))
-      if (!result) return
-      if (!result.text) {
-        toast.info("No speech was detected.")
-        return
-      }
-      onTranscription(result.text)
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Unable to transcribe the recording."
-      )
-    } finally {
-      setElapsedMs(0)
-      setStatus("idle")
-      onFinished()
     }
-  })
+  )
 
   React.useEffect(() => {
     if (status !== "recording") return
-    startedAtRef.current = Date.now()
-    const timer = window.setInterval(() => {
-      setElapsedMs(Date.now() - startedAtRef.current)
+    const startedAt = Date.now()
+    const ticker = window.setInterval(() => {
+      setElapsedMs(Math.min(Date.now() - startedAt, maxRecordingDurationMs))
     }, 250)
-    return () => window.clearInterval(timer)
-  }, [status])
-
-  React.useEffect(() => {
-    if (status !== "recording" || elapsedMs < maxRecordingDurationMs) return
-    void transcribeRecording()
-  }, [elapsedMs, status, transcribeRecording])
+    const deadline = window.setTimeout(() => {
+      void finishRecording("transcribe")
+    }, maxRecordingDurationMs)
+    return () => {
+      window.clearInterval(ticker)
+      window.clearTimeout(deadline)
+    }
+  }, [status, finishRecording])
 
   React.useEffect(
     () => () => {
-      mediaRecorderRef.current?.stop()
+      const recorder = mediaRecorderRef.current
+      if (recorder && recorder.state !== "inactive") recorder.stop()
       releaseCapture()
     },
     []
@@ -187,14 +194,17 @@ export function SpeechRecordingControl({
         if (event.data.size > 0) chunksRef.current.push(event.data)
       }
       recorder.onerror = () => {
-        stopPromiseRef.current?.reject(
-          new Error("The voice recording could not be completed.")
-        )
+        const error = new Error("The voice recording could not be completed.")
+        const pending = stopPromiseRef.current
         stopPromiseRef.current = undefined
         releaseCapture()
+        if (pending) {
+          pending.reject(error)
+          return
+        }
         setStatus("idle")
         onFinished()
-        toast.error("The voice recording could not be completed.")
+        toast.error(error.message)
       }
       recorder.onstop = () => {
         const audio =
@@ -231,14 +241,6 @@ export function SpeechRecordingControl({
     }
   }
 
-  async function cancelRecording() {
-    if (status !== "recording") return
-    await stopRecording()
-    setElapsedMs(0)
-    setStatus("idle")
-    onFinished()
-  }
-
   function connectAnalyser(stream: MediaStream) {
     const AudioContextConstructor =
       window.AudioContext ??
@@ -266,8 +268,8 @@ export function SpeechRecordingControl({
       floating={floating}
       analyser={analyser}
       elapsedMs={elapsedMs}
-      onCancel={() => void cancelRecording()}
-      onConfirm={() => void transcribeRecording()}
+      onCancel={() => void finishRecording("cancel")}
+      onConfirm={() => void finishRecording("transcribe")}
     />
   )
 }

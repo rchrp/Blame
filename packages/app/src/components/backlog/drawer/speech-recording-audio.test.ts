@@ -1,6 +1,14 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { encodeSpeechWav } from "./speech-recording-audio.ts"
+import {
+  speechTranscriptionMaxAudioBytes,
+  speechTranscriptionMaxEncodedChars,
+} from "@blame/speech-contract"
+import {
+  encodeSpeechWav,
+  maxRecordingDurationMs,
+  speechSampleRate,
+} from "./speech-recording-audio.ts"
 
 test("speech audio is encoded as mono 16-bit PCM WAV at the decoded sample rate", () => {
   const channels = [
@@ -25,4 +33,15 @@ test("speech audio is encoded as mono 16-bit PCM WAV at the decoded sample rate"
     Array.from({ length: 5 }, (_, index) => wav.readInt16LE(44 + index * 2)),
     [0, 16_384, -16_384, 32_767, -32_768]
   )
+})
+
+test("a full five-minute dictation fits the shared transcription size limits", () => {
+  assert.equal(maxRecordingDurationMs, 300_000)
+  const samples = new Float32Array(
+    (maxRecordingDurationMs / 1_000) * speechSampleRate
+  )
+  const wav = Buffer.from(encodeSpeechWav([samples], speechSampleRate))
+
+  assert.ok(wav.byteLength <= speechTranscriptionMaxAudioBytes)
+  assert.ok(wav.toString("base64").length <= speechTranscriptionMaxEncodedChars)
 })

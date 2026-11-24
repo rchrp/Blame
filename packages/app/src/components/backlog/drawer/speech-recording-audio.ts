@@ -1,5 +1,6 @@
-// A two-minute recording at this rate fits the transcription API's size limit.
-const speechSampleRate = 16_000
+export const maxRecordingDurationMs = 5 * 60_000
+// Five minutes of 16-bit mono PCM at this rate fit the transcription size limits.
+export const speechSampleRate = 16_000
 
 export async function recordingToSpeechInput(recording: Blob) {
   // MAI-Transcribe 2 rejects WebM recordings, so send PCM WAV.
