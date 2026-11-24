@@ -34,7 +34,7 @@ const secrets = [
   "fake-query-key-0004",
 ];
 
-async function fakeHome() {
+async function fakeMacHome() {
   const home = await mkdtemp(join(tmpdir(), "blame-import-"));
   const files: Record<string, string> = {
     "Library/Application Support/Claude/claude_desktop_config.json":
@@ -178,7 +178,7 @@ args = ["mcp"]
     await mkdir(join(home, path, ".."), { recursive: true });
     await writeFile(join(home, path), content);
   }
-  return home;
+  return scanEnvironment(home, { BLAME_AGENT_IMPORT_HOME: home }, "darwin");
 }
 
 function memoryStore(initial: McpServerConfig[] = []) {
@@ -223,13 +223,10 @@ const blameServer = (
 });
 
 test("a scan lists every source, category and item, and hides every secret", async () => {
-  const home = await fakeHome();
+  const environment = await fakeMacHome();
   try {
     const { store } = memoryStore();
-    const scan = await scanAgentSetups(
-      scanEnvironment(home, { BLAME_AGENT_IMPORT_HOME: home }),
-      store,
-    );
+    const scan = await scanAgentSetups(environment, store);
     const json = JSON.stringify(scan);
     for (const secret of secrets)
       assert.equal(json.includes(secret), false, secret);
@@ -332,13 +329,13 @@ test("a scan lists every source, category and item, and hides every secret", asy
       ],
     );
   } finally {
-    await rm(home, { recursive: true, force: true });
+    await rm(environment.home, { recursive: true, force: true });
   }
 });
 
 test("an import adds what was ticked, never overwrites, and a re-run adds nothing", async () => {
-  const home = await fakeHome();
-  const environment = scanEnvironment(home, { BLAME_AGENT_IMPORT_HOME: home });
+  const environment = await fakeMacHome();
+  const { home } = environment;
   try {
     const { servers, store } = memoryStore([
       blameServer("github", "gh-mcp", []),
@@ -427,8 +424,8 @@ test("an import adds what was ticked, never overwrites, and a re-run adds nothin
 });
 
 test("a skill of the same name but another content is a conflict: skipped, or copied under a new name", async () => {
-  const home = await fakeHome();
-  const environment = scanEnvironment(home, { BLAME_AGENT_IMPORT_HOME: home });
+  const environment = await fakeMacHome();
+  const { home } = environment;
   try {
     await mkdir(join(home, ".agents/skills/release-notes"), {
       recursive: true,

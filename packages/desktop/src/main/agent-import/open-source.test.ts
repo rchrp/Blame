@@ -147,13 +147,13 @@ mcpServers:
 `,
 };
 
-async function fakeHome() {
+async function fakeMacHome() {
   const home = await mkdtemp(join(tmpdir(), "blame-import-oss-"));
   for (const [path, content] of Object.entries(files)) {
     await mkdir(join(home, path, ".."), { recursive: true });
     await writeFile(join(home, path), content);
   }
-  return home;
+  return scanEnvironment(home, { BLAME_AGENT_IMPORT_HOME: home }, "darwin");
 }
 
 function memoryStore() {
@@ -173,11 +173,8 @@ function memoryStore() {
 }
 
 test("the open-source tools' servers and skills are read, with their secrets hidden", async () => {
-  const home = await fakeHome();
+  const environment = await fakeMacHome();
   try {
-    const environment = scanEnvironment(home, {
-      BLAME_AGENT_IMPORT_HOME: home,
-    });
     const scan = await scanAgentSetups(environment, memoryStore().store);
     const json = JSON.stringify(scan);
     for (const secret of secrets)
@@ -239,16 +236,14 @@ test("the open-source tools' servers and skills are read, with their secrets hid
     // Not on this computer: listed, not detected.
     assert.equal(scan.sources.find((s) => s.id === "cursor")!.detected, false);
   } finally {
-    await rm(home, { recursive: true, force: true });
+    await rm(environment.home, { recursive: true, force: true });
   }
 });
 
 test("each tool's transports and units come out right in what is imported", async () => {
-  const home = await fakeHome();
+  const environment = await fakeMacHome();
+  const { home } = environment;
   try {
-    const environment = scanEnvironment(home, {
-      BLAME_AGENT_IMPORT_HOME: home,
-    });
     const { servers, store } = memoryStore();
     const scan = await scanAgentSetups(environment, store);
     const ids = scan.sources.flatMap((source) =>
