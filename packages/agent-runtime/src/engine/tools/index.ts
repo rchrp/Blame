@@ -167,6 +167,7 @@ export async function conversationClientTools(
       builtIn: true,
     },
     tools.map((tool) => tool.name),
+    session.kind === "story" || session.kind === "quick-chat",
   );
   return {
     tools: skills.tool ? [...tools, skills.tool] : tools,

@@ -24,28 +24,158 @@ async function nativeSkills() {
   return (name: string, args?: string) => runSkill(skills, name, args);
 }
 
-test("discovers and invokes Impeccable from Blame's own skills", async () => {
+test("coding sessions keep only the short design directions in the system prompt", async () => {
   const skills = await loadSkills([blameNativeSkillsDirectory()]);
-  assert.deepEqual(skills.map((skill) => skill.name).sort(), [
-    "blame-help",
-    "component-preview",
-    "impeccable",
-  ]);
-  const impeccable = skills.find((skill) => skill.name === "impeccable");
-  assert.match(impeccable?.description ?? "", /frontend task/);
-  assert.match(impeccable?.description ?? "", /Mandatory/);
-  assert.match(impeccable?.description ?? "", /before making design/);
-  const prompt = skillScopeSection(skills);
-  assert.match(prompt, /"name":"impeccable"/);
-  assert.match(prompt, /Not for backend-only/);
-  assert.doesNotMatch(prompt, /# Impeccable for Blame/);
+  const design = skills.find((skill) => skill.name === "unslop")!;
+  const fullCatalog = {
+    ...design,
+    id: "large",
+    name: "large",
+    file: "/large/SKILL.md",
+    description: "x".repeat(18_000),
+  };
+  const prompt = skillScopeSection([fullCatalog, ...skills], true);
+  assert.match(prompt, /Further descriptions exceed/);
+  assert.match(prompt, /## UI work/);
+  assert.ok(prompt.includes(design.description!));
+  assert.match(prompt, /new screen.*args create/);
+  assert.ok(design.description!.length < 450);
+  assert.doesNotMatch(
+    prompt,
+    /# Compose a new screen|# Design the screen|# Review the screen|Concrete corrections|dashboard study/,
+  );
+  assert.doesNotMatch(skillScopeSection(skills), /## UI work/);
+  for (const hidden of [{ disabled: true }, { disableModelInvocation: true }])
+    assert.doesNotMatch(
+      skillScopeSection([{ ...design, ...hidden }], true),
+      /## UI work/,
+    );
+});
 
-  const output = runSkill(skills, "impeccable", "polish settings");
-  assert.match(output, /<command-name>impeccable<\/command-name>/);
-  assert.match(output, /<command-args>polish settings<\/command-args>/);
-  assert.match(output, /# Impeccable for Blame/);
-  assert.match(output, /hard precondition/);
-  assert.match(output, /consult_specialist/);
+test("the native design skill delivers just the requested guide in one tool call", async () => {
+  await withFolders({}, async ({ workspace, home }) => {
+    const { tool } = await conversationSkills(
+      { workspaceRoot: workspace, home, builtIn: true },
+      [],
+      true,
+    );
+    assert.ok(tool);
+    for (const [args, heading] of [
+      ["", "# Design the screen"],
+      ["shape the landing page", "# Design the screen"],
+      ["polish settings", "# Design the screen"],
+      ["create", "# Compose a new screen"],
+      ["Create un espace de facturation", "# Compose a new screen"],
+      ["audit settings", "# Review the screen"],
+      ["critique", "# Review the screen"],
+      ["review the layout", "# Review the screen"],
+    ] as const) {
+      const result = await callThroughToolSet([tool], "skills", {
+        skill: "/unslop",
+        args,
+      });
+      assert.equal(result.outcome, "completed");
+      const text = result.content
+        .map((block) => (block.type === "text" ? block.text : ""))
+        .join("");
+      assert.match(text, /<command-name>unslop<\/command-name>/);
+      if (args)
+        assert.ok(text.includes(`<command-args>${args}</command-args>`));
+      assert.deepEqual(text.match(/^# .+$/gm), [heading]);
+      assert.match(text, /Concrete corrections/);
+      for (const example of [
+        "OUR SERVICES",
+        "01, 02, 03",
+        "monospace",
+        "serif",
+        "sentence case",
+        "decorative emoji",
+        "status color",
+      ]) {
+        assert.ok(text.includes(example), example);
+      }
+      assert.equal(result.blobs.length, 0);
+      assert.doesNotMatch(
+        text,
+        /consult_specialist|frontend_design|# Signs of slop/,
+      );
+      assert.ok(
+        text.replace(blameNativeSkillsDirectory(), "<skills>").length < 3_700,
+        "one focused guide, including tool framing",
+      );
+    }
+  });
+});
+
+test("the Unslop example sends a caption and one local image through the tool transport", async () => {
+  await withFolders({}, async ({ workspace, home }) => {
+    const { tool } = await conversationSkills(
+      { workspaceRoot: workspace, home, builtIn: true },
+      [],
+      true,
+    );
+    assert.ok(tool);
+    for (const input of [
+      { args: "example" },
+      { file: "examples/dashboard.jpg" },
+    ]) {
+      const result = await callThroughToolSet([tool], "skills", {
+        skill: "/unslop",
+        ...input,
+      });
+      assert.equal(result.outcome, "completed");
+      assert.deepEqual(
+        result.content.map((block) => block.type),
+        ["text", "image"],
+      );
+      const caption = result.content[0];
+      assert.ok(
+        caption.type === "text" && caption.text.includes("Damir Sokolovsky"),
+      );
+      assert.equal(result.blobs.length, 1);
+      assert.equal(result.blobs[0].media_type, "image/jpeg");
+      const jpeg = Buffer.from(result.blobs[0].data, "base64");
+      assert.equal(jpeg.readUInt16BE(0), 0xffd8);
+      assert.equal(jpeg.readUInt16BE(jpeg.length - 2), 0xffd9);
+    }
+    const signs = await callThroughToolSet([tool], "skills", {
+      skill: "unslop",
+      file: "references/signs.md",
+    });
+    assert.match(JSON.stringify(signs.content), /Signs of slop/);
+    assert.equal(signs.blobs.length, 0);
+  });
+});
+
+test("a project's own unslop keeps its scope and handles all its modes", async () => {
+  await withFolders(
+    {
+      "repo/.agents/skills/unslop/SKILL.md":
+        "---\nname: unslop\ndescription: Project UI conventions\n---\nReview with our design system.",
+    },
+    async ({ workspace, home }) => {
+      const { prompt, tool } = await conversationSkills(
+        { workspaceRoot: workspace, home, builtIn: true },
+        [],
+        true,
+      );
+      assert.match(prompt, /Project UI conventions/);
+      assert.doesNotMatch(prompt, /## UI work/);
+      for (const args of ["create", "audit", "example"]) {
+        const result = await callThroughToolSet([tool!], "skills", {
+          skill: "unslop",
+          args,
+        });
+        const content = JSON.stringify(result.content);
+        assert.match(content, /Review with our design system/);
+        assert.doesNotMatch(
+          content,
+          /# Compose a new screen|# Review the screen|Concrete corrections/,
+        );
+        assert.equal(result.blobs.length, 0);
+      }
+    },
+  );
 });
 
 test("skill scope discovery omits disabled skills", () => {
@@ -133,10 +263,10 @@ test("the user's own skill folders are found, and the workspace's win over their
     assert.deepEqual(skills.map((skill) => skill.name).sort(), [
       "blame-help",
       "component-preview",
-      "impeccable",
       "legacy",
       "release",
       "review",
+      "unslop",
     ]);
     assert.match(runSkill(skills, "Release"), /Workspace release instructions/);
 
@@ -184,10 +314,10 @@ test("the component preview skill is listed only with its tool", async () => {
     /after creating a UI component or changing how one renders/,
   );
   assert.match(withTool, /even when the app's preview is available/);
-  assert.match(withTool, /"name":"impeccable"/);
+  assert.match(withTool, /"name":"unslop"/);
   for (const toolNames of [[], ["finish_task", "get_preview_devtools"]]) {
     const withoutTool = skillScopeSection(usableSkills(skills, toolNames));
-    assert.match(withoutTool, /"name":"impeccable"/);
+    assert.match(withoutTool, /"name":"unslop"/);
     assert.doesNotMatch(
       withoutTool,
       /component-preview|open_component_preview/,
@@ -420,12 +550,6 @@ test("the component preview skill makes the component preview the default visual
     assert.match(
       output,
       /each one-line caption says which of the two it shows/,
-    );
-
-    const impeccable = executor("impeccable", "polish settings");
-    assert.match(
-      impeccable,
-      /When `open_component_preview` is available, check the component's states, themes and widths there[^\n]*Use the app's preview for the requested workflow, navigation and the component's integration/,
     );
   }
 });
@@ -866,7 +990,8 @@ test("the picker lists what the user may start with /name", async () => {
       });
       const names = items.map((item) => item.name);
       assert.deepEqual(names.slice(0, 2), ["deploy", "fix-issue"]);
-      assert.ok(names.includes("impeccable"));
+      assert.ok(names.includes("unslop"));
+      assert.ok(!names.includes("impeccable"));
       assert.ok(!names.includes("background"));
       // Needs a tool the conversation may not have.
       assert.ok(!names.includes("component-preview"));
