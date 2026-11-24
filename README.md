@@ -91,8 +91,9 @@ Git worktrees stop parallel agents from editing the same files. They do not stop
 
 You try each change in its running app, then request changes, reject it, or approve and merge. Nothing merges until you say so.
 
-- **Agents that show their work.** Agents run through the [Light Semantic Harness](#the-light-semantic-harness): every read, edit, and check is recorded, and checks run again before hand-off. On six hand-audited TypeScript tasks, it matched Cline's results with 54% fewer tokens.
-- **Your models, your machine.** Sign in with your Claude or ChatGPT plan, or use any of 50 AI providers with your own key. Agents, worktrees, and previews run on your computer.
+- **Epics that run on their own.** Give Blame a goal: its orchestrator breaks it into stories, starts their agents in parallel, picks a model for each, and merges the stories whose checks passed into the epic's branch. Your main branch only moves when you approve the epic.
+- **Agents that show their work.** Agents run on Blame's own engine, written in Rust, through the [Light Semantic Harness](#the-light-semantic-harness): every read, edit, and check is recorded, and checks run again before hand-off. In our study of its earlier TypeScript version, it matched Cline's results on six hand-audited tasks with 54% fewer tokens.
+- **Your models, your machine.** Sign in with your Claude or ChatGPT plan, or bring a key for Anthropic, OpenAI, Gemini, OpenRouter, or any OpenAI-compatible API, local models included. Agents, worktrees, and previews run on your computer.
 - **Free and open source.** The whole app is AGPL-3.0, and works without an account. [Blame Cloud](#free-and-blame-cloud) only adds hosted services, such as Cloud Previews.
 
 ## Quick start
@@ -117,6 +118,8 @@ When you open a repository, a setup agent reads it and writes down how the proje
 | Linux GUI, Electron, and Tauri apps    | A screen of the running app                                                     |
 | Apps that cannot run in a container    | Direct mode: the app runs in your project folder, without isolation             |
 
+**While you review a story**, Blame serves a production build of the app instead of the dev server. In one test with a nine-page Next.js app, the preview went from 547 MiB to 77 MiB at steady state. Settings › Story previews turns it off per project.
+
 **In development:** terminal previews for CLI tools, phone and tablet frames, the iOS Simulator, and the Android emulator.
 
 New projects start from **Next.js, React + Vite, Nuxt, Vue + Vite, or SvelteKit**, with **PostgreSQL, MySQL, SQLite, or MongoDB**.
@@ -136,7 +139,7 @@ These are good tools, and all of them run agents in parallel git worktrees. The 
 | Live preview of each task's app         | ✓                                              | ✓                                                 | ✓                                        | —                                                       | ✓                                                       |
 | Ports per task                          | Automatic                                      | A range per task                                  | A range per task                         | —                                                       | Set by hand                                             |
 | Database and services per task, locally | **Automatic, in containers**                   | Your own Docker Compose setup                     | Shared (docs suggest one run at a time)  | —                                                       | Your own scripts                                        |
-| Agents                                  | Its own agent, on your Claude or ChatGPT plan or 50 providers | 35 CLI agents                      | Claude Code, Codex, OpenCode, Cursor     | Claude Code, Codex, Gemini, Aider                       | 10+ CLI agents                                          |
+| Agents                                  | Its own engine, on your Claude or ChatGPT plan or your own keys | 35 CLI agents                    | Claude Code, Codex, OpenCode, Cursor     | Claude Code, Codex, Gemini, Aider                       | 10+ CLI agents                                          |
 | Account required                        | No                                             | No                                                | GitHub login                             | No                                                      | No                                                      |
 
 Checked on November 2, 2026, against each project's own docs. \*Bloop wound down Vibe Kanban in April 2026; it is community-maintained since, without its kanban board. Something wrong or out of date? [Open an issue](https://github.com/rchrp/Blame/issues) and it gets fixed.
@@ -153,7 +156,7 @@ Most coding agents grep, rewrite whole files, and tell you it should work now. B
 | `run_task`    | Runs commands and tests           | Results are bound to the run and the source revision. A failing test stays failed, even behind a script that exits 0. |
 | `finish_task` | Hands the work back               | Required checks run again on the final source. Missing or stale checks are reported as unverified, with the reason. |
 
-**Measured in the open.** On fresh cross-module TypeScript tasks audited by hand, the harness matched Cline's **6/6** with **54% fewer tokens** and a 39% lower estimated cost. That is panel F61 of the [harness study](https://blame.so/research/light-semantic-harness-study.pdf) ([LaTeX source](docs/semantic-harness-study.tex)), which details the conditions, the other panels, and the limits of each result. The harness lives in [`packages/agent-runtime/src/harness`](packages/agent-runtime/src/harness).
+**Measured in the open.** On fresh cross-module TypeScript tasks audited by hand, the harness matched Cline's **6/6** with **54% fewer tokens** and a 39% lower estimated cost. That is panel F61 of the [harness study](https://blame.so/research/light-semantic-harness-study.pdf) ([LaTeX source](docs/semantic-harness-study.tex)), which details the conditions, the other panels, and the limits of each result. The study measured the harness's earlier TypeScript version; the Rust port in [`crates/blame-harness`](crates/blame-harness), which keeps its compiler tier in a Node side process, has not been measured again yet.
 
 ## Features
 
@@ -167,7 +170,8 @@ Most coding agents grep, rewrite whole files, and tell you it should work now. B
 - **Smart worktrees.** Blame analyzes the project and prepares a dedicated branch, worktree, environment, port, and runtime for each story before the agent starts.
 - **Live previews.** Run each worktree's app beside its story, with files, diffs, logs, and terminal output. Cloud Previews can also run it in a managed sandbox.
 - **Controlled merge.** Request another pass, reject the work, or approve and merge. The agent moves fast; the decision stays yours.
-- **Parallel agents, any model.** Run several agents at once across 50 AI providers, plus any OpenAI-compatible API.
+- **Epics and the orchestrator.** Describe a goal and the orchestrator plans it as stories, with dependencies when one needs another, starts their agents, and wakes when they finish to approve, request changes, or reject each one. It can never approve a story whose checks failed. Verified stories merge into the epic's branch; you approve the epic before it reaches your main branch.
+- **Parallel agents, a model per story.** No fixed limit on how many agents run at once. Pick each story's model, or let Blame choose one by intent (cheaper, balanced, or smarter) from the Pareto frontier of estimated cost against intelligence.
 - **Code Practices.** Hold every agent to your conventions, or to a stricter engineering standard, project by project.
 - **Ultra mode.** Switch it on for a message and the agent can start up to four read-only helper agents, side by side: they read the code, the web, or the current changes, and each hands back a short report with references. Each helper's thread opens from the conversation; the lead agent stays responsible for the work.
 - **MCP servers.** Connect your MCP servers to every agent.
@@ -236,7 +240,7 @@ Because live previews are the product, and Electron is the only option that make
 - **Agents drive the preview with standard tools.** Each story's preview is a real browser, and the agent inspects it through the Chrome DevTools Protocol (CDP): console, network, DOM, clicks, screenshots. Electron embeds Chromium, so CDP is built in and every agent-side browser tool works unchanged.
 - **Tauri uses the system webview, and most of them do not speak CDP.** macOS uses WKWebView and Linux uses WebKitGTK, both WebKit, with a different inspection protocol. Only Windows (WebView2) is Chromium. Since macOS is a main target, Tauri would have meant either a second browser running beside the app, or bundling Chromium anyway (CEF), which removes Tauri's size advantage.
 - **The preview must render like your users' browser.** A WebKit preview on macOS, Chromium on Windows, and something else on Linux would show different bugs on each machine. One bundled Chromium means what you review is what you ship.
-- **One language, one codebase.** The desktop app shares TypeScript with the interface, the API, and the agent runtime. A Rust layer would add a second stack to maintain for little gain.
+- **One language for the app.** The desktop app shares TypeScript with the interface and the API. The agent engine is the exception: it is written in Rust and runs as its own process, on your computer or in the Blame Runtime, so the window that shows your previews stays light.
 
 **What about performance?** The interface is not where the time and memory go. The costs are the agents, the language models, the containers, and the Lima VM or WSL distribution that runs your project. Electron adds some memory at idle, which is small next to a Postgres container and a dev server per story, and it does not slow down the agents. Spending that memory buys previews that work the same everywhere and that agents can test.
 
