@@ -326,15 +326,26 @@ export function usableSkills(
   });
 }
 
-/** The prompt section that lists each skill's scope. */
-export function skillScopeSection(skills: readonly Skill[]) {
+const unslopDirectory = join(blameNativeSkillsDirectory(), "unslop");
+const bundledDesignFile = join(unslopDirectory, "SKILL.md");
+
+/** Coding sessions keep the short UI directions visible even with a full skill catalog. */
+export function skillScopeSection(
+  skills: readonly Skill[],
+  projectWork = false,
+) {
   // A skill only the user may run still gets the section: the user's
   // `/name` is what names it.
   if (!skills.some((skill) => !skill.disabled)) return "";
   const enabled = skills.filter(modelListed);
+  const design = projectWork
+    ? enabled.find((skill) => skill.file === bundledDesignFile)
+    : undefined;
+  const uiWork = design ? `\n\n## UI work\n${design.description}` : "";
   const descriptions: string[] = [];
-  let remaining = 16_384;
+  let remaining = 16_384 - uiWork.length;
   for (const skill of enabled) {
+    if (skill === design) continue;
     const description = JSON.stringify({
       name: skill.name,
       description:
@@ -353,7 +364,8 @@ export function skillScopeSection(skills: readonly Skill[]) {
   return (
     "\n\n## Skill selection\n" +
     "Invoke explicitly requested skills: when the user writes `/name`, optionally with arguments, that is a request to run the skill of that name with the skills tool, the rest of their message as its args, even when it is not listed here. Otherwise load a skill when its described scope applies to the current request; frontend files elsewhere in the workspace do not make a backend or mechanical task frontend design work. These descriptions are a startup snapshot; the skills tool loads current instructions. Inspect the skill if relevance is uncertain." +
-    (descriptions.length ? "\n" + descriptions.join("\n") : "")
+    (descriptions.length ? "\n" + descriptions.join("\n") : "") +
+    uiWork
   );
 }
 
@@ -370,7 +382,7 @@ export function userInvocableSkills(skills: readonly Skill[]) {
 }
 
 const skillsDescription =
-  'Execute a skill within the main conversation. When users ask you to perform tasks, check if any available skills match. When users reference a slash command, invoke it with this tool. Input: `skill` (required) and optional `args`. Example: `skill: "pdf"`, `skill: "commit", args: "-m \\"Fix bug\\""`, `skill: "review-pr", args: "123"`, `skill: "ms-office-suite:pdf"`. When a skill matches the user\'s request, invoking this tool is a blocking requirement before any other response. Never mention a skill without invoking this tool. A skill the user names that is not listed is still run on their explicit request, never on yours.';
+  "Invoke a matching skill in the main conversation before work that depends on it. Batch the call with independent code reads. Run a requested /name with its arguments, including unlisted skills only on explicit request. Invoke a skill before mentioning it.";
 
 /**
  * The `skills` tool. Its description names the skills of the snapshot, so it
@@ -421,19 +433,72 @@ export function skillsTool(
       if (!requested) return "Missing skill name.";
       const skills = (await load()).filter((skill) => allowed.has(skill.id));
       const file = textField(input.file);
-      if (!file) return runSkill(skills, requested, textField(input.args));
+      const args = textField(input.args);
       const { found } = findSkill(skills, requested);
-      if (found.length !== 1) return runSkill(skills, requested);
+      if (found.length !== 1) return runSkill(skills, requested, args);
       const skill = found[0]!;
-      return skill.resources
-        ? readSkillFile(
-            skill.file,
-            file,
-            typeof input.offset === "number" ? input.offset : 0,
-          )
-        : `Skill "${skill.name}" has no files besides its instructions.`;
+      if (file) {
+        if (
+          skill.file === bundledDesignFile &&
+          file === "examples/dashboard.jpg"
+        )
+          return unslopExample();
+        return skill.resources
+          ? readSkillFile(
+              skill.file,
+              file,
+              typeof input.offset === "number" ? input.offset : 0,
+            )
+          : `Skill "${skill.name}" has no files besides its instructions.`;
+      }
+      // An override owns its arguments and files, even when it is named unslop.
+      return skill.file === bundledDesignFile
+        ? runUnslop(skill, args)
+        : renderSkill(skill, args);
     },
   });
+}
+
+const unslopWorkflows = new Map([
+  ["create", "create.md"],
+  ["audit", "review.md"],
+  ["critique", "review.md"],
+  ["review", "review.md"],
+]);
+
+async function runUnslop(skill: Skill, args?: string) {
+  if (args?.toLowerCase() === "example") return unslopExample();
+  const mode = args?.split(/\s+/u, 1)[0]?.toLowerCase() ?? "";
+  const workflowFile = unslopWorkflows.get(mode);
+  const [workflow, patterns] = await Promise.all([
+    workflowFile
+      ? readFile(join(unslopDirectory, workflowFile), "utf8")
+      : skill.instructions,
+    readFile(join(unslopDirectory, "patterns.md"), "utf8"),
+  ]);
+  return renderSkill(
+    { ...skill, instructions: `${workflow.trim()}\n\n${patterns.trim()}` },
+    args,
+  );
+}
+
+/** A local reference image goes through the same blob transport as a preview. */
+async function unslopExample() {
+  const directory = join(unslopDirectory, "examples");
+  const [caption, image] = await Promise.all([
+    readFile(join(directory, "dashboard.md"), "utf8"),
+    readFile(join(directory, "dashboard.jpg")),
+  ]);
+  return {
+    content: [
+      { type: "text" as const, text: caption.trim() },
+      {
+        type: "image" as const,
+        mediaType: "image/jpeg",
+        data: image.toString("base64"),
+      },
+    ],
+  };
 }
 
 // An exact name beats a prefixed one (`frontend:build` and `build`).
@@ -455,19 +520,7 @@ export function runSkill(
   args?: string,
 ) {
   const { matches, enabled, found } = findSkill(skills, requested);
-  if (found.length === 1) {
-    const skill = found[0]!;
-    const commandArgs = args?.trim()
-      ? `\n<command-args>${args.trim()}</command-args>`
-      : "";
-    const description = skill.description?.trim()
-      ? `Description: ${skill.description.trim()}\n\n`
-      : "";
-    const folder = skill.resources
-      ? `Base directory for this skill: ${dirname(skill.file)}\nRelative paths in these instructions start there: read a file with the skills tool's \`file\` input, run a script by its full path.\n\n`
-      : "";
-    return `<command-name>${skill.name}</command-name>${commandArgs}\n<command-instructions>\n${description}${folder}${skillInstructions(skill, args)}\n</command-instructions>`;
-  }
+  if (found.length === 1) return renderSkill(found[0]!, args);
   if (matches.length && !enabled.length)
     return `Skill "${matches[0]!.name}" is configured but disabled.`;
   const available = skills
@@ -477,6 +530,19 @@ export function runSkill(
   return available.length
     ? `Skill "${requested}" not found. Available skills: ${available.join(", ")}`
     : "No skills are currently available.";
+}
+
+function renderSkill(skill: Skill, args?: string) {
+  const commandArgs = args?.trim()
+    ? `\n<command-args>${args.trim()}</command-args>`
+    : "";
+  const description = skill.description?.trim()
+    ? `Description: ${skill.description.trim()}\n\n`
+    : "";
+  const folder = skill.resources
+    ? `Base directory for this skill: ${dirname(skill.file)}\nRelative paths in these instructions start there: read a file with the skills tool's \`file\` input, run a script by its full path.\n\n`
+    : "";
+  return `<command-name>${skill.name}</command-name>${commandArgs}\n<command-instructions>\n${description}${folder}${skillInstructions(skill, args)}\n</command-instructions>`;
 }
 
 /**
@@ -552,6 +618,7 @@ function splitArguments(text: string) {
 export async function conversationSkills(
   input: Parameters<typeof skillDirectories>[0],
   toolNames: readonly string[],
+  projectWork = false,
 ) {
   const directories = skillDirectories(input);
   const load = async () =>
@@ -559,7 +626,7 @@ export async function conversationSkills(
   const snapshot = await load();
   return {
     skills: snapshot,
-    prompt: skillScopeSection(snapshot),
+    prompt: skillScopeSection(snapshot, projectWork),
     tool: skillsTool(snapshot, load),
   };
 }
