@@ -175,7 +175,7 @@ function SpeechStartButton({
           title="Start voice input · Right-click to choose a microphone"
           type="button"
           size="icon"
-          variant="subtle"
+          variant="composer"
           disabled={disabled}
           onPointerDown={(event) => {
             if (event.pointerType === "mouse") event.preventDefault()

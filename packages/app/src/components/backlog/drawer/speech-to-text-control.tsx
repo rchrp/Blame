@@ -298,10 +298,10 @@ export function SpeechCapturePill({
       }}
       transition={{ duration: reducedMotion ? 0 : 0.24, ease: "easeOut" }}
       className={cn(
-        "flex h-(--control-height) shrink-0 items-center overflow-hidden rounded-lg border px-1 text-muted-foreground focus-within:ring-1 focus-within:ring-ring",
+        "flex h-(--control-height) shrink-0 items-center overflow-hidden rounded-full border px-1 text-muted-foreground focus-within:ring-1 focus-within:ring-ring",
         floating
           ? "border-border bg-popover shadow-lg"
-          : "border-foreground/8 bg-foreground/4"
+          : "border-foreground/15 bg-foreground/8"
       )}
     >
       <span className="sr-only" role="status">

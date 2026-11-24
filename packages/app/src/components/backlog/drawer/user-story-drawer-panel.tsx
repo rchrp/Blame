@@ -135,7 +135,6 @@ export function UserStoryDrawerPanel({
   onDeleteUserStory,
   onOpenDrawer,
   onOpenPullRequest,
-  onOptimizeUserStory,
   onRequestChanges,
   onReject,
   onStopAgent,
@@ -167,10 +166,6 @@ export function UserStoryDrawerPanel({
   onDeleteUserStory: (story: UserStory) => Promise<void>
   onOpenDrawer: OpenDrawer
   onOpenPullRequest: (story: UserStory) => Promise<UserStory>
-  onOptimizeUserStory?: (input: {
-    summary: string
-    title: string
-  }) => Promise<string>
   onRequestChanges: (
     story: UserStory,
     input: StoryMessageInput
@@ -538,11 +533,6 @@ export function UserStoryDrawerPanel({
         ?.focus()
     })
   })
-  const handleSummaryOptimize = useLatestCallback((nextSummary: string) =>
-    onOptimizeUserStory
-      ? onOptimizeUserStory({ summary: nextSummary, title })
-      : Promise.resolve(nextSummary)
-  )
   const drawerActionButtons = React.useMemo(
     () => (
       <DrawerActions
@@ -722,9 +712,6 @@ export function UserStoryDrawerPanel({
                 onSummaryFileAttachmentsAdd={addSummaryFileAttachments}
                   onSummaryFileAttachmentsReplace={(replacements) => setSummaryFileAttachments((current) => replaceFileAttachments(current, replacements))}
                 onSummaryChange={handleSummaryChange}
-                onSummaryOptimize={
-                  onOptimizeUserStory ? handleSummaryOptimize : undefined
-                }
                 onFileLinkClick={handleOpenDevelopmentFile}
                 onChangedFileClick={handleOpenDevelopmentDiff}
                 onRunModeChange={changeRunMode}

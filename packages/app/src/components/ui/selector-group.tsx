@@ -23,6 +23,6 @@ export function SelectorGroup({
 
 // Rounds only the outer corners, so a lone segment is a full pill.
 export const selectorSegmentClassName =
-  "flex h-8 min-w-0 items-center justify-between gap-2 rounded-none border-0 bg-muted/70 px-3 text-sm font-medium text-foreground shadow-none outline-none transition-colors first:rounded-l-xl last:rounded-r-xl hover:bg-muted focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-0 aria-expanded:bg-muted dark:hover:bg-muted disabled:pointer-events-none disabled:opacity-50"
+  "flex h-8 min-w-0 items-center justify-between gap-2 rounded-none border-0 bg-foreground/8 px-3.5 text-sm font-medium text-foreground shadow-none outline-none transition-colors first:rounded-l-full last:rounded-r-full hover:bg-foreground/14 focus-visible:relative focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-ring/50 active:translate-y-0 aria-expanded:bg-foreground/14 dark:hover:bg-foreground/14 disabled:pointer-events-none disabled:opacity-50"
 
 export const selectorChevronClassName = "size-4 shrink-0 text-muted-foreground"

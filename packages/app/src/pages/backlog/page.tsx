@@ -82,8 +82,6 @@ import { replaceStoryAfterUndo } from "./story-checkpoint-undo"
 import { useStoryComments } from "./use-story-comments"
 import { useNewUserStoryExcerpts } from "./use-new-story-excerpts"
 import { withStoryTransition } from "./story-transitions"
-import { optimizeUserStoryPrompt } from "./user-story-prompt-optimizer"
-
 export function BacklogPage({
   active = true,
   drawerShown = active,
@@ -571,24 +569,6 @@ export function BacklogPage({
       projects.activeProject?.path,
     ]
   )
-  const optimizeUserStory = React.useCallback(
-    (input: { summary: string; title: string }) =>
-      optimizeUserStoryPrompt({
-        input,
-        auth,
-        platform,
-        projectPath: projects.activeProject?.path,
-        model: alternativeSelection.currentModel,
-        reasoningEffort: alternativeSelection.currentVariant,
-      }),
-    [
-      auth,
-      platform,
-      projects.activeProject?.path,
-      alternativeSelection.currentModel,
-      alternativeSelection.currentVariant,
-    ]
-  )
   const storyTitleGenerating = React.useCallback(
     (story: UserStory) => titleGeneratingStoryIds.has(story.id),
     [titleGeneratingStoryIds]
@@ -792,7 +772,6 @@ export function BacklogPage({
     }
   )
   const drawerOpenDrawer = useLatestCallback(openDrawer)
-  const drawerOptimizeStory = useLatestCallback(optimizeUserStory)
   const drawerApproveStory = useLatestCallback(completeReviewStory)
   const drawerOpenPullRequest = useLatestCallback(openPullRequestForStory)
   const drawerCheckPullRequest = useLatestCallback(checkPullRequest)
@@ -872,7 +851,6 @@ export function BacklogPage({
         onDeleteUserStory={deleteDrawerStory}
         onUpdateUserStory={updateDrawerStory}
         onOpenDrawer={drawerOpenDrawer}
-        onOptimizeUserStory={drawerOptimizeStory}
         onApproveAndMerge={drawerApproveStory}
         onCheckPullRequest={
           platform.agent ? drawerCheckPullRequest : undefined

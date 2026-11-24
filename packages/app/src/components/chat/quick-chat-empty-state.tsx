@@ -3,7 +3,6 @@ import {
   CompassIcon,
   FlaskConicalIcon,
   PaletteIcon,
-  WrenchIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -38,7 +37,6 @@ export function QuickChatEmptyState({
 }) {
   return (
     <ConversationEmptyState
-      icon={WrenchIcon}
       title="What would you like to adjust?"
       description="Fix a bug, tweak a detail, or ask about your code. Chat is for focused changes; use the backlog to plan larger features."
       suggestions={suggestions}
@@ -48,26 +46,21 @@ export function QuickChatEmptyState({
 }
 
 export function ConversationEmptyState({
-  icon: Icon,
   title,
   description,
   suggestions,
   onSuggestion,
 }: {
-  icon: LucideIcon
   title: string
   description: string
   suggestions: readonly { icon: LucideIcon; label: string; prompt: string }[]
   onSuggestion?: (prompt: string) => void
 }) {
   return (
-    <div className="onboarding-stagger grid place-items-center gap-5 pb-6">
-      <span className="flex size-12 items-center justify-center rounded-2xl border bg-muted text-muted-foreground shadow-sm">
-        <Icon className="size-5" />
-      </span>
-      <div className="grid max-w-md gap-1 text-center">
-        <h2 className="font-heading text-xl font-semibold">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
+    <div className="onboarding-stagger grid place-items-center gap-6 pb-6">
+      <div className="grid max-w-xl gap-2 text-center">
+        <h2 className="font-heading text-3xl font-semibold">{title}</h2>
+        <p className="text-base text-muted-foreground">{description}</p>
       </div>
       {onSuggestion ? (
         <div className="flex flex-wrap justify-center gap-2">

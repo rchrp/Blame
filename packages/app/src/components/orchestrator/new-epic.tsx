@@ -4,7 +4,6 @@ import {
   ArrowRightIcon,
   GitPullRequestIcon,
   RouteIcon,
-  WorkflowIcon,
 } from "lucide-react"
 import { AgentConversationComposer } from "@/components/chat/agent-conversation"
 import { PreviewLaunchClouds } from "@/components/backlog/drawer/preview-idle-state"
@@ -131,7 +130,6 @@ export function NewEpic({
         }
         emptyState={
           <ConversationEmptyState
-            icon={WorkflowIcon}
             title="What should this epic achieve?"
             description="Give the orchestrator a goal. It plans the user stories, coordinates their agents, and brings the work together on a branch for you to review."
             suggestions={suggestions}

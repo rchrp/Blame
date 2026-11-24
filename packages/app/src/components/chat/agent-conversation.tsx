@@ -511,7 +511,7 @@ export function AgentConversationComposer({
   onAgentCancel?: () => void
   placeholder: string
   submitLabel: string
-  // The button that opens the personalization menu, next to the microphone.
+  // The button that opens the personalization menu, next to the add menu.
   personalizationMenu?: React.ReactNode
   // A tab growing out of the editor's left edge: the agent's plan.
   planTab?: React.ReactNode
@@ -612,7 +612,7 @@ export function AgentConversationComposer({
             <Button
               aria-label={primaryActionLabel}
               className={cn(
-                "p-0 transition-[background-color,color] disabled:opacity-100",
+                "rounded-full p-0 transition-[background-color,color] disabled:opacity-100",
                 stopAction && !submitting
                   ? "bg-foreground text-background hover:bg-foreground/85 disabled:bg-foreground/70"
                   : "bg-blue-600 text-white hover:bg-blue-700",

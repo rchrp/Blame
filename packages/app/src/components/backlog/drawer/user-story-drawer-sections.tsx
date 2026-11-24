@@ -95,7 +95,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
   onSummaryFileAttachmentRemove,
   onSummaryFileAttachmentsAdd,
   onSummaryFileAttachmentsReplace,
-  onSummaryOptimize,
   onFileLinkClick,
   onChangedFileClick,
   onRunModeChange,
@@ -137,7 +136,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
     replacements: FileAttachmentReplacement[]
   ) => void
   onSummaryFileAttachmentsAdd: (attachments: UserStoryFileAttachment[]) => void
-  onSummaryOptimize?: (summary: string) => Promise<string>
   onFileLinkClick?: (path: string) => void
   onChangedFileClick?: (path: string, diffs: VcsFileDiff[]) => void
   status: BacklogColumnId
@@ -188,7 +186,6 @@ export const UserStoryContent = React.memo(function UserStoryContent({
           onFileAttachmentsReplace={onSummaryFileAttachmentsReplace}
           onFileLinkClick={onFileLinkClick}
           onMarkdownChange={onSummaryChange}
-          onOptimize={onSummaryOptimize}
           personalizationMenu={
             mode === "create" && onAmbitionChange ? (
               <PersonalizationMenu

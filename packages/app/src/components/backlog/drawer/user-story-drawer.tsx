@@ -52,10 +52,6 @@ export type UserStoryDrawerProps = {
   onCheckPullRequest?: () => Promise<PullRequestAvailability>
   onOpenDrawer: OpenDrawer
   onOpenPullRequest: (story: UserStory) => Promise<UserStory>
-  onOptimizeUserStory?: (input: {
-    summary: string
-    title: string
-  }) => Promise<string>
   onReject: (story: UserStory, choice: RejectChoice) => Promise<UserStory>
   onRequestChanges: (
     story: UserStory,
@@ -91,7 +87,6 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
   onCheckPullRequest,
   onOpenDrawer,
   onOpenPullRequest,
-  onOptimizeUserStory,
   onReject,
   onRequestChanges,
   reviewDiffEmpty,
@@ -155,7 +150,6 @@ export const UserStoryDrawer = React.memo(function UserStoryDrawer({
           onDeleteUserStory={onDeleteUserStory}
           onOpenDrawer={onOpenDrawer}
           onOpenPullRequest={onOpenPullRequest}
-          onOptimizeUserStory={onOptimizeUserStory}
           onRequestChanges={onRequestChanges}
           onReject={onReject}
           reviewDiffEmpty={reviewDiffEmpty}

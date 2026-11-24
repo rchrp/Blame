@@ -37,9 +37,8 @@ export function PersonalizationMenu({ ambition }: { ambition: AmbitionScope }) {
           aria-label="Personalize the agent"
           title="Personalize the agent"
           type="button"
-          className="rounded-full"
           size="icon"
-          variant="subtle"
+          variant="composer"
         >
           <SlidersVerticalIcon className="size-3.5" />
         </Button>

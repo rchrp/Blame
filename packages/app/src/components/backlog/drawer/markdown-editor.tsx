@@ -7,12 +7,10 @@ import {
   ListChecksIcon,
   ListIcon,
   ListOrderedIcon,
-  LoaderCircleIcon,
   PaperclipIcon,
   PlusIcon,
   QuoteIcon,
   Redo2Icon,
-  PenLineIcon,
   StrikethroughIcon,
   TypeIcon,
   Undo2Icon,
@@ -68,15 +66,12 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverAnchor, PopoverContent } from "@/components/ui/popover"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { usePlatform } from "@/context/platform"
 import { registerFocusOnTypeEditor } from "@/lib/focus-on-type"
 import {
@@ -307,20 +302,23 @@ const markdownActions: {
   { action: "task", icon: ListChecksIcon, label: "Task list" },
 ]
 
-const MarkdownFormattingMenu = React.memo(function MarkdownFormattingMenu({
+const MarkdownComposerMenu = React.memo(function MarkdownComposerMenu({
   disabled,
   onAction,
   onActionIntent,
+  onAttach,
   onRedo,
   onUndo,
 }: {
   disabled?: boolean
   onAction: (action: MarkdownAction) => void
   onActionIntent: () => void
+  onAttach: () => void
   onRedo: () => void
   onUndo: () => void
 }) {
   const pendingAction = React.useRef<(() => void) | null>(null)
+  const itemClassName = "gap-2 px-2 py-1.5"
 
   return (
     <DropdownMenu
@@ -335,18 +333,19 @@ const MarkdownFormattingMenu = React.memo(function MarkdownFormattingMenu({
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
-          aria-label="Formatting"
-          title="Formatting"
+          aria-label="Add to message"
+          title="Attach files or format the text"
           disabled={disabled}
           size="icon"
-          variant="subtle"
+          variant="composer"
         >
-          <TypeIcon />
+          <PlusIcon />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        className="w-44 rounded-xl bg-popover p-1.5"
+        className="w-48 rounded-xl bg-popover p-1.5"
         side="top"
+        align="start"
         sideOffset={8}
         onCloseAutoFocus={(event) => {
           const action = pendingAction.current
@@ -357,75 +356,55 @@ const MarkdownFormattingMenu = React.memo(function MarkdownFormattingMenu({
           action()
         }}
       >
-        {markdownActions.map(({ action, icon: Icon, label }) => (
-          <DropdownMenuItem
-            key={action}
-            className="gap-2 px-2 py-1.5"
-            onSelect={() => {
-              pendingAction.current = () => onAction(action)
-            }}
-          >
-            <Icon className="size-3.5" /> {label}
-          </DropdownMenuItem>
-        ))}
-        <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="gap-2 px-2 py-1.5"
+          className={itemClassName}
           onSelect={() => {
-            pendingAction.current = onUndo
+            pendingAction.current = onAttach
           }}
         >
-          <Undo2Icon className="size-3.5" /> Undo
+          <PaperclipIcon className="size-3.5" /> Attach files
         </DropdownMenuItem>
-        <DropdownMenuItem
-          className="gap-2 px-2 py-1.5"
-          onSelect={() => {
-            pendingAction.current = onRedo
-          }}
-        >
-          <Redo2Icon className="size-3.5" /> Redo
-        </DropdownMenuItem>
+        <DropdownMenuSub>
+          <DropdownMenuSubTrigger className={itemClassName}>
+            <TypeIcon className="size-3.5" /> Format text
+          </DropdownMenuSubTrigger>
+          <DropdownMenuSubContent className="w-44 rounded-xl p-1.5" sideOffset={8}>
+            {markdownActions.map(({ action, icon: Icon, label }) => (
+              <DropdownMenuItem
+                key={action}
+                className={itemClassName}
+                onSelect={() => {
+                  pendingAction.current = () => onAction(action)
+                }}
+              >
+                <Icon className="size-3.5" /> {label}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className={itemClassName}
+              onSelect={() => {
+                pendingAction.current = onUndo
+              }}
+            >
+              <Undo2Icon className="size-3.5" /> Undo
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className={itemClassName}
+              onSelect={() => {
+                pendingAction.current = onRedo
+              }}
+            >
+              <Redo2Icon className="size-3.5" /> Redo
+            </DropdownMenuItem>
+          </DropdownMenuSubContent>
+        </DropdownMenuSub>
       </DropdownMenuContent>
     </DropdownMenu>
   )
 })
 
-const MarkdownOptimizeButton = React.memo(function MarkdownOptimizeButton({
-  disabled,
-  onOptimize,
-  optimizing,
-}: {
-  disabled?: boolean
-  onOptimize: () => void
-  optimizing?: boolean
-}) {
-  return (
-    <TooltipProvider>
-      <Tooltip delayDuration={1000}>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            aria-label="Enhance with AI"
-            className="px-3 text-xs"
-            variant="subtle"
-            disabled={disabled}
-            onClick={onOptimize}
-          >
-            {optimizing ? (
-              <LoaderCircleIcon className="size-3.5 animate-spin" />
-            ) : (
-              <PenLineIcon className="size-3.5" />
-            )}
-            Enhance
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent sideOffset={6}>
-          Transform this user story into a clearer, structured prompt.
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-})
+
 
 type MarkdownSelection = { end: number; start: number }
 
@@ -1044,9 +1023,8 @@ export const MarkdownEditor = React.forwardRef<
     onFileAttachmentsAdd?: (attachments: UserStoryFileAttachment[]) => void
     onFileLinkClick?: (path: string) => void
     onMarkdownChange?: (markdown: string) => void
-    onOptimize?: (markdown: string) => Promise<string>
     onSubmitShortcut?: () => void
-    // The button that opens the personalization menu, next to the microphone.
+    // The button that opens the personalization menu, next to the add menu.
     personalizationMenu?: React.ReactNode
     primaryAction?: React.ReactNode
     readOnly?: boolean
@@ -1074,7 +1052,6 @@ export const MarkdownEditor = React.forwardRef<
     onFileAttachmentsReplace,
     onFileLinkClick,
     onMarkdownChange,
-    onOptimize,
     onSubmitShortcut,
     personalizationMenu,
     primaryAction,
@@ -1138,7 +1115,6 @@ export const MarkdownEditor = React.forwardRef<
   })
   const [activeSelection, setActiveSelection] =
     React.useState<MarkdownSelection | null>(null)
-  const [optimizing, setOptimizing] = React.useState(false)
   const [fileDropActive, setFileDropActive] = React.useState(false)
   const setEditorElement = React.useCallback(
     (element: HTMLDivElement | null) => {
@@ -1840,15 +1816,7 @@ export const MarkdownEditor = React.forwardRef<
     document.execCommand(command)
   }
 
-  async function handleOptimize() {
-    if (!onOptimize || readOnly || optimizing) return
-    setOptimizing(true)
-    try {
-      emitMarkdown(await onOptimize(value))
-    } finally {
-      setOptimizing(false)
-    }
-  }
+  
 
   const stableApplyMarkdownAction = useLatestCallback(applyMarkdownAction)
   const stableRememberEditorSelection = useLatestCallback(
@@ -1859,7 +1827,9 @@ export const MarkdownEditor = React.forwardRef<
   )
   const stableRedo = useLatestCallback(() => runHistoryCommand("redo"))
   const stableUndo = useLatestCallback(() => runHistoryCommand("undo"))
-  const stableOptimize = useLatestCallback(handleOptimize)
+  const stableAttachFiles = useLatestCallback(() =>
+    fileInputRef.current?.click()
+  )
   const composerVisible = !readOnly || submitting
 
   return (
@@ -1945,7 +1915,8 @@ export const MarkdownEditor = React.forwardRef<
             />
           )}
           {composerVisible && (
-            <div className="flex min-h-14 flex-wrap items-end gap-x-3 gap-y-1.5 px-3 pt-1 pb-3">
+            <div className="flex min-h-14 flex-wrap items-end gap-x-3 gap-y-2 px-3 pt-1 pb-3">
+              {/* What goes into the message, then where the agent runs. */}
               <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1.5">
                 {!readOnly && (
                   <>
@@ -1956,35 +1927,19 @@ export const MarkdownEditor = React.forwardRef<
                       type="file"
                       onChange={handleFileSelection}
                     />
-                    <Button
-                      type="button"
-                      aria-label="Attach files"
-                      title="Attach files"
-                      size="icon"
-                      variant="subtle"
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      <PlusIcon />
-                    </Button>
-                    <MarkdownFormattingMenu
-                      disabled={optimizing}
+                    <MarkdownComposerMenu
                       onAction={stableApplyMarkdownAction}
                       onActionIntent={stableRememberEditorSelection}
+                      onAttach={stableAttachFiles}
                       onRedo={stableRedo}
                       onUndo={stableUndo}
                     />
-                    {onOptimize && (
-                      <MarkdownOptimizeButton
-                        disabled={optimizing}
-                        onOptimize={stableOptimize}
-                        optimizing={optimizing}
-                      />
-                    )}
                     {personalizationMenu}
                     {toolbarStart}
                   </>
                 )}
               </div>
+              {/* The model, then dictation and send. */}
               <div className="ml-auto flex min-w-0 max-w-full items-center justify-end gap-1.5">
                 {!readOnly && toolbarEnd}
                 {!readOnly && (
@@ -1992,7 +1947,6 @@ export const MarkdownEditor = React.forwardRef<
                     sessionKey={speechSessionKey}
                     currentText={() => currentValueRef.current}
                     target={speechTarget}
-                    disabled={optimizing}
                     onStartRecording={rememberSpeechSelection}
                     onTranscription={insertSpeechTranscription}
                   />
