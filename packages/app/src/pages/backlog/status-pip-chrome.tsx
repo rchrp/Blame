@@ -66,7 +66,7 @@ export function StatusPipHeader({
           className="size-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
           aria-label="Close"
           title="Close (Esc)"
-          onClick={onClose}
+          onClick={() => onClose()}
         >
           <XIcon />
         </Button>
