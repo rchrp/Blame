@@ -214,6 +214,8 @@ async function verifyRuntime(bundle, instanceName, environment) {
     "command -v blame-semantic-harness",
     "test -s /etc/blame-semantic-harness-sha256",
     "test \"$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version)\" = \"12.15.0\"",
+    // The native binary, not the shebang-less placeholder only a shell runs.
+    "head -c 4 \"$(readlink -f /opt/blame/package-managers/pnpm/12.15.0/bin/pnpm)\" | grep -q ELF",
     "test \"$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version)\" = \"10.34.9\"",
     "test \"$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version)\" = \"12.2.1\"",
     "test \"$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version)\" = \"11.6.4\"",
