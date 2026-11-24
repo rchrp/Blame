@@ -437,6 +437,39 @@ async fn the_claude_code_bridge_is_the_anthropic_wire_at_its_own_address() {
     assert_eq!(error.kind, ErrorKind::Authentication);
 }
 
+#[cfg(unix)]
+#[tokio::test]
+async fn claude_code_can_stream_through_a_unix_socket() {
+    use tokio::net::{TcpStream, UnixListener};
+
+    let mock = Mock::start(vec![Reply::sse(&final_reply())]).await;
+    let path = std::env::temp_dir().join(format!("bcc-{}.sock", uuid::Uuid::new_v4()));
+    let listener = UnixListener::bind(&path).expect("bind Unix socket");
+    let bridge = mock.base.trim_start_matches("http://").to_owned();
+    let relay = tokio::spawn(async move {
+        let (mut guest, _) = listener.accept().await.expect("relay connection");
+        let mut host = TcpStream::connect(bridge).await.expect("bridge connection");
+        tokio::io::copy_bidirectional(&mut guest, &mut host).await
+    });
+    let credential = Credential::ClaudeCodeSocket {
+        key: "bcc1.scope.mac".into(),
+        path: path.to_string_lossy().into_owned(),
+    };
+    let provider = connect("claude-code", &credential, &Options::default()).expect("provider");
+    let (events, error) = run(
+        &provider,
+        request(model("claude-code", MODEL), vec![user("hi")]),
+    )
+    .await;
+    relay.abort();
+    std::fs::remove_file(path).expect("remove test socket");
+    assert!(error.is_none(), "{error:?}");
+    assert!(matches!(events.last(), Some(ModelEvent::Finished { .. })));
+    let sent = mock.only_request();
+    assert_eq!(sent.target, "/v1/messages");
+    assert_eq!(sent.header("x-api-key"), Some("bcc1.scope.mac"));
+}
+
 #[tokio::test]
 async fn a_bearer_token_goes_in_the_authorization_header() {
     let mock = Mock::start(vec![Reply::sse(&final_reply())]).await;

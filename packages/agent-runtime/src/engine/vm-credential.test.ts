@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { vmCredential } from "./host.js";
+import { vmCredential, vmProviderCredential } from "./host-helpers.js";
 
 const vm = { hostAlias: "host.lima.internal" };
 
@@ -37,4 +37,31 @@ test("a remote endpoint and a credential without one are kept", () => {
     ),
     { type: "api_key", key: "k", base_url: "http://127.0.0.1:1" },
   );
+});
+
+test("WSL relays only Claude Code and keeps its session key", async () => {
+  const credential = {
+    type: "api_key" as const,
+    key: "bcc1.session.signature",
+    base_url: "http://127.0.0.1:4000/v1",
+  };
+  const wsl = {
+    async claudeCodeSocket(baseUrl: string) {
+      assert.equal(baseUrl, credential.base_url);
+      return "/tmp/private/bridge.sock";
+    },
+  };
+  assert.deepEqual(await vmProviderCredential("claude-code", credential, wsl), {
+    type: "claude_code_socket",
+    key: credential.key,
+    path: "/tmp/private/bridge.sock",
+  });
+  assert.deepEqual(
+    await vmProviderCredential("openai-compatible", credential, wsl),
+    credential,
+  );
+  assert.deepEqual(await vmProviderCredential("claude-code", credential, vm), {
+    ...credential,
+    base_url: "http://host.lima.internal:4000/v1",
+  });
 });

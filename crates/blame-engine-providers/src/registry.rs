@@ -133,6 +133,7 @@ pub struct Provider {
     kind: ProviderKind,
     client: Client,
     http: ReqwestClient,
+    uses_claude_code_socket: bool,
     idle_timeout: Duration,
     catalog: Arc<LiveCatalog>,
 }
@@ -170,12 +171,15 @@ pub fn connect(
     })?;
     let (secret, account, base_url, bearer) = match credential {
         Credential::ApiKey { key, base_url } => (key.clone(), None, base_url.clone(), false),
+        Credential::ClaudeCodeSocket { key, .. } if kind == ProviderKind::ClaudeCode => {
+            (key.clone(), None, Some("http://localhost/v1".into()), false)
+        }
         Credential::Bearer {
             token,
             account,
             base_url,
         } => (token.clone(), account.clone(), base_url.clone(), true),
-        Credential::Missing => {
+        Credential::Missing | Credential::ClaudeCodeSocket { .. } => {
             return Err(ProviderError::new(
                 ErrorKind::Authentication,
                 format!("no credential for `{id}`"),
@@ -250,18 +254,35 @@ pub fn connect(
         .connect_timeout(options.connect_timeout)
         // Replies stream as sent: no decoder between the provider's events
         // and the loop.
-        .no_gzip()
-        .build()
-        .map_err(|error| {
-            ProviderError::new(
-                ErrorKind::Internal,
-                format!("building the HTTP client failed: {error}"),
-            )
-        })?;
+        .no_gzip();
+    let uses_claude_code_socket = matches!(credential, Credential::ClaudeCodeSocket { .. });
+    let http = if let Credential::ClaudeCodeSocket { path, .. } = credential {
+        #[cfg(unix)]
+        {
+            http.unix_socket(path.as_str())
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = path;
+            return Err(ProviderError::new(
+                ErrorKind::InvalidRequest,
+                "The Claude Code relay requires a Unix socket",
+            ));
+        }
+    } else {
+        http
+    };
+    let http = http.build().map_err(|error| {
+        ProviderError::new(
+            ErrorKind::Internal,
+            format!("building the HTTP client failed: {error}"),
+        )
+    })?;
     Ok(Provider {
         kind,
         client,
         http: ReqwestClient::from(http),
+        uses_claude_code_socket,
         idle_timeout: options.idle_timeout,
         catalog: options.catalog.clone(),
     })
@@ -270,6 +291,10 @@ pub fn connect(
 impl Provider {
     pub fn kind(&self) -> ProviderKind {
         self.kind
+    }
+
+    pub fn uses_claude_code_socket(&self) -> bool {
+        self.uses_claude_code_socket
     }
 
     fn target(&self, request: &ModelRequest, catalog: Arc<Catalog>) -> Target {

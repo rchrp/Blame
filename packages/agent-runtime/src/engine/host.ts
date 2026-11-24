@@ -53,7 +53,7 @@ import {
   attachmentKind,
   conversationToolSession,
   sameJson,
-  vmCredential,
+  vmProviderCredential,
   type VmEngineOptions,
 } from "./host-helpers.js";
 import { Orchestrator } from "./orchestrator/service.js";
@@ -345,7 +345,7 @@ export class EngineHost {
           credential: async (params) => {
             const credential = await this.credentials.resolve(params);
             return location === "vm"
-              ? vmCredential(credential, vm!)
+              ? vmProviderCredential(params.provider, credential, vm!)
               : credential;
           },
           approval: (params, { signal }) => this.approval(params, signal),

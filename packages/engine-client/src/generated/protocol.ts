@@ -94,7 +94,7 @@ block: number,
 replacement: string, };
 
 // prettier-ignore
-export type Credential = { "type": "api_key", key: string, base_url?: string, } | { "type": "bearer", token: string, account?: string, base_url?: string, } | { "type": "missing" };
+export type Credential = { "type": "api_key", key: string, base_url?: string, } | { "type": "claude_code_socket", key: string, path: string, } | { "type": "bearer", token: string, account?: string, base_url?: string, } | { "type": "missing" };
 
 // prettier-ignore
 export type Delivery = "turn" | "steer";

@@ -46,7 +46,6 @@ const providerAccess: Record<string, ProviderAccess> = {
     cons: [
       "Claude Code must be installed and signed in here.",
       "Each conversation starts a Claude Code process.",
-      "Not yet available for stories in the Windows runtime.",
     ],
     note: "Anthropic doesn't let other apps sign in to Claude accounts, so Blame goes through Claude Code, Anthropic's own tool.",
   },

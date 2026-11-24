@@ -13,6 +13,8 @@ import {
   type EngineHostMessage,
   type EngineHostMethod,
 } from "@blame/agent-runtime/engine";
+import { runtimeDistroName } from "../desktop-runtime-environment.ts";
+import { WslClaudeCodeRelay } from "./wsl-claude-code-relay.ts";
 
 export type EngineHostProcessConfig = {
   binary: string;
@@ -29,6 +31,17 @@ if (!parentPort) throw new Error("The engine host needs its parent port");
 const config = JSON.parse(
   process.env.BLAME_ENGINE_HOST_CONFIG ?? "{}",
 ) as EngineHostProcessConfig;
+const claudeCodeRelay =
+  config.vm && process.platform === "win32"
+    ? new WslClaudeCodeRelay("wsl.exe", [
+        "-d",
+        runtimeDistroName(),
+        "-u",
+        "blame",
+        "--exec",
+        "/usr/local/bin/node",
+      ])
+    : undefined;
 
 const post = (message: EngineHostMessage) => parentPort.postMessage(message);
 const desktopPending = new Map<
@@ -84,8 +97,15 @@ const host = new EngineHost({
     ? {
         vm: {
           ...config.vm,
+          ...(claudeCodeRelay
+            ? {
+                claudeCodeSocket: (baseUrl: string) =>
+                  claudeCodeRelay.socket(baseUrl),
+              }
+            : {}),
           // Main installs the engine in the VM and says how to run it.
           prepare: async () => {
+            claudeCodeRelay?.close();
             const command = await services.prepareVmEngine!({});
             return { ...command, env: { ...process.env, ...command.env } };
           },
@@ -124,7 +144,10 @@ parentPort.on("message", ({ data }) => {
         }),
     )
     .finally(() => {
-      if (data.method === "shutdown") process.exit(0);
+      if (data.method === "shutdown") {
+        claudeCodeRelay?.close();
+        process.exit(0);
+      }
     });
 });
 

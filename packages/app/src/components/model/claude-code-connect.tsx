@@ -175,12 +175,7 @@ export function ClaudeCodeConnectContent({
             state={credential && signedIn ? "done" : signedIn ? "current" : "pending"}
             title="Connect to Blame"
           >
-            <p>
-              Usage counts against your Claude plan limits.
-              {isWindows()
-                ? " On Windows, stories that run in the Blame runtime can't use Claude Code yet; Quick Chat can."
-                : null}
-            </p>
+            <p>Usage counts against your Claude plan limits.</p>
           </SetupStep>
         </ol>
       )}

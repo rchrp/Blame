@@ -148,7 +148,8 @@ const SESSION_SCOPED: &[&str] = &["claude-code"];
 
 /// Every provider, connected on first use with the credential the client
 /// gives through `host/credential`. Credentials stay in memory only; one that
-/// the provider refuses is asked for again, once per request.
+/// the provider refuses is asked for again, once per request. A broken
+/// Claude Code socket can also be replaced before any events are delivered.
 pub struct ProviderRouter {
     host: Arc<Host>,
     options: Options,
@@ -203,6 +204,9 @@ impl ProviderRouter {
             .await
         {
             Ok(credential) => credential,
+            Err(HostError::Rpc(message)) if id == "claude-code" => {
+                return Err(ProviderError::new(ErrorKind::Transport, message));
+            }
             Err(error) => {
                 log!(Warn, "no credential for `{id}`: {error}");
                 Credential::Missing
@@ -213,22 +217,26 @@ impl ProviderRouter {
         Ok(provider)
     }
 
-    /// Starts the request; `Err` with the authentication error when the
-    /// provider refused the credential before streaming anything.
+    /// Starts the request. An outer `Err` means the credential can be
+    /// requested again before any model events are delivered.
     async fn attempt(
         provider: &Provider,
         request: ModelRequest,
     ) -> Result<Result<ModelStream, ProviderError>, ProviderError> {
+        let refresh_credential = |error: &ProviderError| {
+            error.kind == ErrorKind::Authentication
+                || (provider.uses_claude_code_socket() && error.kind == ErrorKind::Transport)
+        };
         let mut stream = match provider.stream(request).await {
             Ok(stream) => stream,
-            Err(error) if error.kind == ErrorKind::Authentication => return Err(error),
+            Err(error) if refresh_credential(&error) => return Err(error),
             Err(error) => return Ok(Err(error)),
         };
         // HTTP errors arrive as the stream's first and only item: look at it
         // before handing the stream over, and put it back in front.
         let first = stream.next().await;
         if let Some(Err(error)) = &first
-            && error.kind == ErrorKind::Authentication
+            && refresh_credential(error)
         {
             return Err(error.clone());
         }
@@ -251,11 +259,11 @@ impl ModelProvider for ProviderRouter {
         let provider = self.provider(&id, &session, false).await?;
         match Self::attempt(&provider, request.clone()).await {
             Ok(result) => result,
-            Err(refused) => {
+            Err(error) => {
                 log!(
                     Info,
-                    "`{id}` refused its credential ({}); asking the client again",
-                    refused.message
+                    "`{id}` could not use its credential ({}); asking the client again",
+                    error.message
                 );
                 let provider = self.provider(&id, &session, true).await?;
                 match Self::attempt(&provider, request).await {

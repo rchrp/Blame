@@ -350,8 +350,14 @@ host.
   `blame-lima-runtime`) or `wsl.exe -d <distro> -u blame --exec`. Both
   answer to the host: credentials, client tools, approvals and replication
   to the API go through it, so nothing about a VM session is written to the
-  VM's disk except its records. A credential's local endpoint (a local
-  model, the Claude Code bridge) is rewritten to `host.lima.internal`.
+  VM's disk except its records. On macOS, a credential's local endpoint is
+  rewritten to `host.lima.internal`.
+- **Claude Code on Windows**: when a WSL turn asks for its Claude Code
+  credential, the host opens a relay through `wsl.exe` stdio. The engine
+  sends its Anthropic requests through a private Unix socket inside the
+  runtime. The relay forwards them to the existing Windows loopback bridge,
+  which validates the same session key and runs Claude Code with the
+  Windows sign-in.
 - **Install** (`packages/desktop/src/main/engine/vm-engine.ts`): the static
   musl `blame-engine` for the VM's architecture is copied in through stdin,
   checked against its SHA-256 and made executable, into

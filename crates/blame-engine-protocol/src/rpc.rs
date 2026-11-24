@@ -419,6 +419,8 @@ pub enum Credential {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         base_url: Option<String>,
     },
+    /// The Claude Code bridge, forwarded to a Unix socket by the host.
+    ClaudeCodeSocket { key: String, path: String },
     /// An OAuth access token the client obtained and keeps refreshed.
     Bearer {
         token: String,
@@ -436,6 +438,7 @@ impl std::fmt::Debug for Credential {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(match self {
             Self::ApiKey { .. } => "Credential::ApiKey(…)",
+            Self::ClaudeCodeSocket { .. } => "Credential::ClaudeCodeSocket(…)",
             Self::Bearer { .. } => "Credential::Bearer(…)",
             Self::Missing => "Credential::Missing",
         })

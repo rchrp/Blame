@@ -124,6 +124,8 @@ export type VmEngineOptions = {
    * it, since the VM's own localhost is not this computer's.
    */
   hostAlias?: string;
+  /** A private socket in WSL that reaches the host's Claude Code bridge. */
+  claudeCodeSocket?(baseUrl: string): Promise<string>;
 };
 
 const loopbackHosts = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
@@ -145,4 +147,21 @@ export function vmCredential(
     return credential;
   url.hostname = vm.hostAlias;
   return { ...credential, base_url: url.toString().replace(/\/$/, "") };
+}
+
+export async function vmProviderCredential(
+  provider: string,
+  credential: Credential,
+  vm: Pick<VmEngineOptions, "hostAlias" | "claudeCodeSocket">,
+): Promise<Credential> {
+  if (
+    provider === "claude-code" &&
+    credential.type === "api_key" &&
+    credential.base_url &&
+    vm.claudeCodeSocket
+  ) {
+    const path = await vm.claudeCodeSocket(credential.base_url);
+    return { type: "claude_code_socket", key: credential.key, path };
+  }
+  return vmCredential(credential, vm);
 }
