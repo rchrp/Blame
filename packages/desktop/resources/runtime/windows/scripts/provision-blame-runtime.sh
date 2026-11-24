@@ -144,14 +144,34 @@ ensure_package_manager() {
   version="$2"
   destination="$package_manager_root/$name/$version"
   executable="$destination/bin/$name"
-  if [ -x "$executable" ] && [ "$("$executable" --version 2>/dev/null)" = "$version" ]; then
+  if [ -x "$executable" ] && directly_executable "$executable" &&
+    [ "$("$executable" --version 2>/dev/null)" = "$version" ]; then
     return
   fi
   rm -rf "$destination"
   mkdir -p "$destination/bin"
   npm install --prefix "$destination" --omit=dev --ignore-scripts "$name@$version"
+  # pnpm 11+ ships a shebang-less placeholder that its own install script
+  # replaces with the native binary; --ignore-scripts skipped it. Run only
+  # that script: the placeholder works from a shell but a program spawning
+  # it gets ENOEXEC (every project task in US-103).
+  wrapper="$destination/node_modules/$name"
+  if [ -f "$wrapper/install.js" ] && [ -f "$wrapper/native-binary.mjs" ]; then
+    (cd "$wrapper" && node install.js)
+  fi
   ln -sf "../node_modules/.bin/$name" "$executable"
+  directly_executable "$executable"
   [ "$("$executable" --version)" = "$version" ]
+}
+
+# The kernel runs the file itself: a native binary or a script with a
+# shebang. A shell also runs a shebang-less script, so --version alone
+# cannot tell.
+directly_executable() {
+  case "$(head -c 4 "$(readlink -f "$1")" | od -An -c | tr -d ' \n')" in
+    177ELF* | '#!'*) return 0 ;;
+  esac
+  return 1
 }
 
 node_archive_architecture() {
