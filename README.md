@@ -20,9 +20,9 @@ Blame gives each agent its own worktree, ports, services, and running app, so yo
 
 **[Install](#install)** · [Website](https://blame.so) · [Docs](https://blame.so/docs) · [Discord](https://discord.gg/AfjG6aUyxe) · [Discussions](https://github.com/rchrp/Blame/discussions) · [Roadmap](https://github.com/users/rchrp/projects/7) · [Contributing](CONTRIBUTING.md) · [Code signing policy](CODE_SIGNING_POLICY.md)
 
-<a href="https://blame.so/media/demo-full-h264.mp4"><img src="docs/media/demo.gif" width="900" alt="In Blame, a user story is written and sent to an agent, then the story in review shows its thread and its own running preview of the site, followed by the light theme's preview"></a>
+<a href="https://blame-prod-vitrine-media-gra.s3.gra.io.cloud.ovh.net/demo/demo-full-h264.34bb6f16.mp4"><img src="docs/media/demo.gif" width="900" alt="In Blame, a user story is written and sent to an agent, then the story in review shows its thread and its own running preview of the site, followed by the light theme's preview"></a>
 
-<p><a href="https://blame.so/media/demo-full-h264.mp4"><b>▶ Watch the longer demo</b></a></p>
+<p><a href="https://blame-prod-vitrine-media-gra.s3.gra.io.cloud.ovh.net/demo/demo-full-h264.34bb6f16.mp4"><b>▶ Watch the longer demo</b></a></p>
 
 </div>
 
