@@ -31,7 +31,8 @@ use super::managed::{
     invocation_test_report, managed_test_report,
 };
 use super::output::{
-    bounded_diagnostic, validation_output, validation_scope_paths, without_binary,
+    COMMAND_OUTPUT_OMITTED, bounded_diagnostic, command_output, validation_output,
+    validation_scope_paths, without_binary,
 };
 use super::policy::{CommandEnvironment, blocked_command_reason_for};
 use super::process::{
@@ -57,7 +58,9 @@ use std::time::Duration;
 /// A project task and the typecheck tasks offered after it.
 type SelectedTask = (Task, Option<Vec<TypecheckSelection>>);
 
-const OUTPUT_PAGE_BYTES: usize = 12_000;
+/// One page of a run's output (`inspect`): twice what a result shows whole
+/// (`COMMAND_OUTPUT_LIMIT`), so a cut output reads back in a page or two.
+const OUTPUT_PAGE_BYTES: usize = 24_000;
 // Under Claude Code's 300 s limit on a silent MCP tool call.
 const INSPECT_EXIT_WAIT: Duration = Duration::from_secs(4 * 60);
 const KEPT_FINISHED_RUNS: usize = 20;
@@ -1102,7 +1105,7 @@ impl TaskRunner {
             )?;
             let mut presented = validation_output(&self.root, &output);
             if failure.is_some() || !changed.is_empty() {
-                presented.set("output", bounded_diagnostic(&output, "", 4_000));
+                presented.set("output", command_output(&output));
             }
             if check.get("evidenceOrigin").and_then(Json::as_str) == Some("node_events")
                 && let Some(counts) = check.get("counts")
@@ -1193,7 +1196,7 @@ impl TaskRunner {
                 "status" => "ok",
                 "data" => obj! { "changed" => !changed.is_empty(), "paths" => Json::Arr(changed.iter().map(Json::from).collect()) }
                     .with_opt("exitCode", result.exit_code)
-                    .with("output", bounded_diagnostic(&output, "", 4_000))
+                    .with("output", command_output(&output))
                     .with("validation", obj! { "status" => "stale", "reason" => "Source changed during execution; run a check on the resulting code to verify it." }),
             });
         }
@@ -1226,7 +1229,7 @@ impl TaskRunner {
         let shown = if proof.is_some() {
             validation_output(&self.root, &output)
         } else {
-            obj! { "output" => bounded_diagnostic(&output, "", 4_000) }
+            obj! { "output" => command_output(&output) }
         };
         let mut data = obj! { "command" => command }.with_opt("exitCode", result.exit_code);
         data.extend(shown);
@@ -1267,7 +1270,7 @@ impl TaskRunner {
                     .then_some(true),
             )
             .with_opt("pipeClosedEarly", pipe_closed.then_some(true))
-            .with("output", bounded_diagnostic(output, "", 4_000))
+            .with("output", command_output(output))
             .with("environment", target())
             .with_opt(
                 "guidance",
@@ -1349,7 +1352,8 @@ fn outcome_line(message: &str) -> String {
     }
 }
 fn with_full_output(mut result: Json, id: &str) -> Json {
-    if !result.stringify().contains("diagnostic truncated") {
+    let text = result.stringify();
+    if !text.contains("diagnostic truncated") && !text.contains(COMMAND_OUTPUT_OMITTED) {
         return result;
     }
     let full = obj! { "kind" => "inspect", "run" => id, "cursor" => "0", "until" => "now" };

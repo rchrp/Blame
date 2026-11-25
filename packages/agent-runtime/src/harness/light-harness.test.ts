@@ -1295,11 +1295,22 @@ test("run_task bounds successful command output", async () => {
     const result = data(
       await workspace.tasks.run({
         kind: "command",
-        command: `node -e "console.log('x'.repeat(10000))"`,
+        command: `node -e "for (let i = 0; i < 3000; i++) console.log('line ' + i)"`,
       }),
     );
-    assert.ok(String(result.output).length <= 4_000);
-    assert.match(String(result.output), /diagnostic truncated/u);
+    const output = String(result.output);
+    assert.ok(output.length <= 12_000, String(output.length));
+    assert.match(output, /^line 0\nline 1\n/u);
+    assert.match(output, /\nline 2999\n?$/u);
+    assert.match(
+      output,
+      /… \d+ lines \(\d+ characters\) omitted: fullOutput pages the whole output …/u,
+    );
+    // The cut output points at the run's pages.
+    assert.match(
+      JSON.stringify(result.fullOutput),
+      /^\{"kind":"inspect","run":"r\d+","cursor":"0","until":"now"\}$/u,
+    );
   });
 });
 

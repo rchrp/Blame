@@ -64,20 +64,20 @@ test("a run's output comes in pages that skip nothing", { timeout: 15_000 }, asy
   await fixture(async root => {
     const controller = new AbortController();
     const runner = taskRunner(root, "bounded-output", 0);
-    await writeFile(join(root, "noisy.cjs"), "const fs=require('node:fs');process.stdout.write(Array.from({length:3000},(_,i)=>'line '+i).join('\\n')+'\\n',()=>fs.writeFileSync('.blame/printed','x'));const tick=setInterval(()=>{if(fs.existsSync('.blame/go'))clearInterval(tick)},10);\n");
+    await writeFile(join(root, "noisy.cjs"), "const fs=require('node:fs');process.stdout.write(Array.from({length:6000},(_,i)=>'line '+i).join('\\n')+'\\n',()=>fs.writeFileSync('.blame/printed','x'));const tick=setInterval(()=>{if(fs.existsSync('.blame/go'))clearInterval(tick)},10);\n");
     try {
       const initial = data(await runner.run({ kind: "command", command: "node noisy.cjs" }, { signal: controller.signal }));
       await waitFor(join(root, ".blame/printed"));
       let page = data(await runner.run({ kind: "inspect", run: initial.run, cursor: "0", until: "now" })) as unknown as { output: string; nextOutput?: { cursor: string } };
       let all = page.output;
       while (page.nextOutput) {
-        assert.ok(page.output.length <= 12_000, `${page.output.length} characters`);
+        assert.ok(page.output.length <= 24_000, `${page.output.length} characters`);
         page = data(await runner.run({ kind: "inspect", run: initial.run, cursor: page.nextOutput.cursor, until: "now" })) as unknown as typeof page;
         all += page.output;
       }
-      assert.equal(all, `${Array.from({ length: 3000 }, (_, index) => `line ${index}`).join("\n")}\n`);
+      assert.equal(all, `${Array.from({ length: 6000 }, (_, index) => `line ${index}`).join("\n")}\n`);
       const latest = data(await runner.run({ kind: "inspect", run: initial.run, until: "now" })) as unknown as { output: string; earlierOutput?: unknown };
-      assert.match(latest.output, /line 2999\n$/u);
+      assert.match(latest.output, /line 5999\n$/u);
       assert.ok(latest.earlierOutput, "The latest page says how to read from the start.");
     } finally {
       await writeFile(join(root, ".blame/go"), "go");
@@ -90,7 +90,7 @@ test("a run's output comes in pages that skip nothing", { timeout: 15_000 }, asy
 test("inspect waits for the run to end by default, and a finished run's cut output pages whole", { timeout: 15_000 }, async () => {
   await fixture(async root => {
     const runner = taskRunner(root, "exit-wait", 0);
-    await writeFile(join(root, "slow.cjs"), "setTimeout(()=>{console.log('x'.repeat(10000));console.log('done')},600);\n");
+    await writeFile(join(root, "slow.cjs"), "setTimeout(()=>{console.log('x'.repeat(14000));console.log('done')},600);\n");
     const initial = data(await runner.run({ kind: "command", command: "node slow.cjs" }));
     assert.equal(initial.process, "running");
     const result = data(await runner.run({ kind: "inspect", run: initial.run })) as unknown as { process: string; command?: string; output?: string; cursor?: string; completed?: { status: string; data?: { command?: string; output?: string; fullOutput?: { cursor: string } } } };
@@ -104,10 +104,10 @@ test("inspect waits for the run to end by default, and a finished run's cut outp
     assert.equal(result.output, undefined);
     assert.equal(result.cursor, undefined);
     const waiting = taskRunner(root, "exit-wait", 5_000);
-    const quick = await waiting.run({ kind: "command", command: "node -e \"console.log('y'.repeat(9000))\"" }) as { data: { fullOutput?: { run: string } } };
+    const quick = await waiting.run({ kind: "command", command: "node -e \"console.log('y'.repeat(14000))\"" }) as { data: { fullOutput?: { run: string } } };
     assert.ok(quick.data.fullOutput, "A command that finished within the wait keeps its output too.");
     const whole = data(await waiting.run({ kind: "inspect", run: quick.data.fullOutput.run, cursor: "0", until: "now" })) as unknown as { output: string };
-    assert.match(whole.output, /^y{9000}\n$/u);
+    assert.match(whole.output, /^y{14000}\n$/u);
   });
 });
 

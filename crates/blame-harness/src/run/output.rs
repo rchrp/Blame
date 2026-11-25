@@ -41,6 +41,43 @@ pub fn bounded_diagnostic(value: &str, fallback: &str, maximum: usize) -> String
     )
 }
 
+/// How much of a command's output its result shows whole. Past it, the first
+/// and last lines stay around a note of what was left out, and the result
+/// points at the run's pages (`fullOutput`). It was 4,000 UTF-16 units, the
+/// diagnostic bound, with no measure behind it: a `git log` or `git diff`
+/// read was cut in its middle and read again (US-110, 2026-11-25).
+pub const COMMAND_OUTPUT_LIMIT: usize = 12_000;
+
+/// The end of the note a cut command output carries (`with_full_output`
+/// looks for it).
+pub const COMMAND_OUTPUT_OMITTED: &str = "omitted: fullOutput pages the whole output";
+
+/// A command's output as its result shows it: whole up to
+/// `COMMAND_OUTPUT_LIMIT`, else its first and last whole lines around a note
+/// saying how much was left out.
+pub fn command_output(value: &str) -> String {
+    if utf16_len(value) <= COMMAND_OUTPUT_LIMIT {
+        return value.to_string();
+    }
+    let half = (COMMAND_OUTPUT_LIMIT - 100) / 2;
+    let mut head = utf16_prefix(value, half);
+    if let Some(end) = head.rfind('\n') {
+        head = &head[..=end];
+    }
+    let mut tail = utf16_suffix(value, half);
+    if let Some(start) = tail.find('\n')
+        && start + 1 < tail.len()
+    {
+        tail = &tail[start + 1..];
+    }
+    let middle = &value[head.len()..value.len() - tail.len()];
+    let lines = middle.matches('\n').count();
+    format!(
+        "{head}… {lines} lines ({} characters) {COMMAND_OUTPUT_OMITTED} …\n{tail}",
+        utf16_len(middle)
+    )
+}
+
 pub fn diagnostic(value: &str) -> String {
     bounded_diagnostic(value, "", 16_000)
 }
@@ -213,6 +250,29 @@ mod tests {
         );
         assert_eq!(utf16_suffix("abcdef", 2), "ef");
         assert_eq!(uuid().len(), 36);
+    }
+
+    #[test]
+    fn a_long_command_output_keeps_whole_lines_around_what_it_omits() {
+        let output: String = (1..=2_000).map(|line| format!("line {line}\n")).collect();
+        let shown = command_output(&output);
+        assert!(utf16_len(&shown) <= COMMAND_OUTPUT_LIMIT, "{}", shown.len());
+        assert!(shown.starts_with("line 1\nline 2\n"));
+        assert!(shown.ends_with("line 1999\nline 2000\n"));
+        let note = shown
+            .lines()
+            .find(|line| line.contains(COMMAND_OUTPUT_OMITTED))
+            .expect("a note");
+        assert!(
+            note.starts_with("… ") && note.contains(" lines ("),
+            "{note}"
+        );
+        // Every line shown is whole.
+        for line in shown.lines().filter(|line| !line.starts_with('…')) {
+            assert!(line.starts_with("line "), "{line}");
+        }
+        let short = "a\nb\n";
+        assert_eq!(command_output(short), short);
     }
 
     #[test]
