@@ -51,6 +51,8 @@ export function gitLogArguments(input: {
   return [
     "log",
     input.currentBranchOnly ? "HEAD" : "--all",
+    // Children before parents, which the commit graph's lanes rely on.
+    "--date-order",
     "--decorate=short",
     `--max-count=${limit}`,
     `--skip=${skip}`,

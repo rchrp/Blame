@@ -2,19 +2,26 @@ import * as React from "react"
 import type { GitStatusFile, GitStatusResult } from "@/context/platform"
 import type { GitSelection } from "@/components/git/git-types"
 import { gitFileSelection, gitSelectionKey } from "@/components/git/git-types"
-import { gitStatusClassName, gitStatusLabel } from "@/components/git/git-format"
 import {
-  CheckCircle2Icon,
+  gitStatusLabel,
+  gitStatusName,
+  gitStatusTextClassName,
+} from "@/components/git/git-format"
+import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  CheckIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  CloudUploadIcon,
   GitBranchIcon,
-  MinusIcon,
-  PencilLineIcon,
+  LoaderCircleIcon,
   PlusIcon,
   RefreshCwIcon,
   RotateCcwIcon,
+  SparklesIcon,
   Trash2Icon,
-  UploadIcon,
 } from "lucide-react"
 
 import {
@@ -27,7 +34,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
@@ -37,6 +43,12 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
@@ -60,6 +72,7 @@ export function GitWorkspacePanel({
   onFileSelect,
   onGitAddFile,
   onGenerateCommitMessage,
+  onPush,
   onRefresh,
   onRollbackFile,
   onSelectAll,
@@ -83,6 +96,8 @@ export function GitWorkspacePanel({
   onFileSelect(selection: GitSelection): void
   onGitAddFile(path: string): void
   onGenerateCommitMessage(): void
+  // Pushes the branch's commits that are not on its upstream yet.
+  onPush(): void
   onRefresh(): void
   onRollbackFile(path: string): void
   onSelectAll(): void
@@ -112,7 +127,9 @@ export function GitWorkspacePanel({
     <>
       <aside className="flex min-h-[34rem] min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-xl ring-1 shadow-black/10 ring-foreground/10 xl:min-h-0">
         <WorkspaceHeader
+          busy={disabled}
           loading={loading}
+          onPush={onPush}
           onRefresh={onRefresh}
           status={status}
         />
@@ -120,14 +137,13 @@ export function GitWorkspacePanel({
           disabled={disabled}
           fileCount={fileCount}
           selectedCount={selectedCount}
-          unversionedCount={unversioned.length}
           onClearSelection={onClearSelection}
           onSelectAll={onSelectAll}
         />
-        <ScrollArea className="min-h-0 flex-1 bg-muted/10 dark:bg-muted/20">
+        <ScrollArea className="min-h-0 flex-1">
           {loading && !status ? <WorkspaceSkeleton /> : null}
           {status ? (
-            <div className="flex min-w-0 flex-col gap-2 p-3">
+            <div className="flex min-w-0 flex-col gap-3 px-2 py-2">
               <ChangesGroup
                 disabled={disabled}
                 files={changes}
@@ -181,6 +197,7 @@ export function GitWorkspacePanel({
           onCommit={onCommit}
           onCommitPush={onCommitPush}
           onGenerateMessage={onGenerateCommitMessage}
+          upstream={status?.branch.upstream}
         />
       </aside>
       <ConfirmFileActionDialog
@@ -207,23 +224,49 @@ type FileActionMenuItemProps = {
 }
 
 function WorkspaceHeader({
+  busy,
   loading,
+  onPush,
   onRefresh,
   status,
 }: {
+  busy: boolean
   loading: boolean
+  onPush(): void
   onRefresh(): void
   status?: GitStatusResult
 }) {
+  const branch = status?.branch
+  const ahead = branch?.upstream ? branch.ahead : 0
+
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b bg-muted/20 px-3 py-2">
-      <GitBranchIcon className="size-4 shrink-0 text-muted-foreground" />
+    <div className="flex min-w-0 items-center gap-2.5 border-b px-3 py-2.5">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-foreground/6 text-muted-foreground ring-1 ring-foreground/8">
+        <GitBranchIcon className="size-4" />
+      </span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">
           {status?.branch.current ?? "Repository"}
         </div>
         <BranchMeta status={status} />
       </div>
+      {ahead > 0 ? (
+        <IconAction
+          label={`Push ${ahead} ${ahead === 1 ? "commit" : "commits"} to ${branch?.upstream}`}
+        >
+          <Button
+            className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-xs"
+            disabled={busy}
+            type="button"
+            variant="composer"
+            onClick={onPush}
+          >
+            <ArrowUpIcon className="size-3.5" />
+            Push
+            <span className="text-muted-foreground tabular-nums">{ahead}</span>
+          </Button>
+        </IconAction>
+      ) : null}
       <IconAction label="Refresh Git state">
         <Button
           disabled={loading}
@@ -243,16 +286,20 @@ function BranchMeta({ status }: { status?: GitStatusResult }) {
   const branch = status?.branch
   if (!branch)
     return <div className="text-xs text-muted-foreground">Loading</div>
-  const sync = [
-    branch.ahead ? `${branch.ahead} ahead` : "",
-    branch.behind ? `${branch.behind} behind` : "",
-  ]
-    .filter(Boolean)
-    .join(", ")
   return (
-    <div className="truncate text-xs text-muted-foreground">
-      {branch.upstream ?? (branch.detached ? "Detached HEAD" : "No upstream")}
-      {sync ? ` · ${sync}` : ""}
+    <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+      <span className="min-w-0 truncate">
+        {branch.upstream ?? (branch.detached ? "Detached HEAD" : "No upstream")}
+      </span>
+      {branch.behind ? (
+        <span
+          className="flex shrink-0 items-center gap-0.5 text-amber-600 tabular-nums dark:text-amber-400"
+          title={`${branch.behind} commits to pull`}
+        >
+          <ArrowDownIcon className="size-3" />
+          {branch.behind}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -263,44 +310,41 @@ function WorkspaceActions({
   onClearSelection,
   onSelectAll,
   selectedCount,
-  unversionedCount,
 }: {
   disabled: boolean
   fileCount: number
   onClearSelection(): void
   onSelectAll(): void
   selectedCount: number
-  unversionedCount: number
 }) {
   const allSelected = fileCount > 0 && selectedCount === fileCount
 
   return (
-    <div className="flex items-center gap-2 border-b bg-muted/20 px-3 py-2">
-      <Badge variant="outline">{selectedCount} selected</Badge>
-      <Badge variant="outline">{unversionedCount} unversioned</Badge>
-      <div className="ml-auto flex items-center gap-1">
-        <IconAction label="Select all changes">
-          <Button
-            disabled={disabled || fileCount === 0 || allSelected}
-            size="icon-sm"
-            variant="ghost"
-            onClick={onSelectAll}
-          >
-            <PlusIcon className="size-4" />
-            <span className="sr-only">Select all changes</span>
-          </Button>
-        </IconAction>
-        <IconAction label="Unselect all files">
-          <Button
-            disabled={disabled || selectedCount === 0}
-            size="icon-sm"
-            variant="ghost"
-            onClick={onClearSelection}
-          >
-            <MinusIcon className="size-4" />
-            <span className="sr-only">Unselect all files</span>
-          </Button>
-        </IconAction>
+    <div className="flex h-9 items-center gap-2 border-b px-3 text-xs text-muted-foreground">
+      <span className="min-w-0 truncate tabular-nums">
+        {fileCount === 0
+          ? "Working tree clean"
+          : `${selectedCount} of ${fileCount} selected`}
+      </span>
+      <div className="ml-auto flex items-center">
+        <Button
+          className="text-muted-foreground"
+          disabled={disabled || fileCount === 0 || allSelected}
+          size="xs"
+          variant="ghost"
+          onClick={onSelectAll}
+        >
+          Select all
+        </Button>
+        <Button
+          className="text-muted-foreground"
+          disabled={disabled || selectedCount === 0}
+          size="xs"
+          variant="ghost"
+          onClick={onClearSelection}
+        >
+          Clear
+        </Button>
       </div>
     </div>
   )
@@ -459,9 +503,9 @@ function FileGroupFrame({
 }) {
   return (
     <section className="min-w-0">
-      <div className="flex min-w-0 items-center rounded-md px-1.5 py-1 text-sm hover:bg-muted">
+      <div className="flex h-8 min-w-0 items-center rounded-lg px-1 text-sm hover:bg-muted/60">
         <Button
-          className="mr-1 size-5 shrink-0"
+          className="mr-1 size-5 shrink-0 text-muted-foreground"
           size="icon-xs"
           variant="ghost"
           onClick={() => onOpenChange(!open)}
@@ -480,14 +524,14 @@ function FileGroupFrame({
           type="button"
           onClick={() => onOpenChange(!open)}
         >
-          <span className="truncate font-medium">{title}</span>
-          <span className="shrink-0 text-xs text-muted-foreground">
-            {count} {count === 1 ? "file" : "files"}
+          <span className="truncate text-[13px] font-medium">{title}</span>
+          <span className="flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full bg-foreground/8 px-1.5 text-[11px] font-medium text-muted-foreground tabular-nums">
+            {count}
           </span>
         </button>
       </div>
       {open ? (
-        <div className="mt-1 flex min-w-0 flex-col gap-0.5">{children}</div>
+        <div className="mt-0.5 flex min-w-0 flex-col">{children}</div>
       ) : null}
     </section>
   )
@@ -611,26 +655,36 @@ function FileRowShell({
     >
       <div
         className={cn(
-          "group grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center rounded-md pl-8 hover:bg-muted",
-          active && "bg-muted"
+          "group grid h-8 min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center rounded-lg pl-7 hover:bg-muted/60",
+          active && "bg-muted hover:bg-muted"
         )}
       >
         <Checkbox
           aria-label={`Select ${file.path} for commit`}
           checked={checked}
-          className="ml-1"
           disabled={disabled}
           onCheckedChange={onToggle}
         />
         <button
-          className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-2 py-1.5 text-left text-sm"
+          className="grid h-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 pr-2 pl-2 text-left text-[13px]"
+          title={`${file.path} · ${gitStatusName(file.status)}`}
           type="button"
           onClick={() => onSelect(selection)}
         >
-          <Badge className={gitStatusClassName(file.status)} variant="outline">
+          <DevelopmentFileIcon
+            className="size-4 shrink-0"
+            node={{ path: file.path, type: "file" }}
+          />
+          <FilePathLabel path={file.path} status={file.status} />
+          <span
+            aria-label={gitStatusName(file.status)}
+            className={cn(
+              "w-3 text-center font-mono text-[11px] font-semibold",
+              gitStatusTextClassName(file.status)
+            )}
+          >
             {gitStatusLabel(file.status)}
-          </Badge>
-          <FilePathLabel path={file.path} />
+          </span>
         </button>
       </div>
     </FileContextMenu>
@@ -730,14 +784,22 @@ function DeleteFileMenuItem({
   )
 }
 
-function FilePathLabel({ path }: { path: string }) {
+function FilePathLabel({ path, status }: { path: string; status: string }) {
   const label = splitFilePath(path)
 
   return (
-    <span className="flex min-w-0 items-baseline gap-1">
-      <span className="min-w-0 truncate text-foreground">{label.name}</span>
+    <span className="flex min-w-0 items-baseline gap-1.5">
+      <span
+        className={cn(
+          "max-w-full min-w-0 shrink-0 truncate",
+          gitStatusTextClassName(status),
+          status === "deleted" && "line-through decoration-current/50"
+        )}
+      >
+        {label.name}
+      </span>
       {label.directory ? (
-        <span className="min-w-0 truncate text-xs text-muted-foreground">
+        <span className="min-w-0 truncate text-xs text-muted-foreground/80">
           {label.directory}
         </span>
       ) : null}
@@ -747,7 +809,7 @@ function FilePathLabel({ path }: { path: string }) {
 
 function EmptyGroup({ label }: { label: string }) {
   return (
-    <div className="px-10 py-1.5 text-xs text-muted-foreground">{label}</div>
+    <div className="py-1.5 pl-13 text-xs text-muted-foreground">{label}</div>
   )
 }
 
@@ -835,6 +897,11 @@ function fileActionButtonLabel(action: PendingFileAction) {
   return "Rollback"
 }
 
+const commitTone =
+  "bg-blue-600 text-white hover:bg-blue-700 disabled:bg-foreground/8 disabled:text-muted-foreground disabled:opacity-100"
+
+// Commit, with Commit & Push behind the arrow, as Approve & Merge offers
+// Approve, Merge & Push in the backlog.
 function CommitComposer({
   busy,
   canCommit,
@@ -847,6 +914,7 @@ function CommitComposer({
   onCommit,
   onCommitPush,
   onGenerateMessage,
+  upstream,
 }: {
   busy?: string
   canCommit: boolean
@@ -859,61 +927,100 @@ function CommitComposer({
   onCommit(): void
   onCommitPush(): void
   onGenerateMessage(): void
+  upstream?: string
 }) {
   const actionBusy = Boolean(busy) || generatingMessage
   const disabled = !canCommit || !message.trim() || actionBusy
 
   return (
-    <div
-      className={cn(
-        "flex shrink-0 flex-col gap-2 border-t bg-muted/20 p-3",
-        !hasChanges && "opacity-70"
-      )}
-    >
-      <div className="relative min-w-0">
+    <div className="flex shrink-0 flex-col gap-2 border-t p-3">
+      <div
+        className={cn(
+          "flex min-w-0 flex-col rounded-2xl bg-popover shadow-[0_2px_4px_-2px_#00000012,0_10px_24px_-12px_#00000026] ring-1 ring-foreground/12 transition-[box-shadow] focus-within:ring-foreground/25 dark:shadow-[0_2px_4px_-2px_#0006,0_10px_24px_-12px_#0009]",
+          !hasChanges && "opacity-60"
+        )}
+      >
         <Textarea
-          className="min-h-24 resize-none pb-10 pr-10 font-mono text-xs"
+          aria-label="Commit message"
+          className="max-h-48 min-h-20 resize-none rounded-2xl border-0 bg-transparent px-3.5 pt-3 pb-1 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"
           disabled={!hasChanges || hasConflicts || generatingMessage}
-          placeholder={commitMessagePlaceholder(hasChanges, hasConflicts)}
+          placeholder={commitMessagePlaceholder(
+            hasChanges,
+            hasConflicts,
+            generatingMessage
+          )}
           value={message}
           onChange={(event) => onChange(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter" || !(event.metaKey || event.ctrlKey))
+              return
+            event.preventDefault()
+            if (!disabled) onCommit()
+          }}
         />
-        <IconAction label="Generate commit message with AI">
-          <Button
-            className="absolute bottom-2 right-2"
-            disabled={!canGenerateMessage || actionBusy}
-            size="sm"
-            type="button"
-            variant="ghost"
-            onClick={onGenerateMessage}
-          >
-            <PencilLineIcon
-              className={cn("size-4", generatingMessage && "animate-pulse")}
-            />
-            Auto Message
-            <span className="sr-only">Generate commit message with AI</span>
-          </Button>
-        </IconAction>
-      </div>
-      <div className="flex min-w-0 items-center gap-2">
-        <Button
-          className="flex-1"
-          disabled={disabled}
-          size="sm"
-          onClick={onCommit}
-        >
-          <CheckCircle2Icon className="size-4" />
-          Commit
-        </Button>
-        <Button
-          disabled={disabled}
-          size="sm"
-          variant="outline"
-          onClick={onCommitPush}
-        >
-          <UploadIcon className="size-4" />
-          Commit & Push
-        </Button>
+        <div className="flex min-w-0 items-center gap-1 p-1.5 pt-1">
+          <IconAction label="Write the message from the selected changes">
+            <Button
+              className="h-8 rounded-full px-2.5 text-xs"
+              disabled={!canGenerateMessage || actionBusy}
+              type="button"
+              variant="composer"
+              onClick={onGenerateMessage}
+            >
+              {generatingMessage ? (
+                <LoaderCircleIcon className="size-3.5 animate-spin" />
+              ) : (
+                <SparklesIcon className="size-3.5" />
+              )}
+              {generatingMessage ? "Writing" : "Auto message"}
+            </Button>
+          </IconAction>
+          <div className="ml-auto flex items-center">
+            <Button
+              className={cn(
+                "h-8 gap-1 rounded-l-full rounded-r-none pr-2.5 pl-3",
+                commitTone
+              )}
+              disabled={disabled}
+              title="Commit (⌘↵)"
+              type="button"
+              onClick={onCommit}
+            >
+              <CheckIcon className="size-3.5" />
+              Commit
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  aria-label="More ways to commit"
+                  className={cn(
+                    "h-8 w-7 rounded-l-none rounded-r-full border-l border-l-white/25 pr-0.5 pl-0 disabled:border-l-foreground/10",
+                    commitTone
+                  )}
+                  disabled={disabled}
+                  type="button"
+                >
+                  <ChevronDownIcon className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" className="w-72">
+                <DropdownMenuItem
+                  className="items-start gap-2.5 py-2"
+                  onSelect={onCommitPush}
+                >
+                  <CloudUploadIcon className="mt-0.5" />
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="font-medium">Commit &amp; Push</span>
+                    <span className="text-xs text-muted-foreground">
+                      Commit the selected files, then push them to{" "}
+                      {upstream || "the remote"}.
+                    </span>
+                  </span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
       </div>
       <CommitHint
         busy={busy}
@@ -925,7 +1032,12 @@ function CommitComposer({
   )
 }
 
-function commitMessagePlaceholder(hasChanges: boolean, hasConflicts: boolean) {
+function commitMessagePlaceholder(
+  hasChanges: boolean,
+  hasConflicts: boolean,
+  generatingMessage: boolean
+) {
+  if (generatingMessage) return "Writing a commit message…"
   if (hasConflicts) return "Resolve conflicts first"
   return hasChanges ? "Commit message" : "No changes to commit"
 }
@@ -943,10 +1055,8 @@ function CommitHint({
 }) {
   if (busy)
     return <div className="truncate text-xs text-muted-foreground">{busy}</div>
-  if (!hasChanges)
-    return (
-      <div className="text-xs text-muted-foreground">No changes to commit.</div>
-    )
+  // Without changes, the message field already says so.
+  if (!hasChanges) return null
   if (hasConflicts)
     return (
       <div className="text-xs text-muted-foreground">

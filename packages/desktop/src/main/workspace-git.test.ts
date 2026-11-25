@@ -226,6 +226,30 @@ test("story review resolves the current checkout rather than another branch's la
   }
 });
 
+test("history lists a commit before its parent even when its date is older", async () => {
+  const repository = await createRepository();
+  try {
+    const base = await revision(repository);
+    await git(repository, ["switch", "-c", "side"]);
+    await execFileAsync("git", ["commit", "--allow-empty", "-m", "side"], {
+      cwd: repository,
+      env: { ...process.env, GIT_COMMITTER_DATE: "2000-01-01T00:00:00Z" },
+    });
+    const side = await revision(repository);
+    await git(repository, ["switch", "-"]);
+    await git(repository, ["commit", "--allow-empty", "-m", "main next"]);
+
+    const { stdout } = await git(repository, gitLogArguments({}));
+    const hashes = stdout
+      .split("\x1e")
+      .map((record) => record.trim().split("\x1f")[0])
+      .filter(Boolean);
+    assert.ok(hashes.indexOf(side) < hashes.indexOf(base));
+  } finally {
+    await rm(repository, { recursive: true, force: true });
+  }
+});
+
 test("captures an immutable worktree snapshot including untracked files", async () => {
   const repository = await createRepository();
   try {

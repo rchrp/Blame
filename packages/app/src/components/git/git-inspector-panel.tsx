@@ -7,9 +7,8 @@ import type {
 import type { GitSelection } from "@/components/git/git-types"
 import {
   gitDateLabel,
-  gitRefClassName,
-  gitStatusClassName,
-  gitStatusLabel,
+  gitStatusName,
+  gitStatusTextClassName,
   shortGitHash,
 } from "@/components/git/git-format"
 import {
@@ -19,9 +18,10 @@ import {
 import { totalDiffStats } from "@/components/backlog/development/development-diff-stats-data"
 import { DevelopmentDiffSection } from "@/components/backlog/development/development-diff-section"
 import { GitHubRepositoryCard } from "@/components/git/git-github-repository-card"
-import { GitBranchIcon, GitCommitIcon, GitPullRequestIcon } from "lucide-react"
+import { GitRefLabels } from "@/components/git/git-ref-label"
+import { DevelopmentFileIcon } from "@/components/backlog/development/development-file-icon"
+import { GitBranchIcon, GitCommitIcon, GitMergeIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -108,75 +108,44 @@ function CommitHeader({
   diffs: ReturnType<typeof parseGitDiff>
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 border-b bg-muted/20 px-3 py-3">
-      <div className="flex min-w-0 items-center gap-2">
-        <GitCommitIcon className="size-4 shrink-0 text-muted-foreground" />
-        <span className="truncate font-medium">
+    <div className="flex min-w-0 items-start gap-2.5 border-b px-3 py-3">
+      <HeaderIcon>
+        {commit && commit.parents.length > 1 ? (
+          <GitMergeIcon className="size-4" />
+        ) : (
+          <GitCommitIcon className="size-4" />
+        )}
+      </HeaderIcon>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <span
+          className="line-clamp-2 text-sm leading-5 font-medium break-words"
+          title={commit?.message}
+        >
           {commit?.message ?? "Commit"}
         </span>
+        {commit ? <CommitMeta commit={commit} /> : null}
+        <DiffSummary diffLoading={diffLoading} diffs={diffs} />
       </div>
-      {commit ? <CommitMeta commit={commit} /> : null}
-      <DiffSummary diffLoading={diffLoading} diffs={diffs} />
     </div>
   )
 }
 
 function CommitMeta({ commit }: { commit: GitLogCommit }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 text-xs text-muted-foreground">
-      <div className="truncate">
-        {shortGitHash(commit.hash)} · {commit.authorName} ·{" "}
-        {gitDateLabel(commit.date)}
+    <div className="flex min-w-0 flex-col gap-1.5 text-xs text-muted-foreground">
+      <div className="flex min-w-0 items-center gap-1.5">
+        <span className="shrink-0 rounded-md bg-foreground/8 px-1.5 py-0.5 font-mono text-[11px] text-foreground/80">
+          {shortGitHash(commit.hash)}
+        </span>
+        <span className="min-w-0 truncate">{commit.authorName}</span>
+        <span aria-hidden className="text-muted-foreground/50">
+          ·
+        </span>
+        <span className="shrink-0">{gitDateLabel(commit.date)}</span>
       </div>
-      <CommitRefBadges commit={commit} />
+      <GitRefLabels className="flex-wrap" max={3} refs={commit.refs} />
     </div>
   )
-}
-
-function CommitRefBadges({ commit }: { commit: GitLogCommit }) {
-  if (commit.refs.length === 0) return null
-  const visible = visibleInspectorRefs(commit)
-  const hidden = commit.refs.length - visible.length
-
-  return (
-    <div className="flex max-w-full min-w-0 flex-wrap gap-1 overflow-hidden">
-      {visible.map((ref) => (
-        <Badge
-          className={cn("max-w-28 min-w-0 truncate", gitRefClassName(ref.type))}
-          key={`${commit.hash}:${ref.type}:${ref.name}`}
-          variant="outline"
-        >
-          {ref.name}
-        </Badge>
-      ))}
-      {hidden > 0 ? (
-        <Badge
-          className="border-muted-foreground/20 bg-muted/60 text-muted-foreground"
-          title={commit.refs.map((ref) => ref.name).join(", ")}
-          variant="outline"
-        >
-          +{hidden}
-        </Badge>
-      ) : null}
-    </div>
-  )
-}
-
-function visibleInspectorRefs(commit: GitLogCommit) {
-  const primary = commit.refs.filter(primaryRef)
-  return (primary.length ? primary : commit.refs).slice(0, 3)
-}
-
-function primaryRef(ref: GitLogCommit["refs"][number]) {
-  if (ref.type === "tag") return true
-  return [
-    "HEAD",
-    "main",
-    "master",
-    "origin/HEAD",
-    "origin/main",
-    "origin/master",
-  ].includes(ref.name)
 }
 
 function FileHeader({
@@ -191,37 +160,59 @@ function FileHeader({
   selected: Extract<GitSelection, { type: "file" }>
 }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 border-b bg-muted/20 px-3 py-3">
-      <div className="flex min-w-0 items-center gap-2">
-        <GitPullRequestIcon className="size-4 shrink-0 text-muted-foreground" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate font-medium">{selected.path}</div>
-          <div className="text-xs text-muted-foreground">
-            {selected.staged ? "Staged diff" : "Workspace diff"}
-          </div>
+    <div className="flex min-w-0 items-start gap-2.5 border-b px-3 py-3">
+      <HeaderIcon>
+        <DevelopmentFileIcon
+          className="size-4"
+          node={{ path: selected.path, type: "file" }}
+        />
+      </HeaderIcon>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <div className="truncate text-sm font-medium" title={selected.path}>
+          {selected.path}
         </div>
-        {file ? (
-          <Badge className={gitStatusClassName(file.status)} variant="outline">
-            {gitStatusLabel(file.status)}
-          </Badge>
-        ) : null}
+        <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+          {file ? (
+            <span
+              className={cn("font-medium", gitStatusTextClassName(file.status))}
+            >
+              {gitStatusName(file.status)}
+            </span>
+          ) : null}
+          {file ? (
+            <span aria-hidden className="text-muted-foreground/50">
+              ·
+            </span>
+          ) : null}
+          <span>{selected.staged ? "Staged diff" : "Workspace diff"}</span>
+        </div>
+        <DiffSummary diffLoading={diffLoading} diffs={diffs} />
       </div>
-      <DiffSummary diffLoading={diffLoading} diffs={diffs} />
     </div>
   )
 }
 
 function OverviewHeader({ status }: { status?: GitStatusResult }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 border-b bg-muted/20 px-3 py-3">
-      <GitBranchIcon className="size-4 shrink-0 text-muted-foreground" />
+    <div className="flex min-w-0 items-center gap-2.5 border-b px-3 py-3">
+      <HeaderIcon>
+        <GitBranchIcon className="size-4" />
+      </HeaderIcon>
       <div className="min-w-0">
-        <div className="truncate font-medium">
+        <div className="truncate text-sm font-medium">
           {status?.branch.current ?? "Repository"}
         </div>
         <div className="text-xs text-muted-foreground">Workspace overview</div>
       </div>
     </div>
+  )
+}
+
+function HeaderIcon({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-foreground/6 text-muted-foreground ring-1 ring-foreground/8">
+      {children}
+    </span>
   )
 }
 
@@ -242,7 +233,7 @@ function RepositoryOverview({ status }: { status?: GitStatusResult }) {
 
 function OverviewMetric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex items-center justify-between rounded-md border px-3 py-2">
+    <div className="flex items-center justify-between rounded-lg bg-foreground/4 px-3 py-2 ring-1 ring-foreground/8">
       <span className="text-sm text-muted-foreground">{label}</span>
       <span className="font-mono text-sm font-medium">{value}</span>
     </div>
@@ -290,20 +281,14 @@ function DiffSummary({
   const summary = diffSummary(diffs)
   if (!summary) return null
   return (
-    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground tabular-nums">
       <span>{summary.files}</span>
-      <Badge
-        className="h-5 border-emerald-500/30 bg-emerald-500/10 px-1.5 text-emerald-600 dark:text-emerald-400"
-        variant="outline"
-      >
+      <span className="font-medium text-emerald-600 dark:text-emerald-400">
         +{summary.additions}
-      </Badge>
-      <Badge
-        className="h-5 border-destructive/30 bg-destructive/10 px-1.5 text-destructive"
-        variant="outline"
-      >
-        -{summary.deletions}
-      </Badge>
+      </span>
+      <span className="font-medium text-red-600 dark:text-red-400">
+        −{summary.deletions}
+      </span>
     </div>
   )
 }

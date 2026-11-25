@@ -4,14 +4,28 @@ import type { GitSelection } from "@/components/git/git-types"
 import { gitCommitSelection, gitSelectionKey } from "@/components/git/git-types"
 import {
   gitDateLabel,
-  gitRefClassName,
   gitRelativeDate,
   shortGitHash,
 } from "@/components/git/git-format"
-import { GitCommitIcon, SearchIcon } from "lucide-react"
+import {
+  GitCommitGraphCell,
+  gitGraphRowHeight,
+  gitGraphWidth,
+  type GitCommitNodeKind,
+} from "@/components/git/git-commit-graph"
+import {
+  layoutGitGraph,
+  type GitGraphRow,
+} from "@/components/git/git-graph-layout"
+import { GitRefLabels } from "@/components/git/git-ref-label"
+import { GitCommitIcon, SearchIcon, XIcon } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -40,7 +54,17 @@ export function GitHistoryPanel({
   selected?: GitSelection
 }) {
   const filtered = filterCommits(commits, query)
-  const canLoadMoreHistory = hasMoreCommits && !query.trim()
+  const searching = Boolean(query.trim())
+  const canLoadMoreHistory = hasMoreCommits && !searching
+  const graph = React.useMemo(() => layoutGitGraph(commits), [commits])
+  const graphRows = React.useMemo(
+    () =>
+      new Map(commits.map((commit, index) => [commit.hash, graph.rows[index]])),
+    [commits, graph]
+  )
+  // A search breaks the history apart: its results keep their lane color but
+  // drop the lines that would link unrelated commits.
+  const graphWidth = gitGraphWidth(searching ? 1 : graph.laneCount)
   const scrollAreaRef = React.useRef<HTMLDivElement>(null)
   const scrollGuardRef = React.useRef<HistoryScrollGuard>({
     frame: 0,
@@ -60,10 +84,11 @@ export function GitHistoryPanel({
 
   return (
     <main className="relative flex min-h-[34rem] min-w-0 flex-col xl:min-h-0">
-      <div className="surface-fade-top absolute top-0 right-3 left-0 z-10 overflow-hidden pb-8">
+      <div className="absolute top-0 right-3 left-0 z-10 overflow-hidden pb-8 surface-fade-top">
         <div className="relative">
           <HistoryToolbar
             loadedCount={commits.length}
+            matchCount={searching ? filtered.length : undefined}
             total={commitTotal}
             hasMore={canLoadMoreHistory}
             query={query}
@@ -77,11 +102,17 @@ export function GitHistoryPanel({
           <HistoryEmpty query={query} />
         ) : null}
         {filtered.length > 0 ? (
-          <div className="min-w-0 p-2">
-            {filtered.map((commit, index) => (
+          // A zero-minimum grid track: Radix's table viewport would
+          // otherwise widen to the longest message instead of truncating it.
+          <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] px-2 pt-1 pb-3">
+            {filtered.map((commit) => (
               <CommitRow
                 commit={commit}
-                latest={index === 0}
+                graphRow={visibleGraphRow(
+                  graphRows.get(commit.hash),
+                  searching
+                )}
+                graphWidth={graphWidth}
                 key={commit.hash}
                 selected={selected}
                 onSelect={onCommitSelect}
@@ -100,30 +131,49 @@ export function GitHistoryPanel({
 function HistoryToolbar({
   hasMore,
   loadedCount,
+  matchCount,
   onQueryChange,
   query,
   total,
 }: {
   hasMore: boolean
   loadedCount: number
+  // Commits matching the search among the loaded ones, while searching.
+  matchCount?: number
   onQueryChange(value: string): void
   query: string
   total?: number
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-3 px-3 py-2">
-      <div className="relative min-w-0 flex-1">
-        <SearchIcon className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          className="pl-8"
+    <div className="px-2 py-2">
+      <InputGroup className="h-10 rounded-xl border-transparent bg-muted/60 shadow-none ring-1 ring-foreground/10 dark:bg-muted/50">
+        <InputGroupAddon className="pl-3.5">
+          <SearchIcon className="size-4" />
+        </InputGroupAddon>
+        <InputGroupInput
+          aria-label="Search commits by message, author, hash or branch"
           placeholder="Search message, author, hash, branch"
           value={query}
           onChange={(event) => onQueryChange(event.target.value)}
         />
-      </div>
-      <Badge className="shrink-0" variant="outline">
-        {historyCountLabel(total, loadedCount, hasMore)}
-      </Badge>
+        <InputGroupAddon align="inline-end" className="gap-1 pr-2">
+          {query ? (
+            <InputGroupButton
+              aria-label="Clear commit search"
+              className="text-muted-foreground hover:text-foreground"
+              size="icon-xs"
+              onClick={() => onQueryChange("")}
+            >
+              <XIcon className="size-3.5" />
+            </InputGroupButton>
+          ) : null}
+          <span className="pr-1.5 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+            {matchCount === undefined
+              ? historyCountLabel(total, loadedCount, hasMore)
+              : `${matchCount.toLocaleString()} ${matchCount === 1 ? "match" : "matches"}`}
+          </span>
+        </InputGroupAddon>
+      </InputGroup>
     </div>
   )
 }
@@ -166,8 +216,9 @@ function historyCountLabel(
   loadedCount: number,
   hasMore: boolean
 ) {
-  if (total !== undefined) return `${total} commits`
-  return `${loadedCount}${hasMore ? "+" : ""} commits`
+  const count = (total ?? loadedCount).toLocaleString()
+  const suffix = total === undefined && hasMore ? "+" : ""
+  return `${count}${suffix} ${total === 1 ? "commit" : "commits"}`
 }
 
 function scheduleHistoryScrollCheck(
@@ -224,143 +275,84 @@ function nearHistoryBottom(viewport: HTMLElement) {
 
 function CommitRow({
   commit,
-  latest,
+  graphRow,
+  graphWidth,
   onSelect,
   selected,
 }: {
   commit: GitLogCommit
-  latest: boolean
+  graphRow: GitGraphRow
+  graphWidth: number
   onSelect(selection: GitSelection): void
   selected?: GitSelection
 }) {
   const selection = gitCommitSelection(commit.hash)
   const active = gitSelectionKey(selection) === gitSelectionKey(selected)
+  const merge = commit.parents.length > 1
 
   return (
     <button
       className={cn(
-        "relative grid w-full grid-cols-[1.25rem_minmax(0,1fr)_5.75rem] items-stretch gap-2 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted",
-        active &&
-          "bg-muted before:absolute before:top-1 before:bottom-1 before:left-0 before:w-0.5 before:rounded-full before:bg-blue-500"
+        "flex w-full min-w-0 items-stretch rounded-lg pr-3 text-left transition-colors outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring/50",
+        active && "bg-muted hover:bg-muted"
       )}
+      style={{ height: gitGraphRowHeight }}
       type="button"
       onClick={() => onSelect(selection)}
     >
-      <CommitGraphDot active={active} latest={latest} />
-      <CommitBody commit={commit} />
-      <span
-        className="truncate text-right text-xs text-muted-foreground"
-        title={gitDateLabel(commit.date)}
-      >
-        {gitRelativeDate(commit.date)}
+      <GitCommitGraphCell
+        node={commitNodeKind(commit, active)}
+        row={graphRow}
+        width={graphWidth}
+      />
+      <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5">
+        <span className="flex min-w-0 items-center gap-2">
+          <span
+            className={cn(
+              "min-w-0 truncate text-sm leading-5",
+              merge ? "text-muted-foreground" : "font-medium text-foreground"
+            )}
+            title={commit.message}
+          >
+            {commit.message}
+          </span>
+          <GitRefLabels className="shrink-0" max={2} refs={commit.refs} />
+        </span>
+        <span className="flex min-w-0 items-center gap-1.5 text-xs leading-4 text-muted-foreground">
+          <span className="shrink-0 font-mono text-[11px] text-muted-foreground/80">
+            {shortGitHash(commit.hash)}
+          </span>
+          <span aria-hidden className="text-muted-foreground/50">
+            ·
+          </span>
+          <span className="min-w-0 truncate">{commit.authorName}</span>
+          <span
+            className="ml-auto shrink-0 pl-2 tabular-nums"
+            title={gitDateLabel(commit.date)}
+          >
+            {gitRelativeDate(commit.date)}
+          </span>
+        </span>
       </span>
     </button>
   )
 }
 
-function CommitGraphDot({
-  active,
-  latest,
-}: {
+function commitNodeKind(
+  commit: GitLogCommit,
   active: boolean
-  latest: boolean
-}) {
-  return (
-    <span className="relative flex min-h-10 items-center justify-center">
-      <span
-        className={cn(
-          "absolute -bottom-2 left-1/2 w-px -translate-x-1/2 bg-border",
-          latest ? "top-1/2" : "-top-2"
-        )}
-      />
-      {latest ? (
-        <span
-          className={cn(
-            "relative z-1 flex size-3.5 items-center justify-center rounded-full border bg-background",
-            active ? "border-blue-500" : "border-emerald-500"
-          )}
-        >
-          <span
-            className={cn(
-              "size-1.5 rounded-full",
-              active ? "bg-blue-500" : "bg-emerald-500"
-            )}
-          />
-        </span>
-      ) : (
-        <span
-          className={cn(
-            "relative z-1 size-2.5 rounded-full border bg-background",
-            active ? "border-blue-500 bg-blue-500" : "border-emerald-500"
-          )}
-        />
-      )}
-    </span>
-  )
+): GitCommitNodeKind {
+  if (active) return "selected"
+  if (commit.refs.some((ref) => ref.type === "head")) return "head"
+  return "commit"
 }
 
-function CommitBody({ commit }: { commit: GitLogCommit }) {
-  return (
-    <span className="flex min-w-0 flex-col gap-1">
-      <span className="min-w-0 truncate leading-5 font-medium">
-        {commit.message}
-      </span>
-      <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
-        <span className="shrink-0 font-mono">{shortGitHash(commit.hash)}</span>
-        <span className="min-w-0 truncate">{commit.authorName}</span>
-        <CommitRefs commit={commit} />
-      </span>
-    </span>
-  )
-}
-
-function CommitRefs({ commit }: { commit: GitLogCommit }) {
-  const refs = visibleCommitRefs(commit)
-  if (refs.visible.length === 0 && refs.hidden === 0) return null
-
-  return (
-    <span className="flex min-w-0 shrink-0 items-center gap-1">
-      {refs.visible.map((ref) => (
-        <Badge
-          className={cn("max-w-24 truncate px-1.5", gitRefClassName(ref.type))}
-          key={`${commit.hash}:${ref.type}:${ref.name}`}
-          variant="outline"
-        >
-          {ref.name}
-        </Badge>
-      ))}
-      {refs.hidden > 0 ? (
-        <Badge
-          className="border-muted-foreground/20 bg-muted/60 px-1.5 text-muted-foreground"
-          title={commit.refs.map((ref) => ref.name).join(", ")}
-          variant="outline"
-        >
-          +{refs.hidden}
-        </Badge>
-      ) : null}
-    </span>
-  )
-}
-
-function visibleCommitRefs(commit: GitLogCommit) {
-  const primary = commit.refs.filter(primaryRef)
-  const visible = primary.slice(0, 2)
-  return {
-    hidden: Math.max(0, commit.refs.length - visible.length),
-    visible,
-  }
-}
-
-function primaryRef(ref: GitLogCommit["refs"][number]) {
-  if (ref.type === "tag") return true
-  return [
-    "HEAD",
-    "main",
-    "master",
-    "origin/HEAD",
-    "origin/main",
-    "origin/master",
-  ].includes(ref.name)
+function visibleGraphRow(
+  row: GitGraphRow | undefined,
+  searching: boolean
+): GitGraphRow {
+  if (!row) return { color: 0, column: 0, lines: [] }
+  return searching ? { color: row.color, column: 0, lines: [] } : row
 }
 
 function HistoryEmpty({ query }: { query: string }) {

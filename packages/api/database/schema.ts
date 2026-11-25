@@ -248,6 +248,99 @@ export class DeploymentSourceArtifactSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class EngineBlobSchema extends BaseModel {
+  static $columns = ['createdAt', 'mediaType', 'objectKey', 'ownerId', 'sha256', 'size'] as const
+  $columns = EngineBlobSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare mediaType: string
+  @column()
+  declare objectKey: string
+  @column({ isPrimary: true })
+  declare ownerId: string
+  @column()
+  declare sha256: string
+  @column()
+  declare size: bigint | number
+}
+
+export class EngineSessionBlobSchema extends BaseModel {
+  static $columns = ['ownerId', 'sessionId', 'sha256'] as const
+  $columns = EngineSessionBlobSchema.$columns
+  @column()
+  declare ownerId: string
+  @column({ isPrimary: true })
+  declare sessionId: string
+  @column()
+  declare sha256: string
+}
+
+export class EngineSessionRecordSchema extends BaseModel {
+  static $columns = ['atMs', 'body', 'seq', 'sessionId', 'type'] as const
+  $columns = EngineSessionRecordSchema.$columns
+  @column()
+  declare atMs: bigint | number
+  @column()
+  declare body: string
+  @column()
+  declare seq: bigint | number
+  @column({ isPrimary: true })
+  declare sessionId: string
+  @column()
+  declare type: string
+}
+
+export class EngineSessionSchema extends BaseModel {
+  static $columns = ['createdAt', 'headSeq', 'id', 'projectId', 'purpose', 'updatedAt', 'userId'] as const
+  $columns = EngineSessionSchema.$columns
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare headSeq: bigint | number
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare projectId: string | null
+  @column()
+  declare purpose: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime
+  @column()
+  declare userId: string
+}
+
+export class EpicSchema extends BaseModel {
+  static $columns = ['branch', 'createdAt', 'engineSessionId', 'goal', 'id', 'mergeCommit', 'mergedAt', 'projectId', 'settings', 'status', 'targetBranch', 'title', 'updatedAt'] as const
+  $columns = EpicSchema.$columns
+  @column()
+  declare branch: string | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare engineSessionId: string | null
+  @column()
+  declare goal: string | null
+  @column({ isPrimary: true })
+  declare id: string
+  @column()
+  declare mergeCommit: string | null
+  @column.dateTime()
+  declare mergedAt: DateTime | null
+  @column()
+  declare projectId: string
+  @column()
+  declare settings: any
+  @column()
+  declare status: string
+  @column()
+  declare targetBranch: string | null
+  @column()
+  declare title: string
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+}
+
 export class FileAttachmentSchema extends BaseModel {
   static $columns = ['checksumSha256', 'conversationAttachment', 'createdAt', 'detachedAt', 'id', 'mimeType', 'name', 'objectKey', 'size', 'status', 'updatedAt', 'uploadedAt', 'userId'] as const
   $columns = FileAttachmentSchema.$columns
@@ -961,10 +1054,12 @@ export class UserAiPreferenceSchema extends BaseModel {
 }
 
 export class UserMcpConfigurationSchema extends BaseModel {
-  static $columns = ['createdAt', 'servers', 'updatedAt', 'userId'] as const
+  static $columns = ['createdAt', 'encryptedSecrets', 'servers', 'updatedAt', 'userId'] as const
   $columns = UserMcpConfigurationSchema.$columns
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
+  @column()
+  declare encryptedSecrets: string | null
   @column()
   declare servers: any
   @column.dateTime({ autoCreate: true, autoUpdate: true })
@@ -974,7 +1069,7 @@ export class UserMcpConfigurationSchema extends BaseModel {
 }
 
 export class UserStorySchema extends BaseModel {
-  static $columns = ['agentLastError', 'agentModels', 'agentStatus', 'ambition', 'baseCommit', 'branch', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'engineSessionId', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'owner', 'previewUrl', 'priority', 'projectId', 'pullRequestUrl', 'runConfigurationId', 'runMode', 'status', 'storyNumber', 'summary', 'targetBranch', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
+  static $columns = ['agentLastError', 'agentModels', 'agentStatus', 'ambition', 'baseCommit', 'branch', 'codeSelectionAttachments', 'createdAt', 'discardedReason', 'engineSessionId', 'epicId', 'fileAttachmentUploadPending', 'fileAttachments', 'id', 'mergeCommit', 'mergedAt', 'modelIntent', 'owner', 'previewUrl', 'priority', 'projectId', 'pullRequestUrl', 'requestedModel', 'runConfigurationId', 'runMode', 'startsAfter', 'status', 'storyNumber', 'summary', 'targetBranch', 'title', 'updatedAt', 'workspaceMode', 'worktree'] as const
   $columns = UserStorySchema.$columns
   @column()
   declare agentLastError: string | null
@@ -997,6 +1092,8 @@ export class UserStorySchema extends BaseModel {
   @column()
   declare engineSessionId: string | null
   @column()
+  declare epicId: string | null
+  @column()
   declare fileAttachmentUploadPending: boolean
   @column()
   declare fileAttachments: any | null
@@ -1006,6 +1103,8 @@ export class UserStorySchema extends BaseModel {
   declare mergeCommit: string | null
   @column.dateTime()
   declare mergedAt: DateTime | null
+  @column()
+  declare modelIntent: string | null
   @column()
   declare owner: string
   @column()
@@ -1017,9 +1116,13 @@ export class UserStorySchema extends BaseModel {
   @column()
   declare pullRequestUrl: string | null
   @column()
+  declare requestedModel: any | null
+  @column()
   declare runConfigurationId: string | null
   @column()
   declare runMode: string | null
+  @column()
+  declare startsAfter: any | null
   @column()
   declare status: string
   @column()

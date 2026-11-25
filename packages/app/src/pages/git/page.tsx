@@ -251,6 +251,7 @@ export function GitPage() {
           onFileSelect={git.setSelected}
           onGenerateCommitMessage={generateCommitMessageWithAgent}
           onGitAddFile={git.gitAddFile}
+          onPush={git.push}
           onRefresh={git.refresh}
           onRollbackFile={git.rollbackFile}
           onSelectAll={git.selectAllFiles}
@@ -518,6 +519,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     loadMoreCommits,
     loading,
     loadingMoreCommits,
+    push: () => runAction("Pushing", gitPushAction),
     query,
     refresh,
     rollbackFile: (path: string) =>
@@ -813,6 +815,9 @@ function commitPushAction(
   }
 }
 
+const gitPushAction: GitAction = (root, workspace) =>
+  workspace.gitPush({ root })
+
 async function prepareSelectedFiles(
   root: string,
   workspace: WorkspaceClient,
@@ -929,6 +934,7 @@ function GitUnavailable() {
 function actionSuccess(label: string) {
   if (label === "Committing") return "Commit created"
   if (label === "Committing and pushing") return "Commit pushed"
+  if (label === "Pushing") return "Commits pushed"
   if (label === "Deleting file") return "File deleted"
   if (label === "Git add") return "File added to Git"
   if (label === "Rolling back file") return "File changes rolled back"
