@@ -291,7 +291,10 @@ fn matched_terms<'t>(found: &LexicalMatch, terms: &'t [String]) -> Vec<&'t Strin
 
 /// Relevance order shows the best two lines of every ranked file before the
 /// remaining lines, so one busy file cannot hide the others; path order
-/// lists every line file by file.
+/// lists every line file by file. For a query of several words, lines
+/// holding more of them come first across files: lines sharing one common
+/// word (an import) filled the page before the lines that held the query
+/// (US-110, 2026-11-26).
 pub fn ordered_matches(files: &[FileHits], terms: &[String], relevance: bool) -> Vec<LexicalMatch> {
     if !relevance {
         return files
@@ -326,6 +329,10 @@ pub fn ordered_matches(files: &[FileHits], terms: &[String], relevance: bool) ->
                 output.push(found.clone());
             }
         }
+    }
+    if terms.len() > 1 {
+        // Stable: within as many words, the file order above stays.
+        output.sort_by_cached_key(|found| std::cmp::Reverse(matched_terms(found, terms).len()));
     }
     output
 }
@@ -855,6 +862,41 @@ mod tests {
         assert!(glob.is_match("src/a.ts"));
         assert!(glob.is_match("src/x/y/a.ts"));
         assert!(!glob.is_match("lib/a.ts"));
+    }
+
+    #[test]
+    fn lines_holding_more_query_words_come_first_across_files() {
+        let line = |path: &str, number: usize, hits: &[&str]| LexicalMatch {
+            path: path.to_string(),
+            line_range: (number, number),
+            range: (0, 0),
+            excerpt: String::new(),
+            hits: hits.iter().map(|hit| hit.to_string()).collect(),
+            regex: true,
+        };
+        let terms = search_terms("claude session");
+        let matches = vec![
+            line("a.ts", 1, &["claude"]),
+            line("a.ts", 2, &["claude"]),
+            line("a.ts", 3, &["claude"]),
+            line("b.ts", 1, &["claude"]),
+            line("c.ts", 9, &["Claude", "session"]),
+        ];
+        let ordered = ordered_matches(&ranked_files(&matches, &terms, true), &terms, true);
+        let order: Vec<(&str, usize)> = ordered
+            .iter()
+            .map(|found| (found.path.as_str(), found.line_range.0))
+            .collect();
+        assert_eq!(
+            order,
+            [
+                ("c.ts", 9),
+                ("a.ts", 1),
+                ("a.ts", 2),
+                ("b.ts", 1),
+                ("a.ts", 3)
+            ]
+        );
     }
 
     #[test]
