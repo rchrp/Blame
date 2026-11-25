@@ -25,7 +25,10 @@ import {
 } from "./preview-repair.js";
 import type { PreviewRuntimeContext } from "./preview-types.js";
 import { conversationSkills } from "./skills.js";
-import { sessionStoryHistoryTools } from "./story-history.js";
+import {
+  sessionStoryHistoryTools,
+  type StoryHistoryOptions,
+} from "./story-history.js";
 import { storyProposalTool } from "./story-proposal.js";
 
 export { clientToolGuards } from "./guards.js";
@@ -60,6 +63,8 @@ export type ConversationToolServices = PreviewToolServices &
     pluginPaths?: readonly string[];
     /** An epic's own tools (`engine/orchestrator/tools.ts`), bound to its conversation. */
     orchestratorTools?(session: string, epicId: string): ClientTool<never>[];
+    /** An earlier story's conversation, read from its session (story history). */
+    storyConversation?: StoryHistoryOptions["conversation"];
   };
 
 export type ConversationToolSession = {
@@ -135,6 +140,7 @@ export async function conversationClientTools(
           services.git
             ? (cwd, args) => services.git!({ cwd, args })
             : undefined,
+          services.storyConversation,
         )
       : []),
     session.projectId ? storyProposalTool() : undefined,

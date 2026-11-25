@@ -67,6 +67,8 @@ import { SessionHub } from "./session-hub.js";
 import { sessionStatus } from "./session-status.js";
 import { storyHandlers } from "./stories/handlers.js";
 import { StoryService } from "./stories/service.js";
+import { storyLocation, type HostStory } from "./stories/story.js";
+import { readStoryConversation } from "./tools/story-conversation.js";
 import { taskHandlers, type TaskHost } from "./tasks/handlers.js";
 import { runInitializationRepair } from "./tasks/project.js";
 import { EngineTaskError, TaskRunner } from "./tasks/runner.js";
@@ -237,6 +239,24 @@ export class EngineHost {
         runInitializationRepair(this.taskHost(), input),
       orchestratorTools: (session, epicId) =>
         this.orchestrator.tools(session, epicId),
+      // Where the story's agent runs now (the VM while a Local Container
+      // story is open); a merged one's session is pulled back from the API
+      // by the native engine.
+      storyConversation: async (story) =>
+        story.engineSessionId
+          ? readStoryConversation(
+              await this.clientFor({
+                session: story.engineSessionId,
+                location:
+                  story.status === "in-progress" || story.status === "in-review"
+                    ? storyLocation(
+                        story.workspaceMode as HostStory["workspaceMode"],
+                      )
+                    : "host",
+              }),
+              story.engineSessionId,
+            )
+          : undefined,
     });
     const device = deviceCredentials(options.desktop);
     this.credentials = new CredentialResolver(

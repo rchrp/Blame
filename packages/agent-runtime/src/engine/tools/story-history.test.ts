@@ -175,3 +175,138 @@ function story(
     ...extra,
   };
 }
+
+// An engine story: its outcome, messages and tool calls live in its session.
+test("a story run on the engine reads its outcome, messages and tools from its session", async () => {
+  const model = { provider: "anthropic", model: "m" };
+  const usage = { input_tokens: 1, output_tokens: 1 };
+  let seq = 0;
+  const record = (body: Record<string, unknown>) => ({
+    seq: ++seq,
+    at_ms: seq,
+    ...body,
+  });
+  const turn = (
+    id: string,
+    message: string,
+    tool: { name: string; input: Record<string, unknown> },
+    reply: string,
+  ) => [
+    record({
+      type: "user_message",
+      turn: id,
+      input: [{ type: "text", text: message }],
+      delivery: "turn",
+    }),
+    record({
+      type: "request_started",
+      turn: id,
+      request: `${id}-r1`,
+      model,
+      attempt: 1,
+      prefix_digest: "d",
+    }),
+    record({
+      type: "assistant_message",
+      turn: id,
+      request: `${id}-r1`,
+      stop: "tool_use",
+      usage,
+      blocks: [
+        {
+          type: "tool_call",
+          call: `${id}-c1`,
+          name: tool.name,
+          input: tool.input,
+        },
+      ],
+    }),
+    record({
+      type: "tool_call_started",
+      turn: id,
+      call: `${id}-c1`,
+      name: tool.name,
+      effect: "read_only",
+    }),
+    record({
+      type: "tool_call_finished",
+      turn: id,
+      call: `${id}-c1`,
+      outcome: "completed",
+      content: [{ type: "text", text: "ok" }],
+    }),
+    record({
+      type: "request_started",
+      turn: id,
+      request: `${id}-r2`,
+      model,
+      attempt: 1,
+      prefix_digest: "d",
+    }),
+    record({
+      type: "assistant_message",
+      turn: id,
+      request: `${id}-r2`,
+      stop: "end_turn",
+      usage,
+      blocks: [{ type: "text", text: reply }],
+    }),
+    record({ type: "turn_ended", turn: id, outcome: { status: "completed" } }),
+  ];
+  const records = [
+    record({
+      type: "session_created",
+      config: {
+        purpose: "development-story",
+        workspace_root: "/w",
+        model,
+        engine_tools: [],
+        client_tools: [],
+        tool_options: {},
+        limits: {},
+        checkpoints: false,
+      },
+    }),
+    ...turn(
+      "t1",
+      "Backlog item: harness",
+      { name: "run_task", input: { command: "cargo test" } },
+      "First pass done.",
+    ),
+    ...turn(
+      "t2",
+      "Any other frictions?",
+      { name: "read_code", input: { target: "src/lib.rs" } },
+      "Yes: three more, fixed.",
+    ),
+  ];
+  const { readStoryConversation } = await import("./story-conversation.js");
+  const conversation = await readStoryConversation(
+    {
+      readRecords: async ({ after }: { after: number }) => ({
+        records: records.filter((item) => item.seq > after),
+        head: records.length,
+      }),
+    } as never,
+    "s1",
+  );
+  const digest = formatStoryDigest(
+    { ...stories[0]!, engineSessionId: "s1" },
+    ["outcome", "discussion", "activity"],
+    undefined,
+    conversation,
+  );
+  assert.match(
+    digest,
+    /## Outcome\nThe agent's last reply \(turn 2 of 2\):\n\nYes: three more, fixed\./,
+  );
+  assert.match(
+    digest,
+    /- You \(turn 2\): Any other frictions\?\n {2}→ agent completed: its reply is the outcome above\./,
+  );
+  assert.match(
+    digest,
+    /1\. \[turn 1\] run_task: cargo test\n2\. \[turn 2\] read_code: src\/lib\.rs/,
+  );
+  assert.doesNotMatch(digest, /No agent outcome recorded/);
+});

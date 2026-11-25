@@ -4,6 +4,7 @@ import {
 } from "../../cloud-api.js";
 import type { ApiConnection } from "../../types.js";
 import { defineTool, type ClientTool } from "../tool.js";
+import type { StoryConversation } from "./story-conversation.js";
 
 // Lets an agent find earlier user stories of its project and load what
 // happened in them, in two cheap steps: a ranked one-line-per-story search,
@@ -25,6 +26,9 @@ export type StoryHistoryOptions = {
   // Stories are fetched through these; tests replace them.
   listStories?: () => Promise<unknown>;
   getStory?: (id: string) => Promise<unknown>;
+  // A story run on the engine keeps its outcome, messages and tool calls in
+  // its session, not on its row: read there (`story-conversation.ts`).
+  conversation?: (story: StoryRecord) => Promise<StoryConversation | undefined>;
 };
 
 export type StorySection =
@@ -47,6 +51,8 @@ export type StoryRecord = {
   agentActivities?: Array<Record<string, unknown>> | null;
   comments?: Array<Record<string, unknown>> | null;
   agentRuns?: Array<Record<string, unknown>> | null;
+  engineSessionId?: string | null;
+  workspaceMode?: string | null;
   createdAt?: string;
   updatedAt?: string | null;
 };
@@ -168,10 +174,19 @@ export function storyHistoryTools(
           if (!target)
             return `No story matches "${request.story}" in this project. Use search_user_stories to find it.`;
           const story = (await detail(target.id)) ?? target;
-          const files = request.include.includes("files")
-            ? await changedFiles(story, options.git)
-            : undefined;
-          return formatStoryDigest(story, request.include, files);
+          const [files, conversation] = await Promise.all([
+            request.include.includes("files")
+              ? changedFiles(story, options.git)
+              : undefined,
+            needsConversation(request.include) &&
+            story.engineSessionId &&
+            options.conversation
+              ? options.conversation(story).catch((error: unknown) => {
+                  return { unavailable: errorText(error) } as const;
+                })
+              : undefined,
+          ]);
+          return formatStoryDigest(story, request.include, files, conversation);
         } catch (error) {
           return `Story history is unavailable: ${errorText(error)}`;
         }
@@ -244,20 +259,36 @@ export function formatStoryDigest(
   story: StoryRecord,
   include: StorySection[] = defaultSections,
   files?: string,
+  conversation?: StoryConversation | { unavailable: string },
 ) {
+  const engine =
+    conversation && "turns" in conversation ? conversation : undefined;
+  const unavailable =
+    conversation && "unavailable" in conversation
+      ? `The agent's conversation could not be read: ${conversation.unavailable}`
+      : undefined;
   const lines = [
     `# ${storyDisplayId(story)} · ${story.title}`,
     storyFacts(story),
   ];
   if (include.includes("request"))
     lines.push("", "## Request", clip(story.summary, 2_400) || "(empty)");
-  if (include.includes("outcome")) lines.push("", "## Outcome", outcome(story));
+  if (include.includes("outcome"))
+    lines.push("", "## Outcome", outcome(story, engine, unavailable));
   if (include.includes("files"))
     lines.push("", "## Changed files", files ?? filesHint(story));
   if (include.includes("discussion"))
-    lines.push("", "## Discussion", discussion(story));
+    lines.push(
+      "",
+      "## Discussion",
+      discussion(story, engine, unavailable, include.includes("outcome")),
+    );
   if (include.includes("activity"))
-    lines.push("", "## Agent activity", activityTrail(story));
+    lines.push(
+      "",
+      "## Agent activity",
+      activityTrail(story, engine, unavailable),
+    );
   const left = sections.filter((section) => !include.includes(section));
   if (left.length)
     lines.push("", `More: read_user_story include=[${left.join(", ")}]`);
@@ -328,16 +359,47 @@ function storyFacts(story: StoryRecord) {
     .join(" · ");
 }
 
-function outcome(story: StoryRecord) {
+function needsConversation(include: StorySection[]) {
+  return (
+    include.includes("outcome") ||
+    include.includes("discussion") ||
+    include.includes("activity")
+  );
+}
+
+function outcome(
+  story: StoryRecord,
+  engine?: StoryConversation,
+  unavailable?: string,
+) {
   const summary = story.agentSessionSummary?.trim();
   const final = story.agentFinalResponse?.trim();
-  if (!summary && !final) return "No agent outcome recorded yet.";
+  if (!summary && !final) {
+    const replied = engine?.turns.filter((turn) => turn.reply);
+    const last = replied?.at(-1);
+    if (last?.reply) {
+      const which =
+        engine!.turns.length > 1
+          ? `The agent's last reply (turn ${engine!.turns.indexOf(last) + 1} of ${engine!.turns.length}${last.outcome && last.outcome !== "completed" ? `, ended ${last.outcome}` : ""}):\n\n`
+          : "";
+      return `${which}${clip(last.reply, 6_000)}`;
+    }
+    return unavailable ?? "No agent outcome recorded yet.";
+  }
   if (summary && final && !summary.includes(final.slice(0, 80)))
     return `${clip(summary, 2_000)}\n\nFinal reply:\n${clip(final, 1_200)}`;
   return clip(summary ?? final ?? "", 2_400);
 }
 
-function discussion(story: StoryRecord) {
+function discussion(
+  story: StoryRecord,
+  engine?: StoryConversation,
+  unavailable?: string,
+  outcomeShown = false,
+) {
+  if (!story.comments?.length && engine)
+    return engineDiscussion(engine, outcomeShown);
+  if (!story.comments?.length && unavailable) return unavailable;
   const comments = (story.comments ?? [])
     .map((comment) => ({
       at: stringField(comment, "createdAt"),
@@ -368,7 +430,49 @@ function discussion(story: StoryRecord) {
   ].join("\n");
 }
 
-function activityTrail(story: StoryRecord) {
+// Every message after the brief (change requests, answers, messages sent
+// while the agent worked), each with the agent's reply to it.
+function engineDiscussion(engine: StoryConversation, outcomeShown: boolean) {
+  const lines: string[] = [];
+  // The last reply is the outcome: not repeated when that section shows it.
+  const last = engine.turns.filter((turn) => turn.reply).at(-1);
+  engine.turns.forEach((turn, index) => {
+    if (index > 0 && turn.message)
+      lines.push(`- You (turn ${index + 1}): ${clip(turn.message, 1_200)}`);
+    for (const steer of turn.steers)
+      lines.push(
+        `- You, while the agent worked (turn ${index + 1}): ${clip(steer, 1_200)}`,
+      );
+    if (index > 0 || turn.steers.length)
+      lines.push(
+        `  → agent ${turn.outcome ?? "working"}${
+          turn === last && outcomeShown
+            ? ": its reply is the outcome above."
+            : turn.reply
+              ? `: ${clip(turn.reply, 1_500)}`
+              : ""
+        }`,
+      );
+  });
+  if (!lines.length)
+    return "No messages after the request: the agent worked from it alone (see outcome).";
+  return lines.join("\n");
+}
+
+function activityTrail(
+  story: StoryRecord,
+  engine?: StoryConversation,
+  unavailable?: string,
+) {
+  if (!story.agentActivities?.length && engine) {
+    const steps = engine.turns.flatMap((turn, index) =>
+      turn.tools.map((tool) =>
+        engine.turns.length > 1 ? `[turn ${index + 1}] ${tool}` : tool,
+      ),
+    );
+    if (steps.length) return numberedSteps(steps, 80);
+  }
+  if (!story.agentActivities?.length && unavailable) return unavailable;
   const steps: string[] = [];
   for (const activity of story.agentActivities ?? []) {
     if (activity.kind !== "tool" && activity.kind !== "error") continue;
@@ -377,12 +481,15 @@ function activityTrail(story: StoryRecord) {
     steps.push(activity.kind === "error" ? `error: ${title}` : title);
   }
   if (!steps.length) return "No tool activity recorded.";
-  const shown = steps.slice(-40);
+  return numberedSteps(steps, 40);
+}
+
+function numberedSteps(steps: string[], limit: number) {
+  const shown = steps.slice(-limit);
+  const skipped = steps.length - shown.length;
   return [
-    ...(steps.length > shown.length
-      ? [`(${steps.length - shown.length} earlier steps omitted)`]
-      : []),
-    ...shown.map((step, index) => `${index + 1}. ${step}`),
+    ...(skipped ? [`(${skipped} earlier steps omitted)`] : []),
+    ...shown.map((step, index) => `${skipped + index + 1}. ${step}`),
   ].join("\n");
 }
 
@@ -556,6 +663,7 @@ export function sessionStoryHistoryTools(
     workspaceRoot: string;
   },
   git?: (cwd: string, args: string[]) => Promise<string>,
+  conversation?: StoryHistoryOptions["conversation"],
 ) {
   if (!input.projectId) return [];
   return storyHistoryTools({
@@ -563,5 +671,6 @@ export function sessionStoryHistoryTools(
     projectId: input.projectId,
     storyId: input.storyId,
     ...(git ? { git: (args: string[]) => git(input.workspaceRoot, args) } : {}),
+    ...(conversation ? { conversation } : {}),
   });
 }
