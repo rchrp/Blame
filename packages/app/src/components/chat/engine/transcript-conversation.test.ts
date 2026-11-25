@@ -234,7 +234,17 @@ test("a message sent into the running turn is the person's own, where it joined"
   const steer = live.runs[0]!.activities![1]!
   assert.equal(steer.title, "You")
   assert.equal(steer.detail, "check the docs too")
+  assert.equal(steer.status, "completed", "a request has given it to the model")
   assert.equal(live.runs[0]!.activities![2]!.messageKind, "intermediate")
+
+  // Sent now while a request runs: it waits, shown, for the next one.
+  seq = 0
+  const waiting = conversation(
+    steeredTurn("steer").filter((r) => !(r.type === "request_started" && r.request === "r2"))
+  )
+  const pending = waiting.runs[0]!.activities!.find((activity) => activity.kind === "user")!
+  assert.equal(pending.detail, "check the docs too")
+  assert.equal(pending.status, "running")
 
   // Replayed after the turn: same place, and the acknowledgement is not
   // the turn's reply.

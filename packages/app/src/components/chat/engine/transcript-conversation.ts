@@ -278,7 +278,8 @@ function itemActivity(
         kind: "user",
         title: author,
         detail: userText(item.blocks),
-        status: "completed",
+        // Running until a request gives it to the model.
+        status: item.delivered ? "completed" : "running",
         fileAttachments: userFiles(item.blocks, item.key),
       }
     case "request_failed":

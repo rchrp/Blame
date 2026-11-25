@@ -404,6 +404,7 @@ const AgentConversationTurn = React.memo(function AgentConversationTurn({
                 comment={steerComment(segment.steer)}
                 onFileLinkClick={onFileLinkClick}
                 run={run}
+                steer={segment.steer.status === "running" ? "waiting" : "read"}
               />
             ) : null}
             {segment.acknowledgement ? (
@@ -661,6 +662,7 @@ function RunCommentItem({
   onUndo,
   queued,
   run,
+  steer,
 }: {
   alwaysVisible: boolean
   comment?: AgentConversationComment
@@ -668,6 +670,9 @@ function RunCommentItem({
   onUndo?: (comment: AgentConversationComment) => Promise<void> | void
   queued?: QueuedMessageActions
   run?: AgentConversationRun
+  // A message sent into the running turn, read by the agent or still
+  // waiting for its next step.
+  steer?: "waiting" | "read"
 }) {
   const entering = useEnterAnimation(comment?.createdAt)
   // A queued message can still be edited before it is sent.
@@ -675,7 +680,9 @@ function RunCommentItem({
   const fileAttachments = useEngineFileAttachments(
     comment?.fileAttachments ?? noFileAttachments
   )
-  if (run?.kind === "initial") return null
+  // An initial run opens with the story's brief, shown elsewhere; a message
+  // sent into it later is the person's own and shows where it joined.
+  if (run?.kind === "initial" && !steer) return null
   if (!comment) return null
   const editing = Boolean(queued?.onEdit) && draft !== undefined
   const saveDraft = () => {
@@ -759,6 +766,10 @@ function RunCommentItem({
               <span className="text-xs text-muted-foreground">
                 Saved · not sent to agent
               </span>
+            ) : steer === "waiting" ? (
+              <span className="text-xs text-muted-foreground">
+                Sent · read at the agent&apos;s next step
+              </span>
             ) : null}
             {comment.ultra ? <UltraMark /> : null}
             <span className="text-xs text-muted-foreground">
@@ -788,7 +799,8 @@ type QueuedMessageActions = {
 }
 
 // A message waiting for the agent to finish its turn. Dashed so it reads as
-// not sent yet; "Send now" interrupts the agent with this message only.
+// not sent yet; "Send now" sends it into the running turn, where the agent
+// reads it at its next step.
 export function QueuedConversationMessage({
   comment,
   onFileLinkClick,
