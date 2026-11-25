@@ -10,6 +10,8 @@ use regex::Regex;
 use std::sync::LazyLock;
 
 const V2: &str = "blame_tool_result_v2";
+/// The most lines a text keeps inline in the JSON line.
+const INLINE_LINES: usize = 3;
 const TEXT_KEYS: [&str; 9] = [
     "content",
     "body",
@@ -114,12 +116,16 @@ fn detach(value: &Json, path: &mut Vec<Json>, sections: &mut Vec<(Vec<Json>, Str
         other => other.clone(),
     }
 }
-/// A text gets its own fenced part when it spans lines, or when JSON would
-/// escape it more than the part costs (its label twice, its path in the
-/// header, the fences). A one-line snippet with a few quotes stays inline:
-/// its section cost more than the escapes it saved.
+/// A text gets its own fenced part when it spans more than
+/// `INLINE_LINES` lines, or when JSON would escape it more than the part
+/// costs (its label twice, its path in the header, the fences). A short
+/// message or snippet stays inline: its section cost more than the escapes
+/// it saved, and named its label three times (US-110, 2026-11-26).
 fn worth_detaching(text: &str, label: &str) -> bool {
-    text.contains(['\n', '\r'])
+    text.split(['\n', '\r'])
+        .filter(|line| !line.is_empty())
+        .count()
+        > INLINE_LINES
         || text
             .chars()
             .filter(|character| matches!(character, '"' | '\\') || (*character as u32) < 0x20)
@@ -362,7 +368,7 @@ mod tests {
 
     #[test]
     fn detaches_escaped_text_fields() {
-        let result = obj! { "status" => "ok", "data" => obj! { "content" => "a\nb", "hash" => "src_0123456789abcdef0123456789abcdef" } };
+        let result = obj! { "status" => "ok", "data" => obj! { "content" => "a\nb\nc\nd", "hash" => "src_0123456789abcdef0123456789abcdef" } };
         let encoded = encode_tool_result(&result, Vec::new());
         let parts = encoded.as_array().expect("parts");
         assert_eq!(
@@ -373,7 +379,14 @@ mod tests {
         );
         assert_eq!(
             parts[1].get("text").and_then(Json::as_str),
-            Some("data.content:\n```\na\nb\n```")
+            Some("data.content:\n```\na\nb\nc\nd\n```")
+        );
+        let short = obj! { "status" => "blocked", "message" => "Command exited with code 1.\nerror: no such file" };
+        assert_eq!(
+            encode_tool_result(&short, Vec::new()).as_str(),
+            Some(
+                r#"{"status":"blocked","message":"Command exited with code 1.\nerror: no such file"}"#
+            )
         );
     }
 
