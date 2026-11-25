@@ -79,6 +79,7 @@ import {
 import { epicStateOf } from "./epic-state.js";
 import { EpicModels } from "./models.js";
 import { EpicReading } from "./reading.js";
+import { reviewEpic, type EpicReviewInput } from "./review.js";
 import { OrchestratorState, type EpicEntry } from "./state.js";
 import { orchestratorTools } from "./tools.js";
 
@@ -424,10 +425,12 @@ export class Orchestrator {
     }
   }
 
+  /** The person merges a finished epic, or opens its pull request. */
+  review = (input: EpicReviewInput) => reviewEpic(this, this.host, input);
+
   /**
    * A person acted on a story from a window (a message, a pause, a resume,
-   * a discard…): it is theirs from then on, and the epic's pause and
-   * resume leave it as it is.
+   * a discard…): it is theirs from then on, through the epic's pause.
    */
   touched(storyId: string) {
     return leaveToPerson(this.state, storyId).catch(report);

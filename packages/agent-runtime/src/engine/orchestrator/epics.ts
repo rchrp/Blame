@@ -46,7 +46,16 @@ export function parseEpic(value: unknown): Epic {
 }
 
 export type EpicUpdate = Partial<
-  Pick<Epic, "branch" | "targetBranch" | "engineSessionId">
+  Pick<
+    Epic,
+    | "branch"
+    | "targetBranch"
+    | "engineSessionId"
+    | "status"
+    | "mergedAt"
+    | "mergeCommit"
+    | "settings"
+  >
 >;
 
 export function epicApi(connection: ApiConnection) {

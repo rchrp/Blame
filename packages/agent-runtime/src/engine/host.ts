@@ -652,6 +652,7 @@ export class EngineHost {
     },
     epicState: ({ epicId }) => this.orchestrator.epicState(epicId),
     epicChanged: ({ epicId }) => this.orchestrator.changed(epicId),
+    epicReview: (input) => this.orchestrator.review(input),
     // The service is made in the constructor, after these handlers.
     ...storyHandlers(
       () => this.stories,

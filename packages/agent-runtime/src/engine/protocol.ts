@@ -28,6 +28,8 @@ import type {
 import { engineTaskMethods, type EngineTaskMethods } from "./task-protocol.js";
 import type { EngineStoryMethods, StoryHostEvent } from "./story-protocol.js";
 import type {
+  EpicReviewInput,
+  EpicReviewResult,
   EpicState,
   OrchestratorSettings,
 } from "./orchestrator-protocol.js";
@@ -291,6 +293,8 @@ export type EngineHostMethods = {
    * stories, and wakes the orchestrator if that is due.
    */
   epicChanged: { input: { epicId: string }; result: EpicState };
+  /** The person merges a finished epic, or opens its pull request. */
+  epicReview: { input: EpicReviewInput; result: EpicReviewResult };
 } & EngineTaskMethods &
   EngineStoryMethods;
 
@@ -354,6 +358,7 @@ export const engineHostMethods = [
   "status",
   "epicState",
   "epicChanged",
+  "epicReview",
   ...engineTaskMethods,
   ...engineStoryMethods,
 ] as const satisfies readonly EngineHostMethod[];

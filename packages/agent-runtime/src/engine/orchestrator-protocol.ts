@@ -27,6 +27,8 @@ export type EpicSettings = {
   budgetMicroUsd?: number;
   /** Starting stories and approving a merge wait for the person's Allow. */
   askBeforeLaunch?: boolean;
+  /** The pull request the person opened for the epic's branch (written by the host). */
+  pullRequestUrl?: string;
 };
 
 /** An epic as the API keeps it (`/projects/epics`). */
@@ -43,6 +45,28 @@ export type Epic = {
   mergedAt: string | null;
   mergeCommit: string | null;
 };
+
+/**
+ * The person's review of a finished epic (docs/orchestrator.md, "The
+ * review"): `merge` merges the epic's branch into its target, `pull-request`
+ * pushes the branch and opens (or finds) its GitHub pull request.
+ */
+export type EpicReviewInput = {
+  epicId: string;
+  action: "merge" | "pull-request";
+  /** Only true also pushes the target branch after a merge. */
+  push?: boolean;
+};
+
+export type EpicReviewResult =
+  | {
+      action: "merge";
+      epic: Epic;
+      targetBranch: string;
+      mergeCommit: string;
+      push: { status: "pushed" | "no-upstream" | "skipped" };
+    }
+  | { action: "pull-request"; epic: Epic; url: string; created: boolean };
 
 /**
  * What a window sends with each message to an epic's conversation (purpose

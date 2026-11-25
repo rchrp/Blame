@@ -358,6 +358,30 @@ looks at an epic on each ended story turn, each end of an orchestrator
 turn, `epicChanged`, `epicState`, sign-in and every minute, one look at a
 time per epic.
 
+## The review
+
+Once the orchestrator finishes, the person reviews the epic from its screen
+(`epicReview`, `orchestrator/review.ts`), on the computer that runs its
+conversation:
+
+- **Merge into the target**: the epic's branch goes through the same flow as
+  a story's Approve & Merge (`approveAndMerge`): the target merged into the
+  branch first (an agent resolves conflicts, with the orchestrator's model),
+  then the target fast-forwarded wherever it is checked out, pushed only when
+  asked. The epic is written `completed`, with `mergedAt` and `mergeCommit`.
+- **Open pull request**: the branch pushed and its GitHub pull request opened
+  or found (`openPullRequest`); its URL is kept in `settings.pullRequestUrl`.
+  The epic stays open until the person merges it, here or on GitHub.
+- Both run in a checkout of the epic's branch: the person's own when they
+  checked it out (refused while it has uncommitted changes), else a temporary
+  worktree removed afterwards.
+- Refused while a story is neither merged nor rejected, when no story was
+  merged, while the orchestrator's turn runs, when the branch is not the one
+  this host made (or is gone), and once the epic is completed or discarded.
+
+Not built yet: checks run on the epic's branch after each merge, and a
+preview of the epic's branch.
+
 ## The spend
 
 Computed by the host from the records, never stored by the API:
@@ -469,9 +493,10 @@ on, and the orchestrator is woken (`idle`) to wrap up.
    Quitting while a story runs can leave it paused after relaunch. Actual
    Local Container and Cloud Preview execution and two computers sharing an
    epic still need a separate run.
-3. **Epic review**: checks on the epic's branch after each merge, a preview
-   of the epic's branch, and the person's merge of the epic into its target
-   (or a pull request).
+3. **Epic review**: the person's merge of the epic into its target, or its
+   pull request (in `main` since 2026-11-25, "The review"). Still to build:
+   checks on the epic's branch after each merge, a preview of the epic's
+   branch.
 4. **Later**: agent checks admitted by free memory, an atomic claim so two
    computers never start the same story, previews prepared without a window
    showing the project, a structured question in `finish_task`.
