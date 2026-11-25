@@ -144,6 +144,28 @@ impl Harness {
         Ok(specs)
     }
 
+    /// Whether the harness needs the person's approval before this call
+    /// runs: a command it would refuse only because it changes git.
+    pub async fn needs_approval(&self, name: &str, input: &Value, options: &Value) -> bool {
+        let request = json!({
+            "approval": {
+                "tool": name,
+                "input": input,
+                "taskContract": options.get("taskContract"),
+            }
+        });
+        match self.request(request, &CancellationToken::new()).await {
+            Ok(reply) => reply.get("needed").and_then(Value::as_bool) == Some(true),
+            Err(error) => {
+                log!(
+                    Warn,
+                    "the harness could not say whether a call needs approval: {error}"
+                );
+                false
+            }
+        }
+    }
+
     pub async fn call(
         &self,
         invocation: &ToolInvocation,
@@ -161,6 +183,8 @@ impl Harness {
                 "conversationId": invocation.session,
                 "toolCallId": invocation.call,
                 "metadata": { "contextGeneration": context_generation(invocation) },
+                // The person approved this very call (a chat's git command).
+                "approved": invocation.approved,
             },
         });
         // finish_task shows only screenshots this conversation took: the ones

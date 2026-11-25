@@ -465,3 +465,91 @@ async fn a_session_gets_only_the_harness_tools_its_options_keep() {
     );
     assert!(engine.shutdown().await.success());
 }
+
+// A chat in the person's folder: a git command that changes the repository
+// waits for their approval and then runs; without the option it is refused.
+#[tokio::test]
+async fn a_chats_git_change_runs_once_the_person_approves_it() {
+    let Some(harness) = real_harness() else {
+        eprintln!("skipped: blame-harness is not built");
+        return;
+    };
+    let command = harness_args(&[harness.to_str().unwrap(), "serve"]);
+    for approve in [true, false] {
+        let workspace = temp_dir(if approve { "git-approve" } else { "git-refuse" });
+        for args in [
+            vec!["init", "-q", "--initial-branch=main"],
+            vec![
+                "-c",
+                "user.email=t@t",
+                "-c",
+                "user.name=t",
+                "commit",
+                "-q",
+                "--allow-empty",
+                "-m",
+                "init",
+            ],
+        ] {
+            let status = std::process::Command::new("git")
+                .args(&args)
+                .current_dir(&workspace)
+                .status()
+                .unwrap();
+            assert!(status.success());
+        }
+        let mock = mock(vec![
+            tool_reply(&[(
+                "run_task",
+                json!({ "kind": "command", "command": "git branch feature" }),
+            )]),
+            text_reply(&["Done."]),
+        ])
+        .await;
+        let client = Arc::new(FakeClient::new(&mock.base));
+        let engine = Engine::ready(
+            &temp_dir("git-approval-engine"),
+            &["--harness-command", &command],
+            client,
+        )
+        .await;
+        let mut config = harness_config(&workspace);
+        let mut options = json!({
+            "taskContract": {
+                "effect_requirement": "none",
+                "environment": { "isolated": false, "managedPreview": false },
+            },
+        });
+        if approve {
+            options["approveGitChanges"] = json!(true);
+        }
+        config.tool_options.insert("harness".into(), options);
+        let session = engine.create(config).await;
+        engine.subscribe(&session, 0).await;
+        engine.send(&session, "make a feature branch").await;
+        let records = records_of(
+            &tokio::time::timeout(Duration::from_secs(60), engine.until_turn_ended())
+                .await
+                .expect("the turn ends"),
+        );
+        let asked = kinds(&records).contains(&"approval?");
+        let branch = std::process::Command::new("git")
+            .args(["branch", "--list", "feature"])
+            .current_dir(&workspace)
+            .output()
+            .unwrap();
+        let made = !String::from_utf8_lossy(&branch.stdout).trim().is_empty();
+        let results = results(&records);
+        if approve {
+            assert!(asked, "the person is asked: {:?}", kinds(&records));
+            assert_eq!(results[0].0, ToolOutcome::Completed, "{:?}", results[0].1);
+            assert!(made, "the approved command ran");
+        } else {
+            assert!(!asked);
+            assert!(!made, "refused without the chat's option");
+            let text = format!("{:?}", results[0].1);
+            assert!(text.contains("Git mutations are unavailable"), "{text}");
+        }
+        assert!(engine.shutdown().await.success());
+    }
+}

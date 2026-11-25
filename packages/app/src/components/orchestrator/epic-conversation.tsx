@@ -152,6 +152,7 @@ export function EpicConversation({
           )}
           <EpicReview
             epic={epic}
+            groups={groups}
             state={chat.state}
             onReviewed={() => epics.reload(epic.id)}
           />

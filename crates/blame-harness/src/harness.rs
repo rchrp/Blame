@@ -249,6 +249,7 @@ impl Harness {
                 };
                 let context = RunContext {
                     refresh_preview: None,
+                    approved: false,
                     credentials: request
                         .get("commandCredentials")
                         .filter(|value| value.is_object())
@@ -417,6 +418,8 @@ impl Harness {
         let refresh = || asked("refreshPreviewDependencies");
         let run_context = RunContext {
             refresh_preview: Some(&refresh),
+            // Set by the engine once the person approved this very call.
+            approved: context.get("approved").and_then(Json::as_bool) == Some(true),
             credentials: credentials.filter(|value| value.is_object()),
             signal: signal.clone(),
         };
@@ -621,6 +624,30 @@ fn finish_input_error(input: &Json, issues: &[crate::validate::Issue]) -> String
     )
 }
 
+/// The engine's `approval` question: a run_task command refused only because
+/// it changes git, in a workspace that is not isolated, needs the person's
+/// approval instead.
+pub fn needs_approval(request: &Json) -> bool {
+    if request.get("tool").and_then(Json::as_str) != Some("run_task") {
+        return false;
+    }
+    let input = normalize_run_task_input(&request.get("input").cloned().unwrap_or(Json::Null));
+    if !matches!(
+        input.get("kind").and_then(Json::as_str),
+        None | Some("command")
+    ) {
+        return false;
+    }
+    let Some(command) = input.get("command").and_then(Json::as_str) else {
+        return false;
+    };
+    let contract = request.get("taskContract").cloned().unwrap_or(Json::Null);
+    crate::run::policy::needs_git_approval(
+        command,
+        crate::run::policy::CommandEnvironment::from_contract(&contract),
+    )
+}
+
 /// `runTaskInput`: known model misreadings repaired before validation (a
 /// task sent as `kind: "task"` or without a kind, a bare run number, a
 /// command sent as an inspect).
@@ -720,6 +747,14 @@ pub fn light_tool_context(context: &Json) -> Json {
         .with("metadata", metadata)
         .with_opt("sessionId", present("sessionId"))
         .with_opt("toolCallId", present("toolCallId"))
+        // The person approved this very call (the engine says so).
+        .with_opt(
+            "approved",
+            context
+                .get("approved")
+                .filter(|value| value.as_bool() == Some(true))
+                .cloned(),
+        )
 }
 
 /// A raw read_code input, unvalidated as the TypeScript workspace takes it.

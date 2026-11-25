@@ -8,12 +8,9 @@ import {
   workspaceEngineTools,
   type Purpose,
 } from "./purpose.js";
-import { directFolderEnvironment, projectPrompt } from "./prompt.js";
+import { directChatEnvironment, projectPrompt } from "./prompt.js";
 import { normalizePersonalization } from "../../personalization.js";
-import {
-  planToolGuidance,
-  purposeHarnessTools,
-} from "./tool-sets.js";
+import { planToolGuidance, purposeHarnessTools } from "./tool-sets.js";
 
 export const quickChatPurpose: Purpose<QuickChatSettings> = {
   workspace: (settings) => ({ root: settings.workspaceRoot, location: "host" }),
@@ -25,7 +22,7 @@ export const quickChatPurpose: Purpose<QuickChatSettings> = {
       system_prompt: projectPrompt({
         template: "code-agent-system",
         workspaceRoot: settings.workspaceRoot,
-        environment: directFolderEnvironment,
+        environment: directChatEnvironment,
         plan: planToolGuidance("quick-chat"),
         personalization: settings.personalization,
         practices: settings.codePractices,
@@ -42,6 +39,9 @@ export const quickChatPurpose: Purpose<QuickChatSettings> = {
           },
           responseStyle: normalizePersonalization(settings.personalization)
             .responseStyle,
+          // A git command that changes the person's repository asks for
+          // their approval instead of being refused.
+          approveGitChanges: true,
         },
       },
       limits: settings.maxContextTokens

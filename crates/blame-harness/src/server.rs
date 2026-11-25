@@ -95,6 +95,11 @@ pub fn serve_with<R: BufRead, W: Write + Send + 'static>(
             write(obj! { "id" => id.as_str(), "tools" => describe(request) });
             continue;
         }
+        if let Some(request) = message.get("approval").filter(|value| truthy(value)) {
+            let needed = crate::harness::needs_approval(request);
+            write(obj! { "id" => id.as_str(), "needed" => needed });
+            continue;
+        }
         let (call, request) = match (
             message.get("call").filter(|value| truthy(value)),
             message.get("request").filter(|value| truthy(value)),

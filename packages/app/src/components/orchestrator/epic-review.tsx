@@ -10,6 +10,10 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import type { Epic } from "@/components/orchestrator/data/epic-data"
+import {
+  epicReadyForReview,
+  type EpicBoardGroup,
+} from "@/components/orchestrator/data/epic-board"
 import { usePlatform } from "@/context/platform"
 
 type Action = "merge" | "pull-request"
@@ -21,10 +25,12 @@ type Action = "merge" | "pull-request"
  */
 export function EpicReview({
   epic,
+  groups,
   state,
   onReviewed,
 }: {
   epic: Epic
+  groups: readonly EpicBoardGroup[]
   state: EpicState | undefined
   onReviewed: () => Promise<unknown>
 }) {
@@ -46,7 +52,11 @@ export function EpicReview({
         </span>
       </p>
     )
-  if (state?.conversation !== "finished" || epic.status === "discarded")
+  if (
+    epic.status === "discarded" ||
+    state?.conversation === "working" ||
+    !epicReadyForReview(groups)
+  )
     return null
 
   async function review(action: Action) {

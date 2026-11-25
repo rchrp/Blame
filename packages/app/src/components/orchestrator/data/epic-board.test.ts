@@ -2,7 +2,12 @@ import assert from "node:assert/strict"
 import test from "node:test"
 import type { StoryWaitReason } from "@blame/agent-runtime/engine-protocol"
 
-import { epicActivity, epicBoard, type EpicBoardStory } from "./epic-board.ts"
+import {
+  epicActivity,
+  epicBoard,
+  epicReadyForReview,
+  type EpicBoardStory,
+} from "./epic-board.ts"
 
 let nextNumber = 1
 
@@ -216,4 +221,24 @@ test("a problem of the epic itself needs the person", () => {
     epicActivity({ status: "paused" }, board([]), "waiting"),
     "paused"
   )
+})
+
+test("an epic is ready for review once every story is merged or rejected", () => {
+  assert.equal(
+    epicReadyForReview(
+      board([story({ status: "done" }), story({ status: "discarded" })])
+    ),
+    true
+  )
+  assert.equal(
+    epicReadyForReview(
+      board([story({ status: "done" }), story({ status: "in-review" })])
+    ),
+    false
+  )
+  assert.equal(
+    epicReadyForReview(board([story({ status: "discarded" })])),
+    false
+  )
+  assert.equal(epicReadyForReview(board([])), false)
 })

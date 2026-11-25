@@ -24,6 +24,9 @@ pub struct ToolInvocation {
     /// call may start helper agents. Read from the log when the call runs,
     /// so it is the same on a restart.
     pub ultra: bool,
+    /// The person approved this call (it needed their approval): a harness
+    /// command the chat asked about may then change the repository.
+    pub approved: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -80,4 +83,11 @@ pub trait ToolHost: Send + Sync {
     /// Asked once per call found started but not finished when a session is
     /// reopened after a crash.
     async fn interrupted(&self, invocation: &ToolInvocation) -> InterruptedCall;
+
+    /// Whether this call needs the person's approval although its tool does
+    /// not always (`ToolSpec::needs_approval`): asked before it runs. The same
+    /// answer for the same call, so a restart asks the same.
+    async fn needs_approval(&self, _name: &str, _input: &Value, _config: &SessionConfig) -> bool {
+        false
+    }
 }

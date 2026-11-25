@@ -225,6 +225,7 @@ fn invocation(call: &str, input: Value, ultra: bool) -> ToolInvocation {
         workspace_root: "/work".into(),
         compacted_through: None,
         ultra,
+        approved: false,
     }
 }
 
