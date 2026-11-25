@@ -360,9 +360,10 @@ time per epic.
 
 ## The review
 
-Once the orchestrator finishes, the person reviews the epic from its screen
-(`epicReview`, `orchestrator/review.ts`), on the computer that runs its
-conversation:
+Once every story is merged or rejected (one at least merged) and the
+orchestrator is not working, its screen offers the person the review
+(`epicReview`, `orchestrator/review.ts`, under the conversation), on the
+computer that runs its conversation:
 
 - **Merge into the target**: the epic's branch goes through the same flow as
   a story's Approve & Merge (`approveAndMerge`): the target merged into the
