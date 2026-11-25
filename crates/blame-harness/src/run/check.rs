@@ -82,7 +82,38 @@ pub fn is_mocha_invocation(command: &str) -> bool {
 }
 
 pub fn is_test_invocation(command: &str) -> bool {
-    is_mocha_invocation(command) || TEST_RUNNERS.is_match(command)
+    let command = without_heredoc_bodies(command);
+    is_mocha_invocation(&command) || TEST_RUNNERS.is_match(&command)
+}
+
+// `<<EOF`, `<<-'EOF'`, `<< "EOF"`; not a here-string (`<<<`) or a shift (`1<<2`).
+static HEREDOC: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"(?:^|[^<])<<-?[ \t]*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?"#).expect("pattern")
+});
+
+/// The lines a shell runs as commands: a heredoc's body is data written to
+/// a file or a stdin (`cat > run.sh <<'EOF' … node --test … EOF`).
+fn without_heredoc_bodies(command: &str) -> std::borrow::Cow<'_, str> {
+    if !command.contains("<<") {
+        return std::borrow::Cow::Borrowed(command);
+    }
+    let mut kept = String::new();
+    let mut delimiters = std::collections::VecDeque::new();
+    for line in command.split_inclusive('\n') {
+        if let Some(delimiter) = delimiters.front() {
+            if line.trim_end_matches(['\n', '\r']).trim_start_matches('\t') == delimiter {
+                delimiters.pop_front();
+            }
+            continue;
+        }
+        kept.push_str(line);
+        delimiters.extend(
+            HEREDOC
+                .captures_iter(line)
+                .map(|captures| captures[1].to_string()),
+        );
+    }
+    std::borrow::Cow::Owned(kept)
 }
 
 /// A command's result as the process layer reports it.
@@ -613,6 +644,50 @@ pub fn check_reporting(check: &Json, include_guidance: bool) -> Json {
         include_guidance.then_some("Null means unreported, never zero. Pending is distinct from skipped. Counters follow the runner (some combine skipped/todo). Process success, passing tests, admitted source verification and user acceptance are separate claims."),
     )
 }
+/// A run_task result as the model reads it. A check that observed nothing
+/// (`evidenceOrigin` none: no count, no report) is said once, by
+/// `reporting`: its `check` repeated it, and its `testValidationScope`
+/// qualified runtime results that do not exist. The raw result and the
+/// journal keep both.
+pub fn presented_run_result(result: &Json) -> Json {
+    let mut result = result.clone();
+    if let Some(data) = result.get_mut("data") {
+        without_unobserved_check(data);
+        if let Some(completed) = data
+            .get_mut("completed")
+            .and_then(|completed| completed.get_mut("data"))
+        {
+            without_unobserved_check(completed);
+        }
+    }
+    result
+}
+
+fn without_unobserved_check(data: &mut Json) {
+    let unobserved = data
+        .get("check")
+        .and_then(|check| check.get("evidenceOrigin"))
+        .and_then(Json::as_str)
+        == Some("none");
+    if !unobserved || data.get("reporting").is_none() {
+        return;
+    }
+    data.remove("check");
+    let empty = |scope: &Json, key: &str| {
+        scope
+            .get(key)
+            .and_then(Json::as_array)
+            .is_none_or(|values| values.is_empty())
+    };
+    let scope_says_nothing = data.get("testValidationScope").is_some_and(|scope| {
+        matches!(scope.get("runtimeCases"), None | Some(Json::Null))
+            && empty(scope, "forwardedArgs")
+            && empty(scope, "nextTypecheckSelections")
+    });
+    if scope_says_nothing {
+        data.remove("testValidationScope");
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -634,5 +709,35 @@ mod tests {
         );
         assert!(is_test_invocation("npx vitest run"));
         assert!(!is_test_invocation("ls"));
+    }
+
+    #[test]
+    fn a_heredoc_body_is_no_test_invocation() {
+        let script = "cat > ht <<'EOF'\nnode --test dist/a.test.js\nEOF\nchmod +x ht";
+        assert!(!is_test_invocation(script));
+        assert!(is_test_invocation(&format!(
+            "{script}\nnode --test dist/a.test.js"
+        )));
+        assert!(is_test_invocation("cat <<<\"x\"; node --test"));
+    }
+
+    #[test]
+    fn an_unobserved_check_reads_as_its_reporting_alone() {
+        let empty = || Json::Arr(Vec::new());
+        let result = obj! { "status" => "ok", "data" => obj! {
+            "exitCode" => 0,
+            "check" => obj! { "outcome" => "unknown", "evidenceOrigin" => "none" },
+            "reporting" => obj! { "outcome" => "unknown", "evidenceOrigin" => "none" },
+            "testValidationScope" => obj! { "runtimeCases" => Json::Null, "forwardedArgs" => empty(), "nextTypecheckSelections" => empty() },
+        } };
+        assert_eq!(
+            presented_run_result(&result).stringify(),
+            r#"{"status":"ok","data":{"exitCode":0,"reporting":{"outcome":"unknown","evidenceOrigin":"none"}}}"#
+        );
+        let observed = obj! { "status" => "ok", "data" => obj! {
+            "check" => obj! { "evidenceOrigin" => "runner_output" },
+            "reporting" => obj! { "evidenceOrigin" => "runner_output" },
+        } };
+        assert_eq!(presented_run_result(&observed), observed);
     }
 }

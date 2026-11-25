@@ -373,7 +373,11 @@ pub fn drop_command_echo(result: &mut Json, input: &Value) -> bool {
         return false;
     };
     match result.get_mut("data") {
-        Some(data) if data.get("command").and_then(Json::as_str) == Some(command) => {
+        // The harness trims the command it echoes.
+        Some(data)
+            if data.get("command").and_then(Json::as_str).map(str::trim)
+                == Some(command.trim()) =>
+        {
             data.remove("command");
             true
         }
@@ -591,6 +595,7 @@ fn failed(result: &Json) -> bool {
     };
     let check_failed = data
         .get("check")
+        .or_else(|| data.get("reporting"))
         .and_then(|c| c.get("outcome"))
         .and_then(Json::as_str)
         == Some("failed");

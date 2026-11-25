@@ -271,6 +271,13 @@ export class ClaudeCodeBridge implements ClaudeCodeBridgeHandle {
       lane.continue(parsed, sink);
       active = lane;
     } else {
+      // A new process replays the whole transcript: say why none continued.
+      if (lanes.length)
+        this.log("lane_not_continued", {
+          scope: tokenScope(token),
+          messages: parsed.messages.length,
+          lanes: lanes.map((open) => ({ lane: open.id, reason: open.rejection(parsed) })),
+        });
       // An idle conversation of this scope that does not continue here is
       // over: a finished subagent, or history the client rewrote.
       for (const old of lanes)

@@ -490,13 +490,18 @@ impl Harness {
                     .cloned(),
             );
         match self.execute(&inner, signal) {
-            Ok(raw) => {
+            Ok(result) => {
                 signal.check()?;
-                let ok = raw.get("status").and_then(Json::as_str) == Some("ok");
+                let ok = result.get("status").and_then(Json::as_str) == Some("ok");
+                let content = if name == "run_task" {
+                    model_tool_response(&crate::run::check::presented_run_result(&result))
+                } else {
+                    model_tool_response(&result)
+                };
                 Ok(Presented {
                     ok,
-                    content: model_tool_response(&raw),
-                    raw: Some(raw),
+                    content,
+                    raw: Some(result),
                 })
             }
             Err(failure) if failure.cancelled => Err(failure),

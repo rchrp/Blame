@@ -94,6 +94,8 @@ pub struct Workspace {
     session: String,
     /// The repair plan last attached to a result.
     shown_repair: Option<String>,
+    /// The invalidated checks last listed after a change.
+    shown_invalidation: Option<String>,
 }
 
 static INSTANCES: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -124,6 +126,7 @@ impl Workspace {
             tasks,
             session: session_id.to_string(),
             shown_repair: None,
+            shown_invalidation: None,
             folded_views: Remembered::new(2_000),
             shown_markers: Remembered::new(MAXIMUM_REMEMBERED_MARKERS),
             linked_reads: Remembered::new(2_000),
@@ -528,7 +531,13 @@ impl Workspace {
             ))
         })();
         if let (Ok(Some(state)), Some(data)) = (state, result.get_mut("data")) {
-            data.set("validationState", state);
+            // The same invalidated checks rode on every later edit (1 to 2 KB
+            // each): they are listed again only when the list changed.
+            let key = state.get("invalidatedChecks").map(Json::stringify);
+            if key != self.shown_invalidation {
+                self.shown_invalidation = key;
+                data.set("validationState", state);
+            }
         }
         result
     }

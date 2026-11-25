@@ -469,6 +469,33 @@ describe("Blame's self-repair tools", () => {
       assert.equal(long.value.lines.length, 5);
     });
 
+    it("reads the Claude Code bridge's events", async () => {
+      const { mkdtemp, rm, writeFile } = await import("node:fs/promises");
+      const { tmpdir } = await import("node:os");
+      const { join } = await import("node:path");
+      const directory = await mkdtemp(join(tmpdir(), "blame-bridge-log-"));
+      const previous = process.env.BLAME_CLAUDE_CODE_STATE_DIR;
+      process.env.BLAME_CLAUDE_CODE_STATE_DIR = directory;
+      try {
+        await writeFile(
+          join(directory, "bridge-events.log"),
+          '{"event":"lane_started"}\n{"event":"lane_not_continued","lanes":[{"reason":"changed tools"}]}\n',
+        );
+        const bridge = await call(tools(), "blame_inspect", {
+          area: "logs",
+          source: "bridge",
+          search: "not_continued",
+        });
+        assert.equal(bridge.value.source, "bridge");
+        assert.equal(bridge.value.lines.length, 1);
+        assert.match(bridge.value.lines[0], /changed tools/);
+      } finally {
+        if (previous === undefined) delete process.env.BLAME_CLAUDE_CODE_STATE_DIR;
+        else process.env.BLAME_CLAUDE_CODE_STATE_DIR = previous;
+        await rm(directory, { recursive: true, force: true });
+      }
+    });
+
     it("refuses an unknown area", async () => {
       const { failed } = await call(tools(), "blame_inspect", {
         area: "everything",

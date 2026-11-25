@@ -67,12 +67,22 @@ function detach(value: unknown, path: FieldPath, sections: Array<{ path: FieldPa
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(Object.entries(value).map(([key, item]) => {
     const field = [...path, key];
-    if (textKeys.has(key) && typeof item === "string" && /[\\\n\r\t"]/u.test(item)) {
+    if (textKeys.has(key) && typeof item === "string" && worthDetaching(item, fieldLabel(field))) {
       sections.push({ path: field, text: item });
       return [key, reference(field)];
     }
     return [key, detach(item, field, sections)];
   }));
+}
+
+/**
+ * A text gets its own fenced part when it spans lines, or when JSON would
+ * escape it more than the part costs (its label twice, its path in the
+ * header, the fences): a one-line snippet with a few quotes stays inline.
+ */
+function worthDetaching(text: string, label: string) {
+  // eslint-disable-next-line no-control-regex
+  return /[\n\r]/u.test(text) || (text.match(/["\\\u0000-\u001f]/gu)?.length ?? 0) > 3 * label.length + 24;
 }
 
 /** `data.segments[0].content`, as the model reads it. */

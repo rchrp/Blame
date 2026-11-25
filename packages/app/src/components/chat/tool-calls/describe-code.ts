@@ -153,7 +153,7 @@ export function describeSearch(source: ToolCallSource): ToolCallView {
         kind: str(item.kind),
         name: str(item.qualifiedName) ?? str(item.name),
         snippet:
-          str(item.snippet) ?? str(item.signature) ?? str(item.preview) ?? str(item.text) ??
+          str(item.snippet) ?? matchedContextLine(item.context) ?? str(item.signature) ?? str(item.preview) ?? str(item.text) ??
           (matchingLines !== undefined ? plural(matchingLines, "matching line") : undefined),
       },
     ]
@@ -177,6 +177,10 @@ export function describeSearch(source: ToolCallSource): ToolCallView {
     bodies: withError(harness, hits.length ? [{ type: "search", hits, more: Math.max(total - hits.length, 0) }] : []),
     failed: Boolean(harness?.failed),
   }
+}
+// With context lines, a match has no snippet: its line is the one marked `12:`.
+function matchedContextLine(context: unknown) {
+  return str(str(context)?.split("\n").find((line) => /^\d+:/u.test(line))?.replace(/^\d+:/u, ""))
 }
 
 // Files an edit tool changed, with line counts. The runtime's counts win over

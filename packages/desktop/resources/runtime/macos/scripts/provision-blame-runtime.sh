@@ -14,7 +14,9 @@ pnpm_legacy_version="10.34.9"
 yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
 gh_version="2.103.3"
 preview_display_image="ghcr.io/rchrp/blame-preview-display@sha256:ff979c4dd3b0df001f26252d2da11949f86c820ff7dde8fbbb94bc1d7bd98e2b" # Filled from the signed preview-image release.
-runtime_packages="bubblewrap ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
+# build-essential: cc, c++, ar and make, which cargo build scripts and node-gyp
+# (native npm packages) need; the agent cannot install them without root.
+runtime_packages="bubblewrap build-essential ca-certificates curl dbus-user-session git gzip iptables procps python3 tar xz-utils"
 
 ensure_user() {
   if id blame >/dev/null 2>&1; then

@@ -44,7 +44,8 @@ for (const engine of engines) {
   });
 
   test(`${engine}: a page too large for one result stops early and continues where it stopped`, async () => {
-    const source = `${Array.from({ length: 400 }, (_, index) => `export const needle${index} = "${"x".repeat(90)}";`).join("\n")}\n`;
+    // Matches 61 lines apart: their 30-line contexts do not overlap, so each is shown whole.
+    const source = `${Array.from({ length: 400 }, (_, index) => `export const needle${index} = "${"x".repeat(90)}";`).join("\n".repeat(61))}\n`;
     await withEngine(engine, () => fixture({ "src/long.ts": source }, async (workspace) => {
       const input = { query: "needle", mode: "text" as const, scope: "src", context: 30, limit: 100 };
       const first = data(await workspace.searchCode(input));
@@ -55,7 +56,7 @@ for (const engine of engines) {
       assert.deepEqual(first.nextSearch, { ...input, offset: firstLines.length });
       const second = data(await workspace.searchCode(first.nextSearch as typeof input));
       const secondLines = (second.results as Result[]).map((item) => (item.lines as number[])[0]!);
-      assert.equal(secondLines[0], firstLines.at(-1)! + 1);
+      assert.equal(secondLines[0], firstLines.at(-1)! + 61);
     }));
   });
 
@@ -130,6 +131,25 @@ test("context shows surrounding lines in grep style", async () => {
   await fixture({ "notes.txt": "one\ntwo\nthree marker\nfour\nfive\n" }, async (workspace) => {
     const found = data(await workspace.searchCode({ query: "marker", mode: "text", context: 1 }));
     assert.equal((found.results as Array<{ context: string }>)[0]?.context, "2-two\n3:three marker\n4-four");
+    assert.equal((found.results as Array<{ snippet?: string }>)[0]?.snippet, undefined, "The context already holds the matching line.");
+  });
+});
+
+test("context lines two matches share are shown once, as grep shows them", async () => {
+  await fixture({ "notes.txt": "one\nmarker 1\nthree\nmarker 2\nfive\n" }, async (workspace) => {
+    const found = data(await workspace.searchCode({ query: "marker", mode: "text", context: 1 }));
+    const results = found.results as Array<{ context?: string; snippet?: string }>;
+    assert.deepEqual(results.map((item) => item.context), ["1-one\n2:marker 1\n3-three", "4:marker 2\n5-five"]);
+    assert.deepEqual(results.map((item) => item.snippet), [undefined, undefined]);
+  });
+});
+
+test("a file holding the whole query ranks before files holding its words apart", async () => {
+  const words = "wait until the run ends";
+  const scattered = Array.from({ length: 50 }, () => words.split(" ").join("\n")).join("\n");
+  await fixture({ "docs/notes.md": `${scattered}\n`, "schema.json": `{"until":"exit: ${words}, up to 4 minutes"}\n` }, async (workspace) => {
+    const found = data(await workspace.searchCode({ query: words, output: "files" }));
+    assert.equal((found.files as Array<{ path: string }>)[0]?.path, "schema.json");
   });
 });
 

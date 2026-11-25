@@ -74,6 +74,41 @@ const engineRequests = JSON.parse(
   ),
 ) as Array<{ messages: unknown[] }>;
 
+test("a client that stops reading at the reply's last delta keeps the Claude Code process", async () => {
+  await withBridge(async (bridge, stateDirectory) => {
+    const key = bridge.token("session-late-stop");
+    const first = { role: "user", content: "please use tool late" };
+    // The engine's client (rig) ends a reply at the message_delta carrying
+    // its stop reason and closes the connection before message_stop.
+    const response = await post(bridge, key, {
+      model: "sonnet",
+      stream: true,
+      system: [{ type: "text", text: "You are Blame." }],
+      tools: [echoTool],
+      messages: [first],
+    });
+    const decoder = new TextDecoder();
+    let body = "";
+    for await (const chunk of response.body!) {
+      body += decoder.decode(chunk, { stream: true });
+      if (body.includes('"message_delta"')) break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const toolUse = {
+      role: "assistant",
+      content: [{ type: "tool_use", id: "toolu_1", name: "echo", input: { value: "ping" } }],
+    };
+    const toolResult = {
+      role: "user",
+      content: [{ type: "tool_result", tool_use_id: "toolu_1", content: "pong" }],
+    };
+    const answer = await stream(bridge, key, [first, toolUse, toolResult]);
+    assert.match(text(answer), /tool said: pong/);
+    const started = (await laneEvents(stateDirectory)).filter((entry) => entry.event === "lane_started");
+    assert.equal(started.length, 1, "The conversation continues in its process instead of being replayed in a new one.");
+  });
+});
+
 test("a conversation the engine sends keeps one Claude Code process", async () => {
   await withBridge(async (bridge, stateDirectory) => {
     const key = bridge.token("engine-session");

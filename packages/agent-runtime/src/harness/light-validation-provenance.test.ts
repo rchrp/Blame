@@ -21,6 +21,9 @@ test("post-validation edits expose earlier exact invocations, then a rerun clear
     assert.equal(edit.validationState.sourceRevisionId, edit.sourceRevisionId);
     assert.deepEqual(new Set(edit.validationState.invalidatedChecks.map((v: { task: string }) => v.task)), new Set(["test", "typecheck"]));
     assert.ok(edit.validationState.invalidatedChecks.every((v: { eligibleForCurrentSource: boolean }) => !v.eligibleForCurrentSource));
+    const again = data(await workspace.editCode({ operations: [{ kind: "patch", path: "value.cjs",
+      patch: "*** Begin Patch\n*** Update File: value.cjs\n@@\n-exports.value = 2;\n+exports.value = 3;\n*** End Patch" }] }));
+    assert.equal(again.validationState, undefined, "The invalidated checks already listed are not listed again.");
     const stale = data(await workspace.readCode({ target: "@checks" }, {}));
     assert.equal(stale.checks.length, 0); assert.equal(stale.previousTotal, 2);
     await workspace.runTask({ kind: "project", task: "test" }, {});

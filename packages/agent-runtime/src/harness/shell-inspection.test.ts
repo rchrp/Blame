@@ -132,6 +132,18 @@ test("an unrouted read-only command that matched nothing is not a failure", asyn
   });
 });
 
+test("a pipeline whose other stage failed does not claim its filter matched nothing", async () => {
+  await fixture({ "notes.txt": "alpha\n" }, async (workspace) => {
+    // find exits 1 for the missing folder; grep selected a line.
+    const result = await workspace.runTask({ kind: "command", command: "find missing . -name notes.txt 2>/dev/null | grep notes" }, {} as never);
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    const value = (result as { data: { exitCode: number; noMatch?: boolean; output: string } }).data;
+    assert.equal(value.exitCode, 1);
+    assert.equal(value.noMatch, undefined);
+    assert.match(value.output, /notes\.txt/u);
+  });
+});
+
 test("a read-only pipeline cut short by head is not a failure", async () => {
   await fixture({ "big.txt": "alpha\n".repeat(200_000) }, async (workspace) => {
     const result = await workspace.runTask({ kind: "command", command: "echo start; cat big.txt | head -2" }, {} as never);

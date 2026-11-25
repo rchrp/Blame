@@ -15,6 +15,8 @@ import {
   contentBesideToolResults,
   initialUserContent,
   laneSignature,
+  laneSignatureParts,
+  changedSignatureParts,
   mcpToolResult,
   parseMessagesRequest,
   requestEffort,
@@ -53,6 +55,21 @@ test("maps reasoning settings onto Claude Code effort levels", () => {
   assert.notEqual(
     laneSignature({ ...base, output_config: { effort: "low" } }),
     laneSignature({ ...base, output_config: { effort: "high" } }),
+  );
+});
+
+test("names the signature parts that changed, for the bridge's event log", () => {
+  const base = { model: "opus", system: "System", messages: [{ role: "user" as const, content: "x" }] };
+  const tool = { name: "read_code", input_schema: { type: "object" } };
+  const before = laneSignatureParts({ ...base, tools: [tool] });
+  assert.deepEqual(changedSignatureParts(before, laneSignatureParts({ ...base, tools: [tool] })), []);
+  assert.deepEqual(
+    changedSignatureParts(before, laneSignatureParts({ ...base, tools: [tool, { ...tool, name: "run_task" }] })),
+    ["tools"],
+  );
+  assert.deepEqual(
+    changedSignatureParts(before, laneSignatureParts({ ...base, system: "Other", model: "sonnet", tools: [tool] })),
+    ["model", "system"],
   );
 });
 

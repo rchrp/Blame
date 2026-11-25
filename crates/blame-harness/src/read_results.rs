@@ -223,7 +223,10 @@ pub fn line_byte_range(content: &[u8], start_line: usize, end_line: usize) -> Ou
     let text = String::from_utf8_lossy(content);
     let lines = split_keep_newline(&text);
     if start_line > lines.len() {
-        return Err(Failure::new("Range starts after the end of the file."));
+        return Err(Failure::new(format!(
+            "Range starts after the end of the file, which has {} lines.",
+            lines.len()
+        )));
     }
     let start: usize = lines[..start_line.saturating_sub(1)]
         .iter()

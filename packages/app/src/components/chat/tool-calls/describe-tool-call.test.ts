@@ -141,6 +141,40 @@ test("commands show the command line and how they ended", () => {
   assert.equal(failed.bodies[0]!.type, "error")
 })
 
+test("an ended run reads as its command's result", () => {
+  const ended = view(
+    "run_task",
+    { kind: "inspect", run: "r1" },
+    {
+      status: "ok",
+      data: {
+        run: "r1",
+        command: "npm run build",
+        process: "exited",
+        completed: { status: "ok", data: { exitCode: 0, output: "built" } },
+      },
+    }
+  )
+  assert.equal(ended.chips[0]!.label, "Done")
+  assert.deepEqual(ended.bodies[0], { type: "terminal", command: undefined, cwd: undefined, output: "built", exitCode: 0, truncated: false })
+  const failed = view(
+    "run_task",
+    { kind: "inspect", run: "r2" },
+    {
+      status: "ok",
+      data: {
+        run: "r2",
+        command: "npm test",
+        process: "exited",
+        completed: { status: "blocked", category: "command", message: "Command exited with code 1.\n1 failing" },
+      },
+    }
+  )
+  assert.equal(failed.failed, true)
+  assert.equal(failed.chips[0]!.label, "Exit 1")
+  assert.match(String((failed.bodies[0] as { output?: string }).output), /1 failing/)
+})
+
 test("a check that waited for a turn says how long", () => {
   const result = view(
     "run_task",
@@ -181,6 +215,18 @@ test("test runs surface their counts", () => {
   )
   assert.equal(result.family, "test")
   assert.equal(row(result), "Ran test 1 passed 1.3 s")
+})
+
+test("a match shown with context lines takes its line from them", () => {
+  const result = view(
+    "search_code",
+    { query: "marker", context: 1 },
+    {
+      status: "ok",
+      data: { results: [{ path: "notes.txt", lines: [3, 3], kind: "text", context: "2-two\n3:three marker\n4-four" }] },
+    }
+  )
+  assert.equal((result.bodies[0] as { hits: Array<{ snippet?: string }> }).hits[0]?.snippet, "three marker")
 })
 
 test("searches show the query and the number of results", () => {

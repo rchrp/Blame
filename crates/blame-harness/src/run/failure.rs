@@ -53,6 +53,19 @@ pub fn failed_command_result(
             "recovery" => "Rerun without the final filter or with a broader pattern, or write the output to a file and search that file.",
         };
     }
+    let (head, output) = match exit_code {
+        Some(code) => (format!("Command exited with code {code}."), output),
+        // Stopped by the harness: its reason, which ends the output, comes first.
+        None => match output.rsplit_once('\n') {
+            Some((rest, last)) if STOP_REASONS.iter().any(|reason| last.starts_with(reason)) => {
+                (last.to_string(), rest)
+            }
+            _ if STOP_REASONS.iter().any(|reason| output.starts_with(reason)) => {
+                (output.to_string(), "")
+            }
+            _ => ("Command ended without an exit code.".to_string(), output),
+        },
+    };
     let shown = diagnostic(output);
     let shown = if shown.is_empty() {
         "No diagnostic output was produced.".to_string()
@@ -62,24 +75,41 @@ pub fn failed_command_result(
     obj! {
         "status" => "blocked",
         "category" => failure.category,
-        "message" => format!("Command exited with code {}.\n{shown}", exit_code.map_or("unknown".to_string(), |code| code.to_string())),
+        "message" => format!("{head}\n{shown}"),
         "recovery" => failure.recovery.as_str(),
     }
 }
 
+/// The lines the process layer adds when it stops a command (`process.rs`).
+const STOP_REASONS: [&str; 3] = [
+    "Command cancelled before completion.",
+    "Command timed out after ",
+    "Command stopped: its output passed the captured output limit.",
+];
+
 const FILTERS: [&str; 4] = ["egrep", "fgrep", "grep", "rg"];
+/// Stages that pass a filter's lines on: with pipefail, `grep x | head` exits
+/// with grep's status.
+const PASS_THROUGH: [&str; 8] = ["head", "tail", "sort", "uniq", "wc", "cut", "tr", "cat"];
 static QUOTED: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"'[^']*'|"(?:[^"\\]|\\.)*""#).expect("pattern"));
 static TRAILING_FILTER: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?:\||;|&&)\s*(e?grep|fgrep|rg)(?-u:\b)[^|;&]*$").expect("pattern")
+    Regex::new(r"(?:\||;|&&)\s*(e?grep|fgrep|rg)(?-u:\b)[^|;&]*(?:\|\s*(?:head|tail|sort|uniq|wc|cut|tr|cat)(?-u:\b)[^|;&]*)*$")
+        .expect("pattern")
 });
 
 /// The grep or rg that ends the command line, after other statements or
-/// commands: its "no line matched" status becomes the whole command's.
+/// commands and before pass-through stages: its "no line matched" status
+/// becomes the whole command's.
 fn final_filter(command: &str) -> Option<String> {
     if let Some(statements) = literal_shell_statements(command) {
         let last = &statements.last()?.pipeline;
-        let name = last.last()?.words.first()?.value.clone();
+        let name = last
+            .iter()
+            .rev()
+            .map(|stage| stage.words.first().map(|word| word.value.as_str()))
+            .find(|name| !name.is_some_and(|name| PASS_THROUGH.contains(&name)))??
+            .to_string();
         return ((last.len() > 1 || statements.len() > 1) && FILTERS.contains(&name.as_str()))
             .then_some(name);
     }
@@ -88,6 +118,28 @@ fn final_filter(command: &str) -> Option<String> {
     TRAILING_FILTER
         .captures(&unquoted)
         .map(|captures| captures[1].to_string())
+}
+/// Exit status 1 of a read-only search is not the filter's "no line
+/// selected" when lines were printed through a last pipeline with a stage
+/// that is neither a filter nor a pass-through (`find`, `ls`): pipefail
+/// reports that stage, and the filter did select lines.
+pub fn exit_from_other_stage(command: &str, output: &str) -> bool {
+    if js_trim(output).is_empty() {
+        return false;
+    }
+    let Some(statements) = literal_shell_statements(command) else {
+        return false;
+    };
+    let Some(last) = statements.last() else {
+        return false;
+    };
+    last.pipeline.len() > 1
+        && last.pipeline.iter().any(|stage| {
+            !stage.words.first().is_some_and(|word| {
+                FILTERS.contains(&word.value.as_str())
+                    || PASS_THROUGH.contains(&word.value.as_str())
+            })
+        })
 }
 
 static EXIT_127: LazyLock<Regex> = LazyLock::new(|| {

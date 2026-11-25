@@ -194,6 +194,19 @@ fn parse_shape(patch: &str) -> Outcome<ParsedPatch> {
         _ => return Err(error("Patch file operation is invalid.")),
     };
     let hunks = patch_hunks(&lines[header_index + 1..lines.len() - 1])?;
+    if mode == "update"
+        && !hunks
+            .iter()
+            .flat_map(|hunk| &hunk.lines)
+            .any(|line| line.starts_with(['+', '-']))
+    {
+        let path = lines[header_index]
+            .split_once(':')
+            .map_or("", |(_, path)| js_trim(path));
+        return Err(error(format!(
+            "The patch for {path} has no + or - line: it would change nothing. Prefix each added line with + and each removed line with -."
+        )));
+    }
     Ok(ParsedPatch {
         header_index,
         hunks,

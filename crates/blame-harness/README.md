@@ -147,3 +147,11 @@ pnpm --filter @blame/agent-runtime test
 
 `conformance/run.mjs --binary target/release/blame-harness` runs the same
 files one by one against another build and prints each file's counts.
+
+One file alone: `pnpm run build` compiles the package without its tests,
+`tsc` compiles both, and the test client takes this checkout's debug build.
+
+```bash
+cargo build -p blame-harness
+cd packages/agent-runtime && pnpm exec tsc && node --test dist/harness/light-search-modes.test.js
+```

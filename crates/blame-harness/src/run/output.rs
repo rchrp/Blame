@@ -4,6 +4,7 @@
 use crate::json::Json;
 use crate::obj;
 use crate::text::{utf16_len, utf16_prefix};
+use std::borrow::Cow;
 use std::fs;
 use std::path::Path;
 
@@ -42,6 +43,53 @@ pub fn bounded_diagnostic(value: &str, fallback: &str, maximum: usize) -> String
 
 pub fn diagnostic(value: &str) -> String {
     bounded_diagnostic(value, "", 16_000)
+}
+
+/// Output without what a terminal would show as garbage (a binary file
+/// printed by mistake): each run of such lines becomes one note, and the
+/// text around it stays.
+pub fn without_binary(output: &str) -> Cow<'_, str> {
+    if !output.lines().any(is_binary_line) {
+        return Cow::Borrowed(output);
+    }
+    let mut kept = String::new();
+    let mut omitted = 0;
+    for line in output.split_inclusive('\n') {
+        if is_binary_line(line) {
+            omitted += line.len();
+            continue;
+        }
+        if omitted > 0 {
+            kept.push_str(&binary_note(omitted));
+            omitted = 0;
+        }
+        kept.push_str(line);
+    }
+    if omitted > 0 {
+        kept.push_str(&binary_note(omitted));
+    }
+    Cow::Owned(kept)
+}
+
+fn binary_note(bytes: usize) -> String {
+    format!(
+        "[{bytes} bytes of binary output omitted: inspect the file with `file`, `strings` or `od`]\n"
+    )
+}
+
+/// Undecodable bytes and control characters (not tabs, line ends, backspaces
+/// or terminal escapes) make more than a tenth of the line.
+fn is_binary_line(line: &str) -> bool {
+    let unprintable = line
+        .chars()
+        .filter(|character| {
+            *character == '\u{FFFD}'
+                || *character == '\u{7F}'
+                || (*character < ' '
+                    && !matches!(character, '\t' | '\n' | '\r' | '\u{8}' | '\u{1B}'))
+        })
+        .count();
+    unprintable > 8 && unprintable * 10 > line.chars().count()
 }
 
 /// A long validation output goes to `.blame/logs`, the result keeps 900 characters.
@@ -165,6 +213,22 @@ mod tests {
         );
         assert_eq!(utf16_suffix("abcdef", 2), "ef");
         assert_eq!(uuid().len(), 36);
+    }
+
+    #[test]
+    fn binary_lines_become_one_note_between_text() {
+        let binary =
+            "\u{7F}ELF\u{2}\u{1}\u{1}\0\0\0\0\0\0\0\0\0\u{3}\0\u{FFFD}\u{FFFD}\n".repeat(3);
+        let output = format!("#!/bin/sh\nexec zig ar \"$@\"\n{binary}done\n");
+        assert_eq!(
+            without_binary(&output),
+            format!(
+                "#!/bin/sh\nexec zig ar \"$@\"\n[{} bytes of binary output omitted: inspect the file with `file`, `strings` or `od`]\ndone\n",
+                binary.len()
+            )
+        );
+        let text = "tab\tseparated \u{1B}[32mgreen\u{1B}[0m caf\u{E9}\n";
+        assert!(matches!(without_binary(text), Cow::Borrowed(_)));
     }
 
     #[test]

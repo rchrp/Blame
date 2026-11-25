@@ -10,6 +10,7 @@ import type { LaneLog } from "./claude-code-events.js";
 import {
   bridgeMcpServerName,
   bridgeToolName,
+  changedSignatureParts,
   classifyClaudeCodeError,
   clientStreamEvent,
   contentBesideToolResults,
@@ -17,6 +18,7 @@ import {
   initialUserContent,
   isRecord,
   laneSignature,
+  laneSignatureParts,
   mcpToolResult,
   messageBlocks,
   requestEffort,
@@ -27,6 +29,7 @@ import {
   type AnthropicBlock,
   type AnthropicMessage,
   type AnthropicTool,
+  type LaneSignatureParts,
   type McpToolResult,
   type MessagesRequest,
 } from "./claude-code-protocol.js";
@@ -80,6 +83,7 @@ export class ClaudeCodeLane {
   readonly id = randomUUID();
   readonly secret = randomBytes(18).toString("base64url");
   readonly signature: string;
+  readonly signatureParts: LaneSignatureParts;
   readonly tools: AnthropicTool[];
   lastUsedAt = Date.now();
   private state: LaneState = "streaming";
@@ -121,6 +125,7 @@ export class ClaudeCodeLane {
   constructor(request: MessagesRequest, sink: BridgeSink, options: LaneOptions) {
     this.options = options;
     this.signature = laneSignature(request);
+    this.signatureParts = laneSignatureParts(request);
     this.root = conversationRoot(request);
     this.tools = request.tools ?? [];
     this.systemPromptFile = join(options.stateDirectory, `${this.id}.md`);
@@ -216,20 +221,31 @@ export class ClaudeCodeLane {
 
   /** True when the request is exactly the next turn of this conversation. */
   accepts(request: MessagesRequest) {
-    if (laneSignature(request) !== this.signature) return false;
-    if (conversationRoot(request) !== this.root) return false;
-    if (this.state === "cut") return this.acceptsAfterCut(request.messages);
-    if (this.state !== "idle" && this.state !== "awaiting-tools") return false;
-    if (request.messages.length !== this.expectedLength) return false;
+    return this.rejection(request) === undefined;
+  }
+
+  /**
+   * Why the request is not the next turn of this conversation, undefined when
+   * it is. The bridge logs it: a new process replays the whole transcript.
+   */
+  rejection(request: MessagesRequest): string | undefined {
+    if (laneSignature(request) !== this.signature)
+      return `changed ${changedSignatureParts(this.signatureParts, laneSignatureParts(request)).join(", ")}`;
+    if (conversationRoot(request) !== this.root) return "changed first message";
+    if (this.state === "cut")
+      return this.acceptsAfterCut(request.messages) ? undefined : "history does not continue the cut turn";
+    if (this.state !== "idle" && this.state !== "awaiting-tools") return `lane ${this.state}`;
+    if (request.messages.length !== this.expectedLength)
+      return `${request.messages.length} messages, ${this.expectedLength} expected`;
     const assistant = request.messages[this.expectedLength - 2];
-    if (assistant?.role !== "assistant") return false;
-    if (!sameIds(toolUseIds(assistant), this.pendingToolUseIds)) return false;
+    if (assistant?.role !== "assistant") return "no assistant turn before the last message";
+    if (!sameIds(toolUseIds(assistant), this.pendingToolUseIds)) return "other tool calls";
     const resultIds = toolResults(request.messages.at(-1)!).map((block) =>
       String(block.tool_use_id),
     );
-    return this.state === "awaiting-tools"
-      ? sameIds(resultIds, this.pendingToolUseIds)
-      : resultIds.length === 0;
+    if (this.state === "awaiting-tools")
+      return sameIds(resultIds, this.pendingToolUseIds) ? undefined : "other tool results";
+    return resultIds.length === 0 ? undefined : "tool results without pending calls";
   }
 
   continue(request: MessagesRequest, sink: BridgeSink) {
@@ -270,9 +286,21 @@ export class ClaudeCodeLane {
     return new Promise((resolve) => this.calls.set(id, resolve));
   }
 
-  /** The client went away mid-turn: the conversation state is unknown. */
+  /**
+   * The client went away mid-turn. One that stopped at the message_delta
+   * carrying the stop reason has the whole reply: the engine's client (rig)
+   * ends there, and Claude Code's message_stop can come after the close
+   * (25 conversations replayed in a new process before this). Otherwise the
+   * conversation state is unknown.
+   */
   abandonTurn() {
-    if (this.state === "streaming") this.close("The client closed the request.");
+    if (this.state !== "streaming") return;
+    if (this.stopReason) {
+      this.log("client_closed_at_stop", { stopReason: this.stopReason });
+      this.finishTurn();
+      return;
+    }
+    this.close("The client closed the request.");
   }
 
   /** The computer woke from sleep: a stream that was open is likely dead. */

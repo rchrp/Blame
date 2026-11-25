@@ -80,9 +80,11 @@ for await (const line of lines) {
     streamText(`All three pages render. seen: ${seen.join(" / ")}`);
   } else if (text.includes("use tool")) {
     const id = `toolu_${++messageCount}`;
-    streamMessage([
+    // "late": message_stop comes in its own write after the terminal
+    // message_delta, as real Claude Code's can.
+    await streamMessage([
       { type: "tool_use", id, name: "mcp__blame__echo", input: {} },
-    ], [{ type: "input_json_delta", partial_json: '{"value":"ping"}' }], "tool_use");
+    ], [{ type: "input_json_delta", partial_json: '{"value":"ping"}' }], "tool_use", text.includes("late") ? 300 : 0);
     const result = await callTool(id, { value: "ping" });
     streamText(`tool said: ${result.content.map((item) => (item.type === "image" ? `[image ${item.mimeType}]` : item.text)).join(" ")}`);
   } else if (text.includes("please cut")) {
@@ -146,7 +148,7 @@ function streamText(text) {
   streamMessage([{ type: "text", text: "" }], [{ type: "text_delta", text }], "end_turn");
 }
 
-function streamMessage(blocks, deltas, stopReason) {
+function streamMessage(blocks, deltas, stopReason, stopDelayMs = 0) {
   event({
     type: "message_start",
     message: { id: `msg_${++messageCount}`, type: "message", role: "assistant", model, content: [], usage: { input_tokens: 3, output_tokens: 1 } },
@@ -157,7 +159,10 @@ function streamMessage(blocks, deltas, stopReason) {
     event({ type: "content_block_stop", index });
   });
   event({ type: "message_delta", delta: { stop_reason: stopReason }, usage: { output_tokens: 5 } });
-  event({ type: "message_stop" });
+  if (!stopDelayMs) return event({ type: "message_stop" });
+  return new Promise((resolve) =>
+    setTimeout(() => resolve(event({ type: "message_stop" })), stopDelayMs),
+  );
 }
 
 async function callTool(toolUseId, input) {

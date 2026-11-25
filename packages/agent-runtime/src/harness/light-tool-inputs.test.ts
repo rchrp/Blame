@@ -6,6 +6,20 @@ import test from "node:test";
 import { lightSearchCodeInputSchema, lightReadCodeInputSchema } from "./test-client/contracts.js";
 import { lightSemanticHarnessTools, parseLeniently } from "./test-client/light-tools.js";
 import { mkdir } from "node:fs/promises";
+import { unwrapFeedbackEnvelope } from "../tool-result-envelope.js";
+
+test("a test-like command whose counts were not read shows one reporting block", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-tool-inputs-"));
+  try {
+    const tool = lightSemanticHarnessTools(root).find((candidate) => candidate.name === "run_task")!;
+    const shown = unwrapFeedbackEnvelope(await tool.execute({ kind: "command", command: "echo node --test" }, { agentId: "lead", iteration: 1 } as never)) as { data: Record<string, unknown> };
+    assert.equal(shown.data.check, undefined, JSON.stringify(shown));
+    assert.equal(shown.data.testValidationScope, undefined);
+    assert.equal((shown.data.reporting as { evidenceOrigin?: string } | undefined)?.evidenceOrigin, "none");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
 
 test("a number, object or array sent as a JSON string is read as what the schema expects", () => {
   const search = parseLeniently(lightSearchCodeInputSchema, { query: "alpha", limit: "100" });

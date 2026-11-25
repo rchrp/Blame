@@ -83,6 +83,45 @@ test("scope hints grant no unseen body coverage", async () => {
     assert.equal(await readFile(join(root, "code.ts"), "utf8"), source);
   }, source, false);
 });
+test("a scoped hunk may end on the declaration's closing line", async () => {
+  await fixture(async (workspace, root, alias) => {
+    const result = await edit(workspace, alias, patch("-  return 1;\n+  return 2;\n }"));
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.match(await readFile(join(root, "code.ts"), "utf8"), /return 2;\n\}\n/u);
+  });
+});
+test("a scoped hunk may start on the declaration's indented first line", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-scope-indented-"));
+  try {
+    await writeFile(join(root, "box.ts"), "export class Box {\n  first() {\n    return 1;\n  }\n}\n");
+    const workspace = new LightWorkspace(root, { sessionId: "scope-indented" });
+    const read = await workspace.readCode({ target: "box.ts#Box.first" }, {});
+    assert.equal(read.status, "ok", JSON.stringify(read));
+    const alias = (read as { data: { alias: string } }).data.alias;
+    const result = await edit(workspace, alias, patch("   first() {\n-    return 1;\n+    return 2;\n   }", "box.ts"));
+    assert.equal(result.status, "ok", JSON.stringify(result));
+    assert.equal(await readFile(join(root, "box.ts"), "utf8"), "export class Box {\n  first() {\n    return 2;\n  }\n}\n");
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("a patch without + or - lines is refused instead of reported as an edit", async () => {
+  await fixture(async (workspace, root) => {
+    const result = await workspace.editCode({ operations: [
+      { kind: "patch", patch: patch("-  return 20;\n+  return 21;") },
+      { kind: "patch", patch: patch(" export function first() {") },
+    ] });
+    assert.equal(result.status, "blocked");
+    assert.match(String((result as { message: string }).message), /has no \+ or - line/u);
+    assert.equal(await readFile(join(root, "code.ts"), "utf8"), source);
+  });
+});
+test("a final parse failure says where the edit's lines landed", async () => {
+  await fixture(async (workspace, root) => {
+    const result = await workspace.editCode({ operations: [{ kind: "patch", patch: patch(" export function first() {\n+export const broken = {") }] });
+    assert.equal(result.status, "blocked");
+    assert.match(String((result as { message: string }).message), /from line 3, after `export function first\(\) \{`/u);
+    assert.equal(await readFile(join(root, "code.ts"), "utf8"), source);
+  });
+});
 test("wrong file headers keep their existing correction", async () => {
   await fixture(async (workspace, root, alias) => {
     const hint = recovery(await edit(workspace, alias, patch("-  return 1;\n+  return 2;", "other.ts")));

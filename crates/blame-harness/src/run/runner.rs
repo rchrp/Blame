@@ -22,7 +22,7 @@ use super::dependency::{DependencyInput, DependencyResult, mutate};
 use super::environment::{command_cwd, command_environment, shell_command, target};
 use super::failure::{
     Assessment, command_failure, command_failure_assessment, declared_dependencies,
-    failed_command_result,
+    exit_from_other_stage, failed_command_result,
 };
 use super::formatter::{self, Replacements};
 use super::inspection::read_only_inspection;
@@ -30,7 +30,9 @@ use super::managed::{
     InvocationReport, ManagedReport, ReportSources, environment_manifest_evidence,
     invocation_test_report, managed_test_report,
 };
-use super::output::{bounded_diagnostic, validation_output, validation_scope_paths};
+use super::output::{
+    bounded_diagnostic, validation_output, validation_scope_paths, without_binary,
+};
 use super::policy::{CommandEnvironment, blocked_command_reason};
 use super::process::{
     self, CommandHandle, CommandOptions, CommandOutcome, DEFAULT_OUTPUT_LIMIT, DEFAULT_TIMEOUT_MS,
@@ -164,7 +166,7 @@ fn strings(input: &Json, key: &str) -> Vec<String> {
 }
 
 fn redacted_output(output: &str) -> String {
-    redact_secrets(js_trim(output))
+    redact_secrets(&without_binary(js_trim(output)))
 }
 
 impl TaskRunner {
@@ -274,6 +276,24 @@ impl TaskRunner {
             None if snapshot.process != "running" => Some(run.completion.wait()),
             None => None,
         };
+        // The command is said once, here: never again in its result.
+        let completed = completed.map(|result| without_command(result, &run.command));
+        if cursor.is_none()
+            && let Some(completed) = completed
+        {
+            // An ended run reads as its result, as a command that ended
+            // within the initial wait does: the latest page beside it
+            // repeated the output the result already holds.
+            return Ok(obj! {
+                "status" => "ok",
+                "data" => obj! {
+                    "run" => id,
+                    "command" => run.command.as_str(),
+                    "process" => snapshot.process,
+                    "completed" => with_full_output(completed, id),
+                },
+            });
+        }
         let unread =
             snapshot.total_bytes.unwrap_or(0) as i64 - snapshot.cursor.parse::<i64>().unwrap_or(0);
         let page = |cursor: &str| obj! { "kind" => "inspect", "run" => id, "cursor" => cursor, "until" => "now" };
@@ -292,8 +312,16 @@ impl TaskRunner {
         if unread > 0 {
             data.set("nextOutput", page(&snapshot.cursor));
         }
-        if let Some(completed) = completed {
-            data.set("completed", with_full_output(completed, id));
+        if let Some(mut completed) = completed {
+            // Paging: the pages are the output; the result keeps its outcome.
+            if let Some(data) = completed.get_mut("data") {
+                data.remove("output");
+            }
+            if let Some(message) = completed.get("message").and_then(Json::as_str) {
+                let reason = outcome_line(message);
+                completed.set("message", reason);
+            }
+            data.set("completed", completed);
         }
         Ok(obj! { "status" => "ok", "data" => data })
     }
@@ -1228,7 +1256,11 @@ impl TaskRunner {
         }
         let data = obj! { "command" => command }
             .with_opt("exitCode", result.exit_code)
-            .with_opt("noMatch", (result.exit_code == Some(1)).then_some(true))
+            .with_opt(
+                "noMatch",
+                (result.exit_code == Some(1) && !exit_from_other_stage(command, output))
+                    .then_some(true),
+            )
             .with_opt("pipeClosedEarly", pipe_closed.then_some(true))
             .with("output", bounded_diagnostic(output, "", 4_000))
             .with("environment", target())
@@ -1298,6 +1330,19 @@ static SOURCE_INSPECTION: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// A result whose output was cut says how to page the whole of it.
+/// A failed result's message without the output it quotes: its first line,
+/// without the sentence that introduces the quoted output.
+fn outcome_line(message: &str) -> String {
+    let first = message.split('\n').next().unwrap_or("");
+    match first.strip_suffix(':') {
+        Some(introduced) => introduced
+            .rfind(". ")
+            .map_or(introduced, |end| &introduced[..=end])
+            .trim_end()
+            .to_string(),
+        None => first.to_string(),
+    }
+}
 fn with_full_output(mut result: Json, id: &str) -> Json {
     if !result.stringify().contains("diagnostic truncated") {
         return result;
@@ -1309,6 +1354,15 @@ fn with_full_output(mut result: Json, id: &str) -> Json {
         }
     } else {
         result.set("fullOutput", full);
+    }
+    result
+}
+/// A run's result without the command its inspection already names.
+fn without_command(mut result: Json, command: &str) -> Json {
+    if let Some(data) = result.get_mut("data")
+        && data.get("command").and_then(Json::as_str) == Some(command)
+    {
+        data.remove("command");
     }
     result
 }

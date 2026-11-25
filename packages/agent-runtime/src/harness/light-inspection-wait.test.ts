@@ -93,10 +93,16 @@ test("inspect waits for the run to end by default, and a finished run's cut outp
     await writeFile(join(root, "slow.cjs"), "setTimeout(()=>{console.log('x'.repeat(10000));console.log('done')},600);\n");
     const initial = data(await runner.run({ kind: "command", command: "node slow.cjs" }));
     assert.equal(initial.process, "running");
-    const result = data(await runner.run({ kind: "inspect", run: initial.run })) as unknown as { process: string; completed?: { status: string; data?: { fullOutput?: { cursor: string } } } };
+    const result = data(await runner.run({ kind: "inspect", run: initial.run })) as unknown as { process: string; command?: string; output?: string; cursor?: string; completed?: { status: string; data?: { command?: string; output?: string; fullOutput?: { cursor: string } } } };
     assert.equal(result.process, "exited");
     assert.equal(result.completed?.status, "ok");
     assert.deepEqual(result.completed?.data?.fullOutput, { kind: "inspect", run: initial.run, cursor: "0", until: "now" });
+    // The result says what the run printed once: no latest page beside it, no second copy of the command.
+    assert.equal(result.command, "node slow.cjs");
+    assert.equal(result.completed?.data?.command, undefined);
+    assert.match(result.completed?.data?.output ?? "", /done$/u);
+    assert.equal(result.output, undefined);
+    assert.equal(result.cursor, undefined);
     const waiting = taskRunner(root, "exit-wait", 5_000);
     const quick = await waiting.run({ kind: "command", command: "node -e \"console.log('y'.repeat(9000))\"" }) as { data: { fullOutput?: { run: string } } };
     assert.ok(quick.data.fullOutput, "A command that finished within the wait keeps its output too.");

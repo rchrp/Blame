@@ -23,6 +23,15 @@ test("multi-line text fields read as fenced sections after one metadata line, an
   assert.deepEqual(unwrapFeedbackEnvelope(encoded), result);
 });
 
+test("a one-line text stays inline unless its escapes cost more than a section", () => {
+  const snippet = { status: "ok", data: { snippet: 'let a = "b";' } };
+  assert.deepEqual(encodeToolResult(snippet), snippet);
+  const quoted = '"x",'.repeat(40);
+  const encoded = encodeToolResult({ status: "ok", data: { output: quoted } }) as Part[];
+  assert.equal(encoded[1]!.text, `data.output:\n\`\`\`\n${quoted}\n\`\`\``);
+  assert.deepEqual(unwrapFeedbackEnvelope(encoded), { status: "ok", data: { output: quoted } });
+});
+
 test("hash-only fields are dropped; results without long text stay one object", () => {
   const result = { status: "ok", data: { changed: true, sourceRevisionId: `src_${"a".repeat(32)}`,
     checks: [{ id: `validation://${"b".repeat(64)}`, command: "pnpm test" }],

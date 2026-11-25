@@ -559,6 +559,16 @@ fn the_same_records_give_the_same_request_after_a_reopen() {
     assert!(reopened.policy().is_empty());
     assert_eq!(reopened.digest(), digest);
 }
+#[test]
+fn a_command_echo_is_dropped_whatever_its_trailing_space() {
+    let mut result =
+        Json::parse(r#"{"status":"ok","data":{"command":"ls | grep x","exitCode":1}}"#).unwrap();
+    assert!(super::rules::drop_command_echo(
+        &mut result,
+        &json!({ "command": "ls | grep x " })
+    ));
+    assert_eq!(result.to_text(), r#"{"status":"ok","data":{"exitCode":1}}"#);
+}
 
 /// The policy in a live session: a turn, the session dropped and opened
 /// again from its store, another turn.

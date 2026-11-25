@@ -99,7 +99,7 @@ fn detach(value: &Json, path: &mut Vec<Json>, sections: &mut Vec<(Vec<Json>, Str
                     let detached = match item {
                         Json::Str(text)
                             if TEXT_KEYS.contains(&key.as_str())
-                                && text.contains(['\\', '\n', '\r', '\t', '"']) =>
+                                && worth_detaching(text, &field_label(path)) =>
                         {
                             sections.push((path.clone(), text.clone()));
                             Json::from(format!("[see {}]", field_label(path)))
@@ -113,6 +113,18 @@ fn detach(value: &Json, path: &mut Vec<Json>, sections: &mut Vec<(Vec<Json>, Str
         ),
         other => other.clone(),
     }
+}
+/// A text gets its own fenced part when it spans lines, or when JSON would
+/// escape it more than the part costs (its label twice, its path in the
+/// header, the fences). A one-line snippet with a few quotes stays inline:
+/// its section cost more than the escapes it saved.
+fn worth_detaching(text: &str, label: &str) -> bool {
+    text.contains(['\n', '\r'])
+        || text
+            .chars()
+            .filter(|character| matches!(character, '"' | '\\') || (*character as u32) < 0x20)
+            .count()
+            > 3 * label.len() + 24
 }
 
 /// `data.segments[0].content`, as the model reads it.
@@ -362,6 +374,23 @@ mod tests {
         assert_eq!(
             parts[1].get("text").and_then(Json::as_str),
             Some("data.content:\n```\na\nb\n```")
+        );
+    }
+
+    #[test]
+    fn one_line_texts_stay_inline_unless_escapes_cost_more() {
+        let snippet = obj! { "status" => "ok", "data" => obj! { "snippet" => "let a = \"b\";" } };
+        assert_eq!(
+            encode_tool_result(&snippet, Vec::new()).as_str(),
+            Some(r#"{"status":"ok","data":{"snippet":"let a = \"b\";"}}"#)
+        );
+        let quoted = "\"x\",".repeat(40);
+        let output = obj! { "status" => "ok", "data" => obj! { "output" => quoted.as_str() } };
+        let encoded = encode_tool_result(&output, Vec::new());
+        let parts = encoded.as_array().expect("parts");
+        assert_eq!(
+            parts[1].get("text").and_then(Json::as_str),
+            Some(format!("data.output:\n```\n{quoted}\n```").as_str())
         );
     }
 }

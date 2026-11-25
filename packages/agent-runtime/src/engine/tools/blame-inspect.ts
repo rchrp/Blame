@@ -4,6 +4,10 @@
 // never forwards a README or a log as a message, masks secrets, and says
 // itself what to do next, in the names of Blame's own tools.
 
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
+import { claudeCodeStateDirectory } from "../../claude-code/claude-code-bridge.js";
 import { defineTool, type ClientTool } from "../tool.js";
 import { diagnoseMcp, diagnosePreview } from "./blame-diagnosis.js";
 import {
@@ -61,7 +65,7 @@ export function blameInspectTool(
         source: {
           type: "string",
           description:
-            "logs: app (default) or preview. skills: a GitHub source to check before installing it.",
+            "logs: app (default), preview, or bridge (the Claude Code bridge's events: why a conversation's process started again). skills: a GitHub source to check before installing it.",
         },
         search: {
           type: "string",
@@ -444,6 +448,24 @@ async function logs(
       search,
     );
     return { source: "preview", ...result };
+  }
+  if (input.source === "bridge") {
+    // One JSON line per Claude Code process event, in the state directory
+    // every process of the app shares.
+    const text = await readFile(
+      join(claudeCodeStateDirectory(), "bridge-events.log"),
+      "utf8",
+    ).catch(() => "");
+    const result = tailLines(text, lines, search);
+    return {
+      source: "bridge",
+      ...result,
+      ...(result.lines.length
+        ? {}
+        : {
+            next: "The Claude Code bridge logged nothing that matches: this conversation may use another provider.",
+          }),
+    };
   }
   const log = (await services.blameApp?.({
     action: "log",

@@ -630,7 +630,10 @@ fn plan_resolved_scoped_patch(
         ));
     }
     let (start, end) = resolved.symbol.range;
-    let source = String::from_utf8_lossy(&resolved.content[start..end]).into_owned();
+    // The declaration's first line as the model reads it, with its indentation.
+    let base = indented_start(&resolved.content, start);
+    let indent = start - base;
+    let source = String::from_utf8_lossy(&resolved.content[base..end]).into_owned();
     let replacements = plan_scoped_light_patch(&source, &sections[0].1, &resolved.path)?;
     let file = file_plan(
         plans,
@@ -643,10 +646,13 @@ fn plan_resolved_scoped_patch(
     for replacement in &replacements {
         context.aliases.assert_observed(
             resolved.alias.as_deref(),
-            (replacement.start, replacement.end),
+            (
+                replacement.start.saturating_sub(indent),
+                replacement.end.saturating_sub(indent),
+            ),
         )?;
         if replacement.start == replacement.end
-            && (replacement.start == 0 || replacement.end == end - start)
+            && (replacement.start <= indent || replacement.end == end - base)
         {
             return Err(Failure::new(
                 "Use insert_before or insert_after for a symbol boundary insertion.",
@@ -654,30 +660,35 @@ fn plan_resolved_scoped_patch(
             .into());
         }
         file.replacements.push(SourcedReplacement {
-            start: start + replacement.start,
-            end: start + replacement.end,
+            start: base + replacement.start,
+            end: base + replacement.end,
             replacement: replacement.replacement.clone(),
             source: format!("patch {alias}"),
         });
     }
-    let mut scoped = resolved.content[start..end].to_vec();
+    let mut scoped = resolved.content[base..end].to_vec();
     for replacement in replacements.iter().rev() {
         scoped.splice(
             replacement.start..replacement.end,
             replacement.replacement.bytes(),
         );
     }
-    let mut candidate = resolved.content[..start].to_vec();
+    let mut candidate = resolved.content[..base].to_vec();
     candidate.extend_from_slice(&scoped);
     candidate.extend_from_slice(&resolved.content[end..]);
+    let new_indent = scoped
+        .iter()
+        .take_while(|byte| matches!(byte, b' ' | b'\t'))
+        .count()
+        .min(if indent > 0 { usize::MAX } else { 0 });
     let parsed = parse_code(&resolved.path, &candidate);
     let boundary = parsed
         .symbols
         .iter()
         .filter(|symbol| {
             symbol.kind == resolved.symbol.kind
-                && symbol.range.0 == start
-                && symbol.range.1 == start + scoped.len()
+                && symbol.range.0 == base + new_indent
+                && symbol.range.1 == base + scoped.len()
         })
         .count();
     if boundary != 1 {
@@ -688,6 +699,22 @@ fn plan_resolved_scoped_patch(
         .into());
     }
     Ok(())
+}
+/// Where the declaration's line starts when only indentation comes before
+/// the declaration: a scoped patch's context shows that line as the file does.
+fn indented_start(content: &[u8], start: usize) -> usize {
+    let line_start = content[..start]
+        .iter()
+        .rposition(|byte| *byte == b'\n')
+        .map_or(0, |index| index + 1);
+    if content[line_start..start]
+        .iter()
+        .all(|byte| matches!(byte, b' ' | b'\t'))
+    {
+        line_start
+    } else {
+        start
+    }
 }
 
 fn shape_correction(expected: &str, paths: &[String], supplied: Option<&str>) -> Json {
@@ -1181,9 +1208,55 @@ fn invalid_parse_result(file: &FinalFile) -> Json {
     obj! {
         "status" => "blocked",
         "category" => "code",
-        "message" => format!("Final parse failed for {}; no files were written.{diagnostic}", file.plan.path),
+        "message" => format!("Final parse failed for {}; no files were written.{diagnostic}{}", file.plan.path, change_locations(&file.plan)),
         "recovery" => "Correct the final syntax and submit one new atomic batch.",
     }
+}
+
+/// Where the edit's changes start in the original file. A parse error is
+/// often reported far below them (an unclosed block ends at the file's end),
+/// and an inserted block lands after its context lines, not before them.
+fn change_locations(plan: &PlannedFile) -> String {
+    let Some(initial) = &plan.initial else {
+        return String::new();
+    };
+    let mut starts: Vec<usize> = plan
+        .replacements
+        .iter()
+        .map(|replacement| replacement.start.min(initial.len()))
+        .collect();
+    starts.sort_unstable();
+    starts.dedup();
+    let shown: Vec<String> = starts
+        .iter()
+        .take(3)
+        .map(|start| {
+            let before = &initial[..*start];
+            let line = before.iter().filter(|byte| **byte == b'\n').count() + 1;
+            let previous = before
+                .strip_suffix(b"\n")
+                .filter(|_| before.ends_with(b"\n"))
+                .map(|text| {
+                    let from = text
+                        .iter()
+                        .rposition(|byte| *byte == b'\n')
+                        .map_or(0, |index| index + 1);
+                    String::from_utf8_lossy(&text[from..]).trim().to_string()
+                })
+                .filter(|text| !text.is_empty());
+            match previous {
+                Some(text) => format!(
+                    "line {line}, after `{}`",
+                    crate::text::utf16_prefix(&text, 80)
+                ),
+                None => format!("line {line}"),
+            }
+        })
+        .collect();
+    if shown.is_empty() {
+        return String::new();
+    }
+    format!(" The edit changes the file from {}.", shown.join("; from "))
 }
 
 fn patch_failure_recovery(message: &str) -> Option<&'static str> {

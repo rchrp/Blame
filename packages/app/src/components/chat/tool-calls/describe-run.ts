@@ -48,16 +48,23 @@ export function describeCommand(source: ToolCallSource): ToolCallView {
   }
 
   if (kind === "inspect") {
+    // An ended run reads as its result: the output and exit code are the command's.
+    const ended = harnessResult(data.completed)
+    const endedOutput = ended
+      ? commandOutput(ended.data, undefined) ??
+        (ended.message ? { text: stripAnsi(ended.message), truncated: false } : undefined)
+      : undefined
+    const endedExitCode = exitCode ?? num(ended?.data.exitCode)
     return {
       family: "command",
       verb: source.running ? "Checking on" : "Checked on",
       target: { text: str(data.command) ?? `task ${str(input.run) ?? ""}`.trim(), mono: Boolean(str(data.command)) },
       chips: [
         ...(str(data.state) ? [{ label: humanize(str(data.state)!) }] : []),
-        ...statusChips(harness, exitCode, duration),
+        ...statusChips(ended ?? harness, endedExitCode, duration),
       ],
-      bodies: withError(harness, terminal(undefined, output, exitCode)),
-      failed: Boolean(harness?.failed),
+      bodies: withError(harness, terminal(undefined, output ?? endedOutput, endedExitCode)),
+      failed: Boolean(harness?.failed || ended?.failed),
     }
   }
 

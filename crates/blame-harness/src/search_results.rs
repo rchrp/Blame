@@ -200,10 +200,16 @@ pub fn lexical_query(query: &str, mode: &str, case_sensitive: bool) -> TextQuery
             case_sensitive,
         };
     }
+    // The whole query comes first: a line holding it reads it as one hit
+    // (the only hit with a space), and its file ranks first (`file_score`).
+    let phrase = split_spaces(query)
+        .into_iter()
+        .map(escape_regex)
+        .collect::<Vec<_>>()
+        .join("[ \\t]+");
     TextQuery {
-        pattern: terms
-            .iter()
-            .map(|term| escape_regex(term))
+        pattern: std::iter::once(phrase)
+            .chain(terms.iter().map(|term| escape_regex(term)))
             .collect::<Vec<_>>()
             .join("|"),
         regex: true,
@@ -267,7 +273,12 @@ fn file_score(path: &str, matches: &[LexicalMatch], terms: &[String]) -> usize {
         .iter()
         .filter(|term| normalized.contains(term.as_str()))
         .count();
-    found.len() * 1_000 + path_terms * 100 + matches.len().min(99)
+    // A file holding the whole query outranks files holding its words apart.
+    let phrase = terms.len() > 1
+        && matches
+            .iter()
+            .any(|item| item.hits.iter().any(|hit| hit.contains([' ', '\t'])));
+    usize::from(phrase) * 1_000_000 + found.len() * 1_000 + path_terms * 100 + matches.len().min(99)
 }
 
 fn matched_terms<'t>(found: &LexicalMatch, terms: &'t [String]) -> Vec<&'t String> {
@@ -354,6 +365,8 @@ pub fn search_envelope(
     candidates: usize,
     more: SearchMore,
 ) -> Json {
+    let mut results = results;
+    without_repeated_context(&mut results);
     let page = search_page(input);
     let total = results.len();
     let shown = within_characters(results, MAXIMUM_PAGE_CHARACTERS);
@@ -376,6 +389,51 @@ pub fn search_envelope(
     };
     data.extend(limit_data(input, page, &more, shown_count));
     obj! { "status" => "ok", "data" => data }
+}
+/// Context lines an earlier match of the same file already shows are left
+/// out, as grep merges overlapping context. A match whose context still
+/// holds its own line (`12:`) needs no snippet; one whose context was all
+/// shown keeps only its snippet.
+fn without_repeated_context(results: &mut [Json]) {
+    let mut shown: std::collections::HashMap<String, std::collections::HashSet<usize>> =
+        std::collections::HashMap::new();
+    for result in results.iter_mut() {
+        let Some(context) = result
+            .get("context")
+            .and_then(Json::as_str)
+            .map(str::to_string)
+        else {
+            continue;
+        };
+        let path = result
+            .get("path")
+            .and_then(Json::as_str)
+            .unwrap_or("")
+            .to_string();
+        let seen = shown.entry(path).or_default();
+        let mut kept: Vec<&str> = Vec::new();
+        let mut holds_match = false;
+        for line in context.split('\n') {
+            let numbered = line
+                .find([':', '-'])
+                .and_then(|end| Some((end, line[..end].parse::<usize>().ok()?)));
+            if let Some((end, number)) = numbered {
+                if !seen.insert(number) {
+                    continue;
+                }
+                holds_match |= line.as_bytes()[end] == b':';
+            }
+            kept.push(line);
+        }
+        if kept.is_empty() {
+            result.remove("context");
+            continue;
+        }
+        if holds_match {
+            result.remove("snippet");
+        }
+        result.set("context", kept.join("\n"));
+    }
 }
 
 /// The leading results whose JSON fits the budget, and always the first.
@@ -804,7 +862,7 @@ mod tests {
         assert_eq!(search_terms("Foo  bar foo"), ["foo", "bar"]);
         let query = lexical_query("a.b c", "text", false);
         assert!(query.regex);
-        assert_eq!(query.pattern, "a\\.b|c");
+        assert_eq!(query.pattern, "a\\.b[ \\t]+c|a\\.b|c");
         assert!(!lexical_query("one", "text", false).regex);
     }
 
@@ -818,5 +876,32 @@ mod tests {
             search_result_key(&obj! { "path" => "a.ts" }),
             "a.ts:undefined"
         );
+    }
+
+    #[test]
+    fn shows_shared_context_lines_once() {
+        let mut results = vec![
+            obj! { "path" => "a.txt", "snippet" => "marker 1", "context" => "1-one\n2:marker 1\n3-three" },
+            obj! { "path" => "a.txt", "snippet" => "marker 2", "context" => "3-three\n4:marker 2\n5-five" },
+            obj! { "path" => "a.txt", "snippet" => "three", "context" => "2-marker 1\n3:three\n4-marker 2" },
+            obj! { "path" => "b.txt", "snippet" => "one", "context" => "1:one" },
+        ];
+        without_repeated_context(&mut results);
+        let field = |index: usize, key: &str| {
+            results[index]
+                .get(key)
+                .and_then(Json::as_str)
+                .map(str::to_string)
+        };
+        assert_eq!(
+            field(0, "context").as_deref(),
+            Some("1-one\n2:marker 1\n3-three")
+        );
+        assert_eq!(field(0, "snippet"), None);
+        assert_eq!(field(1, "context").as_deref(), Some("4:marker 2\n5-five"));
+        assert_eq!(field(1, "snippet"), None);
+        assert_eq!(field(2, "context"), None);
+        assert_eq!(field(2, "snippet").as_deref(), Some("three"));
+        assert_eq!(field(3, "context").as_deref(), Some("1:one"));
     }
 }

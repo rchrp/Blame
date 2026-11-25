@@ -23,6 +23,19 @@ test("a six-second command returns its final outcome without status polling", as
   }
 });
 
+test("a command stopped at the output limit says so first, not an unknown exit code", async () => {
+  const root = await mkdtemp(join(tmpdir(), "blame-output-limit-"));
+  try {
+    const workspace = new LightWorkspace(root, { sessionId: "output-limit" });
+    const result = await workspace.runTask({ kind: "command", command: "node -e \"process.stdout.write('x'.repeat(2000000));setTimeout(()=>{},3000)\"" }, {});
+    assert.equal(result.status, "blocked", JSON.stringify(result).slice(0, 500));
+    if (result.status === "blocked")
+      assert.match(result.message, /^Command stopped: its output passed the captured output limit\./u);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("a final grep that selects nothing says it hid the output, not that nothing was printed", async () => {
   const root = await mkdtemp(join(tmpdir(), "blame-final-filter-"));
   try {
@@ -30,6 +43,8 @@ test("a final grep that selects nothing says it hid the output, not that nothing
     for (const command of [
       "node -e 'console.log(\"done\")' | grep missing",
       "MODE=test node -e 'console.log(\"a|b\")' 2>&1 | grep -E \"x|y\"",
+      "node -e 'console.log(\"done\")' | grep missing | head -5",
+      "MODE=test node -e 'console.log(\"a|b\")' 2>&1 | grep -E \"x|y\" | sort | head -5",
     ]) {
       const result = await workspace.runTask({ kind: "command", command }, {});
       assert.equal(result.status, "blocked", JSON.stringify(result));

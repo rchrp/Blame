@@ -123,13 +123,30 @@ export function laneSignature(request: MessagesRequest) {
       model: request.model,
       effort: requestEffort(request) ?? null,
       system: systemText(request),
-      tools: (request.tools ?? []).map((tool) => [
-        tool.name,
-        tool.description ?? "",
-        tool.input_schema,
-      ]),
+      tools: toolSignature(request),
     }),
   );
+}
+
+/** The parts of {@link laneSignature}, hashed: which one changed tells why a conversation needed a new process. */
+export function laneSignatureParts(request: MessagesRequest) {
+  return {
+    model: request.model,
+    effort: requestEffort(request) ?? null,
+    system: sha256(systemText(request)),
+    tools: sha256(JSON.stringify(toolSignature(request))),
+  };
+}
+
+export type LaneSignatureParts = ReturnType<typeof laneSignatureParts>;
+
+/** The parts that differ between two signatures, by name. */
+export function changedSignatureParts(before: LaneSignatureParts, after: LaneSignatureParts) {
+  return (Object.keys(after) as Array<keyof LaneSignatureParts>).filter((part) => before[part] !== after[part]);
+}
+
+function toolSignature(request: MessagesRequest) {
+  return (request.tools ?? []).map((tool) => [tool.name, tool.description ?? "", tool.input_schema]);
 }
 
 /**

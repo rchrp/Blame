@@ -167,7 +167,7 @@ fn detach(value: &Json, path: &mut Vec<Key>, sections: &mut Vec<(Vec<Key>, Strin
                     let detached = match item {
                         Json::String(text)
                             if TEXT_KEYS.contains(&key.as_str())
-                                && text.contains(['\\', '\n', '\r', '\t', '"']) =>
+                                && worth_detaching(text, &field_label(path)) =>
                         {
                             sections.push((path.clone(), text.clone()));
                             Json::str(reference(&field_label(path)))
@@ -181,6 +181,18 @@ fn detach(value: &Json, path: &mut Vec<Key>, sections: &mut Vec<(Vec<Key>, Strin
         ),
         other => other.clone(),
     }
+}
+
+/// A text gets its own fenced part when it spans lines, or when JSON would
+/// escape it more than the part costs (its label twice, its path in the
+/// header, the fences): the harness's rule (`present.rs`).
+fn worth_detaching(text: &str, label: &str) -> bool {
+    text.contains(['\n', '\r'])
+        || text
+            .chars()
+            .filter(|c| matches!(c, '"' | '\\') || (*c as u32) < 0x20)
+            .count()
+            > 3 * label.len() + 24
 }
 
 fn path_json(path: &[Key]) -> Json {
@@ -341,5 +353,11 @@ mod tests {
         assert_eq!(decode(&blocks).unwrap().result, empty);
         assert_eq!(decode(&[text("Done: all done")]), None);
         assert_eq!(decode(&[text("[1]")]), None);
+    }
+
+    #[test]
+    fn a_one_line_snippet_with_quotes_stays_inline() {
+        let result = Json::parse(r#"{"status":"ok","data":{"snippet":"let a = \"b\";"}}"#).unwrap();
+        assert_eq!(encode(&result, false), [result.to_text()]);
     }
 }

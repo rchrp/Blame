@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import test, { type TestContext } from "node:test";
 import { promisify } from "node:util";
 import { parseCode } from "./code-intelligence.js";
 import { validateContent } from "./content-validation.js";
@@ -80,7 +80,7 @@ for (const [extension, compiler] of [
   ["c", "cc"],
   ["cpp", "c++"],
 ]) {
-  test(`valid macro-based ${extension} patches commit without claiming syntax validation`, async () => {
+  test(`valid macro-based ${extension} patches commit without claiming syntax validation`, async (t) => {
     await fixture(async (root, workspace) => {
       const path = `value.${extension}`;
       assert.ok(parseCode(path, Buffer.from(macroFunction)).errorCount > 0);
@@ -93,12 +93,13 @@ for (const [extension, compiler] of [
         "unsupported",
       );
       assert.equal(await readFile(join(root, path), "utf8"), macroFunction);
-      await execute(compiler!, ["-fsyntax-only", path], { cwd: root });
+      if (await compilerInstalled(t, compiler!))
+        await execute(compiler!, ["-fsyntax-only", path], { cwd: root });
     });
   });
 }
 
-test("a C symbol replacement preserves valid macro content", async () => {
+test("a C symbol replacement preserves valid macro content", async (t) => {
   await fixture(async (root, workspace) => {
     await writeFile(join(root, "value.c"), ordinaryFunction);
     await workspace.readCode({ target: "value.c#value" }, {});
@@ -113,11 +114,12 @@ test("a C symbol replacement preserves valid macro content", async () => {
       ],
     });
     assert.equal(result.status, "ok", JSON.stringify(result));
-    await execute("cc", ["-fsyntax-only", "value.c"], { cwd: root });
+    if (await compilerInstalled(t, "cc"))
+      await execute("cc", ["-fsyntax-only", "value.c"], { cwd: root });
   });
 });
 
-test("invalid C remains unverified and the compiler reports the real failure", async () => {
+test("invalid C remains unverified and the compiler reports the real failure", async (t) => {
   await fixture(async (root, workspace) => {
     const result = await workspace.editCode({
       operations: [
@@ -133,9 +135,10 @@ test("invalid C remains unverified and the compiler reports the real failure", a
       (result.data as { parse: { status: string } }).parse.status,
       "unsupported",
     );
-    await assert.rejects(
-      execute("cc", ["-fsyntax-only", "invalid.c"], { cwd: root }),
-    );
+    if (await compilerInstalled(t, "cc"))
+      await assert.rejects(
+        execute("cc", ["-fsyntax-only", "invalid.c"], { cwd: root }),
+      );
   });
 });
 
@@ -158,6 +161,17 @@ test("a definite TypeScript syntax failure preserves atomicity beside an unverif
     });
   });
 });
+
+/**
+ * Whether `compiler` is installed. Without it, the test reports its final
+ * compiler check as skipped: a missing executable must neither fail the
+ * test nor pass as the compiler's rejection.
+ */
+async function compilerInstalled(t: TestContext, compiler: string) {
+  const installed = await execute(compiler, ["--version"]).then(() => true, () => false);
+  if (!installed) t.skip(`${compiler} is not installed: the compiler's own verdict was not checked`);
+  return installed;
+}
 
 async function fixture(
   run: (root: string, workspace: LightWorkspace) => Promise<void>,

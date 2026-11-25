@@ -36,6 +36,11 @@ for (const outcome of ["success", "failure", "cancelled", "unknown-test"] as con
       if (outcome === "failure" || outcome === "cancelled") {
         assert.equal(result.completed.status, "blocked");
         assert.match(JSON.stringify(result.completed), outcome === "failure" ? /code 7/u : /cancelled/u);
+        if (outcome === "failure") {
+          // Read with a cursor, the page holds the output and the result only its outcome.
+          assert.match(result.output, /custom checks passed/u);
+          assert.doesNotMatch(String((result.completed as { message?: string }).message), /custom checks passed/u);
+        }
         if (outcome === "cancelled") {
           const state = await journal.completionSnapshot();
           assert.ok(state.validations.every(v => v.status !== "passed"));
@@ -44,7 +49,9 @@ for (const outcome of ["success", "failure", "cancelled", "unknown-test"] as con
         assert.equal(result.completed.status, "ok", JSON.stringify(result.completed));
         const data = (result.completed as { data: { exitCode?: number; output: string; validation: { status: string }; check?: { outcome: string } } }).data;
         assert.equal(data.exitCode, 0);
-        assert.match(data.output, /custom checks passed/u);
+        // Read with a cursor, the page holds the output and the result its outcome.
+        assert.match(result.output, /custom checks passed/u);
+        assert.equal(data.output, undefined);
         if (outcome === "unknown-test") {
           assert.equal(data.check?.outcome, "unknown");
           assert.equal(data.validation.status, "unknown");

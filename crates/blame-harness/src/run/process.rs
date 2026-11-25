@@ -142,7 +142,7 @@ impl Shared {
         let diagnostic = match state.interruption {
             Some("cancelled") => Some("Command cancelled before completion.".to_string()),
             Some("timed_out") => Some(format!("Command timed out after {} ms.", self.timeout_ms)),
-            Some(_) => Some("Command exceeded the captured output limit.".to_string()),
+            Some(_) => Some("Command stopped: its output passed the captured output limit. Write the output to a file, then search or read that file.".to_string()),
             None => state.error.clone(),
         };
         let output = String::from_utf8_lossy(&state.bytes).into_owned();
