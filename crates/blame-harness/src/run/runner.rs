@@ -32,7 +32,7 @@ use super::managed::{
 };
 use super::output::{
     COMMAND_OUTPUT_OMITTED, bounded_diagnostic, command_output, validation_output,
-    validation_scope_paths, without_binary,
+    validation_scope_paths, without_binary, without_repeats,
 };
 use super::policy::{CommandEnvironment, blocked_command_reason_for};
 use super::process::{
@@ -172,7 +172,7 @@ fn strings(input: &Json, key: &str) -> Vec<String> {
 }
 
 fn redacted_output(output: &str) -> String {
-    redact_secrets(&without_binary(js_trim(output)))
+    redact_secrets(&without_repeats(&without_binary(js_trim(output))))
 }
 
 impl TaskRunner {

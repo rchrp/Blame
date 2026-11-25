@@ -78,8 +78,54 @@ pub fn command_output(value: &str) -> String {
     )
 }
 
+/// A failed command's output in its `message`: the same bound and cut as a
+/// successful one (`command_output`). It was 16,000 units cut mid-line.
 pub fn diagnostic(value: &str) -> String {
-    bounded_diagnostic(value, "", 16_000)
+    command_output(value)
+}
+
+/// From this many identical lines in a row, the first stays and a note
+/// counts the rest: `yes x | head -c 1000000` filled a result with one line
+/// (US-110, 2026-11-26). Blank lines stay as printed.
+const REPEATED_LINES: usize = 4;
+
+/// Output with each run of identical lines shown once and counted.
+pub fn without_repeats(output: &str) -> Cow<'_, str> {
+    let lines: Vec<&str> = output.split_inclusive('\n').collect();
+    let repeated = |index: usize| {
+        let line = lines[index];
+        !line.trim().is_empty()
+            && index + REPEATED_LINES <= lines.len()
+            && lines[index..index + REPEATED_LINES]
+                .iter()
+                .all(|other| *other == line)
+    };
+    if !(0..lines.len()).any(repeated) {
+        return Cow::Borrowed(output);
+    }
+    let mut kept = String::with_capacity(output.len());
+    let mut index = 0;
+    while index < lines.len() {
+        let line = lines[index];
+        kept.push_str(line);
+        if repeated(index) {
+            let run = lines[index..]
+                .iter()
+                .take_while(|other| **other == line)
+                .count();
+            if !line.ends_with('\n') {
+                kept.push('\n');
+            }
+            kept.push_str(&format!(
+                "[the line above repeats {} more times]\n",
+                run - 1
+            ));
+            index += run;
+        } else {
+            index += 1;
+        }
+    }
+    Cow::Owned(kept)
 }
 
 /// Output without what a terminal would show as garbage (a binary file
@@ -273,6 +319,17 @@ mod tests {
         }
         let short = "a\nb\n";
         assert_eq!(command_output(short), short);
+    }
+
+    #[test]
+    fn a_run_of_identical_lines_is_shown_once_and_counted() {
+        let output = format!("start\n{}y\n\n\n\n\nend", "y\n".repeat(500));
+        assert_eq!(
+            without_repeats(&output),
+            "start\ny\n[the line above repeats 500 more times]\n\n\n\n\nend"
+        );
+        let few = "a\na\na\nb\n";
+        assert!(matches!(without_repeats(few), Cow::Borrowed(_)));
     }
 
     #[test]

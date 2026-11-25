@@ -878,7 +878,10 @@ function validationFixture(suffix = "") {
   return {
     "package.json": JSON.stringify({ scripts: { test: "node check.cjs" } }),
     "source.txt": "original",
-    "inspection.txt": "actual inspection data\n".repeat(100),
+    "inspection.txt": Array.from(
+      { length: 100 },
+      (_, line) => `actual inspection data ${line}\n`,
+    ).join(""),
     "check.cjs": `console.log('BEGIN'); for (let i = 0; i < 100; i++) console.log('detail_' + i + ' ' + 'x'.repeat(15)); console.log('END'); ${suffix}`,
   };
 }
