@@ -23,6 +23,8 @@ import { openQuestion } from "@/components/orchestrator/data/epic-transcript"
 import type { useEpicConversation } from "@/components/orchestrator/data/use-epic-conversation"
 import type { EpicBoardGroup } from "./data/epic-board"
 import { EpicQuestion } from "./epic-question"
+import { EpicReview } from "./epic-review"
+import { useEpicStore } from "@/components/orchestrator/data/epic-store"
 import { EpicTimeline } from "@/components/orchestrator/epic-timeline"
 import { ConversationPersonalizationMenu } from "@/components/personalization/personalization-menu"
 import { useProjects } from "@/context/projects"
@@ -41,6 +43,7 @@ export function EpicConversation({
 }) {
   const project = useProjects().activeProject
   const platform = usePlatform()
+  const epics = useEpicStore()
   const draft = useEpicDraft(epic.projectId, epic.id)
   const [sending, setSending] = React.useState(false)
   const empty =
@@ -147,6 +150,11 @@ export function EpicConversation({
               editorRef={draft.composer.editorRef}
             />
           )}
+          <EpicReview
+            epic={epic}
+            state={chat.state}
+            onReviewed={() => epics.reload(epic.id)}
+          />
         </ConversationSurface>
       </section>
     </EngineApprovalProvider>
