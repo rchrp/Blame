@@ -19,6 +19,7 @@ import {
   updateStory,
   type EpicDesk,
 } from "./actions.js";
+import { readableText } from "./text.js";
 
 export type { EpicDesk } from "./actions.js";
 
@@ -96,7 +97,17 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
       },
       effect: "external",
       needsApproval: true,
-      run: (input) => json(createStories(desk, input)),
+      run: (input) =>
+        json(
+          createStories(desk, {
+            ...input,
+            stories: input.stories?.map((story) => ({
+              ...story,
+              title: readableText(story.title),
+              brief: readableText(story.brief),
+            })),
+          }),
+        ),
     }),
     defineTool<Inputs["update_story"]>({
       name: "update_story",
@@ -122,7 +133,14 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
       },
       effect: "external",
       needsApproval: true,
-      run: (input) => json(updateStory(desk, input)),
+      run: (input) =>
+        json(
+          updateStory(desk, {
+            ...input,
+            title: readableText(input.title),
+            brief: readableText(input.brief),
+          }),
+        ),
     }),
     defineTool<Inputs["story_report"]>({
       name: "story_report",
@@ -149,7 +167,7 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
           message: {
             type: "string",
             description:
-              "What the agent reads: the answer, or exactly what to change and why.",
+              "What the agent reads, in Markdown with real line breaks: the answer, or exactly what to change and why.",
           },
           escalate: { type: "boolean" },
           afterTurn: {
@@ -161,7 +179,13 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
         required: ["reason", "storyId", "kind", "message"],
       },
       effect: "external",
-      run: (input) => json(messageStory(desk, input)),
+      run: (input) =>
+        json(
+          messageStory(desk, {
+            ...input,
+            message: readableText(input.message),
+          }),
+        ),
     }),
     defineTool<Inputs["approve_story"]>({
       name: "approve_story",
@@ -215,7 +239,12 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
         required: ["action", "reason"],
       },
       effect: "read_only",
-      run: (input) => endTurn(desk, input),
+      run: (input) =>
+        endTurn(desk, {
+          ...input,
+          question: readableText(input.question),
+          summary: readableText(input.summary),
+        }),
     }),
   ];
 }
