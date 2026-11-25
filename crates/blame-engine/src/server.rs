@@ -28,7 +28,7 @@ use blame_engine_protocol::{
     UserBlock,
 };
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, Mutex, OnceLock, PoisonError};
@@ -76,21 +76,51 @@ pub async fn serve(settings: Settings, mut inbound: Box<dyn Inbound>, outbound: 
     let connection = Connection::start(1, outbound);
     let stop_signal = stop_signal();
     tokio::pin!(stop_signal);
-    let reason = loop {
-        tokio::select! {
-            message = inbound.next() => match message {
-                Some(Ok(line)) => {
-                    if let Some(initialize) = dispatch(&server, &connection, &line) {
-                        // Nothing else is read until the engine is up, so
-                        // requests sent right behind `initialize` find it.
-                        initialize.await;
-                    }
+    // Messages read while a barrier held the others back, in order, and why
+    // the input ended meanwhile.
+    let mut held: VecDeque<String> = VecDeque::new();
+    let mut ended: Option<String> = None;
+    let reason = 'serve: loop {
+        let line = match held.pop_front() {
+            Some(line) => line,
+            None => {
+                if let Some(reason) = ended.take() {
+                    break reason;
                 }
-                Some(Err(error)) => break format!("the client's input failed: {error}"),
-                None => break "the client's input closed".to_owned(),
-            },
-            () = server.exit.cancelled() => break "shutdown".to_owned(),
-            signal = &mut stop_signal => break format!("{signal} received"),
+                tokio::select! {
+                    message = inbound.next() => match message {
+                        Some(Ok(line)) => line,
+                        Some(Err(error)) => break format!("the client's input failed: {error}"),
+                        None => break "the client's input closed".to_owned(),
+                    },
+                    () = server.exit.cancelled() => break "shutdown".to_owned(),
+                    signal = &mut stop_signal => break format!("{signal} received"),
+                }
+            }
+        };
+        let Some(mut barrier) = dispatch(&server, &connection, &line) else {
+            continue;
+        };
+        // No other request is handled until the engine is up, or a task's
+        // session exists, so requests sent right behind find them. The
+        // client's answers to the engine's own requests still are: what the
+        // barrier waits for may wait for one (an open pulling a session from
+        // Blame's database holds what creating a session needs).
+        loop {
+            tokio::select! {
+                biased;
+                () = &mut barrier => break,
+                message = inbound.next(), if ended.is_none() => match message {
+                    Some(Ok(line)) if is_response(&line) => {
+                        dispatch(&server, &connection, &line);
+                    }
+                    Some(Ok(line)) => held.push_back(line),
+                    Some(Err(error)) => ended = Some(format!("the client's input failed: {error}")),
+                    None => ended = Some("the client's input closed".to_owned()),
+                },
+                () = server.exit.cancelled() => break 'serve "shutdown".to_owned(),
+                signal = &mut stop_signal => break 'serve format!("{signal} received"),
+            }
         }
     };
     log!(Info, "stopping: {reason}");
@@ -114,11 +144,17 @@ pub async fn serve(settings: Settings, mut inbound: Box<dyn Inbound>, outbound: 
     log!(Info, "stopped");
 }
 
-/// What the reader finishes before it reads the next message.
+/// What the reader finishes before it handles the next request.
 type Barrier = Pin<Box<dyn Future<Output = ()> + Send>>;
 
+/// The client's answer to one of the engine's requests.
+fn is_response(line: &str) -> bool {
+    serde_json::from_str::<Value>(line)
+        .is_ok_and(|value| value.get("id").is_some() && value.get("method").is_none())
+}
+
 /// Handles one message. An `initialize` request is returned instead of
-/// spawned, for the caller to finish before reading further; so is the
+/// spawned, for the caller to finish before handling further; so is the
 /// creation of a `task/run`'s session, whose run then goes on by itself.
 fn dispatch(server: &Arc<Server>, connection: &Arc<Connection>, line: &str) -> Option<Barrier> {
     let value: Value = match serde_json::from_str(line) {

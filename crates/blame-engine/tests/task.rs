@@ -263,3 +263,49 @@ async fn a_task_cut_by_a_crash_reopens_as_interrupted() {
         }
     ));
 }
+
+// A task's session is created before the engine reads further (a follow
+// sent right behind finds it), while the open it waits for may be pulling a
+// session from Blame's database: the client's answer to that pull must
+// still be read, or neither ends and the engine reads nothing ever again.
+#[tokio::test]
+async fn a_task_sent_while_an_open_waits_for_the_database_does_not_stall_the_engine() {
+    let mock = mock(vec![tool_reply(&[(
+        "submit_title",
+        json!({ "title": "Keep the password" }),
+    )])])
+    .await;
+    let hold = Arc::new(tokio::sync::Notify::new());
+    let mut client = FakeClient::new(&mock.base).with_remote(Arc::new(FakeRemote::default()));
+    client.hold_pulls = Some(hold.clone());
+    let client = Arc::new(client);
+    let engine = Engine::ready(&temp_dir("task-pull"), &[], client.clone()).await;
+    let (_, opened) = engine
+        .send_request(ClientRequest::Open {
+            session: SessionId::from("elsewhere"),
+        })
+        .await;
+    for _ in 0..200 {
+        if client.pulls.load(std::sync::atomic::Ordering::SeqCst) > 0 {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+    }
+    assert!(
+        client.pulls.load(std::sync::atomic::Ordering::SeqCst) > 0,
+        "the open pulls"
+    );
+    let (_, ran) = engine
+        .send_request(run("t1", task(&temp_dir("task-pull-workspace"), false)))
+        .await;
+    hold.notify_one();
+    let unknown = Engine::answer::<SessionOpened>(opened)
+        .await
+        .expect_err("nobody has that session");
+    assert!(unknown.message.contains("does not exist"), "{unknown:?}");
+    let outcome: TaskOutcome = Engine::answer(ran).await.expect("an outcome");
+    assert!(
+        matches!(outcome, TaskOutcome::Completed { .. }),
+        "{outcome:?}"
+    );
+}

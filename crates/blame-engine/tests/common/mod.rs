@@ -56,6 +56,10 @@ pub struct FakeClient {
     pub cancelled: Mutex<Vec<u64>>,
     /// Holds `host/tool` answers until notified, when set.
     pub hold_tools: Option<Arc<tokio::sync::Notify>>,
+    /// Holds `host/log/pull` answers until notified, when set.
+    pub hold_pulls: Option<Arc<tokio::sync::Notify>>,
+    /// How many `host/log/pull` the engine asked.
+    pub pulls: AtomicU64,
     /// Reported as `tool/progress` while each tool call runs.
     pub progress: Mutex<Vec<String>>,
     /// (provider, session) of each `host/credential`.
@@ -80,6 +84,8 @@ impl FakeClient {
             remote: None,
             cancelled: Mutex::new(Vec::new()),
             hold_tools: None,
+            hold_pulls: None,
+            pulls: AtomicU64::new(0),
             progress: Mutex::new(Vec::new()),
             credential_asks: Mutex::new(Vec::new()),
             harness_asks: Mutex::new(Vec::new()),
@@ -143,6 +149,10 @@ impl FakeClient {
             }
             EngineRequest::LogPull { session, after } => {
                 let remote = self.remote.as_ref().ok_or_else(|| rpc("no remote"))?;
+                self.pulls.fetch_add(1, Ordering::SeqCst);
+                if let Some(hold) = &self.hold_pulls {
+                    hold.notified().await;
+                }
                 let records = remote.pull(&session, after);
                 let head = records.last().map_or(after, |r| r.seq);
                 Ok(serde_json::to_value(Records { records, head }).unwrap())
