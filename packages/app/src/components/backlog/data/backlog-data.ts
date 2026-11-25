@@ -87,6 +87,8 @@ export type UserStoryCodeSelectionAttachment = {
 
 export type UserStoryFileAttachment = {
   id: string
+  // A file the engine keeps (a sent message's): its blob, by sha256.
+  blobId?: string
   content?: string
   downloadUrl?: string
   name: string

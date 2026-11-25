@@ -469,6 +469,7 @@ function userFiles(
       : [
           {
             id: `${key}:${index}`,
+            blobId: block.blob.sha256,
             name: block.type === "document" ? block.name : `image-${index}`,
             size: block.blob.bytes,
             type: block.blob.media_type,

@@ -37,10 +37,8 @@ import {
   MarkdownMessage,
   type PendingFileAttachment,
 } from "@/components/backlog/drawer/markdown-editor"
-import {
-  pendingFileAttachments,
-  type FileAttachmentReplacement,
-} from "@/components/backlog/drawer/user-story-attachment-files"
+import type { FileAttachmentReplacement } from "@/components/backlog/drawer/user-story-attachment-files"
+import { useEngineFileAttachments } from "@/components/chat/screenshots/use-engine-file-attachments"
 import type { PendingCodeSelectionAttachment } from "@/components/backlog/shared/comment-attachment-events"
 import { messageExcerpt } from "@/components/backlog/shared/excerpt-model"
 import {
@@ -654,6 +652,8 @@ export function AgentConversationComposer({
   )
 }
 
+const noFileAttachments: UserStoryFileAttachment[] = []
+
 function RunCommentItem({
   alwaysVisible,
   comment,
@@ -672,6 +672,9 @@ function RunCommentItem({
   const entering = useEnterAnimation(comment?.createdAt)
   // A queued message can still be edited before it is sent.
   const [draft, setDraft] = React.useState<string>()
+  const fileAttachments = useEngineFileAttachments(
+    comment?.fileAttachments ?? noFileAttachments
+  )
   if (run?.kind === "initial") return null
   if (!comment) return null
   const editing = Boolean(queued?.onEdit) && draft !== undefined
@@ -715,9 +718,7 @@ function RunCommentItem({
         >
           <MarkdownEditor
             codeSelectionAttachments={comment.codeSelectionAttachments ?? []}
-            fileAttachments={pendingFileAttachments(
-              comment.fileAttachments ?? []
-            )}
+            fileAttachments={fileAttachments}
             markdown={editing ? (draft ?? "") : comment.body}
             onMarkdownChange={editing ? setDraft : undefined}
             readOnly={!editing}

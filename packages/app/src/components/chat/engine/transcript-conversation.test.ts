@@ -526,6 +526,27 @@ test("what only the model reads with a message never shows in the conversation",
   assert.doesNotMatch(JSON.stringify(result), /proposal_decisions/)
 })
 
+test("an image sent with a message keeps its engine blob, so the comment can show it", () => {
+  seq = 0
+  const sha256 = "a".repeat(64)
+  const result = conversation([
+    record({ type: "session_created", config }),
+    record({
+      type: "user_message", turn: "t", delivery: "turn",
+      input: [
+        { type: "text", text: "See this" },
+        { type: "image", blob: { sha256, bytes: 12, media_type: "image/png" } },
+      ],
+    }),
+    record({ type: "request_started", turn: "t", request: "r", model, attempt: 1, prefix_digest: "d" }),
+    record({ type: "assistant_message", turn: "t", request: "r", stop: "end_turn", usage, blocks: [{ type: "text", text: "Seen." }] }),
+    record({ type: "turn_ended", turn: "t", outcome: { status: "completed" } }),
+  ])
+  const [file] = result.comments[0]!.fileAttachments ?? []
+  assert.equal(file?.blobId, sha256)
+  assert.equal(file?.type, "image/png")
+})
+
 test("a reply the checks refused stays, unverified, with the check it names", () => {
   seq = 0
   const turnRecords = (outcome: Record<string, unknown>) => [
