@@ -199,6 +199,11 @@ export type OrchestratorToolInputs = {
     message: string;
     /** Runs this turn on the next model up. */
     escalate?: boolean;
+    /**
+     * Keeps the message for when the agent's running turn ends, instead of
+     * joining that turn now (the default while it works).
+     */
+    afterTurn?: boolean;
   };
   approve_story: { reason: string; storyId: string };
   reject_story: { reason: string; storyId: string };

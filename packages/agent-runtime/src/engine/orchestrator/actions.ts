@@ -371,11 +371,17 @@ export async function messageStory(
         "Send the message without escalate, or reject it.",
       );
   }
+  // A message to an agent at work joins its running turn (the agent reads it
+  // at its next step), unless asked to wait; another model needs a turn of
+  // its own, so an escalation always waits.
+  const steer =
+    story.agentStatus === "Running" && input.afterTurn !== true && !model;
   // Counted before it goes: a quit after the send never forgets one.
   await countMessage(desk, story.id, changes, 1);
   try {
     await desk.stories.send(story.id, {
       message: { text: input.message.trim() },
+      ...(steer ? { steer: true } : {}),
       ...(model ? { turn: { model: model.model } } : {}),
     });
   } catch (error) {
@@ -385,6 +391,11 @@ export async function messageStory(
   return {
     sent: true,
     number: storyDisplayId(story),
+    delivery: steer
+      ? "joined its running turn"
+      : story.agentStatus === "Running"
+        ? "after its running turn"
+        : "new turn",
     ...(model
       ? { model: `${model.model.providerId}/${model.model.modelId}` }
       : {}),

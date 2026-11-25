@@ -853,6 +853,52 @@ describe("judging stories", () => {
     );
   });
 
+  it("joins a working agent's running turn, unless asked to wait or escalating", async () => {
+    const working = () =>
+      row("s1", "a", {
+        epicId,
+        status: "in-progress",
+        agentStatus: "Running",
+        engineSessionId: "session-s1",
+        worktree: "/w/s1",
+        workspaceMode: "cloud-mirror",
+        agentModels: [{ providerId: "anthropic", modelId: "fast", turns: 1 }],
+      });
+    const { run, fake } = await desk({
+      rows: [working()],
+      owned: { s1: "session-s1" },
+      statuses: {
+        "session-s1": { running: true, turnRunning: true } as never,
+      },
+    });
+    const deliveries = () =>
+      fake.calls
+        .filter((item) => item.method === "send")
+        .map((item) => (item.input as { delivery: string }).delivery);
+    const now = await run("message_story", {
+      reason: "r",
+      storyId: "s1",
+      kind: "answer",
+      message: "The data is in data/.",
+    });
+    assert.equal(
+      (now as { delivery: string }).delivery,
+      "joined its running turn",
+    );
+    const later = await run("message_story", {
+      reason: "r",
+      storyId: "s1",
+      kind: "answer",
+      message: "Once done, also check the README.",
+      afterTurn: true,
+    });
+    assert.equal(
+      (later as { delivery: string }).delivery,
+      "after its running turn",
+    );
+    assert.deepEqual(deliveries(), ["steer", "turn"]);
+  });
+
   it("refuses to escalate a story already on the top of the range", async () => {
     const { run } = await desk({
       rows: [

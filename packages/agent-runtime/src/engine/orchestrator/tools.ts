@@ -139,7 +139,7 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
     defineTool<Inputs["message_story"]>({
       name: "message_story",
       description:
-        "Sends a story's agent a message: an answer to its question, or a request for changes. A message to a story in review is a request for changes whatever its kind: at most 3 per story, 6 messages in all. `escalate` runs that turn on the next model up.",
+        "Sends a story's agent a message: an answer to its question, or a request for changes. To an agent at work, it joins its running turn and is read at its next step (`afterTurn` keeps it for when the turn ends). A message to a story in review is a request for changes whatever its kind: at most 3 per story, 6 messages in all. `escalate` runs a new turn on the next model up, so it always waits for the running turn.",
       inputSchema: {
         type: "object",
         properties: {
@@ -152,6 +152,11 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
               "What the agent reads: the answer, or exactly what to change and why.",
           },
           escalate: { type: "boolean" },
+          afterTurn: {
+            type: "boolean",
+            description:
+              "Wait for the agent's running turn to end instead of joining it now.",
+          },
         },
         required: ["reason", "storyId", "kind", "message"],
       },
@@ -161,7 +166,7 @@ export function orchestratorTools(desk: EpicDesk): ClientTool<never>[] {
     defineTool<Inputs["approve_story"]>({
       name: "approve_story",
       description:
-        "Approve & Merge: merges a story in review whose last turn the harness verified into the epic's branch. Stories that start after it can then start.",
+        "Approve & Merge: merges a story in review whose last turn the harness verified into the epic's branch. Stories that start after it start at once: update their briefs before, not after.",
       inputSchema: {
         type: "object",
         properties: { reason, storyId },
