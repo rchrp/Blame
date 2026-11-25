@@ -188,7 +188,7 @@ export const BacklogColumn = React.memo(function BacklogColumn({
         <Button
           type="button"
           variant="ghost"
-          className="h-9 justify-start gap-2 rounded-lg border border-dashed border-foreground/15 px-3 text-sm text-muted-foreground hover:border-foreground/25 hover:bg-popover hover:text-foreground"
+          className="h-9 justify-start gap-2 rounded-lg border border-foreground/15 px-3 text-sm text-muted-foreground hover:border-foreground/25 hover:bg-popover hover:text-foreground"
           onClick={onCreateUserStory}
         >
           <PlusIcon className="size-4" />
