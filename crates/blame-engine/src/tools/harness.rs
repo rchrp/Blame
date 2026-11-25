@@ -84,7 +84,8 @@ pub struct Harness {
     /// Where the harness's questions go (`host/harness`): the client.
     host: std::sync::OnceLock<Arc<crate::connection::Host>>,
     process: tokio::sync::Mutex<Option<Arc<Process>>>,
-    /// Tools per describe request: they depend only on the task contract.
+    /// Tools per describe request: they depend only on the task contract,
+    /// the response style and the tools kept.
     described: Mutex<HashMap<String, Vec<ToolSpec>>>,
     next_id: AtomicU64,
     stopped: AtomicBool,
@@ -115,10 +116,13 @@ impl Harness {
     }
 
     /// The tools the harness offers under `options` (`tool_options.harness`).
+    /// `tools`, when given, keeps only those: an orchestrator only reads, so
+    /// it must never be offered (or able to call) edit_code or run_task.
     pub async fn describe(&self, options: &Value) -> Result<Vec<ToolSpec>, HarnessError> {
         let describe = json!({
             "taskContract": options.get("taskContract"),
             "responseStyle": options.get("responseStyle"),
+            "tools": options.get("tools"),
         });
         let key = describe.to_string();
         if let Some(specs) = self.cache().get(&key) {

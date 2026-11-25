@@ -283,14 +283,20 @@ async fn harness_calls_carry_the_context_generation() {
 
 /// `blame-harness`, built next to this test (`cargo build -p blame-harness`).
 fn real_harness() -> Option<PathBuf> {
-    let deps = std::env::current_exe().ok()?.parent()?.to_path_buf();
     let name = if cfg!(windows) {
         "blame-harness.exe"
     } else {
         "blame-harness"
     };
-    let binary = deps.parent()?.join(name);
-    binary.is_file().then_some(binary)
+    // The test binary sits in `target/<profile>/deps/` or, with newer Cargo,
+    // in `target/<profile>/build/<crate>/<hash>/out/`: the harness is in the
+    // profile directory above either.
+    std::env::current_exe()
+        .ok()?
+        .ancestors()
+        .skip(1)
+        .map(|dir| dir.join(name))
+        .find(|binary| binary.is_file())
 }
 
 #[tokio::test]
@@ -404,6 +410,58 @@ async fn the_real_harness_describes_its_tools_and_reads_code() {
             .to_string()
             .contains("token=granted-by-the-client"),
         "the command ran with the client's credentials"
+    );
+    assert!(engine.shutdown().await.success());
+}
+
+#[tokio::test]
+async fn a_session_gets_only_the_harness_tools_its_options_keep() {
+    let Some(harness) = real_harness() else {
+        eprintln!("skipped: blame-harness is not built");
+        return;
+    };
+    let command = harness_args(&[harness.to_str().unwrap(), "serve"]);
+    let workspace = temp_dir("harness-kept-workspace");
+    let marker = workspace.join("ran.txt");
+    let mock = mock(vec![
+        // The model asks for a tool it was not offered.
+        tool_reply(&[(
+            "run_task",
+            json!({ "kind": "command", "command": format!("echo ran > '{}'", marker.display()) }),
+        )]),
+        text_reply(&["I only read."]),
+    ])
+    .await;
+    let client = Arc::new(FakeClient::new(&mock.base));
+    let engine = Engine::ready(
+        &temp_dir("harness-kept"),
+        &["--harness-command", &command],
+        client,
+    )
+    .await;
+    let mut config = harness_config(&workspace);
+    config.tool_options.insert(
+        "harness".into(),
+        json!({
+            "taskContract": { "objective": "read only" },
+            "tools": ["search_code", "read_code"],
+        }),
+    );
+    let session = engine.create(config).await;
+    engine.subscribe(&session, 0).await;
+    engine.send(&session, "run something").await;
+    let records = records_of(
+        &tokio::time::timeout(Duration::from_secs(60), engine.until_turn_ended())
+            .await
+            .expect("the turn ends"),
+    );
+    let requests = mock.requests();
+    assert_eq!(tool_names(&requests[0].body), ["read_code", "search_code"]);
+    let results = results(&records);
+    assert_ne!(results[0].0, ToolOutcome::Completed, "{:?}", results[0].1);
+    assert!(
+        !marker.exists(),
+        "a tool the session was not offered never runs"
     );
     assert!(engine.shutdown().await.success());
 }
