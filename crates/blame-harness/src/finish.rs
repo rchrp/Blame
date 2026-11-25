@@ -636,6 +636,7 @@ impl FinishService {
         );
         let context = RunContext {
             refresh_preview: None,
+            approved: false,
             credentials: None,
             signal: signal.clone(),
         };

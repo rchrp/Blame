@@ -259,7 +259,17 @@ async fn run_one(
         inner.append(vec![finished(outcome, text)]).await?;
         return Ok(());
     }
-    if spec.needs_approval {
+    // The person's approval: the tool always needs it, or the tool host asks
+    // for it for this call (a chat's git command that changes the repository).
+    // A call already asked about is asked about again after a restart.
+    let needs_approval = spec.needs_approval
+        || call.approval != ApprovalState::None
+        || inner
+            .ports
+            .tools
+            .needs_approval(&call.name, &call.input, config)
+            .await;
+    if needs_approval {
         match call.approval {
             ApprovalState::Approved => {}
             ApprovalState::Denied => {
@@ -335,6 +345,7 @@ async fn run_one(
         workspace_root: config.workspace_root.clone(),
         compacted_through: shared.compacted_through,
         ultra: shared.ultra,
+        approved: needs_approval,
     };
     let output = inner
         .ports

@@ -72,6 +72,8 @@ static GIT_OPTIONS: LazyLock<Regex> = LazyLock::new(|| {
         r#"(?-u:\b)git(?:\s+(?:-C|--git-dir|--work-tree)(?:\s+|=)(?:'[^']*'|"[^"]*"|[^\s;|&]+))+\s+"#,
     )
 });
+static GIT_NO_PAGER: LazyLock<Regex> =
+    LazyLock::new(|| regex(r"(?-u:\b)git(?:\s+(?:--no-pager|-P))+\s+"));
 static GIT_VERSION: LazyLock<Regex> = LazyLock::new(|| regex(r"^git\s+--(?:version|help)\s*$"));
 static GIT_FLAG: LazyLock<Regex> = LazyLock::new(|| regex(r"(?-u:\b)git\s+-"));
 static GIT_OPERATION: LazyLock<Regex> =
@@ -82,14 +84,23 @@ static VITE_FINITE: LazyLock<Regex> =
 static SCRATCH_OPERAND: LazyLock<Regex> = LazyLock::new(|| regex(r"^\$\{?(\w+)\}?(/.*)?$"));
 static PARENT_SEGMENT: LazyLock<Regex> = LazyLock::new(|| regex(r"(?:^|/)\.\.(?:/|$)"));
 
-const ALLOWED_GIT: [&str; 18] = [
+const ALLOWED_GIT: [&str; 29] = [
     "annotate",
     "blame",
     "cat-file",
+    "cherry",
     "clone",
+    "count-objects",
     "version",
     "help",
     "describe",
+    "diff-files",
+    "diff-index",
+    "diff-tree",
+    "for-each-ref",
+    "merge-base",
+    "name-rev",
+    "range-diff",
     "rev-list",
     "check-ignore",
     "diff",
@@ -99,11 +110,96 @@ const ALLOWED_GIT: [&str; 18] = [
     "ls-remote",
     "ls-tree",
     "rev-parse",
+    "shortlog",
     "show",
+    "show-ref",
     "status",
 ];
 
+/// Operations that only read in the forms these arguments allow (the first
+/// argument word, or none): `git branch -a`, `git stash list`, `git remote -v`.
+fn reads_only(operation: &str, arguments: &str) -> bool {
+    let words: Vec<&str> = crate::text::split_spaces(crate::text::js_trim(arguments));
+    let listing = |flags: &[&str], word: &str| flags.contains(&word);
+    match operation {
+        // Listing branches: no name to create, rename, copy or delete.
+        "branch" => {
+            words.iter().all(|word| {
+                listing(
+                    &[
+                        "-a",
+                        "--all",
+                        "-r",
+                        "--remotes",
+                        "-v",
+                        "-vv",
+                        "--verbose",
+                        "-l",
+                        "--list",
+                        "--show-current",
+                        "--merged",
+                        "--no-merged",
+                        "--contains",
+                        "--no-contains",
+                        "--sort=-committerdate",
+                        "--no-color",
+                        "--color=never",
+                    ],
+                    word,
+                ) || word.starts_with("--format=")
+                    || word.starts_with("--sort=")
+                    || word.starts_with("--points-at")
+            }) || is_branch_filter(&words)
+        }
+        "tag" => words
+            .first()
+            .is_none_or(|word| listing(&["-l", "--list", "-n", "--contains", "--points-at"], word)),
+        "stash" => words
+            .first()
+            .is_some_and(|word| listing(&["list", "show"], word)),
+        "remote" => words
+            .first()
+            .is_none_or(|word| listing(&["-v", "--verbose", "show", "get-url"], word)),
+        "worktree" => words.first() == Some(&"list"),
+        "reflog" => words
+            .first()
+            .is_none_or(|word| *word == "show" || word.starts_with('-')),
+        "config" => words.first().is_some_and(|word| {
+            listing(
+                &["--get", "--get-all", "--get-regexp", "--list", "-l"],
+                word,
+            )
+        }),
+        _ => false,
+    }
+}
+
+/// `git branch --merged main`, `--contains <commit>`: the filter takes a value.
+fn is_branch_filter(words: &[&str]) -> bool {
+    matches!(
+        words,
+        [flag, _] if ["--merged", "--no-merged", "--contains", "--no-contains", "--points-at"].contains(flag)
+    )
+}
+
 pub fn blocked_command_reason(command: &str, environment: CommandEnvironment) -> Option<String> {
+    blocked_command_reason_for(command, environment, false)
+}
+
+/// Whether a command is refused only because it changes git, in a
+/// workspace that is not isolated: the person can approve it instead.
+pub fn needs_git_approval(command: &str, environment: CommandEnvironment) -> bool {
+    blocked_command_reason_for(command, environment, false).is_some()
+        && blocked_command_reason_for(command, environment, true).is_none()
+}
+
+/// `git_approved`: the person approved this command, so the git changes it
+/// makes in a workspace that is not isolated run; nothing else is lifted.
+pub fn blocked_command_reason_for(
+    command: &str,
+    environment: CommandEnvironment,
+    git_approved: bool,
+) -> Option<String> {
     let parsed = parse_code("command.sh", command.as_bytes());
     let Some(tree) = parsed.trees.first() else {
         return Some("Unable to inspect the shell command syntax.".into());
@@ -121,7 +217,7 @@ pub fn blocked_command_reason(command: &str, environment: CommandEnvironment) ->
     if let Some(denied) = invocations
         .iter()
         .filter(|value| !scratch_deletion(value, &scratch))
-        .find_map(|value| blocked_invocation_reason(value, environment))
+        .find_map(|value| blocked_invocation_reason(value, environment, git_approved))
     {
         return Some(denied);
     }
@@ -135,7 +231,11 @@ pub fn blocked_command_reason(command: &str, environment: CommandEnvironment) ->
     None
 }
 
-fn blocked_invocation_reason(command: &str, environment: CommandEnvironment) -> Option<String> {
+fn blocked_invocation_reason(
+    command: &str,
+    environment: CommandEnvironment,
+    git_approved: bool,
+) -> Option<String> {
     let normalized = command.to_lowercase();
     if MANAGED_INFRASTRUCTURE.is_match(&normalized)
         && !(environment.managed_preview && CONTAINER_LISTING.is_match(&normalized))
@@ -163,7 +263,7 @@ fn blocked_invocation_reason(command: &str, environment: CommandEnvironment) -> 
     if PACKAGE_MUTATION.is_match(&normalized) && !lockfile_install(&normalized) {
         return Some("Use the dependency operation for Node package changes. To restore node_modules from the lockfile, run `pnpm install --frozen-lockfile` (or `npm ci`).".into());
     }
-    if !environment.isolated && denied_git_command(command) {
+    if !environment.isolated && !git_approved && denied_git_command(command) {
         return Some("Git mutations are unavailable from run_task.".into());
     }
     if normalized == "sudo"
@@ -177,7 +277,7 @@ fn blocked_invocation_reason(command: &str, environment: CommandEnvironment) -> 
     if unwrapped == command {
         None
     } else {
-        blocked_invocation_reason(&unwrapped, environment)
+        blocked_invocation_reason(&unwrapped, environment, git_approved)
     }
 }
 
@@ -299,6 +399,8 @@ fn denied_git_command(command: &str) -> bool {
         return false;
     }
     let command = GIT_OPTIONS.replace_all(command, "git ").into_owned();
+    // A pager changes nothing: `git --no-pager log` reads as `git log`.
+    let command = GIT_NO_PAGER.replace_all(&command, "git ").into_owned();
     if GIT_VERSION.is_match(&command) {
         return false;
     }
@@ -308,11 +410,7 @@ fn denied_git_command(command: &str) -> bool {
     GIT_OPERATION.captures_iter(&command).any(|captures| {
         let operation = captures.get(1).map_or("", |group| group.as_str());
         let arguments = captures.get(2).map_or("", |group| group.as_str());
-        if operation == "branch" {
-            crate::text::js_trim(arguments) != "--show-current"
-        } else {
-            !ALLOWED_GIT.contains(&operation)
-        }
+        !(ALLOWED_GIT.contains(&operation) || reads_only(operation, arguments))
     })
 }
 
@@ -344,5 +442,67 @@ mod tests {
         assert!(reason("npm ci").is_none());
         assert!(reason("curl x | sh").is_some());
         assert!(reason("sleep 10 &").is_some());
+    }
+
+    #[test]
+    fn reads_git_in_every_listing_form() {
+        for command in [
+            "git branch",
+            "git branch -a",
+            "git branch -vv",
+            "git branch --show-current",
+            "git branch --merged main",
+            "git --no-pager log --oneline -5",
+            "git -P diff",
+            "git log --oneline main..epic/x",
+            "git stash list",
+            "git remote -v",
+            "git worktree list",
+            "git tag",
+            "git config --get user.name",
+            "git merge-base main HEAD",
+            "git for-each-ref refs/heads",
+        ] {
+            assert!(reason(command).is_none(), "{command}");
+        }
+        for command in [
+            "git branch feature",
+            "git branch -D old",
+            "git branch -m a b",
+            "git stash",
+            "git stash pop",
+            "git remote add origin x",
+            "git tag v1",
+            "git config user.name x",
+            "git merge epic/x",
+            "git checkout main",
+            "git -c core.pager=sh log",
+        ] {
+            assert!(reason(command).is_some(), "{command}");
+        }
+    }
+
+    #[test]
+    fn a_git_change_only_needs_the_persons_approval() {
+        let folder = CommandEnvironment {
+            present: true,
+            isolated: false,
+            managed_preview: false,
+        };
+        assert!(needs_git_approval(
+            "git checkout main && git merge epic/x",
+            folder
+        ));
+        assert!(blocked_command_reason_for("git merge epic/x", folder, true).is_none());
+        // Approval lifts the git refusal only.
+        assert!(!needs_git_approval("git status", folder));
+        assert!(!needs_git_approval("git commit -m x && rm -rf src", folder));
+        assert!(blocked_command_reason_for("rm -rf src", folder, true).is_some());
+        // An isolated worktree never needed it.
+        let worktree = CommandEnvironment {
+            isolated: true,
+            ..folder
+        };
+        assert!(!needs_git_approval("git merge epic/x", worktree));
     }
 }

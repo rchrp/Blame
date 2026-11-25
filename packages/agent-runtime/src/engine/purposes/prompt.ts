@@ -18,6 +18,11 @@ import { webResearchGuidance } from "../../web-research-calls.js";
 export const directFolderEnvironment =
   "You work directly in the user's project folder, on their current branch, with no isolation. The folder may hold the user's own uncommitted work and other running processes. Never discard or overwrite changes you did not make: no git reset, git clean, git checkout or git stash, no branch switching, and no commits. Prefer ports and processes that do not collide with ones already running, and stop anything you start.";
 
+// A chat works in the same folder, and the person may ask it for git work:
+// each command that changes git waits for their approval (the harness's
+// `approveGitChanges`), so it is theirs, never the agent's own initiative.
+export const directChatEnvironment = `${directFolderEnvironment} When the user asks you for git work (a merge, a commit, a branch switch), do it with run_task: check the state first (git status, the branches), then run the commands; Blame asks the user to approve each command that changes git before it runs, and a denied one did not run.`;
+
 export const worktreeEnvironment =
   "Commands use the current process permissions. Keep their effects within the user's authorized scope and preserve unrelated state.";
 

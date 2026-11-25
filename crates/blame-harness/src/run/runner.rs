@@ -31,7 +31,7 @@ use super::managed::{
     invocation_test_report, managed_test_report,
 };
 use super::output::{bounded_diagnostic, validation_output, validation_scope_paths};
-use super::policy::{CommandEnvironment, blocked_command_reason};
+use super::policy::{CommandEnvironment, blocked_command_reason_for};
 use super::process::{
     self, CommandHandle, CommandOptions, CommandOutcome, DEFAULT_OUTPUT_LIMIT, DEFAULT_TIMEOUT_MS,
 };
@@ -69,6 +69,9 @@ pub struct RunContext<'a> {
     /// After a dependency operation changed files: the session's preview
     /// takes them, and this is its state (the result's `preview`).
     pub refresh_preview: Option<&'a (dyn Fn() -> Option<Json> + Sync)>,
+    /// The person approved this call: its git changes run in a workspace
+    /// that is not isolated (`policy::needs_git_approval`).
+    pub approved: bool,
 }
 
 /// A run's result, set once.
@@ -425,7 +428,9 @@ impl TaskRunner {
         if let Some(recovery) = formatter::recovery(command) {
             return blocked("input", recovery);
         }
-        if let Some(denied) = blocked_command_reason(command, self.environment) {
+        if let Some(denied) =
+            blocked_command_reason_for(command, self.environment, context.approved)
+        {
             return blocked("input", denied);
         }
         let bin = context

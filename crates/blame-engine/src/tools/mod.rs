@@ -180,6 +180,26 @@ impl ToolHost for SessionTools {
         }
     }
 
+    async fn needs_approval(&self, name: &str, input: &Value, _config: &SessionConfig) -> bool {
+        let options = {
+            let state = self.state();
+            if !state.harness_tools.contains(name) {
+                return false;
+            }
+            state.harness_options.clone()
+        };
+        // Only a session whose options ask for it (a chat in the person's
+        // own folder) has its git commands that change the repository
+        // approved, instead of refused.
+        if options.get("approveGitChanges").and_then(Value::as_bool) != Some(true) {
+            return false;
+        }
+        match &self.shared.harness {
+            Some(harness) => harness.needs_approval(name, input, &options).await,
+            None => false,
+        }
+    }
+
     async fn interrupted(&self, invocation: &ToolInvocation) -> InterruptedCall {
         if self.state().harness_tools.contains(&invocation.name) {
             return harness::interrupted(&invocation.name);

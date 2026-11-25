@@ -936,6 +936,18 @@ the timeline shows Allow and Deny under it (`engine-approvals.tsx`; each
 surface wraps its timeline in `EngineApprovalProvider`). Among a conversation's
 client tools only `blame_configure` asks (see "Self-repair tools").
 
+A call can also ask for this one time: before it runs the engine asks its
+tool host (`ToolHost::needs_approval`), and for a harness tool the host asks
+the harness (`{ approval }`). A chat sets `approveGitChanges` in its harness
+options: a `run_task` command the harness would refuse only because it
+changes git in the person's own folder (`policy::needs_git_approval`: a
+merge, a commit, a branch switch) waits for Allow instead, then runs with
+`toolContext.approved`, which lifts that refusal and nothing else (an `rm`
+stays refused). Stories, the orchestrator and the new-project assistant do
+not set it: an agent working alone never waits for a person there. Commands
+that only read git (`git branch -a`, `git stash list`, `git remote -v`,
+`git --no-pager log`…) need no approval anywhere.
+
 ## Ultra mode
 
 The person checks **Ultra mode** in the composer's reasoning menu (per story,
