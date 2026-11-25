@@ -207,3 +207,15 @@ export const epicActivityLabels: Record<EpicActivity, string> = {
   paused: "Paused",
   done: "Done",
 }
+
+/**
+ * Every story of the epic is merged or rejected, one at least merged: its
+ * branch is ready for the person, whatever the orchestrator's last turn
+ * ended with (a summary, or an answer to a later message).
+ */
+export function epicReadyForReview(groups: readonly EpicBoardGroup[]) {
+  const count = (id: EpicBoardGroup["id"]) =>
+    groups.find((group) => group.id === id)?.entries.length ?? 0
+  const all = groups.reduce((sum, group) => sum + group.entries.length, 0)
+  return count("merged") > 0 && count("merged") + count("rejected") === all
+}
