@@ -12,6 +12,7 @@ import type {
 } from "@blame/agent-runtime"
 
 import { ClaudeCodeConnectContent } from "@/components/model/claude-code-connect"
+import { defaultConnectionLabel } from "@/components/model/connection-label"
 import { ProviderMark } from "@/components/model/model-selector"
 import type { ModelSelection } from "@/components/model/model-selection"
 import { groupProviders } from "@/components/model/provider-groups"
@@ -256,7 +257,12 @@ function ConnectProviderContent({
   selection: ModelSelection
 }) {
   const [apiKey, setApiKey] = React.useState("")
-  const [label, setLabel] = React.useState(connectionInitialLabel(credential))
+  // Untouched, the name follows the provider's connections ("OpenAI 2"
+  // once "OpenAI 1" exists); typing replaces it.
+  const [labelInput, setLabel] = React.useState<string>()
+  const label =
+    labelInput ??
+    connectionInitialLabel(credential, provider, selection.credentials)
   const [baseUrl, setBaseUrl] = React.useState(credential?.baseUrl ?? "")
   const [modelInput, setModelInput] = React.useState("")
   const [modelIds, setModelIds] = React.useState(
@@ -605,9 +611,17 @@ function ConnectProviderContent({
 }
 
 function connectionInitialLabel(
-  credential: ProviderCredentialSummary | undefined
+  credential: ProviderCredentialSummary | undefined,
+  provider: Provider,
+  credentials: ProviderCredentialSummary[]
 ) {
-  return credential?.label ?? ""
+  if (credential) return credential.label
+  return defaultConnectionLabel(
+    provider.name,
+    credentials
+      .filter((item) => item.providerId === provider.id)
+      .map((item) => item.label)
+  )
 }
 
 function openAICompatibleModelIds(
