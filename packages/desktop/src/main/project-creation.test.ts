@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
+import { existsSync } from "node:fs";
 import {
   mkdir,
   mkdtemp,
   readFile,
   realpath,
+  rm,
   stat,
   writeFile,
 } from "node:fs/promises";
@@ -195,6 +197,46 @@ test("initializes generated projects as independent git repositories", async () 
 
   const { stdout } = await runGit(target, ["rev-parse", "--show-toplevel"]);
   assert.equal(stdout.trim(), await realpath(target));
+});
+
+test("initial repository commit drops a scaffold's leftover repository", async () => {
+  const parent = await mkdtemp(join(tmpdir(), "blame-new-project-"));
+  const target = join(parent, "scaffolded-app");
+  const scratch = join(target, "scaffold-tmp");
+  const kept = join(target, "kept");
+  for (const folder of [scratch, kept]) {
+    await mkdir(join(folder, "src", "app"), { recursive: true });
+    await writeFile(join(folder, "seed.txt"), "seed\n", "utf8");
+    await runGit(folder, ["init", "--quiet"]);
+    await runGit(folder, ["add", "--all"]);
+    await runGit(folder, [
+      "-c",
+      "user.name=Scaffold",
+      "-c",
+      "user.email=scaffold@example.local",
+      "commit",
+      "--quiet",
+      "-m",
+      "Initial commit from Create Next App",
+    ]);
+  }
+  // The scaffold moved its files up and left only the repository behind.
+  await rm(join(scratch, "seed.txt"));
+  await writeFile(join(target, "package.json"), "{}", "utf8");
+
+  await initializeGeneratedRepository(target);
+
+  const { stdout } = await runGit(target, ["ls-files", "--stage"]);
+  assert.doesNotMatch(stdout, /^160000 /m);
+  assert.deepEqual(
+    stdout
+      .trim()
+      .split("\n")
+      .map((line) => line.split("\t")[1]),
+    [".gitignore", "kept/seed.txt", "package.json"],
+  );
+  assert.equal(existsSync(scratch), false);
+  assert.equal(existsSync(join(kept, ".git")), false);
 });
 
 test("initial repository commit excludes generated runtime artifacts", async () => {

@@ -14,8 +14,10 @@ import { existsSync } from "node:fs";
 import {
   appendFile,
   mkdir,
+  readdir,
   readFile,
   rename,
+  rm,
   writeFile,
 } from "node:fs/promises";
 import { basename, join, relative, resolve } from "node:path";
@@ -165,6 +167,8 @@ export async function initializeGeneratedRepository(
   await git(target, ["init"]);
   await ensureGeneratedProjectGitignore(target);
   await git(target, ["add", "--all", "--", "."]);
+  if (await withoutNestedRepositories(target, emit))
+    await git(target, ["add", "--all", "--", "."]);
   const changed = await hasStagedChanges(target);
   if (!changed) return;
   await git(target, [
@@ -176,6 +180,64 @@ export async function initializeGeneratedRepository(
     "-m",
     "chore: initialize project",
   ]);
+}
+
+// A scaffold run in a scratch folder (`create-next-app scaffold-tmp`, then
+// its files moved up) leaves that folder's own repository behind. Added as
+// is, it became a submodule whose content could never be committed (test4,
+// 2026-11-26). A new project declares no submodule: an undeclared nested
+// repository loses its `.git`, and its folder goes when nothing else is in
+// it. Returns whether one was found.
+async function withoutNestedRepositories(
+  target: string,
+  emit: (event: ProjectCreationEvent) => void,
+) {
+  const staged = await gitOutput(target, ["ls-files", "--stage", "-z"]);
+  const declared = existsSync(join(target, ".gitmodules"))
+    ? (
+        await gitOutput(target, [
+          "config",
+          "--file",
+          ".gitmodules",
+          "--get-regexp",
+          "path",
+        ]).catch(() => "")
+      )
+        .split("\n")
+        .map((line) => line.split(" ").slice(1).join(" "))
+    : [];
+  const nested = staged
+    .split("\0")
+    .filter((entry) => entry.startsWith("160000 "))
+    .map((entry) => entry.slice(entry.indexOf("\t") + 1))
+    .filter((path) => path && !declared.includes(path));
+  for (const path of nested) {
+    await git(target, ["rm", "--cached", "--force", "--quiet", "--", path]);
+    const folder = join(target, path);
+    await rm(join(folder, ".git"), { recursive: true, force: true });
+    if (!(await holdsFiles(folder))) await rm(folder, { recursive: true });
+    emit({
+      type: "stdout",
+      data: `Removed the scaffold's leftover repository in ${path}\n`,
+    });
+  }
+  return nested.length > 0;
+}
+
+async function holdsFiles(folder: string): Promise<boolean> {
+  for (const entry of await readdir(folder, { withFileTypes: true })) {
+    if (!entry.isDirectory()) return true;
+    if (await holdsFiles(join(folder, entry.name))) return true;
+  }
+  return false;
+}
+
+async function gitOutput(cwd: string, args: string[]) {
+  const { stdout } = await execFileAsync(hostGitCommand(), args, {
+    cwd,
+    maxBuffer: gitMaxBuffer,
+  });
+  return String(stdout);
 }
 
 async function hasStagedChanges(target: string) {
