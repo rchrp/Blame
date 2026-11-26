@@ -55,7 +55,12 @@ export function AiPreferencesSetupScreen() {
   const [saving, setSaving] = React.useState(false)
   const connected = selection.connectedProviderIDs.size > 0
   const choice = chooseAutoModels(
-    selection.recommendedModels(allProvidersValue),
+    selection
+      .recommendedModels(allProvidersValue)
+      .map((candidate) => ({
+        ...candidate,
+        outputPrice: candidate.model.cost.output,
+      })),
     selection.currentModel
   )
   const canContinue = connected && !!choice && !selection.loading

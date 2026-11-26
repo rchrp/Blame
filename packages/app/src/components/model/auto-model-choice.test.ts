@@ -2,6 +2,7 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+  agentOutputPriceCap,
   alternativeFloorRatio,
   chooseAutoModels,
   supportedVariant,
@@ -13,9 +14,11 @@ function candidate(
   modelId: string,
   estimatedCost: number | null,
   smartScore: number | null | undefined,
-  segment: AutoModelCandidate<string>["segment"] = "benchmarked"
+  segment: AutoModelCandidate<string>["segment"] = "benchmarked",
+  outputPrice?: number | null
 ): AutoModelCandidate<string> {
   return {
+    ...(outputPrice === undefined ? {} : { outputPrice }),
     providerId,
     modelId,
     position: 0,
@@ -207,12 +210,51 @@ test("equal scores: the cheaper one is the agent, the smarter wins an equal pric
   assert.equal(equalCost?.agent, "a/sharp")
 })
 
-test("the alternative reasons lightly, the agent keeps the model's default", () => {
+test("both models keep their own reasoning default", () => {
   const choice = chooseAutoModels([claudeFable, claudeHaiku])
   assert.equal(choice?.agentVariant, undefined)
-  assert.equal(choice?.alternativeVariant, "low")
+  assert.equal(choice?.alternativeVariant, undefined)
   const same = chooseAutoModels([claudeSonnet])
   assert.equal(same?.alternativeVariant, undefined)
+})
+
+test("the output price cap sits between Opus and Fable", () => {
+  assert.equal(agentOutputPriceCap, 30)
+})
+
+test("the agent is the smartest model within the output price cap", () => {
+  const fable = candidate("anthropic", "fable", 0.6, 64.6, "benchmarked", 50)
+  const opus = candidate("anthropic", "opus", 0.3, 60, "benchmarked", 25)
+  const sonnet = candidate("anthropic", "sonnet", 0.15, 54.5, "benchmarked", 15)
+  const haiku = candidate("anthropic", "haiku", 0.0075, 36.5, "benchmarked", 5)
+  const choice = chooseAutoModels([fable, opus, sonnet, haiku])
+  assert.equal(choice?.agent, "anthropic/opus")
+  // The floor follows the agent: 60 * 0.4 = 24.
+  assert.equal(choice?.alternative, "anthropic/haiku")
+  // A price exactly on the cap passes.
+  const edge = candidate("a", "edge", 1, 50, "benchmarked", 30)
+  assert.equal(
+    chooseAutoModels([edge, candidate("a", "dear", 2, 60, "benchmarked", 31)])
+      ?.agent,
+    "a/edge"
+  )
+})
+
+test("a model without a known output price is not excluded by the cap", () => {
+  const choice = chooseAutoModels([
+    candidate("a", "unknown", 2, 60, "benchmarked", null),
+    candidate("a", "priced", 1, 50, "benchmarked", 10),
+  ])
+  assert.equal(choice?.agent, "a/unknown")
+})
+
+test("every model above the cap: the cheapest of the frontier is the agent", () => {
+  const choice = chooseAutoModels([
+    candidate("a", "top", 2, 60, "benchmarked", 80),
+    candidate("a", "less", 1, 55, "benchmarked", 40),
+  ])
+  assert.equal(choice?.agent, "a/less")
+  assert.equal(choice?.alternative, "a/less")
 })
 
 test("a variant is saved only when the model offers it", () => {

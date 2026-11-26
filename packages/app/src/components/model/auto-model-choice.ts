@@ -10,7 +10,7 @@ import type {
 
 /**
  * The alternative model (project setup, titles, security audits) is the
- * cheapest frontier model scoring at least this share of the smartest one.
+ * cheapest frontier model scoring at least this share of the agent model.
  *
  * Measured on the Intelligence Index of the current catalog (top score 64.6),
  * 0.4 puts the floor at about 26: the small tier of the major labs stays
@@ -21,13 +21,26 @@ import type {
  * It is a share of the top score, not a fixed number, because Artificial
  * Analysis rescales its index when it publishes a new version: a share keeps
  * its meaning, an absolute floor would suddenly exclude or admit everything.
- * The top is the smartest model of the connected providers, so someone with a
- * single modest provider still gets a cheap model that is not much weaker
- * than their best one.
+ * The reference is the agent model picked from the connected providers, so
+ * someone with a single modest provider still gets a cheap model that is not
+ * much weaker than their agent.
  */
 export const alternativeFloorRatio = 0.4
 
-export type AutoModelCandidate<Model> = ModelRecommendation & { model: Model }
+/**
+ * The agent model is the smartest model whose output price, in dollars per
+ * million tokens, is at most this. The very top tier (Claude Fable 5.2 at $40)
+ * costs too much to run as the everyday coding agent, while the tier below it
+ * (Claude Opus 5.5 at $20, and the flagships of the other labs) is what people
+ * expect to start with. A model without a known output price is not excluded.
+ */
+export const agentOutputPriceCap = 30
+
+export type AutoModelCandidate<Model> = ModelRecommendation & {
+  model: Model
+  /** Output price in dollars per million tokens, when known. */
+  outputPrice?: number | null
+}
 
 export type AutoModelChoice<Model> = {
   agent: Model
@@ -40,9 +53,10 @@ export type AutoModelChoice<Model> = {
 }
 
 /**
- * The agent model is the smartest of the frontier. The alternative is the
- * cheapest frontier model at or above the floor, and the agent model itself
- * when none is. A model without an Intelligence Index is never picked, since
+ * The agent model is the smartest of the frontier within the output price
+ * cap, and the cheapest of the frontier when every model is above it. The
+ * alternative is the cheapest frontier model scoring at least the floor share
+ * of the agent model, and the agent model itself when none does. A model without an Intelligence Index is never picked, since
  * the floor cannot be checked on it; only when no model at all is scored (the
  * ranking is unavailable, or the provider has unbenchmarked models only, like
  * an OpenAI-compatible server) does `fallback` stand in for both, so setup can
@@ -51,11 +65,18 @@ export type AutoModelChoice<Model> = {
 export function chooseAutoModels<Model>(
   candidates: AutoModelCandidate<Model>[],
   fallback?: Model,
-  floorRatio = alternativeFloorRatio
+  floorRatio = alternativeFloorRatio,
+  priceCap = agentOutputPriceCap
 ): AutoModelChoice<Model> | undefined {
   const frontier = withoutDominated(candidates.filter(scored))
-  const smartest = [...frontier].sort(bySmartest)[0]
-  if (!smartest) {
+  const affordable = frontier.filter((candidate) =>
+    withinCap(candidate, priceCap)
+  )
+  const agent =
+    affordable.length > 0
+      ? [...affordable].sort(bySmartest)[0]
+      : [...frontier].sort(byCheapest)[0]
+  if (!agent) {
     if (fallback === undefined) return undefined
     return {
       agent: fallback,
@@ -65,20 +86,26 @@ export function chooseAutoModels<Model>(
       source: "fallback",
     }
   }
-  const floor = smartest.smartScore! * floorRatio
+  const floor = agent.smartScore! * floorRatio
   const cheapest = frontier
     .filter((candidate) => candidate.smartScore! >= floor)
     .sort(byCheapest)[0]
-  const alternative = cheapest ?? smartest
+  const alternative = cheapest ?? agent
   return {
-    agent: smartest.model,
+    agent: agent.model,
     alternative: alternative.model,
-    // Lighter work does not need to think long; the coding agent keeps the
-    // model's own default, which its maker tuned for coding.
+    // Both keep the model's own reasoning default, which its maker tuned:
+    // the alternative is already the cheap model, and lowering its effort
+    // on top of that made its work (project setup, audits) noticeably worse.
     agentVariant: undefined,
-    alternativeVariant: alternative === smartest ? undefined : "low",
+    alternativeVariant: undefined,
     source: "frontier",
   }
+}
+
+function withinCap(candidate: AutoModelCandidate<unknown>, cap: number) {
+  const price = candidate.outputPrice
+  return typeof price !== "number" || !Number.isFinite(price) || price <= cap
 }
 
 /** The effort to save for a model: the wanted one when the model offers it. */
