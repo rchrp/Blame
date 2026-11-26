@@ -137,11 +137,15 @@ export async function gitStatus(root: string) {
     gitBranchStatus(cwd),
     gitRemoteUrls(cwd),
   ]);
+  // A submodule whose content alone changed has nothing to commit here
+  // (`git commit` refuses it): only a new commit of its shows. test4's
+  // leftover scaffold repository made every commit fail (2026-11-26).
   const { stdout } = await runRuntimeGit(cwd, [
     "status",
     "--porcelain=v1",
     "-z",
     "--untracked-files=all",
+    "--ignore-submodules=dirty",
   ]);
   return { branch, files: parseGitStatusFiles(stdout), remote: remotes[0] };
 }

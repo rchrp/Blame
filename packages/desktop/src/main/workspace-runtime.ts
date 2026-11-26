@@ -265,6 +265,8 @@ export async function run(
     maxBuffer: input.maxBuffer,
     shell: false,
     windowsVerbatimArguments: commandSpec.windowsVerbatimArguments,
+  }).catch((error: unknown) => {
+    throw withStdoutReason(error);
   });
   return {
     stderr: String(result.stderr),
@@ -558,6 +560,18 @@ function runtimeEnvironment(input: RuntimeOptions, platform: NodeJS.Platform) {
     };
   }
   return env;
+}
+
+// Node's message is the command and its stderr. Some commands say why they
+// failed on stdout alone (`git commit` with nothing to commit): the message
+// then carries that, as the runtime agent's does.
+export function withStdoutReason(error: unknown) {
+  if (!(error instanceof Error)) return error;
+  const { stdout, stderr } = error as { stdout?: unknown; stderr?: unknown };
+  const output = typeof stdout === "string" ? stdout.trim() : "";
+  if (!output || (typeof stderr === "string" && stderr.trim())) return error;
+  error.message = `${error.message.trimEnd()}\n${output}`;
+  return error;
 }
 
 function useRuntimeAgent(platform: NodeJS.Platform, env: NodeJS.ProcessEnv) {

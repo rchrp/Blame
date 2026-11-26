@@ -16,6 +16,7 @@ import {
   ensureRuntimeGitUserIdentity,
   resetRuntimeGitIdentityConfiguredForTesting,
   findProjectFilesByName,
+  withStdoutReason,
 } from "./workspace-runtime.ts";
 import { sanitizeWorkspaceConfigFiles } from "./workspace-config-sanitizer.ts";
 
@@ -643,5 +644,27 @@ test("resolves Windows worktrees in the selected development distribution", () =
       { BLAME_WSL_DISTRO: "BlameRuntimeDev" },
     ),
     String.raw`\\wsl.localhost\BlameRuntimeDev\home\blame\.local\share\blame\runtime\worktrees\Test\story`,
+  );
+});
+
+test("a failed command says why from stdout when stderr is empty", () => {
+  const silent = Object.assign(new Error("Command failed: git commit -m x\n"), {
+    stdout: "On branch main\nno changes added to commit\n",
+    stderr: "",
+  });
+  assert.equal(
+    (withStdoutReason(silent) as Error).message,
+    "Command failed: git commit -m x\nOn branch main\nno changes added to commit",
+  );
+  const loud = Object.assign(
+    new Error("Command failed: git push\nrejected\n"),
+    {
+      stdout: "progress",
+      stderr: "rejected\n",
+    },
+  );
+  assert.equal(
+    (withStdoutReason(loud) as Error).message,
+    "Command failed: git push\nrejected\n",
   );
 });
