@@ -368,7 +368,12 @@ async fn the_real_harness_describes_its_tools_and_reads_code() {
     )
     .await;
     let workspace = temp_dir("harness-real-workspace");
-    std::fs::write(workspace.join("note.txt"), "hello from \"the\" file\n").unwrap();
+    // Over three lines: the content leaves the JSON line for its own section.
+    std::fs::write(
+        workspace.join("note.txt"),
+        "hello from \"the\" file\nsecond\nthird\nfourth\n",
+    )
+    .unwrap();
     let session = engine.create(harness_config(&workspace)).await;
     engine.subscribe(&session, 0).await;
     engine.send(&session, "read the note").await;
