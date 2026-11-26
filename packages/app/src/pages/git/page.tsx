@@ -23,7 +23,6 @@ import {
   gitCommitSelection,
   gitFileSelection,
 } from "@/components/git/git-types"
-import { Button } from "@/components/ui/button"
 import { engineModelChoice } from "@/lib/agent-title-generation"
 import { projectCodePractices } from "@/lib/project-code-practices"
 import {
@@ -41,6 +40,7 @@ import {
   setCommitMessageDraft,
   useCommitMessageDraft,
 } from "./commit-message-draft"
+import { gitActionFailure, gitErrorReason } from "./git-error"
 
 type GitAction = (root: string, workspace: WorkspaceClient) => Promise<unknown>
 
@@ -130,7 +130,6 @@ export function GitPage() {
       })
     } catch (error) {
       const message = errorText(error)
-      git.setError(message)
       failureToast("Commit message generation failed", message, {
         task: "Commit message",
         id: toastId,
@@ -197,7 +196,6 @@ export function GitPage() {
       }
     } catch (error) {
       const message = errorText(error)
-      git.setError(message)
       failureToast("AI conflict resolution failed", message, {
         task: "AI conflict resolution",
         id: toastId,
@@ -231,9 +229,6 @@ export function GitPage() {
 
   return (
     <div className="flex h-svh min-h-0 min-w-0 flex-col gap-4 overflow-hidden px-4 pt-[calc(var(--header-height)+1rem)] pb-4 md:h-[calc(100svh_-_1rem)] lg:px-6 lg:pt-[calc(var(--header-height)+1.5rem)] lg:pb-6">
-      {git.error ? (
-        <GitError message={git.error} onDismiss={git.clearError} />
-      ) : null}
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-auto xl:grid-cols-[18rem_minmax(22rem,30rem)_minmax(0,1fr)] xl:overflow-visible">
         <GitWorkspacePanel
           busy={git.busy}
@@ -307,7 +302,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
   const [commitTotal, setCommitTotal] = React.useState<number>()
   const [diff, setDiff] = React.useState("")
   const [diffLoading, setDiffLoading] = React.useState(false)
-  const [error, setError] = React.useState("")
+  const setError = useGitErrorToast()
   const [hasMoreCommits, setHasMoreCommits] = React.useState(true)
   const [loading, setLoading] = React.useState(Boolean(root && workspace))
   const [loadingMoreCommits, setLoadingMoreCommits] = React.useState(false)
@@ -365,7 +360,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
         if (!options.quiet) setLoading(false)
       }
     },
-    [root, workspace]
+    [root, setError, workspace]
   )
 
   React.useEffect(() => {
@@ -438,7 +433,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
       setDiffLoading,
       setError
     )
-  }, [root, selected, stateVersion, workspace])
+  }, [root, selected, setError, stateVersion, workspace])
 
   const runAction = React.useCallback(
     (label: string, action: GitAction) => {
@@ -453,7 +448,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
         gitIdentity?.handleError
       )
     },
-    [gitIdentity, refresh, root, workspace]
+    [gitIdentity, refresh, root, setError, workspace]
   )
 
   const loadMoreCommits = React.useCallback(
@@ -471,7 +466,7 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
         setHasMoreCommits,
         setLoadingMoreCommits,
       }),
-    [root, workspace]
+    [root, setError, workspace]
   )
 
   return {
@@ -504,7 +499,6 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
     commits,
     diff,
     diffLoading,
-    error,
     deleteFile: (path: string) =>
       runAction(
         "Deleting file",
@@ -544,7 +538,6 @@ function useGitController(root?: string, workspace?: WorkspaceClient) {
       setSelectedFilePaths((current) => removeFilePaths(current, [path])),
     unselectFiles: (paths: string[]) =>
       setSelectedFilePaths((current) => removeFilePaths(current, paths)),
-    clearError: () => setError(""),
   }
 }
 
@@ -704,8 +697,10 @@ async function runGitAction(
         setError
       )
     if (askIdentity?.(message, retry)) return
-    setError(message)
-    toast.error(message)
+    toast.error(gitActionFailure(label), {
+      description: gitErrorReason(message),
+      position: "bottom-right",
+    })
   } finally {
     setBusy(undefined)
   }
@@ -899,21 +894,21 @@ function sameFilePathSet(left: Set<string>, right: Set<string>) {
   return true
 }
 
-function GitError({
-  message,
-  onDismiss,
-}: {
-  message: string
-  onDismiss(): void
-}) {
-  return (
-    <div className="flex items-center gap-3 border-t border-b border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-      <span className="min-w-0 flex-1 truncate">{message}</span>
-      <Button size="sm" variant="ghost" onClick={onDismiss}>
-        Dismiss
-      </Button>
-    </div>
-  )
+// A failure outside an action (a refresh, a diff, more history) shows once
+// as a toast: a refresh failing again with the same error does not show it
+// again, and clearing (`""`) lets it show next time.
+function useGitErrorToast() {
+  const shown = React.useRef("")
+  return React.useCallback((message: string) => {
+    if (message === shown.current) return
+    shown.current = message
+    if (!message) return
+    toast.error("Git error", {
+      id: "git-error",
+      description: gitErrorReason(message),
+      position: "bottom-right",
+    })
+  }, [])
 }
 
 function GitUnavailable() {
