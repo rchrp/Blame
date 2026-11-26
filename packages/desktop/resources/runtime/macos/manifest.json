@@ -1,6 +1,6 @@
 {
   "vm": "BlameRuntime",
-  "runtimeVersion": "16",
+  "runtimeVersion": "17",
   "runtimeAgentVersion": "16",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
