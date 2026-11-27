@@ -179,12 +179,19 @@ async fn watchdog(clock: &dyn Clock, options: &WatchdogOptions) -> ErrorInfo {
         if waited >= options.inactivity {
             return ErrorInfo {
                 kind: ErrorKind::Stalled,
-                message: format!(
-                    "The model sent nothing for {}s.",
-                    options.inactivity.as_secs()
-                ),
+                message: format!("The model sent nothing for {}.", span(options.inactivity)),
                 retry_after_ms: None,
             };
         }
+    }
+}
+
+/// "30 min" for a whole number of minutes, else "90s".
+fn span(duration: Duration) -> String {
+    let seconds = duration.as_secs();
+    if seconds >= 120 && seconds.is_multiple_of(60) {
+        format!("{} min", seconds / 60)
+    } else {
+        format!("{seconds}s")
     }
 }

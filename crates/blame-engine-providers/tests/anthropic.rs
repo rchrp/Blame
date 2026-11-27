@@ -567,6 +567,43 @@ async fn a_silent_stream_fails_as_stalled() {
     assert_eq!(error.kind, ErrorKind::Stalled, "{error:?}");
 }
 
+/// A model that thinks without showing its thinking (Claude Code relays an
+/// empty `thinking_delta` about every second, the API a `ping`) is alive:
+/// only bytes count, not the events they decode to.
+#[tokio::test]
+async fn a_reply_that_only_keeps_alive_for_longer_than_the_idle_limit_is_not_stalled() {
+    let full = reply();
+    let first_delta = full.find("event: content_block_delta").expect("delta");
+    let keep_alive = sse(&[(
+        "content_block_delta",
+        json!({"type": "content_block_delta", "index": 0,
+               "delta": {"type": "thinking_delta", "thinking": "", "estimated_tokens": 100}}),
+    )]);
+    let every = Duration::from_millis(100);
+    let mut pieces = vec![(Duration::ZERO, full[..first_delta].to_owned())];
+    pieces.extend((0..8).map(|_| (every, keep_alive.clone())));
+    pieces.push((every, full[first_delta..].to_owned()));
+    let mock = Mock::start(vec![Reply {
+        status: 200,
+        headers: vec![("content-type".into(), "text/event-stream".into())],
+        body: Body::Paced(pieces),
+    }])
+    .await;
+    let options = Options {
+        idle_timeout: Duration::from_millis(400),
+        ..Options::default()
+    };
+    let provider = connect("anthropic", &api_key("k", &mock.base), &options).expect("provider");
+    let (events, error) = run(&provider, first_request()).await;
+    assert!(error.is_none(), "{error:?}");
+    assert!(
+        events
+            .iter()
+            .any(|event| matches!(event, ModelEvent::Finished { .. })),
+        "{events:#?}"
+    );
+}
+
 #[tokio::test]
 async fn an_error_inside_the_stream_is_classified() {
     let full = reply();

@@ -34,6 +34,9 @@ pub enum Body {
     Cut(String),
     /// The first bytes, then nothing while the connection stays open.
     Stall(String),
+    /// A chunked body sent piece by piece, each after its wait, then ended
+    /// cleanly: a reply that takes its time.
+    Paced(Vec<(Duration, String)>),
 }
 
 pub struct Reply {
@@ -192,6 +195,18 @@ async fn serve(
             let _ = stream.write_all(chunk.as_bytes()).await;
             let _ = stream.flush().await;
             tokio::time::sleep(Duration::from_secs(30)).await;
+        }
+        Body::Paced(pieces) => {
+            head.push_str("transfer-encoding: chunked\r\n\r\n");
+            let _ = stream.write_all(head.as_bytes()).await;
+            for (wait, piece) in pieces {
+                tokio::time::sleep(wait).await;
+                let chunk = format!("{:x}\r\n{piece}\r\n", piece.len());
+                let _ = stream.write_all(chunk.as_bytes()).await;
+                let _ = stream.flush().await;
+            }
+            let _ = stream.write_all(b"0\r\n\r\n").await;
+            let _ = stream.shutdown().await;
         }
     }
 }

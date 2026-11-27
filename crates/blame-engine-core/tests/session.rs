@@ -6,9 +6,10 @@ use blame_engine_core::ports::Clock;
 use blame_engine_core::ports::{ModelMessage, ProviderError};
 use blame_engine_core::projection::{SUMMARY_PREAMBLE, View};
 use blame_engine_core::testing::{
-    Behavior, ManualClock, Script, ScriptedProvider, ScriptedTools, World, config, standard_specs,
+    Behavior, ManualClock, Script, ScriptedProvider, ScriptedTools, Step, World, config,
+    standard_specs,
 };
-use blame_engine_core::{ContextPolicy, RecoveryPolicy, Session, SessionEvent};
+use blame_engine_core::{ContextPolicy, RecoveryPolicy, Session, SessionEvent, WatchdogOptions};
 use blame_engine_protocol::{
     ApprovalDecision, ContextEdit, Delivery, Delta, ErrorKind, RecordBody, SessionActivity,
     SessionId, ToolOutcome, ToolSpec, TurnOutcome, Usage, WorkspaceRestore,
@@ -207,10 +208,47 @@ async fn a_silent_stream_is_abandoned_and_sent_again() {
         })
         .unwrap();
     assert_eq!(failure.kind, ErrorKind::Stalled);
+    let limit = WatchdogOptions::default().inactivity.as_millis() as u64;
     assert!(
-        world.clock.now_ms() - start >= 180_000,
+        world.clock.now_ms() - start >= limit,
         "waited the inactivity limit"
     );
+    assert_eq!(outcome_of_last_turn(&records), TurnOutcome::Completed);
+}
+
+/// A model may think for many minutes with its thinking withheld: no event
+/// arrives while the connection is alive (the provider sees its keep-alive
+/// bytes). The engine waits for it instead of sending the request again.
+#[tokio::test]
+async fn a_model_that_thinks_silently_for_minutes_is_waited_for() {
+    let mut world = fresh();
+    world.clock = ManualClock::manual();
+    world.provider = ScriptedProvider::new().with_clock(world.clock.clone());
+    let Script::Stream(mut steps) = Script::text("thought it through") else {
+        unreachable!("a text reply streams");
+    };
+    steps.insert(1, Step::Delay(Duration::from_secs(10 * 60)));
+    world.provider.push(Script::Stream(steps));
+    let session = create(&world).await;
+    let start = world.clock.now_ms();
+    session.send(text("hi"), Delivery::Turn).await.unwrap();
+    // Ten minutes in watchdog slices: each step waits for both the silent
+    // reply and the watchdog to sleep, so the watchdog checks every slice.
+    for _ in 0..(10 * 60 / 5) {
+        let clock = world.clock.clone();
+        until(move || clock.sleepers() >= 2).await;
+        world.clock.advance(Duration::from_secs(5));
+    }
+    session.wait_idle().await;
+    let records = session.records().await;
+    assert!(
+        !records
+            .iter()
+            .any(|r| matches!(r.body, RecordBody::RequestFailed { .. })),
+        "{:#?}",
+        kinds(&records)
+    );
+    assert!(world.clock.now_ms() - start >= 10 * 60 * 1000);
     assert_eq!(outcome_of_last_turn(&records), TurnOutcome::Completed);
 }
 

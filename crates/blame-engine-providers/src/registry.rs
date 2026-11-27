@@ -84,9 +84,12 @@ impl ProviderKind {
 /// What the binary may tune; the defaults suit production.
 #[derive(Clone, Debug)]
 pub struct Options {
-    /// A streamed reply that sends nothing for this long fails as
-    /// `ErrorKind::Stalled`. Providers ping while a model thinks, so this
-    /// only trips on a dead connection.
+    /// A streamed reply that sends no bytes for this long fails as
+    /// `ErrorKind::Stalled`. Providers ping while a model thinks (Claude
+    /// Code relays an empty thinking delta about every second), and those
+    /// bytes count even though they carry no event, so this only trips on a
+    /// dead connection. It is what tells a dead stream from a model that
+    /// thinks for minutes without showing its thinking.
     pub idle_timeout: Duration,
     /// How long opening a connection may take.
     pub connect_timeout: Duration,
@@ -98,7 +101,7 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
-            idle_timeout: rig_core::driver::STREAM_IDLE_TIMEOUT,
+            idle_timeout: Duration::from_secs(180),
             connect_timeout: Duration::from_secs(30),
             catalog: Arc::new(LiveCatalog::default()),
         }

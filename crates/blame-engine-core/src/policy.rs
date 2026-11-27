@@ -60,7 +60,11 @@ impl RetryPolicy {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct WatchdogOptions {
-    /// A stream silent for this long is stalled and sent again.
+    /// A stream that yields no event for this long is stalled and sent
+    /// again. Only a backstop: a model may think for many minutes without
+    /// an event (its thinking withheld), and the provider tells a live
+    /// stream from a dead one by the bytes it still receives (its idle
+    /// timeout). This must stay above the longest silent thinking.
     pub inactivity: Duration,
     /// How often the wall clock is compared with the time slept.
     pub check_every: Duration,
@@ -72,7 +76,7 @@ pub struct WatchdogOptions {
 impl Default for WatchdogOptions {
     fn default() -> Self {
         Self {
-            inactivity: Duration::from_secs(180),
+            inactivity: Duration::from_secs(30 * 60),
             check_every: Duration::from_secs(5),
             sleep_jump: Duration::from_secs(30),
         }
