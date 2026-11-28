@@ -37,3 +37,16 @@ export function screenshotItemsFromActivities(
   }
   return [...items.values()]
 }
+
+/**
+ * Where a screenshot is read from. An engine image comes from the account,
+ * and when the account lacks it (a merged story's session leaves this
+ * computer, its images with it, before they may have been copied), from
+ * this device's agent screenshots: both are named by the image's sha256.
+ */
+export function screenshotStore(
+  item: Pick<ScreenshotItem, "blob"> | undefined,
+  engine: "loading" | "ready" | "unavailable"
+): "engine" | "device" {
+  return item?.blob && engine !== "unavailable" ? "engine" : "device"
+}

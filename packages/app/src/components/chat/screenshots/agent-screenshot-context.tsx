@@ -14,6 +14,7 @@ import {
 import { readEngineImage } from "./engine-image"
 import {
   screenshotItemsFromActivities,
+  screenshotStore,
   type ScreenshotItem,
 } from "./screenshot-items"
 export type { ScreenshotItem } from "./screenshot-items"
@@ -95,9 +96,10 @@ export function useAgentScreenshot(
   const platform = usePlatform()
   const auth = useCloudAuth()
   const owner = React.useContext(OwnerContext)
-  const id = item?.blob ? undefined : item?.id
-  const sessionId = item?.ref?.sessionId
   const blob = useEngineScreenshot(item?.blob ? item.id : undefined)
+  const store = screenshotStore(item, blob.status)
+  const id = store === "device" ? item?.id : undefined
+  const sessionId = item?.ref?.sessionId
   const value = React.useSyncExternalStore(subscribe, () => snapshot(id))
   React.useEffect(() => {
     if (!id || loaded.has(id) || pending.has(id)) return
@@ -126,7 +128,7 @@ export function useAgentScreenshot(
       })
     pending.set(id, request)
   }, [auth.apiConnection, id, owner, platform.agentScreenshots, sessionId])
-  if (item?.blob) return blob
+  if (store === "engine") return blob
   if (value === "loading") return { status: "loading" }
   if (value === "unavailable") return { status: "unavailable" }
   return { source: value.dataUrl, metadata: value.metadata, status: "ready" }
