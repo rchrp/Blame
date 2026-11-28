@@ -282,7 +282,7 @@ check docker sh -lc 'command -v dockerd >/dev/null 2>&1 && command -v docker >/d
 check docker-compose sh -lc 'docker compose version >/dev/null 2>&1'
 check git sh -lc 'command -v git >/dev/null 2>&1'
 check semantic-harness sh -lc 'command -v blame-semantic-harness >/dev/null 2>&1 && test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__"'
-check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
+check package-managers sh -lc 'test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" && test "$(/opt/blame/package-managers/pnpm/11.18.0/bin/pnpm --version 2>/dev/null)" = "11.18.0" && test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" && test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22"'
 check gh sh -lc '/usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "'
 '@
   $command = $command -replace "__RUNTIME_AGENT_VERSION__", $RuntimeAgentVersion
@@ -534,7 +534,7 @@ version_ok &&
   test -x /usr/local/bin/blame-runtime-agent &&
   command -v blame-semantic-harness >/dev/null 2>&1 &&
   test "$(cat /etc/blame-semantic-harness-sha256 2>/dev/null)" = "__SEMANTIC_HARNESS_SHA256__" &&
-  test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" &&
+  test "$(/opt/blame/package-managers/pnpm/12.15.0/bin/pnpm --version 2>/dev/null)" = "12.15.0" && test "$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version 2>/dev/null)" = "10.34.9" && test "$(/opt/blame/package-managers/pnpm/11.18.0/bin/pnpm --version 2>/dev/null)" = "11.18.0" &&
   test "$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version 2>/dev/null)" = "12.2.1" && test "$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version 2>/dev/null)" = "11.6.4" &&
   test "$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version 2>/dev/null)" = "1.22.22" &&
   /usr/local/bin/gh --version 2>/dev/null | head -n 1 | grep -q "^gh version 2.103.3 "

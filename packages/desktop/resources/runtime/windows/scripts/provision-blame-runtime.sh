@@ -11,6 +11,9 @@ npm_version="${BLAME_NPM_VERSION:-12.2.1}"
 pnpm_version="${BLAME_PNPM_VERSION:-12.15.0}"
 # The newest pnpm 10, for projects that still pin pnpm 10.
 pnpm_legacy_version="10.34.9"
+# The newest pnpm 11, npm's latest pnpm: Corepack and scaffolds such as
+# create-next-app pin it in new projects, which pnpm 12 does not run.
+pnpm_previous_version="11.18.0"
 yarn_version="${BLAME_YARN_VERSION:-1.22.22}"
 gh_version="2.103.3"
 preview_display_image="ghcr.io/rchrp/blame-preview-display@sha256:ff979c4dd3b0df001f26252d2da11949f86c820ff7dde8fbbb94bc1d7bd98e2b" # Filled from the signed preview-image release.
@@ -124,19 +127,24 @@ ensure_package_managers() {
   ensure_package_manager npm "$npm_version"
   ensure_package_manager npm "11.6.4"
   ensure_package_manager pnpm "$pnpm_version"
-  # Existing projects can keep their pnpm 10 pin when the runtime upgrades.
+  # Existing projects can keep their pnpm 10 or 11 pin when the runtime upgrades.
   ensure_package_manager pnpm "$pnpm_legacy_version"
-  remove_retired_pnpm_10
+  ensure_package_manager pnpm "$pnpm_previous_version"
+  remove_retired_pnpm 10 "$pnpm_legacy_version"
+  remove_retired_pnpm 11 "$pnpm_previous_version"
   ensure_package_manager yarn "$yarn_version"
 }
 
-# An upgraded VM keeps the pnpm 10 of its previous runtime, and older pnpm 10
+# An upgraded VM keeps the pnpm 10 and 11 of its previous runtime, and older
 # releases can write outside a project during an install. Keep only the
-# current one: a project pinned to another pnpm 10 runs it as the same major.
-remove_retired_pnpm_10() {
-  for directory in "$package_manager_root"/pnpm/10.*; do
+# current one per major: a project pinned to another release runs it as the
+# same major.
+remove_retired_pnpm() {
+  major="$1"
+  kept="$2"
+  for directory in "$package_manager_root"/pnpm/"$major".*; do
     [ -d "$directory" ] || continue
-    [ "${directory##*/}" = "$pnpm_legacy_version" ] && continue
+    [ "${directory##*/}" = "$kept" ] && continue
     rm -rf "$directory"
   done
 }

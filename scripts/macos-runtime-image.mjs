@@ -217,6 +217,7 @@ async function verifyRuntime(bundle, instanceName, environment) {
     // The native binary, not the shebang-less placeholder only a shell runs.
     "head -c 4 \"$(readlink -f /opt/blame/package-managers/pnpm/12.15.0/bin/pnpm)\" | grep -q ELF",
     "test \"$(/opt/blame/package-managers/pnpm/10.34.9/bin/pnpm --version)\" = \"10.34.9\"",
+    "test \"$(/opt/blame/package-managers/pnpm/11.18.0/bin/pnpm --version)\" = \"11.18.0\"",
     "test \"$(/opt/blame/package-managers/npm/12.2.1/bin/npm --version)\" = \"12.2.1\"",
     "test \"$(/opt/blame/package-managers/npm/11.6.4/bin/npm --version)\" = \"11.6.4\"",
     "test \"$(/opt/blame/package-managers/yarn/1.22.22/bin/yarn --version)\" = \"1.22.22\"",
