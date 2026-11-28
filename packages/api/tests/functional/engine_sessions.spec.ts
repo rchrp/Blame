@@ -397,8 +397,11 @@ test.group('engine blobs', (group) => {
     assert.equal(((await again.json()) as { mediaType: string }).mediaType, 'image/png')
     assert.equal(pulled.status, 200)
     assert.equal(pulled.headers.get('x-blob-media-type'), 'image/png')
-    // The app reads it from another origin: CORS must expose it.
-    const fromApp = await owner.get(`/blobs/${hash}`, { origin: 'http://localhost:5173' })
+    // The app reads it from the configured site origin: CORS must expose it.
+    const siteOrigin = new URL(env.get('BLAME_SITE_URL', 'https://blame.so')).origin
+    const fromApp = await owner.get(`/blobs/${hash}`, { origin: siteOrigin })
+    assert.equal(fromApp.status, 200)
+    assert.equal(fromApp.headers.get('access-control-allow-origin'), siteOrigin)
     assert.include(
       fromApp.headers.get('access-control-expose-headers')?.toLowerCase() ?? '',
       'x-blob-media-type'
