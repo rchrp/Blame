@@ -1,6 +1,6 @@
 {
   "distro": "BlameRuntime",
-  "runtimeVersion": "17",
+  "runtimeVersion": "18",
   "runtimeAgentVersion": "16",
   "runtimeMarker": "/etc/blame-runtime-version",
   "runtimeRoot": "/home/blame/.local/share/blame/runtime",
