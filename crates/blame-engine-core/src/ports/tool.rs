@@ -27,6 +27,10 @@ pub struct ToolInvocation {
     /// The person approved this call (it needed their approval): a harness
     /// command the chat asked about may then change the repository.
     pub approved: bool,
+    /// The session's model reads images ([`super::ModelProvider::reads_images`]):
+    /// a tool may then answer with one, such as a screenshot or a drawing
+    /// the harness reads from the workspace.
+    pub images: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]

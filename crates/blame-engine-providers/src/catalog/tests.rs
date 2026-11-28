@@ -32,3 +32,25 @@ fn a_subscription_takes_its_vendor_s_facts_for_a_model_rig_does_not_list() {
             .is_none()
     );
 }
+
+#[test]
+fn a_model_reads_images_as_its_provider_lists_it() {
+    let model = |provider: &str, model: &str| ModelRef {
+        provider: provider.into(),
+        model: model.into(),
+    };
+    let snapshot = Catalog::snapshot();
+    // Claude Code serves Anthropic's models, which read images.
+    assert!(snapshot.reads_images(&model("claude-code", "claude-sonnet-4-6")));
+    assert!(snapshot.reads_images(&model("anthropic", "claude-sonnet-4-6")));
+    assert!(snapshot.reads_images(&model("anthropic", "claude-haiku-4-5-20251001")));
+    assert!(!snapshot.reads_images(&model("anthropic", "claude-unlisted")));
+    assert!(!snapshot.reads_images(&model("nowhere", "claude-sonnet-4-6")));
+
+    let data = r#"{"openai": {"models": {"gpt-text-only": {
+        "name": "GPT Text Only", "tool_call": true,
+        "modalities": {"input": ["text"]}, "limit": {"context": 500000, "output": 50000}
+    }}}}"#;
+    let catalog = Catalog::read(data, Meta::default(), CatalogSource::ModelsDev).expect("reads");
+    assert!(!catalog.reads_images(&model("openai", "gpt-text-only")));
+}

@@ -463,4 +463,8 @@ impl ModelProvider for AsLead {
     fn forces_tool(&self, model: &ModelRef) -> bool {
         self.inner.forces_tool(model)
     }
+
+    fn reads_images(&self, model: &ModelRef) -> bool {
+        self.inner.reads_images(model)
+    }
 }

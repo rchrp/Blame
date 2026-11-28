@@ -278,6 +278,14 @@ async fn harness_calls_carry_the_context_generation() {
         generations,
         [json!("initial"), json!(format!("compaction:{through}"))]
     );
+    // The session's Claude model reads images, so `read_code` may return a
+    // screenshot or a datasheet drawing to it.
+    let images: Vec<Value> = runner_log(&log)
+        .iter()
+        .filter(|m| m["call"]["tool"] == "read_code")
+        .map(|m| m["call"]["toolContext"]["metadata"]["modelSupportsImages"].clone())
+        .collect();
+    assert_eq!(images, [json!(true), json!(true)]);
     assert!(engine.shutdown().await.success());
 }
 
@@ -340,6 +348,60 @@ async fn harness_questions_reach_the_client_and_back() {
     assert_eq!(asks.len(), 1);
     assert_eq!(asks[0].0, session);
     assert_eq!(asks[0].1, "commandCredentials");
+    assert!(engine.shutdown().await.success());
+}
+
+#[tokio::test]
+async fn the_real_harness_reads_a_workspace_image_for_a_model_that_sees_it() {
+    let Some(harness) = real_harness() else {
+        eprintln!("skipped: blame-harness is not built");
+        return;
+    };
+    let command = harness_args(&[harness.to_str().unwrap(), "serve", "--asks"]);
+    let mock = mock(vec![
+        tool_reply(&[("read_code", json!({ "target": "drawing.png" }))]),
+        text_reply(&["The ports are 34 mm apart."]),
+    ])
+    .await;
+    let client = Arc::new(FakeClient::new(&mock.base));
+    let engine = Engine::ready(
+        &temp_dir("harness-real-image"),
+        &["--harness-command", &command],
+        client,
+    )
+    .await;
+    let workspace = temp_dir("harness-real-image-workspace");
+    // A datasheet drawing an agent extracted from a PDF: one PNG pixel.
+    let pixel: &[u8] = &[
+        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44,
+        0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f,
+        0x15, 0xc4, 0x89, 0x00, 0x00, 0x00, 0x0a, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x63, 0x00,
+        0x01, 0x00, 0x00, 0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49,
+        0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
+    ];
+    std::fs::write(workspace.join("drawing.png"), pixel).unwrap();
+    let session = engine.create(harness_config(&workspace)).await;
+    engine.subscribe(&session, 0).await;
+    engine.send(&session, "read the drawing").await;
+    let records = records_of(
+        &tokio::time::timeout(Duration::from_secs(60), engine.until_turn_ended())
+            .await
+            .expect("the turn ends"),
+    );
+    let results = results(&records);
+    assert_eq!(results[0].0, ToolOutcome::Completed, "{:?}", results[0].1);
+    assert!(
+        results[0]
+            .1
+            .iter()
+            .any(|block| matches!(block, ToolResultBlock::Image { .. })),
+        "{:?}",
+        results[0].1
+    );
+    // The drawing reached the model as an image, not as a refusal.
+    let sent = mock.requests()[1].body.to_string();
+    assert!(sent.contains("iVBORw0KGgo"), "{sent}");
+    assert!(!sent.contains("does not support image input"), "{sent}");
     assert!(engine.shutdown().await.success());
 }
 

@@ -252,6 +252,10 @@ impl ModelProvider for ProviderRouter {
         blame_engine_providers::forces_tool(model)
     }
 
+    fn reads_images(&self, model: &blame_engine_protocol::ModelRef) -> bool {
+        self.options.catalog.current().reads_images(model)
+    }
+
     async fn stream(&self, request: ModelRequest) -> Result<ModelStream, ProviderError> {
         let id = request.model.provider.clone();
         // The loop keys the prompt cache by session.

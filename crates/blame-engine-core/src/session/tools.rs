@@ -346,6 +346,7 @@ async fn run_one(
         compacted_through: shared.compacted_through,
         ultra: shared.ultra,
         approved: needs_approval,
+        images: inner.ports.provider.reads_images(&config.model),
     };
     let output = inner
         .ports

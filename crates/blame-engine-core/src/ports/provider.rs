@@ -134,4 +134,10 @@ pub trait ModelProvider: Send + Sync {
     fn forces_tool(&self, _model: &ModelRef) -> bool {
         false
     }
+
+    /// Whether `model` reads images. Tools only answer with one for a model
+    /// that does ([`super::ToolInvocation::images`]).
+    fn reads_images(&self, _model: &ModelRef) -> bool {
+        false
+    }
 }

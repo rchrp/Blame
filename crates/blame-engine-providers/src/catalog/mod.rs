@@ -27,6 +27,7 @@ pub use live::{LiveCatalog, RefreshOptions};
 pub use sources::MODELS_DEV_KEYS;
 
 use crate::registry::ProviderKind;
+use blame_engine_protocol::ModelRef;
 use rig_core::catalog::{Catalog as RigCatalog, ModelFacts, ModelSpec, SkipReason};
 use rig_core::providers::registry::ProviderId;
 use serde::{Deserialize, Serialize};
@@ -127,6 +128,21 @@ impl Catalog {
 
     pub fn provider(&self, kind: ProviderKind) -> ProviderInfo {
         listing::provider(self, kind)
+    }
+
+    /// Whether `model` reads images, as its provider lists it (a dated
+    /// snapshot as its model). A model listed nowhere, such as an
+    /// OpenAI-compatible server's own, is taken not to.
+    pub fn reads_images(&self, model: &ModelRef) -> bool {
+        let Some(kind) = ProviderKind::from_id(&model.provider) else {
+            return false;
+        };
+        let id = model.model.as_str();
+        let base = listing::snapshot_of(id);
+        self.provider(kind)
+            .models
+            .iter()
+            .any(|info| info.images && (info.id == id || Some(info.id.as_str()) == base))
     }
 
     /// The list a client is given.

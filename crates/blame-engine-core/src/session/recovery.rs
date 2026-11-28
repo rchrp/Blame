@@ -79,6 +79,7 @@ pub(super) async fn recover(inner: &Arc<Inner>) -> Result<(), EngineError> {
                     compacted_through: view.compacted_through(),
                     ultra: state.ultra,
                     approved: false,
+                    images: inner.ports.provider.reads_images(&config.model),
                 };
                 match inner.ports.tools.interrupted(&invocation).await {
                     InterruptedCall::Applied(output) => Some((output.outcome, output.content)),

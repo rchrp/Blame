@@ -182,7 +182,11 @@ impl Harness {
                 "sessionId": invocation.session,
                 "conversationId": invocation.session,
                 "toolCallId": invocation.call,
-                "metadata": { "contextGeneration": context_generation(invocation) },
+                "metadata": {
+                    "contextGeneration": context_generation(invocation),
+                    // `read_code` reads an image only for a model that sees it.
+                    "modelSupportsImages": invocation.images,
+                },
                 // The person approved this very call (a chat's git command).
                 "approved": invocation.approved,
             },
