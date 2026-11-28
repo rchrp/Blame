@@ -397,6 +397,12 @@ test.group('engine blobs', (group) => {
     assert.equal(((await again.json()) as { mediaType: string }).mediaType, 'image/png')
     assert.equal(pulled.status, 200)
     assert.equal(pulled.headers.get('x-blob-media-type'), 'image/png')
+    // The app reads it from another origin: CORS must expose it.
+    const fromApp = await owner.get(`/blobs/${hash}`, { origin: 'http://localhost:5173' })
+    assert.include(
+      fromApp.headers.get('access-control-expose-headers')?.toLowerCase() ?? '',
+      'x-blob-media-type'
+    )
     assert.deepEqual(Buffer.from(await pulled.arrayBuffer()), bytes)
     assert.equal(foreign.status, 404)
     assert.lengthOf(await db.from('engine_blobs'), 1)
@@ -544,7 +550,7 @@ async function createUser() {
   return {
     user,
     raw,
-    get: (path: string) => request(path),
+    get: (path: string, headers: Record<string, string> = {}) => request(path, { headers }),
     delete: (path: string) => request(path, { method: 'DELETE' }),
     push: (id: string, records: unknown[], extra: Record<string, unknown> = {}) =>
       raw(`/sessions/${id}/records`, 'POST', JSON.stringify({ records, ...extra })),

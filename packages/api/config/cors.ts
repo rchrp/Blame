@@ -48,9 +48,10 @@ const corsConfig = defineConfig({
   headers: true,
 
   /**
-   * Response headers exposed to the browser.
+   * Response headers exposed to the browser. The app is another origin: an
+   * engine blob's type (`x-blob-media-type`) is hidden from it otherwise.
    */
-  exposeHeaders: [],
+  exposeHeaders: ['x-blob-media-type'],
 
   /**
    * Allow cookies/authorization headers on cross-origin requests.
