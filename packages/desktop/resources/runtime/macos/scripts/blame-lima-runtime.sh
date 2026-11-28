@@ -518,7 +518,50 @@ stop_runtime() {
   if ! test_lima_available || ! test_vm_present || ! test_vm_running; then
     return
   fi
-  with_lima_environment stop "$vm_name"
+  host_agent_pid="$(vm_json_number hostAgentPID)"
+  if [ -z "$host_agent_pid" ]; then
+    with_lima_environment stop "$vm_name"
+    return
+  fi
+  with_lima_environment stop "$vm_name" &
+  stop_process_id=$!
+  if wait_for_exit "$host_agent_pid" "${BLAME_LIMA_STOP_SECONDS:-60}"; then
+    wait "$stop_process_id"
+    return
+  fi
+  unblock_host_agent "$host_agent_pid"
+  # Lima's stop would wait minutes for an exit event a forced stop never sends.
+  pkill -TERM -P "$stop_process_id" 2>/dev/null || true
+  kill "$stop_process_id" 2>/dev/null || true
+  wait "$stop_process_id" 2>/dev/null || true
+}
+
+# A stopping host agent forked `ssh -O exit` and the child never ran ssh: it
+# spun in the Network framework's fork handler (macOS 27, Lima 2.2.1). The
+# agent waited on it for hours with the VM up, and Lima's stop gave up.
+# Killing the agent's children lets it finish stopping; a forced stop clears
+# an agent that still does not exit.
+unblock_host_agent() {
+  host_agent_pid="$1"
+  pkill -KILL -P "$host_agent_pid" 2>/dev/null || true
+  if wait_for_exit "$host_agent_pid" "${BLAME_LIMA_UNBLOCK_SECONDS:-15}"; then
+    return
+  fi
+  # A forced stop kills the agent and would leave its children to launchd.
+  pkill -KILL -P "$host_agent_pid" 2>/dev/null || true
+  with_lima_environment stop -f "$vm_name"
+}
+
+wait_for_exit() {
+  process_id="$1"
+  remaining_seconds="$2"
+  while kill -0 "$process_id" 2>/dev/null; do
+    if [ "$remaining_seconds" -le 0 ]; then
+      return 1
+    fi
+    remaining_seconds=$((remaining_seconds - 1))
+    sleep 1
+  done
 }
 
 uninstall_runtime() {
