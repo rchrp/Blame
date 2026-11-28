@@ -41,6 +41,25 @@ test("a capture loads when its blob arrives after the tool record", async (t) =>
   assert.equal(fetchImage.mock.callCount(), 2)
 })
 
+test("a capture loads when the API's media type header is hidden", async (t) => {
+  // A page on another origin sees only `content-type` unless the API
+  // exposes `x-blob-media-type`: the PNG signature names the type.
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13])
+  const replies = [
+    new Response(png, { headers: { "content-type": "application/octet-stream" } }),
+    new Response("%PDF-1.7", { headers: { "content-type": "application/octet-stream" } }),
+  ]
+  t.mock.method(globalThis, "fetch", async () => {
+    const response = replies.shift()
+    assert.ok(response, "unexpected blob request")
+    return response
+  })
+  const signal = new AbortController().signal
+  const image = await readEngineImage({ url: "https://example.invalid" }, "a".repeat(64), signal)
+  assert.equal(image?.type, "image/png")
+  assert.equal(await readEngineImage({ url: "https://example.invalid" }, "b".repeat(64), signal), null)
+})
+
 test("the tool gallery includes every capture in conversation order without duplicates", () => {
   const [a, b, c, d] = ["a", "b", "c", "d"].map((char) => char.repeat(64))
   const ref = (id: string) => ({ type: "screenshot_ref", id, width: 390 })
